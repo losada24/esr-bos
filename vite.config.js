@@ -1,18 +1,21 @@
 import { defineConfig } from 'vite';
 import laravel from 'laravel-vite-plugin';
-//import alpineFiles from '../resources/js/alpine-files.js'
-//console.log(alpineFiles)
+import react from '@vitejs/plugin-react';
 
 export default defineConfig({
     plugins: [
         laravel({
-            input: ['resources/js/welcome/index.js'],
+            input: 'resources/js/app.jsx',
             refresh: true,
         }),
+        react(),
     ],
-    server: { 
+    server: {
       hmr: {
           host: 'localhost',
       },
-    }, 
+      watch: {
+          usePolling: true
+      }
+  },
 });
