@@ -15,6 +15,7 @@
         "tightenco/ziggy": "^1.0"
     },
     "require-dev": {
+        "barryvdh/laravel-ide-helper": "^2.13",
         "fakerphp/faker": "^1.9.1",
         "laravel/breeze": "^1.23",
         "laravel/pint": "^1.0",
@@ -49,7 +50,12 @@
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\""
         ],
         "post-create-project-cmd": [
-            "@php artisan key:generate --ansi"
+            "@php artisan key:generate --ansi",
+            "@php artisan vendor:publish --tag-laravel-assets --ansi --force",
+            "@php artisan ide-helper:models -N",
+            "@php artisan ide-helper:generate",
+            "@php artisan ide-helper:eloquent",
+            "@php artisan ide-helper:meta"
         ]
     },
     "extra": {
