@@ -10,14 +10,21 @@ import logo from '../../assets/images/logo.svg'
 import map from '../../assets/images/auth/map.png'
 
 const APP_NAME = import.meta.env.VITE_APP_NAME
+const CUSTOM_TAILWIND_CLASS = {
+  bgMap: `bg-[url(${map})]`
+}
 
 type PropsWithChildrenAndImage = {
   featuredImage?: string
+  formTitle: string
+  formDescription: string
 } & PropsWithChildren
 
 export default function Guest ({
   children,
-  featuredImage
+  featuredImage,
+  formTitle,
+  formDescription
 }: PropsWithChildrenAndImage) {
   return (
     <div className="relative overflow-x-hidden font-nunito text-sm font-normal antialiased">
@@ -31,8 +38,7 @@ export default function Guest ({
             />
           </div>
           <div
-            style={{ '--imageUrl': `url(${map})` }}
-            className="relative flex min-h-screen items-center justify-center bg-[image:var(--imageUrl)] bg-cover bg-center bg-no-repeat px-6 py-10 dark:bg-[#060818] sm:px-16"
+            className={`relative flex min-h-screen items-center justify-center ${CUSTOM_TAILWIND_CLASS.bgMap} bg-cover bg-center bg-no-repeat px-6 py-10 dark:bg-[#060818] sm:px-16`}
           >
             <img
               src={comingSoonObject1}
@@ -81,10 +87,10 @@ export default function Guest ({
                 <div className="w-full max-w-[440px] lg:mt-16">
                   <div className="mb-10">
                     <h1 className="text-3xl font-extrabold uppercase !leading-snug text-primary md:text-4xl">
-                      Sign in
+                      {formTitle}
                     </h1>
                     <p className="text-base font-bold leading-normal text-white-dark">
-                      Enter your email and password to login
+                      {formDescription}
                     </p>
                   </div>
                   {children}

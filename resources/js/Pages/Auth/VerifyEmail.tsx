@@ -3,6 +3,8 @@ import PrimaryButton from '@/Components/PrimaryButton'
 import { Head, Link, useForm } from '@inertiajs/react'
 import { type FormEventHandler } from 'react'
 
+import featuredImage from '../../../assets/images/auth/email-verification.svg'
+
 export default function VerifyEmail ({ status }: { status?: string }) {
   const { post, processing } = useForm({})
 
@@ -13,14 +15,14 @@ export default function VerifyEmail ({ status }: { status?: string }) {
   }
 
   return (
-    <GuestLayout>
+    <GuestLayout
+      featuredImage={featuredImage}
+      formTitle='Email Verification'
+      formDescription='Thanks for signing up! Before getting started, could you verify your
+      email address by clicking on the link we just emailed to you? If you
+      didn&apos;t receive the email, we will gladly send you another.'
+    >
       <Head title="Email Verification" />
-
-      <div className="mb-4 text-sm text-gray-600">
-        Thanks for signing up! Before getting started, could you verify your
-        email address by clicking on the link we just emailed to you? If you
-        didn&apos;t receive the email, we will gladly send you another.
-      </div>
 
       {status === 'verification-link-sent' && (
         <div className="mb-4 font-medium text-sm text-green-600">
@@ -30,12 +32,8 @@ export default function VerifyEmail ({ status }: { status?: string }) {
       )}
 
       <form onSubmit={submit}>
-        <div className="mt-4 flex items-center justify-between">
-          <PrimaryButton disabled={processing}>
-            Resend Verification Email
-          </PrimaryButton>
-
-          <Link
+        <div className="flex items-center justify-end mt-4">
+        <Link
             href={route('logout')}
             method="post"
             as="button"
@@ -43,6 +41,12 @@ export default function VerifyEmail ({ status }: { status?: string }) {
           >
             Log Out
           </Link>
+          <PrimaryButton
+            className="btn btn-gradient border-0 uppercase shadow-[0_10px_20px_-10px_rgba(67,97,238,0.44)] ml-4"
+            disabled={processing}
+          >
+            Log in
+          </PrimaryButton>
         </div>
       </form>
     </GuestLayout>

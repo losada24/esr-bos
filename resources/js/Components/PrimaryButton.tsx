@@ -11,7 +11,7 @@ export default function PrimaryButton ({
       {...props}
       className={
         `inline-flex items-center uppercase tracking-widest transition ease-in-out duration-150 ${
-          disabled !== undefined && 'opacity-25'
+          disabled === true && 'opacity-25'
         } ` + className
       }
       disabled={disabled}

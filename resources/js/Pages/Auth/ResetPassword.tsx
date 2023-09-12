@@ -6,6 +6,10 @@ import PrimaryButton from '@/Components/PrimaryButton'
 import TextInput from '@/Components/TextInput'
 import { Head, useForm } from '@inertiajs/react'
 
+import featuredImage from '../../../assets/images/auth/reset-password.svg'
+import EmailIcon from '@/Components/Icons/Auth/EmailIcon'
+import PasswordIcon from '@/Components/Icons/Auth/PasswordIcon'
+
 export default function ResetPassword ({
   token,
   email
@@ -33,39 +37,52 @@ export default function ResetPassword ({
   }
 
   return (
-    <GuestLayout>
+    <GuestLayout
+      featuredImage={featuredImage}
+      formTitle='Reset Password'
+      formDescription=''
+    >
       <Head title="Reset Password" />
 
       <form onSubmit={submit}>
         <div>
           <InputLabel htmlFor="email" value="Email" />
-
-          <TextInput
-            id="email"
-            type="email"
-            name="email"
-            value={data.email}
-            className="mt-1 block w-full"
-            autoComplete="username"
-            onChange={e => { setData('email', e.target.value) }}
-          />
-
+          <div className='relative text-white-dark'>
+            <TextInput
+              id="email"
+              type="email"
+              name="email"
+              value={data.email}
+              className="form-input ps-10 placeholder:text-white-dark"
+              autoComplete="username"
+              placeholder='Enter Email'
+              onChange={e => { setData('email', e.target.value) }}
+            />
+            <span className="absolute start-4 top-1/2 -translate-y-1/2">
+              <EmailIcon />
+            </span>
+          </div>
           <InputError message={errors.email} className="mt-2" />
         </div>
 
         <div className="mt-4">
           <InputLabel htmlFor="password" value="Password" />
-
-          <TextInput
-            id="password"
-            type="password"
-            name="password"
-            value={data.password}
-            className="mt-1 block w-full"
-            autoComplete="new-password"
-            isFocused={true}
-            onChange={e => { setData('password', e.target.value) }}
-          />
+          <div className="relative text-white-dark">
+            <TextInput
+              id="password"
+              type="password"
+              name="password"
+              value={data.password}
+              className="form-input ps-10 placeholder:text-white-dark"
+              autoComplete="new-password"
+              isFocused={true}
+              placeholder='Enter Password'
+              onChange={e => { setData('password', e.target.value) }}
+            />
+            <span className="absolute start-4 top-1/2 -translate-y-1/2">
+              <PasswordIcon />
+            </span>
+          </div>
 
           <InputError message={errors.password} className="mt-2" />
         </div>
@@ -75,24 +92,30 @@ export default function ResetPassword ({
             htmlFor="password_confirmation"
             value="Confirm Password"
           />
-
-          <TextInput
-            type="password"
-            name="password_confirmation"
-            value={data.password_confirmation}
-            className="mt-1 block w-full"
-            autoComplete="new-password"
-            onChange={e => { setData('password_confirmation', e.target.value) }}
-          />
+          <div className="relative text-white-dark">
+            <TextInput
+              type="password"
+              name="password_confirmation"
+              value={data.password_confirmation}
+              className="form-input ps-10 placeholder:text-white-dark"
+              autoComplete="new-password"
+              placeholder='Password Confirmation'
+              onChange={e => { setData('password_confirmation', e.target.value) }}
+            />
+            <span className="absolute start-4 top-1/2 -translate-y-1/2">
+              <PasswordIcon />
+            </span>
+          </div>
 
           <InputError message={errors.password_confirmation} className="mt-2" />
         </div>
 
-        <div className="flex items-center justify-end mt-4">
-          <PrimaryButton className="ml-4" disabled={processing}>
-            Reset Password
-          </PrimaryButton>
-        </div>
+        <PrimaryButton
+          className="btn btn-gradient !mt-6 w-full border-0 uppercase shadow-[0_10px_20px_-10px_rgba(67,97,238,0.44)]"
+          disabled={processing}
+        >
+          Reset Password
+        </PrimaryButton>
       </form>
     </GuestLayout>
   )

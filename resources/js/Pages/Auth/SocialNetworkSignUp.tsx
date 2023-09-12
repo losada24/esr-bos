@@ -1,4 +1,4 @@
-const SocialNetworkSignUp = () => {
+const SocialNetworkSignUp = ({ isLogin }: { isLogin: boolean }) => {
   return (
     <>
       <div className="relative my-7 text-center md:mb-9">
@@ -107,15 +107,29 @@ const SocialNetworkSignUp = () => {
           </li>
         </ul>
       </div>
-      <div className="text-center dark:text-white">
-        Don&apos;t have an account ?&nbsp;
-        <a
-          href="/auth/cover-register"
-          className="uppercase text-primary underline transition hover:text-black dark:hover:text-white"
-        >
-          SIGN UP
-        </a>
-      </div>
+      {isLogin
+        ? (
+          <div className="text-center dark:text-white">
+            Don&apos;t have an account ?&nbsp;
+            <a
+              href="/register"
+              className="uppercase text-primary underline transition hover:text-black dark:hover:text-white"
+            >
+              SIGN UP
+            </a>
+          </div>
+          )
+        : (
+          <div className="text-center dark:text-white">
+            Already have an account ?&nbsp;
+            <a
+              href="/login"
+              className="uppercase text-primary underline transition hover:text-black dark:hover:text-white"
+            >
+              SIGN IN
+            </a>
+          </div>
+          )}
     </>
   )
 }
