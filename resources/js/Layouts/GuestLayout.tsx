@@ -8,6 +8,7 @@ import polygonObject from '../../assets/images/auth/polygon-object.svg'
 import logoWhite from '../../assets/images/auth/logo-white.svg'
 import logo from '../../assets/images/logo.svg'
 import map from '../../assets/images/auth/map.png'
+import FlashMessages from '@/Components/FlashMessages'
 
 const APP_NAME = import.meta.env.VITE_APP_NAME
 const CUSTOM_TAILWIND_CLASS = {
@@ -93,6 +94,7 @@ export default function Guest ({
                       {formDescription}
                     </p>
                   </div>
+                  <FlashMessages />
                   {children}
                 </div>
                 <p className="absolute bottom-6 w-full text-center dark:text-white">
