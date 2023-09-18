@@ -1,131 +1,68 @@
-import {
-  useState,
-  createContext,
-  useContext,
-  Fragment,
-  type PropsWithChildren,
-  type Dispatch,
-  type SetStateAction
-} from 'react'
-import { Link, type InertiaLinkProps } from '@inertiajs/react'
-import { Transition } from '@headlessui/react'
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react'
+import { usePopper } from 'react-popper'
 
-const DropDownContext = createContext<{
-  open: boolean
-  setOpen: Dispatch<SetStateAction<boolean>>
-  toggleOpen: () => void
-}>({
-      open: false,
-      setOpen: () => {},
-      toggleOpen: () => {}
-    })
+const Dropdown = (props: any, forwardedRef: any) => {
+  const [visibility, setVisibility] = useState<any>(false)
 
-const Dropdown = ({ children }: PropsWithChildren) => {
-  const [open, setOpen] = useState(false)
+  const referenceRef = useRef<any>()
+  const popperRef = useRef<any>()
 
-  const toggleOpen = () => {
-    setOpen(previousState => !previousState)
-  }
-
-  return (
-    <DropDownContext.Provider value={{ open, setOpen, toggleOpen }}>
-      <div className="relative">{children}</div>
-    </DropDownContext.Provider>
-  )
-}
-
-const Trigger = ({ children }: PropsWithChildren) => {
-  const { open, setOpen, toggleOpen } = useContext(DropDownContext)
-
-  return (
-    <>
-      <div onClick={toggleOpen}>{children}</div>
-
-      {open && (
-        <div
-          className="fixed inset-0 z-40"
-          onClick={() => { setOpen(false) }}
-        ></div>
-      )}
-    </>
-  )
-}
-
-const Content = ({
-  align = 'right',
-  width = '48',
-  contentClasses = 'py-1 bg-white',
-  children
-}: PropsWithChildren<{
-  align?: 'left' | 'right'
-  width?: '48'
-  contentClasses?: string
-}>) => {
-  const { open, setOpen } = useContext(DropDownContext)
-
-  let alignmentClasses = 'origin-top'
-
-  if (align === 'left') {
-    alignmentClasses = 'origin-top-left left-0'
-  } else if (align === 'right') {
-    alignmentClasses = 'origin-top-right right-0'
-  }
-
-  let widthClasses = ''
-
-  if (width === '48') {
-    widthClasses = 'w-48'
-  }
-
-  return (
-    <>
-      <Transition
-        as={Fragment}
-        show={open}
-        enter="transition ease-out duration-200"
-        enterFrom="opacity-0 scale-95"
-        enterTo="opacity-100 scale-100"
-        leave="transition ease-in duration-75"
-        leaveFrom="opacity-100 scale-100"
-        leaveTo="opacity-0 scale-95"
-      >
-        <div
-          className={`absolute z-50 mt-2 rounded-md shadow-lg ${alignmentClasses} ${widthClasses}`}
-          onClick={() => { setOpen(false) }}
-        >
-          <div
-            className={
-              'rounded-md ring-1 ring-black ring-opacity-5 ' + contentClasses
-            }
-          >
-            {children}
-          </div>
-        </div>
-      </Transition>
-    </>
-  )
-}
-
-const DropdownLink = ({
-  className = '',
-  children,
-  ...props
-}: InertiaLinkProps) => {
-  return (
-    <Link
-      {...props}
-      className={
-        'block w-full px-4 py-2 text-left text-sm leading-5 text-gray-700 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition duration-150 ease-in-out ' +
-        className
+  const { styles, attributes } = usePopper(referenceRef.current, popperRef.current, {
+    placement: props.placement || 'bottom-end',
+    modifiers: [
+      {
+        name: 'offset',
+        options: {
+          offset: props.offset || [(0)]
+        }
       }
-    >
-      {children}
-    </Link>
+    ]
+  })
+
+  const handleDocumentClick = (event: any) => {
+    if (referenceRef.current?.contains(event.target) || popperRef.current?.contains(event.target)) {
+      return
+    }
+
+    setVisibility(false)
+  }
+
+  useEffect(() => {
+    document.addEventListener('mousedown', handleDocumentClick)
+    return () => {
+      document.removeEventListener('mousedown', handleDocumentClick)
+    }
+  }, [])
+
+  useImperativeHandle(forwardedRef, () => ({
+    close () {
+      setVisibility(false)
+    }
+  }))
+
+  return (
+        <>
+            <button
+                ref={referenceRef}
+                type="button"
+                className={props.btnClassName}
+                onClick={() => { setVisibility(!visibility) }}
+            >
+                {props.button}
+            </button>
+
+                <div
+                ref={popperRef}
+                style={styles.popper}
+                {...attributes.popper}
+                className="z-50"
+                onClick={() => { setVisibility(!visibility) }}
+                >
+                    {visibility && props.children}
+                </div>
+
+        </>
   )
 }
 
-Dropdown.Trigger = Trigger
-Dropdown.Content = Content
-Dropdown.Link = DropdownLink
-
-export default Dropdown
+export default forwardRef(Dropdown)
