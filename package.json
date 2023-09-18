@@ -90,6 +90,7 @@
         "sweetalert2-react-content": "^5.0.7",
         "swiper": "^8.4.4",
         "web-vitals": "^2.1.4",
-        "yup": "^0.32.11"
+        "yup": "^0.32.11",
+        "zustand": "^4.4.1"
     }
 }
