@@ -33,7 +33,8 @@ export const THEME_CONFIG: ThemeConfig = {
 }
 
 export const ROLES = {
-  ADMIN: 'admin'
+  ADMIN: 'admin',
+  CLIENT: 'client'
 }
 
 export const PERSMISSION_USERS_LIST = 'users list'

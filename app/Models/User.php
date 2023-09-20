@@ -24,7 +24,8 @@ class User extends Authenticatable
         'password',
         'provider_id',
         'provider',
-        'provider_token'
+        'provider_token',
+        'reference_code'
     ];
 
     /**
@@ -46,4 +47,9 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
     ];
+
+    public function referrals() 
+    {
+        return $this->hasMany(Referred::class);
+    }
 }

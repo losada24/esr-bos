@@ -2,58 +2,44 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
 import { Head, Link, router } from '@inertiajs/react'
 import EditIcon from '@/Components/Icons/EditIcon'
 import DeleteIcon from '@/Components/Icons/DeleteIcon'
-import { type PageProps, type User } from '@/types'
-import {
-  PERSMISSION_USERS_CREATE,
-  PERSMISSION_USERS_UPDATE,
-  PERSMISSION_USERS_DELETE
-} from '@/Utils/constants'
-import Can from '@/Components/Can'
+import Pagination from '@/Components/Pagination'
+import { type PageProps, type Referred, type PaginatorLink } from '@/types'
 
-type IndexUserProps = PageProps & {
-  users: User[]
+type IndexReferredProps = PageProps & {
+  referrals: {
+    data: Referred[]
+    links: PaginatorLink[]
+  }
 }
 
-export default function Index ({ auth, errors, users }: IndexUserProps) {
+export default function Index ({ auth, errors, referrals }: IndexReferredProps) {
   const destroy = (id: number) => {
     if (confirm('Are you sure you want to delete this User?')) {
       router.delete(route('user.destroy', id))
     }
   }
 
-  console.log(auth)
-
   return (
       <AuthenticatedLayout
           auth={auth}
           errors={errors}
-          pageTitle='Users'
-          actions={
-            <Link
-              className="btn btn-primary"
-              href={route('user.create')}
-            >
-              <span>Create User</span>
-            </Link>
-          }
+          pageTitle='Referrals'
       >
-        <Head title="Users" />
-        
-        {/*<Can
-          auth={auth}
-          permission={PERSMISSION_USERS_CREATE}
-        ></Can>*/}
+        <Head title="Referrals" />
+
         <table className="w-full whitespace-nowrap">
           <thead>
             <tr className="font-bold text-left">
               <th className="px-6 pt-5 pb-4">Name</th>
               <th className="px-6 pt-5 pb-4">Email</th>
-              <th className="px-6 pt-5 pb-4">Role</th>
+              <th className="px-6 pt-5 pb-4">Phone</th>
+              <th className="px-6 pt-5 pb-4">Notes</th>
+              <th className="px-6 pt-5 pb-4">Status</th>
               <th className="px-6 pt-5 pb-4 w-14">Actions</th>
             </tr>
           </thead>
           <tbody>
-            {users.map(({ id, name, email, roles }) => {
+            {referrals.data.map(({ id, name, email, phone, user, notes, status }) => {
               return (
                 <tr
                   key={id}
@@ -66,7 +52,13 @@ export default function Index ({ auth, errors, users }: IndexUserProps) {
                     {email}
                   </td>
                   <td className="border-t px-6 py-4 align-top">
-                    {roles.map(({ name }) => name).join(', ') || 'N/A'}
+                    {phone}
+                  </td>
+                  <td className="border-t px-6 py-4 align-top">
+                    {status}
+                  </td>
+                  <td className="border-t px-6 py-4 align-top">
+                    {notes}
                   </td>
                   <td className="border-t flex items-center px-6 py-4">
                     {/* <Can
@@ -90,13 +82,14 @@ export default function Index ({ auth, errors, users }: IndexUserProps) {
                 </tr>
               )
             })}
-            {users.length === 0 && (
+            {referrals.data.length === 0 && (
               <tr>
-                <td className="px-6 py-4 border-t" colSpan={3}>
-                  No Users found.
+                <td className="px-6 py-4 border-t" colSpan={6}>
+                  No Referrals found.
                 </td>
               </tr>
             )}
+            <Pagination links={referrals.links} />
           </tbody>
         </table>
       </AuthenticatedLayout>

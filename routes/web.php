@@ -4,8 +4,9 @@ use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
-use App\Http\Controllers\EstimatesController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\ReferredController;
 
 /*
 |--------------------------------------------------------------------------
@@ -18,7 +19,10 @@ use App\Http\Controllers\UserController;
 |
 */
 
-Route::get('/', [EstimatesController::class, 'index'])->middleware(['auth']);
+Route::get('/', [DashboardController::class, 'index'])->middleware(['auth']);
+Route::get('/referred/{reference_code}/create', [ReferredController::class, 'create'])->name('referred.create');
+Route::post('/referred/store', [ReferredController::class, 'store'])->name('referred.store');
+
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -27,7 +31,14 @@ Route::middleware('auth')->group(function () {
 
     // USERS
     Route::resource('user', UserController::class);
+    // REDERRED
+    Route::resource('referred', ReferredController::class, [
+        'only' => ['index']        
+    ])->middleware(['role:client|admin']);
 
+    Route::resource('referred', ReferredController::class, [
+        'only' => ['edit', 'update', 'destroy']        
+    ])->middleware(['role:admin']);
 });
 
 require __DIR__.'/auth.php';

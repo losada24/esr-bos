@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
+import { Head } from '@inertiajs/react'
 import { type PageProps } from '@/types'
 
 export default function Dashboard ({ auth }: PageProps) {
@@ -7,6 +8,8 @@ export default function Dashboard ({ auth }: PageProps) {
       user={auth.user}
       pageTitle='Dashboard'
     >
+      <Head title="Dashboard" />
+
       <div>
         <div className="panel mb-5">
           <div className="mb-4 flex items-center sm:flex-row flex-col sm:justify-between justify-center">

@@ -10,6 +10,7 @@ import Sidebar from './Sidebar'
 import Header from './Header'
 import Footer from './Footer'
 import Portals from './Portals'
+import FlashMessages from '@/Components/FlashMessages'
 
 export default function Authenticated ({
   auth,
@@ -49,6 +50,7 @@ export default function Authenticated ({
                         </div>
                         {actions}
                       </div>
+                      <FlashMessages />
                       {children}
                     </div>
                   </div>

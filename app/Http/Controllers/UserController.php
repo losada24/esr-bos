@@ -6,6 +6,7 @@ use App\Actions\CreateUser;
 use App\Actions\UpdateUser;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
+use App\Http\Resources\UserResource;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -20,7 +21,7 @@ class UserController extends Controller
     public function index()
     {
         return Inertia::render('User/Index', [
-          'users' => User::orderBy('name')
+          'users' => User::with(['roles'])->orderBy('name')
             ->get(),
         ]);
     }
@@ -32,7 +33,9 @@ class UserController extends Controller
      */
     public function create()
     {
-        return Inertia::render('User/Create');
+        return Inertia::render('User/Create', [
+          'roles' => \Spatie\Permission\Models\Role::orderBy('name')->get()
+        ]);
     }
 
     /**
@@ -56,9 +59,10 @@ class UserController extends Controller
      */
     public function edit(User $user)
     {
-        $user->loadMissing('roles', 'permissions');
+        $user->loadMissing('roles');
         return Inertia::render('User/Edit', [
-          'user' => $user,
+          'user' => new UserResource($user),
+          'roles' => \Spatie\Permission\Models\Role::orderBy('name')->get()
         ]);
     }
 
