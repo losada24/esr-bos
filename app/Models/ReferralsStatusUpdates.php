@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Carbon\Carbon;
 
 class ReferralsStatusUpdates extends Model
 {
@@ -17,6 +18,12 @@ class ReferralsStatusUpdates extends Model
       'notes',
       'user_id'
     ];
+
+    /*public function getCreatedAtAttribute( $value ) {
+      //print_r($value);die;
+      $createdAt = Carbon::parse($value);
+      return $createdAt->format('m/d/Y');
+    }*/
 
     public function user()
     {

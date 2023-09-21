@@ -37,7 +37,7 @@ export default function Authenticated ({
           {/* END SIDEBAR */}
           <div className="main-content flex flex-col min-h-screen">
             {/* BEGIN TOP NAVBAR */}
-            <Header />
+            <Header auth={auth}/>
             {/* END TOP NAVBAR */}
             {/* BEGIN CONTENT AREA */}
             <Suspense>

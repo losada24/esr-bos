@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 
 class Referred extends Model
 {
@@ -29,8 +30,24 @@ class Referred extends Model
       'status'
     ];
 
+    public function scopeFilter($query, array $filters)
+    {
+        $query->when($filters['status'] ?? null, function ($query, $search) {
+          $query->where('status', $search);
+        })->when($filters['text'] ?? null, function ($query, $search) {
+          $query->where(DB::raw("CONCAT(name, ' ', email, ' ',phone)"), 'like', '%'.$search.'%');
+        })->when($filters['user_id'] ?? null, function ($query, $search) {
+          $query->where('user_id', $search);
+        });
+    }
+
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function referralsStatusUpdate() 
+    {
+        return $this->hasMany(ReferralsStatusUpdates::class, 'referral_id');
     }
 }

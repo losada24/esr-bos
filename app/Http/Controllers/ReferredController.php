@@ -3,12 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Actions\CreateReferred;
+use App\Actions\UpdateReferred;
 use App\Http\Requests\StoreReferredRequest;
+use App\Http\Requests\UpdateReferredRequest;
 use App\Models\Referred;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
+use Illuminate\Contracts\Database\Eloquent\Builder;
 
 class ReferredController extends Controller
 {
@@ -17,20 +20,31 @@ class ReferredController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index(Request $request)
     {
         $userId = Auth::user()->id;
         $isAdmin = User::find($userId)->hasRole('admin');
         
         return Inertia::render('Referred/Index', [
             'referrals' => $isAdmin 
-              ? Referred::with('user')
-                ->paginate()
-                ->withQueryString()
-              : Referred::where('user_id', $userId)
-                  ->with('user')
+              ? Referred::with(['user', 'referralsStatusUpdate' => function (Builder $query) {
+                    $query->orderBy('created_at', 'asc');
+                  }, 'referralsStatusUpdate.user'])
+                  ->filter($request->only(['text', 'status', 'user_id']))
+                  ->orderBy('created_at', 'desc')
                   ->paginate()
                   ->withQueryString()
+              : Referred::where('user_id', $userId)
+                  ->filter($request->only(['text', 'status']))
+                  ->orderBy('created_at', 'desc')
+                  ->with(['user', 'referralsStatusUpdate' => function (Builder $query) {
+                    $query->orderBy('created_at', 'asc');
+                  }, 'referralsStatusUpdate.user'])
+                  ->paginate()
+                  ->withQueryString(),
+              'users' => User::orderBy('name')
+                ->filter(['text' => $request->input('user_term')])
+                ->paginate()
         ]);
     }
 
@@ -74,10 +88,8 @@ class ReferredController extends Controller
      */
     public function edit(Referred $referred)
     {
-        //$referred->loadMissing('roles');
         return Inertia::render('Referred/Edit', [
-          // 'user' => new UserResource($user),
-          // 'roles' => \Spatie\Permission\Models\Role::orderBy('name')->get()
+          'referred' => $referred,
         ]);
     }
 
@@ -88,11 +100,11 @@ class ReferredController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(UpdateUserRequest $updateUserRequest, UpdateUser $updateUser, Referred $referred)
+    public function update(UpdateReferredRequest $updateReferredRequest, UpdateReferred $updateReferred, Referred $referred)
     {
-        // $updateUser->handle($updateUserRequest, $user);
+        $updateReferred->handle($updateReferredRequest, $referred);
         return redirect()->route('referred.index')
-          ->with('success', 'User updated successfully.');
+          ->with('success', 'Referred updated successfully.');
     }
 
     /**

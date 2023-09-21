@@ -11,7 +11,19 @@ export interface User {
   name: string
   email: string
   email_verified_at: string
+  reference_code: string
+  referrals_count: number
   roles: Role[]
+}
+
+export interface ReferralsStatusUpdate {
+  id: number
+  referral_id: number
+  status: string
+  notes: string
+  user: User
+  created_at: Date
+  updated_at: Date
 }
 
 export interface Referred {
@@ -25,6 +37,7 @@ export interface Referred {
   created_at: Date
   updated_at: Date
   user: User
+  referrals_status_update: ReferralsStatusUpdate[]
 }
 
 export interface PaginatorLink {

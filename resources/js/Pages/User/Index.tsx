@@ -2,16 +2,20 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
 import { Head, Link, router } from '@inertiajs/react'
 import EditIcon from '@/Components/Icons/EditIcon'
 import DeleteIcon from '@/Components/Icons/DeleteIcon'
-import { type PageProps, type User } from '@/types'
-import {
-  PERSMISSION_USERS_CREATE,
-  PERSMISSION_USERS_UPDATE,
-  PERSMISSION_USERS_DELETE
-} from '@/Utils/constants'
-import Can from '@/Components/Can'
+import CopyIcon from '@/Components/Icons/CopyIcon'
+import { type PageProps, type User, type PaginatorLink } from '@/types'
+import Pagination from '@/Components/Pagination'
+import Tippy from '@tippyjs/react'
+import 'tippy.js/dist/tippy.css'
+import Swal from 'sweetalert2'
+import withReactContent from 'sweetalert2-react-content'
+import UserFilter from './UserFilter'
 
 type IndexUserProps = PageProps & {
-  users: User[]
+  users: {
+    data: User[]
+    links: PaginatorLink[]
+  }
 }
 
 export default function Index ({ auth, errors, users }: IndexUserProps) {
@@ -20,8 +24,6 @@ export default function Index ({ auth, errors, users }: IndexUserProps) {
       router.delete(route('user.destroy', id))
     }
   }
-
-  console.log(auth)
 
   return (
       <AuthenticatedLayout
@@ -38,22 +40,19 @@ export default function Index ({ auth, errors, users }: IndexUserProps) {
           }
       >
         <Head title="Users" />
-        
-        {/*<Can
-          auth={auth}
-          permission={PERSMISSION_USERS_CREATE}
-        ></Can>*/}
+        <UserFilter />
         <table className="w-full whitespace-nowrap">
           <thead>
             <tr className="font-bold text-left">
               <th className="px-6 pt-5 pb-4">Name</th>
               <th className="px-6 pt-5 pb-4">Email</th>
+              <th className="px-6 pt-5 pb-4 text-right">Referrals</th>
               <th className="px-6 pt-5 pb-4">Role</th>
               <th className="px-6 pt-5 pb-4 w-14">Actions</th>
             </tr>
           </thead>
           <tbody>
-            {users.map(({ id, name, email, roles }) => {
+            {users.data.map(({ id, name, email, roles, reference_code, referrals_count }) => {
               return (
                 <tr
                   key={id}
@@ -65,17 +64,33 @@ export default function Index ({ auth, errors, users }: IndexUserProps) {
                   <td className="border-t px-6 py-4 align-top">
                     {email}
                   </td>
+                  <td className="border-t px-6 py-4 align-top text-right">
+                    <button onClick={() => { router.get(route('referred.index', { user_id: id })) }} className='badge bg-danger p-0.5 px-1.5 rounded-full'>{referrals_count}</button>
+                  </td>
                   <td className="border-t px-6 py-4 align-top">
                     {roles.map(({ name }) => name).join(', ') || 'N/A'}
                   </td>
                   <td className="border-t flex items-center px-6 py-4">
-                    {/* <Can
-                      auth={auth}
-                      permission={PERSMISSION_USERS_UPDATE}
-                    ></Can> <Can
-                      auth={auth}
-                      permission={PERSMISSION_USERS_DELETE}
-                    > </Can> */}
+                      <Tippy content="Copy Link to Clipboard">
+                        <button
+                          className='mr-2'
+                          onClick={() => {
+                            const url = route('referred.create', { reference_code })
+                            navigator.clipboard.writeText(url)
+                            const MySwal = withReactContent(Swal)
+                            MySwal.fire({
+                              title: 'Link successfully copied to clipboard!',
+                              toast: true,
+                              position: 'bottom-start',
+                              showConfirmButton: false,
+                              timer: 3000,
+                              showCloseButton: true
+                            })
+                          }}
+                        >
+                          <CopyIcon className='h-5 w-5' />
+                        </button>
+                      </Tippy>
                       <Link
                         href={route('user.edit', id)}
                       >
@@ -90,7 +105,7 @@ export default function Index ({ auth, errors, users }: IndexUserProps) {
                 </tr>
               )
             })}
-            {users.length === 0 && (
+            {users.data.length === 0 && (
               <tr>
                 <td className="px-6 py-4 border-t" colSpan={3}>
                   No Users found.
@@ -99,6 +114,7 @@ export default function Index ({ auth, errors, users }: IndexUserProps) {
             )}
           </tbody>
         </table>
+        <Pagination links={users.links} />
       </AuthenticatedLayout>
   )
 }

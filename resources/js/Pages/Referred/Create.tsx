@@ -1,26 +1,21 @@
-import { useEffect, type FormEventHandler } from 'react'
 import { Formik, type FormikHelpers } from 'formik'
-import Checkbox from '@/Components/Checkbox'
 import GuestLayout from '@/Layouts/GuestLayout'
-import InputError from '@/Components/InputError'
-import PrimaryButton from '@/Components/PrimaryButton'
-import TextInput from '@/Components/TextInput'
-import { Head, Link, useForm, router } from '@inertiajs/react'
-import { type Referred, type PageProps } from '@/types'
+import { Head, router } from '@inertiajs/react'
+import { type PageProps } from '@/types'
 import * as Yup from 'yup'
 
 import featuredImage from '../../../assets/images/auth/contact-us.svg'
 import ReferredCreateForm from './ReferredCreateForm'
+import { PHONE_REG_EXP } from '@/Utils/constants'
 
 export type ContactProps = PageProps & {
   userId: number
 }
 
-const phoneRegExp = /^((\\+[1-9]{1,4}[ \\-]*)|(\\([0-9]{2,3}\\)[ \\-]*)|([0-9]{2,4})[ \\-]*)*?[0-9]{3,4}?[ \\-]*[0-9]{3,4}?$/
 export const referredCreateSchema = Yup.object({
   name: Yup.string().required('Name is required'),
   email: Yup.string().email('Invalid email address').required('Email is required'),
-  phone: Yup.string().matches(phoneRegExp, 'Phone number is not valid'),
+  phone: Yup.string().matches(PHONE_REG_EXP, 'Phone number is not valid'),
   notes: Yup.string().max(500, 'Must be 500 characters or less')
 })
 
@@ -44,7 +39,6 @@ export default function Create ({ userId }: ContactProps) {
   const handleSubmit = async (values: ReferredCreateFormProps, helpers: FormikHelpers<ReferredCreateFormProps>) => {
     router.post(route('referred.store'), values, {
       onSuccess: () => {
-        console.log('onSuccess')
         helpers.resetForm()
       },
       onError: (errors: any) => {

@@ -5,7 +5,7 @@ import { userUpdateSchema, type UserPageProps, type User } from './UserCommon'
 import UserForm from './UserForm'
 
 export default function Edit ({ auth, roles, user }: UserPageProps) {
-  console.log(user)
+  
   const initialValues: User = {
     id: user?.data.id ?? 0,
     name: user?.data.name ?? '',

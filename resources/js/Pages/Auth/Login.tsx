@@ -112,7 +112,6 @@ export default function Login ({
           </PrimaryButton>
         </div>
       </form>
-      <SocialNetworkSignUp isLogin={true} allowRegistration={false} />
     </GuestLayout>
   )
 }

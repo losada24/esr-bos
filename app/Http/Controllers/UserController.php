@@ -18,11 +18,15 @@ class UserController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index(Request $request)
     {
         return Inertia::render('User/Index', [
-          'users' => User::with(['roles'])->orderBy('name')
-            ->get(),
+          'users' => User::with(['roles'])
+            ->withCount(['referrals'])
+            ->filter($request->only(['text']))
+            ->orderBy('name')
+            ->paginate()
+            ->withQueryString()
         ]);
     }
 

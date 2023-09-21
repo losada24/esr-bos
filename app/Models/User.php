@@ -8,6 +8,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
+use Illuminate\Support\Facades\DB;
 
 class User extends Authenticatable
 {
@@ -47,6 +48,13 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
     ];
+
+    public function scopeFilter($query, array $filters)
+    {
+        $query->when($filters['text'] ?? null, function ($query, $search) {
+          $query->where(DB::raw("CONCAT(name, ' ', email)"), 'like', '%'.$search.'%');
+        });
+    }
 
     public function referrals() 
     {

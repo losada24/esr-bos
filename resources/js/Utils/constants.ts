@@ -55,3 +55,34 @@ export const PERSMISSIONS = [
     ]
   }
 ]
+
+export interface Status {
+  id: string
+  label: string
+  color: string
+}
+
+export const STATUS: Status[] = [
+  {
+    id: 'NEW',
+    label: 'NEW',
+    color: 'bg-warning'
+  },
+  {
+    id: 'PROCESSING',
+    label: 'PROCESSING',
+    color: 'bg-primary'
+  },
+  {
+    id: 'SIGNED_THE_CONTRACT',
+    label: 'SIGNED THE CONTRACT',
+    color: 'bg-success'
+  },
+  {
+    id: 'REJECTED',
+    label: 'REJECTED',
+    color: 'bg-danger'
+  }
+]
+
+export const PHONE_REG_EXP = /^((\\+[1-9]{1,4}[ \\-]*)|(\\([0-9]{2,3}\\)[ \\-]*)|([0-9]{2,4})[ \\-]*)*?[0-9]{3,4}?[ \\-]*[0-9]{3,4}?$/
