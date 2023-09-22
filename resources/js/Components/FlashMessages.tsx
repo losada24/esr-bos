@@ -1,7 +1,6 @@
 import React, { useState, useEffect, type MouseEventHandler } from 'react'
 import { usePage } from '@inertiajs/react'
 import { type PageProps } from '@/types'
-import IconSuccess from './Icons/SuccessIcon'
 import CloseIcon from './Icons/CloseIcon'
 
 const ButtonClose = ({ className, onClick }: { className?: string, onClick: MouseEventHandler<HTMLButtonElement> }) => {

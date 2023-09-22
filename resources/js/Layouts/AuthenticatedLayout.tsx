@@ -1,10 +1,5 @@
-import { useState, type PropsWithChildren, type ReactNode, Suspense } from 'react'
-import ApplicationLogo from '@/Components/ApplicationLogo'
-import Dropdown from '@/Components/Dropdown'
-import NavLink from '@/Components/NavLink'
-import ResponsiveNavLink from '@/Components/ResponsiveNavLink'
-import { Link } from '@inertiajs/react'
-import { type User } from '@/types'
+import { type PropsWithChildren, type ReactNode, Suspense } from 'react'
+import { type Auth } from '@/types'
 import { useStore, type ThemeState } from '@/Store/theme'
 import Sidebar from './Sidebar'
 import Header from './Header'
@@ -12,13 +7,12 @@ import Footer from './Footer'
 import Portals from './Portals'
 import FlashMessages from '@/Components/FlashMessages'
 
-export default function Authenticated ({
+export default function AuthenticatedLayout ({
   auth,
   pageTitle,
   children,
   actions
-}: PropsWithChildren<{ user: User, pageTitle?: string, actions?: ReactNode }>) {
-  // const [showingNavigationDropdown, setShowingNavigationDropdown] = useState(false)
+}: PropsWithChildren<{ auth: Auth, pageTitle?: string, actions?: ReactNode }>) {
   const [themeState, toggleSidebar] = useStore((state: ThemeState) => [
     state.themeState,
     state.toggleSidebar

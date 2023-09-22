@@ -3,8 +3,11 @@ import InputError from '@/Components/InputError'
 import PrimaryButton from '@/Components/PrimaryButton'
 import { Link } from '@inertiajs/react'
 import { STATUS, type Status } from '@/Utils/constants'
+import { type FormikErrors } from 'formik'
+import { type ReferredEditFormProps } from './Edit'
 
-const ReferredForm = ({ submitCount, errors, touched, values, defaultStatus, setFieldValue }) => {
+const ReferredForm = ({ submitCount, errors, values, defaultStatus, setFieldValue }:
+{ submitCount: number, errors: FormikErrors<ReferredEditFormProps>, values: ReferredEditFormProps, defaultStatus: string, setFieldValue: (arg1: string, arg2: any) => void }) => {
   return (
     <Form className='space-y-5'>
       <div className={submitCount ? (errors.name) ? 'has-error' : 'has-success' : ''}>
@@ -31,7 +34,7 @@ const ReferredForm = ({ submitCount, errors, touched, values, defaultStatus, set
       </div>
       <div className={submitCount ? (errors.status ? 'has-error' : 'has-success') : ''}>
         <label htmlFor="status">Status</label>
-        <Field as="select" name="status" className="form-select" onChange={(e) => {
+        <Field as="select" name="status" className="form-select" onChange={(e: any) => {
           setFieldValue('status', e.target.value)
           if (e.target.value === defaultStatus) { setFieldValue('status_notes', '') }
         }}>

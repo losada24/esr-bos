@@ -1,16 +1,19 @@
-import { forwardRef, useEffect, useRef } from 'react'
+import { forwardRef } from 'react'
+
+interface SelectInputProps {
+  name: string
+  id: string
+  value: string
+  className?: string
+  required?: boolean
+  isFocused?: boolean
+  handleChange: (e: React.ChangeEvent<HTMLSelectElement>) => void
+  options: Array<{ value: string, label: string }>
+}
 
 export default forwardRef(function SelectInput (
-  { name, id, value, className, required, isFocused, handleChange, options = [] }, ref
+  { name, id, value, className, required, handleChange, options = [] }: SelectInputProps
 ) {
-  const input = ref ?? useRef()
-
-  useEffect(() => {
-    if (isFocused) {
-      input.current.focus()
-    }
-  }, [])
-
   return (
         <div className="flex flex-col items-start">
             <select
@@ -21,9 +24,8 @@ export default forwardRef(function SelectInput (
                     'border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm ' +
                     className
                 }
-                ref={input}
                 required={required}
-                onChange={(e) => handleChange(e)}
+                onChange={(e) => { handleChange(e) }}
             >
               {options.map((option, index) => {
                 return (

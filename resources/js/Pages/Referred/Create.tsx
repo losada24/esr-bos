@@ -3,7 +3,6 @@ import GuestLayout from '@/Layouts/GuestLayout'
 import { Head, router } from '@inertiajs/react'
 import { type PageProps } from '@/types'
 import * as Yup from 'yup'
-
 import featuredImage from '../../../assets/images/auth/contact-us.svg'
 import ReferredCreateForm from './ReferredCreateForm'
 import { PHONE_REG_EXP } from '@/Utils/constants'
@@ -19,7 +18,7 @@ export const referredCreateSchema = Yup.object({
   notes: Yup.string().max(500, 'Must be 500 characters or less')
 })
 
-interface ReferredCreateFormProps {
+export interface ReferredCreateFormProps {
   user_id: number
   name: string
   email: string
@@ -36,7 +35,7 @@ export default function Create ({ userId }: ContactProps) {
     notes: ''
   }
 
-  const handleSubmit = async (values: ReferredCreateFormProps, helpers: FormikHelpers<ReferredCreateFormProps>) => {
+  const handleSubmit = async (values: any, helpers: FormikHelpers<ReferredCreateFormProps>) => {
     router.post(route('referred.store'), values, {
       onSuccess: () => {
         helpers.resetForm()

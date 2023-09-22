@@ -1,9 +1,10 @@
+import { type SyntheticEvent } from 'react'
 import { useForm, router } from '@inertiajs/react'
 import TextInput from '@/Components/TextInput'
 import PrimaryButton from '@/Components/PrimaryButton'
 
 const UserFilter = () => {
-  const { data, setData, processing } = useForm({
+  const { data, setData } = useForm({
     text: ''
   })
 
@@ -12,7 +13,7 @@ const UserFilter = () => {
       text: ''
     })
 
-    router.get(route(route().current()), {
+    router.get(route('user.index'), {
       text: ''
     }, {
       replace: true,
@@ -20,11 +21,7 @@ const UserFilter = () => {
     })
   }
 
-  const onHandleChange = (event) => {
-    setData(event.target.name, event.target.type === 'checkbox' ? event.target.checked : event.target.value)
-  }
-
-  const submit = (e) => {
+  const submit = (e: SyntheticEvent) => {
     e.preventDefault()
     let currentRoute = route().current()
     if (currentRoute === undefined) {
@@ -47,7 +44,9 @@ const UserFilter = () => {
             name="text"
             value={data.text}
             className="form-input"
-            onChange={onHandleChange}
+            onChange={(e) => {
+              setData('text', e.target.value)
+            }}
             type='text'
             placeholder='Search by Name or Email'
           />

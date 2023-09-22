@@ -1,14 +1,17 @@
 import { Field, Form } from 'formik'
 import InputError from '@/Components/InputError'
 import PrimaryButton from '@/Components/PrimaryButton'
-import { Link } from '@inertiajs/react'
-import { type Role } from '@/types'
 import EmailIcon from '@/Components/Icons/Auth/EmailIcon'
 import UserIcon from '@/Components/Icons/UserIcon'
 import PhoneIcon from '@/Components/Icons/PhoneIcon'
 import MessageIcon from '@/Components/Icons/MessageIcon'
 
-const ReferredCreateForm = ({submitCount, errors}) => {
+interface FormProps {
+  submitCount: number
+  errors: any
+}
+
+const ReferredCreateForm = ({ submitCount, errors }: FormProps) => {
   return (
     <Form className='space-y-5'>
       <div className={submitCount ? (errors.name) ? 'has-error' : 'has-success' : ''}>

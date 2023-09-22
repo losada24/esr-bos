@@ -2,18 +2,25 @@ import React, { useState } from 'react'
 import TextInput from './TextInput'
 import CloseIcon from './Icons/CloseIcon'
 
-const Autocomplete = ({ id, name, value, data, handleChange, handleSearch }) => {
+export interface AutocompleteValue {
+  label: string
+  value: string
+}
+
+const Autocomplete = ({ id, name, value, data, handleChange, handleSearch }:
+{ id: string, name: string, value: AutocompleteValue, data: AutocompleteValue[], handleChange: (arg1: AutocompleteValue) => void, handleSearch: (arg1: string) => void }) => {
   const [isOpen, setIsOpen] = useState(false)
-  const [selectedItem, setSelectedItem] = useState(value)
-  const handleSelect = (item) => {
+  const [selectedItem, setSelectedItem] = useState<AutocompleteValue>(value)
+  const handleSelect = (item: AutocompleteValue) => {
     if (item.value === selectedItem.value) {
-      const nullSelection = {
-        label: null, value: null
+      const nullSelection: AutocompleteValue = {
+        label: '',
+        value: ''
       }
       setSelectedItem({ ...nullSelection })
     } else {
       setSelectedItem(item)
-      handleChange({ ...item, name })
+      handleChange({ ...item })
       setIsOpen(false)
     }
   }
@@ -40,7 +47,7 @@ const Autocomplete = ({ id, name, value, data, handleChange, handleSearch }) => 
               id={id}
               name={name}
               className='form-input my-3'
-              onChange={(e) => handleSearch(e.target.value)}
+              onChange={(e) => { handleSearch(e.target.value) }}
             />
           </li>
           {data.map(item => {

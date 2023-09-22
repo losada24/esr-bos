@@ -13,11 +13,7 @@ export default function Edit ({
   return (
     <AuthenticatedLayout
       auth={auth}
-      header={
-        <h2 className="font-semibold text-xl text-gray-800 leading-tight">
-          Profile
-        </h2>
-      }
+      pageTitle='Profile'
     >
       <Head title="Profile" />
       <div className='grid grid-cols-1 gap-y-2.5'>

@@ -13,7 +13,7 @@ export default function Create ({ auth, roles }: UserPageProps) {
     role: 0
   }
 
-  const handleSubmit = async (values: User, helpers: FormikHelpers<User>) => {
+  const handleSubmit = async (values: any, helpers: FormikHelpers<User>) => {
     router.post(route('user.store'), values, {
       onError: (errors: any) => {
         helpers.setErrors(errors)
@@ -32,11 +32,10 @@ export default function Create ({ auth, roles }: UserPageProps) {
             validationSchema={userSchema}
             onSubmit={handleSubmit}
           >
-            {({ errors, submitCount, touched }) => (
+            {({ errors, submitCount }) => (
               <UserForm
                 errors={errors}
                 submitCount={submitCount}
-                touched={touched}
                 roles={roles}
                 isCreate={true}
               />

@@ -5,13 +5,13 @@ import NavLink from '@/Components/NavLink'
 import { router } from '@inertiajs/react'
 import SignOutIcon from '@/Components/Icons/SignOutIcon'
 import { isAdmin } from '@/Utils/user'
-import { type Role } from '@/types'
+import { type Role, type Auth } from '@/types'
 import { COMPANY_NAME } from '@/Utils/constants'
 import ProfileImage from '@/Components/ProfileImage'
 import ProfileIcon from '@/Components/Icons/ProfileIcon'
 import { ellipse } from '@/Utils/string'
 
-const Header = ({ auth }) => {
+const Header = ({ auth }: { auth: Auth }) => {
   const [themeState, toggleSidebar] = useStore((state: ThemeState) => [
     state.themeState,
     state.toggleSidebar

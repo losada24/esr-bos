@@ -62,6 +62,15 @@ export interface ReferralsByStatusCount {
   count: number
 }
 
+export interface Auth {
+  user: User
+}
+
+interface ListUsersItem {
+  id: number
+  name: string
+}
+
 export type PageProps<
   T extends Record<string, unknown> = Record<string, unknown>,
 > = T & {

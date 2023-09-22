@@ -3,8 +3,10 @@ import InputError from '@/Components/InputError'
 import PrimaryButton from '@/Components/PrimaryButton'
 import { Link } from '@inertiajs/react'
 import { type Role } from '@/types'
+import { type FormikErrors } from 'formik'
+import { type User } from './UserCommon'
 
-const UserForm = ({submitCount, errors, touched, roles, isCreate}) => {
+const UserForm = ({ submitCount, errors, roles, isCreate }: { submitCount: number, errors: FormikErrors<User>, roles: Role[], isCreate: boolean }) => {
   return (
     <Form className='space-y-5'>
       <div className={submitCount ? (errors.name) ? 'has-error' : 'has-success' : ''}>

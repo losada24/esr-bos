@@ -1,20 +1,19 @@
-import { useState, useEffect } from 'react'
-import { usePage, useForm, router } from '@inertiajs/react'
-import Autocomplete from '@/Components/Autocomplete'
+import { useState, useEffect, type SyntheticEvent } from 'react'
+import { useForm, router } from '@inertiajs/react'
+import Autocomplete, { type AutocompleteValue } from '@/Components/Autocomplete'
 import TextInput from '@/Components/TextInput'
 import SelectInput from '@/Components/SelectInput'
 import PrimaryButton from '@/Components/PrimaryButton'
 import { STATUS } from '@/Utils/constants'
 import { isAdmin } from '@/Utils/user'
-import { type Role } from '@/types'
+import { type Role, type Auth, type ListUsersItem } from '@/types'
 
-const ReferredFilter = () => {
-  const { users: userList, auth } = usePage().props
-  const [selectedUser, setSelectedUser] = useState({
-    label: null,
-    value: null
+const ReferredFilter = ({ userList, auth }: { userList: { data: ListUsersItem[] }, auth: Auth }) => {
+  const [selectedUser, setSelectedUser] = useState<AutocompleteValue>({
+    label: '',
+    value: ''
   })
-  const [users, setUsers] = useState([])
+  const [users, setUsers] = useState<AutocompleteValue[]>([])
   const STATUS_OPTIONS = STATUS.map((status) => {
     return {
       label: status.label,
@@ -22,14 +21,14 @@ const ReferredFilter = () => {
     }
   })
 
-  const { data, setData, processing } = useForm({
+  const { data, setData } = useForm({
     text: '',
     status: '',
     user_id: ''
   })
 
   const reset = () => {
-    const emptyUser = { label: null, value: null }
+    const emptyUser: AutocompleteValue = { label: '', value: '' }
     setSelectedUser({ ...emptyUser })
 
     setData({
@@ -38,7 +37,7 @@ const ReferredFilter = () => {
       user_id: ''
     })
 
-    router.get(route(route().current()), {
+    router.get(route('referred.index'), {
       text: '',
       status: '',
       user_id: ''
@@ -48,25 +47,21 @@ const ReferredFilter = () => {
     })
   }
 
-  const onHandleChange = (event) => {
-    setData(event.target.name, event.target.type === 'checkbox' ? event.target.checked : event.target.value)
-  }
-
   const handleStatusChange = (value: string) => {
     setData('status', value)
   }
 
-  const handleSearch = (item) => {
+  const handleSearch = (item: string) => {
     router.get('/referred', { user_term: item }, { preserveState: true, preserveScroll: true, replace: true })
   }
 
-  const onAutocompleteChange = (item) => {
+  const onAutocompleteChange = (item: AutocompleteValue) => {
     const selectedUser = { label: item.label, value: item.value }
     setSelectedUser({ ...selectedUser })
-    setData(item.name, item.value)
+    setData('user_id', item.value)
   }
 
-  const submit = (e) => {
+  const submit = (e: SyntheticEvent) => {
     e.preventDefault()
     let currentRoute = route().current()
     if (currentRoute === undefined) {
@@ -80,10 +75,10 @@ const ReferredFilter = () => {
   }
 
   useEffect(() => {
-    const usersAutocomplete = userList.data.map(data => {
+    const usersAutocomplete: AutocompleteValue[] = userList.data.map(data => {
       return {
         label: data.name,
-        value: data.id
+        value: data.id.toString()
       }
     })
 
@@ -101,7 +96,9 @@ const ReferredFilter = () => {
             name="text"
             value={data.text}
             className="form-input"
-            onChange={onHandleChange}
+            onChange={(e) => {
+              setData('text', e.target.value)
+            }}
             type='text'
             placeholder='Search by Email, Name or Phone'
           />
@@ -116,7 +113,6 @@ const ReferredFilter = () => {
             className="form-select"
             options={[{ label: '', value: '' }, ...STATUS_OPTIONS]}
             handleChange={(e) => { handleStatusChange(e.target.value) }}
-            isMultiple={false}
           />
         </div>
         {isAdmin(auth.user.roles.map((role: Role) => role.name)) && (

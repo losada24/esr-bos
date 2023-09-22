@@ -2,13 +2,12 @@ import { Fragment } from 'react'
 import { Dialog, Transition } from '@headlessui/react'
 import CloseIcon from '@/Components/Icons/CloseIcon'
 import { type ReferralsStatusUpdate } from '@/types'
-import Badge from '@/Components/Badge'
 import StatusBadge from '@/Components/StatusBadge'
 
-const StatusModal = ({ showModal, handleClose, statusHistory }: { showModal: boolean, handleClose: Function, statusHistory: ReferralsStatusUpdate[] }) => {
+const StatusModal = ({ showModal, handleClose, statusHistory }: { showModal: boolean, handleClose: (arg1: boolean) => void, statusHistory: ReferralsStatusUpdate[] }) => {
   return (
     <Transition appear show={showModal} as={Fragment}>
-        <Dialog as="div" open={showModal} onClose={() => handleClose(false)}>
+        <Dialog as="div" open={showModal} onClose={() => { handleClose(false) }}>
             <Transition.Child
                 as={Fragment}
                 enter="ease-out duration-300"
@@ -34,7 +33,7 @@ const StatusModal = ({ showModal, handleClose, statusHistory }: { showModal: boo
                         <Dialog.Panel as="div" className="panel border-0 p-0 rounded-lg overflow-hidden my-8 w-full max-w-lg text-black dark:text-white-dark">
                             <div className="flex bg-[#fbfbfb] dark:bg-[#121c2c] items-center justify-between px-5 py-3">
                                 <div className="text-lg font-bold">Status Updates</div>
-                                <button type="button" className="text-white-dark hover:text-dark" onClick={() => handleClose(false)}>
+                                <button type="button" className="text-white-dark hover:text-dark" onClick={() => { handleClose(false) }}>
                                   <CloseIcon />
                                 </button>
                             </div>

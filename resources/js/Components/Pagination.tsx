@@ -1,9 +1,9 @@
 import React from 'react'
 import { Link } from '@inertiajs/react'
-import { type PaginatorLink, type PageProps } from '@/types'
+import { type PaginatorLink } from '@/types'
 import classNames from 'classnames'
 
-const PageLink = ({ active, label, url }) => {
+const PageLink = ({ active, label, url }: { active: boolean, label: string, url: string }) => {
   const className = classNames(
     [
       'mr-1 mb-1',
@@ -27,7 +27,7 @@ const PageLink = ({ active, label, url }) => {
 // Previous, if on first page
 // Next, if on last page
 // and dots, if exists (...)
-const PageInactive = ({ label }) => {
+const PageInactive = ({ label }: { label: string }) => {
   const className = classNames(
     'mr-1 mb-1 px-4 py-3 text-sm border rounded border-solid border-gray-300 text-gray'
   )

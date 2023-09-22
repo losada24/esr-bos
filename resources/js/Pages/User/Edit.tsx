@@ -5,7 +5,6 @@ import { userUpdateSchema, type UserPageProps, type User } from './UserCommon'
 import UserForm from './UserForm'
 
 export default function Edit ({ auth, roles, user }: UserPageProps) {
-  
   const initialValues: User = {
     id: user?.data.id ?? 0,
     name: user?.data.name ?? '',
@@ -15,7 +14,7 @@ export default function Edit ({ auth, roles, user }: UserPageProps) {
     role: user?.data.role ?? 0
   }
 
-  const handleSubmit = async (values: User, helpers: FormikHelpers<User>) => {
+  const handleSubmit = async (values: any, helpers: FormikHelpers<User>) => {
     router.put(route('user.update', values.id), values, {
       onError: (errors: any) => {
         helpers.setErrors(errors)
@@ -34,11 +33,10 @@ export default function Edit ({ auth, roles, user }: UserPageProps) {
           validationSchema={userUpdateSchema}
           onSubmit={handleSubmit}
         >
-          {({ errors, submitCount, touched }) => (
+          {({ errors, submitCount }) => (
             <UserForm
               errors={errors}
               submitCount={submitCount}
-              touched={touched}
               roles={roles}
               isCreate={false}
             />

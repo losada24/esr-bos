@@ -6,7 +6,7 @@ import { type PageProps } from '@/types'
 import { PHONE_REG_EXP, STATUS } from '@/Utils/constants'
 import ReferredForm from './ReferredForm'
 
-interface ReferredEditFormProps {
+export interface ReferredEditFormProps {
   id: number
   name: string
   email: string
@@ -39,8 +39,8 @@ export default function Edit ({ auth, referred }: ReferredPageProps) {
     notes: referred.notes ?? '',
     status_notes: referred.status_notes ?? ''
   }
-  
-  const handleSubmit = async (values: ReferredEditFormProps, helpers: FormikHelpers<ReferredEditFormProps>) => {
+
+  const handleSubmit = async (values: any, helpers: FormikHelpers<ReferredEditFormProps>) => {
     router.put(route('referred.update', values.id), values, {
       onError: (errors: any) => {
         helpers.setErrors(errors)
@@ -59,11 +59,10 @@ export default function Edit ({ auth, referred }: ReferredPageProps) {
           validationSchema={referredCreateSchema}
           onSubmit={handleSubmit}
         >
-          {({ errors, submitCount, touched, values, setFieldValue }) => (
+          {({ errors, submitCount, values, setFieldValue }) => (
             <ReferredForm
               errors={errors}
               submitCount={submitCount}
-              touched={touched}
               defaultStatus={initialValues.status}
               values={values}
               setFieldValue={setFieldValue}

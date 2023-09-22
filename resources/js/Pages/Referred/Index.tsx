@@ -1,10 +1,10 @@
-import { type ReactNode, useState } from 'react'
+import { useState } from 'react'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
 import { Head, Link, router } from '@inertiajs/react'
 import EditIcon from '@/Components/Icons/EditIcon'
 import DeleteIcon from '@/Components/Icons/DeleteIcon'
 import Pagination from '@/Components/Pagination'
-import { type PageProps, type Referred, type PaginatorLink, type ReferralsStatusUpdate } from '@/types'
+import { type PageProps, type Referred, type PaginatorLink, type ReferralsStatusUpdate, type ListUsersItem } from '@/types'
 import ReferredFilter from './ReferredFilter'
 import { isAdmin } from '@/Utils/user'
 import StatusModal from './StatusModal'
@@ -15,9 +15,12 @@ type IndexReferredProps = PageProps & {
     data: Referred[]
     links: PaginatorLink[]
   }
+  users: {
+    data: ListUsersItem[]
+  }
 }
 
-export default function Index ({ auth, errors, referrals }: IndexReferredProps) {
+export default function Index ({ auth, referrals, users }: IndexReferredProps) {
   const [statusHistoryModal, setStatusHistoryModal] = useState(false)
   const [statusHistory, setStatusHistory] = useState<ReferralsStatusUpdate[]>([])
   const destroy = (id: number) => {
@@ -29,12 +32,11 @@ export default function Index ({ auth, errors, referrals }: IndexReferredProps) 
   return (
       <AuthenticatedLayout
           auth={auth}
-          errors={errors}
           pageTitle='Referrals'
       >
         <Head title="Referrals" />
 
-        <ReferredFilter />
+        <ReferredFilter userList={users} auth={auth} />
         <div className='table-responsive'>
           <table>
             <thead>

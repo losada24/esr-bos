@@ -18,7 +18,7 @@ type IndexUserProps = PageProps & {
   }
 }
 
-export default function Index ({ auth, errors, users }: IndexUserProps) {
+export default function Index ({ auth, users }: IndexUserProps) {
   const destroy = (id: number) => {
     if (confirm('Are you sure you want to delete this User?')) {
       router.delete(route('user.destroy', id))
@@ -28,7 +28,6 @@ export default function Index ({ auth, errors, users }: IndexUserProps) {
   return (
       <AuthenticatedLayout
           auth={auth}
-          errors={errors}
           pageTitle='Users'
           actions={
             <Link

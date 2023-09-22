@@ -4,8 +4,6 @@ import { type PageProps, type ReferralsByMonth, type ReferralsByStatusCount } fr
 import ReferralsByStatus from './ReferralsByStatus'
 import ReferralsByMonths from './ReferralsByMonths'
 
-
-
 type IndexReferredProps = PageProps & {
   referralsByMonth: ReferralsByMonth
   referralsByStatus: ReferralsByStatusCount[]

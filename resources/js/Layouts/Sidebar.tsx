@@ -8,9 +8,9 @@ import ReferralIcon from '@/Components/Icons/ReferralIcon'
 import DashboardIcon from '@/Components/Icons/DashboardIcon'
 import { COMPANY_NAME } from '@/Utils/constants'
 import { isAdmin } from '@/Utils/user'
-import { type Role } from '@/types'
+import { type Role, type Auth } from '@/types'
 
-const Sidebar = ({ auth }) => {
+const Sidebar = ({ auth }: { auth: Auth }) => {
   const [themeState, toggleSidebar] = useStore((state: ThemeState) => [
     state.themeState,
     state.toggleSidebar
