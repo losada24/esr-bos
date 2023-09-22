@@ -5,10 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Referred extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
     /**
      * The table associated with the model.
      *
@@ -29,6 +30,17 @@ class Referred extends Model
       'notes',
       'status'
     ];
+
+    protected static function booted(): void
+    {
+      static::addGlobalScope('role', function ($query) {
+        if (auth()->user()->hasRole('admin')) {
+          return $query;
+        }
+        
+        return $query->where('user_id', auth()->user()->id);
+      });
+    }
 
     public function scopeFilter($query, array $filters)
     {

@@ -1,9 +1,7 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
-use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ReferredController;
@@ -19,7 +17,7 @@ use App\Http\Controllers\ReferredController;
 |
 */
 
-Route::get('/', [DashboardController::class, 'index'])->middleware(['auth']);
+Route::get('/', [DashboardController::class, 'index'])->middleware(['auth'])->name('dashboard');
 Route::get('/referred/{reference_code}/create', [ReferredController::class, 'create'])->name('referred.create');
 Route::post('/referred/store', [ReferredController::class, 'store'])->name('referred.store');
 

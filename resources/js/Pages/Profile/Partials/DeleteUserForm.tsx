@@ -74,11 +74,7 @@ export default function DeleteUserForm ({
           </p>
 
           <div className="mt-6">
-            <InputLabel
-              htmlFor="password"
-              value="Password"
-              className="sr-only"
-            />
+          <label htmlFor='password'>Password</label>
 
             <TextInput
               id="password"
@@ -87,7 +83,7 @@ export default function DeleteUserForm ({
               ref={passwordInput}
               value={data.password}
               onChange={e => { setData('password', e.target.value) }}
-              className="mt-1 block w-3/4"
+              className="form-input"
               isFocused
               placeholder="Password"
             />

@@ -51,6 +51,17 @@ export interface Flash {
   error: string
 }
 
+export interface ReferralsByMonth {
+  months: string[]
+  counts: number[]
+  year: number
+}
+
+export interface ReferralsByStatusCount {
+  status: string
+  count: number
+}
+
 export type PageProps<
   T extends Record<string, unknown> = Record<string, unknown>,
 > = T & {

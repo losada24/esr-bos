@@ -1,11 +1,11 @@
 import { Fragment } from 'react'
 import { Dialog, Transition } from '@headlessui/react'
 import CloseIcon from '@/Components/Icons/CloseIcon'
-import { ReferralsStatusUpdate } from '@/types'
+import { type ReferralsStatusUpdate } from '@/types'
 import Badge from '@/Components/Badge'
 import StatusBadge from '@/Components/StatusBadge'
 
-const StatusModal = ({ showModal, handleClose, statusHistory}: { showModal: boolean, handleClose: Function, statusHistory: ReferralsStatusUpdate[]}) => {
+const StatusModal = ({ showModal, handleClose, statusHistory }: { showModal: boolean, handleClose: Function, statusHistory: ReferralsStatusUpdate[] }) => {
   return (
     <Transition appear show={showModal} as={Fragment}>
         <Dialog as="div" open={showModal} onClose={() => handleClose(false)}>

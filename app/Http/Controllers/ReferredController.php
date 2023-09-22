@@ -8,8 +8,8 @@ use App\Http\Requests\StoreReferredRequest;
 use App\Http\Requests\UpdateReferredRequest;
 use App\Models\Referred;
 use App\Models\User;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 
@@ -22,24 +22,18 @@ class ReferredController extends Controller
      */
     public function index(Request $request)
     {
-        $userId = Auth::user()->id;
-        $isAdmin = User::find($userId)->hasRole('admin');
+        // $userId = Auth::user()->id;
+        // $isAdmin = User::find($userId)->hasRole('admin');
         
         return Inertia::render('Referred/Index', [
-            'referrals' => $isAdmin 
-              ? Referred::with(['user', 'referralsStatusUpdate' => function (Builder $query) {
+            'referrals' => Referred::with(['user', 'referralsStatusUpdate' => function (Builder $query) {
                     $query->orderBy('created_at', 'asc');
                   }, 'referralsStatusUpdate.user'])
+                  ->whereHas('user', function (Builder $query) {
+                    $query->whereNull('deleted_at');
+                  })
                   ->filter($request->only(['text', 'status', 'user_id']))
                   ->orderBy('created_at', 'desc')
-                  ->paginate()
-                  ->withQueryString()
-              : Referred::where('user_id', $userId)
-                  ->filter($request->only(['text', 'status']))
-                  ->orderBy('created_at', 'desc')
-                  ->with(['user', 'referralsStatusUpdate' => function (Builder $query) {
-                    $query->orderBy('created_at', 'asc');
-                  }, 'referralsStatusUpdate.user'])
                   ->paginate()
                   ->withQueryString(),
               'users' => User::orderBy('name')

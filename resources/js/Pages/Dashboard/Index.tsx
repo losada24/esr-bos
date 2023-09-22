@@ -1,24 +1,28 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
 import { Head } from '@inertiajs/react'
-import { type PageProps } from '@/types'
+import { type PageProps, type ReferralsByMonth, type ReferralsByStatusCount } from '@/types'
+import ReferralsByStatus from './ReferralsByStatus'
+import ReferralsByMonths from './ReferralsByMonths'
 
-export default function Dashboard ({ auth }: PageProps) {
+
+
+type IndexReferredProps = PageProps & {
+  referralsByMonth: ReferralsByMonth
+  referralsByStatus: ReferralsByStatusCount[]
+}
+
+export default function Dashboard ({ auth, referralsByMonth, referralsByStatus }: IndexReferredProps) {
   return (
     <AuthenticatedLayout
-      user={auth.user}
+      auth={auth}
       pageTitle='Dashboard'
     >
       <Head title="Dashboard" />
-
-      <div>
-        <div className="panel mb-5">
-          <div className="mb-4 flex items-center sm:flex-row flex-col sm:justify-between justify-center">
-            <div className="sm:mb-0 mb-4">
-              <div className="text-lg font-semibold ltr:sm:text-left rtl:sm:text-right text-center">Calendar</div>
-            </div>
-          </div>
-        </div>
+      <div className="grid lg:grid-cols-3 gap-6 mb-6">
+        <ReferralsByMonths referralsByMonth={referralsByMonth} />
+        <ReferralsByStatus referralsByStatus={referralsByStatus}/>
       </div>
+
     </AuthenticatedLayout>
   )
 }

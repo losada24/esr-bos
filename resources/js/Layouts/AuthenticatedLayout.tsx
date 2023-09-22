@@ -33,7 +33,7 @@ export default function Authenticated ({
         {/* screen loader */}
         <div className={`${themeState.navbar} main-container text-black dark:text-white-dark min-h-screen`}>
           {/* BEGIN SIDEBAR */}
-          <Sidebar />
+          <Sidebar auth={auth}/>
           {/* END SIDEBAR */}
           <div className="main-content flex flex-col min-h-screen">
             {/* BEGIN TOP NAVBAR */}
