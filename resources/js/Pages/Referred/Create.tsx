@@ -5,7 +5,7 @@ import { type PageProps } from '@/types'
 import * as Yup from 'yup'
 import featuredImage from '../../../assets/images/auth/contact-us.svg'
 import ReferredCreateForm from './ReferredCreateForm'
-import { PHONE_REG_EXP } from '@/Utils/constants'
+import { PHONE_REG_EXP, RECAPTCHA_SITE_KEY } from '@/Utils/constants'
 
 export type ContactProps = PageProps & {
   userId: number
@@ -24,6 +24,7 @@ export interface ReferredCreateFormProps {
   email: string
   phone: string
   notes: string
+  captcha_token: string
 }
 
 export default function Create ({ userId }: ContactProps) {
@@ -32,17 +33,22 @@ export default function Create ({ userId }: ContactProps) {
     name: '',
     email: '',
     phone: '',
-    notes: ''
+    notes: '',
+    captcha_token: ''
   }
 
   const handleSubmit = async (values: any, helpers: FormikHelpers<ReferredCreateFormProps>) => {
-    router.post(route('referred.store'), values, {
-      onSuccess: () => {
-        helpers.resetForm()
-      },
-      onError: (errors: any) => {
-        helpers.setErrors(errors)
-      }
+    grecaptcha.ready(function () {
+      grecaptcha.execute(RECAPTCHA_SITE_KEY, { action: 'submit' }).then(function (token: string) {
+        router.post(route('referred.store'), { ...values, captcha_token: token }, {
+          onSuccess: () => {
+            helpers.resetForm()
+          },
+          onError: (errors: any) => {
+            helpers.setErrors(errors)
+          }
+        })
+      })
     })
   }
 

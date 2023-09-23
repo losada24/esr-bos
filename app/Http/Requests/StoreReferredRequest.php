@@ -28,7 +28,12 @@ class StoreReferredRequest extends FormRequest
             'email' => 'required|email|unique:referrals,email',
             'notes' => 'string|min:8|max:255',
             'phone' => 'string',
-            'user_id' => 'required|exists:users,id'
+            'user_id' => 'required|exists:users,id',
+            'captcha_token' => [
+                'required',
+                'string',
+                new \App\Rules\Recaptcha(),
+            ],
         ];
     }
 }

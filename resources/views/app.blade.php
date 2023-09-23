@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" dir="ltr">
     <head>
@@ -11,7 +12,9 @@
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 
         <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-
+        @if (Route::current()->getName() == 'referred.create')
+          <script src="https://www.google.com/recaptcha/api.js?render={{ config('custom.recaptcha_site_key') }}"></script>
+        @endif
         <!-- Scripts -->
         @routes
         @viteReactRefresh
