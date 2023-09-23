@@ -1,6 +1,5 @@
 import { useRef, type FormEventHandler } from 'react'
 import InputError from '@/Components/InputError'
-import InputLabel from '@/Components/InputLabel'
 import PrimaryButton from '@/Components/PrimaryButton'
 import TextInput from '@/Components/TextInput'
 import { useForm } from '@inertiajs/react'
@@ -53,7 +52,7 @@ export default function UpdatePasswordForm ({
 
       <form onSubmit={updatePassword} className="mt-6 space-y-6">
         <div>
-          <InputLabel htmlFor="current_password" value="Current Password" />
+          <label htmlFor='current_password'>Current Password</label>
 
           <TextInput
             id="current_password"
@@ -61,7 +60,7 @@ export default function UpdatePasswordForm ({
             value={data.current_password}
             onChange={e => { setData('current_password', e.target.value) }}
             type="password"
-            className="mt-1 block w-full"
+            className="form-input"
             autoComplete="current-password"
           />
 
@@ -69,7 +68,7 @@ export default function UpdatePasswordForm ({
         </div>
 
         <div>
-          <InputLabel htmlFor="password" value="New Password" />
+        <label htmlFor='password'>New Password</label>
 
           <TextInput
             id="password"
@@ -77,7 +76,7 @@ export default function UpdatePasswordForm ({
             value={data.password}
             onChange={e => { setData('password', e.target.value) }}
             type="password"
-            className="mt-1 block w-full"
+            className="form-input"
             autoComplete="new-password"
           />
 
@@ -85,17 +84,14 @@ export default function UpdatePasswordForm ({
         </div>
 
         <div>
-          <InputLabel
-            htmlFor="password_confirmation"
-            value="Confirm Password"
-          />
+        <label htmlFor='password_confirmation'>Confirm Password</label>
 
           <TextInput
             id="password_confirmation"
             value={data.password_confirmation}
             onChange={e => { setData('password_confirmation', e.target.value) }}
             type="password"
-            className="mt-1 block w-full"
+            className="form-input"
             autoComplete="new-password"
           />
 
@@ -103,7 +99,7 @@ export default function UpdatePasswordForm ({
         </div>
 
         <div className="flex items-center gap-4">
-          <PrimaryButton disabled={processing}>Save</PrimaryButton>
+          <PrimaryButton className='btn btn-primary' disabled={processing}>Save</PrimaryButton>
 
           <Transition
             show={recentlySuccessful}

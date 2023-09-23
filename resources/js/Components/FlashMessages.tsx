@@ -1,7 +1,6 @@
 import React, { useState, useEffect, type MouseEventHandler } from 'react'
 import { usePage } from '@inertiajs/react'
 import { type PageProps } from '@/types'
-import IconSuccess from './Icons/SuccessIcon'
 import CloseIcon from './Icons/CloseIcon'
 
 const ButtonClose = ({ className, onClick }: { className?: string, onClick: MouseEventHandler<HTMLButtonElement> }) => {
@@ -28,7 +27,7 @@ const FlashMessages = () => {
   return (
     <>
       {flash.success !== null && visible && (
-        <div className="mb-4 flex items-center justify-between rounded bg-success-light p-3.5 text-danger dark:bg-success-dark-light">
+        <div className="mb-4 flex items-center justify-between rounded bg-success-light p-3.5 text-success dark:bg-success-dark-light">
           <span className="ltr:pr-2 rtl:pl-2">{flash.success}</span>
           <ButtonClose onClick={() => { setVisible(false) }} className='ltr:ml-auto rtl:mr-auto hover:opacity-80' />
         </div>

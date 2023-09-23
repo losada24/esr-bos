@@ -1,5 +1,4 @@
 import InputError from '@/Components/InputError'
-import InputLabel from '@/Components/InputLabel'
 import PrimaryButton from '@/Components/PrimaryButton'
 import TextInput from '@/Components/TextInput'
 import { Link, useForm, usePage } from '@inertiajs/react'
@@ -44,11 +43,11 @@ export default function UpdateProfileInformation ({
 
       <form onSubmit={submit} className="mt-6 space-y-6">
         <div>
-          <InputLabel htmlFor="name" value="Name" />
+        <label htmlFor='name'>Name</label>
 
           <TextInput
             id="name"
-            className="mt-1 block w-full"
+            className="form-input"
             value={data.name}
             onChange={e => { setData('name', e.target.value) }}
             required
@@ -60,12 +59,11 @@ export default function UpdateProfileInformation ({
         </div>
 
         <div>
-          <InputLabel htmlFor="email" value="Email" />
-
+        <label htmlFor='email'>Email</label>
           <TextInput
             id="email"
             type="email"
-            className="mt-1 block w-full"
+            className="form-input"
             value={data.email}
             onChange={e => { setData('email', e.target.value) }}
             required
@@ -98,7 +96,7 @@ export default function UpdateProfileInformation ({
         )}
 
         <div className="flex items-center gap-4">
-          <PrimaryButton disabled={processing}>Save</PrimaryButton>
+          <PrimaryButton className='btn btn-primary' disabled={processing}>Save</PrimaryButton>
 
           <Transition
             show={recentlySuccessful}

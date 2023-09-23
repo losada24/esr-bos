@@ -27,16 +27,7 @@ class UpdateUser {
       }
 
       $user->update($userData);
-
-      if( $request->is_admin )
-      {
-          $user->syncPermissions([]);
-          $user->assignRole('admin');
-
-      } else {
-          $user->syncRoles([]);
-          $user->syncPermissions($request->permissions);
-      }
+      $user->syncRoles([$request->role]);
     });
   }
 }

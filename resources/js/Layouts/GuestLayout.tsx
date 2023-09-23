@@ -5,12 +5,12 @@ import comingSoonObject1 from '../../assets/images/auth/coming-soon-object1.png'
 import comingSoonObject2 from '../../assets/images/auth/coming-soon-object2.png'
 import comingSoonObject3 from '../../assets/images/auth/coming-soon-object3.png'
 import polygonObject from '../../assets/images/auth/polygon-object.svg'
-import logoWhite from '../../assets/images/auth/logo-white.svg'
-import logo from '../../assets/images/logo.svg'
+import logoWhite from '../../assets/images/vector-reylosglass.svg'
+import logo from '../../assets/images/logo-reylosglass.png'
 import map from '../../assets/images/auth/map.png'
 import FlashMessages from '@/Components/FlashMessages'
 
-const APP_NAME = import.meta.env.VITE_APP_NAME
+const APP_NAME = import.meta.env.VITE_COMPANY_NAME
 const CUSTOM_TAILWIND_CLASS = {
   bgMap: `bg-[url(${map})]`
 }
@@ -65,7 +65,7 @@ export default function Guest ({
               <div className="relative hidden w-full items-center justify-center bg-[linear-gradient(225deg,rgba(239,18,98,1)_0%,rgba(67,97,238,1)_100%)] p-5 lg:inline-flex lg:max-w-[835px] xl:-ms-28 ltr:xl:skew-x-[14deg] rtl:xl:skew-x-[-14deg]">
                 <div className="absolute inset-y-0 w-8 from-primary/10 via-transparent to-transparent ltr:-right-10 ltr:bg-gradient-to-r rtl:-left-10 rtl:bg-gradient-to-l xl:w-16 ltr:xl:-right-20 rtl:xl:-left-20"></div>
                 <div className="ltr:xl:-skew-x-[14deg] rtl:xl:skew-x-[14deg]">
-                  <a href="/" className="w-48 block lg:w-72 ms-10">
+                  <a href={route('dashboard')} className="w-48 block lg:w-72 ms-10">
                     <img src={logoWhite} alt="Logo" className="w-full" />
                   </a>
                   {featuredImage != null && (
@@ -81,7 +81,7 @@ export default function Guest ({
               </div>
               <div className="relative flex w-full flex-col items-center justify-center gap-6 px-4 pb-16 pt-6 sm:px-6 lg:max-w-[667px]">
                 <div className="flex w-full max-w-[440px] items-center gap-2 lg:absolute lg:end-6 lg:top-6 lg:max-w-full">
-                  <a href="/" className="w-8 block lg:hidden">
+                  <a href={route('dashboard')} className="w-8 block lg:hidden">
                     <img src={logo} alt="Logo" className="mx-auto w-10" />
                   </a>
                 </div>
@@ -98,7 +98,7 @@ export default function Guest ({
                   {children}
                 </div>
                 <p className="absolute bottom-6 w-full text-center dark:text-white">
-                  © {new Date().getFullYear()}.{APP_NAME} All Rights Reserved.
+                  © {new Date().getFullYear()}. {APP_NAME} All Rights Reserved.
                 </p>
               </div>
             </div>

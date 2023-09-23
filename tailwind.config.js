@@ -14,6 +14,12 @@ module.exports = {
       './resources/views/**/*.blade.php',
       './resources/js/**/*.tsx'
     ],
+    safelist: [
+        'bg-warning',
+        'bg-primary',
+        'bg-success',
+        'bg-danger',
+    ],
     darkMode: 'class',
     theme: {
         container: {

@@ -15,19 +15,24 @@ class CreateUser {
         'name' => $request->name,
         'email' => $request->email,
         'password' => Hash::make($request->password),
+        'reference_code' => $this->getUniqueReferenceCode(),
       ]);
 
       if( !$user )
       {
           throw new \Exception('User not created');
       }
-
-      if( $request->is_admin )
-      {
-          $user->assignRole('admin');
-      } else {
-          $user->givePermissionTo($request->permissions);
-      }
+      
+      $user->assignRole($request->role);
     });
+  }
+
+  public function getUniqueReferenceCode() {
+    $reference_code = uniqid();
+    $user = User::where('reference_code', $reference_code)->first();
+    if( $user ) {
+      $this->getUniqueReferenceCode();
+    }
+    return $reference_code;
   }
 }

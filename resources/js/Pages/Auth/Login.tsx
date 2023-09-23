@@ -5,7 +5,6 @@ import InputError from '@/Components/InputError'
 import PrimaryButton from '@/Components/PrimaryButton'
 import TextInput from '@/Components/TextInput'
 import { Head, Link, useForm } from '@inertiajs/react'
-import SocialNetworkSignUp from './SocialNetworkSignUp'
 
 import featuredImage from '../../../assets/images/auth/login.svg'
 import EmailIcon from '@/Components/Icons/Auth/EmailIcon'
@@ -112,7 +111,6 @@ export default function Login ({
           </PrimaryButton>
         </div>
       </form>
-      <SocialNetworkSignUp isLogin={true} allowRegistration={false} />
     </GuestLayout>
   )
 }

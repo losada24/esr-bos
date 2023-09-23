@@ -9,7 +9,7 @@ export default function NavLink ({
   return (
     <Link
       {...props}
-      className={ className }
+      className={ `${className} ${active && 'active'}` }
     >
       {children}
     </Link>

@@ -14,6 +14,6 @@ class DefaultRolesSeeder extends Seeder
     public function run(): void
     {
         $role_admin = Role::create(['name' => 'admin']);
-        $buyer_admin = Role::create(['name' => 'buyer']);
+        $client_admin = Role::create(['name' => 'client']);
     }
 }

@@ -8,10 +8,12 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable, HasRoles;
+    use HasApiTokens, HasFactory, Notifiable, HasRoles, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -24,7 +26,8 @@ class User extends Authenticatable
         'password',
         'provider_id',
         'provider',
-        'provider_token'
+        'provider_token',
+        'reference_code'
     ];
 
     /**
@@ -46,4 +49,16 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
     ];
+
+    public function scopeFilter($query, array $filters)
+    {
+        $query->when($filters['text'] ?? null, function ($query, $search) {
+          $query->where(DB::raw("CONCAT(name, ' ', email)"), 'like', '%'.$search.'%');
+        });
+    }
+
+    public function referrals() 
+    {
+        return $this->hasMany(Referred::class);
+    }
 }
