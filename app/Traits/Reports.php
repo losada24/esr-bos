@@ -10,12 +10,12 @@ trait Reports {
     $referrals = Referred::selectRaw('count(*) as count, MONTH(created_at) as month')
       ->whereYear('created_at', date('Y'))
       ->groupBy('month')
+      ->orderBy('month', 'asc')
       ->get()
       ->toArray();
 
     $months = array_column($referrals, 'month');
     $counts = array_column($referrals, 'count');
-    sort($months);
     
     return [
       'months' => array_map(function ($month) {
