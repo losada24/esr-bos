@@ -60,28 +60,33 @@ export interface Status {
   id: string
   label: string
   color: string
+  hex: string
 }
 
 export const STATUS: Status[] = [
   {
     id: 'NEW',
     label: 'NEW',
-    color: 'bg-warning'
+    color: 'bg-warning',
+    hex: '#FFC107'
   },
   {
     id: 'PROCESSING',
     label: 'PROCESSING',
-    color: 'bg-primary'
+    color: 'bg-primary',
+    hex: '#007bff'
   },
   {
     id: 'SIGNED_THE_CONTRACT',
     label: 'SIGNED THE CONTRACT',
-    color: 'bg-success'
+    color: 'bg-success',
+    hex: '#28a745'
   },
   {
     id: 'REJECTED',
     label: 'REJECTED',
-    color: 'bg-danger'
+    color: 'bg-danger',
+    hex: '#dc3545'
   }
 ]
 
