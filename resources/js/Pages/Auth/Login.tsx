@@ -1,4 +1,4 @@
-import { useEffect, type FormEventHandler } from 'react'
+import { useEffect, type FormEventHandler, useState } from 'react'
 import Checkbox from '@/Components/Checkbox'
 import GuestLayout from '@/Layouts/GuestLayout'
 import InputError from '@/Components/InputError'
@@ -9,6 +9,8 @@ import { Head, Link, useForm } from '@inertiajs/react'
 import featuredImage from '../../../assets/images/auth/login.svg'
 import EmailIcon from '@/Components/Icons/Auth/EmailIcon'
 import PasswordIcon from '@/Components/Icons/Auth/PasswordIcon'
+import EyesIcon from '@/Components/Icons/Auth/EyesIcon'
+import BlockedEyeIcon from '@/Components/Icons/Auth/BlockedEyeIcon'
 
 export default function Login ({
   canResetPassword
@@ -16,6 +18,7 @@ export default function Login ({
   status?: string
   canResetPassword: boolean
 }) {
+  const [showPassword, setShowPassword] = useState(false)
   const { data, setData, post, processing, errors, reset } = useForm({
     email: '',
     password: '',
@@ -68,7 +71,7 @@ export default function Login ({
           <div className="relative text-white-dark">
             <TextInput
               id="password"
-              type="password"
+              type={!showPassword ? 'password' : 'text'}
               name="password"
               placeholder="Enter Password"
               value={data.password}
@@ -79,6 +82,9 @@ export default function Login ({
             <span className="absolute start-4 top-1/2 -translate-y-1/2">
               <PasswordIcon />
             </span>
+            <button type='button' onClick={() => { setShowPassword(!showPassword) }} className="absolute h-6 end-4 top-1/2 -translate-y-1/2">
+              {showPassword ? <EyesIcon /> : <BlockedEyeIcon />}
+            </button>
           </div>
           <InputError message={errors.password} className="mt-2" />
         </div>
