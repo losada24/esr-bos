@@ -6,6 +6,8 @@ use App\Models\Referred;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Enum\ReferredStatusEnum;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\NewReferred;
 
 class CreateReferred {
 
@@ -32,6 +34,10 @@ class CreateReferred {
       ]);
 
       $referred->referralsStatusUpdate()->save($referralsStatusUpdate);
+
+      foreach (config('custom.admin_emails') as $recipient) {
+        Mail::to($recipient)->send(new NewReferred($referred));
+      }
     });
   }
 }

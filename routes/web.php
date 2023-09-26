@@ -21,6 +21,14 @@ Route::get('/', [DashboardController::class, 'index'])->middleware(['auth'])->na
 Route::get('/referred/{reference_code}/create', [ReferredController::class, 'create'])->name('referred.create');
 Route::post('/referred/store', [ReferredController::class, 'store'])->name('referred.store');
 
+Route::get('/mailable', function () {
+
+  dd(config('custom', 'admin_emails'));
+
+  /*$referrer = App\Models\Referred::find(1);
+
+  return new App\Mail\NewReferred($referrer);*/
+});
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
