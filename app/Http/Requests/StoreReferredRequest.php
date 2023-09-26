@@ -26,8 +26,8 @@ class StoreReferredRequest extends FormRequest
         return [
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:referrals,email',
-            'notes' => 'string|min:8|max:255',
-            'phone' => 'string',
+            'notes' => 'nullable|string|min:8|max:500',
+            'phone' => 'nullable|string',
             'user_id' => 'required|exists:users,id',
             'captcha_token' => [
                 'required',
