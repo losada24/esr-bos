@@ -15,7 +15,7 @@ class CreateUser {
         'name' => $request->name,
         'email' => $request->email,
         'password' => Hash::make($request->password),
-        'reference_code' => $this->getUniqueReferenceCode(),
+        'created_by' => auth()->user()->id
       ]);
 
       if( !$user )
@@ -23,16 +23,7 @@ class CreateUser {
           throw new \Exception('User not created');
       }
       
-      $user->assignRole($request->role);
+       $user->assignRole($request->role);
     });
-  }
-
-  public function getUniqueReferenceCode() {
-    $reference_code = uniqid();
-    $user = User::where('reference_code', $reference_code)->first();
-    if( $user ) {
-      $this->getUniqueReferenceCode();
-    }
-    return $reference_code;
   }
 }

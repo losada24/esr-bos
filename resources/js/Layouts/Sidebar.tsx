@@ -3,11 +3,11 @@ import { useStore, type ThemeState } from '@/Store/theme'
 import NavLink from '@/Components/NavLink'
 import logo from '../../assets/images/logo-reylosglass.png'
 import UserIcon from '@/Components/Icons/UserIcon'
-import SidebarLinkLabel from '@/Components/SidebarLinkLabel'
 import ReferralIcon from '@/Components/Icons/ReferralIcon'
+import SidebarLinkLabel from '@/Components/SidebarLinkLabel'
 import DashboardIcon from '@/Components/Icons/DashboardIcon'
 import { COMPANY_NAME } from '@/Utils/constants'
-import { isAdmin } from '@/Utils/user'
+import { isAdmin, isClientAdmin } from '@/Utils/user'
 import { type Role, type Auth } from '@/types'
 
 const Sidebar = ({ auth }: { auth: Auth }) => {
@@ -49,7 +49,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                     </div>
                                 </NavLink>
                             </li>
-                            {isAdmin(auth.user.roles.map((role: Role) => role.name)) && (
+                            {(isAdmin(auth.user.roles.map((role: Role) => role.name)) || isClientAdmin(auth.user.roles.map((role: Role) => role.name))) && (
                               <>
                                 <h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">
                                     <svg className="w-4 h-5 flex-none hidden" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
@@ -68,11 +68,18 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                                 </div>
                                             </NavLink>
                                         </li>
+                                        <li className="nav-item">
+                                            <NavLink href={route('client.index')} active={route().current('client.index') || route().current('client.create') || route().current('client.edit')} className="group">
+                                                <div className="flex items-center">
+                                                  <ReferralIcon />
+                                                  <SidebarLinkLabel>Clients</SidebarLinkLabel>
+                                                </div>
+                                            </NavLink>
+                                        </li>
                                     </ul>
                                 </li>
                               </>
                             )}
-
                             <h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">
                                 <svg className="w-4 h-5 flex-none hidden" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
                                     <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -81,12 +88,12 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                             </h2>
 
                             <li className="menu nav-item">
-                                <NavLink href={route('referred.index')} active={route().current('referred.index') || route().current('referred.edit')} className="group">
+                                { /* <NavLink href={route('referred.index')} active={route().current('referred.index') || route().current('referred.edit')} className="group">
                                     <div className="flex items-center">
                                         <ReferralIcon />
                                         <SidebarLinkLabel>Referrals</SidebarLinkLabel>
                                     </div>
-                                </NavLink>
+                                  </NavLink> */}
                             </li>
                         </ul>
                     </PerfectScrollbar>

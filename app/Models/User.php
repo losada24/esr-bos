@@ -10,6 +10,8 @@ use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Enum\RoleEnum;
+use Illuminate\Database\Eloquent\Builder;
 
 class User extends Authenticatable
 {
@@ -24,10 +26,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'provider_id',
-        'provider',
-        'provider_token',
-        'reference_code'
+        'created_by'
     ];
 
     /**
@@ -50,6 +49,13 @@ class User extends Authenticatable
         'password' => 'hashed',
     ];
 
+    public function scopeCreatedByCheck(Builder $query): void
+    {
+      if (!auth()->user()->hasRole(RoleEnum::$ADMIN)) {
+        $query->where('created_by', auth()->user()->id);
+      }
+    }
+
     public function scopeFilter($query, array $filters)
     {
         $query->when($filters['text'] ?? null, function ($query, $search) {
@@ -57,8 +63,8 @@ class User extends Authenticatable
         });
     }
 
-    public function referrals() 
+    public function clients()
     {
-        return $this->hasMany(Referred::class);
+        return $this->hasMany(Client::class);
     }
 }

@@ -11,8 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('referrals', function (Blueprint $table) {
-            $table->string('notes')->nullable()->change();
+        Schema::table('users', function (Blueprint $table) {
+            $table->unsignedBigInteger('created_by')->nullable();
+            $table->foreign('created_by')->references('id')->on('users');
         });
     }
 
@@ -21,8 +22,9 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('referrals', function (Blueprint $table) {
-            $table->string('notes')->change();
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropForeign(['created_by']);
+            $table->dropColumn('created_by');
         });
     }
 };

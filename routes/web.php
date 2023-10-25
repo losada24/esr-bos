@@ -4,7 +4,8 @@ use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\UserController;
-use App\Http\Controllers\ReferredController;
+use App\Http\Controllers\ClientController;
+use App\Enum\RoleEnum;
 
 /*
 |--------------------------------------------------------------------------
@@ -18,8 +19,6 @@ use App\Http\Controllers\ReferredController;
 */
 
 Route::get('/', [DashboardController::class, 'index'])->middleware(['auth'])->name('dashboard');
-Route::get('/referred/{reference_code}/create', [ReferredController::class, 'create'])->name('referred.create');
-Route::post('/referred/store', [ReferredController::class, 'store'])->name('referred.store');
 
 /*Route::get('/mailable', function () {
 
@@ -36,16 +35,19 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     // USERS
-    Route::resource('user', UserController::class);
-    // REDERRED
-    Route::resource('referred', ReferredController::class, [
-        'only' => ['index']        
-    ])->middleware(['role:client|admin']);
+    Route::resource('user', UserController::class)
+      ->only(['index', 'create', 'store'])
+      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$CLIENT_ADMIN]);
+    
+    Route::resource('user', UserController::class)
+      ->only(['edit', 'update', 'destroy'])
+      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$CLIENT_ADMIN, 'checkUserCreatedByField']);
 
-    Route::resource('referred', ReferredController::class, [
-        'only' => ['edit', 'update', 'destroy']        
-    ])->middleware(['role:admin']);
+    // CLIENTS
+    Route::resource('client', ClientController::class)
+      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$CLIENT_ADMIN]);
+    
 });
 
 require __DIR__.'/auth.php';
-require __DIR__.'/socialite.php';
+// require __DIR__.'/socialite.php';

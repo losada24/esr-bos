@@ -2,38 +2,38 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
 import { Head, Link, router } from '@inertiajs/react'
 import EditIcon from '@/Components/Icons/EditIcon'
 import DeleteIcon from '@/Components/Icons/DeleteIcon'
-import { type PageProps, type User, type PaginatorLink } from '@/types'
+import { type PageProps, type Client, type PaginatorLink } from '@/types'
 import Pagination from '@/Components/Pagination'
 import UserFilter from './UserFilter'
 
 type IndexUserProps = PageProps & {
-  users: {
-    data: User[]
+  clients: {
+    data: Client[]
     links: PaginatorLink[]
   }
 }
 
-export default function Index ({ auth, users }: IndexUserProps) {
+export default function Index ({ auth, clients }: IndexUserProps) {
   const destroy = (id: number) => {
-    if (confirm('Are you sure you want to delete this User?')) {
-      router.delete(route('user.destroy', id))
+    if (confirm('Are you sure you want to delete this Client?')) {
+      router.delete(route('client.destroy', id))
     }
   }
 
   return (
       <AuthenticatedLayout
           auth={auth}
-          pageTitle='Users'
+          pageTitle='Clients'
           actions={
             <Link
               className="btn btn-primary"
-              href={route('user.create')}
+              href={route('client.create')}
             >
-              <span>Create User</span>
+              <span>Create Client</span>
             </Link>
           }
       >
-        <Head title="Users" />
+        <Head title="Clients" />
         <UserFilter />
 
         <div className='table-responsive'>
@@ -42,12 +42,14 @@ export default function Index ({ auth, users }: IndexUserProps) {
               <tr className="font-bold text-left">
                 <th className="px-6 pt-5 pb-4">Name</th>
                 <th className="px-6 pt-5 pb-4">Email</th>
-                <th className="px-6 pt-5 pb-4">Role</th>
+                <th className="px-6 pt-5 pb-4">Phone</th>
+                <th className="px-6 pt-5 pb-4">City</th>
+                <th className="px-6 pt-5 pb-4">State</th>
                 <th className="px-6 pt-5 pb-4 w-14">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {users.data.map(({ id, name, email, roles }) => {
+              {clients.data.map(({ id, name, email, phone, city, state }) => {
                 return (
                   <tr
                     key={id}
@@ -60,11 +62,17 @@ export default function Index ({ auth, users }: IndexUserProps) {
                       {email}
                     </td>
                     <td className="border-t px-6 py-4 align-top">
-                      {roles.map(({ name }) => name).join(', ') || 'N/A'}
+                      {phone}
+                    </td>
+                    <td className="border-t px-6 py-4 align-top">
+                      {city}
+                    </td>
+                    <td className="border-t px-6 py-4 align-top">
+                      {state}
                     </td>
                     <td className="border-t flex items-center px-6 py-4">
                         <Link
-                          href={route('user.edit', id)}
+                          href={route('client.edit', id)}
                         >
                           <EditIcon />
                         </Link>
@@ -77,17 +85,17 @@ export default function Index ({ auth, users }: IndexUserProps) {
                   </tr>
                 )
               })}
-              {users.data.length === 0 && (
+              {clients.data.length === 0 && (
                 <tr>
                   <td className="px-6 py-4 border-t" colSpan={3}>
-                    No Users found.
+                    No Clients found.
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
-        <Pagination links={users.links} />
+        <Pagination links={clients.links} />
       </AuthenticatedLayout>
   )
 }

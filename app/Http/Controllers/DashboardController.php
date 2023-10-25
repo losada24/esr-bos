@@ -14,8 +14,8 @@ class DashboardController extends Controller
   public function index(Request $request): Response
   {
       return Inertia::render('Dashboard/Index', [
-        'referralsByMonth' => $this->GetReferralsByMonths(),
-        'referralsByStatus' => $this->GetReferralsByStatus()
+        // 'referralsByMonth' => $this->GetReferralsByMonths(),
+        // 'referralsByStatus' => $this->GetReferralsByStatus()
       ]);
   }
 }

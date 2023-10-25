@@ -14,7 +14,7 @@ class UpdateUser {
 
       if( !$user )
       {
-          throw new \Exception('Order not updated');
+          throw new \Exception('Not not updated');
       }
       
       $userData = [

@@ -11,33 +11,20 @@ export interface User {
   name: string
   email: string
   email_verified_at: string
-  reference_code: string
-  referrals_count: number
   roles: Role[]
 }
 
-export interface ReferralsStatusUpdate {
+export interface Client {
   id: number
-  referral_id: number
-  status: string
-  notes: string
-  user: User
-  created_at: Date
-  updated_at: Date
-}
-
-export interface Referred {
-  id: number
-  user_id: number
   name: string
   email: string
   phone: string
-  notes: string
-  status: string
-  created_at: Date
-  updated_at: Date
+  city: string
+  state: string
+  zip: string
+  address: string
+  user_id: number
   user: User
-  referrals_status_update: ReferralsStatusUpdate[]
 }
 
 export interface PaginatorLink {
@@ -49,17 +36,6 @@ export interface PaginatorLink {
 export interface Flash {
   success: string
   error: string
-}
-
-export interface ReferralsByMonth {
-  months: string[]
-  counts: number[]
-  year: number
-}
-
-export interface ReferralsByStatusCount {
-  status: string
-  count: number
 }
 
 export interface Auth {

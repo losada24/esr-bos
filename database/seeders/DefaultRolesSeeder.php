@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Role;
+use App\Enum\RoleEnum;
 
 class DefaultRolesSeeder extends Seeder
 {
@@ -13,7 +13,8 @@ class DefaultRolesSeeder extends Seeder
      */
     public function run(): void
     {
-        $role_admin = Role::create(['name' => 'admin']);
-        $client_admin = Role::create(['name' => 'client']);
+        $role_admin = Role::create(['name' => RoleEnum::$ADMIN]);
+        $role_client_admin = Role::create(['name' => RoleEnum::$CLIENT_ADMIN]);
+        $role_client = Role::create(['name' => RoleEnum::$CLIENT]);
     }
 }

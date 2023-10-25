@@ -34,6 +34,7 @@ export const THEME_CONFIG: ThemeConfig = {
 
 export const ROLES = {
   ADMIN: 'admin',
+  CLIENT_ADMIN: 'client_admin',
   CLIENT: 'client'
 }
 
@@ -53,40 +54,6 @@ export const PERSMISSIONS = [
       PERSMISSION_USERS_DELETE,
       PERSMISSION_USERS_DETAILS
     ]
-  }
-]
-
-export interface Status {
-  id: string
-  label: string
-  color: string
-  hex: string
-}
-
-export const STATUS: Status[] = [
-  {
-    id: 'NEW',
-    label: 'NEW',
-    color: 'bg-warning',
-    hex: '#FFC107'
-  },
-  {
-    id: 'PROCESSING',
-    label: 'PROCESSING',
-    color: 'bg-primary',
-    hex: '#007bff'
-  },
-  {
-    id: 'SIGNED_THE_CONTRACT',
-    label: 'SIGNED THE CONTRACT',
-    color: 'bg-success',
-    hex: '#28a745'
-  },
-  {
-    id: 'REJECTED',
-    label: 'REJECTED',
-    color: 'bg-danger',
-    hex: '#dc3545'
   }
 ]
 

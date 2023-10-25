@@ -10,9 +10,12 @@ use App\Http\Resources\UserResource;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Spatie\Permission\Models\Role;
+use App\Traits\RoleManagement;
 
 class UserController extends Controller
 {
+    use RoleManagement;
     /**
      * Display a listing of the resource.
      *
@@ -22,7 +25,7 @@ class UserController extends Controller
     {
         return Inertia::render('User/Index', [
           'users' => User::with(['roles'])
-            ->withCount(['referrals'])
+            ->createdByCheck()
             ->filter($request->only(['text']))
             ->orderBy('name')
             ->paginate()
@@ -38,7 +41,7 @@ class UserController extends Controller
     public function create()
     {
         return Inertia::render('User/Create', [
-          'roles' => \Spatie\Permission\Models\Role::orderBy('name')->get()
+          'roles' => Role::whereIn('name', $this->GetChildRolesByRole(auth()->user()->roles[0]->name))->orderBy('name')->get()
         ]);
     }
 
@@ -66,7 +69,7 @@ class UserController extends Controller
         $user->loadMissing('roles');
         return Inertia::render('User/Edit', [
           'user' => new UserResource($user),
-          'roles' => \Spatie\Permission\Models\Role::orderBy('name')->get()
+          'roles' => Role::whereIn('name', $this->GetChildRolesByRole(auth()->user()->roles[0]->name))->orderBy('name')->get()
         ]);
     }
 
