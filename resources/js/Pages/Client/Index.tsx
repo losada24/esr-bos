@@ -4,16 +4,16 @@ import EditIcon from '@/Components/Icons/EditIcon'
 import DeleteIcon from '@/Components/Icons/DeleteIcon'
 import { type PageProps, type Client, type PaginatorLink } from '@/types'
 import Pagination from '@/Components/Pagination'
-import UserFilter from './UserFilter'
+import ClientFilter from './ClientFilter'
 
-type IndexUserProps = PageProps & {
+type IndexClientProps = PageProps & {
   clients: {
     data: Client[]
     links: PaginatorLink[]
   }
 }
 
-export default function Index ({ auth, clients }: IndexUserProps) {
+export default function Index ({ auth, clients }: IndexClientProps) {
   const destroy = (id: number) => {
     if (confirm('Are you sure you want to delete this Client?')) {
       router.delete(route('client.destroy', id))
@@ -34,7 +34,7 @@ export default function Index ({ auth, clients }: IndexUserProps) {
           }
       >
         <Head title="Clients" />
-        <UserFilter />
+        <ClientFilter />
 
         <div className='table-responsive'>
           <table className="w-full whitespace-nowrap">

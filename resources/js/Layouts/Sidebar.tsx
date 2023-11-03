@@ -6,6 +6,7 @@ import UserIcon from '@/Components/Icons/UserIcon'
 import ReferralIcon from '@/Components/Icons/ReferralIcon'
 import SidebarLinkLabel from '@/Components/SidebarLinkLabel'
 import DashboardIcon from '@/Components/Icons/DashboardIcon'
+import BookIcon from '@/Components/Icons/BookIcon'
 import { COMPANY_NAME } from '@/Utils/constants'
 import { isAdmin, isClientAdmin } from '@/Utils/user'
 import { type Role, type Auth } from '@/types'
@@ -73,6 +74,14 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                                 <div className="flex items-center">
                                                   <ReferralIcon />
                                                   <SidebarLinkLabel>Clients</SidebarLinkLabel>
+                                                </div>
+                                            </NavLink>
+                                        </li>
+                                        <li className="nav-item">
+                                            <NavLink href={route('raw-material.index')} active={route().current('raw-material.index') || route().current('raw-material.create') || route().current('raw-material.edit')} className="group">
+                                                <div className="flex items-center">
+                                                  <BookIcon />
+                                                  <SidebarLinkLabel>Raw Materials</SidebarLinkLabel>
                                                 </div>
                                             </NavLink>
                                         </li>

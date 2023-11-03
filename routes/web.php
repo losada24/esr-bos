@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ClientController;
+use App\Http\Controllers\RawMaterialController;
 use App\Enum\RoleEnum;
 
 /*
@@ -46,6 +47,10 @@ Route::middleware('auth')->group(function () {
     // CLIENTS
     Route::resource('client', ClientController::class)
       ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$CLIENT_ADMIN]);
+
+    // RAW MATERIALS
+    Route::resource('raw-material', RawMaterialController::class)
+      ->middleware(["role:" . RoleEnum::$ADMIN]);
     
 });
 

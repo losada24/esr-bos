@@ -3,8 +3,10 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use App\Enum\UnitOfMeasurement;
+use Illuminate\Validation\Rule;
 
-class StoreReferredRequest extends FormRequest
+class StoreRawMaterialRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -25,15 +27,14 @@ class StoreReferredRequest extends FormRequest
     {
         return [
             'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:referrals,email',
-            'notes' => 'nullable|string|min:8|max:500',
-            'phone' => 'nullable|string',
-            'user_id' => 'required|exists:users,id',
-            'captcha_token' => [
-                'required',
-                'string',
-                new \App\Rules\Recaptcha(),
+            'qty' => 'required|numeric|min:0',
+            'unit_of_measurement' => [
+              'required',
+              Rule::in(array_values(UnitOfMeasurement::$UNIT_OF_MEASUREMENT))
             ],
+            'cost_per_unit' => 'required|numeric|min:0',
+            'notes' => 'nullable|string|max:255',
+            'featured_image' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:512',
         ];
     }
 }
