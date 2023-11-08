@@ -4,11 +4,12 @@ import NavLink from '@/Components/NavLink'
 import logo from '../../assets/images/logo-reylosglass.png'
 import UserIcon from '@/Components/Icons/UserIcon'
 import ReferralIcon from '@/Components/Icons/ReferralIcon'
+import MoneyBagIcon from '@/Components/Icons/MoneyBagIcon'
 import SidebarLinkLabel from '@/Components/SidebarLinkLabel'
 import DashboardIcon from '@/Components/Icons/DashboardIcon'
 import BookIcon from '@/Components/Icons/BookIcon'
 import { COMPANY_NAME } from '@/Utils/constants'
-import { isAdmin, isClientAdmin } from '@/Utils/user'
+import { isAdmin, isClientAdmin, isClient } from '@/Utils/user'
 import { type Role, type Auth } from '@/types'
 
 const Sidebar = ({ auth }: { auth: Auth }) => {
@@ -61,27 +62,31 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
 
                                 <li className="nav-item">
                                     <ul>
-                                        <li className="nav-item">
-                                            <NavLink href={route('user.index')} active={route().current('user.index') || route().current('user.create') || route().current('user.edit')} className="group">
-                                                <div className="flex items-center">
-                                                  <UserIcon />
-                                                  <SidebarLinkLabel>Users</SidebarLinkLabel>
-                                                </div>
-                                            </NavLink>
-                                        </li>
+                                        {isAdmin(auth.user.roles.map((role: Role) => role.name)) && (
+                                          <>
+                                            <li className="nav-item">
+                                                <NavLink href={route('user.index')} active={route().current('user.index') || route().current('user.create') || route().current('user.edit')} className="group">
+                                                    <div className="flex items-center">
+                                                      <UserIcon />
+                                                      <SidebarLinkLabel>Users</SidebarLinkLabel>
+                                                    </div>
+                                                </NavLink>
+                                            </li>
+                                            <li className="nav-item">
+                                                <NavLink href={route('raw-material.index')} active={route().current('raw-material.index') || route().current('raw-material.create') || route().current('raw-material.edit')} className="group">
+                                                    <div className="flex items-center">
+                                                      <BookIcon />
+                                                      <SidebarLinkLabel>Raw Materials</SidebarLinkLabel>
+                                                    </div>
+                                                </NavLink>
+                                            </li>
+                                          </>
+                                        )}
                                         <li className="nav-item">
                                             <NavLink href={route('client.index')} active={route().current('client.index') || route().current('client.create') || route().current('client.edit')} className="group">
                                                 <div className="flex items-center">
                                                   <ReferralIcon />
                                                   <SidebarLinkLabel>Clients</SidebarLinkLabel>
-                                                </div>
-                                            </NavLink>
-                                        </li>
-                                        <li className="nav-item">
-                                            <NavLink href={route('raw-material.index')} active={route().current('raw-material.index') || route().current('raw-material.create') || route().current('raw-material.edit')} className="group">
-                                                <div className="flex items-center">
-                                                  <BookIcon />
-                                                  <SidebarLinkLabel>Raw Materials</SidebarLinkLabel>
                                                 </div>
                                             </NavLink>
                                         </li>
@@ -95,15 +100,18 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                 </svg>
                                 <span>Actions</span>
                             </h2>
-
-                            <li className="menu nav-item">
-                                { /* <NavLink href={route('referred.index')} active={route().current('referred.index') || route().current('referred.edit')} className="group">
-                                    <div className="flex items-center">
-                                        <ReferralIcon />
-                                        <SidebarLinkLabel>Referrals</SidebarLinkLabel>
-                                    </div>
-                                  </NavLink> */}
-                            </li>
+                            {(isAdmin(auth.user.roles.map((role: Role) => role.name)) || isClientAdmin(auth.user.roles.map((role: Role) => role.name)) || isClient(auth.user.roles.map((role: Role) => role.name))) && (
+                              <>
+                                <li className="menu nav-item">
+                                    <NavLink href={route('estimate.index')} active={route().current('estimate.index') || route().current('estimate.create') || route().current('estimate.edit')} className="group">
+                                        <div className="flex items-center">
+                                            <MoneyBagIcon />
+                                            <SidebarLinkLabel>Estimates</SidebarLinkLabel>
+                                        </div>
+                                    </NavLink>
+                                </li>
+                              </>
+                            )}
                         </ul>
                     </PerfectScrollbar>
                 </div>

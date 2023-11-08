@@ -1,12 +1,15 @@
 <?php
 
-use App\Http\Controllers\ProfileController;
+use App\Enum\RoleEnum;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ClientController;
+use App\Http\Controllers\ProductController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\EstimateController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\RawMaterialController;
-use App\Enum\RoleEnum;
+use App\Http\Controllers\FixWindowsController;
 
 /*
 |--------------------------------------------------------------------------
@@ -51,6 +54,33 @@ Route::middleware('auth')->group(function () {
     // RAW MATERIALS
     Route::resource('raw-material', RawMaterialController::class)
       ->middleware(["role:" . RoleEnum::$ADMIN]);
+    
+    // ESTIMATES
+    Route::resource('estimate', EstimateController::class)
+      ->only(['index', 'create', 'store'])
+      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$CLIENT_ADMIN . "|" . RoleEnum::$CLIENT]);
+
+    Route::resource('estimate', EstimateController::class)
+      ->only(['edit', 'update', 'destroy'])
+      ->middleware([
+        "role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$CLIENT_ADMIN . "|" . RoleEnum::$CLIENT,
+        "validate.order.owner"
+      ]);
+
+    // PRODUCTS
+    Route::get('/product/{id}', [ProductController::class, 'index'])
+      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$CLIENT_ADMIN . "|" . RoleEnum::$CLIENT]) // TODO: Validate if the user is the owner of the order
+      ->name('product.index');
+    
+    // FIX WINDOWS
+    Route::get('/fix-windows/{id}/create', [FixWindowsController::class, 'create'])
+      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$CLIENT_ADMIN . "|" . RoleEnum::$CLIENT]) // TODO: Validate if the user is the owner of the order
+      ->name('fix-windows.create');
+    
+    Route::get('/fix-windows/store', [FixWindowsController::class, 'store'])
+      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$CLIENT_ADMIN . "|" . RoleEnum::$CLIENT])
+      ->name('fix-windows.store');
+
     
 });
 

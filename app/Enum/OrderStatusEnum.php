@@ -1,0 +1,8 @@
+<?php
+
+namespace App\Enum;
+
+class OrderStatusEnum
+{
+    public static $ESTIMATE = 'estimate';
+}

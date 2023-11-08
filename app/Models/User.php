@@ -67,4 +67,8 @@ class User extends Authenticatable
     {
         return $this->hasMany(Client::class);
     }
+
+    public function isCreatedByLoggedUser() {
+      return $this->created_by == auth()->user()->id;
+    }
 }
