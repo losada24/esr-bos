@@ -23,6 +23,7 @@ class OrderResource extends JsonResource
           'glass_color' => $this->glass_color ?? '',
           'markup' => $this->markup ?? '',
           'notes' => $this->notes ?? '',
+          'created_at' => $this->created_at
         ];
     }
 }

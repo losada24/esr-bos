@@ -4,17 +4,17 @@ import InputError from '@/Components/InputError'
 import PrimaryButton from '@/Components/PrimaryButton'
 import { Link } from '@inertiajs/react'
 import { type FormikErrors } from 'formik'
-import { type FixWindows } from '@/types'
-import FixWindowsDrawing from './FixWindowsDrawing'
+import { type FixedWindows } from '@/types'
+import FixedWindowsDrawing from './FixedWindowsDrawing'
 
-const FixWindowsForm = ({ submitCount, errors, isCreate, frame_colors, glass_colors, estimate_id, values }: {
+const FixedWindowsForm = ({ submitCount, errors, isCreate, frame_colors, glass_colors, estimate_id, values }: {
   submitCount: number
-  errors: FormikErrors<FixWindows>
+  errors: FormikErrors<FixedWindows>
   isCreate: boolean
   frame_colors: string[]
   glass_colors: string[]
   estimate_id: number
-  values: FixWindows
+  values: FixedWindows
 }) => {
   // TODO: Check how fill the glassTypes
   const [glassTypes, setGlassTypes] = useState<string[]>([
@@ -180,7 +180,7 @@ const FixWindowsForm = ({ submitCount, errors, isCreate, frame_colors, glass_col
             </div>
           </fieldset>
           <div className="flex items-center justify-between mt-4">
-            <Link className='btn btn-danger uppercase' href={route('product.index', estimate_id)}>Cancel</Link>
+            <Link className='btn btn-danger uppercase' href={route('estimate.show', estimate_id)}>Cancel</Link>
             <PrimaryButton className="btn btn-primary" type='submit'>
               {isCreate ? 'Create' : 'Save'}
             </PrimaryButton>
@@ -191,7 +191,7 @@ const FixWindowsForm = ({ submitCount, errors, isCreate, frame_colors, glass_col
         <h3 className='text-lg font-semibold'>Preview</h3>
         <div className='h-full flex justify-center align-middle'>
           {values.width !== 0 && values.height !== 0
-            ? <FixWindowsDrawing width={values.width} height={values.height} />
+            ? <FixedWindowsDrawing width={values.width} height={values.height} />
             : ''
           }
         </div>
@@ -200,4 +200,4 @@ const FixWindowsForm = ({ submitCount, errors, isCreate, frame_colors, glass_col
   )
 }
 
-export default FixWindowsForm
+export default FixedWindowsForm

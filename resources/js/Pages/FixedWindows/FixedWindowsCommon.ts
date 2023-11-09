@@ -1,6 +1,6 @@
 import * as Yup from 'yup'
 
-export const fixWindowsSchema = Yup.object({
+export const fixedWindowsSchema = Yup.object({
   id: Yup.number(),
   mark: Yup.string().required('Name is required').max(255, 'Max 255 characters'),
   qty: Yup.number().required('Qty is required').min(1, 'Min 1'),

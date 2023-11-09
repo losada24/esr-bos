@@ -14,6 +14,7 @@ use App\Http\Resources\OrderCollection;
 use App\Http\Resources\RawMaterialResource;
 use App\Models\Client;
 use App\Models\Order;
+use App\Enum\OrderStatusEnum;
 
 class EstimateController extends Controller
 {
@@ -26,7 +27,7 @@ class EstimateController extends Controller
     {
         return Inertia::render('Estimate/Index', [
           'estimates' => new OrderCollection(
-            Order::filter($request->only(['text']))
+            Order::where('status', OrderStatusEnum::$ESTIMATE)->filter($request->only(['text']))
               ->orderBy('name')
               ->paginate()
               ->withQueryString()
@@ -57,7 +58,7 @@ class EstimateController extends Controller
     public function store(StoreEstimateRequest $storeEstimateRequest, CreateEstimate $createEstimate)
     {
         $estimate = $createEstimate->handle($storeEstimateRequest);
-        return redirect()->route('product.index', ['id' => $estimate->id]);
+        return redirect()->route('estimate.show', ['estimate' => $estimate->id]);
     }
 
     /**
@@ -101,5 +102,18 @@ class EstimateController extends Controller
         return redirect()
           ->back()
           ->with('success', 'Estimate deleted successfully.');
+    }
+
+     /**
+     * Display the specified resource.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function show($id)
+    {
+        return Inertia::render('Estimate/Show', [
+          'estimate' => Order::with(['client', 'products'])->findOrFail($id)
+        ]);
     }
 }

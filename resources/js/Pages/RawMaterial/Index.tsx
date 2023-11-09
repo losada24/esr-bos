@@ -82,7 +82,7 @@ export default function Index ({ auth, rawMaterials }: IndexRawMaterialProps) {
                       {unit_of_measurement}
                     </td>
                     <td className="border-t px-6 py-4 align-top">
-                      {cost_per_unit}
+                      ${cost_per_unit}
                     </td>
                     <td className="border-t flex items-center px-6 py-4">
                         <Link

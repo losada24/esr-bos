@@ -1,9 +1,9 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
 import { Head, router } from '@inertiajs/react'
 import { Formik, type FormikHelpers } from 'formik'
-import { type PageProps, type Order, type Client, type FixWindows } from '@/types'
-import FixWindowsForm from './FixWindowsForm'
-import { fixWindowsSchema } from './FixWindowsCommon'
+import { type PageProps, type Order, type Client, type FixedWindows } from '@/types'
+import FixedWindowsForm from './FixedWindowsForm'
+import { fixedWindowsSchema } from './FixedWindowsCommon'
 
 export default function Create ({ auth, frame_colors, glass_colors, estimate }: PageProps & {
   frame_colors: string[]
@@ -11,9 +11,9 @@ export default function Create ({ auth, frame_colors, glass_colors, estimate }: 
   clients: Client[]
   estimate: Order
 }) {
-  const initialValues: FixWindows = {
+  const initialValues: FixedWindows = {
     id: 0,
-    estimate_id: estimate.id,
+    order_id: estimate.id,
     mark: '',
     width: 0,
     height: 0,
@@ -26,9 +26,8 @@ export default function Create ({ auth, frame_colors, glass_colors, estimate }: 
     markup: estimate.markup
   }
 
-  const handleSubmit = async (values: any, helpers: FormikHelpers<FixWindows>) => {
-    router.post(route('fix-windows.store'), values, {
-      forceFormData: true,
+  const handleSubmit = async (values: any, helpers: FormikHelpers<FixedWindows>) => {
+    router.post(route('fixed-windows.store'), values, {
       onError: (errors: any) => {
         helpers.setErrors(errors)
       }
@@ -41,13 +40,13 @@ export default function Create ({ auth, frame_colors, glass_colors, estimate }: 
           pageTitle={'Add Fixed Window'}
       >
           <Head title={'Add Fixed Window'} />
-          <Formik<FixWindows>
+          <Formik<FixedWindows>
             initialValues={initialValues}
-            validationSchema={fixWindowsSchema}
+            validationSchema={fixedWindowsSchema}
             onSubmit={handleSubmit}
           >
             {({ errors, submitCount, values }) => (
-              <FixWindowsForm
+              <FixedWindowsForm
                 errors={errors}
                 submitCount={submitCount}
                 isCreate={true}

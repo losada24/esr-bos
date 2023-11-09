@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\DB;
 
 class Order extends Model
 {
@@ -40,7 +41,7 @@ class Order extends Model
     public function scopeFilter($query, array $filters)
     {
         $query->when($filters['text'] ?? null, function ($query, $search) {
-          $query->where("name", $search);
+          $query->where(DB::raw("CONCAT(name, ' ', project_name)"), 'like', '%'.$search.'%');
         });
     }
 

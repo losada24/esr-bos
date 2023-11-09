@@ -3,7 +3,7 @@ import { useForm, router } from '@inertiajs/react'
 import TextInput from '@/Components/TextInput'
 import PrimaryButton from '@/Components/PrimaryButton'
 
-const UserFilter = () => {
+const EstimateFilter = () => {
   const { data, setData } = useForm({
     text: ''
   })
@@ -13,7 +13,7 @@ const UserFilter = () => {
       text: ''
     })
 
-    router.get(route('user.index'), {
+    router.get(route('estimate.index'), {
       text: ''
     }, {
       replace: true,
@@ -25,7 +25,7 @@ const UserFilter = () => {
     e.preventDefault()
     let currentRoute = route().current()
     if (currentRoute === undefined) {
-      currentRoute = 'user.index'
+      currentRoute = 'estimate.index'
     }
 
     router.get(route(currentRoute), data, {
@@ -48,7 +48,7 @@ const UserFilter = () => {
               setData('text', e.target.value)
             }}
             type='text'
-            placeholder='Search by Name or Email'
+            placeholder='Search by Name or Project'
           />
         </div>
         <div className="flex items-end justify-between w-44 pb-3">
@@ -68,4 +68,4 @@ const UserFilter = () => {
   )
 }
 
-export default UserFilter
+export default EstimateFilter

@@ -1,6 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
 import { Head, router } from '@inertiajs/react'
-import { Formik, type FormikHelpers } from 'formik'
 import { type PageProps, type Order, type Client } from '@/types'
 import Panel from '@/Components/Panel'
 import EditIcon from '@/Components/Icons/EditIcon'
@@ -9,14 +8,12 @@ import PlusIcon from '@/Components/Icons/PlusIcon'
 import Dropdown from '@/Components/Dropdown'
 import AngleIcon from '@/Components/Icons/AngleIcon'
 import DeleteIcon from '@/Components/Icons/DeleteIcon'
+import PriceSummary from './PriceSummary'
 
-export default function Create ({ auth, frame_colors, glass_colors, estimate }: PageProps & {
-  frame_colors: string[]
-  glass_colors: string[]
+export default function Create ({ auth, estimate }: PageProps & {
   clients: Client[]
   estimate: Order
 }) {
-  console.log(estimate)
   return (
       <AuthenticatedLayout
           auth={auth}
@@ -105,11 +102,12 @@ export default function Create ({ auth, frame_colors, glass_colors, estimate }: 
                       <th className="px-6 pt-5 pb-4">Frame Color</th>
                       <th className="px-6 pt-5 pb-4">Glass</th>
                       <th className="px-6 pt-5 pb-4 text-right">Price</th>
+                      <th className="px-6 pt-5 pb-4 text-right">Amount</th>
                       <th className="px-6 pt-5 pb-4 w-14">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {estimate.products?.map(({ id, system, line_item_name, qty, width, height, frame_color, glass_type, glass_color, low_e, privacy, total_price }) => (
+                    {estimate.products?.map(({ id, system, line_item_name, qty, width, height, frame_color, glass_type, glass_color, low_e, privacy, unit_price, total_price }) => (
                         <tr
                           key={id}
                           className="hover:bg-gray-100 focus-within:bg-gray-100"
@@ -133,6 +131,9 @@ export default function Create ({ auth, frame_colors, glass_colors, estimate }: 
                             Glass Details
                           </td>
                           <td className="border-t px-6 py-4 align-top text-right">
+                            ${unit_price}
+                          </td>
+                          <td className="border-t px-6 py-4 align-top text-right">
                             ${total_price}
                           </td>
                           <td className="border-t flex items-center px-6 py-4">
@@ -152,14 +153,15 @@ export default function Create ({ auth, frame_colors, glass_colors, estimate }: 
                     }
                     {estimate.products?.length === 0 && (
                       <tr>
-                        <td className="px-6 py-4 border-t" colSpan={8}>
-                          No Estimates found.
+                        <td className="px-6 py-4 border-t" colSpan={9}>
+                          No Products found.
                         </td>
                       </tr>
                     )}
                   </tbody>
                 </table>
               </div>
+              <PriceSummary estimate={estimate} />
             </div>
           </div>
       </AuthenticatedLayout>

@@ -1,6 +1,6 @@
 import React from 'react'
 // TODO: Fix this drawing
-const FixWindowsDrawing = ({ width, height }: {
+const FixedWindowsDrawing = ({ width, height }: {
   width: number
   height: number
 }) => {
@@ -37,4 +37,4 @@ const FixWindowsDrawing = ({ width, height }: {
   )
 }
 
-export default FixWindowsDrawing
+export default FixedWindowsDrawing

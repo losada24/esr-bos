@@ -1,4 +1,4 @@
-export interface FixWindows {
+export interface FixedWindows {
   id: number
   mark: string
   width: number
@@ -6,7 +6,7 @@ export interface FixWindows {
   qty: number
   markup: number
   frame_color: string
-  estimate_id: number
+  order_id: number
   glass_type: string
   glass_color: string
   low_e: string

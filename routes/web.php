@@ -9,7 +9,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\EstimateController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\RawMaterialController;
-use App\Http\Controllers\FixWindowsController;
+use App\Http\Controllers\FixedWindowsController;
 
 /*
 |--------------------------------------------------------------------------
@@ -67,19 +67,25 @@ Route::middleware('auth')->group(function () {
         "validate.order.owner"
       ]);
 
+    Route::resource('estimate', EstimateController::class)
+      ->only(['show'])
+      ->middleware([
+        "role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$CLIENT_ADMIN . "|" . RoleEnum::$CLIENT // TODO: Validate if the user is the owner of the order
+      ]);
+
     // PRODUCTS
-    Route::get('/product/{id}', [ProductController::class, 'index'])
+    /* Route::get('/product/{id}', [ProductController::class, 'index'])
       ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$CLIENT_ADMIN . "|" . RoleEnum::$CLIENT]) // TODO: Validate if the user is the owner of the order
-      ->name('product.index');
+      ->name('product.index'); */
     
     // FIX WINDOWS
-    Route::get('/fix-windows/{id}/create', [FixWindowsController::class, 'create'])
+    Route::get('/fixed-windows/{id}/create', [FixedWindowsController::class, 'create'])
       ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$CLIENT_ADMIN . "|" . RoleEnum::$CLIENT]) // TODO: Validate if the user is the owner of the order
-      ->name('fix-windows.create');
+      ->name('fixed-windows.create');
     
-    Route::get('/fix-windows/store', [FixWindowsController::class, 'store'])
+    Route::post('/fix-windows/store', [FixedWindowsController::class, 'store'])
       ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$CLIENT_ADMIN . "|" . RoleEnum::$CLIENT])
-      ->name('fix-windows.store');
+      ->name('fixed-windows.store');
 
     
 });

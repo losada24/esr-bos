@@ -16,6 +16,7 @@ class Product extends Model
      * @var array<int, string>
      */
     protected $fillable = [
+      'order_id',
       'system',
       'width',
       'height',
@@ -28,7 +29,6 @@ class Product extends Model
       'low_e',
       'privacy',
       'extras',
-      'order_id',
       'user_id',
       'unit_price',
       'total_price',

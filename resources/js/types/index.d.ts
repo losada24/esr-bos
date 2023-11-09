@@ -9,7 +9,7 @@ import { type Role } from '@/types/interfaces/role'
 import { type ModalProps } from '@/types/interfaces/modalProps'
 import { type Order } from '@/types/interfaces/order'
 import { type Product } from '@/types/interfaces/product'
-import { type FixWindows } from '@/types/interfaces/fixWindows'
+import { type FixedWindows } from '@/types/interfaces/fixedWindows'
 
 export type {
   User,
@@ -23,7 +23,7 @@ export type {
   ModalProps,
   Order,
   Product,
-  FixWindows
+  FixedWindows
 }
 
 /* interface ListUsersItem {
