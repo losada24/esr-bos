@@ -1,10 +1,10 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
 import { Head } from '@inertiajs/react'
-import { type PageProps, type ReferralsByMonth, type ReferralsByStatusCount } from '@/types'
+import { type PageProps } from '@/types'
 
 type IndexReferredProps = PageProps & {
-  referralsByMonth: ReferralsByMonth
-  referralsByStatus: ReferralsByStatusCount[]
+  // referralsByMonth: ReferralsByMonth
+  // referralsByStatus: ReferralsByStatusCount[]
 }
 
 export default function Dashboard ({ auth }: IndexReferredProps) {

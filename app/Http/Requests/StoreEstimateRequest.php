@@ -39,6 +39,10 @@ class StoreEstimateRequest extends FormRequest
               Rule::in(array_values(GlassColorEnum::$GLASS_COLOR))
             ],
             'markup' => 'required|numeric|min:0',
+            'tax_rate' => 'required|numeric|min:0',
+            'installation' => 'required|numeric|min:0',
+            'permit' => 'required|numeric|min:0',
+            'other' => 'required|numeric|min:0',
             'notes' => 'nullable|string|max:255',
         ];
     }

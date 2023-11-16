@@ -4,6 +4,7 @@ import { Formik, type FormikHelpers } from 'formik'
 import { type PageProps, type Order, type Client, type FixedWindows } from '@/types'
 import FixedWindowsForm from './FixedWindowsForm'
 import { fixedWindowsSchema } from './FixedWindowsCommon'
+import { createNextMarkWithLeadingZero } from '@/Utils/mark'
 
 export default function Create ({ auth, frame_colors, glass_colors, estimate }: PageProps & {
   frame_colors: string[]
@@ -14,7 +15,7 @@ export default function Create ({ auth, frame_colors, glass_colors, estimate }: 
   const initialValues: FixedWindows = {
     id: 0,
     order_id: estimate.id,
-    mark: '',
+    mark: createNextMarkWithLeadingZero(estimate?.products_count ?? 0, 3),
     width: 0,
     height: 0,
     frame_color: estimate.frame_color,

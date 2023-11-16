@@ -1,36 +1,30 @@
-import React, { useState, useEffect } from 'react'
+import React from 'react'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
 import { Head, router } from '@inertiajs/react'
 import { Formik, type FormikHelpers } from 'formik'
 import { estimateSchema } from './EstimateCommon'
-import RawMaterialForm from './EstimateForm'
-import { type PageProps, type RawMaterial, type ModalProps } from '@/types'
+import EstimateForm from './EstimateForm'
+import { type PageProps, type Order, type Client } from '@/types'
 
-export default function Edit ({ auth, unit_of_measurement, rawMaterial }: PageProps & { unit_of_measurement: string[], rawMaterial: RawMaterial }) {
-  const [modalProps, setModalProps] = useState<ModalProps | null>(null)
-  const initialValues: RawMaterial = {
-    id: rawMaterial.id ?? 0,
-    name: rawMaterial.name ?? '',
-    qty: rawMaterial.qty ?? 0,
-    unit_of_measurement: rawMaterial.unit_of_measurement ?? '',
-    cost_per_unit: rawMaterial.cost_per_unit ?? 0,
-    notes: rawMaterial.notes ?? '',
-    featured_image: ''
+export default function Edit ({ auth, estimate, frame_colors, glass_colors, clients }: PageProps & { estimate: Order, frame_colors: string[], glass_colors: string[], clients: Client[] }) {
+  const initialValues: Order = {
+    id: estimate.id,
+    frame_color: estimate.frame_color,
+    glass_color: estimate.glass_color,
+    name: estimate.name,
+    notes: estimate.notes ?? '',
+    project_name: estimate.project_name,
+    markup: estimate.markup,
+    client_id: estimate.client_id,
+    tax_amount: estimate.tax_amount,
+    tax_rate: estimate.tax_rate,
+    installation: estimate.installation,
+    permit: estimate.permit,
+    other: estimate.other
   }
 
-  useEffect(() => {
-    setModalProps({
-      title: rawMaterial.name,
-      image: rawMaterial.featured_image
-    })
-  }, [])
-
-  const handleSubmit = async (values: any, helpers: FormikHelpers<RawMaterial>) => {
-    router.post(route('raw-material.update', values.id), {
-      _method: 'PUT',
-      ...values
-    }, {
-      forceFormData: true,
+  const handleSubmit = async (values: any, helpers: FormikHelpers<Order>) => {
+    router.put(route('estimate.update', values.id), values, {
       onError: (errors: any) => {
         helpers.setErrors(errors)
       }
@@ -40,23 +34,24 @@ export default function Edit ({ auth, unit_of_measurement, rawMaterial }: PagePr
   return (
       <AuthenticatedLayout
           auth={auth}
-          pageTitle='Edit Raw Material'
+          pageTitle='Edit Estimate'
       >
         <Head title="Edit" />
-        <Formik<RawMaterial>
+        <Formik<Order>
           initialValues={initialValues}
           validationSchema={estimateSchema}
           onSubmit={handleSubmit}
         >
           {({ errors, submitCount, setFieldValue }) => (
-            <RawMaterialForm
+            <EstimateForm
               errors={errors}
               submitCount={submitCount}
-              unit_of_measurement={unit_of_measurement}
-              setFieldValue={setFieldValue}
-              featured_image={rawMaterial.featured_image}
               isCreate={false}
-              modalProps={modalProps}
+              glass_colors={glass_colors}
+              frame_colors={frame_colors}
+              clients={clients}
+              setFieldValue={setFieldValue}
+              selectedClient={{ label: estimate.client?.name ?? '', value: estimate.client_id }}
             />
           )}
         </Formik>

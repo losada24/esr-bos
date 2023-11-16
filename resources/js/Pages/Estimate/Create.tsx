@@ -14,7 +14,12 @@ export default function Create ({ auth, frame_colors, glass_colors, clients }: P
     notes: '',
     project_name: '',
     markup: 0,
-    client_id: 0
+    client_id: 0,
+    tax_amount: 0,
+    tax_rate: 0,
+    installation: 0,
+    permit: 0,
+    other: 0
   }
 
   const handleSubmit = async (values: any, helpers: FormikHelpers<Order>) => {

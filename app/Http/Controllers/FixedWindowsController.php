@@ -23,7 +23,7 @@ class FixedWindowsController extends Controller
       return Inertia::render('FixedWindows/Create', [
         'frame_colors' => array_values(FrameColorEnum::$FRAME_COLOR),
         'glass_colors' => array_values(GlassColorEnum::$GLASS_COLOR),
-        'estimate' => Order::with(['client'])->findOrFail($id),
+        'estimate' => Order::with(['client'])->withCount(['products'])->findOrFail($id),
       ]);
   }
 

@@ -6,6 +6,7 @@ import { type PageProps, type Order, type PaginatorLink } from '@/types'
 import Pagination from '@/Components/Pagination'
 import EstimateFilter from './EstimateFilter'
 import EyeIcon from '@/Components/Icons/EyeIcon'
+import { createMarkWithLeadingZero } from '@/Utils/mark'
 
 type IndexOrderProps = PageProps & {
   estimates: {
@@ -58,7 +59,7 @@ export default function Index ({ auth, estimates }: IndexOrderProps) {
                     className="hover:bg-gray-100 focus-within:bg-gray-100"
                   >
                     <td className="border-t px-6 py-4 align-top">
-                      {id}
+                      {createMarkWithLeadingZero(id, 6)}
                     </td>
                     <td className="border-t px-6 py-4 align-top">
                       {project_name}

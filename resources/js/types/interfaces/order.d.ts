@@ -17,4 +17,10 @@ export interface Order {
   user?: User
   client?: Client
   products?: Product[]
+  products_count?: number
+  tax_amount?: number
+  tax_rate?: number
+  installation?: number
+  permit?: number
+  other?: number
 }

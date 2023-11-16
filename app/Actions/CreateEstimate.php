@@ -23,6 +23,10 @@ class CreateEstimate {
           'notes' => $request->notes,
           'user_id' => auth()->user()->id,
           'status' => OrderStatusEnum::$ESTIMATE,
+          'tax_rate' => $request->tax_rate,
+          'installation' => $request->installation,
+          'permit' => $request->permit,
+          'other' => $request->other
         ]);
         
         if( !$estimate )

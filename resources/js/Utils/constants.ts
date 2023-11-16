@@ -6,6 +6,16 @@ export type RtlClass = 'rtl' | 'ltr'
 export type Animation = 'animate__fadeIn' | 'animate__fadeInDown' | 'animate__fadeInUp' | 'animate__fadeInLeft' | 'animate__fadeInRight' | 'animate__slideInDown' | 'animate__slideInLeft' | 'animate__slideInRight' | 'animate__zoomIn'
 export type Navbar = 'navbar-sticky' | 'navbar-floating' | 'navbar-static'
 
+export interface Status {
+  id: string
+  color: string
+  label: string
+}
+
+export const STATUS: Status[] = [
+  { id: 'estimate', color: 'bg-primary', label: 'ESTIMATE' }
+]
+
 export interface ThemeConfig {
   locale: Locale
   theme: Theme

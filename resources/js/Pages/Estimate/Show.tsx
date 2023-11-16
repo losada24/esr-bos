@@ -1,5 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
-import { Head, router } from '@inertiajs/react'
+import { Head, router, Link } from '@inertiajs/react'
 import { type PageProps, type Order, type Client } from '@/types'
 import Panel from '@/Components/Panel'
 import EditIcon from '@/Components/Icons/EditIcon'
@@ -9,6 +9,7 @@ import Dropdown from '@/Components/Dropdown'
 import AngleIcon from '@/Components/Icons/AngleIcon'
 import DeleteIcon from '@/Components/Icons/DeleteIcon'
 import PriceSummary from './PriceSummary'
+import { createMarkWithLeadingZero } from '@/Utils/mark'
 
 export default function Create ({ auth, estimate }: PageProps & {
   clients: Client[]
@@ -25,7 +26,7 @@ export default function Create ({ auth, estimate }: PageProps & {
               <Panel className='pb-0'>
                 <div className='group relative flex items-center py-1.5'>
                   <div className="flex-1">Quote #</div>
-                  <div className="text-xs text-white-dark ltr:ml-auto rtl:mr-auto dark:text-gray-500">{estimate.id}</div>
+                  <div className="text-xs text-white-dark ltr:ml-auto rtl:mr-auto dark:text-gray-500">{createMarkWithLeadingZero(estimate.id, 6)}</div>
                 </div>
                 <div className='group relative flex items-center py-1.5'>
                   <div className="flex-1">Client</div>
@@ -50,10 +51,10 @@ export default function Create ({ auth, estimate }: PageProps & {
                   </div>
                 </div>
                 <div className="flex flex-col gap-y-2 border-t border-white-light dark:border-white/10 py-2">
-                    <button onClick={() => { route('estimate.edit', estimate.id) }} className="btn btn-success w-full gap-2">
+                    <Link href= { route('estimate.edit', estimate.id) } className="btn btn-success w-full gap-2">
                       <EditIcon />
                       Edit Estimate
-                    </button>
+                    </Link>
                     <button type="button" className="btn btn-info w-full gap-2">
                         <PrintIcon />
                         Print Estimate
@@ -128,7 +129,7 @@ export default function Create ({ auth, estimate }: PageProps & {
                             {frame_color}
                           </td>
                           <td className="border-t px-6 py-4 align-top">
-                            Glass Details
+                            {glass_type}
                           </td>
                           <td className="border-t px-6 py-4 align-top text-right">
                             ${unit_price}

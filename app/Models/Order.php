@@ -26,6 +26,11 @@ class Order extends Model
       'markup',
       'user_id',
       'client_id',
+      'tax_amount',
+      'tax_rate',
+      'installation',
+      'permit',
+      'other',
     ];
 
     /**
