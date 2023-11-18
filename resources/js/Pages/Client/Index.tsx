@@ -2,9 +2,10 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
 import { Head, Link, router } from '@inertiajs/react'
 import EditIcon from '@/Components/Icons/EditIcon'
 import DeleteIcon from '@/Components/Icons/DeleteIcon'
-import { type PageProps, type Client, type PaginatorLink } from '@/types'
+import { type PageProps, type Client, type PaginatorLink, type Role } from '@/types'
 import Pagination from '@/Components/Pagination'
 import ClientFilter from './ClientFilter'
+import { isAdmin } from '@/Utils/user'
 
 type IndexClientProps = PageProps & {
   clients: {
@@ -14,6 +15,7 @@ type IndexClientProps = PageProps & {
 }
 
 export default function Index ({ auth, clients }: IndexClientProps) {
+  const IS_ADMIN = isAdmin(auth.user.roles.map((role: Role) => role.name))
   const destroy = (id: number) => {
     if (confirm('Are you sure you want to delete this Client?')) {
       router.delete(route('client.destroy', id))
@@ -45,11 +47,14 @@ export default function Index ({ auth, clients }: IndexClientProps) {
                 <th className="px-6 pt-5 pb-4">Phone</th>
                 <th className="px-6 pt-5 pb-4">City</th>
                 <th className="px-6 pt-5 pb-4">State</th>
+                {IS_ADMIN && (
+                  <th className="px-6 pt-5 pb-4">Company</th>
+                )}
                 <th className="px-6 pt-5 pb-4 w-14">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {clients.data.map(({ id, name, email, phone, city, state }) => {
+              {clients.data.map(({ id, name, email, phone, city, state, company }) => {
                 return (
                   <tr
                     key={id}
@@ -70,6 +75,11 @@ export default function Index ({ auth, clients }: IndexClientProps) {
                     <td className="border-t px-6 py-4 align-top">
                       {state}
                     </td>
+                    {IS_ADMIN && (
+                      <td className="border-t px-6 py-4 align-top">
+                        {company?.name}
+                      </td>
+                    )}
                     <td className="border-t flex items-center px-6 py-4">
                         <Link
                           href={route('client.edit', id)}

@@ -8,6 +8,7 @@ import MoneyBagIcon from '@/Components/Icons/MoneyBagIcon'
 import SidebarLinkLabel from '@/Components/SidebarLinkLabel'
 import DashboardIcon from '@/Components/Icons/DashboardIcon'
 import BookIcon from '@/Components/Icons/BookIcon'
+import CompanyIcon from '@/Components/Icons/CompanyIcon'
 import { COMPANY_NAME } from '@/Utils/constants'
 import { isAdmin, isClientAdmin, isClient } from '@/Utils/user'
 import { type Role, type Auth } from '@/types'
@@ -90,6 +91,14 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                                 </div>
                                             </NavLink>
                                         </li>
+                                        <li className="nav-item">
+                                            <NavLink href={route('company.index')} active={route().current('company.index') || route().current('company.create') || route().current('company.edit')} className="group">
+                                                <div className="flex items-center">
+                                                  <CompanyIcon />
+                                                  <SidebarLinkLabel>Companies</SidebarLinkLabel>
+                                                </div>
+                                            </NavLink>
+                                        </li>
                                     </ul>
                                 </li>
                               </>
@@ -100,6 +109,18 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                 </svg>
                                 <span>Actions</span>
                             </h2>
+                            {(isAdmin(auth.user.roles.map((role: Role) => role.name))) && (
+                              <>
+                                <li className="menu nav-item">
+                                    <NavLink href={route('company.profile')} active={route().current('company.profile')} className="group">
+                                        <div className="flex items-center">
+                                            <CompanyIcon />
+                                            <SidebarLinkLabel>Company</SidebarLinkLabel>
+                                        </div>
+                                    </NavLink>
+                                </li>
+                              </>
+                            )}
                             {(isAdmin(auth.user.roles.map((role: Role) => role.name)) || isClientAdmin(auth.user.roles.map((role: Role) => role.name)) || isClient(auth.user.roles.map((role: Role) => role.name))) && (
                               <>
                                 <li className="menu nav-item">

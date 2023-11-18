@@ -3,8 +3,6 @@ namespace App\Actions;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use App\Models\Order;
-use App\Enum\OrderStatusEnum;
 use App\Models\Product;
 use App\Enum\ProductSystemEnum;
 use App\Products\FixedWindowsProduct;

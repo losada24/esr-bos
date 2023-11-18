@@ -1,4 +1,5 @@
 import { type User } from '@/types/interfaces/user'
+import { type Company } from '@/types/interfaces/company'
 
 export interface Client {
   id: number
@@ -11,4 +12,6 @@ export interface Client {
   address: string
   user_id: number
   user: User
+  company_id: number
+  company: Company
 }

@@ -26,7 +26,8 @@ class Client extends Model
       'city',
       'state',
       'zip',
-      'user_id'
+      'user_id',
+      'company_id'
     ];
 
     public function scopeFilter($query, array $filters)
@@ -48,5 +49,10 @@ class Client extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function company()
+    {
+        return $this->belongsTo(Company::class);
     }
 }

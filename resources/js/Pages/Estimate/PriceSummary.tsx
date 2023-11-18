@@ -6,14 +6,14 @@ const PriceSummary = ({ estimate }: { estimate: Order }) => {
       return acc + Number(product.total_price)
     }, 0)
 
-    return subtotal ?? 0
+    return Math.round(subtotal ?? 0)
   }
 
   const subtotal = getSubtotal()
   const getTaxAmount = () => {
     const tax_race: number = estimate.tax_rate ?? 0
     const subtotal: number = getSubtotal() ?? 0
-    return subtotal * tax_race / 100
+    return Math.round(subtotal * tax_race) / 100
   }
 
   const getGrandTotal = () => {
@@ -22,7 +22,7 @@ const PriceSummary = ({ estimate }: { estimate: Order }) => {
     const installation: number = estimate.installation ?? 0
     const permit: number = estimate.permit ?? 0
     const other: number = estimate.other ?? 0
-    return Number(subtotal) + Number(tax_amount) + Number(installation) + Number(permit) + Number(other)
+    return Math.round(Number(subtotal) + Number(tax_amount) + Number(installation) + Number(permit) + Number(other))
   }
 
   return (

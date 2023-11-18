@@ -5,6 +5,7 @@ use App\Models\Client;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
+use App\Enum\RoleEnum;
 
 class UpdateClient {
 
@@ -16,6 +17,11 @@ class UpdateClient {
       {
           throw new \Exception('Not not updated');
       }
+
+      $company_id = auth()->user()->company_id;
+      if (auth()->user()->hasRole(RoleEnum::$ADMIN)) {
+        $company_id = $request->company_id;
+      }
       
       $clientData = [
         'name' => $request->name,
@@ -25,7 +31,8 @@ class UpdateClient {
         'city' => $request->city,
         'state' => $request->state,
         'zip' => $request->zip,
-        'user_id' => auth()->user()->id
+        'user_id' => auth()->user()->id,
+        'company_id' => $company_id,
       ];
 
       $client->update($clientData);

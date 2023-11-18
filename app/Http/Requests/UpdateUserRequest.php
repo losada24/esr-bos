@@ -34,6 +34,7 @@ class UpdateUserRequest extends FormRequest
           ],
           'password' => 'nullable|string|min:8|confirmed',
           'role' => 'required|exists:roles,id',
+          'company_id' => 'nullable|numeric|exists:companies,id'
         ];
     }
 }

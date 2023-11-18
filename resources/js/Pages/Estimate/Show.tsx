@@ -10,11 +10,25 @@ import AngleIcon from '@/Components/Icons/AngleIcon'
 import DeleteIcon from '@/Components/Icons/DeleteIcon'
 import PriceSummary from './PriceSummary'
 import { createMarkWithLeadingZero } from '@/Utils/mark'
+import { PRODUCT_SYSTEMS } from '@/Utils/constants'
 
 export default function Create ({ auth, estimate }: PageProps & {
   clients: Client[]
   estimate: Order
 }) {
+  const getUrlBySystem = (system: string, id: number) => {
+    switch (system) {
+      case PRODUCT_SYSTEMS.FIXED_WINDOWS:
+        return route('fixed-windows.edit', id)
+      case PRODUCT_SYSTEMS.SINGLE_HUNT:
+        return route('single-hunt.edit', id)
+      case PRODUCT_SYSTEMS.HORIZONTAL_ROLLER:
+        return route('horizontal-roller.edit', id)
+      default:
+        return ''
+    }
+  }
+
   return (
       <AuthenticatedLayout
           auth={auth}
@@ -108,7 +122,7 @@ export default function Create ({ auth, estimate }: PageProps & {
                     </tr>
                   </thead>
                   <tbody>
-                    {estimate.products?.map(({ id, system, line_item_name, qty, width, height, frame_color, glass_type, glass_color, low_e, privacy, unit_price, total_price }) => (
+                    {estimate.products?.map(({ id, system, line_item_name, qty, width, height, frame_color, glass_type, unit_price, total_price }) => (
                         <tr
                           key={id}
                           className="hover:bg-gray-100 focus-within:bg-gray-100"
@@ -139,7 +153,7 @@ export default function Create ({ auth, estimate }: PageProps & {
                           </td>
                           <td className="border-t flex items-center px-6 py-4">
                               <button
-                                onClick={() => { route('product.edit', id) }}
+                                onClick={() => { router.get(getUrlBySystem(system, id)) }}
                               >
                                 <EditIcon />
                               </button>

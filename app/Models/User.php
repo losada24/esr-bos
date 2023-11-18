@@ -26,6 +26,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'company_id',
         'created_by'
     ];
 
@@ -69,6 +70,21 @@ class User extends Authenticatable
     }
 
     public function isCreatedByLoggedUser() {
-      return $this->created_by == auth()->user()->id;
+        return $this->created_by == auth()->user()->id;
+    }
+
+    public function companies()
+    {
+        return $this->hasMany(Company::class);
+    }
+
+    public function createdBy()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function company()
+    {
+        return $this->belongsTo(Company::class);
     }
 }

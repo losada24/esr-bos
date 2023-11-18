@@ -1,12 +1,16 @@
+import React, { useState } from 'react'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
 import { Head, Link, router } from '@inertiajs/react'
 import EditIcon from '@/Components/Icons/EditIcon'
 import DeleteIcon from '@/Components/Icons/DeleteIcon'
-import { type PageProps, type Order, type PaginatorLink } from '@/types'
+import { type PageProps, type Order, type PaginatorLink, type Role } from '@/types'
 import Pagination from '@/Components/Pagination'
 import EstimateFilter from './EstimateFilter'
 import EyeIcon from '@/Components/Icons/EyeIcon'
 import { createMarkWithLeadingZero } from '@/Utils/mark'
+import MoneyIcon from '@/Components/Icons/MoneyIcon'
+import { isAdmin, isClientAdmin } from '@/Utils/user'
+import EstimatePaymentModal from './EstimatePaymentModal'
 
 type IndexOrderProps = PageProps & {
   estimates: {
@@ -18,6 +22,8 @@ type IndexOrderProps = PageProps & {
 }
 
 export default function Index ({ auth, estimates }: IndexOrderProps) {
+  const [showOrderModal, setShowOrderModal] = useState<boolean>(false)
+  const [selectedEstimate, setSelectedEstimate] = useState<Order | null>(null)
   const destroy = (id: number) => {
     if (confirm('Are you sure you want to delete this Estimate?')) {
       router.delete(route('estimate.destroy', id))
@@ -52,7 +58,8 @@ export default function Index ({ auth, estimates }: IndexOrderProps) {
               </tr>
             </thead>
             <tbody>
-              {estimates.data.map(({ id, name, project_name, created_at }) => {
+              {estimates.data.map((estimate) => {
+                const { id, name, project_name, created_at } = estimate
                 return (
                   <tr
                     key={id}
@@ -71,19 +78,30 @@ export default function Index ({ auth, estimates }: IndexOrderProps) {
                       {created_at?.toString()}
                     </td>
                     <td className="border-t flex items-center px-6 py-4">
+                        {(isAdmin(auth.user.roles.map((role: Role) => role.name)) || isClientAdmin(auth.user.roles.map((role: Role) => role.name))) && (
+                          <button className='mr-2' title='Create Order' onClick={() => {
+                            setSelectedEstimate(estimate)
+                            setShowOrderModal(true)
+                          }}>
+                            <MoneyIcon />
+                          </button>
+                        )}
                         <Link
                           href={route('estimate.show', id)}
+                          title='View Estimate'
                           className='mr-2'
                         >
                           <EyeIcon />
                         </Link>
                         <Link
                           href={route('estimate.edit', id)}
+                          title='Edit Estimate'
                         >
                           <EditIcon />
                         </Link>
                         <button
                           onClick={() => { destroy(id) }}
+                          title='Delete Estimate'
                         >
                           <DeleteIcon />
                         </button>
@@ -102,6 +120,14 @@ export default function Index ({ auth, estimates }: IndexOrderProps) {
           </table>
         </div>
         <Pagination links={estimates.meta.links} />
+        <EstimatePaymentModal
+          showModal={showOrderModal}
+          onClose={() => {
+            setShowOrderModal(false)
+            setSelectedEstimate(null)
+          }}
+          estimate={selectedEstimate}
+        />
       </AuthenticatedLayout>
   )
 }

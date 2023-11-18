@@ -2,11 +2,11 @@ import { Field, Form } from 'formik'
 import InputError from '@/Components/InputError'
 import PrimaryButton from '@/Components/PrimaryButton'
 import { Link } from '@inertiajs/react'
-import { type Role } from '@/types'
+import { type Role, type Company } from '@/types'
 import { type FormikErrors } from 'formik'
 import { type User } from './UserCommon'
 
-const UserForm = ({ submitCount, errors, roles, isCreate }: { submitCount: number, errors: FormikErrors<User>, roles: Role[], isCreate: boolean }) => {
+const UserForm = ({ submitCount, errors, roles, isCreate, companies, isAdmin }: { submitCount: number, errors: FormikErrors<User>, roles: Role[], isCreate: boolean, companies: Company[], isAdmin: boolean }) => {
   return (
     <Form className='space-y-5'>
       <div className={submitCount ? (errors.name) ? 'has-error' : 'has-success' : ''}>
@@ -43,6 +43,20 @@ const UserForm = ({ submitCount, errors, roles, isCreate }: { submitCount: numbe
         </Field>
         {(submitCount && errors.role) ? <InputError message={errors.role} className="mt-2" /> : ''}
       </div>
+      {isAdmin && (
+        <div className={submitCount ? (errors.company_id ? 'has-error' : 'has-success') : ''}>
+          <label htmlFor="company_id">Company</label>
+          <Field as="select" name="company_id" className="form-select">
+              <option value="">Select Company</option>
+              {companies.map((company: Company) => {
+                return (
+                  <option key={company.id} value={company.id}>{company.name}</option>
+                )
+              })}
+          </Field>
+          {(submitCount && errors.company_id) ? <InputError message={errors.company_id} className="mt-2" /> : ''}
+        </div>
+      )}
       <div className={`mb-3 ${submitCount ? (errors.password) ? 'has-error' : 'has-success' : ''}`}>
         <label htmlFor="password">Password</label>
         <Field

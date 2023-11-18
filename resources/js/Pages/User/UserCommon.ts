@@ -1,5 +1,5 @@
 import * as Yup from 'yup'
-import { type PageProps, type Role } from '@/types'
+import { type PageProps, type Role, type Company } from '@/types'
 
 export const userSchema = Yup.object({
   name: Yup.string().required('Name is required'),
@@ -24,6 +24,7 @@ export interface User {
   password: string
   password_confirmation: string
   role: number
+  company_id: number
 }
 
 interface UserResource {
@@ -32,5 +33,6 @@ interface UserResource {
 
 export type UserPageProps = PageProps & {
   roles: Role[]
+  companies: Company[]
   user?: UserResource
 }

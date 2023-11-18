@@ -8,6 +8,7 @@ use App\Actions\CreateEstimate;
 use App\Actions\UpdateEstimate;
 use App\Http\Requests\StoreEstimateRequest;
 use App\Http\Requests\UpdateEstimateRequest;
+use App\Http\Requests\StoreEstimateToOrderRequest;
 use App\Enum\FrameColorEnum;
 use App\Enum\GlassColorEnum;
 use App\Http\Resources\OrderCollection;
@@ -27,7 +28,7 @@ class EstimateController extends Controller
         return Inertia::render('Estimate/Index', [
           'estimates' => new OrderCollection(
             Order::where('status', OrderStatusEnum::$ESTIMATE)->filter($request->only(['text']))
-              ->orderBy('name')
+              ->orderBy('id', 'desc')
               ->paginate()
               ->withQueryString()
             )
@@ -116,5 +117,15 @@ class EstimateController extends Controller
         return Inertia::render('Estimate/Show', [
           'estimate' => Order::with(['client', 'products'])->findOrFail($id)
         ]);
+    }
+
+    public function orderStore(StoreEstimateToOrderRequest $request, CreateEstimateOrder $createEstimateOrder, Order $estimate)
+    {
+        $createEstimateOrder->handle($request, $estimate);
+        $estimate = Order::findOrFail($request->id);
+        $estimate->status = OrderStatusEnum::$ACCOUNTING;
+        $estimate->save();
+        return redirect()->route('estimate.index')
+          ->with('success', 'Order created successfully.');
     }
 }
