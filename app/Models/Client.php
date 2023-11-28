@@ -41,7 +41,7 @@ class Client extends Model
     {
       static::addGlobalScope('role', function (Builder $query) {
         if (auth()->user()->hasRole(RoleEnum::$CLIENT_ADMIN )) {
-          $query->where('user_id', auth()->user()->id);
+          $query->where('company_id', auth()->user()->company_id);
         }
       });
     }

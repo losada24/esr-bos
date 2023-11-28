@@ -12,10 +12,13 @@ const EstimatePaymentModal = ({ showModal, onClose, estimate }: {
   estimate: Order | null
 }) => {
   const handleSubmit = async (values: any, helpers: FormikHelpers<Order>) => {
-    router.post(route('estimate.store'), values, {
+    router.post(route('estimate.order.store', values.id), values, {
       forceFormData: true,
       onError: (errors: any) => {
         helpers.setErrors(errors)
+      },
+      onSuccess: () => {
+        onClose(false)
       }
     })
   }

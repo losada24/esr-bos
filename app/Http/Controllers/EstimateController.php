@@ -5,6 +5,7 @@ use App\Models\RawMaterial;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Actions\CreateEstimate;
+use App\Actions\CreateEstimateOrder;
 use App\Actions\UpdateEstimate;
 use App\Http\Requests\StoreEstimateRequest;
 use App\Http\Requests\UpdateEstimateRequest;
@@ -27,7 +28,8 @@ class EstimateController extends Controller
     {
         return Inertia::render('Estimate/Index', [
           'estimates' => new OrderCollection(
-            Order::where('status', OrderStatusEnum::$ESTIMATE)->filter($request->only(['text']))
+            Order::estimates()
+              ->filter($request->only(['text']))
               ->orderBy('id', 'desc')
               ->paginate()
               ->withQueryString()
@@ -119,12 +121,10 @@ class EstimateController extends Controller
         ]);
     }
 
-    public function orderStore(StoreEstimateToOrderRequest $request, CreateEstimateOrder $createEstimateOrder, Order $estimate)
+    public function orderStore(StoreEstimateToOrderRequest $request, CreateEstimateOrder $createEstimateOrder)
     {
-        $createEstimateOrder->handle($request, $estimate);
         $estimate = Order::findOrFail($request->id);
-        $estimate->status = OrderStatusEnum::$ACCOUNTING;
-        $estimate->save();
+        $createEstimateOrder->handle($request, $estimate);
         return redirect()->route('estimate.index')
           ->with('success', 'Order created successfully.');
     }

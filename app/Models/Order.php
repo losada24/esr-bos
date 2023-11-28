@@ -6,6 +6,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Eloquent\Builder;
+use App\Enum\RoleEnum;
+use App\Enum\OrderStatusEnum;
 
 class Order extends Model
 {
@@ -31,6 +34,7 @@ class Order extends Model
       'installation',
       'permit',
       'other',
+      'company_id'
     ];
 
     /**
@@ -50,6 +54,41 @@ class Order extends Model
         });
     }
 
+    /**
+     * Scope a query to only show available orders by roles.
+     */
+    public function scopeOrders(Builder $query): void
+    {
+        if (auth()->user()->hasRole(RoleEnum::$CLIENT_ADMIN)) {
+          $query->where('company_id', auth()->user()->company_id)
+            ->where('status', '<>', OrderStatusEnum::$ESTIMATE);
+        }
+        else if (auth()->user()->hasRole(RoleEnum::$ACCOUNTING)) {
+          $query->where('status', OrderStatusEnum::$ACCOUNTING);
+        }
+        else if (auth()->user()->hasRole(RoleEnum::$PRODUCTION)) {
+          $query->where('status', OrderStatusEnum::$PRODUCTION);
+        }
+        else if (auth()->user()->hasRole(RoleEnum::$ADMIN)) {
+          $query->where('status', '<>', OrderStatusEnum::$ESTIMATE);
+        }
+    }
+
+    /**
+     * Scope a query to only show available orders by roles.
+     */
+    public function scopeEstimates(Builder $query): void
+    {
+        $query->where('status', OrderStatusEnum::$ESTIMATE);
+
+        if (auth()->user()->hasRole(RoleEnum::$CLIENT_ADMIN)) {
+          $query->where('company_id', auth()->user()->company_id);
+        }
+        else if (auth()->user()->hasRole(RoleEnum::$CLIENT)) {
+          $query->where('user_id', auth()->user()->id);
+        }
+    }
+
     public function user()
     {
         return $this->belongsTo(User::class);
@@ -63,5 +102,10 @@ class Order extends Model
     public function products()
     {
         return $this->hasMany(Product::class);
+    }
+
+    public function company()
+    {
+        return $this->belongsTo(Company::class);
     }
 }

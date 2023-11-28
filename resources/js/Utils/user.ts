@@ -15,3 +15,11 @@ export const isClient = (roles: string[]): boolean => {
 export const can = (permissions: string[], permission: string): boolean => {
   return permissions.find((p) => p === permission) !== undefined
 }
+
+export const isProduction = (roles: string[]): boolean => {
+  return roles.find((role) => role === ROLES.PRODUCTION) !== undefined
+}
+
+export const isAccounting = (roles: string[]): boolean => {
+  return roles.find((role) => role === ROLES.ACCOUNTING) !== undefined
+}

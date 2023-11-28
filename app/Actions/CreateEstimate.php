@@ -22,6 +22,7 @@ class CreateEstimate {
           'markup' => $request->markup,
           'notes' => $request->notes,
           'user_id' => auth()->user()->id,
+          'company_id' => auth()->user()->company_id,
           'status' => OrderStatusEnum::$ESTIMATE,
           'tax_rate' => $request->tax_rate,
           'installation' => $request->installation,

@@ -8,9 +8,10 @@ import MoneyBagIcon from '@/Components/Icons/MoneyBagIcon'
 import SidebarLinkLabel from '@/Components/SidebarLinkLabel'
 import DashboardIcon from '@/Components/Icons/DashboardIcon'
 import BookIcon from '@/Components/Icons/BookIcon'
+import MoneyIcon from '@/Components/Icons/MoneyIcon'
 import CompanyIcon from '@/Components/Icons/CompanyIcon'
 import { COMPANY_NAME } from '@/Utils/constants'
-import { isAdmin, isClientAdmin, isClient } from '@/Utils/user'
+import { isAdmin, isClientAdmin, isClient, isAccounting, isProduction } from '@/Utils/user'
 import { type Role, type Auth } from '@/types'
 
 const Sidebar = ({ auth }: { auth: Auth }) => {
@@ -124,10 +125,25 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                             {(isAdmin(auth.user.roles.map((role: Role) => role.name)) || isClientAdmin(auth.user.roles.map((role: Role) => role.name)) || isClient(auth.user.roles.map((role: Role) => role.name))) && (
                               <>
                                 <li className="menu nav-item">
-                                    <NavLink href={route('estimate.index')} active={route().current('estimate.index') || route().current('estimate.create') || route().current('estimate.edit')} className="group">
+                                    <NavLink href={route('estimate.index')} active={route().current('estimate.index') || route().current('estimate.create') || route().current('estimate.edit') || route().current('estimate.show')} className="group">
                                         <div className="flex items-center">
                                             <MoneyBagIcon />
                                             <SidebarLinkLabel>Estimates</SidebarLinkLabel>
+                                        </div>
+                                    </NavLink>
+                                </li>
+                              </>
+                            )}
+                            {(isAdmin(auth.user.roles.map((role: Role) => role.name)) ||
+                              isClientAdmin(auth.user.roles.map((role: Role) => role.name)) ||
+                              isAccounting(auth.user.roles.map((role: Role) => role.name)) ||
+                              isProduction(auth.user.roles.map((role: Role) => role.name))) && (
+                              <>
+                                <li className="menu nav-item">
+                                    <NavLink href={route('order.index')} active={route().current('order.index')} className="group">
+                                        <div className="flex items-center">
+                                            <MoneyIcon />
+                                            <SidebarLinkLabel>Orders</SidebarLinkLabel>
                                         </div>
                                     </NavLink>
                                 </li>

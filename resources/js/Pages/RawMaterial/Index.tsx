@@ -48,8 +48,8 @@ export default function Index ({ auth, rawMaterials }: IndexRawMaterialProps) {
               <tr className="font-bold text-left">
                 <th className="px-6 pt-5 pb-4">Featured Image</th>
                 <th className="px-6 pt-5 pb-4">Name</th>
-                <th className="px-6 pt-5 pb-4">Unit of Measurement</th>
                 <th className="px-6 pt-5 pb-4">Qty</th>
+                <th className="px-6 pt-5 pb-4">Unit of Measurement</th>
                 <th className="px-6 pt-5 pb-4">Cost per Unit</th>
                 <th className="px-6 pt-5 pb-4 w-14">Actions</th>
               </tr>

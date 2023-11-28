@@ -2,9 +2,44 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\ProduceOrder;
+use App\Http\Resources\OrderCollection;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
+use App\Models\Order;
+use App\Enum\OrderStatusEnum;
 
 class OrderController extends Controller
 {
-    //
+    /**
+     * Display a listing of the resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function index(Request $request)
+    {
+        return Inertia::render('Order/Index', [
+          'orders' => new OrderCollection(
+            Order::orders()
+              ->filter($request->only(['text']))
+              ->orderBy('id', 'desc')
+              ->paginate()
+              ->withQueryString()
+            )
+        ]);
+    }
+
+    public function produce(Request $request, ProduceOrder $produceOrder) 
+    {
+      $produceOrder->handle($request);
+      return redirect()->route('order.index')
+          ->with('success', 'Order created successfully.');
+    }
+
+    public function workOrder(Order $order) {
+      $order->load(['products', 'client']);
+      return Inertia::render('Order/WorkOrder', [
+        'order' => $order
+      ]);
+    }
 }

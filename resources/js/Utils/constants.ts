@@ -6,6 +6,9 @@ export type RtlClass = 'rtl' | 'ltr'
 export type Animation = 'animate__fadeIn' | 'animate__fadeInDown' | 'animate__fadeInUp' | 'animate__fadeInLeft' | 'animate__fadeInRight' | 'animate__slideInDown' | 'animate__slideInLeft' | 'animate__slideInRight' | 'animate__zoomIn'
 export type Navbar = 'navbar-sticky' | 'navbar-floating' | 'navbar-static'
 
+export const ESTIMATE_STATUS: string = 'estimate'
+export const ACCOUNTING_STATUS: string = 'accounting'
+export const PRODUCTION_STATUS: string = 'production'
 export interface Status {
   id: string
   color: string
@@ -13,7 +16,7 @@ export interface Status {
 }
 
 export const STATUS: Status[] = [
-  { id: 'estimate', color: 'bg-primary', label: 'ESTIMATE' }
+  { id: ESTIMATE_STATUS, color: 'bg-primary', label: ESTIMATE_STATUS.toUpperCase() }
 ]
 
 export interface ThemeConfig {
@@ -45,7 +48,9 @@ export const THEME_CONFIG: ThemeConfig = {
 export const ROLES = {
   ADMIN: 'admin',
   CLIENT_ADMIN: 'client_admin',
-  CLIENT: 'client'
+  CLIENT: 'client',
+  ACCOUNTING: 'accounting',
+  PRODUCTION: 'production'
 }
 
 export const PERSMISSION_USERS_LIST = 'users list'

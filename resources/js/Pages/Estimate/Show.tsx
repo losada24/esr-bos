@@ -1,3 +1,4 @@
+import React, { useState } from 'react'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
 import { Head, router, Link } from '@inertiajs/react'
 import { type PageProps, type Order, type Client } from '@/types'
@@ -10,12 +11,17 @@ import AngleIcon from '@/Components/Icons/AngleIcon'
 import DeleteIcon from '@/Components/Icons/DeleteIcon'
 import PriceSummary from './PriceSummary'
 import { createMarkWithLeadingZero } from '@/Utils/mark'
-import { PRODUCT_SYSTEMS } from '@/Utils/constants'
+import { PRODUCT_SYSTEMS, ESTIMATE_STATUS, PRODUCTION_STATUS } from '@/Utils/constants'
+import MoneyIcon from '@/Components/Icons/MoneyIcon'
+import EstimatePaymentModal from './EstimatePaymentModal'
+import HammerIcon from '@/Components/Icons/HammerIcon'
 
 export default function Create ({ auth, estimate }: PageProps & {
   clients: Client[]
   estimate: Order
 }) {
+  const [showOrderModal, setShowOrderModal] = useState<boolean>(false)
+  const [selectedEstimate, setSelectedEstimate] = useState<Order | null>(null)
   const getUrlBySystem = (system: string, id: number) => {
     switch (system) {
       case PRODUCT_SYSTEMS.FIXED_WINDOWS:
@@ -65,43 +71,62 @@ export default function Create ({ auth, estimate }: PageProps & {
                   </div>
                 </div>
                 <div className="flex flex-col gap-y-2 border-t border-white-light dark:border-white/10 py-2">
-                    <Link href= { route('estimate.edit', estimate.id) } className="btn btn-success w-full gap-2">
-                      <EditIcon />
-                      Edit Estimate
-                    </Link>
+                  {estimate.status === ESTIMATE_STATUS && (
+                    <>
+                      <Link href= { route('estimate.edit', estimate.id) } className="btn btn-success w-full gap-2">
+                        <EditIcon />
+                        Edit Estimate
+                      </Link>
+                      <div className='dropdown'>
+                        <Dropdown
+                            placement='bottom-start'
+                            btnClassName="btn btn-primary w-full gap-2 dropdown-toggle"
+                            button={
+                                <>
+                                    <PlusIcon />
+                                    Add Products
+                                    <span>
+                                      <AngleIcon />
+                                    </span>
+                                </>
+                            }
+                        >
+                            <ul className="w-full">
+                                <li>
+                                    <button onClick={() => {
+                                      router.get(route('fixed-windows.create', estimate.id))
+                                    }}>Fixed Windows</button>
+                                </li>
+                                <li>
+                                    <button type="button">Single Hunt</button>
+                                </li>
+                                <li>
+                                    <button type="button">Horizontal Roller</button>
+                                </li>
+                            </ul>
+                        </Dropdown>
+                      </div>
+                      <button type="button" className="btn btn-secondary w-full gap-2" onClick={() => {
+                        setSelectedEstimate(estimate)
+                        setShowOrderModal(true)
+                      }}>
+                          <MoneyIcon color='#fff' />
+                          Create Order
+                      </button>
+                    </>
+                  )}
                     <button type="button" className="btn btn-info w-full gap-2">
                         <PrintIcon />
                         Print Estimate
                     </button>
-                    <div className='dropdown'>
-                      <Dropdown
-                          placement='bottom-start'
-                          btnClassName="btn btn-primary w-full gap-2 dropdown-toggle"
-                          button={
-                              <>
-                                  <PlusIcon />
-                                  Add Products
-                                  <span>
-                                    <AngleIcon />
-                                  </span>
-                              </>
-                          }
-                      >
-                          <ul className="w-full">
-                              <li>
-                                  <button onClick={() => {
-                                    router.get(route('fixed-windows.create', estimate.id))
-                                  }}>Fixed Windows</button>
-                              </li>
-                              <li>
-                                  <button type="button">Single Hunt</button>
-                              </li>
-                              <li>
-                                  <button type="button">Horizontal Roller</button>
-                              </li>
-                          </ul>
-                      </Dropdown>
-                    </div>
+                    {estimate.status === PRODUCTION_STATUS && (
+                      <button type="button" className="btn btn-secondary w-full gap-2" onClick={() => {
+                        router.get(route('order.workOrder', estimate.id))
+                      }}>
+                          <HammerIcon color="#fff" />
+                          Work Order
+                      </button>
+                    )}
                 </div>
               </Panel>
             </div>
@@ -118,7 +143,9 @@ export default function Create ({ auth, estimate }: PageProps & {
                       <th className="px-6 pt-5 pb-4">Glass</th>
                       <th className="px-6 pt-5 pb-4 text-right">Price</th>
                       <th className="px-6 pt-5 pb-4 text-right">Amount</th>
-                      <th className="px-6 pt-5 pb-4 w-14">Actions</th>
+                      {estimate.status === ESTIMATE_STATUS && (
+                        <th className="px-6 pt-5 pb-4 w-14">Actions</th>
+                      )}
                     </tr>
                   </thead>
                   <tbody>
@@ -151,18 +178,20 @@ export default function Create ({ auth, estimate }: PageProps & {
                           <td className="border-t px-6 py-4 align-top text-right">
                             ${total_price}
                           </td>
-                          <td className="border-t flex items-center px-6 py-4">
-                              <button
-                                onClick={() => { router.get(getUrlBySystem(system, id)) }}
-                              >
-                                <EditIcon />
-                              </button>
-                              <button
-                                onClick={() => { route('product.destroy', id) }}
-                              >
-                                <DeleteIcon />
-                              </button>
-                          </td>
+                          {estimate.status === ESTIMATE_STATUS && (
+                            <td className="border-t flex items-center px-6 py-4">
+                                <button
+                                  onClick={() => { router.get(getUrlBySystem(system, id)) }}
+                                >
+                                  <EditIcon />
+                                </button>
+                                <button
+                                  onClick={() => { route('product.destroy', id) }}
+                                >
+                                  <DeleteIcon />
+                                </button>
+                            </td>
+                          )}
                         </tr>
                     ))
                     }
@@ -179,6 +208,14 @@ export default function Create ({ auth, estimate }: PageProps & {
               <PriceSummary estimate={estimate} />
             </div>
           </div>
+          <EstimatePaymentModal
+            showModal={showOrderModal}
+            onClose={() => {
+              setShowOrderModal(false)
+              setSelectedEstimate(null)
+            }}
+            estimate={selectedEstimate}
+          />
       </AuthenticatedLayout>
   )
 }

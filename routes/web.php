@@ -10,6 +10,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\RawMaterialController;
 use App\Http\Controllers\FixedWindowsController;
 use App\Http\Controllers\CompanyController;
+use App\Http\Controllers\OrderController;
 
 /*
 |--------------------------------------------------------------------------
@@ -85,7 +86,7 @@ Route::middleware('auth')->group(function () {
         "role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$CLIENT_ADMIN . "|" . RoleEnum::$CLIENT // TODO: Validate if the user is the owner of the order
       ]);
 
-    Route::post('/estimate/order/store/{order}', [EstimateController::class, 'orderStore'])
+    Route::post('/estimate/order/store', [EstimateController::class, 'orderStore'])
       ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$CLIENT_ADMIN])
       ->name('estimate.order.store');
 
@@ -106,7 +107,18 @@ Route::middleware('auth')->group(function () {
       ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$CLIENT_ADMIN . "|" . RoleEnum::$CLIENT]) // TODO: Validate if the user is the owner of the order
       ->name('fixed-windows.update');
     
+    // ORDERS
+    Route::get('/order', [OrderController::class, 'index'])
+      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$CLIENT_ADMIN . "|" . RoleEnum::$PRODUCTION . "|" . RoleEnum::$ACCOUNTING])
+      ->name('order.index');
 
+    Route::post('/order/produce', [OrderController::class, 'produce'])
+      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$ACCOUNTING])
+      ->name('order.produce');
+
+    Route::get('/order/workOrder/{order}', [OrderController::class, 'workOrder'])
+      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$PRODUCTION ])
+      ->name('order.workOrder');
     
 });
 
