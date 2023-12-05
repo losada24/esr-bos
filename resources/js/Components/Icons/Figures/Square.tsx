@@ -1,0 +1,11 @@
+import React from 'react'
+
+const Square = () => {
+  return (
+    <svg viewBox="0 0 448 512" style={{ backgroundColor: 'red' }}>
+      <path d="M448 95.1v320c0 35.35-28.65 64-64 64H64c-35.35 0-64-28.65-64-64v-320c0-35.35 28.65-63.1 64-63.1h320C419.3 31.1 448 60.65 448 95.1z"/>
+    </svg>
+  )
+}
+
+export default Square

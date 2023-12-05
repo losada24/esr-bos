@@ -1,62 +1,125 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { type Product } from '@/types'
-
-const JAMB_COLOR: string = '#991b1b'
-const FRAME_HEAD_COLOR: string = '#9a3412'
-const VERTICAL_GLASSING_BEAD_COLOR: string = '#3f6212'
-const HORIZONTAL_GLASSING_BEAD_COLOR: string = '#1e40af'
+import { getNumberWithFraction } from '@/Utils/numbers'
+import { useStore } from '@/Store/materialSummary'
+import { type ProductOrderFields } from './OrderCommon'
+import { SQFT, FOOT, UNIT } from '@/Utils/constants'
 
 const FixedWindowsMeasurements = ({ product }: { product: Product }) => {
+  const store = useStore()
   const { width, height } = product
   const JAMB = height - 1.37
   const FRAME_HEAD = width
-  const GLASS_HEIGHT = height - 1.875
-  const GLASS_WIDTH = width - 4.312
+  const GLASS_HEIGHT = parseFloat((height - 1.875).toFixed(3))
+  const GLASS_WIDTH = parseFloat((width - 4.312 - 0.065).toFixed(3))
+  const GLAZING_BEAD_VERTICAL = parseFloat((GLASS_HEIGHT - 0.87 + 0.3775).toFixed(3))
+  const GLAZING_BEAD_HORIZONTAL = parseFloat((GLASS_WIDTH + 0.1875).toFixed(3))
+  const T_SLOT_SEAL_GLAZING_BEAT = parseFloat(((GLAZING_BEAD_VERTICAL * 2) + (GLAZING_BEAD_HORIZONTAL * 2)).toFixed(3))
+
+  const products: ProductOrderFields[] = [
+    {
+      part: `Glass ${GLASS_WIDTH}x${GLASS_HEIGHT}`,
+      rawMaterial: product.glass_type,
+      qty: product.qty,
+      size: 0,
+      unit: SQFT
+    },
+    {
+      part: 'Jamb',
+      rawMaterial: '103',
+      qty: product.qty * 2,
+      size: JAMB,
+      unit: FOOT
+    },
+    {
+      part: 'Frame Head/Sill',
+      rawMaterial: '101',
+      qty: product.qty * 2,
+      size: FRAME_HEAD,
+      unit: FOOT
+    },
+    {
+      part: 'Vertical Glazing Bead',
+      rawMaterial: '108',
+      qty: product.qty * 2,
+      size: GLAZING_BEAD_VERTICAL,
+      unit: FOOT
+    },
+    {
+      part: 'Horizontal Glazing Bead',
+      rawMaterial: '108',
+      qty: product.qty * 2,
+      size: GLAZING_BEAD_HORIZONTAL,
+      unit: FOOT
+    },
+    {
+      part: 'Screw Cover',
+      rawMaterial: `SC 001 ${product.frame_color.charAt(0).toUpperCase()}`,
+      qty: product.qty * 2,
+      size: GLASS_WIDTH,
+      unit: FOOT
+    },
+    {
+      part: 'T Slot Seal Glazing Beat 7/16',
+      rawMaterial: 'TSG 0003',
+      qty: product.qty,
+      size: T_SLOT_SEAL_GLAZING_BEAT,
+      unit: FOOT
+    },
+    {
+      part: 'Stop Sash',
+      rawMaterial: `STS 0001 ${product.frame_color.charAt(0).toUpperCase()}`,
+      qty: product.qty,
+      size: GLASS_HEIGHT,
+      unit: FOOT
+    },
+    {
+      part: 'Setting Block',
+      rawMaterial: 'NE850062',
+      qty: 8,
+      size: 0,
+      unit: UNIT
+    },
+    {
+      part: 'Screws',
+      rawMaterial: 'Screws 8x1',
+      qty: 12,
+      size: 0,
+      unit: UNIT
+    }
+  ]
+
+  useEffect(() => {
+    products.forEach((productOrderField) => {
+      store.addMaterial({
+        material: productOrderField.rawMaterial,
+        quantity: productOrderField.qty ?? 0,
+        size: productOrderField.size,
+        unit: productOrderField.unit
+      })
+    })
+  }, [product])
+
   return (
     <>
       <tr className="font-bold">
-        <th className="px-6 pt-5 pb-4 text-left">Part</th>
+        <th className="px-6 pt-5 pb-4 text-left" colSpan={2}>Part</th>
         <th className="px-6 pt-5 pb-4 text-left">Raw Material</th>
-        <th className="px-6 pt-5 pb-4 text-left">Qty</th>
-        <th className="px-6 pt-5 pb-4 text-left">Size</th>
-        <th className="px-6 pt-5 pb-4 text-left">COLOR</th>
+        <th className="px-6 pt-5 pb-4 text-right">Qty</th>
+        <th className="px-6 pt-5 pb-4 text-right">Size</th>
       </tr>
-      <tr>
-        <td className="border-t px-6 py-4 align-top">Jamb</td>
-        <td className="border-t px-6 py-4 align-top">103</td>
-        <td className="border-t px-6 py-4 align-top text-left">{product.qty * 2}</td>
-        <td className="border-t px-6 py-4 align-top text-left">{JAMB}</td>
-        <td className="border-t px-6 py-4 align-top text-left">
-          <div className='w-12 h-12 rounded-full' style={{ backgroundColor: JAMB_COLOR }} />
-        </td>
-      </tr>
-      <tr>
-        <td className="border-t px-6 py-4 align-top">Frame Head/Sill</td>
-        <td className="border-t px-6 py-4 align-top">101</td>
-        <td className="border-t px-6 py-4 align-top text-left">{product.qty * 2}</td>
-        <td className="border-t px-6 py-4 align-top text-left">{FRAME_HEAD}</td>
-        <td className="border-t px-6 py-4 align-top text-left">
-          <div className='w-5 h-5 rounded-full' style={{ backgroundColor: FRAME_HEAD_COLOR }} />
-        </td>
-      </tr>
-      <tr>
-        <td className="border-t px-6 py-4 align-top">Vertical Glazing Bead</td>
-        <td className="border-t px-6 py-4 align-top">108</td>
-        <td className="border-t px-6 py-4 align-top text-left">{product.qty * 2}</td>
-        <td className="border-t px-6 py-4 align-top text-left">{GLASS_HEIGHT - 0.87}</td>
-        <td className="border-t px-6 py-4 align-top text-left">
-          <div className='w-5 h-5 rounded-full' style={{ backgroundColor: VERTICAL_GLASSING_BEAD_COLOR }} />
-        </td>
-      </tr>
-      <tr>
-        <td className="border-t px-6 py-4 align-top">Horizontal Glazing Bead</td>
-        <td className="border-t px-6 py-4 align-top">108</td>
-        <td className="border-t px-6 py-4 align-top text-left">{product.qty * 2}</td>
-        <td className="border-t px-6 py-4 align-top text-left">{GLASS_WIDTH}</td>
-        <td className="border-t px-6 py-4 align-top text-left">
-          <div className='w-5 h-5 rounded-full' style={{ backgroundColor: HORIZONTAL_GLASSING_BEAD_COLOR }} />
-        </td>
-      </tr>
+      {products.map((productOrderField, index) => {
+        return <tr key={`${product.id}_${index}`}>
+          <td className="border-t px-6 py-4 align-top" colSpan={2}>{productOrderField.part}</td>
+          <td className="border-t px-6 py-4 align-top">{productOrderField.rawMaterial}</td>
+          <td className="border-t px-6 py-4 align-top">
+            <div className='text-right'>{productOrderField.qty}</div>
+          </td>
+          <td className="border-t px-6 py-4 align-top">
+            <div className='text-right'>{getNumberWithFraction(productOrderField.size ?? 0)}</div>
+          </td>
+        </tr>
+      })}
     </>
   )
 }

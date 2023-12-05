@@ -34,6 +34,11 @@ class Product extends Model
       'total_price',
     ];
 
+    protected $dispatchesEvents = [
+      'created' => \App\Events\ProductCreated::class,
+      'updated' => \App\Events\ProductCreated::class,
+    ];
+
     public function scopeFilter($query, array $filters)
     {
         $query->when($filters['text'] ?? null, function ($query, $search) {

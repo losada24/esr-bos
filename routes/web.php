@@ -112,13 +112,17 @@ Route::middleware('auth')->group(function () {
       ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$CLIENT_ADMIN . "|" . RoleEnum::$PRODUCTION . "|" . RoleEnum::$ACCOUNTING])
       ->name('order.index');
 
-    Route::post('/order/produce', [OrderController::class, 'produce'])
+    Route::post('/order/status-update', [OrderController::class, 'statusUpdate'])
       ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$ACCOUNTING])
-      ->name('order.produce');
+      ->name('order.status.update');
 
     Route::get('/order/workOrder/{order}', [OrderController::class, 'workOrder'])
       ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$PRODUCTION ])
       ->name('order.workOrder');
+
+    Route::get('/order/show/{id}', [OrderController::class, 'show'])
+      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$PRODUCTION ])
+      ->name('order.show');
     
 });
 

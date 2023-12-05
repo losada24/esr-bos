@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
-import { Head, Link, router } from '@inertiajs/react'
+import { Head, Link } from '@inertiajs/react'
 import { type PageProps, type Order, type PaginatorLink, type Role } from '@/types'
 import Pagination from '@/Components/Pagination'
 import EyeIcon from '@/Components/Icons/EyeIcon'
@@ -9,6 +9,7 @@ import { isAdmin, isAccounting } from '@/Utils/user'
 import { ACCOUNTING_STATUS } from '@/Utils/constants'
 import OrderFilter from './OrderFilter'
 import HammerIcon from '@/Components/Icons/HammerIcon'
+import OrderUpdateStatusModal from './OrderUpdateStatusModal'
 
 type IndexOrderProps = PageProps & {
   orders: {
@@ -17,14 +18,17 @@ type IndexOrderProps = PageProps & {
       links: PaginatorLink[]
     }
   }
+  statuses: string[]
 }
 
-export default function Index ({ auth, orders }: IndexOrderProps) {
-  const sendToProduction = (id: number) => {
+export default function Index ({ auth, orders, statuses }: IndexOrderProps) {
+  const [showOrderModal, setShowOrderModal] = useState<boolean>(false)
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
+  /* const sendToProduction = (id: number) => {
     if (confirm('Are you sure you want produce this order?')) {
       router.post(route('order.produce'), { id })
     }
-  }
+  } */
   return (
       <AuthenticatedLayout
           auth={auth}
@@ -70,7 +74,7 @@ export default function Index ({ auth, orders }: IndexOrderProps) {
                     </td>
                     <td className="border-t flex items-center px-6 py-4">
                         <Link
-                          href={route('estimate.show', id)}
+                          href={route('order.show', id)}
                           title='View Order'
                           className='mr-2'
                         >
@@ -78,7 +82,10 @@ export default function Index ({ auth, orders }: IndexOrderProps) {
                         </Link>
                         {((isAdmin(auth.user.roles.map((role: Role) => role.name)) || isAccounting(auth.user.roles.map((role: Role) => role.name))) &&
                           order.status === ACCOUNTING_STATUS) && (
-                          <button title='Produce Order' onClick={() => { sendToProduction(id) }}>
+                          <button title='Produce Order' onClick={() => {
+                            setSelectedOrder(order)
+                            setShowOrderModal(true)
+                          }}>
                             <HammerIcon />
                           </button>
                         )}
@@ -97,6 +104,15 @@ export default function Index ({ auth, orders }: IndexOrderProps) {
           </table>
         </div>
         <Pagination links={orders.meta.links} />
+        <OrderUpdateStatusModal
+          showModal={showOrderModal}
+          onClose={() => {
+            setShowOrderModal(false)
+            setSelectedOrder(null)
+          }}
+          order={selectedOrder}
+          statuses={statuses}
+        />
       </AuthenticatedLayout>
   )
 }

@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Models\Order;
 use App\Enum\OrderStatusEnum;
+use App\Http\Requests\UpdateOrderStatusRequest;
 
 class OrderController extends Controller
 {
@@ -25,15 +26,19 @@ class OrderController extends Controller
               ->orderBy('id', 'desc')
               ->paginate()
               ->withQueryString()
-            )
+          ),
+          'statuses' => [
+            OrderStatusEnum::$ESTIMATE,
+            OrderStatusEnum::$PRODUCTION,
+          ]
         ]);
     }
 
-    public function produce(Request $request, ProduceOrder $produceOrder) 
+    public function statusUpdate(UpdateOrderStatusRequest $updateOrderStatusRequest, ProduceOrder $produceOrder) 
     {
-      $produceOrder->handle($request);
+      $produceOrder->handle($updateOrderStatusRequest);
       return redirect()->route('order.index')
-          ->with('success', 'Order created successfully.');
+          ->with('success', 'Order updated successfully.');
     }
 
     public function workOrder(Order $order) {
@@ -41,5 +46,12 @@ class OrderController extends Controller
       return Inertia::render('Order/WorkOrder', [
         'order' => $order
       ]);
+    }
+
+    public function show($id)
+    {
+        return Inertia::render('Order/Show', [
+          'order' => Order::with(['client', 'products'])->findOrFail($id)
+        ]);
     }
 }

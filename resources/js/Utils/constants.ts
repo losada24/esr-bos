@@ -81,3 +81,47 @@ export const PRODUCT_SYSTEMS = {
   SINGLE_HUNT: 'SINGLE HUNT',
   HORIZONTAL_ROLLER: 'HORIZONTAL ROLLER'
 }
+
+export const COLORS: string[] = [
+  '#020617',
+  '#64748b',
+  '#450a0a',
+  '#dc2626',
+  '#fca5a5',
+  '#fb923c',
+  '#fbbf24',
+  '#a3e635',
+  '#16a34a',
+  '#1e40af',
+  '#93c5fd',
+  '#6b21a8',
+  '#4c0519'
+]
+
+export const SQUARE = 'SQUARE'
+export const RECTANGLE = 'RECTANGLE'
+export const CIRCLE = 'CIRCLE'
+export const TRIANGLE = 'TRIANGLE'
+export const TRAPEZOID = 'TRAPEZOID'
+export const PARALLELOGRAM = 'PARALLELOGRAM'
+// export const PENTAGON = 'PENTAGON'
+// export const HEXAGON = 'HEXAGON'
+// export const OCTAGON = 'OCTAGON'
+// export const RIGHT_TRIANGLE = 'RIGHT_TRIANGLE'
+
+export const SHAPES: string[] = [
+  SQUARE,
+  CIRCLE,
+  TRAPEZOID,
+  TRIANGLE,
+  PARALLELOGRAM,
+  RECTANGLE
+  // RIGHT_TRIANGLE,
+  // PENTAGON,
+  // HEXAGON,
+  // OCTAGON
+]
+
+export const FOOT: string = 'FOOT'
+export const UNIT: string = 'UNIT'
+export const SQFT: string = 'SQFT'

@@ -140,7 +140,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                               isProduction(auth.user.roles.map((role: Role) => role.name))) && (
                               <>
                                 <li className="menu nav-item">
-                                    <NavLink href={route('order.index')} active={route().current('order.index')} className="group">
+                                    <NavLink href={route('order.index')} active={route().current('order.index') || route().current('order.show') || route().current('order.workOrder')} className="group">
                                         <div className="flex items-center">
                                             <MoneyIcon />
                                             <SidebarLinkLabel>Orders</SidebarLinkLabel>

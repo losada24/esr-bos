@@ -37,6 +37,11 @@ class Order extends Model
       'company_id'
     ];
 
+    protected $dispatchesEvents = [
+      'created' => \App\Events\OrderCreated::class,
+      'updated' => \App\Events\OrderCreated::class,
+    ];
+
     /**
      * The attributes that should be cast.
      *
@@ -107,5 +112,10 @@ class Order extends Model
     public function company()
     {
         return $this->belongsTo(Company::class);
+    }
+
+    public function snapshots()
+    {
+        return $this->hasMany(OrderSnapshots::class);
     }
 }

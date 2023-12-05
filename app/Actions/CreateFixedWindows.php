@@ -5,13 +5,13 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\Product;
 use App\Enum\ProductSystemEnum;
+use App\Events\OrderCreated;
 use App\Products\FixedWindowsProduct;
 
 class CreateFixedWindows {
 
   public function handle(Request $request) {
     DB::transaction(function() use ($request) {
-
       $fixedWindowsProduct = new FixedWindowsProduct(
         $request->width,
         $request->height
