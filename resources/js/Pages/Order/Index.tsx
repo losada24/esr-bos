@@ -1,15 +1,16 @@
 import React, { useState } from 'react'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
-import { Head, Link } from '@inertiajs/react'
+import { Head, Link, router } from '@inertiajs/react'
 import { type PageProps, type Order, type PaginatorLink, type Role } from '@/types'
 import Pagination from '@/Components/Pagination'
 import EyeIcon from '@/Components/Icons/EyeIcon'
 import { createMarkWithLeadingZero } from '@/Utils/mark'
 import { isAdmin, isAccounting } from '@/Utils/user'
-import { ACCOUNTING_STATUS } from '@/Utils/constants'
+import { ACCOUNTING_STATUS, PRODUCTION_STATUS } from '@/Utils/constants'
 import OrderFilter from './OrderFilter'
 import HammerIcon from '@/Components/Icons/HammerIcon'
 import OrderUpdateStatusModal from './OrderUpdateStatusModal'
+import CheckIcon from '@/Components/Icons/CheckIcon'
 
 type IndexOrderProps = PageProps & {
   orders: {
@@ -24,11 +25,12 @@ type IndexOrderProps = PageProps & {
 export default function Index ({ auth, orders, statuses }: IndexOrderProps) {
   const [showOrderModal, setShowOrderModal] = useState<boolean>(false)
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
-  /* const sendToProduction = (id: number) => {
-    if (confirm('Are you sure you want produce this order?')) {
-      router.post(route('order.produce'), { id })
+  const completeProduction = (id: number) => {
+    if (confirm('Are you sure you want complete this order?')) {
+      router.post(route('order.complete.production'), { id })
     }
-  } */
+  }
+
   return (
       <AuthenticatedLayout
           auth={auth}
@@ -87,6 +89,12 @@ export default function Index ({ auth, orders, statuses }: IndexOrderProps) {
                             setShowOrderModal(true)
                           }}>
                             <HammerIcon />
+                          </button>
+                        )}
+                        {((isAdmin(auth.user.roles.map((role: Role) => role.name)) || isAccounting(auth.user.roles.map((role: Role) => role.name))) &&
+                          order.status === PRODUCTION_STATUS) && (
+                          <button title='Complete Order' onClick={() => { completeProduction(id) }}>
+                            <CheckIcon />
                           </button>
                         )}
                     </td>

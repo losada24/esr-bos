@@ -1,15 +1,20 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
-import { Head, router } from '@inertiajs/react'
+import { Head, Link } from '@inertiajs/react'
 import { type PageProps, type Order, type Client } from '@/types'
 import Panel from '@/Components/Panel'
 import { createMarkWithLeadingZero } from '@/Utils/mark'
 import HammerIcon from '@/Components/Icons/HammerIcon'
+import { useStore } from '@/Store/materialSummary'
 
 export default function Create ({ auth, order }: PageProps & {
   clients: Client[]
   order: Order
 }) {
+  const store = useStore()
+  useEffect(() => {
+    store.reset()
+  }, [])
   return (
       <AuthenticatedLayout
           auth={auth}
@@ -40,12 +45,10 @@ export default function Create ({ auth, order }: PageProps & {
                   </div>
                 </div>
                 <div className="flex flex-col gap-y-2 border-t border-white-light dark:border-white/10 py-2">
-                    <button type="button" className="btn btn-secondary w-full gap-2" onClick={() => {
-                      router.get(route('order.workOrder', order.id))
-                    }}>
+                    <Link href={route('order.workOrder', order.id)} className="btn btn-secondary w-full gap-2">
                         <HammerIcon color="#fff" />
                         Work Order
-                    </button>
+                    </Link>
                 </div>
               </Panel>
             </div>

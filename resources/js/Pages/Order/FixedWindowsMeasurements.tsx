@@ -18,10 +18,10 @@ const FixedWindowsMeasurements = ({ product }: { product: Product }) => {
 
   const products: ProductOrderFields[] = [
     {
-      part: `Glass ${GLASS_WIDTH}x${GLASS_HEIGHT}`,
+      part: `${GLASS_WIDTH}x${GLASS_HEIGHT}`,
       rawMaterial: product.glass_type,
       qty: product.qty,
-      size: 0,
+      size: GLASS_WIDTH * GLASS_HEIGHT,
       unit: SQFT
     },
     {
@@ -76,14 +76,14 @@ const FixedWindowsMeasurements = ({ product }: { product: Product }) => {
     {
       part: 'Setting Block',
       rawMaterial: 'NE850062',
-      qty: 8,
+      qty: 8 * product.qty,
       size: 0,
       unit: UNIT
     },
     {
       part: 'Screws',
       rawMaterial: 'Screws 8x1',
-      qty: 12,
+      qty: 12 * product.qty,
       size: 0,
       unit: UNIT
     }
@@ -95,10 +95,11 @@ const FixedWindowsMeasurements = ({ product }: { product: Product }) => {
         material: productOrderField.rawMaterial,
         quantity: productOrderField.qty ?? 0,
         size: productOrderField.size,
-        unit: productOrderField.unit
+        unit: productOrderField.unit,
+        part: productOrderField.part
       })
     })
-  }, [product])
+  }, [])
 
   return (
     <>
@@ -110,14 +111,28 @@ const FixedWindowsMeasurements = ({ product }: { product: Product }) => {
       </tr>
       {products.map((productOrderField, index) => {
         return <tr key={`${product.id}_${index}`}>
-          <td className="border-t px-6 py-4 align-top" colSpan={2}>{productOrderField.part}</td>
-          <td className="border-t px-6 py-4 align-top">{productOrderField.rawMaterial}</td>
-          <td className="border-t px-6 py-4 align-top">
-            <div className='text-right'>{productOrderField.qty}</div>
-          </td>
-          <td className="border-t px-6 py-4 align-top">
-            <div className='text-right'>{getNumberWithFraction(productOrderField.size ?? 0)}</div>
-          </td>
+          {productOrderField.unit === SQFT
+            ? <>
+                <td className="border-t px-6 py-4 align-top" colSpan={2}>Glass</td>
+                <td className="border-t px-6 py-4 align-top">{productOrderField.rawMaterial}</td>
+                <td className="border-t px-6 py-4 align-top">
+                  <div className='text-right'>{productOrderField.qty}</div>
+                </td>
+                <td className="border-t px-6 py-4 align-top">
+                  <div className='text-right'>{productOrderField.part}</div>
+                </td>
+              </>
+            : <>
+                <td className="border-t px-6 py-4 align-top" colSpan={2}>{productOrderField.part}</td>
+                <td className="border-t px-6 py-4 align-top">{productOrderField.rawMaterial}</td>
+                <td className="border-t px-6 py-4 align-top">
+                  <div className='text-right'>{productOrderField.qty}</div>
+                </td>
+                <td className="border-t px-6 py-4 align-top">
+                  <div className='text-right'>{getNumberWithFraction(productOrderField.size ?? 0)}</div>
+                </td>
+              </>
+          }
         </tr>
       })}
     </>

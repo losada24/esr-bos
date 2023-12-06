@@ -23,4 +23,5 @@ export interface Order {
   installation?: number
   permit?: number
   other?: number
+  external_purchase_id?: string
 }

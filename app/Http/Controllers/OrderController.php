@@ -30,6 +30,7 @@ class OrderController extends Controller
           'statuses' => [
             OrderStatusEnum::$ESTIMATE,
             OrderStatusEnum::$PRODUCTION,
+            OrderStatusEnum::$ORDER_COMPLETED
           ]
         ]);
     }
@@ -39,6 +40,23 @@ class OrderController extends Controller
       $produceOrder->handle($updateOrderStatusRequest);
       return redirect()->route('order.index')
           ->with('success', 'Order updated successfully.');
+    }
+
+    public function completeProduction(Request $request) 
+    {
+      $order = Order::find($request->id);
+      if( !$order )
+      {
+          throw new \Exception('Not not updated');
+      }
+
+      $orderData = [
+        'status' => OrderStatusEnum::$ORDER_COMPLETED
+      ];
+
+      $order->update($orderData);
+      return redirect()->route('order.index')
+          ->with('success', 'Order completed successfully.');
     }
 
     public function workOrder(Order $order) {

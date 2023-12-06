@@ -27,7 +27,8 @@ class CreateEstimate {
           'tax_rate' => $request->tax_rate,
           'installation' => $request->installation,
           'permit' => $request->permit,
-          'other' => $request->other
+          'other' => $request->other,
+          'external_purchase_id' => $request->external_purchase_id,
         ]);
         
         if( !$estimate )

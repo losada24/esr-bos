@@ -59,6 +59,12 @@ export default function Create ({ auth, estimate }: PageProps & {
                   </div>
                 </div>
                 <div className='group relative flex items-center py-1.5'>
+                  <div className="flex-1">External Purchase Id</div>
+                  <div className="text-xs text-white-dark ltr:ml-auto rtl:mr-auto dark:text-gray-500">
+                    {estimate.external_purchase_id ? estimate.external_purchase_id : 'No Project'}
+                  </div>
+                </div>
+                <div className='group relative flex items-center py-1.5'>
                   <div className="flex-1">Markup</div>
                   <div className="text-xs text-white-dark ltr:ml-auto rtl:mr-auto dark:text-gray-500">
                     {estimate.markup} %
@@ -119,14 +125,6 @@ export default function Create ({ auth, estimate }: PageProps & {
                         <PrintIcon />
                         Print Estimate
                     </button>
-                    {estimate.status === PRODUCTION_STATUS && (
-                      <button type="button" className="btn btn-secondary w-full gap-2" onClick={() => {
-                        router.get(route('order.workOrder', estimate.id))
-                      }}>
-                          <HammerIcon color="#fff" />
-                          Work Order
-                      </button>
-                    )}
                 </div>
               </Panel>
             </div>

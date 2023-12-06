@@ -19,6 +19,41 @@ const EstimateForm = ({ submitCount, errors, isCreate, glass_colors, frame_color
 }) => {
   return (
     <Form className='space-y-5'>
+      <div className='grid gap-4 grid-cols-3'>
+        <div className={submitCount ? (errors.name) ? 'has-error' : 'has-success' : ''}>
+          <label htmlFor="name">Name</label>
+          <Field
+            id="name"
+            name="name"
+            className="form-input"
+            autoComplete="name"
+            placeholder='Name'
+          />
+          {(submitCount && errors.name) ? <InputError message={errors.name} className="mt-2" /> : ''}
+        </div>
+        <div className={submitCount ? (errors.project_name) ? 'has-error' : 'has-success' : ''}>
+          <label htmlFor="project_name">Project Name</label>
+          <Field
+            id="project_name"
+            name="project_name"
+            className="form-input"
+            autoComplete="project_name"
+            placeholder='Project Name'
+          />
+          {(submitCount && errors.project_name) ? <InputError message={errors.project_name} className="mt-2" /> : ''}
+        </div>
+        <div className={submitCount ? (errors.project_name) ? 'has-error' : 'has-success' : ''}>
+          <label htmlFor="external_purchase_id">External Purchase Id</label>
+          <Field
+            id="external_purchase_id"
+            name="external_purchase_id"
+            className="form-input"
+            autoComplete="external_purchase_id"
+            placeholder='External Purchase Id'
+          />
+          {(submitCount && errors.external_purchase_id) ? <InputError message={errors.external_purchase_id} className="mt-2" /> : ''}
+        </div>
+      </div>
       <div className='grid gap-4 grid-cols-2'>
         <div className={submitCount ? (errors.name) ? 'has-error' : 'has-success' : ''}>
           <label htmlFor="name">Name</label>

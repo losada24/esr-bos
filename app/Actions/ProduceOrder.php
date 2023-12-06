@@ -20,7 +20,8 @@ class ProduceOrder {
       }
 
       $orderData = [
-        'status' => OrderStatusEnum::$PRODUCTION,
+        'status' => $request->status,
+        'notes' => $request->notes,
       ];
 
       $order->update($orderData);

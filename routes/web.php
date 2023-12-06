@@ -115,6 +115,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/order/status-update', [OrderController::class, 'statusUpdate'])
       ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$ACCOUNTING])
       ->name('order.status.update');
+    
+    Route::post('/order/complete-production', [OrderController::class, 'completeProduction'])
+      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$PRODUCTION])
+      ->name('order.complete.production');
 
     Route::get('/order/workOrder/{order}', [OrderController::class, 'workOrder'])
       ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$PRODUCTION ])

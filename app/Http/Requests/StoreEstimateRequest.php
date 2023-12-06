@@ -44,6 +44,7 @@ class StoreEstimateRequest extends FormRequest
             'permit' => 'required|numeric|min:0',
             'other' => 'required|numeric|min:0',
             'notes' => 'nullable|string|max:255',
+            'external_purchase_id' => 'nullable|string|max:255',
         ];
     }
 }

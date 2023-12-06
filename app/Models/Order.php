@@ -34,7 +34,8 @@ class Order extends Model
       'installation',
       'permit',
       'other',
-      'company_id'
+      'company_id',
+      'external_purchase_id',
     ];
 
     protected $dispatchesEvents = [
@@ -69,7 +70,8 @@ class Order extends Model
             ->where('status', '<>', OrderStatusEnum::$ESTIMATE);
         }
         else if (auth()->user()->hasRole(RoleEnum::$ACCOUNTING)) {
-          $query->where('status', OrderStatusEnum::$ACCOUNTING);
+          $query->where('status', OrderStatusEnum::$ACCOUNTING)
+            ->orWhere('status', OrderStatusEnum::$PRODUCTION_COMPLETED);
         }
         else if (auth()->user()->hasRole(RoleEnum::$PRODUCTION)) {
           $query->where('status', OrderStatusEnum::$PRODUCTION);

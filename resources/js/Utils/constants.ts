@@ -9,6 +9,7 @@ export type Navbar = 'navbar-sticky' | 'navbar-floating' | 'navbar-static'
 export const ESTIMATE_STATUS: string = 'estimate'
 export const ACCOUNTING_STATUS: string = 'accounting'
 export const PRODUCTION_STATUS: string = 'production'
+export const PRODUCTION_COMPLETED: string = 'production completed'
 export interface Status {
   id: string
   color: string
@@ -125,3 +126,4 @@ export const SHAPES: string[] = [
 export const FOOT: string = 'FOOT'
 export const UNIT: string = 'UNIT'
 export const SQFT: string = 'SQFT'
+export const LENGTH_OF_BARS: number = 16
