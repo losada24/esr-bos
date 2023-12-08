@@ -5,6 +5,7 @@ use App\Models\Company;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use App\Enum\RoleEnum;
 
 class UpdateCompany {
 
@@ -37,6 +38,11 @@ class UpdateCompany {
         'featured_image' => $reaturedImagePath,
         'user_id' => auth()->user()->id
       ];
+
+      if (auth()->user()->hasRole(RoleEnum::$ADMIN)) {
+        $companyData['mockup'] = $request->mockup;
+        $companyData['promotion'] = $request->promotion;
+      }
 
       $company->update($companyData);
     });

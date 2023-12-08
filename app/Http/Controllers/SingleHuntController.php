@@ -7,13 +7,13 @@ use Inertia\Inertia;
 use App\Enum\FrameColorEnum;
 use App\Enum\GlassColorEnum;
 use App\Models\Order;
-use App\Http\Requests\StoreFixedWindowsRequest;
+use App\Http\Requests\StoreSingleHuntRequest;
 use App\Http\Requests\UpdateFixedWindowsRequest;
 use App\Actions\CreateFixedWindows;
 use App\Models\Product;
 use App\Actions\UpdateFixedWindows;
 
-class FixedWindowsController extends Controller
+class SingleHuntController extends Controller
 {
   /**
      * Show the form for creating a new resource.
@@ -23,7 +23,7 @@ class FixedWindowsController extends Controller
 
   public function create($id)
   {
-      return Inertia::render('FixedWindows/Create', [
+      return Inertia::render('SingleHunt/Create', [
         'frame_colors' => array_values(FrameColorEnum::$FRAME_COLOR),
         'glass_colors' => array_values(GlassColorEnum::$GLASS_COLOR),
         'estimate' => Order::with(['client'])->withCount(['products'])->findOrFail($id),
@@ -36,10 +36,10 @@ class FixedWindowsController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(StoreFixedWindowsRequest $storeFixWindowsRequest, CreateFixedWindows $createFixWindows)
+    public function store(StoreSingleHuntRequest $storeSingleHuntRequest, CreateSingleHunt $createSingleHunt)
     {
-        $createFixWindows->handle($storeFixWindowsRequest);
-        return redirect()->route('estimate.show', ['estimate' => $storeFixWindowsRequest->order_id]);
+        $createSingleHunt->handle($storeSingleHuntRequest);
+        return redirect()->route('estimate.show', ['estimate' => $storeSingleHuntRequest->order_id]);
     }
 
     /**
@@ -50,7 +50,7 @@ class FixedWindowsController extends Controller
      */
     public function edit(Product $product)
     {
-      return Inertia::render('FixedWindows/Edit', [
+      return Inertia::render('SingleHunt/Edit', [
           'frame_colors' => array_values(FrameColorEnum::$FRAME_COLOR),
           'glass_colors' => array_values(GlassColorEnum::$GLASS_COLOR),
           'product' => $product,

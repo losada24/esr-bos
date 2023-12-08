@@ -39,6 +39,8 @@ class UpdateCompanyRequest extends FormRequest
             ],
             'zip' => 'required|numeric|max_digits:5|min_digits:5',
             'featured_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:512',
+            'mockup' => 'nullable|integer|min:value:0|max:100',
+            'promotion' => 'nullable|numeric|min:value:0|max:100',
         ];
     }
 }

@@ -104,7 +104,9 @@ export default function Create ({ auth, estimate }: PageProps & {
                                     }}>Fixed Windows</button>
                                 </li>
                                 <li>
-                                    <button type="button">Single Hunt</button>
+                                    <button onClick={() => {
+                                      router.get(route('single-hunt.create', estimate.id))
+                                    }}>Single Hunt</button>
                                 </li>
                                 <li>
                                     <button type="button">Horizontal Roller</button>

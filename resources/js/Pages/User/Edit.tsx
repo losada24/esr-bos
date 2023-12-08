@@ -15,7 +15,8 @@ export default function Edit ({ auth, roles, user, companies }: UserPageProps) {
     password: '',
     password_confirmation: '',
     role: user?.data.role ?? 0,
-    company_id: user?.data.company_id ?? 0
+    company_id: user?.data.company_id ?? 0,
+    mockup: user?.data.mockup ?? 0
   }
 
   const handleSubmit = async (values: any, helpers: FormikHelpers<User>) => {

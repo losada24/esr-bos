@@ -25,7 +25,9 @@ class CreateCompany {
         'state' => $request->state,
         'zip' => $request->zip,
         'featured_image' => $reaturedImagePath,
-        'user_id' => auth()->user()->id
+        'user_id' => auth()->user()->id,
+        'mockup' => $request->mockup,
+        'promotion' => $request->promotion
       ]);
 
       if( !$company )

@@ -4,10 +4,12 @@ import { isValidFileType, isValidFileSize } from '../RawMaterial/RawMaterialComm
 export const companySchema = Yup.object({
   id: Yup.number(),
   name: Yup.string().required('Name is required'),
-  phone_number: Yup.string().required('Phone is required').max(20, 'Phone number must be 10 digits'),
+  phone_number: Yup.string().required('Phone is required').max(20, 'Phone number must be 20 digits'),
   address: Yup.string().required('Address is required').max(500, 'Address must be less than 500 characters'),
   city: Yup.string().required('City is required').max(100, 'City must be less than 100 characters'),
   state: Yup.string().required('State is required').max(100, 'State must be less than 100 characters'),
+  mockup: Yup.number().nullable().integer().min(0).max(100),
+  promotion: Yup.number().nullable().integer().min(0).max(100),
   zip: Yup.string().required('Zip is required')
     .matches(/^[0-9]+$/, 'Must be only digits')
     .min(5, 'Must be exactly 5 digits')
@@ -31,4 +33,6 @@ export interface Company {
   zip: string
   address: string
   featured_image: string
+  mockup?: number
+  promotion?: number
 }

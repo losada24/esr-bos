@@ -11,6 +11,7 @@ use App\Http\Controllers\RawMaterialController;
 use App\Http\Controllers\FixedWindowsController;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\SingleHuntController;
 
 /*
 |--------------------------------------------------------------------------
@@ -106,6 +107,15 @@ Route::middleware('auth')->group(function () {
     Route::put('/fixed-windows/update/{product}', [FixedWindowsController::class, 'update'])
       ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$CLIENT_ADMIN . "|" . RoleEnum::$CLIENT]) // TODO: Validate if the user is the owner of the order
       ->name('fixed-windows.update');
+
+    // SINGLE HUNT
+    Route::get('/single-hunt/{id}/create', [SingleHuntController::class, 'create'])
+      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$CLIENT_ADMIN . "|" . RoleEnum::$CLIENT]) // TODO: Validate if the user is the owner of the order
+      ->name('single-hunt.create');
+    
+    Route::post('/single-hunt/store', [SingleHuntController::class, 'store'])
+      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$CLIENT_ADMIN . "|" . RoleEnum::$CLIENT])
+      ->name('single-hunt.store');
     
     // ORDERS
     Route::get('/order', [OrderController::class, 'index'])

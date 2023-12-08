@@ -10,6 +10,7 @@ import { type ModalProps } from '@/types/interfaces/modalProps'
 import { type Order } from '@/types/interfaces/order'
 import { type Product } from '@/types/interfaces/product'
 import { type FixedWindows } from '@/types/interfaces/fixedWindows'
+import { type SingleHunt } from '@/types/interfaces/singleHunt'
 import { type Company } from '@/types/interfaces/company'
 
 export type {
@@ -25,7 +26,8 @@ export type {
   Order,
   Product,
   FixedWindows,
-  Company
+  Company,
+  SingleHunt
 }
 
 /* interface ListUsersItem {

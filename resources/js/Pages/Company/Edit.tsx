@@ -16,7 +16,9 @@ export default function Edit ({ auth, states, company }: PageProps & { states: s
     state: company.state ?? '',
     zip: company.zip ?? '',
     phone_number: company.phone_number ?? '',
-    featured_image: ''
+    featured_image: '',
+    mockup: company.mockup ?? 0,
+    promotion: company.promotion ?? 0
   }
 
   useEffect(() => {

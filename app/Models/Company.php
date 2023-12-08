@@ -26,7 +26,9 @@ class Company extends Model
       'state',
       'zip',
       'featured_image',
-      'user_id'
+      'user_id',
+      'mockup',
+      'promotion'
     ];
 
     public function scopeFilter($query, array $filters)

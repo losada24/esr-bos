@@ -57,6 +57,22 @@ const UserForm = ({ submitCount, errors, roles, isCreate, companies, isAdmin }: 
           {(submitCount && errors.company_id) ? <InputError message={errors.company_id} className="mt-2" /> : ''}
         </div>
       )}
+      <div className={submitCount ? (errors.mockup) ? 'has-error' : 'has-success' : ''}>
+        <label htmlFor="mockup">Mockup</label>
+        <div className='flex flex-1'>
+          <Field
+            id="mockup"
+            name="mockup"
+            className="form-input text-right rounded-r-none"
+            autoComplete="mockup"
+            placeholder='Mockup'
+            type='number'
+            min='0'
+          />
+          <div className="bg-[#eee] flex justify-center items-center px-3 font-semibold border border-[#e0e6ed] dark:border-[#17263c] dark:bg-[#1b2e4b] rounded-r-md">%</div>
+        </div>
+        {(submitCount && errors.mockup) ? <InputError message={errors.mockup} className="mt-2" /> : ''}
+      </div>
       <div className={`mb-3 ${submitCount ? (errors.password) ? 'has-error' : 'has-success' : ''}`}>
         <label htmlFor="password">Password</label>
         <Field

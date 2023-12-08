@@ -2,11 +2,12 @@ import React, { useState } from 'react'
 import { Field, Form } from 'formik'
 import InputError from '@/Components/InputError'
 import PrimaryButton from '@/Components/PrimaryButton'
-import { Link } from '@inertiajs/react'
+import { Link, usePage } from '@inertiajs/react'
 import { type FormikErrors } from 'formik'
 import { type Company } from './CompanyCommon'
-import { type ModalProps } from '@/types'
+import { type ModalProps, type Role, type PageProps } from '@/types'
 import FeaturedImageModal from '@/Pages/RawMaterial/FeaturedImageModal'
+import { isAdmin } from '@/Utils/user'
 
 const CompanyForm = ({ submitCount, errors, isCreate, states, setFieldValue, featured_image, modalProps }: {
   submitCount: number
@@ -17,6 +18,7 @@ const CompanyForm = ({ submitCount, errors, isCreate, states, setFieldValue, fea
   featured_image?: string
   setFieldValue: (field: string, value: any, shouldValidate?: boolean | undefined) => void }) => {
   const [showModal, setShowModal] = useState(false)
+  const { auth } = usePage<PageProps>().props
   return (
     <Form className='space-y-5'>
       <div className={submitCount ? (errors.name) ? 'has-error' : 'has-success' : ''}>
@@ -92,6 +94,40 @@ const CompanyForm = ({ submitCount, errors, isCreate, states, setFieldValue, fea
         />
         {(submitCount && errors.zip) ? <InputError message={errors.zip} className="mt-2" /> : ''}
       </div>
+      {isAdmin(auth.user.roles.map((role: Role) => role.name)) && (
+        <div className='grid grid-cols-2 gap-4'>
+          <div className={submitCount ? (errors.mockup) ? 'has-error' : 'has-success' : ''}>
+            <label htmlFor="mockup">Mockup</label>
+            <div className='flex flex-1'>
+              <Field
+                id="mockup"
+                name="mockup"
+                className="form-input text-right rounded-r-none"
+                autoComplete="mockup"
+                placeholder='Mockup'
+                type='number'
+              />
+              <div className="bg-[#eee] flex justify-center items-center px-3 font-semibold border border-[#e0e6ed] dark:border-[#17263c] dark:bg-[#1b2e4b] rounded-r-md">%</div>
+            </div>
+            {(submitCount && errors.mockup) ? <InputError message={errors.mockup} className="mt-2" /> : ''}
+          </div>
+          <div className={submitCount ? (errors.promotion) ? 'has-error' : 'has-success' : ''}>
+            <label htmlFor="promotion">Promotion</label>
+            <div className='flex flex-1'>
+              <Field
+                id="promotion"
+                name="promotion"
+                className="form-input text-right rounded-r-none"
+                autoComplete="promotion"
+                placeholder='Promotion'
+                type='number'
+              />
+              <div className="bg-[#eee] flex justify-center items-center px-3 font-semibold border border-[#e0e6ed] dark:border-[#17263c] dark:bg-[#1b2e4b] rounded-r-md">%</div>
+            </div>
+            {(submitCount && errors.promotion) ? <InputError message={errors.promotion} className="mt-2" /> : ''}
+          </div>
+        </div>
+      )}
       <div className={submitCount ? (errors.featured_image) ? 'has-error' : 'has-success' : ''}>
         <label htmlFor="featured_image">Feature Image</label>
         <input

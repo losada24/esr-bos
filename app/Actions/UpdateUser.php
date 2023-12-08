@@ -27,6 +27,7 @@ class UpdateUser {
         'name' => $request->name,
         'email' => $request->email,
         'company_id' => $company_id,
+        'mockup' => $request->mockup,
       ];
 
       if ($request->password) {
