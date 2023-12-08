@@ -117,6 +117,14 @@ Route::middleware('auth')->group(function () {
       ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$CLIENT_ADMIN . "|" . RoleEnum::$CLIENT])
       ->name('single-hunt.store');
     
+    Route::get('/single-hunt/edit/{product}', [SingleHuntController::class, 'edit'])
+      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$CLIENT_ADMIN . "|" . RoleEnum::$CLIENT]) // TODO: Validate if the user is the owner of the order
+      ->name('single-hunt.edit');
+
+    Route::put('/single-hunt/update/{product}', [SingleHuntController::class, 'update'])
+      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$CLIENT_ADMIN . "|" . RoleEnum::$CLIENT]) // TODO: Validate if the user is the owner of the order
+      ->name('single-hunt.update');
+    
     // ORDERS
     Route::get('/order', [OrderController::class, 'index'])
       ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$CLIENT_ADMIN . "|" . RoleEnum::$PRODUCTION . "|" . RoleEnum::$ACCOUNTING])

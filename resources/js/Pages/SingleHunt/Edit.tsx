@@ -3,8 +3,8 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
 import { Head, router } from '@inertiajs/react'
 import { Formik, type FormikHelpers } from 'formik'
 import { type PageProps, type Product, type Client, type FixedWindows } from '@/types'
-import FixedWindowsForm from './SingleHuntForm'
-import { fixedWindowsSchema } from './SingleHuntCommon'
+import SingleHuntForm from './SingleHuntForm'
+import { singleHuntSchema } from './SingleHuntCommon'
 
 export default function Edit ({ auth, product, frame_colors, glass_colors }: PageProps & {
   frame_colors: string[]
@@ -27,7 +27,7 @@ export default function Edit ({ auth, product, frame_colors, glass_colors }: Pag
   }
 
   const handleSubmit = async (values: any, helpers: FormikHelpers<FixedWindows>) => {
-    router.put(route('fixed-windows.update', values.id), values, {
+    router.put(route('single-hunt.update', values.id), values, {
       onError: (errors: any) => {
         helpers.setErrors(errors)
       }
@@ -42,11 +42,11 @@ export default function Edit ({ auth, product, frame_colors, glass_colors }: Pag
         <Head title="Edit" />
         <Formik<FixedWindows>
           initialValues={initialValues}
-          validationSchema={fixedWindowsSchema}
+          validationSchema={singleHuntSchema}
           onSubmit={handleSubmit}
         >
           {({ errors, submitCount, values }) => (
-            <FixedWindowsForm
+            <SingleHuntForm
               errors={errors}
               submitCount={submitCount}
               isCreate={false}

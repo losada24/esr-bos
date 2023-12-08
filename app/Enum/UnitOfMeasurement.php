@@ -8,6 +8,7 @@ class UnitOfMeasurement {
     'INCH' => 'INCH',
     'FOOT' => 'FOOT',
     'UNIT' => 'UNIT',
+    'SQFT' => 'SQFT',
   ];
 
 }

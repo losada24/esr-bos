@@ -5,16 +5,16 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\Product;
 use App\Enum\ProductSystemEnum;
-use App\Events\OrderCreated;
-use App\Products\FixedWindowsProduct;
+use App\Products\SingleHuntProduct;
 
 class CreateSingleHunt {
 
   public function handle(Request $request) {
     DB::transaction(function() use ($request) {
-      $fixedWindowsProduct = new FixedWindowsProduct(
+      $fixedWindowsProduct = new SingleHuntProduct(
         $request->width,
-        $request->height
+        $request->height,
+        $request->frame_color
       );
 
       $unitPrice = $fixedWindowsProduct->getUnitPrice();
@@ -23,7 +23,7 @@ class CreateSingleHunt {
 
       $product = Product::create([
         'order_id' => $request->order_id,
-        'system' => ProductSystemEnum::$FIXED_WINDOWS,
+        'system' => ProductSystemEnum::$SINGLE_HUNT,
         'width' => $request->width,
         'height' => $request->height,
         'line_item_name' => $request->mark,

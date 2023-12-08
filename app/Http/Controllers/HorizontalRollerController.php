@@ -13,7 +13,7 @@ use App\Actions\CreateSingleHunt;
 use App\Models\Product;
 use App\Actions\UpdateSingleHunt;
 
-class SingleHuntController extends Controller
+class HorizontalRollerController extends Controller
 {
   /**
      * Show the form for creating a new resource.

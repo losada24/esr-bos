@@ -78,6 +78,7 @@ class SingleHuntProduct implements IProduct {
 
         // TODO: ADD GLASS COST
         // TODO: ADD BALANCES COST
+        // TODO: ADD SCREEN COST
         $unitPriceCost = 
           $ventJambCost +
           $ventBottomCost +

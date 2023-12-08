@@ -4,7 +4,7 @@ import EditIcon from '@/Components/Icons/EditIcon'
 import DeleteIcon from '@/Components/Icons/DeleteIcon'
 import { type PageProps, type RawMaterial, type PaginatorLink, type ModalProps } from '@/types'
 import Pagination from '@/Components/Pagination'
-import UserFilter from './UserFilter'
+import RawMaterialFilter from './RawMaterialFilter'
 import { useState } from 'react'
 import FeaturedImageModal from './FeaturedImageModal'
 
@@ -40,7 +40,7 @@ export default function Index ({ auth, rawMaterials }: IndexRawMaterialProps) {
           }
       >
         <Head title="Raw Material" />
-        <UserFilter />
+        <RawMaterialFilter />
 
         <div className='table-responsive'>
           <table className="w-full whitespace-nowrap">

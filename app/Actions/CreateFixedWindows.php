@@ -14,7 +14,9 @@ class CreateFixedWindows {
     DB::transaction(function() use ($request) {
       $fixedWindowsProduct = new FixedWindowsProduct(
         $request->width,
-        $request->height
+        $request->height,
+        $request->frame_color,
+        $request->glass_type
       );
 
       $unitPrice = $fixedWindowsProduct->getUnitPrice();

@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React from 'react'
 import { Field, Form } from 'formik'
 import InputError from '@/Components/InputError'
 import PrimaryButton from '@/Components/PrimaryButton'
@@ -20,6 +20,7 @@ const SingleHuntForm = ({ submitCount, errors, isCreate, frame_colors, glass_col
   const getFrameJambs = (height: number) => {
     return (height / 2) - (5.25 / 2) - 0.0625
   }
+
   const glassTypes: string[] = [
     '5/16 Laminate Annealed',
     '5/16 Laminate Head Strengthened'

@@ -17,9 +17,21 @@ const FixedWindowsForm = ({ submitCount, errors, isCreate, frame_colors, glass_c
   values: FixedWindows
 }) => {
   // TODO: Check how fill the glassTypes
-  const [glassTypes, setGlassTypes] = useState<string[]>([
-    '3/16 HS + 0.090 SGP + 3/16 HS'
-  ])
+  const [glassTypes, setGlassTypes] = useState<string[]>([])
+  useEffect(() => {
+    if (values.glass_color !== '' && values.low_e !== '' && values.privacy !== '') {
+      const firstGlass = `3/16 HS ${values.glass_color} ${values.glass_color === 'CLEAR' && values.low_e !== 'NONE' ? values.low_e : ''}`
+      const interlayer = `+0.09PVB t ${values.privacy}`
+      console.log('LOW E', values.low_e)
+      const lastGlass = `3/16HS CLEAR ${values.glass_color !== 'CLEAR' && values.low_e !== 'NONE' ? values.low_e : ''}`
+
+      setGlassTypes([`${firstGlass} ${interlayer} ${lastGlass}(EXPRESS)`, `${firstGlass} ${interlayer} ${lastGlass}(REGULAR)`])
+    } else {
+      setGlassTypes([])
+    }
+    console.log('values', values)
+  }, [values])
+
   return (
     <div className='grid gap-6 grid-cols-12'>
       <div className='col-span-6'>
@@ -138,7 +150,7 @@ const FixedWindowsForm = ({ submitCount, errors, isCreate, frame_colors, glass_c
                   placeholder='Low E'
                   as="select"
                 >
-                  {['None', 'SB70', 'N70/38'].map((type, index) => (
+                  {['NONE', 'LOW E'].map((type, index) => (
                     <option key={index} value={type}>{type}</option>
                   ))}
                 </Field>
@@ -155,7 +167,7 @@ const FixedWindowsForm = ({ submitCount, errors, isCreate, frame_colors, glass_c
                   as="select"
                 >
                   <option value="">Select Privacy Type</option>
-                  {['Clear', 'White'].map((color, index) => (
+                  {['Clear', 'White Interlayer'].map((color, index) => (
                     <option key={index} value={color}>{color}</option>
                   ))}
                 </Field>

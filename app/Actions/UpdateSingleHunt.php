@@ -4,7 +4,7 @@ namespace App\Actions;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use App\Products\FixedWindowsProduct;
+use App\Products\SingleHuntProduct;
 use App\Enum\ProductSystemEnum;
 
 class UpdateSingleHunt {
@@ -18,9 +18,10 @@ class UpdateSingleHunt {
           throw new \Exception('Product not updated');
       }
 
-      $fixedWindowsProduct = new FixedWindowsProduct(
+      $fixedWindowsProduct = new SingleHuntProduct(
         $request->width,
-        $request->height
+        $request->height,
+        $request->frame_color
       );
 
       $unitPrice = $fixedWindowsProduct->getUnitPrice();
@@ -29,7 +30,7 @@ class UpdateSingleHunt {
 
       $productData = [
         'order_id' => $request->order_id,
-        'system' => ProductSystemEnum::$FIXED_WINDOWS,
+        'system' => ProductSystemEnum::$SINGLE_HUNT,
         'width' => $request->width,
         'height' => $request->height,
         'line_item_name' => $request->mark,

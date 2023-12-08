@@ -33,7 +33,7 @@ class UpdateRawMaterialRequest extends FormRequest
             'required',
             Rule::in(array_values(UnitOfMeasurement::$UNIT_OF_MEASUREMENT))
           ],
-          'cost_per_unit' => 'required|numeric|min:0|digits_between:1,10',
+          'cost_per_unit' => 'required|numeric|min:0',
           'notes' => 'nullable|string|max:255',
           'featured_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:512'
         ];

@@ -20,7 +20,9 @@ class UpdateFixedWindows {
 
       $fixedWindowsProduct = new FixedWindowsProduct(
         $request->width,
-        $request->height
+        $request->height,
+        $request->frame_color,
+        $request->glass_type
       );
 
       $unitPrice = $fixedWindowsProduct->getUnitPrice();

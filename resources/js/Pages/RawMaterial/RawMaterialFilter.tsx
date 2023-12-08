@@ -3,7 +3,7 @@ import { useForm, router } from '@inertiajs/react'
 import TextInput from '@/Components/TextInput'
 import PrimaryButton from '@/Components/PrimaryButton'
 
-const UserFilter = () => {
+const RawMaterialFilter = () => {
   const { data, setData } = useForm({
     text: ''
   })
@@ -13,7 +13,7 @@ const UserFilter = () => {
       text: ''
     })
 
-    router.get(route('user.index'), {
+    router.get(route('raw-material.index'), {
       text: ''
     }, {
       replace: true,
@@ -25,7 +25,7 @@ const UserFilter = () => {
     e.preventDefault()
     let currentRoute = route().current()
     if (currentRoute === undefined) {
-      currentRoute = 'user.index'
+      currentRoute = 'raw-material.index'
     }
 
     router.get(route(currentRoute), data, {
@@ -68,4 +68,4 @@ const UserFilter = () => {
   )
 }
 
-export default UserFilter
+export default RawMaterialFilter
