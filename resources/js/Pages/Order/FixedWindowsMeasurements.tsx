@@ -94,7 +94,7 @@ const FixedWindowsMeasurements = ({ product }: { product: Product }) => {
       store.addMaterial({
         material: productOrderField.rawMaterial,
         quantity: productOrderField.qty ?? 0,
-        size: productOrderField.size,
+        size: Number(productOrderField.size ?? 0),
         unit: productOrderField.unit,
         part: productOrderField.part
       })

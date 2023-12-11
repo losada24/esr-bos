@@ -43,7 +43,7 @@ const MaterialConsumption = () => {
               {item.unit === FOOT && (
                 <>
                   <td className="border-t px-6 py-4 align-top text-right">
-                    {`${getNumberWithFraction(item.size ?? 0)} ${FOOT}`}
+                    {`${getNumberWithFraction(item.size ?? 0 * 0.083)} ${FOOT}`}
                   </td>
                   <td className="border-t px-6 py-4 align-top text-right">
                     {`${Math.ceil((item.size ?? 0) / LENGTH_OF_BARS)}(pcs)`}

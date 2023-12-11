@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect} from 'react'
 import { Field, Form } from 'formik'
 import InputError from '@/Components/InputError'
 import PrimaryButton from '@/Components/PrimaryButton'
@@ -16,15 +16,22 @@ const SingleHuntForm = ({ submitCount, errors, isCreate, frame_colors, glass_col
   estimate_id: number
   values: SingleHunt
 }) => {
-  // TODO: Check how fill the glassTypes
   const getFrameJambs = (height: number) => {
     return (height / 2) - (5.25 / 2) - 0.0625
   }
 
-  const glassTypes: string[] = [
-    '5/16 Laminate Annealed',
-    '5/16 Laminate Head Strengthened'
-  ]
+  const [glassTypes, setGlassTypes] = useState<string[]>([])
+  useEffect(() => {
+    if (values.glass_color !== '' && values.low_e !== '' && values.privacy !== '') {
+      const firstGlass = `1/8 HS ${values.glass_color} ${values.glass_color === 'CLEAR' && values.low_e !== 'NONE' ? values.low_e : ''}`
+      const interlayer = `+0.09PVB s ${values.privacy}`
+      const lastGlass = `1/8 HS CLEAR ${values.glass_color !== 'CLEAR' && values.low_e !== 'NONE' ? values.low_e : ''}`
+
+      setGlassTypes([`${firstGlass} ${interlayer} ${lastGlass}(EXPRESS)`, `${firstGlass} ${interlayer} ${lastGlass}(REGULAR)`])
+    } else {
+      setGlassTypes([])
+    }
+  }, [values])
 
   return (
     <div className='grid gap-6 grid-cols-12'>
@@ -112,6 +119,16 @@ const SingleHuntForm = ({ submitCount, errors, isCreate, frame_colors, glass_col
                 </div>
                 {(submitCount && errors.markup) ? <InputError message={errors.markup} className="mt-2" /> : ''}
               </div>
+              <div className={submitCount ? (errors.screen) ? 'has-error inline-flex' : 'has-success inline-flex' : 'inline-flex'}>
+                <Field
+                  id="screen"
+                  name="screen"
+                  className="form-checkbox"
+                  type='checkbox'
+                />
+                <label htmlFor="screen">Screen</label>
+                {(submitCount && errors.screen) ? <InputError message={errors.screen} className="mt-2" /> : ''}
+              </div>
             </div>
           </fieldset>
           <fieldset>
@@ -144,7 +161,7 @@ const SingleHuntForm = ({ submitCount, errors, isCreate, frame_colors, glass_col
                   placeholder='Low E'
                   as="select"
                 >
-                  {['None', 'SB70', 'N70/38'].map((type, index) => (
+                  {['None', 'LOW E'].map((type, index) => (
                     <option key={index} value={type}>{type}</option>
                   ))}
                 </Field>
@@ -161,7 +178,7 @@ const SingleHuntForm = ({ submitCount, errors, isCreate, frame_colors, glass_col
                   as="select"
                 >
                   <option value="">Select Privacy Type</option>
-                  {['Clear', 'White'].map((color, index) => (
+                  {['Clear', 'White Interlayer'].map((color, index) => (
                     <option key={index} value={color}>{color}</option>
                   ))}
                 </Field>

@@ -21,10 +21,11 @@ export default function Create ({ auth, frame_colors, glass_colors, estimate }: 
     frame_color: estimate.frame_color,
     glass_color: estimate.glass_color,
     glass_type: '',
-    low_e: '',
+    low_e: 'NONE',
     privacy: '',
     qty: 0,
-    markup: estimate.markup
+    markup: estimate.markup,
+    screen: false
   }
 
   const handleSubmit = async (values: any, helpers: FormikHelpers<SingleHunt>) => {

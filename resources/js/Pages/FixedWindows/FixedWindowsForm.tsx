@@ -16,20 +16,17 @@ const FixedWindowsForm = ({ submitCount, errors, isCreate, frame_colors, glass_c
   estimate_id: number
   values: FixedWindows
 }) => {
-  // TODO: Check how fill the glassTypes
   const [glassTypes, setGlassTypes] = useState<string[]>([])
   useEffect(() => {
     if (values.glass_color !== '' && values.low_e !== '' && values.privacy !== '') {
       const firstGlass = `3/16 HS ${values.glass_color} ${values.glass_color === 'CLEAR' && values.low_e !== 'NONE' ? values.low_e : ''}`
       const interlayer = `+0.09PVB t ${values.privacy}`
-      console.log('LOW E', values.low_e)
-      const lastGlass = `3/16HS CLEAR ${values.glass_color !== 'CLEAR' && values.low_e !== 'NONE' ? values.low_e : ''}`
+      const lastGlass = `3/16 HS CLEAR ${values.glass_color !== 'CLEAR' && values.low_e !== 'NONE' ? values.low_e : ''}`
 
       setGlassTypes([`${firstGlass} ${interlayer} ${lastGlass}(EXPRESS)`, `${firstGlass} ${interlayer} ${lastGlass}(REGULAR)`])
     } else {
       setGlassTypes([])
     }
-    console.log('values', values)
   }, [values])
 
   return (

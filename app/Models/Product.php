@@ -39,6 +39,11 @@ class Product extends Model
       'updated' => \App\Events\ProductCreated::class,
     ];
 
+    
+    protected $casts = [
+      'extras' => 'array'
+    ];
+
     public function scopeFilter($query, array $filters)
     {
         $query->when($filters['text'] ?? null, function ($query, $search) {

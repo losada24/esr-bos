@@ -31,6 +31,7 @@ export const useStore = create<MaterialsSummaryState>((set) => ({
         const itemIndex = state.items.findIndex((i) => i.material === item.material)
         if (itemIndex !== -1) {
           state.items[itemIndex].quantity += item.quantity
+          state.items[itemIndex].size += Number(item.size) ?? 0
           return { ...state }
         } else {
           state.items.push(item)

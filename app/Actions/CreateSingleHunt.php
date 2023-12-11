@@ -14,7 +14,9 @@ class CreateSingleHunt {
       $fixedWindowsProduct = new SingleHuntProduct(
         $request->width,
         $request->height,
-        $request->frame_color
+        $request->frame_color,
+        $request->glass_type,
+        $request->screen
       );
 
       $unitPrice = $fixedWindowsProduct->getUnitPrice();
@@ -36,6 +38,9 @@ class CreateSingleHunt {
         'privacy' => $request->privacy,
         'unit_price' => $unitPriceWithMarkup,
         'total_price' => $unitPriceWithMarkup * $request->qty,
+        'extras' => [
+          'screen' => $request->screen
+        ],
         'user_id' => auth()->user()->id,
       ]);
       

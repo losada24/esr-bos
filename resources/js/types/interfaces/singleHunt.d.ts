@@ -11,4 +11,5 @@ export interface SingleHunt {
   glass_color: string
   low_e: string
   privacy: string
+  screen: boolean
 }

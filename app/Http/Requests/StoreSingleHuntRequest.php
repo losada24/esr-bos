@@ -43,7 +43,8 @@ class StoreSingleHuntRequest extends FormRequest
             'order_id' => 'required|exists:orders,id',
             'glass_type' => 'required|string|max:255',
             'low_e' => 'required|string|max:255',
-            'privacy' => 'required|string|max:255'
+            'privacy' => 'required|string|max:255',
+            'screen' => 'required|boolean'
         ];
     }
 }
