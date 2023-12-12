@@ -8,7 +8,7 @@ export const companySchema = Yup.object({
   address: Yup.string().required('Address is required').max(500, 'Address must be less than 500 characters'),
   city: Yup.string().required('City is required').max(100, 'City must be less than 100 characters'),
   state: Yup.string().required('State is required').max(100, 'State must be less than 100 characters'),
-  mockup: Yup.number().nullable().integer().min(0).max(100),
+  markup: Yup.number().nullable().integer().min(0).max(100),
   promotion: Yup.number().nullable().integer().min(0).max(100),
   zip: Yup.string().required('Zip is required')
     .matches(/^[0-9]+$/, 'Must be only digits')
@@ -33,6 +33,6 @@ export interface Company {
   zip: string
   address: string
   featured_image: string
-  mockup?: number
+  markup?: number
   promotion?: number
 }

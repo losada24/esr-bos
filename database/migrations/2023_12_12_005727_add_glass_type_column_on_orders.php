@@ -11,9 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-          $table->integer('mockup')->nullable()->default(0);
-        });
+      Schema::table('orders', function (Blueprint $table) {
+        $table->string('glass_type');
+      });
     }
 
     /**
@@ -21,8 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-          $table->dropColumn(['mockup']);
-        });
+      Schema::table('orders', function (Blueprint $table) {
+        $table->dropColumn('glass_type');
+      });
     }
 };

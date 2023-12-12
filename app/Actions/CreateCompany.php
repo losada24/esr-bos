@@ -26,7 +26,7 @@ class CreateCompany {
         'zip' => $request->zip,
         'featured_image' => $reaturedImagePath,
         'user_id' => auth()->user()->id,
-        'mockup' => $request->mockup,
+        'markup' => $request->markup,
         'promotion' => $request->promotion
       ]);
 

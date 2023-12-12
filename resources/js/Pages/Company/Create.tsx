@@ -15,7 +15,7 @@ export default function Create ({ auth, states }: PageProps & { states: string[]
     state: '',
     zip: '',
     featured_image: '',
-    mockup: 0,
+    markup: 0,
     promotion: 0
   }
 

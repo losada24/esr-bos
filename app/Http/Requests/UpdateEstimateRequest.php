@@ -3,7 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use App\Enum\UnitOfMeasurement;
+use App\Enum\GlassTypeEnum;
 use App\Enum\FrameColorEnum;
 use App\Enum\GlassColorEnum;
 use Illuminate\Validation\Rule;
@@ -47,6 +47,11 @@ class UpdateEstimateRequest extends FormRequest
           'other' => 'required|numeric|min:0',
           'notes' => 'nullable|string|max:255',
           'external_purchase_id' => 'nullable|string|max:255',
+          'glass_type' => [
+            'required',
+            'max:255',
+            Rule::in(array_values(GlassTypeEnum::$GLASS_TYPE))
+          ],
         ];
     }
 }

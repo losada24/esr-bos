@@ -20,7 +20,8 @@ export default function Create ({ auth, frame_colors, glass_colors, clients }: P
     installation: 0,
     permit: 0,
     other: 0,
-    external_purchase_id: ''
+    external_purchase_id: '',
+    glass_type: ''
   }
 
   const handleSubmit = async (values: any, helpers: FormikHelpers<Order>) => {

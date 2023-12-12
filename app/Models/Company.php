@@ -27,7 +27,7 @@ class Company extends Model
       'zip',
       'featured_image',
       'user_id',
-      'mockup',
+      'markup',
       'promotion'
     ];
 

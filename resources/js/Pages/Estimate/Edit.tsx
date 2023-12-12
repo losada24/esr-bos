@@ -21,7 +21,8 @@ export default function Edit ({ auth, estimate, frame_colors, glass_colors, clie
     installation: estimate.installation,
     permit: estimate.permit,
     other: estimate.other,
-    external_purchase_id: estimate.external_purchase_id
+    external_purchase_id: estimate.external_purchase_id,
+    glass_type: estimate.glass_type
   }
 
   const handleSubmit = async (values: any, helpers: FormikHelpers<Order>) => {

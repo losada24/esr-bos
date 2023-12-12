@@ -27,7 +27,7 @@ class User extends Authenticatable
         'email',
         'password',
         'company_id',
-        'mockup',
+        'markup',
         'promotion',
         'created_by'
     ];

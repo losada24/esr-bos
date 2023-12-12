@@ -17,7 +17,7 @@ export default function Edit ({ auth, states, company }: PageProps & { states: s
     zip: company.zip ?? '',
     phone_number: company.phone_number ?? '',
     featured_image: '',
-    mockup: company.mockup ?? 0,
+    markup: company.markup ?? 0,
     promotion: company.promotion ?? 0
   }
 

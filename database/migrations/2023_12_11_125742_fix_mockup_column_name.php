@@ -12,7 +12,11 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-          $table->integer('mockup')->nullable()->default(0);
+          $table->renameColumn('mockup', 'markup');
+        });
+
+        Schema::table('companies', function (Blueprint $table) {
+          $table->renameColumn('mockup', 'markup');
         });
     }
 
@@ -22,7 +26,11 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-          $table->dropColumn(['mockup']);
+          $table->renameColumn('markup', 'mockup');
+        });
+
+        Schema::table('companies', function (Blueprint $table) {
+          $table->renameColumn('markup', 'mockup');
         });
     }
 };

@@ -96,20 +96,20 @@ const CompanyForm = ({ submitCount, errors, isCreate, states, setFieldValue, fea
       </div>
       {isAdmin(auth.user.roles.map((role: Role) => role.name)) && (
         <div className='grid grid-cols-2 gap-4'>
-          <div className={submitCount ? (errors.mockup) ? 'has-error' : 'has-success' : ''}>
-            <label htmlFor="mockup">Mockup</label>
+          <div className={submitCount ? (errors.markup) ? 'has-error' : 'has-success' : ''}>
+            <label htmlFor="markup">Markup</label>
             <div className='flex flex-1'>
               <Field
-                id="mockup"
-                name="mockup"
+                id="markup"
+                name="markup"
                 className="form-input text-right rounded-r-none"
-                autoComplete="mockup"
-                placeholder='Mockup'
+                autoComplete="markup"
+                placeholder='markup'
                 type='number'
               />
               <div className="bg-[#eee] flex justify-center items-center px-3 font-semibold border border-[#e0e6ed] dark:border-[#17263c] dark:bg-[#1b2e4b] rounded-r-md">%</div>
             </div>
-            {(submitCount && errors.mockup) ? <InputError message={errors.mockup} className="mt-2" /> : ''}
+            {(submitCount && errors.markup) ? <InputError message={errors.markup} className="mt-2" /> : ''}
           </div>
           <div className={submitCount ? (errors.promotion) ? 'has-error' : 'has-success' : ''}>
             <label htmlFor="promotion">Promotion</label>

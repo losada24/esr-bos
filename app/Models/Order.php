@@ -36,6 +36,7 @@ class Order extends Model
       'other',
       'company_id',
       'external_purchase_id',
+      'glass_type'
     ];
 
     protected $dispatchesEvents = [

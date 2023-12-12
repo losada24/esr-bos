@@ -24,4 +24,5 @@ export interface Order {
   permit?: number
   other?: number
   external_purchase_id?: string
+  glass_type: string
 }

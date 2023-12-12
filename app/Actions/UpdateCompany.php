@@ -40,7 +40,7 @@ class UpdateCompany {
       ];
 
       if (auth()->user()->hasRole(RoleEnum::$ADMIN)) {
-        $companyData['mockup'] = $request->mockup;
+        $companyData['markup'] = $request->markup;
         $companyData['promotion'] = $request->promotion;
       }
 

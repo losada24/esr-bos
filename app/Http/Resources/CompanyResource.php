@@ -23,6 +23,8 @@ class CompanyResource extends JsonResource
           'state' => $this->state ?? '',
           'zip' => $this->zip ?? '',
           'featured_image' => $this->featured_image ? asset('storage/'.$this->featured_image) : '',
+          'promotion' => $this->promotion ?? '',
+          'markup' => $this->markup ?? '',
         ];
     }
 }

@@ -16,7 +16,9 @@ export default function Profile ({ auth, states, company }: PageProps & { states
     state: company.state ?? '',
     zip: company.zip ?? '',
     phone_number: company.phone_number ?? '',
-    featured_image: ''
+    featured_image: '',
+    markup: company.markup ?? 0,
+    promotion: company.promotion ?? 0
   }
 
   useEffect(() => {
