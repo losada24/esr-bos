@@ -5,7 +5,7 @@ import comingSoonObject1 from '../../assets/images/auth/coming-soon-object1.png'
 import comingSoonObject2 from '../../assets/images/auth/coming-soon-object2.png'
 import comingSoonObject3 from '../../assets/images/auth/coming-soon-object3.png'
 import polygonObject from '../../assets/images/auth/polygon-object.svg'
-import logoWhite from '../../assets/images/vector-reylosglass.svg'
+import logoWhite from '../../../assets/images/logo-reylosglass.png'
 import logo from '../../assets/images/logo-reylosglass.png'
 import map from '../../assets/images/auth/map.png'
 import FlashMessages from '@/Components/FlashMessages'
@@ -66,7 +66,7 @@ export default function Guest ({
                 <div className="absolute inset-y-0 w-8 from-primary/10 via-transparent to-transparent ltr:-right-10 ltr:bg-gradient-to-r rtl:-left-10 rtl:bg-gradient-to-l xl:w-16 ltr:xl:-right-20 rtl:xl:-left-20"></div>
                 <div className="ltr:xl:-skew-x-[14deg] rtl:xl:skew-x-[14deg]">
                   <a href={route('dashboard')} className="w-48 block lg:w-72 ms-10">
-                    <img src={logoWhite} alt="Logo" className="w-full" />
+                    <img src={logo} alt="Logo" className="w-full" />
                   </a>
                   {featuredImage != null && (
                     <div className="mt-24 hidden w-full max-w-[430px] lg:block">

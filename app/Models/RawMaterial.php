@@ -28,7 +28,7 @@ class RawMaterial extends Model
     public function scopeFilter($query, array $filters)
     {
         $query->when($filters['text'] ?? null, function ($query, $search) {
-          $query->where("name", $search);
+          $query->where("name", 'LIKE', '%' . $search . '%');
         });
     }
 
