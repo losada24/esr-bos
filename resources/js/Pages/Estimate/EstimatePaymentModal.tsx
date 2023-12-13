@@ -36,7 +36,8 @@ const EstimatePaymentModal = ({ showModal, onClose, estimate }: {
     tax_rate: estimate?.tax_rate ?? 0,
     installation: estimate?.installation ?? 0,
     permit: estimate?.permit ?? 0,
-    other: estimate?.other ?? 0
+    other: estimate?.other ?? 0,
+    glass_type: estimate?.glass_type ?? ''
   }
 
   return (
