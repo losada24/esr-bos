@@ -7,19 +7,19 @@ import { type FormikErrors } from 'formik'
 import { type SingleHunt } from '@/types'
 import SingleHuntDrawing from './SingleHuntDrawing'
 
-const SingleHuntForm = ({ submitCount, errors, isCreate, frame_colors, glass_colors, estimate_id, values }: {
+const SingleHuntForm = ({ submitCount, errors, isCreate, frame_colors, glass_colors, estimate_id, values, glassType }: {
   submitCount: number
   errors: FormikErrors<SingleHunt>
   isCreate: boolean
   frame_colors: string[]
   glass_colors: string[]
   estimate_id: number
+  glassType: string
   values: SingleHunt
 }) => {
   const getFrameJambs = (height: number) => {
     return (height / 2) - (5.25 / 2) - 0.0625
   }
-
   const [glassTypes, setGlassTypes] = useState<string[]>([])
   useEffect(() => {
     if (values.glass_color !== '' && values.low_e !== '' && values.privacy !== '') {
@@ -27,7 +27,7 @@ const SingleHuntForm = ({ submitCount, errors, isCreate, frame_colors, glass_col
       const interlayer = `+0.09PVB s ${values.privacy}`
       const lastGlass = `1/8 HS CLEAR ${values.glass_color !== 'CLEAR' && values.low_e !== 'NONE' ? values.low_e : ''}`
 
-      setGlassTypes([`${firstGlass} ${interlayer} ${lastGlass}(EXPRESS)`, `${firstGlass} ${interlayer} ${lastGlass}(REGULAR)`])
+      setGlassTypes([`${firstGlass} ${interlayer} ${lastGlass}(${glassType})`])
     } else {
       setGlassTypes([])
     }
@@ -92,7 +92,7 @@ const SingleHuntForm = ({ submitCount, errors, isCreate, frame_colors, glass_col
                 <Field
                   id="frame_color"
                   name="frame_color"
-                  className="form-input"
+                  className="form-select"
                   autoComplete="frame_color"
                   placeholder='Frame Colors'
                   as="select"
@@ -139,7 +139,7 @@ const SingleHuntForm = ({ submitCount, errors, isCreate, frame_colors, glass_col
                 <Field
                   id="glass_color"
                   name="glass_color"
-                  className="form-input"
+                  className="form-select"
                   autoComplete="glass_color"
                   placeholder='Glass Colors'
                   as="select"
@@ -156,12 +156,12 @@ const SingleHuntForm = ({ submitCount, errors, isCreate, frame_colors, glass_col
                 <Field
                   id="low_e"
                   name="low_e"
-                  className="form-input"
+                  className="form-select"
                   autoComplete="low_e"
                   placeholder='Low E'
                   as="select"
                 >
-                  {['None', 'LOW E'].map((type, index) => (
+                  {['NONE', 'LOW E'].map((type, index) => (
                     <option key={index} value={type}>{type}</option>
                   ))}
                 </Field>
@@ -172,7 +172,7 @@ const SingleHuntForm = ({ submitCount, errors, isCreate, frame_colors, glass_col
                 <Field
                   id="privacy"
                   name="privacy"
-                  className="form-input"
+                  className="form-select"
                   autoComplete="privacy"
                   placeholder='Privacy'
                   as="select"
@@ -189,7 +189,7 @@ const SingleHuntForm = ({ submitCount, errors, isCreate, frame_colors, glass_col
                 <Field
                   id="glass_type"
                   name="glass_type"
-                  className="form-input"
+                  className="form-select"
                   autoComplete="glass_type"
                   placeholder='glass_type'
                   as="select"

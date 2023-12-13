@@ -61,7 +61,7 @@ export default function Create ({ auth, estimate }: PageProps & {
                 <div className='group relative flex items-center py-1.5'>
                   <div className="flex-1">External Purchase Id</div>
                   <div className="text-xs text-white-dark ltr:ml-auto rtl:mr-auto dark:text-gray-500">
-                    {estimate.external_purchase_id ? estimate.external_purchase_id : 'No Project'}
+                    {estimate.external_purchase_id ? estimate.external_purchase_id : 'No External Purchase Id'}
                   </div>
                 </div>
                 <div className='group relative flex items-center py-1.5'>
@@ -109,7 +109,9 @@ export default function Create ({ auth, estimate }: PageProps & {
                                     }}>Single Hunt</button>
                                 </li>
                                 <li>
-                                    <button type="button">Horizontal Roller</button>
+                                    <button onClick={() => {
+                                      router.get(route('horizontal-roller.create', estimate.id))
+                                    }}>Horizontal Roller</button>
                                 </li>
                             </ul>
                         </Dropdown>

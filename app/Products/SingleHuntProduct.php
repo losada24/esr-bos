@@ -59,7 +59,7 @@ class SingleHuntProduct implements IProduct {
         $tSlotSealFrameBottomMaterial = RawMaterial::where('id', 19)->first(); // TSB 0001
         $tSlotSealFrameBottomCost = $this->width * 0.083 * $tSlotSealFrameBottomMaterial->cost_per_unit;
         $weatherStripMeetRailSashMaterial = RawMaterial::where('name', 'W 22184 ' . $firstFrameColorLetter)->first(); // W 22184 W or B
-        $weatherStripMeetRailSashCost = ((2 * ($this->getGlassHeigth() + 2.188)) + 2 * ($this->width - 3/938)) * 0.083 * $weatherStripMeetRailSashMaterial->cost_per_unit;
+        $weatherStripMeetRailSashCost = ((2 * ($this->getGlassHeigth() + 2.188)) + ($this->width - 3/938)) * 0.083 * $weatherStripMeetRailSashMaterial->cost_per_unit;
         $weatherStripBottomMaterial = RawMaterial::where('name', 'W 22254 ' . $firstFrameColorLetter)->first(); // W 22254 B or W
         $weatherStripBottomCost = $this->width * 0.083 * $weatherStripBottomMaterial->cost_per_unit;
         $steelReiceformentMaterial = RawMaterial::where('id', 24)->first(); // ST 0001
@@ -72,6 +72,9 @@ class SingleHuntProduct implements IProduct {
         $settingBlockCost = 16 * $settingBlockMaterial->cost_per_unit;
         $stopSashMaterial = RawMaterial::where('name', 'STS 0001 ' . $firstFrameColorLetter)->first(); // STS 0001 (W or B)
         $stopSashCost = 2 * 3 * 0.083 * $stopSashMaterial->cost_per_unit;
+        $structuralSliconeMaterial = RawMaterial::where('id', 32)->first(); //STRUCTURAL SILICONE
+        $structuralSliconeMaterialCost = (($this->getGlassWidth() * 4) + ($this->getGlassHeigth() * 4)) * 0.083 * $structuralSliconeMaterial->cost_per_unit;
+        
         // GET OTHER BILLS
         $workBill = config('custom.work_bill');
         $rentBill = config('custom.rent_bill');
@@ -111,6 +114,7 @@ class SingleHuntProduct implements IProduct {
           $stopSashCost +
           $glassCost +
           $balancePrice +
+          $structuralSliconeMaterialCost +
           $screenCost +
           $workBill +
           $rentBill +

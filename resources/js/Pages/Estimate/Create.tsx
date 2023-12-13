@@ -5,7 +5,11 @@ import { estimateSchema } from './EstimateCommon'
 import EstimateForm from './EstimateForm'
 import { type PageProps, type Order, type Client } from '@/types'
 
-export default function Create ({ auth, frame_colors, glass_colors, clients }: PageProps & { frame_colors: string[], glass_colors: string[], clients: Client[] }) {
+export default function Create ({ auth, frame_colors, glass_colors, clients, glass_types }: PageProps & {
+  frame_colors: string[]
+  glass_colors: string[]
+  clients: Client[]
+  glass_types: string[] }) {
   const initialValues: Order = {
     id: 0,
     frame_color: '',
@@ -51,6 +55,7 @@ export default function Create ({ auth, frame_colors, glass_colors, clients }: P
                 isCreate={true}
                 glass_colors={glass_colors}
                 frame_colors={frame_colors}
+                glass_types={glass_types}
                 clients={clients}
                 setFieldValue={setFieldValue}
               />

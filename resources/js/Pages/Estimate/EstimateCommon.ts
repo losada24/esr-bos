@@ -8,6 +8,7 @@ export const estimateSchema = Yup.object({
   client_id: Yup.number().required('Client is required'),
   frame_color: Yup.string().required('Frame color is required'),
   glass_color: Yup.string().required('Glass color is required'),
+  glass_type: Yup.string().required('Glass type is required'),
   markup: Yup.number().required('Markup is required'),
   notes: Yup.string().max(255, 'Max 255 characters')
 })

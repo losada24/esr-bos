@@ -12,6 +12,7 @@ import { type Product } from '@/types/interfaces/product'
 import { type FixedWindows } from '@/types/interfaces/fixedWindows'
 import { type SingleHunt } from '@/types/interfaces/singleHunt'
 import { type Company } from '@/types/interfaces/company'
+import { type HorizontalRoller } from './interfaces/horizontalRoller'
 
 export type {
   User,
@@ -27,7 +28,8 @@ export type {
   Product,
   FixedWindows,
   Company,
-  SingleHunt
+  SingleHunt,
+  HorizontalRoller
 }
 
 /* interface ListUsersItem {

@@ -7,11 +7,13 @@ use Inertia\Inertia;
 use App\Enum\FrameColorEnum;
 use App\Enum\GlassColorEnum;
 use App\Models\Order;
-use App\Http\Requests\StoreSingleHuntRequest;
+use App\Http\Requests\StoreHorizontalRollerRequest;
 use App\Http\Requests\UpdateFixedWindowsRequest;
-use App\Actions\CreateSingleHunt;
+use App\Actions\CreateHorizontalRoller;
 use App\Models\Product;
-use App\Actions\UpdateSingleHunt;
+use App\Actions\UpdateHorizontalRoller;
+use App\Enum\HorizontalRollerConfigEnum;
+use App\Enum\HorizontalRollerHandleEnum;
 
 class HorizontalRollerController extends Controller
 {
@@ -23,9 +25,11 @@ class HorizontalRollerController extends Controller
 
   public function create($id)
   {
-      return Inertia::render('SingleHunt/Create', [
+      return Inertia::render('HorizontalRoller/Create', [
         'frame_colors' => array_values(FrameColorEnum::$FRAME_COLOR),
         'glass_colors' => array_values(GlassColorEnum::$GLASS_COLOR),
+        'config' => array_values(HorizontalRollerConfigEnum::$CONFIG),
+        'handle' => array_values(HorizontalRollerHandleEnum::$HANDLE),
         'estimate' => Order::with(['client'])->withCount(['products'])->findOrFail($id),
       ]);
   }
@@ -36,10 +40,11 @@ class HorizontalRollerController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(StoreSingleHuntRequest $storeSingleHuntRequest, CreateSingleHunt $createSingleHunt)
+    public function store(StoreHorizontalRollerRequest $storeHorizontalRollerRequest, CreateHorizontalRoller $createHorizontalRoller)
     {
-        $createSingleHunt->handle($storeSingleHuntRequest);
-        return redirect()->route('estimate.show', ['estimate' => $storeSingleHuntRequest->order_id]);
+        $createHorizontalRoller->handle($storeHorizontalRollerRequest);
+        return redirect()->route('estimate.show', ['estimate' => $storeHorizontalRollerRequest->order_id])
+          ->with('success', 'Horizontal Roller created successfully.');
     }
 
     /**
@@ -50,9 +55,12 @@ class HorizontalRollerController extends Controller
      */
     public function edit(Product $product)
     {
-      return Inertia::render('SingleHunt/Edit', [
+      $product->loadMissing('order');
+      return Inertia::render('HorizontalRoller/Edit', [
           'frame_colors' => array_values(FrameColorEnum::$FRAME_COLOR),
           'glass_colors' => array_values(GlassColorEnum::$GLASS_COLOR),
+          'config' => array_values(HorizontalRollerConfigEnum::$CONFIG),
+          'handle' => array_values(HorizontalRollerHandleEnum::$HANDLE),
           'product' => $product,
         ]);
     }
@@ -64,24 +72,10 @@ class HorizontalRollerController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(UpdateFixedWindowsRequest $updateFixedWindowsRequest, UpdateSingleHunt $updateFixedWindows, Product $product)
+    public function update(UpdateFixedWindowsRequest $updateFixedWindowsRequest, UpdateHorizontalRoller $updateFixedWindows, Product $product)
     {
         $updateFixedWindows->handle($updateFixedWindowsRequest, $product);
         return redirect()->route('estimate.show', ['estimate' => $product->order_id])
-          ->with('success', 'Single Hunt updated successfully.');
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function destroy(Product $product)
-    {
-        $product->delete();
-        return redirect()
-          ->back()
-          ->with('success', 'Single Hunt deleted successfully.');
+          ->with('success', 'Horizontal Roller updated successfully.');
     }
 }

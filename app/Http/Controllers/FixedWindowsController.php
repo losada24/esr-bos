@@ -39,7 +39,8 @@ class FixedWindowsController extends Controller
     public function store(StoreFixedWindowsRequest $storeFixWindowsRequest, CreateFixedWindows $createFixWindows)
     {
         $createFixWindows->handle($storeFixWindowsRequest);
-        return redirect()->route('estimate.show', ['estimate' => $storeFixWindowsRequest->order_id]);
+        return redirect()->route('estimate.show', ['estimate' => $storeFixWindowsRequest->order_id])
+          ->with('success', 'Fixed Windows created successfully.');
     }
 
     /**
@@ -50,6 +51,7 @@ class FixedWindowsController extends Controller
      */
     public function edit(Product $product)
     {
+      $product->loadMissing('order');
       return Inertia::render('FixedWindows/Edit', [
           'frame_colors' => array_values(FrameColorEnum::$FRAME_COLOR),
           'glass_colors' => array_values(GlassColorEnum::$GLASS_COLOR),
@@ -69,19 +71,5 @@ class FixedWindowsController extends Controller
         $updateFixedWindows->handle($updateFixedWindowsRequest, $product);
         return redirect()->route('estimate.show', ['estimate' => $product->order_id])
           ->with('success', 'Fixed Windows updated successfully.');
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function destroy(Product $product)
-    {
-        $product->delete();
-        return redirect()
-          ->back()
-          ->with('success', 'Fixed Windows deleted successfully.');
     }
 }

@@ -1,18 +1,20 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
 import { Head, router } from '@inertiajs/react'
 import { Formik, type FormikHelpers } from 'formik'
-import { type PageProps, type Order, type Client, type FixedWindows } from '@/types'
-import FixedWindowsForm from './FixedWindowsForm'
-import { fixedWindowsSchema } from './FixedWindowsCommon'
+import { type PageProps, type Order, type Client, type HorizontalRoller } from '@/types'
+import HorizontalRollerForm from './HorizontalRollerForm'
+import { horizontalRollerSchema } from './HorizontalRollerCommon'
 import { createNextMarkWithLeadingZero } from '@/Utils/mark'
 
-export default function Create ({ auth, frame_colors, glass_colors, estimate }: PageProps & {
+export default function Create ({ auth, frame_colors, glass_colors, estimate, handle, config }: PageProps & {
   frame_colors: string[]
   glass_colors: string[]
+  config: string[]
+  handle: string[]
   clients: Client[]
   estimate: Order
 }) {
-  const initialValues: FixedWindows = {
+  const initialValues: HorizontalRoller = {
     id: 0,
     order_id: estimate.id,
     mark: createNextMarkWithLeadingZero(estimate?.products_count ?? 0, 3),
@@ -24,11 +26,14 @@ export default function Create ({ auth, frame_colors, glass_colors, estimate }: 
     low_e: 'NONE',
     privacy: '',
     qty: 0,
-    markup: estimate.markup
+    markup: estimate.markup,
+    screen: false,
+    handle: '',
+    config: ''
   }
 
-  const handleSubmit = async (values: any, helpers: FormikHelpers<FixedWindows>) => {
-    router.post(route('fixed-windows.store'), values, {
+  const handleSubmit = async (values: any, helpers: FormikHelpers<HorizontalRoller>) => {
+    router.post(route('horizontal-roller.store'), values, {
       onError: (errors: any) => {
         helpers.setErrors(errors)
       }
@@ -38,24 +43,26 @@ export default function Create ({ auth, frame_colors, glass_colors, estimate }: 
   return (
       <AuthenticatedLayout
           auth={auth}
-          pageTitle={'Add Fixed Window'}
+          pageTitle={'Add Horizontal Roller'}
       >
-          <Head title={'Add Fixed Window'} />
-          <Formik<FixedWindows>
+          <Head title={'Add Horizontal Roller'} />
+          <Formik<HorizontalRoller>
             initialValues={initialValues}
-            validationSchema={fixedWindowsSchema}
+            validationSchema={horizontalRollerSchema}
             onSubmit={handleSubmit}
           >
             {({ errors, submitCount, values }) => (
-              <FixedWindowsForm
+              <HorizontalRollerForm
                 errors={errors}
                 submitCount={submitCount}
                 isCreate={true}
                 glass_colors={glass_colors}
                 frame_colors={frame_colors}
+                glassType={estimate.glass_type}
                 estimate_id={estimate.id}
                 values={values}
-                glassType={estimate.glass_type}
+                handle={handle}
+                config={config}
               />
             )}
           </Formik>

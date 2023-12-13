@@ -6,13 +6,14 @@ import { type FormikErrors } from 'formik'
 import { type Order, type Client } from '@/types'
 import Select from 'react-select'
 
-const EstimateForm = ({ submitCount, errors, isCreate, glass_colors, frame_colors, clients, setFieldValue, selectedClient }: {
+const EstimateForm = ({ submitCount, errors, isCreate, glass_colors, frame_colors, clients, setFieldValue, selectedClient, glass_types }: {
   submitCount: number
   errors: FormikErrors<Order>
   isCreate: boolean
   featured_image?: string
   frame_colors: string[]
   glass_colors: string[]
+  glass_types: string[]
   clients: Client[]
   setFieldValue: (field: string, value: any) => void
   selectedClient?: { label: string, value: number }
@@ -82,12 +83,14 @@ const EstimateForm = ({ submitCount, errors, isCreate, glass_colors, frame_color
           </div>
           {(submitCount && errors.markup) ? <InputError message={errors.markup} className="mt-2" /> : ''}
         </div>
+      </div>
+      <div className='grid gap-4 grid-cols-3'>
         <div className={submitCount ? (errors.frame_color) ? 'has-error' : 'has-success' : ''}>
           <label htmlFor="frame_color">Frame Color</label>
           <Field
             id="frame_color"
             name="frame_color"
-            className="form-input"
+            className="form-select"
             autoComplete="frame_color"
             placeholder='Frame Colors'
             as="select"
@@ -104,7 +107,7 @@ const EstimateForm = ({ submitCount, errors, isCreate, glass_colors, frame_color
           <Field
             id="glass_color"
             name="glass_color"
-            className="form-input"
+            className="form-select"
             autoComplete="glass_color"
             placeholder='Glass Color'
             as="select"
@@ -116,6 +119,25 @@ const EstimateForm = ({ submitCount, errors, isCreate, glass_colors, frame_color
           </Field>
           {(submitCount && errors.glass_color) ? <InputError message={errors.glass_color} className="mt-2" /> : ''}
         </div>
+        <div className={submitCount ? (errors.glass_type) ? 'has-error' : 'has-success' : ''}>
+          <label htmlFor="glass_type">Glass Type</label>
+          <Field
+            id="glass_type"
+            name="glass_type"
+            className="form-select"
+            autoComplete="glass_type"
+            placeholder='Glass Type'
+            as="select"
+          >
+            <option value="">Select Glass Type</option>
+            {glass_types.map((type, index) => (
+              <option key={index} value={type}>{type}</option>
+            ))}
+          </Field>
+          {(submitCount && errors.glass_type) ? <InputError message={errors.glass_type} className="mt-2" /> : ''}
+        </div>
+      </div>
+      <div className='grid gap-4 grid-cols-2'>
         <div className={submitCount ? (errors.tax_rate) ? 'has-error' : 'has-success' : ''}>
           <label htmlFor="name">Tax Rate</label>
           <div className="flex flex-1">

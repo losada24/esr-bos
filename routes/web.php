@@ -12,6 +12,7 @@ use App\Http\Controllers\FixedWindowsController;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\SingleHuntController;
+use App\Http\Controllers\HorizontalRollerController;
 
 /*
 |--------------------------------------------------------------------------
@@ -91,7 +92,7 @@ Route::middleware('auth')->group(function () {
       ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$CLIENT_ADMIN])
       ->name('estimate.order.store');
 
-    // FIX WINDOWS
+    // FIXED WINDOWS
     Route::get('/fixed-windows/{id}/create', [FixedWindowsController::class, 'create'])
       ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$CLIENT_ADMIN . "|" . RoleEnum::$CLIENT]) // TODO: Validate if the user is the owner of the order
       ->name('fixed-windows.create');
@@ -124,6 +125,23 @@ Route::middleware('auth')->group(function () {
     Route::put('/single-hunt/update/{product}', [SingleHuntController::class, 'update'])
       ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$CLIENT_ADMIN . "|" . RoleEnum::$CLIENT]) // TODO: Validate if the user is the owner of the order
       ->name('single-hunt.update');
+
+    // HORIZONTAL ROLLER
+    Route::get('/horizontal-roller/{id}/create', [HorizontalRollerController::class, 'create'])
+      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$CLIENT_ADMIN . "|" . RoleEnum::$CLIENT]) // TODO: Validate if the user is the owner of the order
+      ->name('horizontal-roller.create');
+    
+    Route::post('/horizontal-roller/store', [HorizontalRollerController::class, 'store'])
+      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$CLIENT_ADMIN . "|" . RoleEnum::$CLIENT])
+      ->name('horizontal-roller.store');
+    
+    Route::get('/horizontal-roller/edit/{product}', [HorizontalRollerController::class, 'edit'])
+      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$CLIENT_ADMIN . "|" . RoleEnum::$CLIENT]) // TODO: Validate if the user is the owner of the order
+      ->name('horizontal-roller.edit');
+
+    Route::put('/horizontal-roller/update/{product}', [HorizontalRollerController::class, 'update'])
+      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$CLIENT_ADMIN . "|" . RoleEnum::$CLIENT]) // TODO: Validate if the user is the owner of the order
+      ->name('horizontal-roller.update');
     
     // ORDERS
     Route::get('/order', [OrderController::class, 'index'])

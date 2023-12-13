@@ -2,16 +2,26 @@ import React from 'react'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
 import { Head, router } from '@inertiajs/react'
 import { Formik, type FormikHelpers } from 'formik'
-import { type PageProps, type Product, type Client, type FixedWindows } from '@/types'
-import FixedWindowsForm from './FixedWindowsForm'
-import { fixedWindowsSchema } from './FixedWindowsCommon'
+import { type PageProps, type Product, type Client, type HorizontalRoller } from '@/types'
+import SingleHuntForm from './HorizontalRollerForm'
+import { horizontalRollerSchema } from './HorizontalRollerCommon'
 
-export default function Edit ({ auth, product, frame_colors, glass_colors }: PageProps & {
+interface ProductWithExtras extends Product {
+  extras: {
+    screen: boolean
+    handle: string
+    config: string
+  }
+}
+
+export default function Edit ({ auth, product, frame_colors, glass_colors, handle, config }: PageProps & {
   frame_colors: string[]
   glass_colors: string[]
+  config: string[]
+  handle: string[]
   clients: Client[]
-  product: Product }) {
-  const initialValues: FixedWindows = {
+  product: ProductWithExtras }) {
+  const initialValues: HorizontalRoller = {
     id: product.id,
     order_id: product.order_id,
     mark: product.line_item_name,
@@ -23,11 +33,14 @@ export default function Edit ({ auth, product, frame_colors, glass_colors }: Pag
     low_e: product.low_e,
     privacy: product.privacy,
     qty: product.qty,
-    markup: product.markup
+    markup: product.markup,
+    screen: product.extras.screen,
+    handle: product.extras.handle,
+    config: product.extras.config
   }
 
-  const handleSubmit = async (values: any, helpers: FormikHelpers<FixedWindows>) => {
-    router.put(route('fixed-windows.update', values.id), values, {
+  const handleSubmit = async (values: any, helpers: FormikHelpers<HorizontalRoller>) => {
+    router.put(route('horizontal-roller.update', values.id), values, {
       onError: (errors: any) => {
         helpers.setErrors(errors)
       }
@@ -37,16 +50,16 @@ export default function Edit ({ auth, product, frame_colors, glass_colors }: Pag
   return (
       <AuthenticatedLayout
           auth={auth}
-          pageTitle='Edit Estimate'
+          pageTitle='Edit Horizonral Roller'
       >
         <Head title="Edit" />
-        <Formik<FixedWindows>
+        <Formik<HorizontalRoller>
           initialValues={initialValues}
-          validationSchema={fixedWindowsSchema}
+          validationSchema={horizontalRollerSchema}
           onSubmit={handleSubmit}
         >
           {({ errors, submitCount, values }) => (
-            <FixedWindowsForm
+            <SingleHuntForm
               errors={errors}
               submitCount={submitCount}
               isCreate={false}
@@ -55,6 +68,8 @@ export default function Edit ({ auth, product, frame_colors, glass_colors }: Pag
               estimate_id={product.order_id}
               values={values}
               glassType={product?.order?.glass_type ?? ''}
+              handle={handle}
+              config={config}
             />
           )}
         </Formik>

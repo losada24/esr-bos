@@ -39,7 +39,8 @@ class SingleHuntController extends Controller
     public function store(StoreSingleHuntRequest $storeSingleHuntRequest, CreateSingleHunt $createSingleHunt)
     {
         $createSingleHunt->handle($storeSingleHuntRequest);
-        return redirect()->route('estimate.show', ['estimate' => $storeSingleHuntRequest->order_id]);
+        return redirect()->route('estimate.show', ['estimate' => $storeSingleHuntRequest->order_id])
+          ->with('success', 'Single Hunt created successfully.');
     }
 
     /**
@@ -50,6 +51,7 @@ class SingleHuntController extends Controller
      */
     public function edit(Product $product)
     {
+      $product->loadMissing('order');
       return Inertia::render('SingleHunt/Edit', [
           'frame_colors' => array_values(FrameColorEnum::$FRAME_COLOR),
           'glass_colors' => array_values(GlassColorEnum::$GLASS_COLOR),
@@ -69,19 +71,5 @@ class SingleHuntController extends Controller
         $updateFixedWindows->handle($updateFixedWindowsRequest, $product);
         return redirect()->route('estimate.show', ['estimate' => $product->order_id])
           ->with('success', 'Single Hunt updated successfully.');
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function destroy(Product $product)
-    {
-        $product->delete();
-        return redirect()
-          ->back()
-          ->with('success', 'Single Hunt deleted successfully.');
     }
 }

@@ -1,3 +1,5 @@
+import { type Order } from './order'
+
 export interface Product {
   id: number
   system: string
@@ -11,11 +13,12 @@ export interface Product {
   glass_color: string
   low_e: string
   privacy: string
-  extras: string
+  // extras: string
   price: number
   created_at?: Date
   order_id: number
   user_id: number
   unit_price: number
   total_price: number
+  order?: Order
 }

@@ -19,6 +19,7 @@ class CreateEstimate {
           'client_id' => $request->client_id,
           'frame_color' => $request->frame_color,
           'glass_color' => $request->glass_color,
+          'glass_type' => $request->glass_type,
           'markup' => $request->markup,
           'notes' => $request->notes,
           'user_id' => auth()->user()->id,

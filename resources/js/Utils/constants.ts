@@ -127,3 +127,4 @@ export const FOOT: string = 'FOOT'
 export const UNIT: string = 'UNIT'
 export const SQFT: string = 'SQFT'
 export const LENGTH_OF_BARS: number = 16
+export const CONFIG_XO: string = 'XO'

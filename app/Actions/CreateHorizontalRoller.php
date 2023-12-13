@@ -5,13 +5,13 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\Product;
 use App\Enum\ProductSystemEnum;
-use App\Products\SingleHuntProduct;
+use App\Products\HorizontalRollerProduct;
 
-class CreateSingleHunt {
+class CreateHorizontalRoller {
 
   public function handle(Request $request) {
     DB::transaction(function() use ($request) {
-      $fixedWindowsProduct = new SingleHuntProduct(
+      $horizontalRollerProduct = new HorizontalRollerProduct(
         $request->width,
         $request->height,
         $request->frame_color,
@@ -19,13 +19,13 @@ class CreateSingleHunt {
         $request->screen
       );
 
-      $unitPrice = $fixedWindowsProduct->getUnitPrice();
+      $unitPrice = $horizontalRollerProduct->getUnitPrice();
       $markupValue = $unitPrice * ($request->markup / 100);
       $unitPriceWithMarkup = $unitPrice + $markupValue;
 
       $product = Product::create([
         'order_id' => $request->order_id,
-        'system' => ProductSystemEnum::$SINGLE_HUNT,
+        'system' => ProductSystemEnum::$HORIZONTAL_ROLLER,
         'width' => $request->width,
         'height' => $request->height,
         'line_item_name' => $request->mark,
@@ -39,14 +39,16 @@ class CreateSingleHunt {
         'unit_price' => $unitPriceWithMarkup,
         'total_price' => $unitPriceWithMarkup * $request->qty,
         'extras' => [
-          'screen' => $request->screen
+          'screen' => $request->screen,
+          'config' => $request->config,
+          'handle' => $request->handle,
         ],
         'user_id' => auth()->user()->id,
       ]);
       
       if( !$product )
       {
-          throw new \Exception('Single Hunt not created');
+          throw new \Exception('Horizontal Roller not created');
       }
     });
   }

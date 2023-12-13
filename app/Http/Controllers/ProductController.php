@@ -5,20 +5,21 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Models\Order;
+use App\Models\Product;
 
 class ProductController extends Controller
 {
-    /**
-     * Show the form for creating a new resource.
+     /**
+     * Remove the specified resource from storage.
      *
+     * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function index($id)
+    public function destroy(Product $product)
     {
-        return Inertia::render('Product/Index', [
-          // 'frame_colors' => array_values(FrameColorEnum::$FRAME_COLOR),
-          // 'glass_colors' => array_values(GlassColorEnum::$GLASS_COLOR),
-          'estimate' => Order::with(['client', 'products'])->findOrFail($id),
-        ]);
+        $product->delete();
+        return redirect()
+          ->back()
+          ->with('success', 'Product deleted successfully.');
     }
 }

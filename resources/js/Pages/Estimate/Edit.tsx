@@ -6,7 +6,12 @@ import { estimateSchema } from './EstimateCommon'
 import EstimateForm from './EstimateForm'
 import { type PageProps, type Order, type Client } from '@/types'
 
-export default function Edit ({ auth, estimate, frame_colors, glass_colors, clients }: PageProps & { estimate: Order, frame_colors: string[], glass_colors: string[], clients: Client[] }) {
+export default function Edit ({ auth, estimate, frame_colors, glass_colors, clients, glass_types }: PageProps & {
+  estimate: Order
+  frame_colors: string[]
+  glass_colors: string[]
+  glass_types: string[]
+  clients: Client[] }) {
   const initialValues: Order = {
     id: estimate.id,
     frame_color: estimate.frame_color,
@@ -51,6 +56,7 @@ export default function Edit ({ auth, estimate, frame_colors, glass_colors, clie
               isCreate={false}
               glass_colors={glass_colors}
               frame_colors={frame_colors}
+              glass_types={glass_types}
               clients={clients}
               setFieldValue={setFieldValue}
               selectedClient={{ label: estimate.client?.name ?? '', value: estimate.client_id }}

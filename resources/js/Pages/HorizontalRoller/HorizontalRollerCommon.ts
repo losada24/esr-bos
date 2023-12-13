@@ -1,6 +1,6 @@
 import * as Yup from 'yup'
 
-export const singleHuntSchema = Yup.object({
+export const horizontalRollerSchema = Yup.object({
   id: Yup.number(),
   mark: Yup.string().required('Name is required').max(255, 'Max 255 characters'),
   qty: Yup.number().required('Qty is required').min(1, 'Min 1'),
@@ -12,5 +12,7 @@ export const singleHuntSchema = Yup.object({
   privacy: Yup.string().required('Privacy is required'),
   low_e: Yup.string().required('Glass coating is required'),
   glass_type: Yup.string().required('Glass type is required'),
-  screen: Yup.boolean()
+  screen: Yup.boolean(),
+  config: Yup.string().required('Config is required'),
+  handle: Yup.string().required('Handle is required')
 })

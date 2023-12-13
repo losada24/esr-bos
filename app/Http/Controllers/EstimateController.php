@@ -12,6 +12,7 @@ use App\Http\Requests\UpdateEstimateRequest;
 use App\Http\Requests\StoreEstimateToOrderRequest;
 use App\Enum\FrameColorEnum;
 use App\Enum\GlassColorEnum;
+use App\Enum\GlassTypeEnum;
 use App\Http\Resources\OrderCollection;
 use App\Models\Client;
 use App\Models\Order;
@@ -47,7 +48,8 @@ class EstimateController extends Controller
         return Inertia::render('Estimate/Create', [
           'frame_colors' => array_values(FrameColorEnum::$FRAME_COLOR),
           'glass_colors' => array_values(GlassColorEnum::$GLASS_COLOR),
-          'clients' => Client::all(), // TODO: ONLY SHOW CLIENTS THAT BELONG TO THE USER
+          'glass_types' => array_values(GlassTypeEnum::$GLASS_TYPE),
+          'clients' => Client::all(),
         ]);
     }
 
@@ -76,6 +78,7 @@ class EstimateController extends Controller
           'estimate' => $estimate,
           'frame_colors' => array_values(FrameColorEnum::$FRAME_COLOR),
           'glass_colors' => array_values(GlassColorEnum::$GLASS_COLOR),
+          'glass_types' => array_values(GlassTypeEnum::$GLASS_TYPE),
           'clients' => Client::all(),
         ]);
     }

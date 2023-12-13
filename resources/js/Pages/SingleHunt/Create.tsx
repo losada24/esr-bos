@@ -54,6 +54,7 @@ export default function Create ({ auth, frame_colors, glass_colors, estimate }: 
                 isCreate={true}
                 glass_colors={glass_colors}
                 frame_colors={frame_colors}
+                glassType={estimate.glass_type}
                 estimate_id={estimate.id}
                 values={values}
               />

@@ -4,19 +4,24 @@ import InputError from '@/Components/InputError'
 import PrimaryButton from '@/Components/PrimaryButton'
 import { Link } from '@inertiajs/react'
 import { type FormikErrors } from 'formik'
-import { type FixedWindows } from '@/types'
-import FixedWindowsDrawing from './FixedWindowsDrawing'
+import { type HorizontalRoller } from '@/types'
+import HorizontalRollerDrawing from './HorizontalRollerDrawing'
 
-const FixedWindowsForm = ({ submitCount, errors, isCreate, frame_colors, glass_colors, estimate_id, values, glassType }: {
+const HorizontalRollerForm = ({ submitCount, errors, isCreate, frame_colors, glass_colors, estimate_id, values, glassType, handle, config }: {
   submitCount: number
-  errors: FormikErrors<FixedWindows>
+  errors: FormikErrors<HorizontalRoller>
   isCreate: boolean
   frame_colors: string[]
   glass_colors: string[]
   estimate_id: number
   glassType: string
-  values: FixedWindows
+  values: HorizontalRoller
+  config: string[]
+  handle: string[]
 }) => {
+  const getVentBottom = (width: number) => {
+    return (width / 2) - (5.25 / 2) - 0.125 + 2.188
+  }
   const [glassTypes, setGlassTypes] = useState<string[]>([])
   useEffect(() => {
     if (values.glass_color !== '' && values.low_e !== '' && values.privacy !== '') {
@@ -116,6 +121,50 @@ const FixedWindowsForm = ({ submitCount, errors, isCreate, frame_colors, glass_c
                 </div>
                 {(submitCount && errors.markup) ? <InputError message={errors.markup} className="mt-2" /> : ''}
               </div>
+              <div className={submitCount ? (errors.config) ? 'has-error' : 'has-success' : ''}>
+                <label htmlFor="config">Config</label>
+                <Field
+                  id="config"
+                  name="config"
+                  className="form-select"
+                  autoComplete="config"
+                  placeholder='Config'
+                  as="select"
+                >
+                  <option value="">Select Config</option>
+                  {config.map((config, index) => (
+                    <option key={index} value={config}>{config}</option>
+                  ))}
+                </Field>
+                {(submitCount && errors.config) ? <InputError message={errors.config} className="mt-2" /> : ''}
+              </div>
+              <div className={submitCount ? (errors.handle) ? 'has-error' : 'has-success' : ''}>
+                <label htmlFor="handle">Handle</label>
+                <Field
+                  id="handle"
+                  name="handle"
+                  className="form-select"
+                  autoComplete="handle"
+                  placeholder='Handle'
+                  as="select"
+                >
+                  <option value="">Select Handle</option>
+                  {handle.map((handle, index) => (
+                    <option key={index} value={handle}>{handle}</option>
+                  ))}
+                </Field>
+                {(submitCount && errors.handle) ? <InputError message={errors.handle} className="mt-2" /> : ''}
+              </div>
+              <div className={submitCount ? (errors.screen) ? 'has-error inline-flex' : 'has-success inline-flex' : 'inline-flex'}>
+                <Field
+                  id="screen"
+                  name="screen"
+                  className="form-checkbox"
+                  type='checkbox'
+                />
+                <label htmlFor="screen">Screen</label>
+                {(submitCount && errors.screen) ? <InputError message={errors.screen} className="mt-2" /> : ''}
+              </div>
             </div>
           </fieldset>
           <fieldset>
@@ -202,7 +251,12 @@ const FixedWindowsForm = ({ submitCount, errors, isCreate, frame_colors, glass_c
         <h3 className='text-lg font-semibold'>Preview</h3>
         <div className='h-full flex justify-center align-middle'>
           {values.width !== 0 && values.height !== 0
-            ? <FixedWindowsDrawing width={values.width} height={values.height} />
+            ? <HorizontalRollerDrawing
+                width={values.width}
+                height={values.height}
+                config={values.config}
+                widthtOfMovementPart={getVentBottom(values.height)}
+              />
             : ''
           }
         </div>
@@ -211,4 +265,4 @@ const FixedWindowsForm = ({ submitCount, errors, isCreate, frame_colors, glass_c
   )
 }
 
-export default FixedWindowsForm
+export default HorizontalRollerForm
