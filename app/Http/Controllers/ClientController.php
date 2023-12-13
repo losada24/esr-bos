@@ -11,6 +11,7 @@ use App\Http\Requests\StoreClientRequest;
 use App\Http\Requests\UpdateClientRequest;
 use App\Http\Resources\UserResource;
 use App\Enum\States;
+use App\Models\Company;
 
 class ClientController extends Controller
 {
@@ -22,7 +23,7 @@ class ClientController extends Controller
     public function index(Request $request)
     {
         return Inertia::render('Client/Index', [
-          'clients' => Client::filter($request->only(['text']))
+          'clients' => Client::with(['company'])->filter($request->only(['text']))
             ->orderBy('name')
             ->paginate()
             ->withQueryString()
@@ -38,6 +39,7 @@ class ClientController extends Controller
     {
         return Inertia::render('Client/Create', [
           'states' => array_values(States::$USA_STATES),
+          'companies' => Company::orderBy('name')->orderBy('name')->get()
         ]);
     }
 
@@ -65,6 +67,7 @@ class ClientController extends Controller
         return Inertia::render('Client/Edit', [
           'client' => $client,
           'states' => array_values(States::$USA_STATES),
+          'companies' => Company::orderBy('name')->orderBy('name')->get()
         ]);
     }
 

@@ -26,7 +26,8 @@ class Client extends Model
       'city',
       'state',
       'zip',
-      'user_id'
+      'user_id',
+      'company_id'
     ];
 
     public function scopeFilter($query, array $filters)
@@ -39,8 +40,8 @@ class Client extends Model
     protected static function booted(): void
     {
       static::addGlobalScope('role', function (Builder $query) {
-        if (auth()->user()->hasRole(RoleEnum::$CLIENT_ADMIN )) {
-          $query->where('user_id', auth()->user()->id);
+        if (auth()->user()->hasRole(RoleEnum::$CLIENT_ADMIN ) || auth()->user()->hasRole(RoleEnum::$CLIENT)) {
+          $query->where('company_id', auth()->user()->company_id);
         }
       });
     }
@@ -48,5 +49,10 @@ class Client extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function company()
+    {
+        return $this->belongsTo(Company::class);
     }
 }

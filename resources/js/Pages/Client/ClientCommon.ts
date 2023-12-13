@@ -22,4 +22,5 @@ export interface Client {
   state: string
   zip: string
   address: string
+  company_id: number
 }

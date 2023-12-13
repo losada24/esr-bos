@@ -9,7 +9,6 @@ use App\Traits\Reports;
 
 class DashboardController extends Controller
 {
-  use Reports;
 
   public function index(Request $request): Response
   {

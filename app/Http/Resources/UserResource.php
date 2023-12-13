@@ -22,6 +22,7 @@ class UserResource extends JsonResource
           'reference_code' => $this->reference_code ?? '',
           'created_at' => $this->created_at,
           'updated_at' => $this->updated_at,
+          'company_id' => $this->company_id ?? '',
         ];
     }
 }

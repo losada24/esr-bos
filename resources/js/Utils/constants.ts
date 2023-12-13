@@ -6,6 +6,20 @@ export type RtlClass = 'rtl' | 'ltr'
 export type Animation = 'animate__fadeIn' | 'animate__fadeInDown' | 'animate__fadeInUp' | 'animate__fadeInLeft' | 'animate__fadeInRight' | 'animate__slideInDown' | 'animate__slideInLeft' | 'animate__slideInRight' | 'animate__zoomIn'
 export type Navbar = 'navbar-sticky' | 'navbar-floating' | 'navbar-static'
 
+export const ESTIMATE_STATUS: string = 'estimate'
+export const ACCOUNTING_STATUS: string = 'accounting'
+export const PRODUCTION_STATUS: string = 'production'
+export const PRODUCTION_COMPLETED: string = 'production completed'
+export interface Status {
+  id: string
+  color: string
+  label: string
+}
+
+export const STATUS: Status[] = [
+  { id: ESTIMATE_STATUS, color: 'bg-primary', label: ESTIMATE_STATUS.toUpperCase() }
+]
+
 export interface ThemeConfig {
   locale: Locale
   theme: Theme
@@ -35,7 +49,9 @@ export const THEME_CONFIG: ThemeConfig = {
 export const ROLES = {
   ADMIN: 'admin',
   CLIENT_ADMIN: 'client_admin',
-  CLIENT: 'client'
+  CLIENT: 'client',
+  ACCOUNTING: 'accounting',
+  PRODUCTION: 'production'
 }
 
 export const PERSMISSION_USERS_LIST = 'users list'
@@ -60,3 +76,55 @@ export const PERSMISSIONS = [
 export const PHONE_REG_EXP = /^((\\+[1-9]{1,4}[ \\-]*)|(\\([0-9]{2,3}\\)[ \\-]*)|([0-9]{2,4})[ \\-]*)*?[0-9]{3,4}?[ \\-]*[0-9]{3,4}?$/
 export const COMPANY_NAME: string = import.meta.env.VITE_COMPANY_NAME
 export const RECAPTCHA_SITE_KEY: string = import.meta.env.VITE_RECAPTCHA_SITE_KEY
+export type PRODUCT_SYSTEM = 'FIXED WINDOWS' | 'SINGLE HUNT' | 'HORIZONTAL ROLLER'
+export const PRODUCT_SYSTEMS = {
+  FIXED_WINDOWS: 'FIXED WINDOWS',
+  SINGLE_HUNT: 'SINGLE HUNT',
+  HORIZONTAL_ROLLER: 'HORIZONTAL ROLLER'
+}
+
+export const COLORS: string[] = [
+  '#020617',
+  '#64748b',
+  '#450a0a',
+  '#dc2626',
+  '#fca5a5',
+  '#fb923c',
+  '#fbbf24',
+  '#a3e635',
+  '#16a34a',
+  '#1e40af',
+  '#93c5fd',
+  '#6b21a8',
+  '#4c0519'
+]
+
+export const SQUARE = 'SQUARE'
+export const RECTANGLE = 'RECTANGLE'
+export const CIRCLE = 'CIRCLE'
+export const TRIANGLE = 'TRIANGLE'
+export const TRAPEZOID = 'TRAPEZOID'
+export const PARALLELOGRAM = 'PARALLELOGRAM'
+// export const PENTAGON = 'PENTAGON'
+// export const HEXAGON = 'HEXAGON'
+// export const OCTAGON = 'OCTAGON'
+// export const RIGHT_TRIANGLE = 'RIGHT_TRIANGLE'
+
+export const SHAPES: string[] = [
+  SQUARE,
+  CIRCLE,
+  TRAPEZOID,
+  TRIANGLE,
+  PARALLELOGRAM,
+  RECTANGLE
+  // RIGHT_TRIANGLE,
+  // PENTAGON,
+  // HEXAGON,
+  // OCTAGON
+]
+
+export const FOOT: string = 'FOOT'
+export const UNIT: string = 'UNIT'
+export const SQFT: string = 'SQFT'
+export const LENGTH_OF_BARS: number = 16
+export const CONFIG_XO: string = 'XO'

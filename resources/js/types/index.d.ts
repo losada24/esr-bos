@@ -1,57 +1,38 @@
-export interface Role {
+import { type User } from '@/types/interfaces/user'
+import { type Auth } from '@/types/interfaces/auth'
+import { type Client } from '@/types/interfaces/client'
+import { type Flash } from '@/types/interfaces/flash'
+import { type PageProps } from '@/types/types/pageProps'
+import { type RawMaterial } from '@/types/interfaces/rawMaterial'
+import { type PaginatorLink } from '@/types/interfaces/paginatorLink'
+import { type Role } from '@/types/interfaces/role'
+import { type ModalProps } from '@/types/interfaces/modalProps'
+import { type Order } from '@/types/interfaces/order'
+import { type Product } from '@/types/interfaces/product'
+import { type FixedWindows } from '@/types/interfaces/fixedWindows'
+import { type SingleHunt } from '@/types/interfaces/singleHunt'
+import { type Company } from '@/types/interfaces/company'
+import { type HorizontalRoller } from './interfaces/horizontalRoller'
+
+export type {
+  User,
+  Auth,
+  Client,
+  Flash,
+  PageProps,
+  RawMaterial,
+  PaginatorLink,
+  Role,
+  ModalProps,
+  Order,
+  Product,
+  FixedWindows,
+  Company,
+  SingleHunt,
+  HorizontalRoller
+}
+
+/* interface ListUsersItem {
   id: number
   name: string
-  guard_name: string
-  created_at: Date
-  updated_at: Date
-}
-
-export interface User {
-  id: number
-  name: string
-  email: string
-  email_verified_at: string
-  roles: Role[]
-}
-
-export interface Client {
-  id: number
-  name: string
-  email: string
-  phone: string
-  city: string
-  state: string
-  zip: string
-  address: string
-  user_id: number
-  user: User
-}
-
-export interface PaginatorLink {
-  active: boolean
-  label: string
-  url: string
-}
-
-export interface Flash {
-  success: string
-  error: string
-}
-
-export interface Auth {
-  user: User
-}
-
-interface ListUsersItem {
-  id: number
-  name: string
-}
-
-export type PageProps<
-  T extends Record<string, unknown> = Record<string, unknown>,
-> = T & {
-  auth: {
-    user: User
-  }
-  flash: Flash
-}
+} */

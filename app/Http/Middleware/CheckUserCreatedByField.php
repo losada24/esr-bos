@@ -28,7 +28,7 @@ class CheckUserCreatedByField
     function CheckCreatedByAttribute($request)
     {
         $user = User::find($request->id);
-        if ($user != null && $user->created_by == auth()->user()->id) {
+        if ($user != null && $user->company_id == auth()->user()->company_id) {
             return true;
         } else {
             return false;

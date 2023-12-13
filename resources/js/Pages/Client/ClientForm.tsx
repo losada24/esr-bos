@@ -4,8 +4,9 @@ import PrimaryButton from '@/Components/PrimaryButton'
 import { Link } from '@inertiajs/react'
 import { type FormikErrors } from 'formik'
 import { type Client } from './ClientCommon'
+import { type Company } from '@/types'
 
-const ClientForm = ({ submitCount, errors, isCreate, states }: { submitCount: number, errors: FormikErrors<Client>, isCreate: boolean, states: string[] }) => {
+const ClientForm = ({ submitCount, errors, isCreate, states, companies, isAdmin }: { submitCount: number, errors: FormikErrors<Client>, isCreate: boolean, states: string[], isAdmin: boolean, companies: Company[] }) => {
   return (
     <Form className='space-y-5'>
       <div className={submitCount ? (errors.name) ? 'has-error' : 'has-success' : ''}>
@@ -92,6 +93,20 @@ const ClientForm = ({ submitCount, errors, isCreate, states }: { submitCount: nu
         />
         {(submitCount && errors.zip) ? <InputError message={errors.zip} className="mt-2" /> : ''}
       </div>
+      {isAdmin && (
+        <div className={submitCount ? (errors.company_id ? 'has-error' : 'has-success') : ''}>
+          <label htmlFor="company_id">Company</label>
+          <Field as="select" name="company_id" className="form-select">
+              <option value="">Select Company</option>
+              {companies.map((company: Company) => {
+                return (
+                  <option key={company.id} value={company.id}>{company.name}</option>
+                )
+              })}
+          </Field>
+          {(submitCount && errors.company_id) ? <InputError message={errors.company_id} className="mt-2" /> : ''}
+        </div>
+      )}
       <div className="flex items-center justify-between mt-4">
         <Link className='btn btn-danger uppercase' href={route('client.index')}>Cancel</Link>
         <PrimaryButton className="btn btn-primary" type='submit'>

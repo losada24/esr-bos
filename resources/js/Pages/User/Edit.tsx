@@ -3,15 +3,20 @@ import { Head, router } from '@inertiajs/react'
 import { Formik, type FormikHelpers } from 'formik'
 import { userUpdateSchema, type UserPageProps, type User } from './UserCommon'
 import UserForm from './UserForm'
+import { type Role } from '@/types'
+import { isAdmin } from '@/Utils/user'
 
-export default function Edit ({ auth, roles, user }: UserPageProps) {
+export default function Edit ({ auth, roles, user, companies }: UserPageProps) {
+  const IS_ADMIN = isAdmin(auth.user.roles.map((role: Role) => role.name))
   const initialValues: User = {
     id: user?.data.id ?? 0,
     name: user?.data.name ?? '',
     email: user?.data.email ?? '',
     password: '',
     password_confirmation: '',
-    role: user?.data.role ?? 0
+    role: user?.data.role ?? 0,
+    company_id: user?.data.company_id ?? 0,
+    mockup: user?.data.mockup ?? 0
   }
 
   const handleSubmit = async (values: any, helpers: FormikHelpers<User>) => {
@@ -39,6 +44,8 @@ export default function Edit ({ auth, roles, user }: UserPageProps) {
               submitCount={submitCount}
               roles={roles}
               isCreate={false}
+              companies={companies}
+              isAdmin={IS_ADMIN}
             />
           )}
         </Formik>

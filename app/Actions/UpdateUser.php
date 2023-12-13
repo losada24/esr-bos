@@ -5,6 +5,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
+use App\Enum\RoleEnum;
 
 class UpdateUser {
 
@@ -16,10 +17,17 @@ class UpdateUser {
       {
           throw new \Exception('Not not updated');
       }
-      
+
+      $company_id = auth()->user()->company_id;
+      if (auth()->user()->hasRole(RoleEnum::$ADMIN)) {
+        $company_id = $request->company_id;
+      }
+
       $userData = [
         'name' => $request->name,
         'email' => $request->email,
+        'company_id' => $company_id,
+        'markup' => $request->markup,
       ];
 
       if ($request->password) {
