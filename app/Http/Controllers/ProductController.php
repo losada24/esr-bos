@@ -17,9 +17,10 @@ class ProductController extends Controller
      */
     public function destroy(Product $product)
     {
+        $estimate = $product->order_id;
         $product->delete();
         return redirect()
-          ->back()
+          ->route('estimate.show', ['estimate' => $estimate])
           ->with('success', 'Product deleted successfully.');
     }
 }

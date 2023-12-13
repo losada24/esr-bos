@@ -11,10 +11,9 @@ import AngleIcon from '@/Components/Icons/AngleIcon'
 import DeleteIcon from '@/Components/Icons/DeleteIcon'
 import PriceSummary from './PriceSummary'
 import { createMarkWithLeadingZero } from '@/Utils/mark'
-import { PRODUCT_SYSTEMS, ESTIMATE_STATUS, PRODUCTION_STATUS } from '@/Utils/constants'
+import { PRODUCT_SYSTEMS, ESTIMATE_STATUS } from '@/Utils/constants'
 import MoneyIcon from '@/Components/Icons/MoneyIcon'
 import EstimatePaymentModal from './EstimatePaymentModal'
-import HammerIcon from '@/Components/Icons/HammerIcon'
 
 export default function Create ({ auth, estimate }: PageProps & {
   clients: Client[]
@@ -188,7 +187,11 @@ export default function Create ({ auth, estimate }: PageProps & {
                                   <EditIcon />
                                 </button>
                                 <button
-                                  onClick={() => { route('product.destroy', id) }}
+                                  onClick={() => {
+                                    if (confirm('Are you sure you want to delete this product?')) {
+                                      router.delete(route('product.destroy', id))
+                                    }
+                                  }}
                                 >
                                   <DeleteIcon />
                                 </button>

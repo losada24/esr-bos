@@ -13,6 +13,7 @@ use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\SingleHuntController;
 use App\Http\Controllers\HorizontalRollerController;
+use App\Http\Controllers\ProductController;
 
 /*
 |--------------------------------------------------------------------------
@@ -142,6 +143,11 @@ Route::middleware('auth')->group(function () {
     Route::put('/horizontal-roller/update/{product}', [HorizontalRollerController::class, 'update'])
       ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$CLIENT_ADMIN . "|" . RoleEnum::$CLIENT]) // TODO: Validate if the user is the owner of the order
       ->name('horizontal-roller.update');
+
+    // PRODUCT DELETE
+    Route::delete('/product/{product}', [ProductController::class, 'destroy'])
+      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$CLIENT_ADMIN . "|" . RoleEnum::$CLIENT]) //TODO: Validate if the user is the owner of the order
+      ->name('product.destroy');
     
     // ORDERS
     Route::get('/order', [OrderController::class, 'index'])
