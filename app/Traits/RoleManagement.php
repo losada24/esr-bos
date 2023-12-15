@@ -12,7 +12,9 @@ trait RoleManagement {
                 $roles = [
                   RoleEnum::$ADMIN,
                   RoleEnum::$CLIENT_ADMIN,
-                  RoleEnum::$CLIENT
+                  RoleEnum::$CLIENT,
+                  RoleEnum::$ACCOUNTING,
+                  RoleEnum::$PRODUCTION
                 ];
                 break;
             case RoleEnum::$CLIENT_ADMIN:

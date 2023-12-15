@@ -35,36 +35,121 @@ class HorizontalRollerProduct implements IProduct {
       return $this->getGlassHeigth() - 0.25 - 0.15;
     }
 
+    public function getVentJamb() {
+      return $this->height - 5.23 - 0.15;
+    }
+
+    public function getVentBottomAndTop() {
+      return $this->getGlassWidth() + 2.188;
+    }
+
+    public function getFixedMeetingRail() {
+      return $this->height - 5.188;
+    }
+
+    public function getMoveGlazingBead() {
+      return $this->getMoveGlassHeight() + 0.125;
+    }
+
+    public function getGlazingBeadWidth() {
+      return $this->getGlassWidth() - 0.75;
+    }
+
+    public function getScreenWidth() {
+      return ($this->width / 2) - 0.25;
+    }
+
+    public function getScreenHeigth() {
+      return $this->height - 5.5;
+    }
+
+    public function getFrameSill() {
+      return $this->width - 1.562;
+    }
+
+    public function getSillTrackRail() {
+      return $this->getFrameSill() - 1;
+    }
+
+    public function getSteelReiceforment() {
+      return $this->getFixedMeetingRail() - 1;
+    }
+
+    public function getWeatherStripMeetRailSash() {
+      return 2 * $this->getVentJamb() + $this->getFixedMeetingRail();
+    }
+
+    public function getTSlotSealGlazingBeat() {
+      return (4 * $this->getGlassWidth()) + (2 * $this->getGlassHeigth()) + (2 * $this->getMoveGlazingBead());
+    }
+
+    public function getCuttingList($qty) {
+        $cuttingListResult = [];
+        $materialColor = $this->getMaterialColor($this->frameColor);
+        $cuttingListResult[] = $this->getCuttingListObject('Glass', $this->glassType, $qty, $this->getGlassWidth() . 'x' . $this->getGlassHeigth());
+        $cuttingListResult[] = $this->getCuttingListObject('Vent Jamb', 'VW 110 ' . $materialColor, $qty, $this->getVentJamb());
+        $cuttingListResult[] = $this->getCuttingListObject('Vent Jamb', 'VW 106 ' . $materialColor, $qty, $this->getVentJamb());
+        $cuttingListResult[] = $this->getCuttingListObject('Vent Bottom', 'VW 107 ' . $materialColor, 2 * $qty, $this->getVentBottomAndTop());
+        $cuttingListResult[] = $this->getCuttingListObject('Vent Top', 'VW 107 ' . $materialColor, $qty, $this->getVentBottomAndTop());
+        $cuttingListResult[] = $this->getCuttingListObject('Jamb', 'VW 101 ' . $materialColor, $qty, $this->height);
+        $cuttingListResult[] = $this->getCuttingListObject('Jamb', 'VW 102 ' . $materialColor, $qty, $this->height);
+        $cuttingListResult[] = $this->getCuttingListObject('Punch M.R', ' - ', 1, $this->getGlassWidth() + 0.44);
+        $cuttingListResult[] = $this->getCuttingListObject('Fixed Meeting Rail', 'VW 104 ' . $materialColor, $qty, $this->getFixedMeetingRail());
+        $cuttingListResult[] = $this->getCuttingListObject('Glazing Bead Fix', 'VW 108 ' . $materialColor, 2 * $qty, $this->getGlassHeigth());
+        $cuttingListResult[] = $this->getCuttingListObject('Glazing Bead Move', 'VW 108 ' . $materialColor, 2 * $qty, $this->getMoveGlazingBead());
+        $cuttingListResult[] = $this->getCuttingListObject('Glazing Bead Width', 'VW 108 ' . $materialColor, 4 * $qty, $this->getGlazingBeadWidth());
+        $cuttingListResult[] = $this->getCuttingListObject('Frame Head', 'VW 111 ' . $materialColor, 2 * $qty, $this->getFrameSill());
+        $cuttingListResult[] = $this->getCuttingListObject('Sill Track Rail', 'VW 112 ' . $materialColor, $qty, $this->getSillTrackRail());
+        $cuttingListResult[] = $this->getCuttingListObject('Weep Hole', 'WH 0001 ' . $materialColor, 2 * $qty, '0');
+        $cuttingListResult[] = $this->getCuttingListObject('Roles Housing', 'RH 0001 ' . $materialColor, 2 * $qty, '0');
+        $cuttingListResult[] = $this->getCuttingListObject('Steel Reiceforcement square', 'ST 0001', $qty, $this->getSteelReiceforment());
+        $cuttingListResult[] = $this->getCuttingListObject('Vent Latch', 'VW 109 ' . $materialColor, 2 * $qty, '3inch');
+        $cuttingListResult[] = $this->getCuttingListObject('Stop Sash', 'STS 0001 ' . $materialColor, 3 * $qty, '3inch');
+        $cuttingListResult[] = $this->getCuttingListObject('Screw Cover', 'SC 0001 ' . $materialColor, $qty, $this->getGlassHeigth());
+        $cuttingListResult[] = $this->getCuttingListObject('Side Sash Clip', 'SS 0001 ' . $materialColor, 2 * $qty, $this->getVentBottomAndTop());
+        $cuttingListResult[] = $this->getCuttingListObject('Setting Block', 'NE 850125', 16 * $qty, '');
+        $cuttingListResult[] = $this->getCuttingListObject('Weather Strip Meet Rail Sash', 'W 22184 ' . $materialColor, $qty, $this->getWeatherStripMeetRailSash());
+        $cuttingListResult[] = $this->getCuttingListObject('Weather Strip Bottom', 'W 22254 ' . $materialColor, $qty, $this->height);
+        $cuttingListResult[] = $this->getCuttingListObject('T Slot Seal Glazing Beat 7/16', 'TSG 0003', $qty, $this->getTSlotSealGlazingBeat());
+        $cuttingListResult[] = $this->getCuttingListObject('T Slot Seal Frame Bottom', 'TSB 0001', $qty, $this->height);
+        //SILICONE
+        if ($this->screenRequired) {
+          $cuttingListResult[] = $this->getCuttingListObject('Screen', '', $qty, $this->getScreenWidth() . 'x' . $this->getScreenHeigth());
+        }
+
+        return $cuttingListResult;
+    }
+
     public function getUnitPrice() {
-        $firstFrameColorLetter = substr($this->frameColor, 0, 1);
+        $firstFrameColorLetter = $this->getMaterialColor($this->frameColor);
         $ventJamb106Material = RawMaterial::where('name', 'VW 106 ' . $firstFrameColorLetter)->first(); // MATERIAL 106
-        $ventJamb106Cost = ($this->height - 5.23 - 0.15) * 0.083 * $ventJamb106Material->cost_per_unit;
+        $ventJamb106Cost = $this->getVentJamb() * 0.083 * $ventJamb106Material->cost_per_unit;
         $ventJamb110Material = RawMaterial::where('name', 'VW 110 ' . $firstFrameColorLetter)->first(); // MATERIAL 110
-        $ventJamb110Cost = ($this->height - 5.23 - 0.15) * 0.083 * $ventJamb110Material->cost_per_unit;
+        $ventJamb110Cost = $this->getVentJamb() * 0.083 * $ventJamb110Material->cost_per_unit;
         $ventBottomMaterial = RawMaterial::where('name', 'VW 107 ' . $firstFrameColorLetter)->first(); // MATERIAL 107,
-        $ventBottomCost = ($this->getGlassWidth() + 2.188) * 0.083 * $ventBottomMaterial->cost_per_unit;
-        $ventTopCost = ($this->getGlassWidth() + 2.188) * 0.083 * $ventBottomMaterial->cost_per_unit;
+        $ventBottomCost = $this->getVentBottomAndTop() * 0.083 * $ventBottomMaterial->cost_per_unit * 2;
+        $ventTopCost = $this->getVentBottomAndTop() * 0.083 * $ventBottomMaterial->cost_per_unit;
         $jamb101Material = RawMaterial::where('name', 'VW 101 ' . $firstFrameColorLetter)->first(); // MATERIAL 101
         $jamb101Cost = $this->height * 0.083 * $jamb101Material->cost_per_unit;
         $jamb102Material = RawMaterial::where('name', 'VW 102 ' . $firstFrameColorLetter)->first(); // MATERIAL 102
         $jamb102Cost = $this->height * 0.083 * $jamb102Material->cost_per_unit;
         $fixedMeetingRailMaterial = RawMaterial::where('name', 'VW 104 ' . $firstFrameColorLetter)->first(); // MATERIAL 104
-        $fixedMeetingRailMaterialCost = ($this->height - 5.188) * 0.083 * $fixedMeetingRailMaterial->cost_per_unit;
+        $fixedMeetingRailMaterialCost = $this->getFixedMeetingRail() * 0.083 * $fixedMeetingRailMaterial->cost_per_unit;
         $frameHeadSillMaterial = RawMaterial::where('name', 'VW 111 ' . $firstFrameColorLetter)->first(); // MATERIAL 111
-        $frameHeadSillCost = ($this->width - 1.562) * 0.083 * $frameHeadSillMaterial->cost_per_unit * 2;
+        $frameHeadSillCost = $this->getFrameSill() * 0.083 * $frameHeadSillMaterial->cost_per_unit * 2;
         $stilTrackRailMaterial = RawMaterial::where('name', 'VW 112 ' . $firstFrameColorLetter)->first(); // MATERIAL 112
-        $stilTrackRailCost = ($this->width - 1.562 - 1) * 0.083 * $stilTrackRailMaterial->cost_per_unit;
+        $stilTrackRailCost = $this->getSillTrackRail() * 0.083 * $stilTrackRailMaterial->cost_per_unit;
         $weepHoleMaterial = RawMaterial::where('name', 'WH 0001 ' . $firstFrameColorLetter)->first(); // MATERIAL WH 0001 (W or B)
         $weepHoleCost = 2 * $weepHoleMaterial->cost_per_unit;
         $rolesHousingMaterial = RawMaterial::where('id', 31)->first(); // MATERIAL RH 0001
         $rolesHousingCost = 2 * $rolesHousingMaterial->cost_per_unit;
-        $steelReinforcementMaterial = RawMaterial::where('id', 24)->first(); // MATERIAL ST 0001
-        $steelReinforcementCost = ($this->height - 5.188 - 1) * 0.083 * $steelReinforcementMaterial->cost_per_unit;
+        $steelReinforcementMaterial = RawMaterial::where('name', 'ST 0001')->first(); // MATERIAL ST 0001
+        $steelReinforcementCost = $this->getSteelReiceforment() * 0.083 * $steelReinforcementMaterial->cost_per_unit;
         $ventLatchMaterial = RawMaterial::where('name', 'VW 109 ' . $firstFrameColorLetter)->first(); // MATERIAL 109
         $ventLatchCost = 3 * 0.083 * $ventLatchMaterial->cost_per_unit * 2;
         $stopSashMaterial = RawMaterial::where('name', 'STS 0001 ' . $firstFrameColorLetter)->first(); // MATERIAL STS 0001 (W or B)
         $stopSashCost = 3 * 0.083 * $stopSashMaterial->cost_per_unit * 2;
-        $screwCoverMaterial = RawMaterial::where('name', 'SC 001 ' . $firstFrameColorLetter)->first(); // SC 001 (W or B)
+        $screwCoverMaterial = RawMaterial::where('name', 'SC 0001 ' . $firstFrameColorLetter)->first(); // SC 0001 (W or B)
         $screwCoverCost =  $this->getGlassHeigth() * 0.083 * $screwCoverMaterial->cost_per_unit;
         $sideSashClipMaterial = RawMaterial::where('name', 'SS 0001 ' . $firstFrameColorLetter)->first(); // MATERIAL SS 0001 (W or B)
         $sideSashClipCost = ($this->getGlassWidth() + 2.188) * 0.083 * $sideSashClipMaterial->cost_per_unit * 2;
@@ -79,8 +164,8 @@ class HorizontalRollerProduct implements IProduct {
         $tSlotSealFrameBottomMaterial = RawMaterial::where('id', 19)->first(); // TSB 0001
         $tSlotSealFrameBottomCost = $this->height * 0.083 * $tSlotSealFrameBottomMaterial->cost_per_unit;
         $glazingBeatMaterial = RawMaterial::where('name', 'VW 108 ' . $firstFrameColorLetter)->first(); // MATERIAL 108
-        $glazingBeatWidthCost = (4 * ($this->getGlassWidth() - 0.75)) * 0.083 * $glazingBeatMaterial->cost_per_unit;             
-        $glazingBeatHeigthCost = ((2 * $this->getGlassHeigth()) + (2 * ($this->getMoveGlassHeight() + 0.125))) * 0.083 * $glazingBeatMaterial->cost_per_unit;
+        $glazingBeatWidthCost = 4 * $this->getGlazingBeadWidth() * 0.083 * $glazingBeatMaterial->cost_per_unit;             
+        $glazingBeatHeigthCost = ((2 * $this->getGlassHeigth()) + (2 * $this->getMoveGlazingBead())) * 0.083 * $glazingBeatMaterial->cost_per_unit;
 
         $structuralSliconeMaterial = RawMaterial::where('id', 32)->first(); // MATERIAL 105//STRUCTURAL SILICONE
         $structuralSliconeMaterialCost = (($this->getGlassWidth() * 4) + ($this->getGlassHeigth() * 4)) * 0.083 * $structuralSliconeMaterial->cost_per_unit;
@@ -96,7 +181,7 @@ class HorizontalRollerProduct implements IProduct {
         $glassCost = $this->getGlassHeigth() * $this->getGlassWidth() / 144 * $glassMaterial->cost_per_unit;
         $screenCost = 0;
         if ($this->screenRequired) {
-          $screenCost = ($this->width / 2 - 0.25) * ($this->height - 5.5) / 144 * $screen_price_by_sqft;
+          $screenCost = $this->getScreenWidth() * $this->getScreenHeigth() / 144 * $screen_price_by_sqft;
         }
         $unitPriceCost = 
           $ventJamb106Cost +

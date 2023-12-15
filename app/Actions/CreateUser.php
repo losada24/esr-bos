@@ -24,7 +24,7 @@ class CreateUser {
         'email' => $request->email,
         'password' => Hash::make($request->password),
         'company_id' => $company_id,
-        'markup' => $$request->markup,
+        'markup' => $request->markup,
         'created_by' => auth()->user()->id
       ]);
 

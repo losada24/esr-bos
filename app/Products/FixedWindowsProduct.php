@@ -29,24 +29,53 @@ class FixedWindowsProduct implements IProduct {
       return $this->width - 4.312 - 0.065;
     }
 
+    public function getJamb() {
+      return $this->height - 1.37;
+    }
+
+    public function getGlazingBeatVertical() {
+      return $this->getGlassHeigth() - 0.87 + 0.375;
+    }
+
+    public function getGlazingBeatHorizontal() {
+      return $this->getGlassWidth() + 0.1875;
+    }
+
+    public function getCuttingList($qty) {
+      $cuttingListResult = [];
+      $materialColor = $this->getMaterialColor($this->frameColor);
+      $cuttingListResult[] = $this->getCuttingListObject('Glass', $this->glassType, $qty, $this->getGlassWidth() . 'x' . $this->getGlassHeigth());
+      $cuttingListResult[] = $this->getCuttingListObject('Frame Head', 'VW 101 ' . $materialColor, 2 * $qty, $this->width);
+      $cuttingListResult[] = $this->getCuttingListObject('Jamb', 'VW 103 ' . $materialColor, 2 * $qty, $this->getJamb());
+      $cuttingListResult[] = $this->getCuttingListObject('Glazing Bead Vertical', 'VW 108 ' . $materialColor, 2 * $qty, $this->getGlazingBeatVertical());
+      $cuttingListResult[] = $this->getCuttingListObject('Glazing Bead Horizontal', 'VW 108 ' . $materialColor, 2 * $qty, $this->getGlazingBeatHorizontal());
+      $cuttingListResult[] = $this->getCuttingListObject('Screw Cover', 'SC 0001 ' . $materialColor, 2 * $qty, $this->getGlassWidth());
+      $cuttingListResult[] = $this->getCuttingListObject('T Slot Seal Glazing Beat 7/16', 'TSG 0003', $qty, ($this->getGlazingBeatHorizontal() * 2) + ($this->getGlazingBeatVertical() * 2));
+      $cuttingListResult[] = $this->getCuttingListObject('Stop Sash', 'STS 0001 ' . $materialColor, 2 * $qty, $this->getGlassHeigth());
+      $cuttingListResult[] = $this->getCuttingListObject('Setting Block', 'NE 850125', 8 * $qty, $this->getGlassHeigth());
+      $cuttingListResult[] = $this->getCuttingListObject('Screws', 'Screws 8x1', 12 * $qty, $this->getGlassHeigth());
+
+      return $cuttingListResult;
+    }
+
     public function getUnitPrice() {
-        $firstFrameColorLetter = substr($this->frameColor, 0, 1);
+        $firstFrameColorLetter = $this->getMaterialColor($this->frameColor);
         $frameHeadMaterial = RawMaterial::where('name', 'VW 101 ' . $firstFrameColorLetter)->first(); // MATERIAL 101
         $frameHeadCost = $this->width * 0.083 * $frameHeadMaterial->cost_per_unit * 2;
         $jambMaterial = RawMaterial::where('name', 'VW 103 ' . $firstFrameColorLetter)->first(); // MATERIAL 103
-        $jambCost = (($this->height - 1.37) * 0.083) * $jambMaterial->cost_per_unit * 2;
+        $jambCost = ($this->getJamb() * 0.083) * $jambMaterial->cost_per_unit * 2;
         $screwMaterial = RawMaterial::where('id', 4)->first(); // MATERIAL Screws 8x1
         $screwMaterialCost = $screwMaterial->cost_per_unit * 12;
         $glazingBeadMaterial = RawMaterial::where('name', 'VW 108 ' . $firstFrameColorLetter)->first(); // MATERIAL 108
-        $glazingBeadVerticalCost = ($this->getGlassHeigth() - 0.87 + 0.3775) * 0.083 * $glazingBeadMaterial->cost_per_unit * 2;
-        $glazingBeadHorizontalCost = ($this->getGlassWidth() + 0.1875) * 0.083 * $glazingBeadMaterial->cost_per_unit * 2;
-        $screwCoverMaterial = RawMaterial::where('name', 'SC 001 ' . $firstFrameColorLetter)->first(); // SC 001 (W or B)
+        $glazingBeadVerticalCost = $this->getGlazingBeatVertical() * 0.083 * $glazingBeadMaterial->cost_per_unit * 2;
+        $glazingBeadHorizontalCost = $this->getGlazingBeatHorizontal() * 0.083 * $glazingBeadMaterial->cost_per_unit * 2;
+        $screwCoverMaterial = RawMaterial::where('name', 'SC 0001 ' . $firstFrameColorLetter)->first(); // SC 001 (W or B)
         $screwCoverCost =  $this->getGlassWidth() * 0.083 * 2 * $screwCoverMaterial->cost_per_unit;
-        $tSlotSealGlazingBeatMaterial = RawMaterial::where('id', 7)->first(); // T-Slot Seal Glazing Bead 7/16
-        $tSlotSealGlazingBeatCost = (((($this->getGlassHeigth() - 0.87 + 0.3775) * 2) * 0.083) + ((($this->getGlassWidth() + 0.1875) * 2) * 0.083)) * $tSlotSealGlazingBeatMaterial->cost_per_unit;
+        $tSlotSealGlazingBeatMaterial = RawMaterial::where('name', 'TSG 0003')->first(); // MATERIAL TSG 0003
+        $tSlotSealGlazingBeatCost = (($this->getGlazingBeatHorizontal() * 2) + ($this->getGlazingBeatVertical() * 2)) * 0.083 * $tSlotSealGlazingBeatMaterial->cost_per_unit;
         $stopSashMaterial = RawMaterial::where('name', 'STS 0001 ' . $firstFrameColorLetter)->first(); // STS 0001 (W or B)
         $stopSashCost = ($this->getGlassHeigth() * 2) * 0.083 * $stopSashMaterial->cost_per_unit;
-        $settingBlockMaterial = RawMaterial::where('id', 10)->first(); // MATERIAL Setting Block
+        $settingBlockMaterial = RawMaterial::where('name', 'NE 850125')->first(); // MATERIAL NE 850125
         $settingBlockCost = 8 * $settingBlockMaterial->cost_per_unit;
         $structuralSiliconeMaterial = RawMaterial::where('id', 32)->first(); // MATERIAL Structural Silicone
         $structuralSiliconeCost = (((($this->getGlassHeigth() - 0.87 + 0.3775) * 2) * 0.083) + ((($this->getGlassWidth() + 0.1875) * 2) * 0.083)) * $structuralSiliconeMaterial->cost_per_unit;

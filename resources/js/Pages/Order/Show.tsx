@@ -1,13 +1,16 @@
 import React, { useEffect } from 'react'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
 import { Head, Link } from '@inertiajs/react'
-import { type PageProps, type Order, type Client } from '@/types'
+import { type PageProps, type Order, type Client, type Role } from '@/types'
 import Panel from '@/Components/Panel'
 import { createMarkWithLeadingZero } from '@/Utils/mark'
 import HammerIcon from '@/Components/Icons/HammerIcon'
 import { useStore } from '@/Store/materialSummary'
+import { isAccounting, isAdmin } from '@/Utils/user'
+import PriceSummary from '@/Pages/Estimate/PriceSummary'
+import { PRODUCTION_STATUS } from '@/Utils/constants'
 
-export default function Create ({ auth, order }: PageProps & {
+export default function Show ({ auth, order }: PageProps & {
   clients: Client[]
   order: Order
 }) {
@@ -15,6 +18,8 @@ export default function Create ({ auth, order }: PageProps & {
   useEffect(() => {
     store.reset()
   }, [])
+  const IS_ACCOUNTING = isAccounting(auth.user.roles.map((role: Role) => role.name))
+  const IS_ADMIN = isAdmin(auth.user.roles.map((role: Role) => role.name))
   return (
       <AuthenticatedLayout
           auth={auth}
@@ -45,10 +50,12 @@ export default function Create ({ auth, order }: PageProps & {
                   </div>
                 </div>
                 <div className="flex flex-col gap-y-2 border-t border-white-light dark:border-white/10 py-2">
-                    <Link href={route('order.workOrder', order.id)} className="btn btn-secondary w-full gap-2">
-                        <HammerIcon color="#fff" />
-                        Work Order
-                    </Link>
+                    {order.status === PRODUCTION_STATUS && (
+                      <Link href={route('order.workOrder', order.id)} className="btn btn-secondary w-full gap-2">
+                          <HammerIcon color="#fff" />
+                          Work Order
+                      </Link>
+                    )}
                 </div>
               </Panel>
             </div>
@@ -63,10 +70,16 @@ export default function Create ({ auth, order }: PageProps & {
                       <th className="px-6 pt-5 pb-4">Size</th>
                       <th className="px-6 pt-5 pb-4">Frame Color</th>
                       <th className="px-6 pt-5 pb-4">Glass</th>
+                      {(IS_ACCOUNTING || IS_ADMIN) && (
+                        <>
+                          <th className="px-6 pt-5 pb-4">Price</th>
+                          <th className="px-6 pt-5 pb-4">Amount</th>
+                        </>
+                      )}
                     </tr>
                   </thead>
                   <tbody>
-                    {order.products?.map(({ id, system, line_item_name, qty, width, height, frame_color, glass_type }) => (
+                    {order.products?.map(({ id, system, line_item_name, qty, width, height, frame_color, glass_type, unit_price, total_price }) => (
                         <tr
                           key={id}
                           className="hover:bg-gray-100 focus-within:bg-gray-100"
@@ -89,12 +102,22 @@ export default function Create ({ auth, order }: PageProps & {
                           <td className="border-t px-6 py-4 align-top">
                             {glass_type}
                           </td>
+                          {(IS_ACCOUNTING || IS_ADMIN) && (
+                            <>
+                              <td className="border-t px-6 py-4 align-top">
+                                {unit_price}
+                              </td>
+                              <td className="border-t px-6 py-4 align-top">
+                                {total_price}
+                              </td>
+                            </>
+                          )}
                         </tr>
                     ))
                     }
                     {order.products?.length === 0 && (
                       <tr>
-                        <td className="px-6 py-4 border-t" colSpan={6}>
+                        <td className="px-6 py-4 border-t" colSpan={IS_ACCOUNTING ? 8 : 6}>
                           No Products found.
                         </td>
                       </tr>
@@ -102,6 +125,9 @@ export default function Create ({ auth, order }: PageProps & {
                   </tbody>
                 </table>
               </div>
+              {(IS_ACCOUNTING || IS_ADMIN) && (
+                <PriceSummary estimate={order} />
+              )}
             </div>
           </div>
       </AuthenticatedLayout>
