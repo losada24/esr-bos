@@ -9,6 +9,11 @@ use Inertia\Inertia;
 use App\Models\Order;
 use App\Enum\OrderStatusEnum;
 use App\Http\Requests\UpdateOrderStatusRequest;
+use App\Enum\ProductSystemEnum;
+use App\Products\FixedWindowsProduct;
+use App\Products\HorizontalRollerProduct;
+use App\Products\SingleHuntProduct;
+use stdClass;
 
 class OrderController extends Controller
 {
@@ -61,8 +66,60 @@ class OrderController extends Controller
 
     public function workOrder(Order $order) {
       $order->load(['products', 'client']);
+      
+        $orderData = [
+          'id' => $order->id,
+          'client' => $order->client->name,
+          'created_at' => $order->created_at,
+          'project_name' => $order->project_name,
+          'products' => $order->products->map(function($product, $key) {
+            $cuttingList = [];
+            switch($product->system) {
+              case ProductSystemEnum::$FIXED_WINDOWS:
+                $cuttingListObject = new FixedWindowsProduct(
+                  $product->width,
+                  $product->height,
+                  $product->frame_color,
+                  $product->glass_type
+                );
+                $cuttingList = $cuttingListObject->getCuttingList($product->qty);
+                break;
+              case ProductSystemEnum::$HORIZONTAL_ROLLER:
+                $cuttingListObject = new HorizontalRollerProduct(
+                  $product->width,
+                  $product->height,
+                  $product->frame_color,
+                  $product->glass_type,
+                  $product->extras['screen']
+                );
+                $cuttingList = $cuttingListObject->getCuttingList($product->qty);
+                break;
+              case ProductSystemEnum::$SINGLE_HUNT:
+                $cuttingListObject = new SingleHuntProduct(
+                  $product->width,
+                  $product->height,
+                  $product->frame_color,
+                  $product->glass_type,
+                  $product->extras['screen']
+                );
+                $cuttingList = $cuttingListObject->getCuttingList($product->qty);
+                break;
+            }
+
+            return [
+              'id' => $product->id,
+              'visual_id' => $key,
+              'system' => $product->system,
+              'qty' => $product->qty,
+              'width' => $product->width,
+              'height' => $product->height,
+              'cutting_list' => $cuttingList,
+            ];
+          })
+        ];
+
       return Inertia::render('Order/WorkOrder', [
-        'order' => $order
+        'order' => $orderData
       ]);
     }
 

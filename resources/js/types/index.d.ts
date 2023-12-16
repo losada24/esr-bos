@@ -13,6 +13,7 @@ import { type FixedWindows } from '@/types/interfaces/fixedWindows'
 import { type SingleHunt } from '@/types/interfaces/singleHunt'
 import { type Company } from '@/types/interfaces/company'
 import { type HorizontalRoller } from './interfaces/horizontalRoller'
+import { type CuttingList } from './interfaces/cuttingList'
 
 export type {
   User,
@@ -29,7 +30,8 @@ export type {
   FixedWindows,
   Company,
   SingleHunt,
-  HorizontalRoller
+  HorizontalRoller,
+  CuttingList
 }
 
 /* interface ListUsersItem {

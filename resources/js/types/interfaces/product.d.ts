@@ -1,4 +1,5 @@
 import { type Order } from './order'
+import { type CuttingList } from './cuttingList'
 
 export interface Product {
   id: number
@@ -21,4 +22,5 @@ export interface Product {
   unit_price: number
   total_price: number
   order?: Order
+  cutting_list?: CuttingList[]
 }

@@ -105,10 +105,10 @@ export default function Show ({ auth, order }: PageProps & {
                           {(IS_ACCOUNTING || IS_ADMIN) && (
                             <>
                               <td className="border-t px-6 py-4 align-top">
-                                {unit_price}
+                                ${unit_price}
                               </td>
                               <td className="border-t px-6 py-4 align-top">
-                                {total_price}
+                                ${total_price}
                               </td>
                             </>
                           )}

@@ -4,114 +4,115 @@ namespace App\Products;
 
 use App\Interfaces\IProduct;
 use App\Models\RawMaterial;
+use App\Traits\Fractions;
 use App\Traits\Product;
 
 class HorizontalRollerProduct implements IProduct {
 
-    use Product;
+    use Product, Fractions;
     public $width;
     public $height;
     public $frameColor;
     public $glassType;
     public $screenRequired;
     
-    public function __construct($width, $height, $frameColor, $glassType, $screenRequired/* , $line_item_name, $glass, $qty, $markup */) {
-        $this->width = $width;
-        $this->height = $height;
+    public function __construct($width, $height, $frameColor, $glassType, $screenRequired) {
+        $this->width = (float) $width;
+        $this->height = (float) $height;
         $this->frameColor = $frameColor;
         $this->glassType = $glassType;
         $this->screenRequired = $screenRequired;
     }
 
     public function getGlassHeigth() {
-      return $this->height - 5.21 - 0.1;
+      return round($this->height - 5.21 - 0.1, 3);
     }
 
     public function getGlassWidth() {
-      return ($this->width / 2) - (5.25 / 2) - 0.125;
+      return round(($this->width / 2) - (5.25 / 2) - 0.125, 3);
     }
 
     public function getMoveGlassHeight() {
-      return $this->getGlassHeigth() - 0.25 - 0.15;
+      return round($this->getGlassHeigth() - 0.25 - 0.15, 3);
     }
 
     public function getVentJamb() {
-      return $this->height - 5.23 - 0.15;
+      return round($this->height - 5.23 - 0.15, 3);
     }
 
     public function getVentBottomAndTop() {
-      return $this->getGlassWidth() + 2.188;
+      return round($this->getGlassWidth() + 2.188, 3);
     }
 
     public function getFixedMeetingRail() {
-      return $this->height - 5.188;
+      return round($this->height - 5.188, 3);
     }
 
     public function getMoveGlazingBead() {
-      return $this->getMoveGlassHeight() + 0.125;
+      return round($this->getMoveGlassHeight() + 0.125, 3);
     }
 
     public function getGlazingBeadWidth() {
-      return $this->getGlassWidth() - 0.75;
+      return round($this->getGlassWidth() - 0.75, 3);
     }
 
     public function getScreenWidth() {
-      return ($this->width / 2) - 0.25;
+      return round(($this->width / 2) - 0.25, 3);
     }
 
     public function getScreenHeigth() {
-      return $this->height - 5.5;
+      return round($this->height - 5.5, 3);
     }
 
     public function getFrameSill() {
-      return $this->width - 1.562;
+      return round($this->width - 1.562, 3);
     }
 
     public function getSillTrackRail() {
-      return $this->getFrameSill() - 1;
+      return round($this->getFrameSill() - 1, 3);
     }
 
     public function getSteelReiceforment() {
-      return $this->getFixedMeetingRail() - 1;
+      return round($this->getFixedMeetingRail() - 1, 3);
     }
 
     public function getWeatherStripMeetRailSash() {
-      return 2 * $this->getVentJamb() + $this->getFixedMeetingRail();
+      return round(2 * $this->getVentJamb() + $this->getFixedMeetingRail(), 3);
     }
 
     public function getTSlotSealGlazingBeat() {
-      return (4 * $this->getGlassWidth()) + (2 * $this->getGlassHeigth()) + (2 * $this->getMoveGlazingBead());
+      return round((4 * $this->getGlassWidth()) + (2 * $this->getGlassHeigth()) + (2 * $this->getMoveGlazingBead()), 3);
     }
 
     public function getCuttingList($qty) {
         $cuttingListResult = [];
         $materialColor = $this->getMaterialColor($this->frameColor);
         $cuttingListResult[] = $this->getCuttingListObject('Glass', $this->glassType, $qty, $this->getGlassWidth() . 'x' . $this->getGlassHeigth());
-        $cuttingListResult[] = $this->getCuttingListObject('Vent Jamb', 'VW 110 ' . $materialColor, $qty, $this->getVentJamb());
-        $cuttingListResult[] = $this->getCuttingListObject('Vent Jamb', 'VW 106 ' . $materialColor, $qty, $this->getVentJamb());
-        $cuttingListResult[] = $this->getCuttingListObject('Vent Bottom', 'VW 107 ' . $materialColor, 2 * $qty, $this->getVentBottomAndTop());
-        $cuttingListResult[] = $this->getCuttingListObject('Vent Top', 'VW 107 ' . $materialColor, $qty, $this->getVentBottomAndTop());
-        $cuttingListResult[] = $this->getCuttingListObject('Jamb', 'VW 101 ' . $materialColor, $qty, $this->height);
-        $cuttingListResult[] = $this->getCuttingListObject('Jamb', 'VW 102 ' . $materialColor, $qty, $this->height);
-        $cuttingListResult[] = $this->getCuttingListObject('Punch M.R', ' - ', 1, $this->getGlassWidth() + 0.44);
-        $cuttingListResult[] = $this->getCuttingListObject('Fixed Meeting Rail', 'VW 104 ' . $materialColor, $qty, $this->getFixedMeetingRail());
-        $cuttingListResult[] = $this->getCuttingListObject('Glazing Bead Fix', 'VW 108 ' . $materialColor, 2 * $qty, $this->getGlassHeigth());
-        $cuttingListResult[] = $this->getCuttingListObject('Glazing Bead Move', 'VW 108 ' . $materialColor, 2 * $qty, $this->getMoveGlazingBead());
-        $cuttingListResult[] = $this->getCuttingListObject('Glazing Bead Width', 'VW 108 ' . $materialColor, 4 * $qty, $this->getGlazingBeadWidth());
-        $cuttingListResult[] = $this->getCuttingListObject('Frame Head', 'VW 111 ' . $materialColor, 2 * $qty, $this->getFrameSill());
-        $cuttingListResult[] = $this->getCuttingListObject('Sill Track Rail', 'VW 112 ' . $materialColor, $qty, $this->getSillTrackRail());
+        $cuttingListResult[] = $this->getCuttingListObject('Vent Jamb', 'VW 110 ' . $materialColor, $qty, $this->getNumberWithFraction($this->getVentJamb()));
+        $cuttingListResult[] = $this->getCuttingListObject('Vent Jamb', 'VW 106 ' . $materialColor, $qty, $this->getNumberWithFraction($this->getVentJamb()));
+        $cuttingListResult[] = $this->getCuttingListObject('Vent Bottom', 'VW 107 ' . $materialColor, 2 * $qty, $this->getNumberWithFraction($this->getVentBottomAndTop()));
+        $cuttingListResult[] = $this->getCuttingListObject('Vent Top', 'VW 107 ' . $materialColor, $qty, $this->getNumberWithFraction($this->getVentBottomAndTop()));
+        $cuttingListResult[] = $this->getCuttingListObject('Jamb', 'VW 101 ' . $materialColor, $qty, $this->getNumberWithFraction($this->height));
+        $cuttingListResult[] = $this->getCuttingListObject('Jamb', 'VW 102 ' . $materialColor, $qty, $this->getNumberWithFraction($this->height));
+        $cuttingListResult[] = $this->getCuttingListObject('Punch M.R', ' - ', 1, $this->getNumberWithFraction($this->getGlassWidth() + 0.44));
+        $cuttingListResult[] = $this->getCuttingListObject('Fixed Meeting Rail', 'VW 104 ' . $materialColor, $qty, $this->getNumberWithFraction($this->getFixedMeetingRail()));
+        $cuttingListResult[] = $this->getCuttingListObject('Glazing Bead Fix', 'VW 108 ' . $materialColor, 2 * $qty, $this->getNumberWithFraction($this->getGlassHeigth()));
+        $cuttingListResult[] = $this->getCuttingListObject('Glazing Bead Move', 'VW 108 ' . $materialColor, 2 * $qty, $this->getNumberWithFraction($this->getMoveGlazingBead()));
+        $cuttingListResult[] = $this->getCuttingListObject('Glazing Bead Width', 'VW 108 ' . $materialColor, 4 * $qty, $this->getNumberWithFraction($this->getGlazingBeadWidth()));
+        $cuttingListResult[] = $this->getCuttingListObject('Frame Head', 'VW 111 ' . $materialColor, 2 * $qty, $this->getNumberWithFraction($this->getFrameSill()));
+        $cuttingListResult[] = $this->getCuttingListObject('Sill Track Rail', 'VW 112 ' . $materialColor, $qty, $this->getNumberWithFraction($this->getSillTrackRail()));
         $cuttingListResult[] = $this->getCuttingListObject('Weep Hole', 'WH 0001 ' . $materialColor, 2 * $qty, '0');
         $cuttingListResult[] = $this->getCuttingListObject('Roles Housing', 'RH 0001 ' . $materialColor, 2 * $qty, '0');
-        $cuttingListResult[] = $this->getCuttingListObject('Steel Reiceforcement square', 'ST 0001', $qty, $this->getSteelReiceforment());
+        $cuttingListResult[] = $this->getCuttingListObject('Steel Reiceforcement square', 'ST 0001', $qty, $this->getNumberWithFraction($this->getSteelReiceforment()));
         $cuttingListResult[] = $this->getCuttingListObject('Vent Latch', 'VW 109 ' . $materialColor, 2 * $qty, '3inch');
         $cuttingListResult[] = $this->getCuttingListObject('Stop Sash', 'STS 0001 ' . $materialColor, 3 * $qty, '3inch');
-        $cuttingListResult[] = $this->getCuttingListObject('Screw Cover', 'SC 0001 ' . $materialColor, $qty, $this->getGlassHeigth());
-        $cuttingListResult[] = $this->getCuttingListObject('Side Sash Clip', 'SS 0001 ' . $materialColor, 2 * $qty, $this->getVentBottomAndTop());
+        $cuttingListResult[] = $this->getCuttingListObject('Screw Cover', 'SC 0001 ' . $materialColor, $qty, $this->getNumberWithFraction($this->getGlassHeigth()));
+        $cuttingListResult[] = $this->getCuttingListObject('Side Sash Clip', 'SS 0001 ' . $materialColor, 2 * $qty, $this->getNumberWithFraction($this->getVentBottomAndTop()));
         $cuttingListResult[] = $this->getCuttingListObject('Setting Block', 'NE 850125', 16 * $qty, '');
-        $cuttingListResult[] = $this->getCuttingListObject('Weather Strip Meet Rail Sash', 'W 22184 ' . $materialColor, $qty, $this->getWeatherStripMeetRailSash());
-        $cuttingListResult[] = $this->getCuttingListObject('Weather Strip Bottom', 'W 22254 ' . $materialColor, $qty, $this->height);
-        $cuttingListResult[] = $this->getCuttingListObject('T Slot Seal Glazing Beat 7/16', 'TSG 0003', $qty, $this->getTSlotSealGlazingBeat());
-        $cuttingListResult[] = $this->getCuttingListObject('T Slot Seal Frame Bottom', 'TSB 0001', $qty, $this->height);
+        $cuttingListResult[] = $this->getCuttingListObject('Weather Strip Meet Rail Sash', 'W 22184 ' . $materialColor, $qty, $this->getNumberWithFraction($this->getWeatherStripMeetRailSash()));
+        $cuttingListResult[] = $this->getCuttingListObject('Weather Strip Bottom', 'W 22254 ' . $materialColor, $qty, $this->getNumberWithFraction($this->height));
+        $cuttingListResult[] = $this->getCuttingListObject('T Slot Seal Glazing Beat 7/16', 'TSG 0003', $qty, $this->getNumberWithFraction($this->getTSlotSealGlazingBeat()));
+        $cuttingListResult[] = $this->getCuttingListObject('T Slot Seal Frame Bottom', 'TSB 0001', $qty, $this->getNumberWithFraction($this->height));
         //SILICONE
         if ($this->screenRequired) {
           $cuttingListResult[] = $this->getCuttingListObject('Screen', '', $qty, $this->getScreenWidth() . 'x' . $this->getScreenHeigth());

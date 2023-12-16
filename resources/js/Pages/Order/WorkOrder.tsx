@@ -4,15 +4,17 @@ import { Head, Link } from '@inertiajs/react'
 import { type PageProps, type Order, type Client } from '@/types'
 import PrintIcon from '@/Components/Icons/PrintIcon'
 import { createMarkWithLeadingZero } from '@/Utils/mark'
-import FixedWindowsMeasurements from './FixedWindowsMeasurements'
+import FixedWindowsMeasurements from './ShowCuttingList'
 import { PRODUCT_SYSTEMS } from '@/Utils/constants'
 import VisualId from '@/Components/VisualId'
 import MaterialConsumption from './MaterialConsumption'
+import ShowCuttingList from './ShowCuttingList'
 
 export default function WorkOrder ({ auth, order }: PageProps & {
   clients: Client[]
   order: Order
 }) {
+  console.log(order)
   return (
       <AuthenticatedLayout
           auth={auth}
@@ -20,7 +22,7 @@ export default function WorkOrder ({ auth, order }: PageProps & {
           actions={
             <Link
               className="btn btn-primary"
-              href={route('estimate.create')}
+              href='#'
             >
               <PrintIcon />
               Print Work Order
@@ -61,7 +63,7 @@ export default function WorkOrder ({ auth, order }: PageProps & {
                     <td><span className='font-semibold'>Size:</span> {product.width} x {product.height}</td>
                     <td className='flex items-center justify-between'><span className='font-semibold'>Visual ID:</span> <VisualId index={index} /></td>
                   </tr>
-                  {product?.system === PRODUCT_SYSTEMS.FIXED_WINDOWS && <FixedWindowsMeasurements product={product} />}
+                  <ShowCuttingList cuttingList={product?.cutting_list ?? []} productId={product.id} />
                 </Fragment>
               })}
             </tbody>
