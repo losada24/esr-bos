@@ -116,7 +116,7 @@ class FixedWindowsProduct implements IProduct {
         $frameHeadCost = $this->width * 0.083 * $frameHeadMaterial->cost_per_unit * 2;
         $jambMaterial = RawMaterial::where('name', 'VW 103 ' . $this->materialColor)->first(); // MATERIAL 103
         $jambCost = ($this->getJamb() * 0.083) * $jambMaterial->cost_per_unit * 2;
-        $screwMaterial = RawMaterial::where('id', 4)->first(); // MATERIAL Screws 8x1
+        $screwMaterial = RawMaterial::where('name', 'PPA 08-1')->first(); // MATERIAL Screws 8x1
         $screwMaterialCost = $screwMaterial->cost_per_unit * 12;
         $glazingBeadMaterial = RawMaterial::where('name', 'VW 108 ' . $this->materialColor)->first(); // MATERIAL 108
         $glazingBeadVerticalCost = $this->getGlazingBeatVertical() * 0.083 * $glazingBeadMaterial->cost_per_unit * 2;
@@ -139,6 +139,34 @@ class FixedWindowsProduct implements IProduct {
         $electricityBill = config('custom.electricity_bill');
         $internetBill = config('custom.internet_bill');
         $otherBill = config('custom.other_bill');
+        $packing = config('custom.packing');
+
+
+        /* echo "Frame Head Cost: " . $frameHeadCost . "<br>";
+        echo "jambCost: " . $jambCost . "<br>";
+        echo "screwMaterialCost: " . $screwMaterialCost . "<br>";
+        echo "glazingBeadVerticalCost: " . $glazingBeadVerticalCost . "<br>";
+        echo "glazingBeadHorizontalCost: " . $glazingBeadHorizontalCost . "<br>";
+        echo "screwCoverCost: " . $screwCoverCost . "<br>";
+        echo "tSlotSealGlazingBeatCost: " . $tSlotSealGlazingBeatCost . "<br>";
+        echo "stopSashCost: " . $stopSashCost . "<br>";
+        echo "settingBlockCost: " . $settingBlockCost . "<br>";
+        echo "structuralSiliconeCost: " . $structuralSiliconeCost . "<br>";
+        echo "glassCost: " . $glassCost . "<br>";
+        echo 'Suma Total: ' . round(
+            $frameHeadCost + 
+            $jambCost + 
+            $screwMaterialCost + 
+            $glazingBeadVerticalCost + 
+            $glazingBeadHorizontalCost + 
+            $screwCoverCost + 
+            $tSlotSealGlazingBeatCost +
+            $stopSashCost +
+            $settingBlockCost +
+            $structuralSiliconeCost +
+            $packing +
+            $glassCost, 2);
+        die;*/
 
         $unitPriceCost = 
           $frameHeadCost + 
@@ -156,7 +184,8 @@ class FixedWindowsProduct implements IProduct {
           $rentBill +
           $electricityBill +
           $internetBill +
-          $otherBill;
+          $otherBill +
+          $packing;
           
         //GET COMPANY MOCKUP
         $companyMockup = $this->getCompanyMockup();
@@ -165,6 +194,6 @@ class FixedWindowsProduct implements IProduct {
         $promotion = $this->getCompanyPromotion();
         $promotionCost = $unitPriceCost * $promotion / 100;
 
-        return $unitPriceCost + $companyMockupCost - $promotionCost;
+        return round($unitPriceCost + $companyMockupCost - $promotionCost, 2);
     }
 }

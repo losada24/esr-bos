@@ -9,5 +9,6 @@ return [
   'electricity_bill' => env('ELECTRICITY_BILL'),
   'internet_bill' => env('INTERNET_BILL'),
   'other_bill' => env('OTHER_BILL'),
-  'screen_price_by_sqft' => env('SCREEN_PRICE_BY_SQFT')
+  'screen_price_by_sqft' => env('SCREEN_PRICE_BY_SQFT'),
+  'packing' => env('PACKING'),
 ];

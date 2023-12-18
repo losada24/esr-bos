@@ -2,6 +2,7 @@
 
 namespace App\Products;
 
+use App\Enum\FrameColorEnum;
 use App\Interfaces\IProduct;
 use App\Models\RawMaterial;
 use App\Traits\Fractions;
@@ -101,13 +102,22 @@ class HorizontalRollerProduct implements IProduct {
       $sts0001 = RawMaterial::where('name', 'STS 0001 ' . $this->materialColor)->first();
       $sc0001 = RawMaterial::where('name', 'SC 0001 ' . $this->materialColor)->first();
       $ss0001 = RawMaterial::where('name', 'SS 0001 ' . $this->materialColor)->first();
-      $w22184 = RawMaterial::where('name', 'W 22184 ' . $this->materialColor)->first();
-      $w22254 = RawMaterial::where('name', 'W 22254 ' . $this->materialColor)->first();
+      
+      if ($this->frameColor == FrameColorEnum::$FRAME_COLOR["WHITE"]) {
+        $weatherStripMeetRailSash = RawMaterial::where('name', 'W 22184 W')->first(); // W 22184 W or B
+      } else {
+        $weatherStripMeetRailSash = RawMaterial::where('name', 'W 22174 G')->first(); // W 22184 W or B
+      }
+      $w22254 = RawMaterial::where('name', 'W 22254 BL')->first();
       $rh0001 = RawMaterial::where('name', 'RH 0001')->first();
       $st0001 = RawMaterial::where('name', 'ST 0001')->first();
       $tsg0003 = RawMaterial::where('name', 'TSG 0003')->first();
       $tsb0001 = RawMaterial::where('name', 'TSB 0001')->first();
       $ne850125 = RawMaterial::where('name', 'NE 850125')->first();
+      $ppa081 = RawMaterial::where('name', 'PPA 08-1')->first();
+      $ppa083 = RawMaterial::where('name', 'PPA 08-3')->first();
+      $ls0001 = RawMaterial::where('name', 'LS 0001')->first(); // MATERIAL LS 0001
+      $df4525 = RawMaterial::where('name', 'DF 4525')->first(); 
 
       return [
           'VW 110 ' . $this->materialColor => [
@@ -121,7 +131,7 @@ class HorizontalRollerProduct implements IProduct {
             'storage_measure' => $vw106->storage_measure,
           ],
           'VW 107 ' . $this->materialColor => [
-            'amount' => (($this->getVentBottomAndTop() * 2  * $qty) + ($qty * $this->getVentBottomAndTop())) * 0.083,
+            'amount' => (($this->getVentBottomAndTop() * $qty) + ($qty * $this->getVentBottomAndTop())) * 0.083,
             'unit_of_measurement' => $vw107->unit_of_measurement,
             'storage_measure' => $vw107->storage_measure
           ],
@@ -141,7 +151,7 @@ class HorizontalRollerProduct implements IProduct {
             'storage_measure' => $vw104->storage_measure
           ],
           'VW 108 ' . $this->materialColor => [
-            'amount' => (($this->getGlassHeigth() * 2 * $qty) + ($this->getMoveGlazingBead() * 2 * $qty) + ($this->getGlazingBeadWidth() * 4 * $qty)) * 0.083,
+            'amount' => (($this->getGlassHeigth() * 2 * $qty) + ($this->getMoveGlazingBead() * 2 * $qty) + ($this->getGlazingBeadWidth() * 4 * $qty) + ($this->height - 5.25)) * 0.083,
             'unit_of_measurement' => $vw108->unit_of_measurement,
             'storage_measure' => $vw108->storage_measure
           ],
@@ -185,12 +195,12 @@ class HorizontalRollerProduct implements IProduct {
             'unit_of_measurement' => $ss0001->unit_of_measurement,
             'storage_measure' => $ss0001->storage_measure
           ],
-          'W 22184 ' . $this->materialColor => [
-            'amount' => $this->getWeatherStripMeetRailSash() * $qty * 0.083,
-            'unit_of_measurement' => $w22184->unit_of_measurement,
-            'storage_measure' => $w22184->storage_measure
+          $weatherStripMeetRailSash->name => [
+            'amount' => $this->getWeatherStripMeetRailSash() * 0.083 * $qty,
+            'unit_of_measurement' => $weatherStripMeetRailSash->unit_of_measurement,
+            'storage_measure' => $weatherStripMeetRailSash->storage_measure
           ],
-          'W 22254 ' . $this->materialColor => [
+          'W 22254 BL' => [
             'amount' => $this->height * $qty * 0.083,
             'unit_of_measurement' => $w22254->unit_of_measurement,
             'storage_measure' => $w22254->storage_measure
@@ -215,6 +225,26 @@ class HorizontalRollerProduct implements IProduct {
             'unit_of_measurement' => $ne850125->unit_of_measurement,
             'storage_measure' => $ne850125->storage_measure
           ],
+          'PPA 08-1' => [
+            'amount' => 12 * $qty,
+            'unit_of_measurement' => $ppa081->unit_of_measurement,
+            'storage_measure' => $ppa081->storage_measure,
+          ],
+          'PPA 08-3' => [
+            'amount' => 4 * $qty,
+            'unit_of_measurement' => $ppa083->unit_of_measurement,
+            'storage_measure' => $ppa083->storage_measure,
+          ],
+          'LS 0001' => [
+            'amount' => 2 * $qty,
+            'unit_of_measurement' => $ls0001->unit_of_measurement,
+            'storage_measure' => $ls0001->storage_measure,
+          ],
+          'DF 4525' => [
+            'amount' => ($this->height - 5.25) * $qty * 0.083,
+            'unit_of_measurement' => $df4525->unit_of_measurement,
+            'storage_measure' => $df4525->storage_measure,
+          ],
       ];
     }
 
@@ -224,7 +254,7 @@ class HorizontalRollerProduct implements IProduct {
         $cuttingListResult[] = $this->getCuttingListObject('Glass Move', $this->glassType, $qty, $this->getNumberWithFraction($this->getGlassWidth()) . ' x ' . $this->getNumberWithFraction($this->getMoveGlassHeight()));
         $cuttingListResult[] = $this->getCuttingListObject('Vent Jamb', 'VW 110 ' . $this->materialColor, $qty, $this->getNumberWithFraction($this->getVentJamb()));
         $cuttingListResult[] = $this->getCuttingListObject('Vent Jamb', 'VW 106 ' . $this->materialColor, $qty, $this->getNumberWithFraction($this->getVentJamb()));
-        $cuttingListResult[] = $this->getCuttingListObject('Vent Bottom', 'VW 107 ' . $this->materialColor, 2 * $qty, $this->getNumberWithFraction($this->getVentBottomAndTop()));
+        $cuttingListResult[] = $this->getCuttingListObject('Vent Bottom', 'VW 107 ' . $this->materialColor, $qty, $this->getNumberWithFraction($this->getVentBottomAndTop()));
         $cuttingListResult[] = $this->getCuttingListObject('Vent Top', 'VW 107 ' . $this->materialColor, $qty, $this->getNumberWithFraction($this->getVentBottomAndTop()));
         $cuttingListResult[] = $this->getCuttingListObject('Jamb', 'VW 101 ' . $this->materialColor, $qty, $this->getNumberWithFraction($this->height));
         $cuttingListResult[] = $this->getCuttingListObject('Jamb', 'VW 102 ' . $this->materialColor, $qty, $this->getNumberWithFraction($this->height));
@@ -233,6 +263,7 @@ class HorizontalRollerProduct implements IProduct {
         $cuttingListResult[] = $this->getCuttingListObject('Glazing Bead Fix Vertical', 'VW 108 ' . $this->materialColor, 2 * $qty, $this->getNumberWithFraction($this->getGlassHeigth()));
         $cuttingListResult[] = $this->getCuttingListObject('Glazing Bead Move Vertical', 'VW 108 ' . $this->materialColor, 2 * $qty, $this->getNumberWithFraction($this->getMoveGlazingBead()));
         $cuttingListResult[] = $this->getCuttingListObject('Glazing Bead Width Horizontal', 'VW 108 ' . $this->materialColor, 4 * $qty, $this->getNumberWithFraction($this->getGlazingBeadWidth()));
+        $cuttingListResult[] = $this->getCuttingListObject('Frame Side Cover', 'VW 108 ' . $this->materialColor, $qty, $this->getNumberWithFraction($this->height - 5.25));
         $cuttingListResult[] = $this->getCuttingListObject('Frame Head', 'VW 111 ' . $this->materialColor, 2 * $qty, $this->getNumberWithFraction($this->getFrameSill()));
         $cuttingListResult[] = $this->getCuttingListObject('Sill Track Rail', 'VW 112 ' . $this->materialColor, $qty, $this->getNumberWithFraction($this->getSillTrackRail()));
         $cuttingListResult[] = $this->getCuttingListObject('Steel Reiceforcement square', 'ST 0001', $qty, $this->getNumberWithFraction($this->getSteelReiceforment()));
@@ -253,7 +284,7 @@ class HorizontalRollerProduct implements IProduct {
         $ventJamb110Material = RawMaterial::where('name', 'VW 110 ' . $firstFrameColorLetter)->first(); // MATERIAL 110
         $ventJamb110Cost = $this->getVentJamb() * 0.083 * $ventJamb110Material->cost_per_unit;
         $ventBottomMaterial = RawMaterial::where('name', 'VW 107 ' . $firstFrameColorLetter)->first(); // MATERIAL 107,
-        $ventBottomCost = $this->getVentBottomAndTop() * 0.083 * $ventBottomMaterial->cost_per_unit * 2;
+        $ventBottomCost = $this->getVentBottomAndTop() * 0.083 * $ventBottomMaterial->cost_per_unit;
         $ventTopCost = $this->getVentBottomAndTop() * 0.083 * $ventBottomMaterial->cost_per_unit;
         $jamb101Material = RawMaterial::where('name', 'VW 101 ' . $firstFrameColorLetter)->first(); // MATERIAL 101
         $jamb101Cost = $this->height * 0.083 * $jamb101Material->cost_per_unit;
@@ -281,9 +312,13 @@ class HorizontalRollerProduct implements IProduct {
         $sideSashClipCost = ($this->getGlassWidth() + 2.188) * 0.083 * $sideSashClipMaterial->cost_per_unit * 2;
         $settingBlockMaterial = RawMaterial::where('id', 10)->first(); // MATERIAL NE850062
         $settingBlockCost = 16 * $settingBlockMaterial->cost_per_unit;
-        $weatherStripMeetRailSashMaterial = RawMaterial::where('name', 'W 22184 ' . $firstFrameColorLetter)->first(); // MATERIAL W 22184 (W or B)
-        $weatherStripMeetRailSashCost = (2 * ($this->height - 5.23 - 0.15) + ($this->width - 5.188)) * 0.083 * $weatherStripMeetRailSashMaterial->cost_per_unit;
-        $wheatherStripBottomMaterial = RawMaterial::where('name', 'W 22254 ' . $firstFrameColorLetter)->first(); // MATERIAL W 22254 (W or B)
+        if ($this->frameColor == FrameColorEnum::$FRAME_COLOR["WHITE"]) {
+          $weatherStripMeetRailSashMaterial = RawMaterial::where('name', 'W 22184 W')->first(); // W 22184 W or B
+        } else {
+          $weatherStripMeetRailSashMaterial = RawMaterial::where('name', 'W 22174 G')->first(); // W 22184 W or B
+        }
+        $weatherStripMeetRailSashCost = (2 * $this->getVentBottomAndTop() + $this->getFixedMeetingRail()) * 0.083 * $weatherStripMeetRailSashMaterial->cost_per_unit;
+        $wheatherStripBottomMaterial = RawMaterial::where('name', 'W 22254 BL')->first(); // MATERIAL W 22254 BL
         $wheatherStripBottomCost = $this->height * 0.083 * $wheatherStripBottomMaterial->cost_per_unit;
         $tSlotSealGlazingBeatMaterial = RawMaterial::where('id', 7)->first(); // TSG 0003
         $tSlotSealGlazingBeatCost = ((4 * $this->getGlassHeigth()) + (4 * $this->getGlassWidth())) * 0.083 * $tSlotSealGlazingBeatMaterial->cost_per_unit;
@@ -292,9 +327,18 @@ class HorizontalRollerProduct implements IProduct {
         $glazingBeatMaterial = RawMaterial::where('name', 'VW 108 ' . $firstFrameColorLetter)->first(); // MATERIAL 108
         $glazingBeatWidthCost = 4 * $this->getGlazingBeadWidth() * 0.083 * $glazingBeatMaterial->cost_per_unit;             
         $glazingBeatHeigthCost = ((2 * $this->getGlassHeigth()) + (2 * $this->getMoveGlazingBead())) * 0.083 * $glazingBeatMaterial->cost_per_unit;
-
+        $frameSideCoverCost = ($this->height - 5.25) * 0.083 * $glazingBeatMaterial->cost_per_unit;// new piece
         $structuralSliconeMaterial = RawMaterial::where('id', 32)->first(); // MATERIAL 105//STRUCTURAL SILICONE
         $structuralSliconeMaterialCost = (($this->getGlassWidth() * 4) + ($this->getGlassHeigth() * 4)) * 0.083 * $structuralSliconeMaterial->cost_per_unit;
+        $screwMaterial = RawMaterial::where('name', 'PPA 08-1')->first(); // MATERIAL Screws 8x1
+        $screwMaterialCost = $screwMaterial->cost_per_unit * 12;
+        $screwMaterial3inch = RawMaterial::where('name', 'PPA 08-3')->first(); // MATERIAL Screws 8x1
+        $screwMaterial3Cost = $screwMaterial3inch->cost_per_unit * 4;
+        $lockSprignMaterial = RawMaterial::where('name', 'LS 0001')->first(); // MATERIAL LS 0001
+        $lockSprignMaterialCost = $lockSprignMaterial->cost_per_unit * 2;
+        
+        $dobleFaceMaterial = RawMaterial::where('name', 'DF 4525')->first(); // MATERIAL LS 0001
+        $dobleFacenMaterialCost = ($this->height - 5.25) * 0.083 * $dobleFaceMaterial->cost_per_unit;
 
         // GET OTHER BILLS
         $workBill = config('custom.work_bill');
@@ -303,6 +347,8 @@ class HorizontalRollerProduct implements IProduct {
         $internetBill = config('custom.internet_bill');
         $otherBill = config('custom.other_bill');
         $screen_price_by_sqft = config('custom.screen_price_by_sqft');
+        $packing = config('custom.packing');
+
         $glassMaterial = RawMaterial::where('name', $this->glassType)->first(); // MATERIAL Glass
         $glassCost = $this->getGlassHeigth() * $this->getGlassWidth() / 144 * $glassMaterial->cost_per_unit;
         $glassCostMove = $this->getMoveGlassHeight() * $this->getGlassWidth() / 144 * $glassMaterial->cost_per_unit;
@@ -310,6 +356,73 @@ class HorizontalRollerProduct implements IProduct {
         if ($this->screenRequired) {
           $screenCost = $this->getScreenWidth() * $this->getScreenHeigth() / 144 * $screen_price_by_sqft;
         }
+
+         /* echo "ventJamb110Cost : " . $ventJamb110Cost . "<br/>";
+          echo "ventJamb106Cost : " . $ventJamb106Cost . "<br/>";
+          echo "ventBottomCost : " . $ventBottomCost . "<br/>";
+          echo "ventTopCost : " . $ventTopCost . "<br/>";
+          echo "jamb101Cost : " . $jamb101Cost . "<br/>";
+          echo "jamb102Cost : " . $jamb102Cost . "<br/>";
+          echo "fixedMeetingRailMaterialCost : " . $fixedMeetingRailMaterialCost . "<br/>";
+          echo "frameHeadSillCost : " . $frameHeadSillCost . "<br/>";
+          echo "stilTrackRailCost : " . $stilTrackRailCost . "<br/>";
+          echo "weepHoleCost : " . $weepHoleCost . "<br/>";
+          echo "rolesHousingCost : " . $rolesHousingCost . "<br/>";
+          echo "steelReinforcementCost : " . $steelReinforcementCost . "<br/>";
+          echo "ventLatchCost : " . $ventLatchCost . "<br/>";
+          echo "stopSashCost : " . $stopSashCost . "<br/>";
+          echo "screwCoverCost : " . $screwCoverCost . "<br/>";
+          echo "sideSashClipCost : " . $sideSashClipCost . "<br/>";
+          echo "settingBlockCost : " . $settingBlockCost . "<br/>";
+          echo "weatherStripMeetRailSashCost : " . $weatherStripMeetRailSashCost . "<br/>";
+          echo "wheatherStripBottomCost : " . $wheatherStripBottomCost . "<br/>";
+          echo "tSlotSealGlazingBeatCost : " . $tSlotSealGlazingBeatCost . "<br/>";
+          echo "tSlotSealFrameBottomCost : " . $tSlotSealFrameBottomCost . "<br/>";
+          echo "glazingBeatWidthCost : " . $glazingBeatWidthCost + $glazingBeatHeigthCost + $frameSideCoverCost . "<br/>";
+          echo "structuralSliconeMaterialCost : " . $structuralSliconeMaterialCost . "<br/>";
+          echo "glassCost : " . $glassCost . "<br/>";
+          echo "glassCostMove : " . $glassCostMove . "<br/>";
+          echo "screenCost : " . $screenCost . "<br/>";
+          echo "Screws 8-1: " . $screwMaterialCost . "<br/>";
+          echo "Screws 8-3: " . $screwMaterial3Cost . "<br/>";
+          echo "Doble Face: " . $dobleFacenMaterialCost . "<br/>";
+          echo "lockSprignMaterialCost: " . $lockSprignMaterialCost . "<br/>";
+          echo "packing: " . $packing . "<br/>";
+          echo "Total: " . round($ventJamb106Cost +
+          $ventJamb110Cost +
+          $ventBottomCost +
+          $ventTopCost +
+          $jamb101Cost +
+          $jamb102Cost +
+          $fixedMeetingRailMaterialCost +
+          $frameHeadSillCost +
+          $stilTrackRailCost +
+          $weepHoleCost +
+          $rolesHousingCost +
+          $steelReinforcementCost +
+          $ventLatchCost +
+          $stopSashCost +
+          $screwCoverCost +
+          $sideSashClipCost +
+          $settingBlockCost +
+          $weatherStripMeetRailSashCost +
+          $wheatherStripBottomCost +
+          $tSlotSealGlazingBeatCost +
+          $tSlotSealFrameBottomCost +
+          $glazingBeatWidthCost +
+          $glazingBeatHeigthCost +
+          $frameSideCoverCost +
+          $structuralSliconeMaterialCost +
+          $screwMaterialCost +
+          $screwMaterial3Cost +
+          $lockSprignMaterialCost +
+          $dobleFacenMaterialCost +
+          $glassCost +
+          $glassCostMove +
+          $packing +
+          $screenCost, 2);
+          die;*/
+
         $unitPriceCost = 
           $ventJamb106Cost +
           $ventJamb110Cost +
@@ -337,7 +450,12 @@ class HorizontalRollerProduct implements IProduct {
           $structuralSliconeMaterialCost +
           $glassCost +
           $glassCostMove +
+          $screwMaterialCost +
+          $screwMaterial3Cost +
+          $lockSprignMaterialCost +
+          $dobleFacenMaterialCost +
           $screenCost +
+          $packing +
           $workBill +
           $rentBill +
           $electricityBill +

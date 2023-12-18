@@ -2,6 +2,7 @@
 
 namespace App\Products;
 
+use App\Enum\FrameColorEnum;
 use App\Interfaces\IProduct;
 use App\Models\RawMaterial;
 use App\Traits\Fractions;
@@ -112,11 +113,19 @@ class SingleHuntProduct implements IProduct {
       $sts0001 = RawMaterial::where('name', 'STS 0001 ' . $this->materialColor)->first();
       $stg0002 = RawMaterial::where('name', 'TSG 0002')->first();
       $tbs0001 = RawMaterial::where('name', 'TSB 0001')->first();
-      $w22184 = RawMaterial::where('name', 'W 22184 ' . $this->materialColor)->first();
+      if ($this->frameColor == FrameColorEnum::$FRAME_COLOR["WHITE"]) {
+        $weatherStripMeetRailSash = RawMaterial::where('name', 'W 22184 W')->first(); // W 22184 W or B
+      } else {
+        $weatherStripMeetRailSash = RawMaterial::where('name', 'W 22174 G')->first(); // W 22184 W or B
+      }
+      //$w22184 = RawMaterial::where('name', 'W 22184 ' . $this->materialColor)->first();
       $w22254BL = RawMaterial::where('name', 'W 22254 BL')->first();
       $sc0001 = RawMaterial::where('name', 'SC 0001 ' . $this->materialColor)->first();
       $ss0001 = RawMaterial::where('name', 'SS 0001 ' . $this->materialColor)->first();
       $ne850125 = RawMaterial::where('name', 'NE 850125')->first();
+      $ppa081 = RawMaterial::where('name', 'PPA 08-1')->first();
+      $ls0001 = RawMaterial::where('name', 'LS 0001')->first(); // MATERIAL LS 0001
+      $clb0001 = RawMaterial::where('name', 'CLB 0001')->first(); // MATERIAL CLB 0001
 
       return [
         'VW 107 ' . $this->materialColor => [
@@ -189,10 +198,10 @@ class SingleHuntProduct implements IProduct {
           'unit_of_measurement' => $tbs0001->unit_of_measurement,
           'storage_measure' => $tbs0001->storage_measure
         ],
-        'W 22184 ' . $this->materialColor => [
+        $weatherStripMeetRailSash->name => [
           'amount' => $this->getWeatherStripMeetRailSash() * 0.083 * $qty,
-          'unit_of_measurement' => $w22184->unit_of_measurement,
-          'storage_measure' => $w22184->storage_measure
+          'unit_of_measurement' => $weatherStripMeetRailSash->unit_of_measurement,
+          'storage_measure' => $weatherStripMeetRailSash->storage_measure
         ],
         'W 22254 BL' => [
           'amount' => $this->width * 0.083 * $qty,
@@ -214,12 +223,26 @@ class SingleHuntProduct implements IProduct {
           'unit_of_measurement' => $ne850125->unit_of_measurement,
           'storage_measure' => $ne850125->storage_measure
         ],
+        'PPA 08-1' => [
+          'amount' => 16 * $qty,
+          'unit_of_measurement' => $ppa081->unit_of_measurement,
+          'storage_measure' => $ppa081->storage_measure,
+        ],
+        'LS 0001' => [
+          'amount' => 2 * $qty,
+          'unit_of_measurement' => $ls0001->unit_of_measurement,
+          'storage_measure' => $ls0001->storage_measure,
+        ],
+        'CLB 0001' => [
+          'amount' => 2 * $qty,
+          'unit_of_measurement' => $clb0001->unit_of_measurement,
+          'storage_measure' => $clb0001->storage_measure,
+        ],
       ];
     }
 
     public function getCuttingList($qty) {
       $cuttingListResult = [];
-      $this->materialColor = $this->getMaterialColor($this->frameColor);
       $cuttingListResult[] = $this->getCuttingListObject('Glass', $this->glassType, 2 * $qty, $this->getNumberWithFraction($this->getGlassWidth()) . ' x ' . $this->getNumberWithFraction($this->getGlassHeigth()));
       $cuttingListResult[] = $this->getCuttingListObject('Jamb', 'VW 107 ' . $this->materialColor, 2 * $qty, $this->getNumberWithFraction($this->getJamb()));
       $cuttingListResult[] = $this->getCuttingListObject('Vent Bottom', 'VW 106 ' . $this->materialColor, $qty, $this->getNumberWithFraction($this->getVentTopAndBottom()));
@@ -265,7 +288,7 @@ class SingleHuntProduct implements IProduct {
         $glazingBeadMaterial = RawMaterial::where('name', 'VW 108 ' . $this->materialColor)->first(); // MATERIAL 108
         $glazingBeadVerticalCost = $this->getGlazingBeatVertical() * 0.083 * $glazingBeadMaterial->cost_per_unit * 4;
         $glazingBeadHorizontalCost = $this->getGlazingBeatHorizontal() * 0.083 * $glazingBeadMaterial->cost_per_unit * 4;
-        $ventLachMaterial = RawMaterial::where('name', 'VW 103 ' . $this->materialColor)->first(); // MATERIAL 109
+        $ventLachMaterial = RawMaterial::where('name', 'VW 109 ' . $this->materialColor)->first(); // MATERIAL 109
         $ventLachCost = 3 * 0.083 * $ventLachMaterial->cost_per_unit * 2;
         $balanceHolderMaterial = RawMaterial::where('name', 'VW 105 MF')->first(); // MATERIAL VW 105 MF
         $balanceHolderCost = 1 * 0.083 * $balanceHolderMaterial->cost_per_unit * 2;
@@ -273,7 +296,11 @@ class SingleHuntProduct implements IProduct {
         $tSlotSealGlazingBeatCost = $this->getTSlotSealGlazingBeat() * 0.083 * $tSlotSealGlazingBeatMaterial->cost_per_unit;
         $tSlotSealFrameBottomMaterial = RawMaterial::where('name', 'TSB 0001')->first(); // TSB 0001
         $tSlotSealFrameBottomCost = $this->width * 0.083 * $tSlotSealFrameBottomMaterial->cost_per_unit;
-        $weatherStripMeetRailSashMaterial = RawMaterial::where('name', 'W 22184 ' . $this->materialColor)->first(); // W 22184 W or B
+        if ($this->frameColor == FrameColorEnum::$FRAME_COLOR["WHITE"]) {
+          $weatherStripMeetRailSashMaterial = RawMaterial::where('name', 'W 22184 W')->first(); // W 22184 W or B
+        } else {
+          $weatherStripMeetRailSashMaterial = RawMaterial::where('name', 'W 22174 G')->first(); // W 22184 W or B
+        }
         $weatherStripMeetRailSashCost = $this->getWeatherStripMeetRailSash() * 0.083 * $weatherStripMeetRailSashMaterial->cost_per_unit;
         $weatherStripBottomMaterial = RawMaterial::where('name', 'W 22254 BL')->first(); // W 22254 BL
         $weatherStripBottomCost = $this->width * 0.083 * $weatherStripBottomMaterial->cost_per_unit;
@@ -289,7 +316,13 @@ class SingleHuntProduct implements IProduct {
         $stopSashCost = 2 * 3 * 0.083 * $stopSashMaterial->cost_per_unit;
         $structuralSliconeMaterial = RawMaterial::where('id', 32)->first(); //STRUCTURAL SILICONE
         $structuralSliconeMaterialCost = (($this->getGlassWidth() * 4) + ($this->getGlassHeigth() * 4)) * 0.083 * $structuralSliconeMaterial->cost_per_unit;
-        
+        $screwMaterial = RawMaterial::where('name', 'PPA 08-1')->first(); // MATERIAL Screws 8x1
+        $screwMaterialCost = $screwMaterial->cost_per_unit * 16;
+        $lockSprignMaterial = RawMaterial::where('name', 'LS 0001')->first(); // MATERIAL LS 0001
+        $lockSprignMaterialCost = $lockSprignMaterial->cost_per_unit * 2;
+        $clipTakeOffBalanceMaterial = RawMaterial::where('name', 'CLB 0001')->first(); // MATERIAL CLB 0001
+        $clipTakeOffBalanceCost = $clipTakeOffBalanceMaterial->cost_per_unit * 2;
+
         // GET OTHER BILLS
         $workBill = config('custom.work_bill');
         $rentBill = config('custom.rent_bill');
@@ -297,6 +330,7 @@ class SingleHuntProduct implements IProduct {
         $internetBill = config('custom.internet_bill');
         $otherBill = config('custom.other_bill');
         $screen_price_by_sqft = config('custom.screen_price_by_sqft');
+        $packing = config('custom.packing');
 
         $glassMaterial = RawMaterial::where('name', $this->glassType)->first(); // MATERIAL Glass
         $glassCost = $this->getGlassHeigth() * $this->getGlassWidth() / 144 * $glassMaterial->cost_per_unit;
@@ -305,6 +339,63 @@ class SingleHuntProduct implements IProduct {
         if ($this->screenRequired) {
           $screenCost = $this->getScreenWidth() * $this->getScreenHeigth() / 144 * $screen_price_by_sqft;
         }
+
+        /* echo "ventJambCost:" . $ventJambCost . "<br>" ;
+            echo  "ventBottomCost: " . $ventBottomCost . "<br>" ;
+            echo  "ventTopCost: " . $ventTopCost . "<br>" ;
+            echo  "frameJambCost:" . $frameJambCost . "<br>" ;
+            echo  "fixedMeetingRailCost: " . $fixedMeetingRailCost . "<br>" ;
+            echo  "frameHeadCost: " . $frameHeadCost . "<br>" ;
+            echo  "frameSillCost: " . $frameSillCost . "<br>" ;
+            echo  "glazingBeadVerticalCost: " . $glazingBeadVerticalCost . "<br>" ;
+            echo  "glazingBeadHorizontalCost: " . $glazingBeadHorizontalCost . "<br>" ;
+            echo  "ventLachCost: " . $ventLachCost . "<br>" ;
+            echo  "balanceHolderCost: " . $balanceHolderCost . "<br>" ;
+            echo  "tSlotSealGlazingBeatCost: " . $tSlotSealGlazingBeatCost . "<br>" ;
+            echo  "tSlotSealFrameBottomCost: " . $tSlotSealFrameBottomCost . "<br>" ;
+            echo  "weatherStripMeetRailSashCost: " . $weatherStripMeetRailSashCost . "<br>" ;
+            echo  "weatherStripBottomCost: " . $weatherStripBottomCost . "<br>" ;
+            echo  "steelReiceformentCost: " . $steelReiceformentCost . "<br>" ;
+            echo  "screwCoverCost: " . $screwCoverCost . "<br>" ;
+            echo  "sideSashClipCost: " . $sideSashClipCost . "<br>" ;
+            echo  "settingBlockCost: " . $settingBlockCost . "<br>" ;
+            echo  "stopSashCost: " . $stopSashCost . "<br>" ;
+            echo  "glassCost: " . ($glassCost * 2) . "<br>" ;
+            echo  "balancePrice: " . $balancePrice . "<br>" ;
+            echo  "structuralSliconeMaterialCost: " . $structuralSliconeMaterialCost . "<br>" ;
+            echo  "screenCost: " . $screenCost . "<br>" ;
+            echo  "packing: " . $packing . "<br>" ;
+            echo  "Screws: " . $screwMaterialCost . "<br>" ;
+            echo  "LockSpringCost: " . $lockSprignMaterialCost . "<br>" ;
+            echo  "clipTakeOffBalanceCost: " . $clipTakeOffBalanceCost . "<br>" ;
+            echo "Total:" . round($ventJambCost +
+                        $ventBottomCost +
+                        $ventTopCost +
+                        $frameJambCost +
+                        $fixedMeetingRailCost +
+                        $frameHeadCost +
+                        $frameSillCost +
+                        $glazingBeadVerticalCost +
+                        $glazingBeadHorizontalCost +
+                        $ventLachCost +
+                        $balanceHolderCost +
+                        $tSlotSealGlazingBeatCost +
+                        $tSlotSealFrameBottomCost +
+                        $weatherStripMeetRailSashCost +
+                        $weatherStripBottomCost +
+                        $steelReiceformentCost +
+                        $screwCoverCost +
+                        $sideSashClipCost +
+                        $settingBlockCost +
+                        $stopSashCost +
+                        ($glassCost * 2) +
+                        $balancePrice +
+                        $structuralSliconeMaterialCost +
+                        $screenCost +
+                        $screwMaterialCost +
+                        $lockSprignMaterialCost +
+                        $packing, 2) . "<br>";
+        die;*/
 
         $unitPriceCost = 
           $ventJambCost +
@@ -330,7 +421,11 @@ class SingleHuntProduct implements IProduct {
           ($glassCost * 2) +
           $balancePrice +
           $structuralSliconeMaterialCost +
+          $screwMaterialCost +
+          $lockSprignMaterialCost +
+          $clipTakeOffBalanceCost +
           $screenCost +
+          $packing +
           $workBill +
           $rentBill +
           $electricityBill +
