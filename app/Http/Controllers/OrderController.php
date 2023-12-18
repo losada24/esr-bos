@@ -67,56 +67,117 @@ class OrderController extends Controller
     public function workOrder(Order $order) {
       $order->load(['products', 'client']);
       
-        $orderData = [
-          'id' => $order->id,
-          'client' => $order->client->name,
-          'created_at' => $order->created_at,
-          'project_name' => $order->project_name,
-          'products' => $order->products->map(function($product, $key) {
-            $cuttingList = [];
-            switch($product->system) {
-              case ProductSystemEnum::$FIXED_WINDOWS:
-                $cuttingListObject = new FixedWindowsProduct(
-                  $product->width,
-                  $product->height,
-                  $product->frame_color,
-                  $product->glass_type
-                );
-                $cuttingList = $cuttingListObject->getCuttingList($product->qty);
-                break;
-              case ProductSystemEnum::$HORIZONTAL_ROLLER:
-                $cuttingListObject = new HorizontalRollerProduct(
-                  $product->width,
-                  $product->height,
-                  $product->frame_color,
-                  $product->glass_type,
-                  $product->extras['screen']
-                );
-                $cuttingList = $cuttingListObject->getCuttingList($product->qty);
-                break;
-              case ProductSystemEnum::$SINGLE_HUNT:
-                $cuttingListObject = new SingleHuntProduct(
-                  $product->width,
-                  $product->height,
-                  $product->frame_color,
-                  $product->glass_type,
-                  $product->extras['screen']
-                );
-                $cuttingList = $cuttingListObject->getCuttingList($product->qty);
-                break;
-            }
+      $materialConsumption = [];
+      $order->products->each(function($product) use (&$materialConsumption) {
+        switch($product->system) {
+          case ProductSystemEnum::$FIXED_WINDOWS:
+            $cuttingListObject = new FixedWindowsProduct(
+              $product->width,
+              $product->height,
+              $product->frame_color,
+              $product->glass_type
+            );
 
-            return [
-              'id' => $product->id,
-              'visual_id' => $key,
-              'system' => $product->system,
-              'qty' => $product->qty,
-              'width' => $product->width,
-              'height' => $product->height,
-              'cutting_list' => $cuttingList,
-            ];
-          })
-        ];
+            collect($cuttingListObject->getMaterialConsumption($product->qty))->each(function($value, $key) use (&$materialConsumption) {
+              if( isset($materialConsumption[$key]) ) {
+                $materialConsumption[$key] += $value;
+              } else {
+                $materialConsumption[$key] = $value;
+              }
+            });
+            break;
+          case ProductSystemEnum::$HORIZONTAL_ROLLER:
+            $cuttingListObject = new HorizontalRollerProduct(
+              $product->width,
+              $product->height,
+              $product->frame_color,
+              $product->glass_type,
+              $product->extras['screen']
+            );
+
+            collect($cuttingListObject->getMaterialConsumption($product->qty))->each(function($value, $key) use (&$materialConsumption) {
+              if( isset($materialConsumption[$key]) ) {
+                $materialConsumption[$key] += $value;
+              } else {
+                $materialConsumption[$key] = $value;
+              }
+            });
+            break;
+          case ProductSystemEnum::$SINGLE_HUNT:
+            $cuttingListObject = new SingleHuntProduct(
+              $product->width,
+              $product->height,
+              $product->frame_color,
+              $product->glass_type,
+              $product->extras['screen']
+            );
+
+            collect($cuttingListObject->getMaterialConsumption($product->qty))->each(function($value, $key) use (&$materialConsumption) {
+              if( isset($materialConsumption[$key]) ) {
+                $materialConsumption[$key] += $value;
+              } else {
+                $materialConsumption[$key] = $value;
+              }
+            });
+            break;
+        }
+      });
+
+      //dd($materialConsumption);
+
+      $orderData = [
+        'id' => $order->id,
+        'name' => $order->name,
+        'client' => $order->client,
+        'created_at' => $order->created_at,
+        'project_name' => $order->project_name,
+        'products' => $order->products->map(function($product, $key) {
+          $cuttingList = [];
+          switch($product->system) {
+            case ProductSystemEnum::$FIXED_WINDOWS:
+              $cuttingListObject = new FixedWindowsProduct(
+                $product->width,
+                $product->height,
+                $product->frame_color,
+                $product->glass_type
+              );
+              $cuttingList = $cuttingListObject->getCuttingList($product->qty);
+              break;
+            case ProductSystemEnum::$HORIZONTAL_ROLLER:
+              $cuttingListObject = new HorizontalRollerProduct(
+                $product->width,
+                $product->height,
+                $product->frame_color,
+                $product->glass_type,
+                $product->extras['screen']
+              );
+              $cuttingList = $cuttingListObject->getCuttingList($product->qty);
+              break;
+            case ProductSystemEnum::$SINGLE_HUNT:
+              $cuttingListObject = new SingleHuntProduct(
+                $product->width,
+                $product->height,
+                $product->frame_color,
+                $product->glass_type,
+                $product->extras['screen']
+              );
+              $cuttingList = $cuttingListObject->getCuttingList($product->qty);
+              break;
+          }
+
+          return [
+            'id' => $product->id,
+            'visual_id' => $key,
+            'line_item_name' => $product->line_item_name,
+            'system' => $product->system,
+            'qty' => $product->qty,
+            'width' => $product->width,
+            'height' => $product->height,
+            'cutting_list' => $cuttingList,
+          ];
+        }),
+        'materialConsumption' => []
+      ];
 
       return Inertia::render('Order/WorkOrder', [
         'order' => $orderData

@@ -1,25 +1,32 @@
-import React, { useEffect } from 'react'
+import React from 'react'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
 import { Head, Link } from '@inertiajs/react'
 import { type PageProps, type Order, type Client, type Role } from '@/types'
 import Panel from '@/Components/Panel'
 import { createMarkWithLeadingZero } from '@/Utils/mark'
 import HammerIcon from '@/Components/Icons/HammerIcon'
-import { useStore } from '@/Store/materialSummary'
 import { isAccounting, isAdmin } from '@/Utils/user'
-import PriceSummary from '@/Pages/Estimate/PriceSummary'
 import { PRODUCTION_STATUS } from '@/Utils/constants'
 
 export default function Show ({ auth, order }: PageProps & {
   clients: Client[]
   order: Order
 }) {
-  const store = useStore()
-  useEffect(() => {
-    store.reset()
-  }, [])
   const IS_ACCOUNTING = isAccounting(auth.user.roles.map((role: Role) => role.name))
   const IS_ADMIN = isAdmin(auth.user.roles.map((role: Role) => role.name))
+  const getSubtotal = () => {
+    const subtotal: number | undefined = order.products?.reduce((acc, product) => {
+      return acc + Number(product.total_price)
+    }, 0)
+
+    return Math.round(subtotal ?? 0)
+  }
+
+  const getGrandTotal = () => {
+    const subtotal: number = getSubtotal() ?? 0
+    return Math.round(Number(subtotal))
+  }
+
   return (
       <AuthenticatedLayout
           auth={auth}
@@ -27,7 +34,7 @@ export default function Show ({ auth, order }: PageProps & {
       >
           <Head title={`Order ${createMarkWithLeadingZero(order.id, 6)}`} />
           <div className='grid gap-6 grid-cols-12'>
-            <div className='col-span-4'>
+            <div className='col-span-2'>
               <Panel className='pb-0'>
                 <div className='group relative flex items-center py-1.5'>
                   <div className="flex-1">Quote #</div>
@@ -59,7 +66,7 @@ export default function Show ({ auth, order }: PageProps & {
                 </div>
               </Panel>
             </div>
-            <div className='col-span-8'>
+            <div className='col-span-10'>
               <div className='table-responsive'>
                 <table className="w-full whitespace-nowrap">
                   <thead>
@@ -123,11 +130,20 @@ export default function Show ({ auth, order }: PageProps & {
                       </tr>
                     )}
                   </tbody>
+                  {(IS_ACCOUNTING || IS_ADMIN) && (
+                    <tfoot>
+                      <tr>
+                        <td className="border-t px-6 py-4 align-top text-right font-semibold" colSpan={7}>
+                          Grand Total
+                        </td>
+                        <td className="border-t px-6 py-4 align-top">
+                          {`$${getGrandTotal()}`}
+                        </td>
+                      </tr>
+                    </tfoot>
+                  )}
                 </table>
               </div>
-              {(IS_ACCOUNTING || IS_ADMIN) && (
-                <PriceSummary estimate={order} />
-              )}
             </div>
           </div>
       </AuthenticatedLayout>

@@ -83,7 +83,7 @@ export default function Index ({ auth, orders, statuses }: IndexOrderProps) {
                           <EyeIcon />
                         </Link>
                         {((isAdmin(auth.user.roles.map((role: Role) => role.name)) || isAccounting(auth.user.roles.map((role: Role) => role.name))) &&
-                          order.status === ACCOUNTING_STATUS) && (
+                          (order.status === ACCOUNTING_STATUS)) && (
                           <button title='Produce Order' onClick={() => {
                             setSelectedOrder(order)
                             setShowOrderModal(true)

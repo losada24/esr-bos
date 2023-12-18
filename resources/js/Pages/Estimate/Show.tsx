@@ -41,7 +41,7 @@ export default function Create ({ auth, estimate }: PageProps & {
       >
           <Head title={`Estimate ${estimate.name}`} />
           <div className='grid gap-6 grid-cols-12'>
-            <div className='col-span-4'>
+            <div className='col-span-2'>
               <Panel className='pb-0'>
                 <div className='group relative flex items-center py-1.5'>
                   <div className="flex-1">Quote #</div>
@@ -131,7 +131,7 @@ export default function Create ({ auth, estimate }: PageProps & {
                 </div>
               </Panel>
             </div>
-            <div className='col-span-8'>
+            <div className='col-span-10'>
               <div className='table-responsive'>
                 <table className="w-full whitespace-nowrap">
                   <thead>

@@ -26,3 +26,13 @@ test('check 6.529', function () {
 
     expect($fraction->getNumberWithFraction(6.529))->toBe('6 1/2');
 });
+
+
+test('check 6.454', function () {
+
+    $fraction = new class {
+        use App\Traits\Fractions;
+    };
+
+    expect($fraction->getNumberWithFraction(6.454))->toBe('6 1/2');
+});

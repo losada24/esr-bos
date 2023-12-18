@@ -120,7 +120,7 @@ const EstimateForm = ({ submitCount, errors, isCreate, glass_colors, frame_color
           {(submitCount && errors.glass_color) ? <InputError message={errors.glass_color} className="mt-2" /> : ''}
         </div>
         <div className={submitCount ? (errors.glass_type) ? 'has-error' : 'has-success' : ''}>
-          <label htmlFor="glass_type">Glass Type</label>
+          <label htmlFor="glass_type">Glass Lead Time</label>
           <Field
             id="glass_type"
             name="glass_type"

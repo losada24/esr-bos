@@ -14,8 +14,8 @@ const ShowCuttingList = ({ cuttingList, productId }: { cuttingList: CuttingList[
         return <tr key={`${productId}${index}`}>
           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900" colSpan={2}>{productOrderField.part}</td>
           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{productOrderField.material}</td>
-          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{productOrderField.qty}</td>
-          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{productOrderField.size}</td>
+          <th className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-right">{productOrderField.qty}</th>
+          <th className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-right">{productOrderField.size}</th>
         </tr>
       })}
     </>
