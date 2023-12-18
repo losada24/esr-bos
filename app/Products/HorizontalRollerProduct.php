@@ -87,28 +87,134 @@ class HorizontalRollerProduct implements IProduct {
     }
 
     public function getMaterialConsumption($qty) {
+      $vw110 = RawMaterial::where('name', 'VW 110 ' . $this->materialColor)->first();
+      $vw106 = RawMaterial::where('name', 'VW 106 ' . $this->materialColor)->first();
+      $vw107 = RawMaterial::where('name', 'VW 107 ' . $this->materialColor)->first();
+      $vw101 = RawMaterial::where('name', 'VW 101 ' . $this->materialColor)->first();
+      $vw102 = RawMaterial::where('name', 'VW 102 ' . $this->materialColor)->first();
+      $vw104 = RawMaterial::where('name', 'VW 104 ' . $this->materialColor)->first();
+      $vw108 = RawMaterial::where('name', 'VW 108 ' . $this->materialColor)->first();
+      $vw111 = RawMaterial::where('name', 'VW 111 ' . $this->materialColor)->first();
+      $vw112 = RawMaterial::where('name', 'VW 112 ' . $this->materialColor)->first();
+      $vw109 = RawMaterial::where('name', 'VW 109 ' . $this->materialColor)->first();
+      $vh0001 = RawMaterial::where('name', 'WH 0001 ' . $this->materialColor)->first();
+      $sts0001 = RawMaterial::where('name', 'STS 0001 ' . $this->materialColor)->first();
+      $sc0001 = RawMaterial::where('name', 'SC 0001 ' . $this->materialColor)->first();
+      $ss0001 = RawMaterial::where('name', 'SS 0001 ' . $this->materialColor)->first();
+      $w22184 = RawMaterial::where('name', 'W 22184 ' . $this->materialColor)->first();
+      $w22254 = RawMaterial::where('name', 'W 22254 ' . $this->materialColor)->first();
+      $rh0001 = RawMaterial::where('name', 'RH 0001')->first();
+      $st0001 = RawMaterial::where('name', 'ST 0001')->first();
+      $tsg0003 = RawMaterial::where('name', 'TSG 0003')->first();
+      $tsb0001 = RawMaterial::where('name', 'TSB 0001')->first();
+      $ne850125 = RawMaterial::where('name', 'NE 850125')->first();
+
       return [
-          'VW 110 ' . $this->materialColor => $this->getVentJamb() * 2 * $qty * 0.083,
-          'VW 106 ' . $this->materialColor => $this->getVentJamb() * $qty * 0.083,
-          'VW 107 ' . $this->materialColor => (($this->getVentBottomAndTop() * 2  * $qty) + ($qty * $this->getVentBottomAndTop())) * 0.083,
-          'VW 101 ' . $this->materialColor => $this->height * $qty * 0.083,
-          'VW 102 ' . $this->materialColor => $this->height * $qty * 0.083,
-          'VW 104 ' . $this->materialColor => $this->getFixedMeetingRail() * $qty * 0.083,
-          'VW 108 ' . $this->materialColor => (($this->getGlassHeigth() * 2 * $qty) + ($this->getMoveGlazingBead() * 2 * $qty) + ($this->getGlazingBeadWidth() * 4 * $qty)) * 0.083,
-          'VW 111 ' . $this->materialColor => ($this->getFrameSill() * 2 * $qty) * 0.083,
-          'VW 112 ' . $this->materialColor => $this->getSillTrackRail() * $qty * 0.083,
-          'WH 0001 ' . $this->materialColor => 2 * $qty,
-          'RH 0001 ' . $this->materialColor => 2 * $qty,
-          'ST 0001' => $this->getSteelReiceforment() * $qty * 0.083,
-          'VW 109 ' . $this->materialColor => 2 * $qty,
-          'STS 0001 ' . $this->materialColor => 3 * $qty,
-          'SC 0001 ' . $this->materialColor => $this->getGlassHeigth() * $qty * 0.083,
-          'SS 0001 ' . $this->materialColor => ($this->getVentBottomAndTop() * 2 * $qty) * 0.083,
-          'NE 850125' => 16 * $qty,
-          'W 22184 ' . $this->materialColor => $this->getWeatherStripMeetRailSash() * $qty * 0.083,
-          'w 22254 ' . $this->materialColor => $this->height * $qty * 0.083,
-          'TSG 0003' => $this->getTSlotSealGlazingBeat() * $qty * 0.083,
-          'TSB 0001' => $this->height * $qty * 0.083,
+          'VW 110 ' . $this->materialColor => [
+            'amount' => $this->getVentJamb() * 2 * $qty * 0.083,
+            'unit_of_measurement' => $vw110->unit_of_measurement,
+            'storage_measure' => $vw110->storage_measure,
+          ],
+          'VW 106 ' . $this->materialColor => [
+            'amount' => $this->getVentJamb() * $qty * 0.083,
+            'unit_of_measurement' => $vw106->unit_of_measurement,
+            'storage_measure' => $vw106->storage_measure,
+          ],
+          'VW 107 ' . $this->materialColor => [
+            'amount' => (($this->getVentBottomAndTop() * 2  * $qty) + ($qty * $this->getVentBottomAndTop())) * 0.083,
+            'unit_of_measurement' => $vw107->unit_of_measurement,
+            'storage_measure' => $vw107->storage_measure
+          ],
+          'VW 101 ' . $this->materialColor => [
+            'amount' => $this->height * $qty * 0.083,
+            'unit_of_measurement' => $vw101->unit_of_measurement,
+            'storage_measure' => $vw101->storage_measure
+          ],
+          'VW 102 ' . $this->materialColor => [
+            'amount' => $this->height * $qty * 0.083,
+            'unit_of_measurement' => $vw102->unit_of_measurement,
+            'storage_measure' => $vw102->storage_measure
+          ],
+          'VW 104 ' . $this->materialColor => [
+            'amount' => $this->getFixedMeetingRail() * $qty * 0.083,
+            'unit_of_measurement' => $vw104->unit_of_measurement,
+            'storage_measure' => $vw104->storage_measure
+          ],
+          'VW 108 ' . $this->materialColor => [
+            'amount' => (($this->getGlassHeigth() * 2 * $qty) + ($this->getMoveGlazingBead() * 2 * $qty) + ($this->getGlazingBeadWidth() * 4 * $qty)) * 0.083,
+            'unit_of_measurement' => $vw108->unit_of_measurement,
+            'storage_measure' => $vw108->storage_measure
+          ],
+          'VW 111 ' . $this->materialColor => [
+            'amount' => ($this->getFrameSill() * 2 * $qty) * 0.083,
+            'unit_of_measurement' => $vw111->unit_of_measurement,
+            'storage_measure' => $vw111->storage_measure
+          ],
+          'VW 112 ' . $this->materialColor => [
+            'amount' => $this->getSillTrackRail() * $qty * 0.083,
+            'unit_of_measurement' => $vw112->unit_of_measurement,
+            'storage_measure' => $vw112->storage_measure
+          ],
+          'VW 109 ' . $this->materialColor => [
+            'amount' => 2 * $qty,
+            'unit_of_measurement' => $vw109->unit_of_measurement,
+            'storage_measure' => $vw109->storage_measure
+          ],
+          'WH 0001 ' . $this->materialColor => [
+            'amount' => 2 * $qty,
+            'unit_of_measurement' => $vh0001->unit_of_measurement,
+            'storage_measure' => $vh0001->storage_measure
+          ],
+          'RH 0001' => [
+            'amount' => 2 * $qty,
+            'unit_of_measurement' => $rh0001->unit_of_measurement,
+            'storage_measure' => $rh0001->storage_measure
+          ],
+          'STS 0001 ' . $this->materialColor => [
+            'amount' => 3 * $qty,
+            'unit_of_measurement' => $sts0001->unit_of_measurement,
+            'storage_measure' => $sts0001->storage_measure
+          ],
+          'SC 0001 ' . $this->materialColor => [
+            'amount' =>  $this->getGlassHeigth() * $qty * 0.083,
+            'unit_of_measurement' => $sc0001->unit_of_measurement,
+            'storage_measure' => $sc0001->storage_measure
+          ],
+          'SS 0001 ' . $this->materialColor => [
+            'amount' => ($this->getVentBottomAndTop() * 2 * $qty) * 0.083,
+            'unit_of_measurement' => $ss0001->unit_of_measurement,
+            'storage_measure' => $ss0001->storage_measure
+          ],
+          'W 22184 ' . $this->materialColor => [
+            'amount' => $this->getWeatherStripMeetRailSash() * $qty * 0.083,
+            'unit_of_measurement' => $w22184->unit_of_measurement,
+            'storage_measure' => $w22184->storage_measure
+          ],
+          'W 22254 ' . $this->materialColor => [
+            'amount' => $this->height * $qty * 0.083,
+            'unit_of_measurement' => $w22254->unit_of_measurement,
+            'storage_measure' => $w22254->storage_measure
+          ],
+          'ST 0001' => [
+            'amount' => $this->getSteelReiceforment() * $qty * 0.083,
+            'unit_of_measurement' => $st0001->unit_of_measurement,
+            'storage_measure' => $st0001->storage_measure
+          ],
+          'TSG 0003' => [
+            'amount' => $this->getTSlotSealGlazingBeat() * $qty * 0.083,
+            'unit_of_measurement' => $tsg0003->unit_of_measurement,
+            'storage_measure' => $tsg0003->storage_measure
+          ],
+          'TSB 0001' => [
+            'amount' => $this->height * $qty * 0.083,
+            'unit_of_measurement' => $tsb0001->unit_of_measurement,
+            'storage_measure' => $tsb0001->storage_measure
+          ],
+          'NE 850125' => [
+            'amount' => 16 * $qty,
+            'unit_of_measurement' => $ne850125->unit_of_measurement,
+            'storage_measure' => $ne850125->storage_measure
+          ],
       ];
     }
 
@@ -161,7 +267,7 @@ class HorizontalRollerProduct implements IProduct {
         $stilTrackRailCost = $this->getSillTrackRail() * 0.083 * $stilTrackRailMaterial->cost_per_unit;
         $weepHoleMaterial = RawMaterial::where('name', 'WH 0001 ' . $firstFrameColorLetter)->first(); // MATERIAL WH 0001 (W or B)
         $weepHoleCost = 2 * $weepHoleMaterial->cost_per_unit;
-        $rolesHousingMaterial = RawMaterial::where('id', 31)->first(); // MATERIAL RH 0001
+        $rolesHousingMaterial = RawMaterial::where('name', 'RH 0001')->first(); // MATERIAL RH 0001
         $rolesHousingCost = 2 * $rolesHousingMaterial->cost_per_unit;
         $steelReinforcementMaterial = RawMaterial::where('name', 'ST 0001')->first(); // MATERIAL ST 0001
         $steelReinforcementCost = $this->getSteelReiceforment() * 0.083 * $steelReinforcementMaterial->cost_per_unit;

@@ -45,15 +45,56 @@ class FixedWindowsProduct implements IProduct {
     }
 
     public function getMaterialConsumption($qty) {
+      $vw101 = RawMaterial::where('name', 'VW 101 ' . $this->materialColor)->first();
+      $vw103 = RawMaterial::where('name', 'VW 103 ' . $this->materialColor)->first();
+      $vw108 = RawMaterial::where('name', 'VW 108 ' . $this->materialColor)->first();
+      $sc0001 = RawMaterial::where('name', 'SC 0001 ' . $this->materialColor)->first();
+      $sts0001 = RawMaterial::where('name', 'STS 0001 ' . $this->materialColor)->first();
+      $tsg0003 = RawMaterial::where('name', 'TSG 0003')->first();
+      $ne850125 = RawMaterial::where('name', 'NE 850125')->first();
+      $ppa081 = RawMaterial::where('name', 'PPA 08-1')->first();
+
       return [
-        'VW 101 ' . $this->materialColor => $this->width * 2 * $qty * 0.083,
-        'VW 103 ' . $this->materialColor => $this->getJamb() * 2 * $qty * 0.083,
-        'VW 108 ' . $this->materialColor => ($this->getGlazingBeatVertical() * 2 + $this->getGlazingBeatHorizontal() * 2) * $qty * 0.083,
-        'SC 0001 ' . $this->materialColor => ($this->getGlassWidth() * 2) * $qty * 0.083,
-        'TSG 0003' => (($this->getGlazingBeatHorizontal() * 2) + ($this->getGlazingBeatVertical() * 2)) * $qty * 0.083,
-        'STS 0001 ' . $this->materialColor => ($this->getGlassHeigth() * 2) * $qty * 0.083,
-        'NE 850125' => 8 * $qty,
-        'PPA 08-1' => 12 * $qty,
+        'VW 101 ' . $this->materialColor => [
+          'amount' => $this->width * 2 * $qty * 0.083,
+          'unit_of_measurement' => $vw101->unit_of_measurement,
+          'storage_measure' => $vw101->storage_measure,
+        ],
+        'VW 103 ' . $this->materialColor => [
+          'amount' => $this->getJamb() * 2 * $qty * 0.083,
+          'unit_of_measurement' => $vw103->unit_of_measurement,
+          'storage_measure' => $vw103->storage_measure,
+        ],
+        'VW 108 ' . $this->materialColor => [
+          'amount' => ($this->getGlazingBeatVertical() * 2 + $this->getGlazingBeatHorizontal() * 2) * $qty * 0.083,
+          'unit_of_measurement' => $vw108->unit_of_measurement,
+          'storage_measure' => $vw108->storage_measure,
+        ],
+        'SC 0001 ' . $this->materialColor => [
+          'amount' => ($this->getGlassWidth() * 2) * $qty * 0.083,
+          'unit_of_measurement' => $sc0001->unit_of_measurement,
+          'storage_measure' => $sc0001->storage_measure,
+        ],
+        'TSG 0003' => [
+          'amount' => (($this->getGlazingBeatHorizontal() * 2) + ($this->getGlazingBeatVertical() * 2)) * $qty * 0.083,
+          'unit_of_measurement' => $tsg0003->unit_of_measurement,
+          'storage_measure' => $tsg0003->storage_measure,
+        ],
+        'STS 0001 ' . $this->materialColor => [
+          'amount' => ($this->getGlassHeigth() * 2) * $qty * 0.083,
+          'unit_of_measurement' => $sts0001->unit_of_measurement,
+          'storage_measure' => $sts0001->storage_measure,
+        ],
+        'NE 850125' => [
+          'amount' => 8 * $qty,
+          'unit_of_measurement' => $ne850125->unit_of_measurement,
+          'storage_measure' => $ne850125->storage_measure,
+        ],
+        'PPA 08-1' => [
+          'amount' => 12 * $qty,
+          'unit_of_measurement' => $ppa081->unit_of_measurement,
+          'storage_measure' => $ppa081->storage_measure,
+        ],
       ];
     }
 

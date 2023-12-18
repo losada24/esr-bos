@@ -80,7 +80,7 @@ class OrderController extends Controller
 
             collect($cuttingListObject->getMaterialConsumption($product->qty))->each(function($value, $key) use (&$materialConsumption) {
               if( isset($materialConsumption[$key]) ) {
-                $materialConsumption[$key] += $value;
+                $materialConsumption[$key]['amount'] += $value['amount'];
               } else {
                 $materialConsumption[$key] = $value;
               }
@@ -97,7 +97,7 @@ class OrderController extends Controller
 
             collect($cuttingListObject->getMaterialConsumption($product->qty))->each(function($value, $key) use (&$materialConsumption) {
               if( isset($materialConsumption[$key]) ) {
-                $materialConsumption[$key] += $value;
+                $materialConsumption[$key]['amount'] += $value['amount'];
               } else {
                 $materialConsumption[$key] = $value;
               }
@@ -114,7 +114,7 @@ class OrderController extends Controller
 
             collect($cuttingListObject->getMaterialConsumption($product->qty))->each(function($value, $key) use (&$materialConsumption) {
               if( isset($materialConsumption[$key]) ) {
-                $materialConsumption[$key] += $value;
+                $materialConsumption[$key]['amount'] += $value['amount'];
               } else {
                 $materialConsumption[$key] = $value;
               }
@@ -122,8 +122,6 @@ class OrderController extends Controller
             break;
         }
       });
-
-      //dd($materialConsumption);
 
       $orderData = [
         'id' => $order->id,
@@ -176,7 +174,7 @@ class OrderController extends Controller
             'cutting_list' => $cuttingList,
           ];
         }),
-        'materialConsumption' => []
+        'materialConsumption' => $materialConsumption
       ];
 
       return Inertia::render('Order/WorkOrder', [

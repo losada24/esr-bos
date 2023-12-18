@@ -98,26 +98,122 @@ class SingleHuntProduct implements IProduct {
     }
 
     public function getMaterialConsumption($qty) {
+      $vw107 = RawMaterial::where('name', 'VW 107 ' . $this->materialColor)->first();
+      $vw106 = RawMaterial::where('name', 'VW 106 ' . $this->materialColor)->first();
+      $vw110 = RawMaterial::where('name', 'VW 110 ' . $this->materialColor)->first();
+      $vw103 = RawMaterial::where('name', 'VW 103 ' . $this->materialColor)->first();
+      $vw104 = RawMaterial::where('name', 'VW 104 ' . $this->materialColor)->first();
+      $vw101 = RawMaterial::where('name', 'VW 101 ' . $this->materialColor)->first();
+      $vw102 = RawMaterial::where('name', 'VW 102 ' . $this->materialColor)->first();
+      $vw108 = RawMaterial::where('name', 'VW 108 ' . $this->materialColor)->first();
+      $st0001 = RawMaterial::where('name', 'ST 0001')->first();
+      $vw109 = RawMaterial::where('name', 'VW 109 ' . $this->materialColor)->first();
+      $vm105MF = RawMaterial::where('name', 'VW 105 MF')->first();
+      $sts0001 = RawMaterial::where('name', 'STS 0001 ' . $this->materialColor)->first();
+      $stg0002 = RawMaterial::where('name', 'TSG 0002')->first();
+      $tbs0001 = RawMaterial::where('name', 'TSB 0001')->first();
+      $w22184 = RawMaterial::where('name', 'W 22184 ' . $this->materialColor)->first();
+      $w22254BL = RawMaterial::where('name', 'W 22254 BL')->first();
+      $sc0001 = RawMaterial::where('name', 'SC 0001 ' . $this->materialColor)->first();
+      $ss0001 = RawMaterial::where('name', 'SS 0001 ' . $this->materialColor)->first();
+      $ne850125 = RawMaterial::where('name', 'NE 850125')->first();
+
       return [
-        'VW 107 ' . $this->materialColor => $this->getJamb() * 0.083 * 2 * $qty,
-        'VW 106 ' . $this->materialColor => $this->getVentTopAndBottom() * 0.083 * $qty,
-        'VW 110 ' . $this->materialColor => $this->getVentTopAndBottom() * 0.083 * $qty,
-        'VW 103 ' . $this->materialColor => $this->getFrameJamb() * 0.083 * 2 * $qty,
-        'VW 104 ' . $this->materialColor => $this->getFixedMeetingRail() * 0.083 * $qty,
-        'VW 101 ' . $this->materialColor => $this->width * 0.083 * $qty,
-        'VW 102 ' . $this->materialColor => $this->width * 0.083 * $qty,
-        'VW 108 ' . $this->materialColor => ($this->getGlazingBeatVertical() * 0.083 * 4 * $qty) + ($this->getGlazingBeatHorizontal() * 0.083 * 4 * $qty),
-        'ST 0001' => $this->getSteelReiceforment() * 0.083 * $qty,
-        'VW 109 ' . $this->materialColor => 2 * $qty,
-        'VW 105 MF' => 2 * $qty,
-        'STS 0001 ' . $this->materialColor => 2 * $qty,
-        'TSG 0002' => $this->getTSlotSealGlazingBeat() * 0.083 * $qty,
-        'TSB 0001' => $this->width * 0.083 * $qty,
-        'W 22184 ' . $this->materialColor => $this->getWeatherStripMeetRailSash() * 0.083 * $qty,
-        'W 22254 BL' => $this->width * 0.083 * $qty,
-        'SC 0001 ' . $this->materialColor => $this->getGlassWidth() * 0.083 * $qty,
-        'SS 0001 ' . $this->materialColor => $this->getJamb() * 0.083 * 2 * $qty,
-        'NE 850125' => 16 * $qty,
+        'VW 107 ' . $this->materialColor => [
+          'amount' => $this->getJamb() * 0.083 * 2 * $qty,
+          'unit_of_measurement' => $vw107->unit_of_measurement,
+          'storage_measure' => $vw107->storage_measure,
+        ],
+        'VW 106 ' . $this->materialColor => [
+          'amount' => $this->getVentTopAndBottom() * 0.083 * $qty,
+          'unit_of_measurement' => $vw106->unit_of_measurement,
+          'storage_measure' => $vw106->storage_measure,
+        ],
+        'VW 110 ' . $this->materialColor => [
+          'amount' => $this->getVentTopAndBottom() * 0.083 * $qty,
+          'unit_of_measurement' => $vw110->unit_of_measurement,
+          'storage_measure' => $vw110->storage_measure,
+        ],
+        'VW 103 ' . $this->materialColor => [
+          'amount' => $this->getFrameJamb() * 0.083 * 2 * $qty,
+          'unit_of_measurement' => $vw103->unit_of_measurement,
+          'storage_measure' => $vw103->storage_measure,
+        ],
+        'VW 104 ' . $this->materialColor => [
+          'amount' => $this->getFixedMeetingRail() * 0.083 * $qty,
+          'unit_of_measurement' => $vw104->unit_of_measurement,
+          'storage_measure' => $vw104->storage_measure,
+        ],
+        'VW 101 ' . $this->materialColor => [
+          'amount' => $this->width * 0.083 * $qty,
+          'unit_of_measurement' => $vw101->unit_of_measurement,
+          'storage_measure' => $vw101->storage_measure,
+        ],
+        'VW 102 ' . $this->materialColor => [
+          'amount' => $this->width * 0.083 * $qty,
+          'unit_of_measurement' => $vw102->unit_of_measurement,
+          'storage_measure' => $vw102->storage_measure,
+        ],
+        'VW 108 ' . $this->materialColor => [
+          'amount' => ($this->getGlazingBeatVertical() * 0.083 * 4 * $qty) + ($this->getGlazingBeatHorizontal() * 0.083 * 4 * $qty),
+          'unit_of_measurement' => $vw108->unit_of_measurement,
+          'storage_measure' => $vw108->storage_measure
+        ],
+        'ST 0001' => [
+          'amount' => $this->getSteelReiceforment() * 0.083 * $qty,
+          'unit_of_measurement' => $st0001->unit_of_measurement,
+          'storage_measure' => $st0001->storage_measure
+        ],
+        'VW 109 ' . $this->materialColor => [
+          'amount' => 2 * $qty,
+          'unit_of_measurement' => $vw109->unit_of_measurement,
+          'storage_measure' => $vw109->storage_measure
+        ],
+        'VW 105 MF' => [
+          'amount' => 2 * $qty,
+          'unit_of_measurement' => $vm105MF->unit_of_measurement,
+          'storage_measure' => $vm105MF->storage_measure
+        ],
+        'STS 0001 ' . $this->materialColor => [
+          'amount' => 2 * $qty,
+          'unit_of_measurement' => $sts0001->unit_of_measurement,
+          'storage_measure' => $sts0001->storage_measure
+        ],
+        'TSG 0002' => [
+          'amount' => $this->getTSlotSealGlazingBeat() * 0.083 * $qty,
+          'unit_of_measurement' => $stg0002->unit_of_measurement,
+          'storage_measure' => $stg0002->storage_measure
+        ],
+        'TSB 0001' => [
+          'amount' => $this->width * 0.083 * $qty,
+          'unit_of_measurement' => $tbs0001->unit_of_measurement,
+          'storage_measure' => $tbs0001->storage_measure
+        ],
+        'W 22184 ' . $this->materialColor => [
+          'amount' => $this->getWeatherStripMeetRailSash() * 0.083 * $qty,
+          'unit_of_measurement' => $w22184->unit_of_measurement,
+          'storage_measure' => $w22184->storage_measure
+        ],
+        'W 22254 BL' => [
+          'amount' => $this->width * 0.083 * $qty,
+          'unit_of_measurement' => $w22254BL->unit_of_measurement,
+          'storage_measure' => $w22254BL->storage_measure
+        ],
+        'SC 0001 ' . $this->materialColor => [
+          'amount' => $this->getGlassWidth() * 0.083 * $qty,
+          'unit_of_measurement' => $sc0001->unit_of_measurement,
+          'storage_measure' => $sc0001->storage_measure
+        ],
+        'SS 0001 ' . $this->materialColor => [
+          'amount' => $this->getJamb() * 0.083 * 2 * $qty,
+          'unit_of_measurement' => $ss0001->unit_of_measurement,
+          'storage_measure' => $ss0001->storage_measure
+        ],
+        'NE 850125' => [
+          'amount' => 16 * $qty,
+          'unit_of_measurement' => $ne850125->unit_of_measurement,
+          'storage_measure' => $ne850125->storage_measure
+        ],
       ];
     }
 
@@ -152,25 +248,24 @@ class SingleHuntProduct implements IProduct {
     }
 
     public function getUnitPrice() {
-        $firstFrameColorLetter = $this->getMaterialColor($this->frameColor);
-        $ventJambMaterial = RawMaterial::where('name', 'VW 107 ' . $firstFrameColorLetter)->first(); // MATERIAL 107
+        $ventJambMaterial = RawMaterial::where('name', 'VW 107 ' . $this->materialColor)->first(); // MATERIAL 107
         $ventJambCost = $this->getJamb() * 0.083 * $ventJambMaterial->cost_per_unit * 2;
-        $ventBottomMaterial = RawMaterial::where('name', 'VW 106 ' . $firstFrameColorLetter)->first(); // MATERIAL 106
+        $ventBottomMaterial = RawMaterial::where('name', 'VW 106 ' . $this->materialColor)->first(); // MATERIAL 106
         $ventBottomCost = $this->getVentTopAndBottom() * 0.083 * $ventBottomMaterial->cost_per_unit;
-        $ventTopMaterial = RawMaterial::where('name', 'VW 110 ' . $firstFrameColorLetter)->first(); // MATERIAL 110
+        $ventTopMaterial = RawMaterial::where('name', 'VW 110 ' . $this->materialColor)->first(); // MATERIAL 110
         $ventTopCost = $this->getVentTopAndBottom() * 0.083 * $ventTopMaterial->cost_per_unit;
-        $frameJambMaterial = RawMaterial::where('name', 'VW 103 ' . $firstFrameColorLetter)->first(); // MATERIAL 103
+        $frameJambMaterial = RawMaterial::where('name', 'VW 103 ' . $this->materialColor)->first(); // MATERIAL 103
         $frameJambCost = $this->getFrameJamb() * 0.083 * $frameJambMaterial->cost_per_unit * 2;
-        $fixedMeetingRailMaterial = RawMaterial::where('name', 'VW 104 ' . $firstFrameColorLetter)->first(); // MATERIAL 104
+        $fixedMeetingRailMaterial = RawMaterial::where('name', 'VW 104 ' . $this->materialColor)->first(); // MATERIAL 104
         $fixedMeetingRailCost = $this->getFixedMeetingRail() * 0.083 * $fixedMeetingRailMaterial->cost_per_unit;
-        $frameHeadMaterial = RawMaterial::where('name', 'VW 101 ' . $firstFrameColorLetter)->first(); // MATERIAL 101
+        $frameHeadMaterial = RawMaterial::where('name', 'VW 101 ' . $this->materialColor)->first(); // MATERIAL 101
         $frameHeadCost = $this->width * 0.083 * $frameHeadMaterial->cost_per_unit;
-        $frameSillMaterial = RawMaterial::where('name', 'VW 102 ' . $firstFrameColorLetter)->first(); // MATERIAL 102
+        $frameSillMaterial = RawMaterial::where('name', 'VW 102 ' . $this->materialColor)->first(); // MATERIAL 102
         $frameSillCost = $this->width * 0.083 * $frameSillMaterial->cost_per_unit;
-        $glazingBeadMaterial = RawMaterial::where('name', 'VW 108 ' . $firstFrameColorLetter)->first(); // MATERIAL 108
+        $glazingBeadMaterial = RawMaterial::where('name', 'VW 108 ' . $this->materialColor)->first(); // MATERIAL 108
         $glazingBeadVerticalCost = $this->getGlazingBeatVertical() * 0.083 * $glazingBeadMaterial->cost_per_unit * 4;
         $glazingBeadHorizontalCost = $this->getGlazingBeatHorizontal() * 0.083 * $glazingBeadMaterial->cost_per_unit * 4;
-        $ventLachMaterial = RawMaterial::where('name', 'VW 103 ' . $firstFrameColorLetter)->first(); // MATERIAL 109
+        $ventLachMaterial = RawMaterial::where('name', 'VW 103 ' . $this->materialColor)->first(); // MATERIAL 109
         $ventLachCost = 3 * 0.083 * $ventLachMaterial->cost_per_unit * 2;
         $balanceHolderMaterial = RawMaterial::where('name', 'VW 105 MF')->first(); // MATERIAL VW 105 MF
         $balanceHolderCost = 1 * 0.083 * $balanceHolderMaterial->cost_per_unit * 2;
@@ -178,19 +273,19 @@ class SingleHuntProduct implements IProduct {
         $tSlotSealGlazingBeatCost = $this->getTSlotSealGlazingBeat() * 0.083 * $tSlotSealGlazingBeatMaterial->cost_per_unit;
         $tSlotSealFrameBottomMaterial = RawMaterial::where('name', 'TSB 0001')->first(); // TSB 0001
         $tSlotSealFrameBottomCost = $this->width * 0.083 * $tSlotSealFrameBottomMaterial->cost_per_unit;
-        $weatherStripMeetRailSashMaterial = RawMaterial::where('name', 'W 22184 ' . $firstFrameColorLetter)->first(); // W 22184 W or B
+        $weatherStripMeetRailSashMaterial = RawMaterial::where('name', 'W 22184 ' . $this->materialColor)->first(); // W 22184 W or B
         $weatherStripMeetRailSashCost = $this->getWeatherStripMeetRailSash() * 0.083 * $weatherStripMeetRailSashMaterial->cost_per_unit;
         $weatherStripBottomMaterial = RawMaterial::where('name', 'W 22254 BL')->first(); // W 22254 BL
         $weatherStripBottomCost = $this->width * 0.083 * $weatherStripBottomMaterial->cost_per_unit;
         $steelReiceformentMaterial = RawMaterial::where('name', 'ST 0001')->first(); // ST 0001
         $steelReiceformentCost = $this->getSteelReiceforment() * 0.083 * $steelReiceformentMaterial->cost_per_unit;
-        $screwCoverMaterial = RawMaterial::where('name', 'SC 0001 ' . $firstFrameColorLetter)->first(); // SC 001 (W or B)
+        $screwCoverMaterial = RawMaterial::where('name', 'SC 0001 ' . $this->materialColor)->first(); // SC 001 (W or B)
         $screwCoverCost =  $this->getGlassWidth() * 0.083 * $screwCoverMaterial->cost_per_unit;
-        $sideSashClipMaterial = RawMaterial::where('name', 'SS 0001 ' . $firstFrameColorLetter)->first(); // SS 0001 (W or B)
+        $sideSashClipMaterial = RawMaterial::where('name', 'SS 0001 ' . $this->materialColor)->first(); // SS 0001 (W or B)
         $sideSashClipCost = $this->getJamb() * 0.083 * $sideSashClipMaterial->cost_per_unit * 2;
         $settingBlockMaterial = RawMaterial::where('name', 'NE 850125')->first(); // MATERIAL NE 850062
         $settingBlockCost = 16 * $settingBlockMaterial->cost_per_unit;
-        $stopSashMaterial = RawMaterial::where('name', 'STS 0001 ' . $firstFrameColorLetter)->first(); // STS 0001 (W or B)
+        $stopSashMaterial = RawMaterial::where('name', 'STS 0001 ' . $this->materialColor)->first(); // STS 0001 (W or B)
         $stopSashCost = 2 * 3 * 0.083 * $stopSashMaterial->cost_per_unit;
         $structuralSliconeMaterial = RawMaterial::where('id', 32)->first(); //STRUCTURAL SILICONE
         $structuralSliconeMaterialCost = (($this->getGlassWidth() * 4) + ($this->getGlassHeigth() * 4)) * 0.083 * $structuralSliconeMaterial->cost_per_unit;
