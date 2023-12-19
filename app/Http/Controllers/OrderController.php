@@ -13,10 +13,13 @@ use App\Enum\ProductSystemEnum;
 use App\Products\FixedWindowsProduct;
 use App\Products\HorizontalRollerProduct;
 use App\Products\SingleHuntProduct;
-use stdClass;
+use App\Traits\Product;
+
 
 class OrderController extends Controller
 {
+
+    use Product;
     /**
      * Display a listing of the resource.
      *
@@ -78,13 +81,8 @@ class OrderController extends Controller
               $product->glass_type
             );
 
-            collect($cuttingListObject->getMaterialConsumption($product->qty))->each(function($value, $key) use (&$materialConsumption) {
-              if( isset($materialConsumption[$key]) ) {
-                $materialConsumption[$key]['amount'] += $value['amount'];
-              } else {
-                $materialConsumption[$key] = $value;
-              }
-            });
+            $materialConsuptionForProduct = $cuttingListObject->getMaterialConsumption($product->qty);
+            $this->updateMaterialsConsumption($materialConsuptionForProduct, $materialConsumption);
             break;
           case ProductSystemEnum::$HORIZONTAL_ROLLER:
             $cuttingListObject = new HorizontalRollerProduct(
@@ -95,13 +93,8 @@ class OrderController extends Controller
               $product->extras['screen']
             );
 
-            collect($cuttingListObject->getMaterialConsumption($product->qty))->each(function($value, $key) use (&$materialConsumption) {
-              if( isset($materialConsumption[$key]) ) {
-                $materialConsumption[$key]['amount'] += $value['amount'];
-              } else {
-                $materialConsumption[$key] = $value;
-              }
-            });
+            $materialConsuptionForProduct = $cuttingListObject->getMaterialConsumption($product->qty);
+            $this->updateMaterialsConsumption($materialConsuptionForProduct, $materialConsumption);
             break;
           case ProductSystemEnum::$SINGLE_HUNT:
             $cuttingListObject = new SingleHuntProduct(
@@ -112,13 +105,8 @@ class OrderController extends Controller
               $product->extras['screen']
             );
 
-            collect($cuttingListObject->getMaterialConsumption($product->qty))->each(function($value, $key) use (&$materialConsumption) {
-              if( isset($materialConsumption[$key]) ) {
-                $materialConsumption[$key]['amount'] += $value['amount'];
-              } else {
-                $materialConsumption[$key] = $value;
-              }
-            });
+            $materialConsuptionForProduct = $cuttingListObject->getMaterialConsumption($product->qty);
+            $this->updateMaterialsConsumption($materialConsuptionForProduct, $materialConsumption);
             break;
         }
       });

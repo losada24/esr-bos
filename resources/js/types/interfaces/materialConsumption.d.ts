@@ -1,3 +1,6 @@
 export interface MaterialConsumption {
-  material_id: number
+  name: string
+  amount: number
+  storage_measure: number
+  unit_of_measurement: string
 }

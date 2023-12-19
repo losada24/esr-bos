@@ -254,8 +254,7 @@ class HorizontalRollerProduct implements IProduct {
         $cuttingListResult[] = $this->getCuttingListObject('Glass Move', $this->glassType, $qty, $this->getNumberWithFraction($this->getGlassWidth()) . ' x ' . $this->getNumberWithFraction($this->getMoveGlassHeight()));
         $cuttingListResult[] = $this->getCuttingListObject('Vent Jamb', 'VW 110 ' . $this->materialColor, $qty, $this->getNumberWithFraction($this->getVentJamb()));
         $cuttingListResult[] = $this->getCuttingListObject('Vent Jamb', 'VW 106 ' . $this->materialColor, $qty, $this->getNumberWithFraction($this->getVentJamb()));
-        $cuttingListResult[] = $this->getCuttingListObject('Vent Bottom', 'VW 107 ' . $this->materialColor, $qty, $this->getNumberWithFraction($this->getVentBottomAndTop()));
-        $cuttingListResult[] = $this->getCuttingListObject('Vent Top', 'VW 107 ' . $this->materialColor, $qty, $this->getNumberWithFraction($this->getVentBottomAndTop()));
+        $cuttingListResult[] = $this->getCuttingListObject('Vent Top/Bottom', 'VW 107 ' . $this->materialColor, $qty * 2, $this->getNumberWithFraction($this->getVentBottomAndTop()));
         $cuttingListResult[] = $this->getCuttingListObject('Jamb', 'VW 101 ' . $this->materialColor, $qty, $this->getNumberWithFraction($this->height));
         $cuttingListResult[] = $this->getCuttingListObject('Jamb', 'VW 102 ' . $this->materialColor, $qty, $this->getNumberWithFraction($this->height));
         $cuttingListResult[] = $this->getCuttingListObject('Punch M.R', ' - ', '-', $this->getNumberWithFraction($this->getGlassWidth() + 0.44));
@@ -268,7 +267,7 @@ class HorizontalRollerProduct implements IProduct {
         $cuttingListResult[] = $this->getCuttingListObject('Sill Track Rail', 'VW 112 ' . $this->materialColor, $qty, $this->getNumberWithFraction($this->getSillTrackRail()));
         $cuttingListResult[] = $this->getCuttingListObject('Steel Reiceforcement square', 'ST 0001', $qty, $this->getNumberWithFraction($this->getSteelReiceforment()));
         $cuttingListResult[] = $this->getCuttingListObject('Screw Cover', 'SC 0001 ' . $this->materialColor, $qty, $this->getNumberWithFraction($this->getGlassHeigth()));
-        $cuttingListResult[] = $this->getCuttingListObject('Side Sash Clip', 'SS 0001 ' . $this->materialColor, 2 * $qty, $this->getNumberWithFraction($this->getVentBottomAndTop()));
+        $cuttingListResult[] = $this->getCuttingListObject('Side Sash PVC', 'SS 0001 ' . $this->materialColor, 2 * $qty, $this->getNumberWithFraction($this->getVentBottomAndTop()));
         //SILICONE
         if ($this->screenRequired) {
           $cuttingListResult[] = $this->getCuttingListObject('Screen', '', $qty, $this->getNumberWithFraction($this->getScreenWidth()) . ' x ' . $this->getNumberWithFraction($this->getScreenHeigth()));

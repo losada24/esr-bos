@@ -5,14 +5,13 @@ import { type PageProps, type Order, type Client } from '@/types'
 import PrintIcon from '@/Components/Icons/PrintIcon'
 import { createMarkWithLeadingZero } from '@/Utils/mark'
 import VisualId from '@/Components/VisualId'
-import MaterialConsumption from './MaterialConsumption'
+import MaterialConsumptionList from './MaterialConsumptionList'
 import ShowCuttingList from './ShowCuttingList'
 
 export default function WorkOrder ({ auth, order }: PageProps & {
   clients: Client[]
   order: Order
 }) {
-  console.log(order)
   return (
       <AuthenticatedLayout
           auth={auth}
@@ -66,7 +65,7 @@ export default function WorkOrder ({ auth, order }: PageProps & {
               })}
             </tbody>
           </table>
-          <MaterialConsumption />
+          <MaterialConsumptionList materialConsumption={order.materialConsumption ?? []} />
       </AuthenticatedLayout>
   )
 }

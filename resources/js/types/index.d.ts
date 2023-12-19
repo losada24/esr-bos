@@ -14,6 +14,7 @@ import { type SingleHunt } from '@/types/interfaces/singleHunt'
 import { type Company } from '@/types/interfaces/company'
 import { type HorizontalRoller } from './interfaces/horizontalRoller'
 import { type CuttingList } from './interfaces/cuttingList'
+import { type MaterialConsumption } from './interfaces/materialConsumption'
 
 export type {
   User,
@@ -31,10 +32,6 @@ export type {
   Company,
   SingleHunt,
   HorizontalRoller,
-  CuttingList
+  CuttingList,
+  MaterialConsumption
 }
-
-/* interface ListUsersItem {
-  id: number
-  name: string
-} */

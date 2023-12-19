@@ -1,6 +1,7 @@
 import { type User } from '@/types/interfaces/user'
 import { type Client } from '@/types/interfaces/client'
 import { type Product } from '@/types/interfaces/product'
+import { type MaterialConsumption } from './materialConsumption'
 
 export interface Order {
   id: number
@@ -25,4 +26,5 @@ export interface Order {
   other?: number
   external_purchase_id?: string
   glass_type: string
+  materialConsumption?: MaterialConsumption[]
 }

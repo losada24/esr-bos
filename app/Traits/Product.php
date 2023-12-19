@@ -31,4 +31,20 @@ trait Product {
     $cuttingListObject->size = $size;
     return $cuttingListObject;
   }
+
+  public function updateMaterialsConsumption($materialConsumptionForProduct, &$materialConsumption) {
+    collect($materialConsumptionForProduct)->each(function($value, $key) use (&$materialConsumption) {
+      $index = array_search($key, array_column($materialConsumption, 'name'));
+      if( $index !== false ) {
+        $materialConsumption[$index]['amount'] += $value['amount'];
+      } else {
+        $materialConsumption[] = [
+          'name' => $key,
+          'amount' => $value['amount'],
+          'unit_of_measurement' => $value['unit_of_measurement'],
+          'storage_measure' => $value['storage_measure'],
+        ];
+      }
+    });
+  }
 }
