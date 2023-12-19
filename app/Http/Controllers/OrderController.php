@@ -96,7 +96,7 @@ class OrderController extends Controller
             $materialConsuptionForProduct = $cuttingListObject->getMaterialConsumption($product->qty);
             $this->updateMaterialsConsumption($materialConsuptionForProduct, $materialConsumption);
             break;
-          case ProductSystemEnum::$SINGLE_HUNT:
+          case ProductSystemEnum::$SINGLE_HUNG:
             $cuttingListObject = new SingleHuntProduct(
               $product->width,
               $product->height,
@@ -139,7 +139,7 @@ class OrderController extends Controller
               );
               $cuttingList = $cuttingListObject->getCuttingList($product->qty);
               break;
-            case ProductSystemEnum::$SINGLE_HUNT:
+            case ProductSystemEnum::$SINGLE_HUNG:
               $cuttingListObject = new SingleHuntProduct(
                 $product->width,
                 $product->height,

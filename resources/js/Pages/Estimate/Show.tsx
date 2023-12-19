@@ -25,7 +25,7 @@ export default function Create ({ auth, estimate }: PageProps & {
     switch (system) {
       case PRODUCT_SYSTEMS.FIXED_WINDOWS:
         return route('fixed-windows.edit', id)
-      case PRODUCT_SYSTEMS.SINGLE_HUNT:
+      case PRODUCT_SYSTEMS.SINGLE_HUNG:
         return route('single-hunt.edit', id)
       case PRODUCT_SYSTEMS.HORIZONTAL_ROLLER:
         return route('horizontal-roller.edit', id)
@@ -105,7 +105,7 @@ export default function Create ({ auth, estimate }: PageProps & {
                                 <li>
                                     <button onClick={() => {
                                       router.get(route('single-hunt.create', estimate.id))
-                                    }}>Single Hunt</button>
+                                    }}>Single Hung</button>
                                 </li>
                                 <li>
                                     <button onClick={() => {

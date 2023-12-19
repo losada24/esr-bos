@@ -76,10 +76,10 @@ export const PERSMISSIONS = [
 export const PHONE_REG_EXP = /^((\\+[1-9]{1,4}[ \\-]*)|(\\([0-9]{2,3}\\)[ \\-]*)|([0-9]{2,4})[ \\-]*)*?[0-9]{3,4}?[ \\-]*[0-9]{3,4}?$/
 export const COMPANY_NAME: string = import.meta.env.VITE_COMPANY_NAME
 export const RECAPTCHA_SITE_KEY: string = import.meta.env.VITE_RECAPTCHA_SITE_KEY
-export type PRODUCT_SYSTEM = 'FIXED WINDOWS' | 'SINGLE HUNT' | 'HORIZONTAL ROLLER'
+export type PRODUCT_SYSTEM = 'FIXED WINDOWS' | 'SINGLE HUNG' | 'HORIZONTAL ROLLER'
 export const PRODUCT_SYSTEMS = {
   FIXED_WINDOWS: 'FIXED WINDOWS',
-  SINGLE_HUNT: 'SINGLE HUNT',
+  SINGLE_HUNG: 'SINGLE HUNG',
   HORIZONTAL_ROLLER: 'HORIZONTAL ROLLER'
 }
 

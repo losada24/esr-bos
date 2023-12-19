@@ -1,5 +1,6 @@
 import React from 'react'
 import { CONFIG_XO } from '@/Utils/constants'
+import { getNumberWithFraction } from '@/Utils/numbers'
 // TODO: Fix this drawing
 const HorizontallRollerOX = ({ width, height, widthtOfMovementPart }: {
   width: number
@@ -10,7 +11,7 @@ const HorizontallRollerOX = ({ width, height, widthtOfMovementPart }: {
     <svg version="1.1" width="100%" height="100%" style={{ overflow: 'hidden' }} viewBox="-13 -13 76 76">
       <defs></defs>
       <g id="two-0" transform="matrix(1 0 0 1 0 0)" opacity="1">
-        <text transform="matrix(1 0 0 1 44.96175 61)" id="two-147" fontFamily="sans-serif" fontSize="5" textAnchor="middle" dominantBaseline="middle" alignmentBaseline="middle" fontStyle="normal" fontWeight="500" textDecoration="none" fill="#616A72" stroke="transparent" strokeWidth="1" opacity="1" visibility="visible">{widthtOfMovementPart}&rdquo;</text>
+        <text transform="matrix(1 0 0 1 44.96175 61)" id="two-147" fontFamily="sans-serif" fontSize="5" textAnchor="middle" dominantBaseline="middle" alignmentBaseline="middle" fontStyle="normal" fontWeight="500" textDecoration="none" fill="#616A72" stroke="transparent" strokeWidth="1" opacity="1" visibility="visible">{`${getNumberWithFraction(widthtOfMovementPart)}"`}</text>
           <g id="two-148" transform="matrix(1 0 0 1 0 0)" opacity="1">
             <path transform="matrix(1 0 0 1 0 0)" id="two-144" d="M 29.9235 52 L 29.9235 60 " fill="#fff" stroke="#616A72" strokeWidth="0.3" strokeOpacity="1" fillOpacity="1" visibility="visible" strokeLinecap="butt" strokeLinejoin="miter" strokeMiterlimit="4"></path>
             <path transform="matrix(1 0 0 1 0 0)" id="two-145" d="M 60 52 L 60 60 " fill="#fff" stroke="#616A72" strokeWidth="0.3" strokeOpacity="1" fillOpacity="1" visibility="visible" strokeLinecap="butt" strokeLinejoin="miter" strokeMiterlimit="4"></path>
@@ -35,12 +36,12 @@ const HorizontallRollerOX = ({ width, height, widthtOfMovementPart }: {
             <path transform="matrix(1 0 0 1 27.5345 25)" id="two-156" d="M -0.375 -21.571 L 0.375 -21.571 L 0.375 21.571 L -0.375 21.571 Z " fill="#fff" stroke="#000" strokeWidth="0.3" strokeOpacity="1" fillOpacity="1" visibility="visible" strokeLinecap="butt" strokeLinejoin="miter" strokeMiterlimit="4"></path>
             <path transform="matrix(1 0 0 1 30.2985 25)" id="two-157" d="M -0.375 -21.571 L 0.375 -21.571 L 0.375 21.571 L -0.375 21.571 Z " fill="#fff" stroke="#000" strokeWidth="0.3" strokeOpacity="1" fillOpacity="1" visibility="visible" strokeLinecap="butt" strokeLinejoin="miter" strokeMiterlimit="4"></path>
           </g>
-          <text transform="matrix(1 0 0 1 30 -10)" id="two-164" fontFamily="sans-serif" fontSize="5" textAnchor="middle" dominantBaseline="middle" alignmentBaseline="middle" fontStyle="normal" fontWeight="500" textDecoration="none" fill="#616A72" stroke="transparent" strokeWidth="1" opacity="1" visibility="visible">{width}</text>
+          <text transform="matrix(1 0 0 1 30 -10)" id="two-164" fontFamily="sans-serif" fontSize="5" textAnchor="middle" dominantBaseline="middle" alignmentBaseline="middle" fontStyle="normal" fontWeight="500" textDecoration="none" fill="#616A72" stroke="transparent" strokeWidth="1" opacity="1" visibility="visible">{`${getNumberWithFraction(width)}"`}</text>
           <g id="two-165" transform="matrix(1 0 0 1 0 0)" opacity="1"><path transform="matrix(1 0 0 1 0 0)" id="two-161" d="M 0 -2 L 0 -10 " fill="#fff" stroke="#616A72" strokeWidth="0.3" strokeOpacity="1" fillOpacity="1" visibility="visible" strokeLinecap="butt" strokeLinejoin="miter" strokeMiterlimit="4"></path>
             <path transform="matrix(1 0 0 1 0 0)" id="two-162" d="M 60 -2 L 60 -10 " fill="#fff" stroke="#616A72" strokeWidth="0.3" strokeOpacity="1" fillOpacity="1" visibility="visible" strokeLinecap="butt" strokeLinejoin="miter" strokeMiterlimit="4"></path>
             <path transform="matrix(1 0 0 1 0 0)" id="two-163" d="M -2 -8 L 62 -8 " fill="#fff" stroke="#616A72" strokeWidth="0.3" strokeOpacity="1" fillOpacity="1" visibility="visible" strokeLinecap="butt" strokeLinejoin="miter" strokeMiterlimit="4"></path>
           </g>
-          <text transform="matrix(0 -1 1 0 -10 25)" id="two-169" fontFamily="sans-serif" fontSize="5" textAnchor="middle" dominantBaseline="middle" alignmentBaseline="middle" fontStyle="normal" fontWeight="500" textDecoration="none" fill="#616A72" stroke="transparent" strokeWidth="1" opacity="1" visibility="visible">{height}</text>
+          <text transform="matrix(0 -1 1 0 -10 25)" id="two-169" fontFamily="sans-serif" fontSize="5" textAnchor="middle" dominantBaseline="middle" alignmentBaseline="middle" fontStyle="normal" fontWeight="500" textDecoration="none" fill="#616A72" stroke="transparent" strokeWidth="1" opacity="1" visibility="visible">{`${getNumberWithFraction(height)}"`}</text>
           <g id="two-170" transform="matrix(1 0 0 1 0 0)" opacity="1"><path transform="matrix(1 0 0 1 0 0)" id="two-166" d="M -10 0 L -2 0 " fill="#fff" stroke="#616A72" strokeWidth="0.3" strokeOpacity="1" fillOpacity="1" visibility="visible" strokeLinecap="butt" strokeLinejoin="miter" strokeMiterlimit="4"></path>
             <path transform="matrix(1 0 0 1 0 0)" id="two-167" d="M -10 50 L -2 50 " fill="#fff" stroke="#616A72" strokeWidth="0.3" strokeOpacity="1" fillOpacity="1" visibility="visible" strokeLinecap="butt" strokeLinejoin="miter" strokeMiterlimit="4"></path><path transform="matrix(1 0 0 1 0 0)" id="two-168" d="M -8 -2 L -8 52 " fill="#fff" stroke="#616A72" strokeWidth="0.3" strokeOpacity="1" fillOpacity="1" visibility="visible" strokeLinecap="butt" strokeLinejoin="miter" strokeMiterlimit="4"></path>
           </g>
@@ -58,7 +59,7 @@ const HorizontallRollerXO = ({ width, height, widthtOfMovementPart }: {
     <svg version="1.1" width="100%" height="100%" style={{ overflow: 'hidden' }} viewBox="-13 -13 76 76">
       <defs></defs>
       <g id="two-0" transform="matrix(1 0 0 1 0 0)" opacity="1">
-        <text transform="matrix(1 0 0 1 15.038249 61)" id="two-246" fontFamily="sans-serif" fontSize="5" textAnchor="middle" dominantBaseline="middle" alignmentBaseline="middle" fontStyle="normal" fontWeight="500" textDecoration="none" fill="#616A72" stroke="transparent" strokeWidth="1" opacity="1" visibility="visible">{widthtOfMovementPart}</text>
+        <text transform="matrix(1 0 0 1 15.038249 61)" id="two-246" fontFamily="sans-serif" fontSize="5" textAnchor="middle" dominantBaseline="middle" alignmentBaseline="middle" fontStyle="normal" fontWeight="500" textDecoration="none" fill="#616A72" stroke="transparent" strokeWidth="1" opacity="1" visibility="visible">{`${getNumberWithFraction(widthtOfMovementPart)}"`}</text>
         <g id="two-247" transform="matrix(1 0 0 1 0 0)" opacity="1"><path transform="matrix(1 0 0 1 0 0)" id="two-243" d="M 0 52 L 0 60 " fill="#fff" stroke="#616A72" strokeWidth="0.3" strokeOpacity="1" fillOpacity="1" visibility="visible" strokeLinecap="butt" strokeLinejoin="miter" strokeMiterlimit="4"></path>
           <path transform="matrix(1 0 0 1 0 0)" id="two-244" d="M 30.076499 52 L 30.076499 60 " fill="#fff" stroke="#616A72" strokeWidth="0.3" strokeOpacity="1" fillOpacity="1" visibility="visible" strokeLinecap="butt" strokeLinejoin="miter" strokeMiterlimit="4"></path>
           <path transform="matrix(1 0 0 1 0 0)" id="two-245" d="M -2 58 L 32.076499 58 " fill="#fff" stroke="#616A72" strokeWidth="0.3" strokeOpacity="1" fillOpacity="1" visibility="visible" strokeLinecap="butt" strokeLinejoin="miter" strokeMiterlimit="4"></path>
@@ -83,13 +84,13 @@ const HorizontallRollerXO = ({ width, height, widthtOfMovementPart }: {
           <path transform="matrix(1 0 0 1 29.701499 25)" id="two-258" d="M -0.375 -21.571 L 0.375 -21.571 L 0.375 21.571 L -0.375 21.571 Z " fill="#fff" stroke="#000" strokeWidth="0.3" strokeOpacity="1" fillOpacity="1" visibility="visible" strokeLinecap="butt" strokeLinejoin="miter" strokeMiterlimit="4"></path>
           <path transform="matrix(1 0 0 1 32.465499 25)" id="two-259" d="M -0.375 -21.571 L 0.375 -21.571 L 0.375 21.571 L -0.375 21.571 Z " fill="#fff" stroke="#000" strokeWidth="0.3" strokeOpacity="1" fillOpacity="1" visibility="visible" strokeLinecap="butt" strokeLinejoin="miter" strokeMiterlimit="4"></path>
         </g>
-        <text transform="matrix(1 0 0 1 30 -10)" id="two-266" fontFamily="sans-serif" fontSize="5" textAnchor="middle" dominantBaseline="middle" alignmentBaseline="middle" fontStyle="normal" fontWeight="500" textDecoration="none" fill="#616A72" stroke="transparent" strokeWidth="1" opacity="1" visibility="visible">{width}</text>
+        <text transform="matrix(1 0 0 1 30 -10)" id="two-266" fontFamily="sans-serif" fontSize="5" textAnchor="middle" dominantBaseline="middle" alignmentBaseline="middle" fontStyle="normal" fontWeight="500" textDecoration="none" fill="#616A72" stroke="transparent" strokeWidth="1" opacity="1" visibility="visible">{`${getNumberWithFraction(width)}"`}</text>
         <g id="two-267" transform="matrix(1 0 0 1 0 0)" opacity="1">
           <path transform="matrix(1 0 0 1 0 0)" id="two-263" d="M 0 -2 L 0 -10 " fill="#fff" stroke="#616A72" strokeWidth="0.3" strokeOpacity="1" fillOpacity="1" visibility="visible" strokeLinecap="butt" strokeLinejoin="miter" strokeMiterlimit="4"></path>
           <path transform="matrix(1 0 0 1 0 0)" id="two-264" d="M 60 -2 L 60 -10 " fill="#fff" stroke="#616A72" strokeWidth="0.3" strokeOpacity="1" fillOpacity="1" visibility="visible" strokeLinecap="butt" strokeLinejoin="miter" strokeMiterlimit="4"></path>
           <path transform="matrix(1 0 0 1 0 0)" id="two-265" d="M -2 -8 L 62 -8 " fill="#fff" stroke="#616A72" strokeWidth="0.3" strokeOpacity="1" fillOpacity="1" visibility="visible" strokeLinecap="butt" strokeLinejoin="miter" strokeMiterlimit="4"></path>
         </g>
-        <text transform="matrix(0 -1 1 0 -10 25)" id="two-271" fontFamily="sans-serif" fontSize="5" textAnchor="middle" dominantBaseline="middle" alignmentBaseline="middle" fontStyle="normal" fontWeight="500" textDecoration="none" fill="#616A72" stroke="transparent" strokeWidth="1" opacity="1" visibility="visible">{height}</text>
+        <text transform="matrix(0 -1 1 0 -10 25)" id="two-271" fontFamily="sans-serif" fontSize="5" textAnchor="middle" dominantBaseline="middle" alignmentBaseline="middle" fontStyle="normal" fontWeight="500" textDecoration="none" fill="#616A72" stroke="transparent" strokeWidth="1" opacity="1" visibility="visible">{`${getNumberWithFraction(height)}"`}</text>
         <g id="two-272" transform="matrix(1 0 0 1 0 0)" opacity="1">
           <path transform="matrix(1 0 0 1 0 0)" id="two-268" d="M -10 0 L -2 0 " fill="#fff" stroke="#616A72" strokeWidth="0.3" strokeOpacity="1" fillOpacity="1" visibility="visible" strokeLinecap="butt" strokeLinejoin="miter" strokeMiterlimit="4"></path>
           <path transform="matrix(1 0 0 1 0 0)" id="two-269" d="M -10 50 L -2 50 " fill="#fff" stroke="#616A72" strokeWidth="0.3" strokeOpacity="1" fillOpacity="1" visibility="visible" strokeLinecap="butt" strokeLinejoin="miter" strokeMiterlimit="4"></path>

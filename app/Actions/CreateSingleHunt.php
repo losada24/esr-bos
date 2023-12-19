@@ -25,7 +25,7 @@ class CreateSingleHunt {
 
       $product = Product::create([
         'order_id' => $request->order_id,
-        'system' => ProductSystemEnum::$SINGLE_HUNT,
+        'system' => ProductSystemEnum::$SINGLE_HUNG,
         'width' => $request->width,
         'height' => $request->height,
         'line_item_name' => $request->mark,

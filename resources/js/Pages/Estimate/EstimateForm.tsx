@@ -43,7 +43,7 @@ const EstimateForm = ({ submitCount, errors, isCreate, glass_colors, frame_color
           />
           {(submitCount && errors.project_name) ? <InputError message={errors.project_name} className="mt-2" /> : ''}
         </div>
-        <div className={submitCount ? (errors.project_name) ? 'has-error' : 'has-success' : ''}>
+        <div className={submitCount ? (errors.external_purchase_id) ? 'has-error' : 'has-success' : ''}>
           <label htmlFor="external_purchase_id">External Purchase Id</label>
           <Field
             id="external_purchase_id"

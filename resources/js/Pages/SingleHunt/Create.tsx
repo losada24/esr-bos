@@ -39,9 +39,9 @@ export default function Create ({ auth, frame_colors, glass_colors, estimate }: 
   return (
       <AuthenticatedLayout
           auth={auth}
-          pageTitle={'Add Single Hunt'}
+          pageTitle={'Add Single Hung'}
       >
-          <Head title={'Add Single Hunt'} />
+          <Head title={'Add Single Hung'} />
           <Formik<SingleHunt>
             initialValues={initialValues}
             validationSchema={singleHuntSchema}

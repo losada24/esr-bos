@@ -44,7 +44,7 @@ export default function Edit ({ auth, product, frame_colors, glass_colors }: Pag
   return (
       <AuthenticatedLayout
           auth={auth}
-          pageTitle='Edit Estimate'
+          pageTitle='Edit Single Hung'
       >
         <Head title="Edit" />
         <Formik<SingleHunt>

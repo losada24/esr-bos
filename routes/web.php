@@ -111,19 +111,19 @@ Route::middleware('auth')->group(function () {
       ->name('fixed-windows.update');
 
     // SINGLE HUNT
-    Route::get('/single-hunt/{id}/create', [SingleHuntController::class, 'create'])
+    Route::get('/single-hung/{id}/create', [SingleHuntController::class, 'create'])
       ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$CLIENT_ADMIN . "|" . RoleEnum::$CLIENT]) // TODO: Validate if the user is the owner of the order
       ->name('single-hunt.create');
     
-    Route::post('/single-hunt/store', [SingleHuntController::class, 'store'])
+    Route::post('/single-hung/store', [SingleHuntController::class, 'store'])
       ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$CLIENT_ADMIN . "|" . RoleEnum::$CLIENT])
       ->name('single-hunt.store');
     
-    Route::get('/single-hunt/edit/{product}', [SingleHuntController::class, 'edit'])
+    Route::get('/single-hung/edit/{product}', [SingleHuntController::class, 'edit'])
       ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$CLIENT_ADMIN . "|" . RoleEnum::$CLIENT]) // TODO: Validate if the user is the owner of the order
       ->name('single-hunt.edit');
 
-    Route::put('/single-hunt/update/{product}', [SingleHuntController::class, 'update'])
+    Route::put('/single-hung/update/{product}', [SingleHuntController::class, 'update'])
       ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$CLIENT_ADMIN . "|" . RoleEnum::$CLIENT]) // TODO: Validate if the user is the owner of the order
       ->name('single-hunt.update');
 

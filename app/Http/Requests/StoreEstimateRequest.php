@@ -29,7 +29,7 @@ class StoreEstimateRequest extends FormRequest
     {
         return [
             'name' => 'required|string|max:255',
-            'project_name' => 'string|max:255',
+            'project_name' => 'nullable|string|max:255',
             'client_id' => 'required|exists:clients,id', // TODO: ONLY SHOW CLIENTS THAT BELONG TO THE USER
             'frame_color' => [
               'required',
