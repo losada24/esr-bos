@@ -160,6 +160,8 @@ class OrderController extends Controller
             'width' => $product->width,
             'height' => $product->height,
             'cutting_list' => $cuttingList,
+            'frame_color' => $product->frame_color,
+            'extras' => $product->extras,
           ];
         }),
         'materialConsumption' => $materialConsumption
@@ -173,7 +175,12 @@ class OrderController extends Controller
     public function show($id)
     {
         return Inertia::render('Order/Show', [
-          'order' => Order::with(['client', 'products'])->findOrFail($id)
+          'order' => Order::with(['client', 'products'])->findOrFail($id),
+          'statuses' => [
+            OrderStatusEnum::$ESTIMATE,
+            OrderStatusEnum::$PRODUCTION,
+            OrderStatusEnum::$ORDER_COMPLETED
+          ]
         ]);
     }
 }

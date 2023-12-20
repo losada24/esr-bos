@@ -82,6 +82,7 @@ export const PRODUCT_SYSTEMS = {
   SINGLE_HUNG: 'SINGLE HUNG',
   HORIZONTAL_ROLLER: 'HORIZONTAL ROLLER'
 }
+export const EXPRESS_GLASS_TYPE: string = 'EXPRESS'
 
 export const COLORS: string[] = [
   '#020617',

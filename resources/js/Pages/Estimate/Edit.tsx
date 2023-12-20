@@ -18,7 +18,7 @@ export default function Edit ({ auth, estimate, frame_colors, glass_colors, clie
     glass_color: estimate.glass_color,
     name: estimate.name,
     notes: estimate.notes ?? '',
-    project_name: estimate.project_name,
+    project_name: estimate.project_name ?? '',
     markup: estimate.markup,
     client_id: estimate.client_id,
     tax_amount: estimate.tax_amount,
@@ -26,7 +26,7 @@ export default function Edit ({ auth, estimate, frame_colors, glass_colors, clie
     installation: estimate.installation,
     permit: estimate.permit,
     other: estimate.other,
-    external_purchase_id: estimate.external_purchase_id,
+    external_purchase_id: estimate.external_purchase_id ?? '',
     glass_type: estimate.glass_type
   }
 

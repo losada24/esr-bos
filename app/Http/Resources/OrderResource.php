@@ -19,11 +19,14 @@ class OrderResource extends JsonResource
           'name' => $this->name ?? '',
           'status' => $this->status ?? '',
           'project_name' => $this->project_name ?? '',
+          'external_purchase_id' => $this->external_purchase_id ?? '',
           'frame_color' => $this->frame_color ?? '',
           'glass_color' => $this->glass_color ?? '',
+          'glass_type' => $this->glass_type ?? '',
           'markup' => $this->markup ?? '',
           'notes' => $this->notes ?? '',
-          'created_at' => $this->created_at
+          'created_at' => $this->created_at,
+          'productsCount' => $this->productsCount ?? 0,
         ];
     }
 }

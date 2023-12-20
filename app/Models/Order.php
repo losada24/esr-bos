@@ -57,7 +57,8 @@ class Order extends Model
     public function scopeFilter($query, array $filters)
     {
         $query->when($filters['text'] ?? null, function ($query, $search) {
-          $query->where(DB::raw("CONCAT(name, ' ', project_name)"), 'like', '%'.$search.'%');
+          $searchStr = ltrim($search, "0");
+          $query->where(DB::raw("CONCAT(id, ' ', name, ' ', project_name)"), 'like', '%'. $searchStr .'%');
         });
     }
 
@@ -120,5 +121,10 @@ class Order extends Model
     public function snapshots()
     {
         return $this->hasMany(OrderSnapshots::class);
+    }
+
+    public function orderStatus()
+    {
+        return $this->hasMany(OrderStatus::class);
     }
 }

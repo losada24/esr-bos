@@ -27,7 +27,7 @@ class UpdateOrderStatusRequest extends FormRequest
     {
         return [
             'id' => 'required|exists:orders,id',
-            'notes' => 'nullable|string|max:255',
+            'notes' => 'nullable|string|max:500',
             'status' => [
               'required',
               'string',
@@ -35,6 +35,7 @@ class UpdateOrderStatusRequest extends FormRequest
               Rule::in([
                 OrderStatusEnum::$ESTIMATE,
                 OrderStatusEnum::$PRODUCTION,
+                OrderStatusEnum::$ORDER_COMPLETED
               ])
             ]
         ];

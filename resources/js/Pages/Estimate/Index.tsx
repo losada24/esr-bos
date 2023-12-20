@@ -29,7 +29,7 @@ export default function Index ({ auth, estimates }: IndexOrderProps) {
       router.delete(route('estimate.destroy', id))
     }
   }
-
+  console.log(estimates)
   return (
       <AuthenticatedLayout
           auth={auth}
@@ -59,7 +59,7 @@ export default function Index ({ auth, estimates }: IndexOrderProps) {
             </thead>
             <tbody>
               {estimates.data.map((estimate) => {
-                const { id, name, project_name, created_at } = estimate
+                const { id, name, project_name, created_at, productsCount } = estimate
                 return (
                   <tr
                     key={id}
@@ -78,7 +78,7 @@ export default function Index ({ auth, estimates }: IndexOrderProps) {
                       {created_at?.toString()}
                     </td>
                     <td className="border-t flex items-center px-6 py-4">
-                        {(isAdmin(auth.user.roles.map((role: Role) => role.name)) || isClientAdmin(auth.user.roles.map((role: Role) => role.name))) && (
+                        {(isAdmin(auth.user.roles.map((role: Role) => role.name)) || isClientAdmin(auth.user.roles.map((role: Role) => role.name))) && (productsCount ?? 0) > 0 && (
                           <button className='mr-2' title='Create Order' onClick={() => {
                             setSelectedEstimate(estimate)
                             setShowOrderModal(true)

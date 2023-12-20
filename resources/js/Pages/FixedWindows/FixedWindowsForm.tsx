@@ -6,6 +6,7 @@ import { Link } from '@inertiajs/react'
 import { type FormikErrors } from 'formik'
 import { type FixedWindows } from '@/types'
 import FixedWindowsDrawing from './FixedWindowsDrawing'
+import { EXPRESS_GLASS_TYPE } from '@/Utils/constants'
 
 const FixedWindowsForm = ({ submitCount, errors, isCreate, frame_colors, glass_colors, estimate_id, values, glassType }: {
   submitCount: number
@@ -18,6 +19,7 @@ const FixedWindowsForm = ({ submitCount, errors, isCreate, frame_colors, glass_c
   values: FixedWindows
 }) => {
   const [glassTypes, setGlassTypes] = useState<string[]>([])
+  const LOW_E_OPTIONS: string[] = glassType !== EXPRESS_GLASS_TYPE ? ['NONE', 'LOW E'] : ['NONE']
   useEffect(() => {
     if (values.glass_color !== '' && values.low_e !== '' && values.privacy !== '') {
       const firstGlass = `3/16 HS ${values.glass_color} ${values.glass_color === 'CLEAR' && values.low_e !== 'NONE' ? values.low_e : ''}`
@@ -164,7 +166,7 @@ const FixedWindowsForm = ({ submitCount, errors, isCreate, frame_colors, glass_c
                   placeholder='Low E'
                   as="select"
                 >
-                  {['NONE', 'LOW E'].map((type, index) => (
+                  {LOW_E_OPTIONS.map((type, index) => (
                     <option key={index} value={type}>{type}</option>
                   ))}
                 </Field>

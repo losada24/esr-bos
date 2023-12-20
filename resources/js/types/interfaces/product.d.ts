@@ -1,5 +1,6 @@
 import { type Order } from './order'
 import { type CuttingList } from './cuttingList'
+import { type Extras } from './extras'
 
 export interface Product {
   id: number
@@ -14,7 +15,7 @@ export interface Product {
   glass_color: string
   low_e: string
   privacy: string
-  // extras: string
+  extras?: Extras
   price: number
   created_at?: Date
   order_id: number

@@ -13,6 +13,10 @@ class ProduceOrder {
     DB::transaction(function() use ($request) {
 
       $order = Order::find($request->id);
+      $orderStatus = [
+        'status' => $request->status,
+        'notes' => $request->notes
+      ];
       
       if( !$order )
       {
@@ -20,11 +24,11 @@ class ProduceOrder {
       }
 
       $orderData = [
-        'status' => $request->status,
-        'notes' => $request->notes,
+        'status' => $request->status
       ];
 
       $order->update($orderData);
+      $order->orderStatus()->create($orderStatus);
 
     });
   }

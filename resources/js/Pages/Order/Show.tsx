@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
 import { Head, Link } from '@inertiajs/react'
 import { type PageProps, type Order, type Client, type Role } from '@/types'
@@ -6,14 +6,18 @@ import Panel from '@/Components/Panel'
 import { createMarkWithLeadingZero } from '@/Utils/mark'
 import HammerIcon from '@/Components/Icons/HammerIcon'
 import { isAccounting, isAdmin } from '@/Utils/user'
-import { PRODUCTION_STATUS } from '@/Utils/constants'
+import { ACCOUNTING_STATUS, PRODUCTION_STATUS } from '@/Utils/constants'
+import OrderUpdateStatusModal from './OrderUpdateStatusModal'
 
-export default function Show ({ auth, order }: PageProps & {
+export default function Show ({ auth, order, statuses }: PageProps & {
   clients: Client[]
   order: Order
+  statuses: string[]
 }) {
   const IS_ACCOUNTING = isAccounting(auth.user.roles.map((role: Role) => role.name))
   const IS_ADMIN = isAdmin(auth.user.roles.map((role: Role) => role.name))
+  const [showOrderModal, setShowOrderModal] = useState<boolean>(false)
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const getSubtotal = () => {
     const subtotal: number | undefined = order.products?.reduce((acc, product) => {
       return acc + Number(product.total_price)
@@ -62,6 +66,15 @@ export default function Show ({ auth, order }: PageProps & {
                           <HammerIcon color="#fff" />
                           Work Order
                       </Link>
+                    )}
+                    {((isAdmin(auth.user.roles.map((role: Role) => role.name)) || isAccounting(auth.user.roles.map((role: Role) => role.name))) &&
+                      (order.status === ACCOUNTING_STATUS)) && (
+                      <button title='Produce Order' className="btn btn-secondary w-full gap-2" onClick={() => {
+                        setSelectedOrder(order)
+                        setShowOrderModal(true)
+                      }}>
+                        <HammerIcon color="#fff" /> Produce Order
+                      </button>
                     )}
                 </div>
               </Panel>
@@ -146,6 +159,15 @@ export default function Show ({ auth, order }: PageProps & {
               </div>
             </div>
           </div>
+          <OrderUpdateStatusModal
+            showModal={showOrderModal}
+            onClose={() => {
+              setShowOrderModal(false)
+              setSelectedOrder(null)
+            }}
+            order={selectedOrder}
+            statuses={statuses}
+          />
       </AuthenticatedLayout>
   )
 }

@@ -37,6 +37,11 @@ class CreateEstimate {
             throw new \Exception('Estimate not created');
         }
 
+        $estimate->orderStatus()->create([
+          'status' => OrderStatusEnum::$ESTIMATE,
+          'notes' => "Estimate created by " . auth()->user()->name
+        ]);
+
         DB::commit();
         return $estimate;
         
