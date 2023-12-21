@@ -13,6 +13,7 @@ use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\SingleHuntController;
 use App\Http\Controllers\HorizontalRollerController;
+use App\Http\Controllers\PdfController;
 use App\Http\Controllers\ProductController;
 
 /*
@@ -169,6 +170,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/order/show/{id}', [OrderController::class, 'show'])
       ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$PRODUCTION ])
       ->name('order.show');
+
+    // PDF DOCUMENTS
+    Route::get('/pdf/work-order/{id}', [PdfController::class, 'workOrder'])
+      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$PRODUCTION ])
+      ->name('pdf.work.order');
     
 });
 

@@ -70,46 +70,8 @@ class OrderController extends Controller
     public function workOrder(Order $order) {
       $order->load(['products', 'client']);
       
-      $materialConsumption = [];
-      $order->products->each(function($product) use (&$materialConsumption) {
-        switch($product->system) {
-          case ProductSystemEnum::$FIXED_WINDOWS:
-            $cuttingListObject = new FixedWindowsProduct(
-              $product->width,
-              $product->height,
-              $product->frame_color,
-              $product->glass_type
-            );
-
-            $materialConsuptionForProduct = $cuttingListObject->getMaterialConsumption($product->qty);
-            $this->updateMaterialsConsumption($materialConsuptionForProduct, $materialConsumption);
-            break;
-          case ProductSystemEnum::$HORIZONTAL_ROLLER:
-            $cuttingListObject = new HorizontalRollerProduct(
-              $product->width,
-              $product->height,
-              $product->frame_color,
-              $product->glass_type,
-              $product->extras['screen']
-            );
-
-            $materialConsuptionForProduct = $cuttingListObject->getMaterialConsumption($product->qty);
-            $this->updateMaterialsConsumption($materialConsuptionForProduct, $materialConsumption);
-            break;
-          case ProductSystemEnum::$SINGLE_HUNG:
-            $cuttingListObject = new SingleHuntProduct(
-              $product->width,
-              $product->height,
-              $product->frame_color,
-              $product->glass_type,
-              $product->extras['screen']
-            );
-
-            $materialConsuptionForProduct = $cuttingListObject->getMaterialConsumption($product->qty);
-            $this->updateMaterialsConsumption($materialConsuptionForProduct, $materialConsumption);
-            break;
-        }
-      });
+      $materialConsumption = $this->getMaterialConsumption($order);
+      $cuttingList = $this->getCuttingList($order);
 
       $orderData = [
         'id' => $order->id,
@@ -117,53 +79,7 @@ class OrderController extends Controller
         'client' => $order->client,
         'created_at' => $order->created_at,
         'project_name' => $order->project_name,
-        'products' => $order->products->map(function($product, $key) {
-          $cuttingList = [];
-          switch($product->system) {
-            case ProductSystemEnum::$FIXED_WINDOWS:
-              $cuttingListObject = new FixedWindowsProduct(
-                $product->width,
-                $product->height,
-                $product->frame_color,
-                $product->glass_type
-              );
-              $cuttingList = $cuttingListObject->getCuttingList($product->qty);
-              break;
-            case ProductSystemEnum::$HORIZONTAL_ROLLER:
-              $cuttingListObject = new HorizontalRollerProduct(
-                $product->width,
-                $product->height,
-                $product->frame_color,
-                $product->glass_type,
-                $product->extras['screen']
-              );
-              $cuttingList = $cuttingListObject->getCuttingList($product->qty);
-              break;
-            case ProductSystemEnum::$SINGLE_HUNG:
-              $cuttingListObject = new SingleHuntProduct(
-                $product->width,
-                $product->height,
-                $product->frame_color,
-                $product->glass_type,
-                $product->extras['screen']
-              );
-              $cuttingList = $cuttingListObject->getCuttingList($product->qty);
-              break;
-          }
-
-          return [
-            'id' => $product->id,
-            'visual_id' => $key,
-            'line_item_name' => $product->line_item_name,
-            'system' => $product->system,
-            'qty' => $product->qty,
-            'width' => $product->width,
-            'height' => $product->height,
-            'cutting_list' => $cuttingList,
-            'frame_color' => $product->frame_color,
-            'extras' => $product->extras,
-          ];
-        }),
+        'products' => $cuttingList,
         'materialConsumption' => $materialConsumption
       ];
 

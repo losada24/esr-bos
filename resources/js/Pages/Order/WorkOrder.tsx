@@ -19,7 +19,7 @@ export default function WorkOrder ({ auth, order }: PageProps & {
           actions={
             <Link
               className="btn btn-primary"
-              href='#'
+              href={route('pdf.work.order')}
             >
               <PrintIcon />
               Print Work Order
