@@ -121,7 +121,7 @@ class HorizontalRollerProduct implements IProduct {
 
       return [
           'VW 110 ' . $this->materialColor => [
-            'amount' => $this->getVentJamb() * 2 * $qty * 0.083,
+            'amount' => $this->getVentJamb() * $qty * 0.083,
             'unit_of_measurement' => $vw110->unit_of_measurement,
             'storage_measure' => $vw110->storage_measure,
           ],
