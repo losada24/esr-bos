@@ -100,14 +100,20 @@ class FixedWindowsProduct implements IProduct {
 
     public function getCuttingList($qty) {
       $cuttingListResult = [];
-      $cuttingListResult[] = $this->getCuttingListObject('Glass', $this->glassType, $qty, $this->getNumberWithFraction($this->getGlassWidth()) . ' x ' . $this->getNumberWithFraction($this->getGlassHeigth()));
       $cuttingListResult[] = $this->getCuttingListObject('Frame Head', 'VW 101 ' . $this->materialColor, 2 * $qty, $this->getNumberWithFraction($this->width));
       $cuttingListResult[] = $this->getCuttingListObject('Jamb', 'VW 103 ' . $this->materialColor, 2 * $qty, $this->getNumberWithFraction($this->getJamb()));
       $cuttingListResult[] = $this->getCuttingListObject('Glazing Bead Vertical', 'VW 108 ' . $this->materialColor, 2 * $qty, $this->getNumberWithFraction($this->getGlazingBeatVertical()));
       $cuttingListResult[] = $this->getCuttingListObject('Glazing Bead Horizontal', 'VW 108 ' . $this->materialColor, 2 * $qty, $this->getNumberWithFraction($this->getGlazingBeatHorizontal()));
       $cuttingListResult[] = $this->getCuttingListObject('Screw Cover', 'SC 0001 ' . $this->materialColor, 2 * $qty, $this->getNumberWithFraction($this->getGlassWidth()));
       $cuttingListResult[] = $this->getCuttingListObject('Stop Sash', 'STS 0001 ' . $this->materialColor, 2 * $qty, $this->getNumberWithFraction($this->getGlassHeigth()));
+      $cuttingListResult[] = $this->getCuttingListObject('Glass', $this->glassType, $qty, $this->getNumberWithFraction($this->getGlassWidth()) . ' x ' . $this->getNumberWithFraction($this->getGlassHeigth()));
 
+      return $cuttingListResult;
+    }
+
+    public function getPoGlass($qty) {
+      $cuttingListResult = [];
+      $cuttingListResult[] = $this->getCuttingListObject('Glass', $this->glassType, $qty, $this->getNumberWithFraction($this->getGlassWidth()) . ' x ' . $this->getNumberWithFraction($this->getGlassHeigth()));
       return $cuttingListResult;
     }
 

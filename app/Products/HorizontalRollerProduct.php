@@ -276,6 +276,24 @@ class HorizontalRollerProduct implements IProduct {
         return $cuttingListResult;
     }
 
+    //TODO: Refactor to use in getCuttingList
+    public function getPoScreen($qty) {
+        $poScreenResult = [];
+        $poScreenResult[] = $this->getCuttingListObject('Screen', '', $qty, $this->getNumberWithFraction($this->getScreenWidth()) . ' x ' . $this->getNumberWithFraction($this->getScreenHeigth()));
+        
+        return $poScreenResult;
+    }
+
+    //TODO: Refactor to use in getCuttingList
+    public function getPoGlass($qty) {
+        $poScreenResult = [];
+
+        $poScreenResult[] = $this->getCuttingListObject('Glass Fixed', $this->glassType, $qty, $this->getNumberWithFraction($this->getGlassWidth()) . ' x ' . $this->getNumberWithFraction($this->getGlassHeigth()));
+        $poScreenResult[] = $this->getCuttingListObject('Glass Move', $this->glassType, $qty, $this->getNumberWithFraction($this->getGlassWidth()) . ' x ' . $this->getNumberWithFraction($this->getMoveGlassHeight()));
+
+        return $poScreenResult;
+    }
+
     public function getUnitPrice() {
         $firstFrameColorLetter = $this->getMaterialColor($this->frameColor);
         $ventJamb106Material = RawMaterial::where('name', 'VW 106 ' . $firstFrameColorLetter)->first(); // MATERIAL 106

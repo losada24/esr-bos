@@ -172,9 +172,21 @@ Route::middleware('auth')->group(function () {
       ->name('order.show');
 
     // PDF DOCUMENTS
-    Route::get('/pdf/work-order/{id}', [PdfController::class, 'workOrder'])
+    Route::get('/pdf/work-order/{order}', [PdfController::class, 'workOrder'])
       ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$PRODUCTION ])
       ->name('pdf.work.order');
+
+    Route::get('/pdf/material-consumption/{order}', [PdfController::class, 'materialConsumption'])
+      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$PRODUCTION ])
+      ->name('pdf.material.consumption');
+
+    Route::get('/pdf/po-screen/{order}', [PdfController::class, 'poScreen'])
+      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$PRODUCTION ])
+      ->name('pdf.po.screen');
+
+    Route::get('/pdf/po-glass/{order}', [PdfController::class, 'poGlass'])
+      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$PRODUCTION ])
+      ->name('pdf.po.glass');
     
 });
 

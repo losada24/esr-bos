@@ -7,7 +7,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
 import { createTw } from 'react-pdf-tailwind'
 import PrintButton from '@/Pages/Order/PrintButton'
 import POHeaders from './POHeaders'
-import CuttingListItems from './CuttingListItems'
+import ScreenAndGlassPO from './ScreenAndGlassPO'
 
 type IndexOrderProps = PageProps & {
   order: Order
@@ -27,17 +27,17 @@ const tw = createTw({
   }
 })
 
-const WorkOrder = ({ order, auth }: IndexOrderProps) => {
+const POGlass = ({ order, auth }: IndexOrderProps) => {
   console.log(order)
   return (
     <AuthenticatedLayout
           auth={auth}
-          pageTitle={`Work Order ${order.name}`}
+          pageTitle={`PO Screen ${order.name}`}
           actions={
             <PrintButton id={order.id} />
           }
       >
-        <Head title={`Work Order ${order.name}`} />
+        <Head title={`PO Screen ${order.name}`} />
         <PrintLayout>
           <Page size="A4" style={tw('p-6 font-regular')}>
             <POHeaders order={order} />
@@ -49,10 +49,6 @@ const WorkOrder = ({ order, auth }: IndexOrderProps) => {
                     <Text style={tw('text-xs text-white-dark dark:text-gray-500')}>{product.line_item_name}</Text>
                   </View>
                   <View style={tw('flex flex-row justify-start items-center gap-3')}>
-                    <Text style={tw('text-xs text-white-dark text-black')}>Qty:</Text>
-                    <Text style={tw('text-xs text-white-dark dark:text-gray-500')}>{product.qty}</Text>
-                  </View>
-                  <View style={tw('flex flex-row justify-start items-center gap-3')}>
                     <Text style={tw('text-xs text-white-dark text-black')}>System Product:</Text>
                     <Text style={tw('text-xs text-white-dark dark:text-gray-500')}>{product.system} ({product.frame_color}) {product?.extras?.config}</Text>
                   </View>
@@ -60,12 +56,8 @@ const WorkOrder = ({ order, auth }: IndexOrderProps) => {
                     <Text style={tw('text-xs text-white-dark text-black')}>Size:</Text>
                     <Text style={tw('text-xs text-white-dark dark:text-gray-500')}>{product.width} x {product.height}</Text>
                   </View>
-                  <View style={tw('flex flex-row justify-start items-center gap-3')}>
-                    <Text style={tw('text-xs text-white-dark text-black')}>Visual ID:</Text>
-                    <Text style={tw('text-xs text-white-dark dark:text-gray-500')}>X</Text>
-                  </View>
                 </View>
-                <CuttingListItems cuttingList={product?.cutting_list ?? []} productId={product.id} />
+                <ScreenAndGlassPO cuttingList={product?.cutting_list ?? []} productId={product.id} />
               </Fragment>
             })}
           </Page>
@@ -74,4 +66,4 @@ const WorkOrder = ({ order, auth }: IndexOrderProps) => {
   )
 }
 
-export default WorkOrder
+export default POGlass

@@ -1,12 +1,12 @@
 import React, { Fragment } from 'react'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
-import { Head, Link } from '@inertiajs/react'
+import { Head } from '@inertiajs/react'
 import { type PageProps, type Order, type Client } from '@/types'
-import PrintIcon from '@/Components/Icons/PrintIcon'
 import { createMarkWithLeadingZero } from '@/Utils/mark'
 import VisualId from '@/Components/VisualId'
 import MaterialConsumptionList from './MaterialConsumptionList'
 import ShowCuttingList from './ShowCuttingList'
+import PrintButton from './PrintButton'
 
 export default function WorkOrder ({ auth, order }: PageProps & {
   clients: Client[]
@@ -17,13 +17,7 @@ export default function WorkOrder ({ auth, order }: PageProps & {
           auth={auth}
           pageTitle={`Work Order ${order.name}`}
           actions={
-            <Link
-              className="btn btn-primary"
-              href={route('pdf.work.order')}
-            >
-              <PrintIcon />
-              Print Work Order
-            </Link>
+            <PrintButton id={order.id} />
           }
       >
           <Head title={`Work Order ${order.name}`} />

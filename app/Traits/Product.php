@@ -147,4 +147,95 @@ trait Product {
       ];
     });
   }
+
+  public function getPOGlass($order) {
+    return $order->products->map(function($product, $key) {
+      $cuttingList = [];
+      switch($product->system) {
+        case ProductSystemEnum::$FIXED_WINDOWS:
+          $cuttingListObject = new FixedWindowsProduct(
+            $product->width,
+            $product->height,
+            $product->frame_color,
+            $product->glass_type
+          );
+          $cuttingList = $cuttingListObject->getPoGlass($product->qty);
+          break;
+        case ProductSystemEnum::$HORIZONTAL_ROLLER:
+          $cuttingListObject = new HorizontalRollerProduct(
+            $product->width,
+            $product->height,
+            $product->frame_color,
+            $product->glass_type,
+            $product->extras['screen']
+          );
+          $cuttingList = $cuttingListObject->getPoGlass($product->qty);
+          break;
+        case ProductSystemEnum::$SINGLE_HUNG:
+          $cuttingListObject = new SingleHuntProduct(
+            $product->width,
+            $product->height,
+            $product->frame_color,
+            $product->glass_type,
+            $product->extras['screen']
+          );
+          $cuttingList = $cuttingListObject->getPoGlass($product->qty);
+          break;
+      }
+
+      return [
+        'id' => $product->id,
+        'visual_id' => $key,
+        'line_item_name' => $product->line_item_name,
+        'system' => $product->system,
+        'qty' => $product->qty,
+        'width' => $product->width,
+        'height' => $product->height,
+        'cutting_list' => $cuttingList,
+        'frame_color' => $product->frame_color,
+        'extras' => $product->extras,
+      ];
+    });
+  }
+
+  public function getPOScreen($order) {
+    return $order->products->map(function($product, $key) {
+      $cuttingList = [];
+      switch($product->system) {
+        case ProductSystemEnum::$HORIZONTAL_ROLLER:
+          $cuttingListObject = new HorizontalRollerProduct(
+            $product->width,
+            $product->height,
+            $product->frame_color,
+            $product->glass_type,
+            $product->extras['screen']
+          );
+          $cuttingList = $cuttingListObject->getPoScreen($product->qty);
+          break;
+        case ProductSystemEnum::$SINGLE_HUNG:
+          $cuttingListObject = new SingleHuntProduct(
+            $product->width,
+            $product->height,
+            $product->frame_color,
+            $product->glass_type,
+            $product->extras['screen']
+          );
+          $cuttingList = $cuttingListObject->getPoScreen($product->qty);
+          break;
+      }
+
+      return [
+        'id' => $product->id,
+        'visual_id' => $key,
+        'line_item_name' => $product->line_item_name,
+        'system' => $product->system,
+        'qty' => $product->qty,
+        'width' => $product->width,
+        'height' => $product->height,
+        'cutting_list' => $cuttingList,
+        'frame_color' => $product->frame_color,
+        'extras' => $product->extras,
+      ];
+    });
+  }
 }

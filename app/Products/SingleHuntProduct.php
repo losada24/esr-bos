@@ -270,6 +270,22 @@ class SingleHuntProduct implements IProduct {
       return $cuttingListResult;
     }
 
+    //TODO: Refactor to use in getCuttingList
+    public function getPoScreen($qty) {
+      $cuttingListResult = [];
+      $cuttingListResult[] = $this->getCuttingListObject('Screen', '', $qty, $this->getNumberWithFraction($this->getScreenWidth()) . ' x ' . $this->getNumberWithFraction($this->getScreenHeigth()));
+      
+      return $cuttingListResult;
+    }
+
+    //TODO: Refactor to use in getCuttingList
+    public function getPoGlass($qty) {
+      $cuttingListResult = [];
+      $cuttingListResult[] = $this->getCuttingListObject('Glass', $this->glassType, 2 * $qty, $this->getNumberWithFraction($this->getGlassWidth()) . ' x ' . $this->getNumberWithFraction($this->getGlassHeigth()));
+
+      return $cuttingListResult;
+    }
+
     public function getUnitPrice() {
         $ventJambMaterial = RawMaterial::where('name', 'VW 107 ' . $this->materialColor)->first(); // MATERIAL 107
         $ventJambCost = $this->getJamb() * 0.083 * $ventJambMaterial->cost_per_unit * 2;
