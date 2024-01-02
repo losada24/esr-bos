@@ -7,7 +7,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
 import { createTw } from 'react-pdf-tailwind'
 import PrintButton from '@/Pages/Order/PrintButton'
 import POHeaders from './POHeaders'
-import ScreenAndGlassPO from './ScreenAndGlassPO'
+import CuttingListItems from './CuttingListItems'
 
 type IndexOrderProps = PageProps & {
   order: Order
@@ -28,19 +28,18 @@ const tw = createTw({
 })
 
 const POGlass = ({ order, auth }: IndexOrderProps) => {
-  console.log(order)
   return (
     <AuthenticatedLayout
           auth={auth}
-          pageTitle={`PO Screen ${order.name}`}
+          pageTitle={`PO Glass ${order.name}`}
           actions={
             <PrintButton id={order.id} />
           }
       >
-        <Head title={`PO Screen ${order.name}`} />
+        <Head title={`PO Glass ${order.name}`} />
         <PrintLayout>
           <Page size="A4" style={tw('p-6 font-regular')}>
-            <POHeaders order={order} />
+            <POHeaders order={order} poType='GL' />
             {order?.products?.map((product, index) => {
               return <Fragment key={index}>
                 <View style={tw('flex flex-row gap-4 justify-between bg-gray-200 mb-3 p-3')}>
@@ -57,7 +56,7 @@ const POGlass = ({ order, auth }: IndexOrderProps) => {
                     <Text style={tw('text-xs text-white-dark dark:text-gray-500')}>{product.width} x {product.height}</Text>
                   </View>
                 </View>
-                <ScreenAndGlassPO cuttingList={product?.cutting_list ?? []} productId={product.id} />
+                <CuttingListItems cuttingList={product?.cutting_list ?? []} productId={product.id} />
               </Fragment>
             })}
           </Page>

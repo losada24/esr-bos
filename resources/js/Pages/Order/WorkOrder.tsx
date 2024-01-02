@@ -23,7 +23,7 @@ export default function WorkOrder ({ auth, order }: PageProps & {
           <Head title={`Work Order ${order.name}`} />
           <div className='pb-0 grid grid-cols-4 gap-6 mb-2'>
             <div className='flex justify-start items-center gap-3'>
-              <div className="">Quote #</div>
+              <div className="">Order #</div>
               <div className="text-xs text-white-dark dark:text-gray-500">{createMarkWithLeadingZero(order.id, 6)}</div>
             </div>
             <div className='flex justify-start items-center gap-3'>

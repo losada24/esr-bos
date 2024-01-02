@@ -3,4 +3,5 @@ export interface MaterialConsumption {
   amount: number
   storage_measure: number
   unit_of_measurement: string
+  notes: string
 }

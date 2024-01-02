@@ -59,41 +59,49 @@ class FixedWindowsProduct implements IProduct {
           'amount' => $this->width * 2 * $qty * 0.083,
           'unit_of_measurement' => $vw101->unit_of_measurement,
           'storage_measure' => $vw101->storage_measure,
+          'notes' => $vw101->notes,
         ],
         'VW 103 ' . $this->materialColor => [
           'amount' => $this->getJamb() * 2 * $qty * 0.083,
           'unit_of_measurement' => $vw103->unit_of_measurement,
           'storage_measure' => $vw103->storage_measure,
+          'notes' => $vw103->notes,
         ],
         'VW 108 ' . $this->materialColor => [
           'amount' => ($this->getGlazingBeatVertical() * 2 + $this->getGlazingBeatHorizontal() * 2) * $qty * 0.083,
           'unit_of_measurement' => $vw108->unit_of_measurement,
           'storage_measure' => $vw108->storage_measure,
+          'notes' => $vw108->notes,
         ],
         'SC 0001 ' . $this->materialColor => [
           'amount' => ($this->getGlassWidth() * 2) * $qty * 0.083,
           'unit_of_measurement' => $sc0001->unit_of_measurement,
           'storage_measure' => $sc0001->storage_measure,
+          'notes' => $sc0001->notes,
         ],
         'TSG 0003' => [
           'amount' => (($this->getGlazingBeatHorizontal() * 2) + ($this->getGlazingBeatVertical() * 2)) * $qty * 0.083,
           'unit_of_measurement' => $tsg0003->unit_of_measurement,
           'storage_measure' => $tsg0003->storage_measure,
+          'notes' => $tsg0003->notes,
         ],
         'STS 0001 ' . $this->materialColor => [
           'amount' => ($this->getGlassHeigth() * 2) * $qty * 0.083,
           'unit_of_measurement' => $sts0001->unit_of_measurement,
           'storage_measure' => $sts0001->storage_measure,
+          'notes' => $sts0001->notes,
         ],
         'NE 850125' => [
           'amount' => 8 * $qty,
           'unit_of_measurement' => $ne850125->unit_of_measurement,
           'storage_measure' => $ne850125->storage_measure,
+          'notes' => $ne850125->notes,
         ],
         'PPA 08-1' => [
           'amount' => 12 * $qty,
           'unit_of_measurement' => $ppa081->unit_of_measurement,
           'storage_measure' => $ppa081->storage_measure,
+          'notes' => $ppa081->notes,
         ],
       ];
     }

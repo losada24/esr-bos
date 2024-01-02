@@ -11,12 +11,14 @@ const MaterialConsumptionList = ({ materialConsumption }: { materialConsumption:
         <tbody>
           <tr className="font-bold">
             <th className="px-6 pt-5 pb-4 text-left">Material</th>
+            <th className="px-6 pt-5 pb-4 text-left">Notes</th>
             <th className="px-6 pt-5 pb-4 text-right">Total Amount</th>
             <th className="px-6 pt-5 pb-4 text-right">Wharehouse Delivery</th>
           </tr>
           {materialConsumption.map((item, index) => {
             return <tr key={index}>
               <td className="border-t px-6 py-4 align-top">{item.name}</td>
+              <td className="border-t px-6 py-4 align-top">{item.notes}</td>
               {item.unit_of_measurement === UNIT && (
                 <>
                   <th colSpan={2} className="border-t px-6 py-4 align-top text-right font-normal">

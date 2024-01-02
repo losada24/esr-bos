@@ -48,6 +48,7 @@ trait Product {
           'amount' => $value['amount'],
           'unit_of_measurement' => $value['unit_of_measurement'],
           'storage_measure' => $value['storage_measure'],
+          'notes' => $value['notes'],
         ];
       }
     });

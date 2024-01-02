@@ -7,7 +7,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
 import { createTw } from 'react-pdf-tailwind'
 import PrintButton from '@/Pages/Order/PrintButton'
 import POHeaders from './POHeaders'
-import ScreenAndGlassPO from './ScreenAndGlassPO'
+import ScreenPOItems from './ScreenPOItems'
 
 type IndexOrderProps = PageProps & {
   order: Order
@@ -28,7 +28,6 @@ const tw = createTw({
 })
 
 const PoScreen = ({ order, auth }: IndexOrderProps) => {
-  console.log(order)
   return (
     <AuthenticatedLayout
           auth={auth}
@@ -40,7 +39,7 @@ const PoScreen = ({ order, auth }: IndexOrderProps) => {
         <Head title={`PO Screen ${order.name}`} />
         <PrintLayout>
           <Page size="A4" style={tw('p-6 font-regular')}>
-            <POHeaders order={order} />
+            <POHeaders order={order} poType='SC'/>
             {order?.products?.map((product, index) => {
               return <Fragment key={index}>
                 <View style={tw('flex flex-row gap-4 justify-between bg-gray-200 mb-3 p-3')}>
@@ -57,7 +56,7 @@ const PoScreen = ({ order, auth }: IndexOrderProps) => {
                     <Text style={tw('text-xs text-white-dark dark:text-gray-500')}>{product.width} x {product.height}</Text>
                   </View>
                 </View>
-                <ScreenAndGlassPO cuttingList={product?.cutting_list ?? []} productId={product.id} />
+                <ScreenPOItems cuttingList={product?.cutting_list ?? []} productId={product.id} />
               </Fragment>
             })}
           </Page>

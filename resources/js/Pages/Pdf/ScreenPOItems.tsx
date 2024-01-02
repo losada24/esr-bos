@@ -17,7 +17,7 @@ const tw = createTw({
   }
 })
 
-const ScreenAndGlassPO = ({ cuttingList, productId }: { cuttingList: CuttingList[], productId: number }) => {
+const ScreenPOItems = ({ cuttingList, productId }: { cuttingList: CuttingList[], productId: number }) => {
   return (
     <>
       <View style={tw('flex flex-row gap-4 justify-between border-b border-gray-200 mb-3 p-3')}>
@@ -36,4 +36,4 @@ const ScreenAndGlassPO = ({ cuttingList, productId }: { cuttingList: CuttingList
   )
 }
 
-export default ScreenAndGlassPO
+export default ScreenPOItems

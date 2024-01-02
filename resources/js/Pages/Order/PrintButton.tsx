@@ -25,6 +25,13 @@ const PrintButton = ({ id }: { id: number }) => {
             <Link
               href={route('pdf.work.order', id)}
             >
+              Work Order
+            </Link>
+          </li>
+          <li>
+            <Link
+              href={route('pdf.work.order', id)}
+            >
               Cutting List
             </Link>
           </li>

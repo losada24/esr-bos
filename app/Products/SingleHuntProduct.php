@@ -132,111 +132,133 @@ class SingleHuntProduct implements IProduct {
           'amount' => $this->getJamb() * 0.083 * 2 * $qty,
           'unit_of_measurement' => $vw107->unit_of_measurement,
           'storage_measure' => $vw107->storage_measure,
+          'notes' => $vw107->notes
         ],
         'VW 106 ' . $this->materialColor => [
           'amount' => $this->getVentTopAndBottom() * 0.083 * $qty,
           'unit_of_measurement' => $vw106->unit_of_measurement,
           'storage_measure' => $vw106->storage_measure,
+          'notes' => $vw106->notes
         ],
         'VW 110 ' . $this->materialColor => [
           'amount' => $this->getVentTopAndBottom() * 0.083 * $qty,
           'unit_of_measurement' => $vw110->unit_of_measurement,
           'storage_measure' => $vw110->storage_measure,
+          'notes' => $vw110->notes
         ],
         'VW 103 ' . $this->materialColor => [
           'amount' => $this->getFrameJamb() * 0.083 * 2 * $qty,
           'unit_of_measurement' => $vw103->unit_of_measurement,
           'storage_measure' => $vw103->storage_measure,
+          'notes' => $vw103->notes
         ],
         'VW 104 ' . $this->materialColor => [
           'amount' => $this->getFixedMeetingRail() * 0.083 * $qty,
           'unit_of_measurement' => $vw104->unit_of_measurement,
           'storage_measure' => $vw104->storage_measure,
+          'notes' => $vw104->notes
         ],
         'VW 101 ' . $this->materialColor => [
           'amount' => $this->width * 0.083 * $qty,
           'unit_of_measurement' => $vw101->unit_of_measurement,
           'storage_measure' => $vw101->storage_measure,
+          'notes' => $vw101->notes
         ],
         'VW 102 ' . $this->materialColor => [
           'amount' => $this->width * 0.083 * $qty,
           'unit_of_measurement' => $vw102->unit_of_measurement,
           'storage_measure' => $vw102->storage_measure,
+          'notes' => $vw106->notes
         ],
         'VW 108 ' . $this->materialColor => [
           'amount' => ($this->getGlazingBeatVertical() * 0.083 * 4 * $qty) + ($this->getGlazingBeatHorizontal() * 0.083 * 4 * $qty),
           'unit_of_measurement' => $vw108->unit_of_measurement,
-          'storage_measure' => $vw108->storage_measure
+          'storage_measure' => $vw108->storage_measure,
+          'notes' => $vw108->notes
         ],
         'ST 0001' => [
           'amount' => $this->getSteelReiceforment() * 0.083 * $qty,
           'unit_of_measurement' => $st0001->unit_of_measurement,
-          'storage_measure' => $st0001->storage_measure
+          'storage_measure' => $st0001->storage_measure,
+          'notes' => $st0001->notes
         ],
         'VW 109 ' . $this->materialColor => [
           'amount' => 2 * $qty,
           'unit_of_measurement' => $vw109->unit_of_measurement,
-          'storage_measure' => $vw109->storage_measure
+          'storage_measure' => $vw109->storage_measure,
+          'notes' => $vw109->notes
         ],
         'VW 105 MF' => [
           'amount' => 2 * $qty,
           'unit_of_measurement' => $vm105MF->unit_of_measurement,
-          'storage_measure' => $vm105MF->storage_measure
+          'storage_measure' => $vm105MF->storage_measure,
+          'notes' => $vm105MF->notes
         ],
         'STS 0001 ' . $this->materialColor => [
           'amount' => 2 * $qty,
           'unit_of_measurement' => $sts0001->unit_of_measurement,
-          'storage_measure' => $sts0001->storage_measure
+          'storage_measure' => $sts0001->storage_measure,
+          'notes' => $sts0001->notes
         ],
         'TSG 0002' => [
           'amount' => $this->getTSlotSealGlazingBeat() * 0.083 * $qty,
           'unit_of_measurement' => $stg0002->unit_of_measurement,
-          'storage_measure' => $stg0002->storage_measure
+          'storage_measure' => $stg0002->storage_measure,
+          'notes' => $stg0002->notes
         ],
         'TSB 0001' => [
           'amount' => $this->width * 0.083 * $qty,
           'unit_of_measurement' => $tbs0001->unit_of_measurement,
-          'storage_measure' => $tbs0001->storage_measure
+          'storage_measure' => $tbs0001->storage_measure,
+          'notes' => $tbs0001->notes
         ],
         $weatherStripMeetRailSash->name => [
           'amount' => $this->getWeatherStripMeetRailSash() * 0.083 * $qty,
           'unit_of_measurement' => $weatherStripMeetRailSash->unit_of_measurement,
-          'storage_measure' => $weatherStripMeetRailSash->storage_measure
+          'storage_measure' => $weatherStripMeetRailSash->storage_measure,
+          'notes' => $weatherStripMeetRailSash->notes
         ],
         'W 22254 BL' => [
           'amount' => $this->width * 0.083 * $qty,
           'unit_of_measurement' => $w22254BL->unit_of_measurement,
-          'storage_measure' => $w22254BL->storage_measure
+          'storage_measure' => $w22254BL->storage_measure,
+          'notes' => $w22254BL->notes
         ],
         'SC 0001 ' . $this->materialColor => [
           'amount' => $this->getGlassWidth() * 0.083 * $qty,
           'unit_of_measurement' => $sc0001->unit_of_measurement,
-          'storage_measure' => $sc0001->storage_measure
+          'storage_measure' => $sc0001->storage_measure,
+          'notes' => $sc0001->notes
         ],
         'SS 0001 ' . $this->materialColor => [
           'amount' => $this->getJamb() * 0.083 * 2 * $qty,
           'unit_of_measurement' => $ss0001->unit_of_measurement,
-          'storage_measure' => $ss0001->storage_measure
+          'storage_measure' => $ss0001->storage_measure,
+          'notes' => $ss0001->notes
         ],
         'NE 850125' => [
           'amount' => 16 * $qty,
           'unit_of_measurement' => $ne850125->unit_of_measurement,
-          'storage_measure' => $ne850125->storage_measure
+          'storage_measure' => $ne850125->storage_measure,
+          'notes' => $ne850125->notes
         ],
         'PPA 08-1' => [
           'amount' => 16 * $qty,
           'unit_of_measurement' => $ppa081->unit_of_measurement,
           'storage_measure' => $ppa081->storage_measure,
+          'notes' => $ppa081->notes
         ],
         'LS 0001' => [
           'amount' => 2 * $qty,
           'unit_of_measurement' => $ls0001->unit_of_measurement,
           'storage_measure' => $ls0001->storage_measure,
+          'notes' => $ls0001->notes
         ],
         'CLB 0001' => [
           'amount' => 2 * $qty,
           'unit_of_measurement' => $clb0001->unit_of_measurement,
           'storage_measure' => $clb0001->storage_measure,
+          'notes' => $clb0001->notes
         ],
       ];
     }
