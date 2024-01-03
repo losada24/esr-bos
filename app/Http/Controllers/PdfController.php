@@ -3,7 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Enum\ProductSystemEnum;
+use App\Http\Resources\CompanyResource;
+use App\Models\Company;
 use App\Models\Order;
+use App\Models\User;
 use Illuminate\Http\Request;
 use App\Traits\Product;
 use Inertia\Inertia;
@@ -75,6 +78,27 @@ class PdfController extends Controller
       ]);
     }
 
+    public function poBalance(Order $order)
+    {
+      $order->load(['products' => function($query) {
+        $query->where('system', ProductSystemEnum::$SINGLE_HUNG);
+      }, 'client']);
+      
+      $poBalance = $this->getBalancePO($order);
+      
+      $orderData = [
+        'id' => $order->id,
+        'name' => $order->name,
+        'client' => $order->client,
+        'created_at' => $order->created_at,
+        'project_name' => $order->project_name,
+        'balances' => $poBalance,
+      ];
+      return Inertia::render('Pdf/PoBalance', [
+        'order' => $orderData
+      ]);
+    }
+
     public function poGlass(Order $order)
     {
       $order->load(['products', 'client']);
@@ -91,6 +115,27 @@ class PdfController extends Controller
       ];
       return Inertia::render('Pdf/POGlass', [
         'order' => $orderData
+      ]);
+    }
+
+    public function report(Order $order)
+    {
+      $order->load(['products', 'client', 'user.company']);
+      
+      return Inertia::render('Pdf/Report', [
+        'order' => $order
+      ]);
+    }
+
+    public function estimate(Order $order)
+    {
+      $order->load(['products', 'client', 'user.company']);
+      $company = Company::where('id', $order->user->company_id)->first();
+      CompanyResource::withoutWrapping();
+      //asset('storage/'.$this->featured_image)
+      return Inertia::render('Pdf/Estimate', [
+        'order' => $order,
+        'company' => new CompanyResource($company),
       ]);
     }
 }

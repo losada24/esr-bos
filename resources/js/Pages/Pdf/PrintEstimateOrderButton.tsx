@@ -4,7 +4,7 @@ import PrintIcon from '@/Components/Icons/PrintIcon'
 import AngleIcon from '@/Components/Icons/AngleIcon'
 import { Link } from '@inertiajs/react'
 
-const PrintButton = ({ id }: { id: number }) => {
+const PrintEstimateOrderButton = ({ id }: { id: number }) => {
   return (
     <div className='dropdown'>
       <Dropdown
@@ -13,7 +13,7 @@ const PrintButton = ({ id }: { id: number }) => {
         button={
             <>
                 <PrintIcon />
-                Print
+                Actions
                 <span>
                   <AngleIcon />
                 </span>
@@ -23,44 +23,23 @@ const PrintButton = ({ id }: { id: number }) => {
         <ul className="ltr:right-0 rtl:left-0 whitespace-nowrap">
           <li>
             <Link
-              href={route('pdf.work.order', id)}
+              href={route('pdf.report', id)}
             >
-              Work Order
+              Report
             </Link>
           </li>
           <li>
             <Link
-              href={route('pdf.work.order', id)}
+              href={route('pdf.estimate', id)}
             >
-              Cutting List
+              Estimate
             </Link>
           </li>
           <li>
             <Link
-              href={route('pdf.material.consumption', id)}
+              href={route('estimate.show', id)}
             >
-              Material Consumption
-            </Link>
-          </li>
-          <li>
-            <Link
-              href={route('pdf.po.screen', id)}
-            >
-              PO Screens
-            </Link>
-          </li>
-          <li>
-            <Link
-              href={route('pdf.po.glass', id)}
-            >
-              PO Glasses
-            </Link>
-          </li>
-          <li>
-            <Link
-              href={route('pdf.po.balance', id)}
-            >
-              PO Balances
+              Go to Estimate
             </Link>
           </li>
         </ul>
@@ -69,4 +48,4 @@ const PrintButton = ({ id }: { id: number }) => {
   )
 }
 
-export default PrintButton
+export default PrintEstimateOrderButton

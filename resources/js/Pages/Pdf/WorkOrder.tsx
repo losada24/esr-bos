@@ -28,7 +28,6 @@ const tw = createTw({
 })
 
 const WorkOrder = ({ order, auth }: IndexOrderProps) => {
-  console.log(order)
   return (
     <AuthenticatedLayout
           auth={auth}

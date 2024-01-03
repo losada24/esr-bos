@@ -239,4 +239,25 @@ trait Product {
       ];
     });
   }
+
+  public function getBalancePO($order) {
+    return $order->products->map(function($product) {
+      $singleHomeObject = new SingleHuntProduct(
+        $product->width,
+        $product->height,
+        $product->frame_color,
+        $product->glass_type,
+        $product->extras['screen']
+      );
+
+      $balanceInfo = $singleHomeObject->getBalancesBySize();
+
+      return [
+        'id' => $product->id,
+        'qty' => $product->qty,
+        'size' => $balanceInfo[2],
+        'part_no' => $balanceInfo[3],
+      ];
+    });
+  }
 }

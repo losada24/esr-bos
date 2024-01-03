@@ -1,6 +1,7 @@
 import { type User } from '@/types/interfaces/user'
 import { type Client } from '@/types/interfaces/client'
 import { type Product } from '@/types/interfaces/product'
+import { type Balance } from '@/types/interfaces/balance'
 import { type MaterialConsumption } from './materialConsumption'
 
 export interface Order {
@@ -28,4 +29,5 @@ export interface Order {
   glass_type: string
   materialConsumption?: MaterialConsumption[]
   productsCount?: number
+  balances?: Balance[]
 }

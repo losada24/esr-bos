@@ -27,8 +27,8 @@ class UpdateHorizontalRoller {
       );
 
       $unitPrice = $horizontalRollerProduct->getUnitPrice();
-      $markupValue = $unitPrice * ($request->markup / 100);
-      $unitPriceWithMarkup = $unitPrice + $markupValue;
+      // $markupValue = $unitPrice * ($request->markup / 100);
+      // $unitPriceWithMarkup = $unitPrice + $markupValue;
 
       $productData = [
         'order_id' => $request->order_id,
@@ -43,8 +43,8 @@ class UpdateHorizontalRoller {
         'glass_color' => $request->glass_color,
         'low_e' => $request->low_e,
         'privacy' => $request->privacy,
-        'unit_price' => $unitPriceWithMarkup,
-        'total_price' => $unitPriceWithMarkup * $request->qty,
+        'unit_price' => $unitPrice,
+        'total_price' => $unitPrice * $request->qty,
         'extras' => [
           'screen' => $request->screen,
           'config' => $request->config,

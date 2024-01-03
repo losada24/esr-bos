@@ -10,7 +10,6 @@ import DashboardIcon from '@/Components/Icons/DashboardIcon'
 import BookIcon from '@/Components/Icons/BookIcon'
 import MoneyIcon from '@/Components/Icons/MoneyIcon'
 import CompanyIcon from '@/Components/Icons/CompanyIcon'
-import { COMPANY_NAME } from '@/Utils/constants'
 import { isAdmin, isClientAdmin, isClient, isAccounting, isProduction } from '@/Utils/user'
 import { type Role, type Auth } from '@/types'
 

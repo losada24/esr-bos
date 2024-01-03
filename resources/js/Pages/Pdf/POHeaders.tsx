@@ -23,7 +23,7 @@ const POHeaders = ({ order, poType }: { order: Order, poType?: string }) => {
     <View style={tw('flex flex-row gap-4 justify-between')}>
       <View style={tw('flex flex-row justify-start items-center gap-3')}>
         <Text style={tw('text-base text-white-dark text-black')}>Order #</Text>
-        <Text style={tw('text-base text-white-dark dark:text-gray-500')}>{`${createMarkWithLeadingZero(order.id, 6)}${poType}`}</Text>
+        <Text style={tw('text-base text-white-dark dark:text-gray-500')}>{`${createMarkWithLeadingZero(order.id, 6)}${poType ?? ''}`}</Text>
       </View>
       <View style={tw('flex flex-row justify-start items-center gap-3')}>
         <Text style={tw('text-base text-white-dark text-black')}>Client</Text>

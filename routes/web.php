@@ -188,6 +188,18 @@ Route::middleware('auth')->group(function () {
       ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$PRODUCTION ])
       ->name('pdf.po.glass');
     
+    Route::get('/pdf/po-balance/{order}', [PdfController::class, 'poBalance'])
+      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$PRODUCTION ])
+      ->name('pdf.po.balance');
+    
+    Route::get('/pdf/estimate/{order}', [PdfController::class, 'estimate'])
+      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$PRODUCTION ])
+      ->name('pdf.estimate');
+    
+    Route::get('/pdf/report/{order}', [PdfController::class, 'report'])
+      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$PRODUCTION ])
+      ->name('pdf.report');
+    
 });
 
 require __DIR__.'/auth.php';

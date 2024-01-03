@@ -15,6 +15,7 @@ import { type Company } from '@/types/interfaces/company'
 import { type HorizontalRoller } from './interfaces/horizontalRoller'
 import { type CuttingList } from './interfaces/cuttingList'
 import { type MaterialConsumption } from './interfaces/materialConsumption'
+import { type Balance } from './interfaces/balance'
 
 export type {
   User,
@@ -33,5 +34,6 @@ export type {
   SingleHunt,
   HorizontalRoller,
   CuttingList,
-  MaterialConsumption
+  MaterialConsumption,
+  Balance
 }

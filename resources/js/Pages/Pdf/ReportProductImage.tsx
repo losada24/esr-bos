@@ -1,0 +1,45 @@
+import React from 'react'
+import { Text, View } from '@react-pdf/renderer'
+import { createTw } from 'react-pdf-tailwind'
+import { type Product } from '@/types'
+import { PRODUCT_SYSTEMS, NO_CERTIFICATION_STANDARD_MESSAGE } from '@/Utils/constants'
+
+const tw = createTw({
+  theme: {
+    extend: {
+      fontFamily: {
+        regular: 'NunitoRegular',
+        bold: 'NunitoBold'
+      },
+      colors: {
+        custom: '#bada55'
+      }
+    }
+  }
+})
+
+const ReportProductImage = ({ product }: { product: Product }) => {
+  // TODO: Create helper function to check if product is certified
+  // TODO: Fix Image
+  return (
+    <View>
+      {product.system === PRODUCT_SYSTEMS.FIXED_WINDOWS && (product.width > 53 || product.height > 74) && (
+        <View style={tw('flex flex-row mb-4 p-3')}>
+          <Text style={tw('text-xs text-red-700 font-regular text-center')}>{NO_CERTIFICATION_STANDARD_MESSAGE}</Text>
+        </View>
+      )}
+      {product.system === PRODUCT_SYSTEMS.SINGLE_HUNG && (product.width > 53.125 || product.height > 74) && (
+        <View style={tw('flex flex-row mb-4 p-3')}>
+          <Text style={tw('text-xs text-red-700 font-regular text-center')}>{NO_CERTIFICATION_STANDARD_MESSAGE}</Text>
+        </View>
+      )}
+      {product.system === PRODUCT_SYSTEMS.HORIZONTAL_ROLLER && (product.width > 74 || product.height > 53) && (
+        <View style={tw('flex flex-row mb-4 p-3')}>
+          <Text style={tw('text-xs text-red-700 font-regular text-center')}>{NO_CERTIFICATION_STANDARD_MESSAGE}</Text>
+        </View>
+      )}
+    </View>
+  )
+}
+
+export default ReportProductImage

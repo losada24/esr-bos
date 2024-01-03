@@ -124,10 +124,34 @@ export default function Create ({ auth, estimate }: PageProps & {
                       </button>
                     </>
                   )}
-                    <button type="button" className="btn btn-info w-full gap-2">
-                        <PrintIcon />
-                        Print Estimate
-                    </button>
+                  <div className='dropdown'>
+                    <Dropdown
+                        placement='bottom-start'
+                        btnClassName="btn btn-info w-full gap-2 dropdown-toggle"
+                        button={
+                            <>
+                                <PrintIcon />
+                                Print
+                                <span>
+                                  <AngleIcon />
+                                </span>
+                            </>
+                        }
+                    >
+                        <ul className="w-full">
+                            <li>
+                                <button onClick={() => {
+                                  router.get(route('pdf.report', estimate.id))
+                                }}>Report</button>
+                            </li>
+                            <li>
+                                <button onClick={() => {
+                                  router.get(route('pdf.estimate', estimate.id))
+                                }}>Estimate</button>
+                            </li>
+                        </ul>
+                    </Dropdown>
+                  </div>
                 </div>
               </Panel>
             </div>
