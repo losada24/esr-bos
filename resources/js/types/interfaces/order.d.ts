@@ -3,6 +3,7 @@ import { type Client } from '@/types/interfaces/client'
 import { type Product } from '@/types/interfaces/product'
 import { type Balance } from '@/types/interfaces/balance'
 import { type MaterialConsumption } from './materialConsumption'
+import { type PaymentInfo } from './paymentInfo'
 
 export interface Order {
   id: number
@@ -30,4 +31,5 @@ export interface Order {
   materialConsumption?: MaterialConsumption[]
   productsCount?: number
   balances?: Balance[]
+  payments?: PaymentInfo[]
 }

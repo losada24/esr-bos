@@ -29,7 +29,6 @@ export default function Index ({ auth, estimates }: IndexOrderProps) {
       router.delete(route('estimate.destroy', id))
     }
   }
-  console.log(estimates)
   return (
       <AuthenticatedLayout
           auth={auth}
@@ -79,12 +78,9 @@ export default function Index ({ auth, estimates }: IndexOrderProps) {
                     </td>
                     <td className="border-t flex items-center px-6 py-4">
                         {(isAdmin(auth.user.roles.map((role: Role) => role.name)) || isClientAdmin(auth.user.roles.map((role: Role) => role.name))) && (productsCount ?? 0) > 0 && (
-                          <button className='mr-2' title='Create Order' onClick={() => {
-                            setSelectedEstimate(estimate)
-                            setShowOrderModal(true)
-                          }}>
+                          <Link href={route('estimate.order', id) } className='mr-2' title='Create Order'>
                             <MoneyIcon />
-                          </button>
+                          </Link>
                         )}
                         <Link
                           href={route('estimate.show', id)}

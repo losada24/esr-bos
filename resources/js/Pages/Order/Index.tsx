@@ -6,7 +6,7 @@ import Pagination from '@/Components/Pagination'
 import EyeIcon from '@/Components/Icons/EyeIcon'
 import { createMarkWithLeadingZero } from '@/Utils/mark'
 import { isAdmin, isAccounting } from '@/Utils/user'
-import { ACCOUNTING_STATUS, PRODUCTION_STATUS } from '@/Utils/constants'
+import { ACCOUNTING_STATUS, PRODUCTION_STATUS, PRODUCTION_COMPLETED } from '@/Utils/constants'
 import OrderFilter from './OrderFilter'
 import HammerIcon from '@/Components/Icons/HammerIcon'
 import OrderUpdateStatusModal from './OrderUpdateStatusModal'
@@ -83,8 +83,8 @@ export default function Index ({ auth, orders, statuses }: IndexOrderProps) {
                           <EyeIcon />
                         </Link>
                         {((isAdmin(auth.user.roles.map((role: Role) => role.name)) || isAccounting(auth.user.roles.map((role: Role) => role.name))) &&
-                          (order.status === ACCOUNTING_STATUS)) && (
-                          <button title='Produce Order' onClick={() => {
+                          (order.status === ACCOUNTING_STATUS || order.status === PRODUCTION_COMPLETED)) && (
+                          <button title='Change Order Status' onClick={() => {
                             setSelectedOrder(order)
                             setShowOrderModal(true)
                           }}>
@@ -93,7 +93,7 @@ export default function Index ({ auth, orders, statuses }: IndexOrderProps) {
                         )}
                         {((isAdmin(auth.user.roles.map((role: Role) => role.name)) || isAccounting(auth.user.roles.map((role: Role) => role.name))) &&
                           order.status === PRODUCTION_STATUS) && (
-                          <button title='Complete Order' onClick={() => { completeProduction(id) }}>
+                          <button title='Complete Production' onClick={() => { completeProduction(id) }}>
                             <CheckIcon />
                           </button>
                         )}

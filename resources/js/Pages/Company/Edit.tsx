@@ -18,7 +18,8 @@ export default function Edit ({ auth, states, company }: PageProps & { states: s
     phone_number: company.phone_number ?? '',
     featured_image: '',
     markup: company.markup ?? 0,
-    promotion: company.promotion ?? 0
+    promotion: company.promotion ?? 0,
+    allow_credit_payment: company.allow_credit_payment ?? false
   }
 
   useEffect(() => {

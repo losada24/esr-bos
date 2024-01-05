@@ -9,4 +9,5 @@ class RoleEnum
     public static $CLIENT = 'client';
     public static $ACCOUNTING = 'accounting';
     public static $PRODUCTION = 'production';
+    public static $SHIPPING = 'shipping';
 }

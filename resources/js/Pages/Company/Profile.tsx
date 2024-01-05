@@ -18,7 +18,8 @@ export default function Profile ({ auth, states, company }: PageProps & { states
     phone_number: company.phone_number ?? '',
     featured_image: '',
     markup: company.markup ?? 0,
-    promotion: company.promotion ?? 0
+    promotion: company.promotion ?? 0,
+    allow_credit_payment: company.allow_credit_payment ?? false
   }
 
   useEffect(() => {

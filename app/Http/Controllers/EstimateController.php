@@ -17,6 +17,7 @@ use App\Http\Resources\OrderCollection;
 use App\Models\Client;
 use App\Models\Order;
 use App\Enum\OrderStatusEnum;
+use App\Enum\States;
 
 class EstimateController extends Controller
 {
@@ -121,13 +122,27 @@ class EstimateController extends Controller
     public function show($id)
     {
         return Inertia::render('Estimate/Show', [
-          'estimate' => Order::with(['client', 'products'])->findOrFail($id)
+          'estimate' => Order::with(['client', 'products', 'user.company'])->findOrFail($id)
+        ]);
+    }
+
+    /**
+     * Display the specified resource.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function order($id)
+    {
+        return Inertia::render('Estimate/Payment', [
+          'estimate' => Order::with(['client', 'products', 'user.company'])->findOrFail($id),
+          'states' => array_values(States::$USA_STATES),
         ]);
     }
 
     public function orderStore(StoreEstimateToOrderRequest $request, CreateEstimateOrder $createEstimateOrder)
     {
-        $estimate = Order::findOrFail($request->id);
+        $estimate = Order::findOrFail($request->order_id); //TODO: not allow pay two times same order
         $createEstimateOrder->handle($request, $estimate);
         return redirect()->route('estimate.index')
           ->with('success', 'Order created successfully.');

@@ -71,7 +71,7 @@ const CompanyForm = ({ submitCount, errors, isCreate, states, setFieldValue, fea
         <Field
           id="state"
           name="state"
-          className="form-input"
+          className="form-select"
           autoComplete="state"
           placeholder='State'
           as="select"
@@ -125,6 +125,16 @@ const CompanyForm = ({ submitCount, errors, isCreate, states, setFieldValue, fea
               <div className="bg-[#eee] flex justify-center items-center px-3 font-semibold border border-[#e0e6ed] dark:border-[#17263c] dark:bg-[#1b2e4b] rounded-r-md">%</div>
             </div>
             {(submitCount && errors.promotion) ? <InputError message={errors.promotion} className="mt-2" /> : ''}
+          </div>
+          <div className={submitCount ? (errors.allow_credit_payment) ? 'has-error inline-flex' : 'has-success inline-flex' : 'inline-flex'}>
+            <Field
+              id="allow_credit_payment"
+              name="allow_credit_payment"
+              className="form-checkbox"
+              type='checkbox'
+            />
+            <label htmlFor="allow_credit_payment">Allow Credit Payment</label>
+            {(submitCount && errors.allow_credit_payment) ? <InputError message={errors.allow_credit_payment} className="mt-2" /> : ''}
           </div>
         </div>
       )}

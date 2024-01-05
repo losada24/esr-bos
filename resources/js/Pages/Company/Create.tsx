@@ -16,7 +16,8 @@ export default function Create ({ auth, states }: PageProps & { states: string[]
     zip: '',
     featured_image: '',
     markup: 0,
-    promotion: 0
+    promotion: 0,
+    allow_credit_payment: false
   }
 
   const handleSubmit = async (values: any, helpers: FormikHelpers<Company>) => {

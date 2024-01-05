@@ -38,7 +38,7 @@ class OrderController extends Controller
           'statuses' => [
             OrderStatusEnum::$ESTIMATE,
             OrderStatusEnum::$PRODUCTION,
-            OrderStatusEnum::$ORDER_COMPLETED
+            OrderStatusEnum::$READY_FOR_DELIVERY
           ]
         ]);
     }
@@ -58,8 +58,9 @@ class OrderController extends Controller
           throw new \Exception('Not not updated');
       }
 
+      // TODO: Insert status history
       $orderData = [
-        'status' => OrderStatusEnum::$ORDER_COMPLETED
+        'status' => OrderStatusEnum::$PRODUCTION_COMPLETED
       ];
 
       $order->update($orderData);
@@ -89,13 +90,13 @@ class OrderController extends Controller
     }
 
     public function show($id)
-    {
+    {   // TODO: Send roles by auth user to always use same modal form to update status
         return Inertia::render('Order/Show', [
-          'order' => Order::with(['client', 'products'])->findOrFail($id),
+          'order' => Order::with(['client', 'products', 'payments'])->findOrFail($id),
           'statuses' => [
             OrderStatusEnum::$ESTIMATE,
             OrderStatusEnum::$PRODUCTION,
-            OrderStatusEnum::$ORDER_COMPLETED
+            OrderStatusEnum::$READY_FOR_DELIVERY
           ]
         ]);
     }

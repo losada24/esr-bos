@@ -78,6 +78,9 @@ class Order extends Model
         else if (auth()->user()->hasRole(RoleEnum::$PRODUCTION)) {
           $query->where('status', OrderStatusEnum::$PRODUCTION);
         }
+        else if (auth()->user()->hasRole(RoleEnum::$SHIPPING)) {
+          $query->where('status', OrderStatusEnum::$READY_FOR_DELIVERY);
+        }
         else if (auth()->user()->hasRole(RoleEnum::$ADMIN)) {
           $query->where('status', '<>', OrderStatusEnum::$ESTIMATE);
         }
@@ -111,6 +114,11 @@ class Order extends Model
     public function products()
     {
         return $this->hasMany(Product::class);
+    }
+
+    public function payments()
+    {
+        return $this->hasMany(Payment::class);
     }
 
     public function company()

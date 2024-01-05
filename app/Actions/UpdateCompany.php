@@ -36,12 +36,13 @@ class UpdateCompany {
         'state' => $request->state,
         'zip' => $request->zip,
         'featured_image' => $reaturedImagePath,
-        'user_id' => auth()->user()->id
+        'user_id' => auth()->user()->id,
       ];
 
       if (auth()->user()->hasRole(RoleEnum::$ADMIN)) {
         $companyData['markup'] = $request->markup;
         $companyData['promotion'] = $request->promotion;
+        $companyData['allow_credit_payment'] = $request->allow_credit_payment;
       }
 
       $company->update($companyData);

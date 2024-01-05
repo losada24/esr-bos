@@ -11,4 +11,5 @@ export interface Company {
   user_id: number
   user: User
   featured_image: string
+  allow_credit_payment: boolean
 }

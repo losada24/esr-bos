@@ -13,14 +13,12 @@ import PriceSummary from './PriceSummary'
 import { createMarkWithLeadingZero } from '@/Utils/mark'
 import { PRODUCT_SYSTEMS, ESTIMATE_STATUS } from '@/Utils/constants'
 import MoneyIcon from '@/Components/Icons/MoneyIcon'
-import EstimatePaymentModal from './EstimatePaymentModal'
+import PaymentInformation from '../Order/PaymentInformation'
 
 export default function Create ({ auth, estimate }: PageProps & {
   clients: Client[]
   estimate: Order
 }) {
-  const [showOrderModal, setShowOrderModal] = useState<boolean>(false)
-  const [selectedEstimate, setSelectedEstimate] = useState<Order | null>(null)
   const getUrlBySystem = (system: string, id: number) => {
     switch (system) {
       case PRODUCT_SYSTEMS.FIXED_WINDOWS:
@@ -115,13 +113,10 @@ export default function Create ({ auth, estimate }: PageProps & {
                             </ul>
                         </Dropdown>
                       </div>
-                      <button type="button" className="btn btn-secondary w-full gap-2" onClick={() => {
-                        setSelectedEstimate(estimate)
-                        setShowOrderModal(true)
-                      }}>
+                      <Link href={ route('estimate.order', estimate.id) } className="btn btn-secondary w-full gap-2">
                           <MoneyIcon color='#fff' />
-                          Create Order
-                      </button>
+                          Crear Order
+                      </Link>
                     </>
                   )}
                   <div className='dropdown'>
@@ -237,14 +232,6 @@ export default function Create ({ auth, estimate }: PageProps & {
               <PriceSummary estimate={estimate} />
             </div>
           </div>
-          <EstimatePaymentModal
-            showModal={showOrderModal}
-            onClose={() => {
-              setShowOrderModal(false)
-              setSelectedEstimate(null)
-            }}
-            estimate={selectedEstimate}
-          />
       </AuthenticatedLayout>
   )
 }

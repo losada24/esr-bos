@@ -10,6 +10,7 @@ export const ESTIMATE_STATUS: string = 'estimate'
 export const ACCOUNTING_STATUS: string = 'accounting'
 export const PRODUCTION_STATUS: string = 'production'
 export const PRODUCTION_COMPLETED: string = 'production completed'
+export const READY_FOR_DELIVERY: string = 'ready for delivery'
 export interface Status {
   id: string
   color: string
@@ -130,3 +131,10 @@ export const SQFT: string = 'SQFT'
 export const LENGTH_OF_BARS: number = 16
 export const CONFIG_XO: string = 'XO'
 export const NO_CERTIFICATION_STANDARD_MESSAGE: string = 'The windows does not comply with certification standards'
+export const PAYMENT_METHODS = {
+  CASH: 'CASH',
+  CHECK: 'CHECK',
+  CREDIT: 'CREDIT',
+  BANK_TRANSFER: 'BANK TRANSFER'
+}
+export const ADDRESS_REQUIRED_AFTER_AMOUNT: number = import.meta.env.VITE_ADDRESS_REQUIRED_AFTER_AMOUNT

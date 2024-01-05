@@ -16,6 +16,7 @@ import { type HorizontalRoller } from './interfaces/horizontalRoller'
 import { type CuttingList } from './interfaces/cuttingList'
 import { type MaterialConsumption } from './interfaces/materialConsumption'
 import { type Balance } from './interfaces/balance'
+import { type PaymentInfo } from './interfaces/paymentInfo'
 
 export type {
   User,
@@ -35,5 +36,6 @@ export type {
   HorizontalRoller,
   CuttingList,
   MaterialConsumption,
-  Balance
+  Balance,
+  PaymentInfo
 }

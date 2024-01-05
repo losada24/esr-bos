@@ -21,7 +21,8 @@ export const companySchema = Yup.object({
       otherwise: Yup.mixed().nullable()
     })
     .test('is-valid-type', 'Not a valid image type', value => isValidFileType(value?.name, 'image'))
-    .test('is-valid-size', 'Max allowed size is 500KB', value => isValidFileSize(value?.size ?? 0))
+    .test('is-valid-size', 'Max allowed size is 500KB', value => isValidFileSize(value?.size ?? 0)),
+  allow_credit_payment: Yup.boolean()
 })
 
 export interface Company {
@@ -35,4 +36,5 @@ export interface Company {
   featured_image: string
   markup?: number
   promotion?: number
+  allow_credit_payment: boolean
 }

@@ -27,7 +27,8 @@ class CreateCompany {
         'featured_image' => $reaturedImagePath,
         'user_id' => auth()->user()->id,
         'markup' => $request->markup,
-        'promotion' => $request->promotion
+        'promotion' => $request->promotion,
+        'allow_credit_payment' => $request->allow_credit_payment,
       ]);
 
       if( !$company )

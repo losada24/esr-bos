@@ -8,6 +8,7 @@ import HammerIcon from '@/Components/Icons/HammerIcon'
 import { isAccounting, isAdmin } from '@/Utils/user'
 import { ACCOUNTING_STATUS, PRODUCTION_STATUS } from '@/Utils/constants'
 import OrderUpdateStatusModal from './OrderUpdateStatusModal'
+import PaymentInformation from './PaymentInformation'
 
 export default function Show ({ auth, order, statuses }: PageProps & {
   clients: Client[]
@@ -80,7 +81,7 @@ export default function Show ({ auth, order, statuses }: PageProps & {
               </Panel>
             </div>
             <div className='col-span-10'>
-              <div className='table-responsive'>
+              <div className='table-responsive mb-4'>
                 <table className="w-full whitespace-nowrap">
                   <thead>
                     <tr className="font-bold text-left">
@@ -157,6 +158,7 @@ export default function Show ({ auth, order, statuses }: PageProps & {
                   )}
                 </table>
               </div>
+              <PaymentInformation paymentInfo={order.payments} />
             </div>
           </div>
           <OrderUpdateStatusModal

@@ -90,6 +90,10 @@ Route::middleware('auth')->group(function () {
         "role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$CLIENT_ADMIN . "|" . RoleEnum::$CLIENT // TODO: Validate if the user is the owner of the order
       ]);
 
+    Route::get('/estimate/{id}/order', [EstimateController::class, 'order'])
+      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$CLIENT_ADMIN])
+      ->name('estimate.order');
+
     Route::post('/estimate/order/store', [EstimateController::class, 'orderStore'])
       ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$CLIENT_ADMIN])
       ->name('estimate.order.store');

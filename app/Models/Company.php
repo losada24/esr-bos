@@ -13,6 +13,10 @@ class Company extends Model
 {
     use HasFactory, SoftDeletes;
 
+    protected $casts = [
+      'allow_credit_payment' => 'boolean',
+    ];
+
     /**
      * The attributes that are mass assignable.
      *
@@ -28,7 +32,8 @@ class Company extends Model
       'featured_image',
       'user_id',
       'markup',
-      'promotion'
+      'promotion',
+      'allow_credit_payment'
     ];
 
     public function scopeFilter($query, array $filters)
@@ -37,15 +42,6 @@ class Company extends Model
           $query->where(DB::raw("CONCAT(name, ' ', phone_number, ' ', address, ' ', zip, ' ', city)"), 'like', '%'.$search.'%');
         });
     }
-
-    /*protected static function booted(): void
-    {
-      static::addGlobalScope('role', function (Builder $query) {
-        if (auth()->user()->hasRole(RoleEnum::$CLIENT_ADMIN )) {
-          $query->where('user_id', auth()->user()->id);
-        }
-      });
-    } */
 
     public function user()
     {
