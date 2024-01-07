@@ -74,4 +74,24 @@ const VisualId = ({ index }: { index: number }) => {
   return <GetShapeInColor color={cartesianProduct[index].color} shape={cartesianProduct[index].shape} />
 }
 
+export const AllVisualIds = () => {
+  const cartesianProduct: VisualIDShape[] = []
+  for (let i = 0; i < SHAPES.length; i++) {
+    for (let j = 0; j < COLORS.length; j++) {
+      cartesianProduct.push({
+        shape: SHAPES[i],
+        color: COLORS[j]
+      })
+    }
+  }
+
+  return (
+    <div className='flex flex-wrap gap-4 mt-4'>
+      {cartesianProduct.map((item, index) => {
+        return <GetShapeInColor key={index} color={item.color} shape={item.shape} />
+      })}
+    </div>
+  )
+}
+
 export default VisualId

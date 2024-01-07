@@ -3,7 +3,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
 import { Head } from '@inertiajs/react'
 import { type PageProps, type Order, type Client } from '@/types'
 import { createMarkWithLeadingZero } from '@/Utils/mark'
-import VisualId from '@/Components/VisualId'
+import VisualId, { AllVisualIds } from '@/Components/VisualId'
 import MaterialConsumptionList from './MaterialConsumptionList'
 import ShowCuttingList from './ShowCuttingList'
 import PrintButton from './PrintButton'
@@ -60,6 +60,7 @@ export default function WorkOrder ({ auth, order }: PageProps & {
             </tbody>
           </table>
           <MaterialConsumptionList materialConsumption={order.materialConsumption ?? []} />
+          <AllVisualIds />
       </AuthenticatedLayout>
   )
 }
