@@ -12,6 +12,7 @@ export default function Edit ({ auth, states, company }: PageProps & { states: s
     id: company.id ?? 0,
     name: company.name ?? '',
     address: company.address ?? '',
+    email: company.email ?? '',
     city: company.city ?? '',
     state: company.state ?? '',
     zip: company.zip ?? '',

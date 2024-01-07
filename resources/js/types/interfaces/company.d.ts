@@ -4,6 +4,7 @@ export interface Company {
   id: number
   name: string
   phone_number: string
+  email: string
   city: string
   state: string
   zip: string

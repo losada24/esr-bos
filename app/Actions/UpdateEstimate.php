@@ -15,6 +15,12 @@ class UpdateEstimate {
       {
           throw new \Exception('Not not updated');
       }
+
+      if ($estimate->markup != $request->markup) {
+        $estimate->products()->update([
+          'markup' => $request->markup
+        ]);
+      }
       
       $orderData = [
         'name' => $request->name,

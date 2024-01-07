@@ -43,6 +43,17 @@ const CompanyForm = ({ submitCount, errors, isCreate, states, setFieldValue, fea
         />
         {(submitCount && errors.phone_number) ? <InputError message={errors.phone_number} className="mt-2" /> : ''}
       </div>
+      <div className={submitCount ? (errors.email) ? 'has-error' : 'has-success' : ''}>
+        <label htmlFor="email">Email</label>
+        <Field
+          id="email"
+          name="email"
+          className="form-input"
+          autoComplete="email"
+          placeholder='Email'
+        />
+        {(submitCount && errors.email) ? <InputError message={errors.email} className="mt-2" /> : ''}
+      </div>
       <div className={submitCount ? (errors.address) ? 'has-error' : 'has-success' : ''}>
         <label htmlFor="address">Address</label>
         <Field

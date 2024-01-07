@@ -31,6 +31,7 @@ class UpdateCompany {
       $companyData = [
         'name' => $request->name,
         'phone_number' => $request->phone_number,
+        'email' => $request->email,
         'address' => $request->address,
         'city' => $request->city,
         'state' => $request->state,

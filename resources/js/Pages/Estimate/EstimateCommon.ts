@@ -11,7 +11,7 @@ export const estimateSchema = Yup.object({
   glass_color: Yup.string().required('Glass color is required'),
   glass_type: Yup.string().required('Glass type is required'),
   markup: Yup.number().required('Markup is required'),
-  notes: Yup.string().max(255, 'Max 255 characters')
+  notes: Yup.string().nullable()
 })
 
 export const paymentInfoSchema = Yup.object({
@@ -42,7 +42,7 @@ export const paymentInfoSchema = Yup.object({
   phone_number: Yup.string()
     .when(['method', 'amount'], {
       is: (method: string, amount: number) => PAYMENT_METHODS.CREDIT === method || amount >= ADDRESS_REQUIRED_AFTER_AMOUNT,
-      then: Yup.string().email().required('Phone is required').max(255, 'Max 255 characters'),
+      then: Yup.string().required('Phone is required').max(255, 'Max 255 characters'),
       otherwise: Yup.string().nullable().max(255, 'Max 255 characters')
     }),
   street_address: Yup.string()

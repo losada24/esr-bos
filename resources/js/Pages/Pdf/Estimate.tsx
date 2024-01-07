@@ -1,7 +1,7 @@
 import React from 'react'
 import PrintLayout from '@/Layouts/PrintLayout'
 import { Head } from '@inertiajs/react'
-import { Page } from '@react-pdf/renderer'
+import { Page, Text, View } from '@react-pdf/renderer'
 import { type PageProps, type Order, type Company } from '@/types'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
 import { createTw } from 'react-pdf-tailwind'
@@ -13,6 +13,7 @@ import PrintEstimateOrderButton from '@/Pages/Pdf/PrintEstimateOrderButton'
 import logo from '../../../assets/images/logo-reylosglass.png'
 import ReportCompany from './ReportCompany'
 import EstimateTotal from './EstimateTotal'
+import { Notes } from './Notes'
 
 type IndexOrderProps = PageProps & {
   order: Order
@@ -34,6 +35,7 @@ const tw = createTw({
 })
 
 const Estimate = ({ order, auth, company }: IndexOrderProps) => {
+  console.log(order)
   return (
     <AuthenticatedLayout
           auth={auth}
@@ -56,6 +58,9 @@ const Estimate = ({ order, auth, company }: IndexOrderProps) => {
               return <ReportProduct product={product} key={index} />
             })}
             <EstimateTotal order={order} />
+            {order.notes !== null && (
+              <Notes notes={order.notes ?? ''} />
+            )}
             <ReportSignature />
           </Page>
         </PrintLayout>

@@ -49,6 +49,7 @@ export default function Index ({ auth, companies }: IndexCompanyProps) {
                 <th className="px-6 pt-5 pb-4">Logo</th>
                 <th className="px-6 pt-5 pb-4">Name</th>
                 <th className="px-6 pt-5 pb-4">Phone</th>
+                <th className="px-6 pt-5 pb-4">Email</th>
                 <th className="px-6 pt-5 pb-4">City</th>
                 <th className="px-6 pt-5 pb-4">State</th>
                 <th className="px-6 pt-5 pb-4">Zip</th>
@@ -56,7 +57,7 @@ export default function Index ({ auth, companies }: IndexCompanyProps) {
               </tr>
             </thead>
             <tbody>
-              {companies.data.map(({ id, name, phone_number, city, state, zip, featured_image }) => {
+              {companies.data.map(({ id, name, phone_number, email, city, state, zip, featured_image }) => {
                 return (
                   <tr
                     key={id}
@@ -78,6 +79,9 @@ export default function Index ({ auth, companies }: IndexCompanyProps) {
                     </td>
                     <td className="border-t px-6 py-4 align-top">
                       {phone_number}
+                    </td>
+                    <td className="border-t px-6 py-4 align-top">
+                      {email}
                     </td>
                     <td className="border-t px-6 py-4 align-top">
                       {city}

@@ -10,6 +10,8 @@ use App\Models\Order;
 use App\Enum\OrderStatusEnum;
 use App\Http\Requests\UpdateOrderStatusRequest;
 use App\Enum\ProductSystemEnum;
+use App\Enum\RoleEnum;
+use App\Models\OrderStatus;
 use App\Products\FixedWindowsProduct;
 use App\Products\HorizontalRollerProduct;
 use App\Products\SingleHuntProduct;
@@ -50,7 +52,7 @@ class OrderController extends Controller
           ->with('success', 'Order updated successfully.');
     }
 
-    public function completeProduction(Request $request) 
+    /* public function completeProduction(Request $request) 
     {
       $order = Order::find($request->id);
       if( !$order )
@@ -66,6 +68,40 @@ class OrderController extends Controller
       $order->update($orderData);
       return redirect()->route('order.index')
           ->with('success', 'Order completed successfully.');
+    } */
+
+    public function status(Order $order) {
+      $statuses = [];
+      if (((auth()->user()->hasRole(RoleEnum::$ADMIN) || auth()->user()->hasRole(RoleEnum::$ACCOUNTING)) && 
+        ($order->status ==  OrderStatusEnum::$ACCOUNTING || $order->status ==  OrderStatusEnum::$PRODUCTION_COMPLETED))) {
+          if ($order->status ==  OrderStatusEnum::$ACCOUNTING) {
+            $statuses = [
+              OrderStatusEnum::$ESTIMATE,
+              OrderStatusEnum::$PRODUCTION
+            ];
+          }
+          else if ($order->status ==  OrderStatusEnum::$PRODUCTION_COMPLETED) {
+            $statuses = [
+              OrderStatusEnum::$READY_FOR_DELIVERY
+            ];
+          }
+      }
+      else if (((auth()->user()->hasRole(RoleEnum::$ADMIN) || auth()->user()->hasRole(RoleEnum::$PRODUCTION)) && 
+        $order->status ==  OrderStatusEnum::$PRODUCTION)) {
+        $statuses = [
+          OrderStatusEnum::$PARTIAL_PRODUCTION_COMPLETED,
+          OrderStatusEnum::$PRODUCTION_COMPLETED
+        ];
+      }
+      else if (((auth()->user()->hasRole(RoleEnum::$ADMIN) || auth()->user()->hasRole(RoleEnum::$SHIPPING)) && 
+        $order->status ==  OrderStatusEnum::$READY_FOR_DELIVERY)) {
+        $statuses = [
+          OrderStatusEnum::$DELIVERED,
+          OrderStatusEnum::$PARTIAL_DELIVERED
+        ];
+      }
+
+      return response()->json($statuses);
     }
 
     public function workOrder(Order $order) {

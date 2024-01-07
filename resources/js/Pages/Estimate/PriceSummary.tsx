@@ -1,5 +1,5 @@
 import { type Order } from '@/types'
-import { getSubtotal, getTaxAmount, getGrandTotal } from '@/Utils/price'
+import { getSubtotal, getTaxAmount, getGrandTotal, getSubtotalWithMarkup, formatPrice } from '@/Utils/price'
 
 const PriceSummary = ({ estimate }: { estimate: Order }) => {
   return (
@@ -8,7 +8,11 @@ const PriceSummary = ({ estimate }: { estimate: Order }) => {
         <div className="space-y-2 ltr:text-right rtl:text-left">
             <div className="flex items-center">
                 <div className="flex-1">Subtotal</div>
-                <div className="w-[37%]">{`$${getSubtotal(estimate)}`}</div>
+                <div className="w-[37%]">{`${formatPrice(getSubtotal(estimate) ?? 0)}`}</div>
+            </div>
+            <div className="flex items-center">
+                <div className="flex-1">Estimate Subtotal</div>
+                <div className="w-[37%]">{`${formatPrice(getSubtotalWithMarkup(estimate) ?? 0)}`}</div>
             </div>
             <div className="flex items-center">
                 <div className="flex-1">Tax Rate</div>
@@ -16,23 +20,23 @@ const PriceSummary = ({ estimate }: { estimate: Order }) => {
             </div>
             <div className="flex items-center">
                 <div className="flex-1">Tax Amount</div>
-                <div className="w-[37%]">{`$${getTaxAmount(estimate)}`}</div>
+                <div className="w-[37%]">{`${formatPrice(getTaxAmount(estimate) ?? 0)}`}</div>
             </div>
             <div className="flex items-center">
                 <div className="flex-1">Installation</div>
-                <div className="w-[37%]">{`$${estimate.installation}`}</div>
+                <div className="w-[37%]">{`${formatPrice(estimate.installation ?? 0)}`}</div>
             </div>
             <div className="flex items-center">
                 <div className="flex-1">Permit</div>
-                <div className="w-[37%]">{`$${estimate.permit}`}</div>
+                <div className="w-[37%]">{`${formatPrice(estimate.permit ?? 0)}`}</div>
             </div>
             <div className="flex items-center">
                 <div className="flex-1">Other</div>
-                <div className="w-[37%]">{`$${estimate.other}`}</div>
+                <div className="w-[37%]">{`${formatPrice(estimate.other ?? 0)}`}</div>
             </div>
             <div className="flex items-center text-lg font-semibold">
                 <div className="flex-1">Grand Total</div>
-                <div className="w-[37%]">{`$${getGrandTotal(estimate)}`}</div>
+                <div className="w-[37%]">{`${formatPrice(getGrandTotal(estimate) ?? 0)}`}</div>
             </div>
         </div>
     </div>

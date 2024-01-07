@@ -3,8 +3,10 @@
 namespace App\Http\Requests;
 
 use App\Enum\PaymentMethodEnum;
+use App\Enum\States;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use NunoMaduro\Collision\Adapters\Phpunit\State;
 
 class StoreEstimateToOrderRequest extends FormRequest
 {
@@ -57,7 +59,7 @@ class StoreEstimateToOrderRequest extends FormRequest
                   'required',
                   'string',
                   'max:100',
-                  Rule::in(array_values(PaymentMethodEnum::$PAYMENT_METHOD))
+                  Rule::in(array_values(States::$USA_STATES))
                 ]
               ),
             ],

@@ -73,7 +73,7 @@ const FixedWindowsForm = ({ submitCount, errors, isCreate, frame_colors, glass_c
                   type='number'
                 />
                 {(submitCount && errors.width) ? <InputError message={errors.width} className="mt-2" /> : ''}
-                {values.width > 53 && (
+                {(values.width * values.height / 144) > 27.24 && (
                   <div className="flex items-center p-3.5 rounded text-warning bg-danger-light dark:bg-danger-dark-light mt-3">
                     <span className="ltr:pr-2 rtl:pl-2">
                       <strong className="ltr:mr-1 rtl:ml-1">Warning!</strong>
@@ -93,14 +93,6 @@ const FixedWindowsForm = ({ submitCount, errors, isCreate, frame_colors, glass_c
                   type='number'
                 />
                 {(submitCount && errors.height) ? <InputError message={errors.height} className="mt-2" /> : ''}
-                {values.height > 74 && (
-                  <div className="flex items-center p-3.5 rounded text-warning bg-danger-light dark:bg-danger-dark-light mt-3">
-                    <span className="ltr:pr-2 rtl:pl-2">
-                      <strong className="ltr:mr-1 rtl:ml-1">Warning!</strong>
-                      The windows does not comply with certification standards
-                    </span>
-                  </div>
-                )}
               </div>
               <div className={submitCount ? (errors.frame_color) ? 'has-error' : 'has-success' : ''}>
                 <label htmlFor="frame_color">Frame Color</label>

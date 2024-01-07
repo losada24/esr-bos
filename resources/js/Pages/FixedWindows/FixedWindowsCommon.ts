@@ -4,7 +4,7 @@ export const fixedWindowsSchema = Yup.object({
   id: Yup.number(),
   mark: Yup.string().required('Name is required').max(255, 'Max 255 characters'),
   qty: Yup.number().required('Qty is required').min(1, 'Min 1'),
-  width: Yup.number().required('Width is required').min(12, 'Min width 12').max(60, 'Max width 60'),
+  width: Yup.number().required('Width is required').min(12, 'Min width 12').max(74, 'Max width 74'),
   height: Yup.number().required('Height is required').min(12, 'Min height 12').max(120, 'Max height 120'),
   markup: Yup.number().required('Markup is required'),
   frame_color: Yup.string().required('Frame color is required'),

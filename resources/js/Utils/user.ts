@@ -23,3 +23,7 @@ export const isProduction = (roles: string[]): boolean => {
 export const isAccounting = (roles: string[]): boolean => {
   return roles.find((role) => role === ROLES.ACCOUNTING) !== undefined
 }
+
+export const isShipping = (roles: string[]): boolean => {
+  return roles.find((role) => role === ROLES.SHIPPING) !== undefined
+}

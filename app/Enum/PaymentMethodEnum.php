@@ -8,7 +8,7 @@ class PaymentMethodEnum {
     'CASH' => 'CASH',
     'CHECK' => 'CHECK',
     'CREDIT' => 'CREDIT',
-    'BANK_TRANSFER' => 'BANK_TRANSFER'
+    'BANK TRANSFER' => 'BANK TRANSFER'
   ];
 
 }

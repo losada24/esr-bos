@@ -16,6 +16,7 @@ export default function Profile ({ auth, states, company }: PageProps & { states
     state: company.state ?? '',
     zip: company.zip ?? '',
     phone_number: company.phone_number ?? '',
+    email: company.email ?? '',
     featured_image: '',
     markup: company.markup ?? 0,
     promotion: company.promotion ?? 0,

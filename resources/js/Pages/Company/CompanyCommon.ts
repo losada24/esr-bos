@@ -5,6 +5,7 @@ export const companySchema = Yup.object({
   id: Yup.number(),
   name: Yup.string().required('Name is required'),
   phone_number: Yup.string().required('Phone is required').max(20, 'Phone number must be 20 digits'),
+  email: Yup.string().email().required('Email is required').max(255, 'Email must be less than 255 characters'),
   address: Yup.string().required('Address is required').max(500, 'Address must be less than 500 characters'),
   city: Yup.string().required('City is required').max(100, 'City must be less than 100 characters'),
   state: Yup.string().required('State is required').max(100, 'State must be less than 100 characters'),
@@ -29,6 +30,7 @@ export interface Company {
   id: number
   name: string
   phone_number: string
+  email: string
   city: string
   state: string
   zip: string

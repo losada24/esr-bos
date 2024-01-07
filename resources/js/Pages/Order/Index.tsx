@@ -1,14 +1,13 @@
 import React, { useState } from 'react'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
-import { Head, Link, router } from '@inertiajs/react'
+import { Head, Link } from '@inertiajs/react'
 import { type PageProps, type Order, type PaginatorLink, type Role } from '@/types'
 import Pagination from '@/Components/Pagination'
 import EyeIcon from '@/Components/Icons/EyeIcon'
 import { createMarkWithLeadingZero } from '@/Utils/mark'
-import { isAdmin, isAccounting } from '@/Utils/user'
-import { ACCOUNTING_STATUS, PRODUCTION_STATUS, PRODUCTION_COMPLETED } from '@/Utils/constants'
+import { isAdmin, isAccounting, isShipping, isProduction } from '@/Utils/user'
+import { ACCOUNTING_STATUS, PRODUCTION_STATUS, PRODUCTION_COMPLETED, READY_FOR_DELIVERY } from '@/Utils/constants'
 import OrderFilter from './OrderFilter'
-import HammerIcon from '@/Components/Icons/HammerIcon'
 import OrderUpdateStatusModal from './OrderUpdateStatusModal'
 import CheckIcon from '@/Components/Icons/CheckIcon'
 
@@ -19,17 +18,16 @@ type IndexOrderProps = PageProps & {
       links: PaginatorLink[]
     }
   }
-  statuses: string[]
 }
 
-export default function Index ({ auth, orders, statuses }: IndexOrderProps) {
+export default function Index ({ auth, orders }: IndexOrderProps) {
   const [showOrderModal, setShowOrderModal] = useState<boolean>(false)
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
-  const completeProduction = (id: number) => {
+  /* const completeProduction = (id: number) => {
     if (confirm('Are you sure you want complete this order?')) {
       router.post(route('order.complete.production'), { id })
     }
-  }
+  } */
 
   return (
       <AuthenticatedLayout
@@ -82,21 +80,33 @@ export default function Index ({ auth, orders, statuses }: IndexOrderProps) {
                         >
                           <EyeIcon />
                         </Link>
-                        {((isAdmin(auth.user.roles.map((role: Role) => role.name)) || isAccounting(auth.user.roles.map((role: Role) => role.name))) &&
-                          (order.status === ACCOUNTING_STATUS || order.status === PRODUCTION_COMPLETED)) && (
+                        {((
+                          (isAdmin(auth.user.roles.map((role: Role) => role.name)) ||
+                          isAccounting(auth.user.roles.map((role: Role) => role.name))) &&
+                            (order.status === ACCOUNTING_STATUS || order.status === PRODUCTION_COMPLETED)) ||
+                          ((
+                            (isAdmin(auth.user.roles.map((role: Role) => role.name)) ||
+                            isShipping(auth.user.roles.map((role: Role) => role.name))) &&
+                            order.status === READY_FOR_DELIVERY)) ||
+                          ((
+                            (isAdmin(auth.user.roles.map((role: Role) => role.name)) ||
+                            isProduction(auth.user.roles.map((role: Role) => role.name))) &&
+                            order.status === PRODUCTION_STATUS
+                          ))
+                        ) && (
                           <button title='Change Order Status' onClick={() => {
                             setSelectedOrder(order)
                             setShowOrderModal(true)
                           }}>
-                            <HammerIcon />
-                          </button>
-                        )}
-                        {((isAdmin(auth.user.roles.map((role: Role) => role.name)) || isAccounting(auth.user.roles.map((role: Role) => role.name))) &&
-                          order.status === PRODUCTION_STATUS) && (
-                          <button title='Complete Production' onClick={() => { completeProduction(id) }}>
                             <CheckIcon />
                           </button>
                         )}
+                        {/* ((isAdmin(auth.user.roles.map((role: Role) => role.name)) || isAccounting(auth.user.roles.map((role: Role) => role.name))) &&
+                          order.status === PRODUCTION_STATUS) && (
+                          <button title='Complete Production' onClick={() => { completeProduction(id) }}>
+                            <HammerIcon />
+                          </button>
+                        ) */}
                     </td>
                   </tr>
                 )
@@ -119,7 +129,7 @@ export default function Index ({ auth, orders, statuses }: IndexOrderProps) {
             setSelectedOrder(null)
           }}
           order={selectedOrder}
-          statuses={statuses}
+          // statuses={statuses}
         />
       </AuthenticatedLayout>
   )

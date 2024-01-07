@@ -51,7 +51,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                     </div>
                                 </NavLink>
                             </li>
-                            {(isAdmin(auth.user.roles.map((role: Role) => role.name)) || isClientAdmin(auth.user.roles.map((role: Role) => role.name))) && (
+                            {(isAdmin(auth.user.roles.map((role: Role) => role.name))) && (
                               <>
                                 <h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">
                                     <svg className="w-4 h-5 flex-none hidden" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
@@ -108,7 +108,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                 </svg>
                                 <span>Actions</span>
                             </h2>
-                            {(isAdmin(auth.user.roles.map((role: Role) => role.name))) && (
+                            {(isAdmin(auth.user.roles.map((role: Role) => role.name)) || isClientAdmin(auth.user.roles.map((role: Role) => role.name))) && (
                               <>
                                 <li className="menu nav-item">
                                     <NavLink href={route('company.profile')} active={route().current('company.profile')} className="group">
@@ -117,6 +117,26 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                             <SidebarLinkLabel>Company</SidebarLinkLabel>
                                         </div>
                                     </NavLink>
+                                </li>
+                              </>
+                            )}
+                            {isClientAdmin(auth.user.roles.map((role: Role) => role.name)) && (
+                              <>
+                                <li className="nav-item">
+                                  <NavLink href={route('user.index')} active={route().current('user.index') || route().current('user.create') || route().current('user.edit')} className="group">
+                                      <div className="flex items-center">
+                                        <UserIcon />
+                                        <SidebarLinkLabel>Users</SidebarLinkLabel>
+                                      </div>
+                                  </NavLink>
+                                </li>
+                                  <li className="nav-item">
+                                  <NavLink href={route('client.index')} active={route().current('client.index') || route().current('client.create') || route().current('client.edit')} className="group">
+                                      <div className="flex items-center">
+                                        <ReferralIcon />
+                                        <SidebarLinkLabel>Clients</SidebarLinkLabel>
+                                      </div>
+                                  </NavLink>
                                 </li>
                               </>
                             )}

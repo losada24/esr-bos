@@ -37,7 +37,9 @@ class UpdateOrderStatusRequest extends FormRequest
                 OrderStatusEnum::$PRODUCTION,
                 OrderStatusEnum::$ORDER_COMPLETED,
                 OrderStatusEnum::$READY_FOR_DELIVERY,
-                OrderStatusEnum::$PRODUCTION_COMPLETED
+                OrderStatusEnum::$PRODUCTION_COMPLETED,
+                OrderStatusEnum::$DELIVERED,
+                OrderStatusEnum::$PARTIAL_PRODUCTION_COMPLETED
               ])
             ]
         ];

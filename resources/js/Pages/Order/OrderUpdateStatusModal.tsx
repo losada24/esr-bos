@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import Modal from '@/Components/Modal'
 import CloseIcon from '@/Components/Icons/CloseIcon'
 import { type Order } from '@/types'
@@ -7,12 +8,20 @@ import { type FormikHelpers, Formik } from 'formik'
 import OrderStatusUpdateForm from './OrderStatusUpdateForm'
 import { orderStatusUpdateSchema, type OrderStatusUpdate } from './OrderCommon'
 
-const OrderUpdateStatusModal = ({ showModal, onClose, order, statuses }: {
+const OrderUpdateStatusModal = ({ showModal, onClose, order }: {
   showModal: boolean
   onClose: CallableFunction
   order: Order | null
-  statuses: string[]
 }) => {
+  const [statuses, setStatuses] = useState<string[]>([])
+
+  useEffect(() => {
+    if (order === null) return
+    fetch(route('order.status', { order: order?.id ?? 0 })).then(async (response) => { return await response.json() }).then((data) => {
+      setStatuses(data)
+    })
+  }, [order])
+
   const handleSubmit = async (values: any, helpers: FormikHelpers<OrderStatusUpdate>) => {
     router.post(route('order.status.update'), values, {
       onError: (errors: any) => {
@@ -49,10 +58,10 @@ const OrderUpdateStatusModal = ({ showModal, onClose, order, statuses }: {
               validationSchema={orderStatusUpdateSchema}
               onSubmit={handleSubmit}
             >
-              {() => (
+              {({ errors, submitCount }) => (
                 <OrderStatusUpdateForm
-                  submitCount={0}
-                  errors={{}}
+                  submitCount={submitCount}
+                  errors={errors}
                   isCreate={false}
                   statuses={statuses}
                 />

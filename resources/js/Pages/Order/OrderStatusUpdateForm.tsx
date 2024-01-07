@@ -18,7 +18,7 @@ const OrderStatusUpdateForm = ({ submitCount, errors, isCreate, statuses }: {
         <Field
           id="status"
           name="status"
-          className="form-input"
+          className="form-select"
           autoComplete="status"
           placeholder='Status'
           as="select"

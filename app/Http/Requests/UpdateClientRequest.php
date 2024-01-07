@@ -39,7 +39,7 @@ class UpdateClientRequest extends FormRequest
               Rule::in(array_values(States::$USA_STATES))
             ],
             'zip' => 'required|numeric|max_digits:5|min_digits:5',
-            'company_id' => 'nullable|numeric|exists:companies,id'
+            'company_id' => 'nullable|numeric'
         ];
     }
 }

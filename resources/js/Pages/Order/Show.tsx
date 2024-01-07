@@ -168,7 +168,6 @@ export default function Show ({ auth, order, statuses }: PageProps & {
               setSelectedOrder(null)
             }}
             order={selectedOrder}
-            statuses={statuses}
           />
       </AuthenticatedLayout>
   )

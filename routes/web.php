@@ -163,9 +163,13 @@ Route::middleware('auth')->group(function () {
       ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$ACCOUNTING])
       ->name('order.status.update');
     
-    Route::post('/order/complete-production', [OrderController::class, 'completeProduction'])
+    /* Route::post('/order/complete-production', [OrderController::class, 'completeProduction'])
       ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$PRODUCTION])
-      ->name('order.complete.production');
+      ->name('order.complete.production'); */
+    
+    Route::get('/order/status/{order}', [OrderController::class, 'status'])
+      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$PRODUCTION ])
+      ->name('order.status');
 
     Route::get('/order/workOrder/{order}', [OrderController::class, 'workOrder'])
       ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$PRODUCTION ])
@@ -197,11 +201,11 @@ Route::middleware('auth')->group(function () {
       ->name('pdf.po.balance');
     
     Route::get('/pdf/estimate/{order}', [PdfController::class, 'estimate'])
-      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$PRODUCTION ])
+      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$CLIENT_ADMIN . "|" . RoleEnum::$CLIENT ])
       ->name('pdf.estimate');
     
     Route::get('/pdf/report/{order}', [PdfController::class, 'report'])
-      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$PRODUCTION ])
+      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$CLIENT_ADMIN . "|" . RoleEnum::$CLIENT ])
       ->name('pdf.report');
     
 });

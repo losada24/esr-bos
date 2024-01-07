@@ -13,7 +13,6 @@ import PriceSummary from './PriceSummary'
 import { createMarkWithLeadingZero } from '@/Utils/mark'
 import { PRODUCT_SYSTEMS, ESTIMATE_STATUS } from '@/Utils/constants'
 import MoneyIcon from '@/Components/Icons/MoneyIcon'
-import PaymentInformation from '../Order/PaymentInformation'
 
 export default function Create ({ auth, estimate }: PageProps & {
   clients: Client[]
@@ -76,10 +75,6 @@ export default function Create ({ auth, estimate }: PageProps & {
                 <div className="flex flex-col gap-y-2 border-t border-white-light dark:border-white/10 py-2">
                   {estimate.status === ESTIMATE_STATUS && (
                     <>
-                      <Link href= { route('estimate.edit', estimate.id) } className="btn btn-success w-full gap-2">
-                        <EditIcon />
-                        Edit Estimate
-                      </Link>
                       <div className='dropdown'>
                         <Dropdown
                             placement='bottom-start'
@@ -113,6 +108,10 @@ export default function Create ({ auth, estimate }: PageProps & {
                             </ul>
                         </Dropdown>
                       </div>
+                      <Link href= { route('estimate.edit', estimate.id) } className="btn btn-success w-full gap-2">
+                        <EditIcon />
+                        Edit Estimate
+                      </Link>
                       <Link href={ route('estimate.order', estimate.id) } className="btn btn-secondary w-full gap-2">
                           <MoneyIcon color='#fff' />
                           Crear Order

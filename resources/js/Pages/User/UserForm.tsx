@@ -58,7 +58,7 @@ const UserForm = ({ submitCount, errors, roles, isCreate, companies, isAdmin }: 
         </div>
       )}
       <div className={submitCount ? (errors.markup) ? 'has-error' : 'has-success' : ''}>
-        <label htmlFor="markup">markup</label>
+        <label htmlFor="markup">Markup</label>
         <div className='flex flex-1'>
           <Field
             id="markup"

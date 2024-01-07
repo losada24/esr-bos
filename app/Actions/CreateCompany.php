@@ -16,10 +16,11 @@ class CreateCompany {
         $fileName = time() . '_' . $request->file('featured_image')->getClientOriginalName();
         $reaturedImagePath = $request->file('featured_image')->storeAs('companies_images', $fileName, 'public');
       }
-
+      
       $company = Company::create([
         'name' => $request->name,
         'phone_number' => $request->phone_number,
+        'email' => $request->email,
         'address' => $request->address,
         'city' => $request->city,
         'state' => $request->state,

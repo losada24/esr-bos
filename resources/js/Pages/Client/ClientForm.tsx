@@ -70,7 +70,7 @@ const ClientForm = ({ submitCount, errors, isCreate, states, companies, isAdmin 
         <Field
           id="state"
           name="state"
-          className="form-input"
+          className="form-select"
           autoComplete="state"
           placeholder='State'
           as="select"

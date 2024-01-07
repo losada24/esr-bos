@@ -52,7 +52,8 @@ export const ROLES = {
   CLIENT_ADMIN: 'client_admin',
   CLIENT: 'client',
   ACCOUNTING: 'accounting',
-  PRODUCTION: 'production'
+  PRODUCTION: 'production',
+  SHIPPING: 'shipping'
 }
 
 export const PERSMISSION_USERS_LIST = 'users list'

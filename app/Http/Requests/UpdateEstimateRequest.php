@@ -45,7 +45,7 @@ class UpdateEstimateRequest extends FormRequest
           'installation' => 'required|numeric|min:0',
           'permit' => 'required|numeric|min:0',
           'other' => 'required|numeric|min:0',
-          'notes' => 'nullable|string|max:255',
+          'notes' => 'nullable|string',
           'external_purchase_id' => 'nullable|string|max:255',
           'glass_type' => [
             'required',
