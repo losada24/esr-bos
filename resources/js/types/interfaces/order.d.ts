@@ -4,6 +4,7 @@ import { type Product } from '@/types/interfaces/product'
 import { type Balance } from '@/types/interfaces/balance'
 import { type MaterialConsumption } from './materialConsumption'
 import { type PaymentInfo } from './paymentInfo'
+import { type CuttingListProducts } from './cuttingListProducts'
 
 export interface Order {
   id: number
@@ -32,4 +33,5 @@ export interface Order {
   productsCount?: number
   balances?: Balance[]
   payments?: PaymentInfo[]
+  orderCuttingList?: CuttingListProducts[]
 }

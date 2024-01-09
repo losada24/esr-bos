@@ -24,4 +24,5 @@ export interface Product {
   total_price: number
   order?: Order
   cutting_list?: CuttingList[]
+  visual_id?: number
 }

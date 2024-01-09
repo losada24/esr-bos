@@ -37,6 +37,24 @@ class PdfController extends Controller
       ]);
     }
 
+    public function cuttingList(Order $order)
+    {
+      $order->load(['products', 'client']);
+      $orderCuttingList = $this->orderedCuttingList($order);
+
+      $orderData = [
+        'id' => $order->id,
+        'name' => $order->name,
+        'client' => $order->client,
+        'created_at' => $order->created_at,
+        'project_name' => $order->project_name,
+        'orderCuttingList' => $orderCuttingList,
+      ];
+      return Inertia::render('Pdf/CuttingList', [
+        'order' => $orderData
+      ]);
+    }
+
     public function materialConsumption(Order $order)
     {
       $order->load(['products', 'client']);

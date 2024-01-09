@@ -184,6 +184,10 @@ Route::middleware('auth')->group(function () {
       ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$PRODUCTION ])
       ->name('pdf.work.order');
 
+    Route::get('/pdf/cutting-list/{order}', [PdfController::class, 'cuttingList'])
+      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$PRODUCTION ])
+      ->name('pdf.cutting.list');
+
     Route::get('/pdf/material-consumption/{order}', [PdfController::class, 'materialConsumption'])
       ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$PRODUCTION ])
       ->name('pdf.material.consumption');

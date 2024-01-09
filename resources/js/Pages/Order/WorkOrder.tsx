@@ -60,7 +60,6 @@ export default function WorkOrder ({ auth, order }: PageProps & {
             </tbody>
           </table>
           <MaterialConsumptionList materialConsumption={order.materialConsumption ?? []} />
-          <AllVisualIds />
       </AuthenticatedLayout>
   )
 }

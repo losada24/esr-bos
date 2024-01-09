@@ -2,7 +2,6 @@ import React from 'react'
 import { Text, View, Image } from '@react-pdf/renderer'
 import { createTw } from 'react-pdf-tailwind'
 import { createMarkWithLeadingZero } from '@/Utils/mark'
-import { type Order } from '@/types'
 
 const COMPANY_ADDRESS = import.meta.env.VITE_COMPANY_ADDRESS
 const COMPANY_PHONE = import.meta.env.VITE_COMPANY_PHONE
