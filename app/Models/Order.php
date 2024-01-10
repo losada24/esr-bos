@@ -54,6 +54,11 @@ class Order extends Model
         return date('m/d/Y', strtotime($value));
     }
 
+    public function getQuoteNumberAttribute()
+    {
+        return str_pad($this->id, 6, '0', STR_PAD_LEFT);
+    }
+
     public function scopeFilter($query, array $filters)
     {
         $query->when($filters['text'] ?? null, function ($query, $search) {

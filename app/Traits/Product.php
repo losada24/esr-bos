@@ -162,7 +162,6 @@ trait Product {
       'width' => $cuttingListForProduct['width'],
       'height' => $cuttingListForProduct['height'],
       'frame_color' => $cuttingListForProduct['frame_color'],
-
     ];
   }
 

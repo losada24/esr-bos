@@ -32,6 +32,53 @@ import image28 from '../../../assets/images/visual_ids/28.jpg'
 import image29 from '../../../assets/images/visual_ids/29.jpg'
 import image30 from '../../../assets/images/visual_ids/30.jpg'
 import image31 from '../../../assets/images/visual_ids/31.jpg'
+import image32 from '../../../assets/images/visual_ids/32.jpg'
+import image33 from '../../../assets/images/visual_ids/33.jpg'
+import image34 from '../../../assets/images/visual_ids/34.jpg'
+import image35 from '../../../assets/images/visual_ids/35.jpg'
+import image36 from '../../../assets/images/visual_ids/36.jpg'
+import image37 from '../../../assets/images/visual_ids/37.jpg'
+import image38 from '../../../assets/images/visual_ids/38.jpg'
+import image39 from '../../../assets/images/visual_ids/39.jpg'
+import image40 from '../../../assets/images/visual_ids/40.jpg'
+import image41 from '../../../assets/images/visual_ids/41.jpg'
+import image42 from '../../../assets/images/visual_ids/42.jpg'
+import image43 from '../../../assets/images/visual_ids/43.jpg'
+import image44 from '../../../assets/images/visual_ids/44.jpg'
+import image45 from '../../../assets/images/visual_ids/45.jpg'
+import image46 from '../../../assets/images/visual_ids/46.jpg'
+import image47 from '../../../assets/images/visual_ids/47.jpg'
+import image48 from '../../../assets/images/visual_ids/48.jpg'
+import image49 from '../../../assets/images/visual_ids/49.jpg'
+import image50 from '../../../assets/images/visual_ids/50.jpg'
+import image51 from '../../../assets/images/visual_ids/51.jpg'
+import image52 from '../../../assets/images/visual_ids/52.jpg'
+import image53 from '../../../assets/images/visual_ids/53.jpg'
+import image54 from '../../../assets/images/visual_ids/54.jpg'
+import image55 from '../../../assets/images/visual_ids/55.jpg'
+import image56 from '../../../assets/images/visual_ids/56.jpg'
+import image57 from '../../../assets/images/visual_ids/57.jpg'
+import image58 from '../../../assets/images/visual_ids/58.jpg'
+import image59 from '../../../assets/images/visual_ids/59.jpg'
+import image60 from '../../../assets/images/visual_ids/60.jpg'
+import image61 from '../../../assets/images/visual_ids/61.jpg'
+import image62 from '../../../assets/images/visual_ids/62.jpg'
+import image63 from '../../../assets/images/visual_ids/63.jpg'
+import image64 from '../../../assets/images/visual_ids/64.jpg'
+import image65 from '../../../assets/images/visual_ids/65.jpg'
+import image66 from '../../../assets/images/visual_ids/66.jpg'
+import image67 from '../../../assets/images/visual_ids/67.jpg'
+import image68 from '../../../assets/images/visual_ids/68.jpg'
+import image69 from '../../../assets/images/visual_ids/69.jpg'
+import image70 from '../../../assets/images/visual_ids/70.jpg'
+import image71 from '../../../assets/images/visual_ids/71.jpg'
+import image72 from '../../../assets/images/visual_ids/72.jpg'
+import image73 from '../../../assets/images/visual_ids/73.jpg'
+import image74 from '../../../assets/images/visual_ids/74.jpg'
+import image75 from '../../../assets/images/visual_ids/75.jpg'
+import image76 from '../../../assets/images/visual_ids/76.jpg'
+import image77 from '../../../assets/images/visual_ids/77.jpg'
+import image78 from '../../../assets/images/visual_ids/78.jpg'
 
 const tw = createTw({
   theme: {
@@ -70,7 +117,54 @@ const images: string[] = [
   image28,
   image29,
   image30,
-  image31
+  image31,
+  image32,
+  image33,
+  image34,
+  image35,
+  image36,
+  image37,
+  image38,
+  image39,
+  image40,
+  image41,
+  image42,
+  image43,
+  image44,
+  image45,
+  image46,
+  image47,
+  image48,
+  image49,
+  image50,
+  image51,
+  image52,
+  image53,
+  image54,
+  image55,
+  image56,
+  image57,
+  image58,
+  image59,
+  image60,
+  image61,
+  image62,
+  image63,
+  image64,
+  image65,
+  image66,
+  image67,
+  image68,
+  image69,
+  image70,
+  image71,
+  image72,
+  image73,
+  image74,
+  image75,
+  image76,
+  image77,
+  image78
 ]
 
 const VisualId = ({ index }: { index: number }) => {

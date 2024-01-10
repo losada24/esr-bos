@@ -12,4 +12,5 @@ return [
   'screen_price_by_sqft' => env('SCREEN_PRICE_BY_SQFT'),
   'packing' => env('PACKING'),
   'address_required_after_amount' => env('ADDRESS_REQUIRED_AFTER_AMOUNT'),
+  'labels_images_path' => env('LABELS_IMAGES_PATH'),
 ];

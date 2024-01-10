@@ -13,6 +13,7 @@ use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\SingleHuntController;
 use App\Http\Controllers\HorizontalRollerController;
+use App\Http\Controllers\LabelController;
 use App\Http\Controllers\PdfController;
 use App\Http\Controllers\ProductController;
 
@@ -211,6 +212,15 @@ Route::middleware('auth')->group(function () {
     Route::get('/pdf/report/{order}', [PdfController::class, 'report'])
       ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$CLIENT_ADMIN . "|" . RoleEnum::$CLIENT ])
       ->name('pdf.report');
+
+    // LABELS
+    Route::get('/label/pieces/{order}', [LabelController::class, 'labelsByPieces'])
+      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$PRODUCTION ])
+      ->name('labels.labelsByPieces');
+
+    Route::get('/label/product/{order}', [LabelController::class, 'productLabels'])
+      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$PRODUCTION ])
+      ->name('labels.productLabels');
     
 });
 

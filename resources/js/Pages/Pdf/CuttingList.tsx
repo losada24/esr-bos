@@ -42,7 +42,6 @@ interface CuttingListProps {
 
 const CuttingList = ({ order, auth }: IndexOrderProps) => {
   const orderCuttingList: CuttingListProps[] = []
-  console.log(order)
   order?.orderCuttingList?.forEach((product) => {
     product.items.forEach((item) => {
       orderCuttingList.push({

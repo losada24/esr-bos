@@ -63,6 +63,26 @@ const PrintButton = ({ id }: { id: number }) => {
               PO Balances
             </Link>
           </li>
+          <li>
+            <button
+              onClick={() => {
+                const url = route('labels.labelsByPieces', id)
+                window.open(url, '_blank')
+              }}
+            >
+              Cutting List CSV
+            </button>
+          </li>
+          <li>
+            <button
+              onClick={() => {
+                const url = route('labels.productLabels', id)
+                window.open(url, '_blank')
+              }}
+            >
+              Order Info CSV
+            </button>
+          </li>
         </ul>
       </Dropdown>
     </div>
