@@ -16,4 +16,22 @@ class ProductSystemEnum
         default => 'FW'
       };
     }
+
+    public static function getSystemPressure($systemName) {
+      return match($systemName) {
+        self::$FIXED_WINDOWS => '+75/-75 psf',
+        self::$SINGLE_HUNG => '+70/-70 psf',
+        self::$HORIZONTAL_ROLLER => '+70/-70 psf',
+        default => '+75/-75 psf'
+      };
+    }
+
+    public static function getSystemNoa($systemName) {
+      return match($systemName) {
+        self::$FIXED_WINDOWS => '22-43F',
+        self::$SINGLE_HUNG => '22-41D',
+        self::$HORIZONTAL_ROLLER => '22-42F',
+        default => ''
+      };
+    }
 }

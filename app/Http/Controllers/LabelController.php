@@ -53,7 +53,7 @@ class LabelController extends Controller
     }
 
     public function productLabels(Order $order) {
-      $fileName = 'Order.csv';
+      $fileName = 'Products.csv';
       $headers = array(
         "Content-type" => "text/csv",
         "Content-Disposition" => "attachment; filename=$fileName",
@@ -62,31 +62,32 @@ class LabelController extends Controller
         "Expires" => "0"
       );
 
-      $columns = array('Order', 'Material', 'Mark', 'Size', 'Part', 'Qty', 'Image');
+      $columns = array('Quote', 'Mark', 'Client', 'Project', 'System', 'Frame', 'Config', 'Glass Type', 'Size', 'Pressure', 'NOA Number');
       
-      $order->load(['products', 'client']);
-      $orderCuttingList = $this->orderedCuttingList($order);
-
-      $callback = function() use ($orderCuttingList, $columns, $order) {
+      $order->load(['products', 'company']);
+      
+      $callback = function() use ($order, $columns) {
           $file = fopen('php://output', 'w');
           fputcsv($file, $columns);
 
-          foreach ($orderCuttingList as $product) {
-            foreach ($product['items'] as $item) {
-              for ($i = 0; $i < $item['qty']; $i++) {
-                fputcsv($file, [
-                  $order->quoteNumber,
-                  $product['material'],
-                  $item['line_item_name'],
-                  $item['size'],
-                  ProductSystemEnum::getSystemNameAbbr($item['system']) . "/" . $item['part'],
-                  $i + 1 . "/" . $item['qty'],
-                  config('custom.labels_images_path') . $item['visual_id'] + 1 . ".jpg"
-                ]);
-              }
+          foreach ($order->products as $product) {
+            for ($i = 0; $i < $product->qty; $i++) {
+              fputcsv($file, [
+                $order->quoteNumber,
+                $product->line_item_name,
+                $order->company->name,
+                $order->project_name,
+                $product->system,
+                $product->frame_color,
+                isset($product->extras['config']) ? $product->extras['config'] : '',
+                $product->glass_type,
+                $product->width . " x " . $product->height . " inches",
+                ProductSystemEnum::getSystemPressure($product->system),
+                ProductSystemEnum::getSystemNoa($product->system)
+              ]);
             }
           }
-          
+
           fclose($file);
       };
 
