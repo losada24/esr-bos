@@ -1,7 +1,7 @@
 import React from 'react'
 import PrintLayout from '@/Layouts/PrintLayout'
 import { Head } from '@inertiajs/react'
-import { Page, Text } from '@react-pdf/renderer'
+import { Page } from '@react-pdf/renderer'
 import { type PageProps, type Order } from '@/types'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
 import { createTw } from 'react-pdf-tailwind'
@@ -10,6 +10,7 @@ import ReportProduct from './ReportProduct'
 import ReportTotal from './ReportTotal'
 import ReportSignature from './ReportSignature'
 import PrintEstimateOrderButton from '@/Pages/Pdf/PrintEstimateOrderButton'
+import LeadTimeAlert from './LeadTimeAlert'
 
 import logo from '../../../assets/images/logo-reylosglass.png'
 import ReportCompany from './ReportCompany'
@@ -55,6 +56,7 @@ const Report = ({ order, auth }: IndexOrderProps) => {
             {order?.products?.map((product, index) => {
               return <ReportProduct product={product} key={index} />
             })}
+            <LeadTimeAlert glass_type={order.glass_type} />
             <ReportTotal order={order} />
             {order.notes !== null && (
               <Notes notes={order.notes ?? ''} />

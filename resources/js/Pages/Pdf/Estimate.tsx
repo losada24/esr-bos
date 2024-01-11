@@ -9,7 +9,6 @@ import ReportHeader from './ReportHeader'
 import ReportProduct from './ReportProduct'
 import ReportSignature from './ReportSignature'
 import PrintEstimateOrderButton from '@/Pages/Pdf/PrintEstimateOrderButton'
-import LeadTimeAlert from './LeadTimeAlert'
 
 import logo from '../../../assets/images/logo-reylosglass.png'
 import ReportCompany from './ReportCompany'
@@ -58,7 +57,6 @@ const Estimate = ({ order, auth, company }: IndexOrderProps) => {
             {order?.products?.map((product, index) => {
               return <ReportProduct product={product} key={index} />
             })}
-            <LeadTimeAlert glass_type={order.glass_type} />
             <EstimateTotal order={order} />
             {order.notes !== null && (
               <Notes notes={order.notes ?? ''} />
