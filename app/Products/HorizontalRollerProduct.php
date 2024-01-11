@@ -36,11 +36,11 @@ class HorizontalRollerProduct implements IProduct {
     }
 
     public function getMoveGlassHeight() {
-      return round($this->getGlassHeigth() - 0.25 - 0.15, 3);
+      return round($this->getGlassHeigth() - 0.25 - 0.15 - 0.125, 3);
     }
 
     public function getVentJamb() {
-      return round($this->height - 5.23 - 0.15, 3);
+      return round($this->height - 5.23 - 0.15 - 0.125, 3);
     }
 
     public function getVentBottomAndTop() {
