@@ -17,8 +17,15 @@ class FixedWindowsProduct implements IProduct {
     public $materialColor;
     
     public function __construct($width, $height, $frameColor, $glassType) {
-        $this->width = (float) $width;
-        $this->height = (float) $height;
+
+        if ($width  > 53) {
+            $this->height = $width;
+            $this->width = $height;
+        } else {
+          $this->width = (float) $width;
+          $this->height = (float) $height;
+        }
+        
         $this->frameColor = $frameColor;
         $this->glassType = $glassType;
         $this->materialColor = $this->getMaterialColor($frameColor);
