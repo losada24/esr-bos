@@ -10,7 +10,6 @@ import EyeIcon from '@/Components/Icons/EyeIcon'
 import { createMarkWithLeadingZero } from '@/Utils/mark'
 import MoneyIcon from '@/Components/Icons/MoneyIcon'
 import { isAdmin, isClientAdmin } from '@/Utils/user'
-import EstimatePaymentModal from './EstimatePaymentModal'
 
 type IndexOrderProps = PageProps & {
   estimates: {
@@ -22,8 +21,6 @@ type IndexOrderProps = PageProps & {
 }
 
 export default function Index ({ auth, estimates }: IndexOrderProps) {
-  const [showOrderModal, setShowOrderModal] = useState<boolean>(false)
-  const [selectedEstimate, setSelectedEstimate] = useState<Order | null>(null)
   const destroy = (id: number) => {
     if (confirm('Are you sure you want to delete this Estimate?')) {
       router.delete(route('estimate.destroy', id))
@@ -116,14 +113,6 @@ export default function Index ({ auth, estimates }: IndexOrderProps) {
           </table>
         </div>
         <Pagination links={estimates.meta.links} />
-        <EstimatePaymentModal
-          showModal={showOrderModal}
-          onClose={() => {
-            setShowOrderModal(false)
-            setSelectedEstimate(null)
-          }}
-          estimate={selectedEstimate}
-        />
       </AuthenticatedLayout>
   )
 }

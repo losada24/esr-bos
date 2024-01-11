@@ -10,6 +10,7 @@ export default function Create ({ auth, states }: PageProps & { states: string[]
     id: 0,
     name: '',
     phone_number: '',
+    email: '',
     address: '',
     city: '',
     state: '',

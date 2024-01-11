@@ -1,8 +1,7 @@
-import { type PageProps, type Order, type Client } from '@/types'
+import { type Order } from '@/types'
 import { getSubtotal } from '@/Utils/price'
 
-export default function PaymentSummary ({ estimate }: PageProps & {
-  clients: Client[]
+export default function PaymentSummary ({ estimate }: {
   estimate: Order
 }) {
   return (

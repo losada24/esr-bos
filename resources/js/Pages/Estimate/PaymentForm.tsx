@@ -16,6 +16,7 @@ const PaymentForm = ({ submitCount, errors, estimate, values, states }: {
   values: PaymentInfo
   states: string[]
 }) => {
+  const subtotal = getSubtotal(estimate) ?? 0
   return (
     <Form className='w-full'>
       <div className='grid grid-cols-12 gap-4 mb-4'>
@@ -93,7 +94,7 @@ const PaymentForm = ({ submitCount, errors, estimate, values, states }: {
             {(submitCount && errors.method) ? <InputError message={errors.method} className="mt-2 mb-2" /> : ''}
           </div>
         </div>
-        {(values.method === PAYMENT_METHODS.CREDIT || getSubtotal(estimate) >= ADDRESS_REQUIRED_AFTER_AMOUNT) && (
+        {(values.method === PAYMENT_METHODS.CREDIT || subtotal >= ADDRESS_REQUIRED_AFTER_AMOUNT) && (
           <div className='space-y-5 col-span-8'>
             <div className='grid grid-cols-2 gap-4'>
               <div className={submitCount ? (errors.first_name) ? 'has-error' : 'has-success' : ''}>

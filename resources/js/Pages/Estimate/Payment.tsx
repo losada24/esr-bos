@@ -25,7 +25,7 @@ export default function Payment ({ estimate, auth, states }: PageProps & {
     notes: '',
     first_name: '',
     last_name: '',
-    amount: getSubtotal(estimate)
+    amount: getSubtotal(estimate) ?? 0
   }
 
   const handleSubmit = async (values: any, helpers: FormikHelpers<PaymentInfo>) => {
