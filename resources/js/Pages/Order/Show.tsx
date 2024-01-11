@@ -9,8 +9,11 @@ import { isAccounting, isAdmin } from '@/Utils/user'
 import { ACCOUNTING_STATUS, PRODUCTION_STATUS } from '@/Utils/constants'
 import OrderUpdateStatusModal from './OrderUpdateStatusModal'
 import PaymentInformation from './PaymentInformation'
+import { getSubtotal, getGrandTotal, formatPrice } from '@/Utils/price'
+import PrintButton from './PrintButton'
+import PrintEstimateButton from '../Estimate/PrintEstimateButton'
 
-export default function Show ({ auth, order, statuses }: PageProps & {
+export default function Show ({ auth, order }: PageProps & {
   clients: Client[]
   order: Order
   statuses: string[]
@@ -19,7 +22,7 @@ export default function Show ({ auth, order, statuses }: PageProps & {
   const IS_ADMIN = isAdmin(auth.user.roles.map((role: Role) => role.name))
   const [showOrderModal, setShowOrderModal] = useState<boolean>(false)
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
-  const getSubtotal = () => {
+  /*  const getSubtotal = () => {
     const subtotal: number | undefined = order.products?.reduce((acc, product) => {
       return acc + Number(product.total_price)
     }, 0)
@@ -30,7 +33,7 @@ export default function Show ({ auth, order, statuses }: PageProps & {
   const getGrandTotal = () => {
     const subtotal: number = getSubtotal() ?? 0
     return Math.round(Number(subtotal))
-  }
+  } */
 
   return (
       <AuthenticatedLayout
@@ -77,6 +80,7 @@ export default function Show ({ auth, order, statuses }: PageProps & {
                         <HammerIcon color="#fff" /> Produce Order
                       </button>
                     )}
+                    <PrintEstimateButton id={order.id} />
                 </div>
               </Panel>
             </div>
@@ -151,7 +155,7 @@ export default function Show ({ auth, order, statuses }: PageProps & {
                           Grand Total
                         </td>
                         <td className="border-t px-6 py-4 align-top">
-                          {`$${getGrandTotal()}`}
+                          {formatPrice(getGrandTotal(order))}
                         </td>
                       </tr>
                     </tfoot>

@@ -21,30 +21,6 @@ export const paymentInfoSchema = Yup.object({
     .required('Payment Method Required'),
   terms_and_conditions_agreed: Yup.boolean().equals([true], 'Terms and Conditions must be accepted'),
   amount: Yup.number(),
-  first_name: Yup.string()
-    .when(['method', 'amount'], {
-      is: (method: string, amount: number) => PAYMENT_METHODS.CREDIT === method || amount >= ADDRESS_REQUIRED_AFTER_AMOUNT,
-      then: Yup.string().required('First Name is required').max(255, 'Max 255 characters'),
-      otherwise: Yup.string().nullable().max(255, 'Max 255 characters')
-    }),
-  last_name: Yup.string()
-    .when(['method', 'amount'], {
-      is: (method: string, amount: number) => PAYMENT_METHODS.CREDIT === method || amount >= ADDRESS_REQUIRED_AFTER_AMOUNT,
-      then: Yup.string().required('Last Name is required').max(255, 'Max 255 characters'),
-      otherwise: Yup.string().nullable().max(255, 'Max 255 characters')
-    }),
-  email: Yup.string()
-    .when(['method', 'amount'], {
-      is: (method: string, amount: number) => PAYMENT_METHODS.CREDIT === method || amount >= ADDRESS_REQUIRED_AFTER_AMOUNT,
-      then: Yup.string().email().required('Email is required').max(255, 'Max 255 characters'),
-      otherwise: Yup.string().nullable().max(255, 'Max 255 characters')
-    }),
-  phone_number: Yup.string()
-    .when(['method', 'amount'], {
-      is: (method: string, amount: number) => PAYMENT_METHODS.CREDIT === method || amount >= ADDRESS_REQUIRED_AFTER_AMOUNT,
-      then: Yup.string().required('Phone is required').max(255, 'Max 255 characters'),
-      otherwise: Yup.string().nullable().max(255, 'Max 255 characters')
-    }),
   street_address: Yup.string()
     .when(['method', 'amount'], {
       is: (method: string, amount: number) => PAYMENT_METHODS.CREDIT === method || amount >= ADDRESS_REQUIRED_AFTER_AMOUNT,

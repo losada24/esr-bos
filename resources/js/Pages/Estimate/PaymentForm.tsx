@@ -96,50 +96,6 @@ const PaymentForm = ({ submitCount, errors, estimate, values, states }: {
         </div>
         {(values.method === PAYMENT_METHODS.CREDIT || subtotal >= ADDRESS_REQUIRED_AFTER_AMOUNT) && (
           <div className='space-y-5 col-span-8'>
-            <div className='grid grid-cols-2 gap-4'>
-              <div className={submitCount ? (errors.first_name) ? 'has-error' : 'has-success' : ''}>
-                <label htmlFor="name">First Name</label>
-                <Field
-                  id="first_name"
-                  name="first_name"
-                  className="form-input"
-                  placeholder='First Name'
-                />
-                {(submitCount && errors.first_name) ? <InputError message={errors.first_name} className="mt-2" /> : ''}
-              </div>
-              <div className={submitCount ? (errors.last_name) ? 'has-error' : 'has-success' : ''}>
-                <label htmlFor="name">Last Name</label>
-                <Field
-                  id="last_name"
-                  name="last_name"
-                  className="form-input"
-                  placeholder='Last Name'
-                />
-                {(submitCount && errors.last_name) ? <InputError message={errors.last_name} className="mt-2" /> : ''}
-              </div>
-            </div>
-            <div className='grid grid-cols-2 gap-4'>
-              <div className={submitCount ? (errors.email) ? 'has-error' : 'has-success' : ''}>
-                <label htmlFor="email">Email</label>
-                <Field
-                  id="email"
-                  name="email"
-                  className="form-input"
-                  placeholder='Email'
-                />
-                {(submitCount && errors.email) ? <InputError message={errors.email} className="mt-2" /> : ''}
-              </div>
-              <div className={submitCount ? (errors.phone_number) ? 'has-error' : 'has-success' : ''}>
-                <label htmlFor="phone_number">Phone Number</label>
-                <Field
-                  id="phone_number"
-                  name="phone_number"
-                  className="form-input"
-                  placeholder='Phone Number'
-                />
-                {(submitCount && errors.phone_number) ? <InputError message={errors.phone_number} className="mt-2" /> : ''}
-              </div>
-            </div>
             <div className={submitCount ? (errors.street_address) ? 'has-error' : 'has-success' : ''}>
               <label htmlFor="name">Street Address</label>
               <Field

@@ -37,7 +37,7 @@ const ReportHeader = ({ data, logo, isForClient }: { data?: ReportHeaderDataProp
         <View style={tw('flex flex-col justify-start w-4/12')}>
           <Text style={tw('text-xs text-gray-900 font-regular')}>{isForClient ? data?.address : COMPANY_ADDRESS}</Text>
           <Text style={tw('text-xs text-gray-900 font-regular')}>{isForClient ? data?.phone_number : COMPANY_PHONE}</Text>
-          {!isForClient && <Text style={tw('text-xs text-gray-900 font-regular')}>{COMPANY_EMAIL}</Text>}
+          <Text style={tw('text-xs text-gray-900 font-regular')}>{isForClient ? data?.email : COMPANY_EMAIL}</Text>
         </View>
       </View>
       <View style={tw('flex flex-row justify-between w-3/12 text-right')}>

@@ -34,12 +34,6 @@ class StoreEstimateToOrderRequest extends FormRequest
               'string',
               Rule::in(array_values(PaymentMethodEnum::$PAYMENT_METHOD))
             ],
-            'phone_number' => [
-              Rule::when(
-                fn($input) => $input->method == PaymentMethodEnum::$PAYMENT_METHOD['CREDIT'] || $input->amount >= config('custom.address_required_after_amount')
-                , ['required', 'max:20']
-              ),
-            ],
             'street_address' => [
               Rule::when(
                 fn($input) => $input->method == PaymentMethodEnum::$PAYMENT_METHOD['CREDIT'] || $input->amount >= config('custom.address_required_after_amount')
@@ -73,24 +67,6 @@ class StoreEstimateToOrderRequest extends FormRequest
               Rule::when(
                 fn($input) => $input->method == PaymentMethodEnum::$PAYMENT_METHOD['CREDIT'] || $input->amount >= config('custom.address_required_after_amount')
                 , ['required', 'max:100']
-              ),
-            ],
-            'first_name' => [
-              Rule::when(
-                fn($input) => $input->method == PaymentMethodEnum::$PAYMENT_METHOD['CREDIT'] || $input->amount >= config('custom.address_required_after_amount')
-                , ['required', 'max:255']
-              ),
-            ],
-            'last_name' => [
-              Rule::when(
-                fn($input) => $input->method == PaymentMethodEnum::$PAYMENT_METHOD['CREDIT'] || $input->amount >= config('custom.address_required_after_amount')
-                , ['required', 'max:255']
-              ),
-            ],
-            'email' => [
-              Rule::when(
-                fn($input) => $input->method == PaymentMethodEnum::$PAYMENT_METHOD['CREDIT'] || $input->amount >= config('custom.address_required_after_amount')
-                , ['required', 'email', 'max:255']
               ),
             ],
             'notes' => [

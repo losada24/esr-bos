@@ -1,10 +1,8 @@
-import React, { useState } from 'react'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
 import { Head, router, Link } from '@inertiajs/react'
 import { type PageProps, type Order, type Client } from '@/types'
 import Panel from '@/Components/Panel'
 import EditIcon from '@/Components/Icons/EditIcon'
-import PrintIcon from '@/Components/Icons/PrintIcon'
 import PlusIcon from '@/Components/Icons/PlusIcon'
 import Dropdown from '@/Components/Dropdown'
 import AngleIcon from '@/Components/Icons/AngleIcon'
@@ -13,6 +11,7 @@ import PriceSummary from './PriceSummary'
 import { createMarkWithLeadingZero } from '@/Utils/mark'
 import { PRODUCT_SYSTEMS, ESTIMATE_STATUS } from '@/Utils/constants'
 import MoneyIcon from '@/Components/Icons/MoneyIcon'
+import PrintEstimateButton from './PrintEstimateButton'
 
 export default function Create ({ auth, estimate }: PageProps & {
   clients: Client[]
@@ -118,34 +117,7 @@ export default function Create ({ auth, estimate }: PageProps & {
                       </Link>
                     </>
                   )}
-                  <div className='dropdown'>
-                    <Dropdown
-                        placement='bottom-start'
-                        btnClassName="btn btn-info w-full gap-2 dropdown-toggle"
-                        button={
-                            <>
-                                <PrintIcon />
-                                Print
-                                <span>
-                                  <AngleIcon />
-                                </span>
-                            </>
-                        }
-                    >
-                        <ul className="w-full">
-                            <li>
-                                <button onClick={() => {
-                                  router.get(route('pdf.report', estimate.id))
-                                }}>Report</button>
-                            </li>
-                            <li>
-                                <button onClick={() => {
-                                  router.get(route('pdf.estimate', estimate.id))
-                                }}>Estimate</button>
-                            </li>
-                        </ul>
-                    </Dropdown>
-                  </div>
+                  <PrintEstimateButton id={estimate.id} />
                 </div>
               </Panel>
             </div>

@@ -29,7 +29,6 @@ export default function Payment ({ estimate, auth, states }: PageProps & {
   }
 
   const handleSubmit = async (values: any, helpers: FormikHelpers<PaymentInfo>) => {
-    console.log(values)
     router.post(route('estimate.order.store'), values, {
       forceFormData: true,
       onError: (errors: any) => {
