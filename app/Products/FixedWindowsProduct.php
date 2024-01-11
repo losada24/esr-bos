@@ -108,7 +108,7 @@ class FixedWindowsProduct implements IProduct {
 
     public function getCuttingList($qty) {
       $cuttingListResult = [];
-      $cuttingListResult[] = $this->getCuttingListObject('Frame Head', 'VW 101 ' . $this->materialColor, 2 * $qty, $this->getNumberWithFraction($this->width), $this->width);
+      $cuttingListResult[] = $this->getCuttingListObject('Frame Head/Sill', 'VW 101 ' . $this->materialColor, 2 * $qty, $this->getNumberWithFraction($this->width), $this->width);
       $cuttingListResult[] = $this->getCuttingListObject('Jamb', 'VW 103 ' . $this->materialColor, 2 * $qty, $this->getNumberWithFraction($this->getJamb()), $this->getJamb());
       $cuttingListResult[] = $this->getCuttingListObject('Glazing Bead Vertical', 'VW 108 ' . $this->materialColor, 2 * $qty, $this->getNumberWithFraction($this->getGlazingBeatVertical()), $this->getGlazingBeatVertical());
       $cuttingListResult[] = $this->getCuttingListObject('Glazing Bead Horizontal', 'VW 108 ' . $this->materialColor, 2 * $qty, $this->getNumberWithFraction($this->getGlazingBeatHorizontal()), $this->getGlazingBeatHorizontal());
