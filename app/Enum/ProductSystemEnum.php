@@ -28,9 +28,9 @@ class ProductSystemEnum
 
     public static function getSystemNoa($systemName) {
       return match($systemName) {
-        self::$FIXED_WINDOWS => '22-43F',
-        self::$SINGLE_HUNG => '22-41D',
-        self::$HORIZONTAL_ROLLER => '22-42F',
+        self::$FIXED_WINDOWS => 'F.B.C FL 41809',
+        self::$SINGLE_HUNG => 'NOA #23-0921.02',
+        self::$HORIZONTAL_ROLLER => 'F.B.C FL 41810',
         default => ''
       };
     }
