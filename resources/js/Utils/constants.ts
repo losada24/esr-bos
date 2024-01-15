@@ -143,3 +143,13 @@ export const GLASS_TYPE = {
   REGULAR: 'REGULAR',
   EXPRESS: 'EXPRESS'
 }
+
+export const PO_SCREEN: string = 'SC'
+export const PO_GLASS: string = 'GL'
+export const PO_BALANCE: string = 'BL'
+
+export const PO_TITLES: Record<string, string> = {
+  [PO_SCREEN]: 'PO SCREEN',
+  [PO_GLASS]: 'PO GLASS',
+  [PO_BALANCE]: 'PO BALANCE'
+}

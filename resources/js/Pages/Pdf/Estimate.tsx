@@ -14,6 +14,7 @@ import logo from '../../../assets/images/logo-reylosglass.png'
 import ReportCompany from './ReportCompany'
 import EstimateTotal from './EstimateTotal'
 import { Notes } from './Notes'
+import Pagination from './Pagination'
 
 type IndexOrderProps = PageProps & {
   order: Order
@@ -46,6 +47,7 @@ const Estimate = ({ order, auth, company }: IndexOrderProps) => {
         <Head title={`Estimate: ${order.name}`} />
         <PrintLayout>
           <Page size="A4" style={tw('p-6 font-regular')}>
+            <Pagination />
             <ReportHeader data={{
               id: order.id,
               address: company.address,

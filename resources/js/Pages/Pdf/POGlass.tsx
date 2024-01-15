@@ -8,6 +8,9 @@ import { createTw } from 'react-pdf-tailwind'
 import PrintButton from '@/Pages/Order/PrintButton'
 import POHeaders from './POHeaders'
 import CuttingListItems from './CuttingListItems'
+import { PO_GLASS, PO_TITLES } from '@/Utils/constants'
+import Pagination from './Pagination'
+import { getNumberWithFraction } from '@/Utils/numbers'
 
 type IndexOrderProps = PageProps & {
   order: Order
@@ -38,8 +41,9 @@ const POGlass = ({ order, auth }: IndexOrderProps) => {
       >
         <Head title={`PO Glass ${order.name}`} />
         <PrintLayout>
-          <Page size="A4" style={tw('p-6 font-regular')}>
-            <POHeaders order={order} poType='GL' />
+          <Page wrap size="A4" style={tw('p-6 font-regular')}>
+            <Pagination />
+            <POHeaders order={order} poType={PO_GLASS} documentTitle={PO_TITLES[PO_GLASS]} />
             {order?.products?.map((product, index) => {
               return <Fragment key={index}>
                 <View style={tw('flex flex-row gap-4 justify-between bg-gray-200 mb-3 p-3')}>
@@ -53,7 +57,7 @@ const POGlass = ({ order, auth }: IndexOrderProps) => {
                   </View>
                   <View style={tw('flex flex-row justify-start items-center gap-3')}>
                     <Text style={tw('text-xs text-white-dark text-black')}>Size:</Text>
-                    <Text style={tw('text-xs text-white-dark dark:text-gray-500')}>{product.width} x {product.height}</Text>
+                    <Text style={tw('text-xs text-white-dark dark:text-gray-500')}>{getNumberWithFraction(product.width)} x {getNumberWithFraction(product.height)}</Text>
                   </View>
                 </View>
                 <CuttingListItems cuttingList={product?.cutting_list ?? []} productId={product.id} />

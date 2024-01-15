@@ -21,14 +21,6 @@ const PaymentInformation = ({ paymentInfo }: { paymentInfo?: PaymentInfo[] }) =>
                     {(payment.method === PAYMENT_METHODS.CREDIT || payment.amount >= ADDRESS_REQUIRED_AFTER_AMOUNT) && (
                       <>
                         <tr>
-                          <td className="font-semibold">First Name</td>
-                          <td>{payment.first_name}</td>
-                        </tr>
-                        <tr>
-                          <td className="font-semibold">Last Name</td>
-                          <td>{payment.last_name}</td>
-                        </tr>
-                        <tr>
                           <td className="font-semibold">Address</td>
                           <td>{payment.street_address}</td>
                         </tr>
@@ -43,14 +35,6 @@ const PaymentInformation = ({ paymentInfo }: { paymentInfo?: PaymentInfo[] }) =>
                         <tr>
                           <td className="font-semibold">Zip Code</td>
                           <td>{payment.state}</td>
-                        </tr>
-                        <tr>
-                          <td className="font-semibold">Phone Number</td>
-                          <td>{payment.phone_number}</td>
-                        </tr>
-                        <tr>
-                          <td className="font-semibold">Email</td>
-                          <td>{payment.email}</td>
                         </tr>
                         <tr>
                           <td className="font-semibold">Notes</td>

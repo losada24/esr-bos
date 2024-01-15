@@ -90,7 +90,9 @@ class OrderController extends Controller
         $order->status ==  OrderStatusEnum::$PRODUCTION)) {
         $statuses = [
           OrderStatusEnum::$PARTIAL_PRODUCTION_COMPLETED,
-          OrderStatusEnum::$PRODUCTION_COMPLETED
+          OrderStatusEnum::$PRODUCTION_COMPLETED,
+          OrderStatusEnum::$SCHEDULED_PRODUCTION,
+          OrderStatusEnum::$PRODUCTION_IN_PROGRESS
         ];
       }
       else if (((auth()->user()->hasRole(RoleEnum::$ADMIN) || auth()->user()->hasRole(RoleEnum::$SHIPPING)) && 

@@ -39,6 +39,9 @@ class CreateFixedWindows {
         'unit_price' => $unitPrice,
         'total_price' => $unitPrice * $request->qty,
         'user_id' => auth()->user()->id,
+        'extras' => [
+          'config' => 'O'
+        ],
       ]);
       
       if( !$product )

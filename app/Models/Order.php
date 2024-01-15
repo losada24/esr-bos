@@ -78,10 +78,17 @@ class Order extends Model
         }
         else if (auth()->user()->hasRole(RoleEnum::$ACCOUNTING)) {
           $query->where('status', OrderStatusEnum::$ACCOUNTING)
-            ->orWhere('status', OrderStatusEnum::$PRODUCTION_COMPLETED);
+            ->orWhere('status', OrderStatusEnum::$PRODUCTION_COMPLETED)
+            ->orWhere('status', OrderStatusEnum::$PRODUCTION)
+            ->orWhere('status', OrderStatusEnum::$PARTIAL_PRODUCTION_COMPLETED)
+            ->orWhere('status', OrderStatusEnum::$PARTIAL_DELIVERED);
         }
         else if (auth()->user()->hasRole(RoleEnum::$PRODUCTION)) {
-          $query->where('status', OrderStatusEnum::$PRODUCTION);
+          $query->where('status', OrderStatusEnum::$PRODUCTION)
+            ->orWhere('status', OrderStatusEnum::$PRODUCTION_IN_PROGRESS)
+            ->orWhere('status', OrderStatusEnum::$SCHEDULED_PRODUCTION)
+            ->orWhere('status', OrderStatusEnum::$PARTIAL_PRODUCTION_COMPLETED)
+            ->orWhere('status', OrderStatusEnum::$PARTIAL_DELIVERED);
         }
         else if (auth()->user()->hasRole(RoleEnum::$SHIPPING)) {
           $query->where('status', OrderStatusEnum::$READY_FOR_DELIVERY);

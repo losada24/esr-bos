@@ -39,7 +39,8 @@ class CreateSingleHunt {
         'unit_price' => $unitPrice,
         'total_price' => $unitPrice * $request->qty,
         'extras' => [
-          'screen' => $request->screen
+          'screen' => $request->screen,
+          'config' => 'OX'
         ],
         'user_id' => auth()->user()->id,
       ]);

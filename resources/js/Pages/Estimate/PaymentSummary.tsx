@@ -1,5 +1,5 @@
 import { type Order } from '@/types'
-import { getSubtotal } from '@/Utils/price'
+import { getSubtotal, formatPrice } from '@/Utils/price'
 
 export default function PaymentSummary ({ estimate }: {
   estimate: Order
@@ -44,10 +44,10 @@ export default function PaymentSummary ({ estimate }: {
                   {glass_type}
                 </td>
                 <td className="border-t px-6 py-4 align-top text-right">
-                  ${unit_price}
+                  {formatPrice(unit_price)}
                 </td>
                 <td className="border-t px-6 py-4 align-top text-right">
-                  ${total_price}
+                  {formatPrice(total_price)}
                 </td>
               </tr>
           ))
@@ -66,7 +66,7 @@ export default function PaymentSummary ({ estimate }: {
               Subtotal
             </td>
             <td className="px-6 py-4 border-t text-right">
-              ${getSubtotal(estimate)}
+              {formatPrice(getSubtotal(estimate) ?? 0)}
             </td>
           </tr>
         </tfoot>

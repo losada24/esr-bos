@@ -15,6 +15,7 @@ import LeadTimeAlert from './LeadTimeAlert'
 import logo from '../../../assets/images/logo-reylosglass.png'
 import ReportCompany from './ReportCompany'
 import { Notes } from './Notes'
+import Pagination from './Pagination'
 
 type IndexOrderProps = PageProps & {
   order: Order
@@ -45,7 +46,8 @@ const Report = ({ order, auth }: IndexOrderProps) => {
       >
         <Head title={`Report: ${order.name}`} />
         <PrintLayout>
-          <Page size="A4" style={tw('p-6 font-regular')}>
+          <Page wrap size="A4" style={tw('p-6 font-regular')}>
+            <Pagination />
             <ReportHeader data={{
               id: order.id,
               address: '',

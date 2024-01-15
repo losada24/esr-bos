@@ -25,12 +25,13 @@ class LabelController extends Controller
       
       $order->load(['products', 'client']);
       $orderCuttingList = $this->orderedCuttingList($order);
+      $reverseOrderCuttingList = array_reverse($orderCuttingList);
 
-      $callback = function() use ($orderCuttingList, $columns, $order) {
+      $callback = function() use ($reverseOrderCuttingList, $columns, $order) {
           $file = fopen('php://output', 'w');
           fputcsv($file, $columns);
 
-          foreach ($orderCuttingList as $product) {
+          foreach ($reverseOrderCuttingList as $product) {
             foreach ($product['items'] as $item) {
               for ($i = 0; $i < $item['qty']; $i++) {
                 fputcsv($file, [

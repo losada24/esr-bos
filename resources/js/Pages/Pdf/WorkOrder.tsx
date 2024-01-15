@@ -9,6 +9,8 @@ import PrintButton from '@/Pages/Order/PrintButton'
 import POHeaders from './POHeaders'
 import CuttingListItems from './CuttingListItems'
 import VisualId from './VisualId'
+import Pagination from './Pagination'
+import { getNumberWithFraction } from '@/Utils/numbers'
 
 type IndexOrderProps = PageProps & {
   order: Order
@@ -39,8 +41,9 @@ const WorkOrder = ({ order, auth }: IndexOrderProps) => {
       >
         <Head title={`Work Order ${order.name}`} />
         <PrintLayout>
-          <Page size="A4" style={tw('p-6 font-regular')}>
-            <POHeaders order={order} />
+          <Page wrap size="A4" style={tw('p-6 font-regular')}>
+            <Pagination />
+            <POHeaders order={order} documentTitle='Work Order' />
             {order?.products?.map((product, index) => {
               return <Fragment key={index}>
                 <View style={tw('flex flex-row gap-4 justify-between bg-gray-200 mb-3 p-3')}>
@@ -58,7 +61,7 @@ const WorkOrder = ({ order, auth }: IndexOrderProps) => {
                   </View>
                   <View style={tw('flex flex-row justify-start items-center gap-3')}>
                     <Text style={tw('text-xs text-white-dark text-black')}>Size:</Text>
-                    <Text style={tw('text-xs text-white-dark dark:text-gray-500')}>{product.width} x {product.height}</Text>
+                    <Text style={tw('text-xs text-white-dark dark:text-gray-500')}>{getNumberWithFraction(product.width)} x {getNumberWithFraction(product.height)}</Text>
                   </View>
                   <View style={tw('flex flex-row justify-start items-center gap-3')}>
                     <Text style={tw('text-xs text-white-dark text-black')}>Visual ID:</Text>

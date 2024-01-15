@@ -4,6 +4,7 @@ import { createTw } from 'react-pdf-tailwind'
 import { type Product } from '@/types'
 import ReportProductImage from '@/Pages/Pdf/ReportProductImage'
 import { PRODUCT_SYSTEMS } from '@/Utils/constants'
+import { getNumberWithFraction } from '@/Utils/numbers'
 
 const tw = createTw({
   theme: {
@@ -53,7 +54,7 @@ const ReportProduct = ({ product }: { product: Product }) => {
             <Text style={tw('text-xs text-gray-900 font-regular')}>{product.system}</Text>
           </View>
           <View style={tw('flex flex-row justify-start items-center gap-3 w-3/12')}>
-            <Text style={tw('text-xs text-gray-900 font-regular')}>{product.width}&quot; x {product.height}&quot;</Text>
+            <Text style={tw('text-xs text-gray-900 font-regular')}>{getNumberWithFraction(product.width)} x {getNumberWithFraction(product.height)}</Text>
           </View>
           <View style={tw('flex flex-row justify-start items-center gap-3 w-2/12')}>
             <Text style={tw('text-xs text-gray-900 font-regular')}>{product.frame_color}</Text>

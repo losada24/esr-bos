@@ -9,6 +9,7 @@ import PrintButton from '@/Pages/Order/PrintButton'
 import { FOOT, UNIT, SQFT } from '@/Utils/constants'
 import POHeaders from './POHeaders'
 import { getNumberWithFraction } from '@/Utils/numbers'
+import Pagination from './Pagination'
 
 type IndexOrderProps = PageProps & {
   order: Order
@@ -39,8 +40,9 @@ const MaterialConsumption = ({ order, auth }: IndexOrderProps) => {
       >
         <Head title={`Material Consumption: ${order.name}`} />
         <PrintLayout>
-          <Page size="A4" style={tw('p-6 font-regular')}>
-            <POHeaders order={order} />
+          <Page wrap size="A4" style={tw('p-6 font-regular')}>
+            <Pagination />
+            <POHeaders order={order} documentTitle='Material Consumption' />
             <View style={tw('flex flex-row gap-4 justify-between border-b border-gray-200 mb-3 p-3')}>
               <Text style={tw('text-xs text-white-dark text-black font-bold w-3/12')}>Material</Text>
               <Text style={tw('text-xs text-white-dark text-black font-bold w-3/12')}>Notes</Text>
