@@ -2,23 +2,23 @@ import React from 'react'
 import PrintLayout from '@/Layouts/PrintLayout'
 import { Head } from '@inertiajs/react'
 import { Page } from '@react-pdf/renderer'
-import { type PageProps, type Order } from '@/types'
+import { type PageProps, type Order, type Company } from '@/types'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
 import { createTw } from 'react-pdf-tailwind'
 import ReportHeader from './ReportHeader'
 import ReportProduct from './ReportProduct'
-import ReportTotal from './ReportTotal'
 import ReportSignature from './ReportSignature'
 import PrintEstimateOrderButton from '@/Pages/Pdf/PrintEstimateOrderButton'
-import LeadTimeAlert from './LeadTimeAlert'
 
 import logo from '../../../assets/images/logo-reylosglass.png'
 import ReportCompany from './ReportCompany'
+import EstimateTotal from './EstimateTotal'
 import { Notes } from './Notes'
 import Pagination from './Pagination'
 
 type IndexOrderProps = PageProps & {
   order: Order
+  company: Company
 }
 
 const tw = createTw({
@@ -35,31 +35,30 @@ const tw = createTw({
   }
 })
 
-const Report = ({ order, auth }: IndexOrderProps) => {
+const EstimateWithoutPrices = ({ order, auth, company }: IndexOrderProps) => {
   return (
     <AuthenticatedLayout
           auth={auth}
-          pageTitle={`Report: ${order.name}`}
+          pageTitle={`Estimate without Prices: ${order.name}`}
           actions={
             <PrintEstimateOrderButton id={order.id} status={order.status} />
           }
       >
-        <Head title={`Report: ${order.name}`} />
+        <Head title={`Estimate without Prices: ${order.name}`} />
         <PrintLayout>
-          <Page wrap size="A4" style={tw('p-6 font-regular')}>
+          <Page size="A4" style={tw('p-6 font-regular')}>
             <Pagination />
             <ReportHeader data={{
               id: order.id,
-              address: '',
-              featured_image: '',
-              phone_number: ''
-            }} logo={logo}/>
-            <ReportCompany order={order} isForClient={false} />
+              address: company.address,
+              featured_image: company.featured_image,
+              phone_number: company.phone_number,
+              email: company.email
+            }} logo={logo} isForClient={true} />
+            <ReportCompany order={order} isForClient={true} />
             {order?.products?.map((product, index) => {
-              return <ReportProduct product={product} key={index} showPrices={true} />
+              return <ReportProduct product={product} key={index} showPrices={false} />
             })}
-            <LeadTimeAlert glass_type={order.glass_type} />
-            <ReportTotal order={order} />
             {order.notes !== null && (
               <Notes notes={order.notes ?? ''} />
             )}
@@ -70,4 +69,4 @@ const Report = ({ order, auth }: IndexOrderProps) => {
   )
 }
 
-export default Report
+export default EstimateWithoutPrices

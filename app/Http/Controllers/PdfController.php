@@ -145,13 +145,34 @@ class PdfController extends Controller
       ]);
     }
 
-    public function estimate(Order $order)
+    public function estimateWithPrices(Order $order)
     {
       $order->load(['products', 'client', 'user.company']);
       $company = Company::where('id', $order->user->company_id)->first();
       CompanyResource::withoutWrapping();
-      //asset('storage/'.$this->featured_image)
-      return Inertia::render('Pdf/Estimate', [
+      return Inertia::render('Pdf/EstimateWithPrices', [
+        'order' => $order,
+        'company' => new CompanyResource($company),
+      ]);
+    }
+
+    public function estimateWithoutPrices(Order $order)
+    {
+      $order->load(['products', 'client', 'user.company']);
+      $company = Company::where('id', $order->user->company_id)->first();
+      CompanyResource::withoutWrapping();
+      return Inertia::render('Pdf/EstimateWithoutPrices', [
+        'order' => $order,
+        'company' => new CompanyResource($company),
+      ]);
+    }
+
+    public function estimateWithTotalPrices(Order $order)
+    {
+      $order->load(['products', 'client', 'user.company']);
+      $company = Company::where('id', $order->user->company_id)->first();
+      CompanyResource::withoutWrapping();
+      return Inertia::render('Pdf/EstimateWithTotalPrices', [
         'order' => $order,
         'company' => new CompanyResource($company),
       ]);

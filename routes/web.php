@@ -88,11 +88,15 @@ Route::middleware('auth')->group(function () {
     Route::resource('estimate', EstimateController::class)
       ->only(['show'])
       ->middleware([
-        "role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$CLIENT_ADMIN . "|" . RoleEnum::$CLIENT // TODO: Validate if the user is the owner of the order
+        "role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$CLIENT_ADMIN . "|" . RoleEnum::$CLIENT,
+        "validate.order.owner"
       ]);
 
     Route::get('/estimate/{id}/order', [EstimateController::class, 'order'])
-      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$CLIENT_ADMIN])
+      ->middleware([
+        "role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$CLIENT_ADMIN,
+        "validate.order.owner.by.id"
+      ])
       ->name('estimate.order');
 
     Route::post('/estimate/order/store', [EstimateController::class, 'orderStore'])
@@ -164,10 +168,6 @@ Route::middleware('auth')->group(function () {
       ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$ACCOUNTING])
       ->name('order.status.update');
     
-    /* Route::post('/order/complete-production', [OrderController::class, 'completeProduction'])
-      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$PRODUCTION])
-      ->name('order.complete.production'); */
-    
     Route::get('/order/status/{order}', [OrderController::class, 'status'])
       ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$PRODUCTION ])
       ->name('order.status');
@@ -205,9 +205,17 @@ Route::middleware('auth')->group(function () {
       ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$PRODUCTION ])
       ->name('pdf.po.balance');
     
-    Route::get('/pdf/estimate/{order}', [PdfController::class, 'estimate'])
+    Route::get('/pdf/estimate-with-prices/{order}', [PdfController::class, 'estimateWithPrices'])
       ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$CLIENT_ADMIN . "|" . RoleEnum::$CLIENT ])
-      ->name('pdf.estimate');
+      ->name('pdf.estimate.with.prices');
+    
+    Route::get('/pdf/estimate-with-totals/{order}', [PdfController::class, 'estimateWithTotalPrices'])
+      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$CLIENT_ADMIN . "|" . RoleEnum::$CLIENT ])
+      ->name('pdf.estimate.with.total.prices');
+
+    Route::get('/pdf/estimate-without/{order}', [PdfController::class, 'estimateWithoutPrices'])
+      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$CLIENT_ADMIN . "|" . RoleEnum::$CLIENT ])
+      ->name('pdf.estimate.without.prices');
     
     Route::get('/pdf/report/{order}', [PdfController::class, 'report'])
       ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$CLIENT_ADMIN . "|" . RoleEnum::$CLIENT ])

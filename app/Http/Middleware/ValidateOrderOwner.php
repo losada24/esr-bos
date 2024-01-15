@@ -18,11 +18,12 @@ class ValidateOrderOwner
     public function handle(Request $request, Closure $next): Response
     {
         $order = $request->route('estimate');
-        $order->load('user');
-        
+        if (is_numeric($order) || is_string($order)) {
+          $order = Order::findOrFail($order);  
+        }
+
         if (auth()->user()->hasRole(RoleEnum::$ADMIN ) || 
-          (auth()->user()->hasRole(RoleEnum::$CLIENT_ADMIN) && $order->user->isCreatedByLoggedUser()) || 
-          ($order != null && $order->user_id == auth()->user()->id)) {
+          ((auth()->user()->hasRole(RoleEnum::$CLIENT_ADMIN) || auth()->user()->hasRole(RoleEnum::$CLIENT)) && $order->company_id == auth()->user()->company_id)) {
             return $next($request);
         } else {
             return redirect()->route('estimate.index')

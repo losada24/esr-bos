@@ -35,16 +35,16 @@ const tw = createTw({
   }
 })
 
-const Estimate = ({ order, auth, company }: IndexOrderProps) => {
+const EstimateWithTotalPrices = ({ order, auth, company }: IndexOrderProps) => {
   return (
     <AuthenticatedLayout
           auth={auth}
-          pageTitle={`Estimate: ${order.name}`}
+          pageTitle={`Estimate with Total Prices: ${order.name}`}
           actions={
             <PrintEstimateOrderButton id={order.id} status={order.status} />
           }
       >
-        <Head title={`Estimate: ${order.name}`} />
+        <Head title={`Estimate with Total Prices: ${order.name}`} />
         <PrintLayout>
           <Page size="A4" style={tw('p-6 font-regular')}>
             <Pagination />
@@ -57,7 +57,7 @@ const Estimate = ({ order, auth, company }: IndexOrderProps) => {
             }} logo={logo} isForClient={true} />
             <ReportCompany order={order} isForClient={true} />
             {order?.products?.map((product, index) => {
-              return <ReportProduct product={product} key={index} />
+              return <ReportProduct product={product} key={index} showPrices={false} />
             })}
             <EstimateTotal order={order} />
             {order.notes !== null && (
@@ -70,4 +70,4 @@ const Estimate = ({ order, auth, company }: IndexOrderProps) => {
   )
 }
 
-export default Estimate
+export default EstimateWithTotalPrices

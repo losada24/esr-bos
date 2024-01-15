@@ -7,6 +7,7 @@ import VisualId, { AllVisualIds } from '@/Components/VisualId'
 import MaterialConsumptionList from './MaterialConsumptionList'
 import ShowCuttingList from './ShowCuttingList'
 import PrintButton from './PrintButton'
+import { getNumberWithFraction } from '@/Utils/numbers'
 
 export default function WorkOrder ({ auth, order }: PageProps & {
   clients: Client[]
@@ -51,7 +52,7 @@ export default function WorkOrder ({ auth, order }: PageProps & {
                     <td><span className='font-semibold'>Mark:</span> {product.line_item_name}</td>
                     <td><span className='font-semibold'>Qty:</span> {product.qty}</td>
                     <td><span className='font-semibold'>System Product:</span> {product.system} ({product.frame_color}) {product?.extras?.config}</td>
-                    <td><span className='font-semibold'>Size:</span> {product.width} x {product.height}</td>
+                    <td><span className='font-semibold'>Size:</span> {getNumberWithFraction(product.width)} x {getNumberWithFraction(product.height)}</td>
                     <td className='flex items-center justify-between'><span className='font-semibold'>Visual ID:</span> <VisualId index={index} /></td>
                   </tr>
                   <ShowCuttingList cuttingList={product?.cutting_list ?? []} productId={product.id} />

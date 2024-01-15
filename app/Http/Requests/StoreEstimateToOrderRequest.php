@@ -7,6 +7,7 @@ use App\Enum\States;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use NunoMaduro\Collision\Adapters\Phpunit\State;
+use App\Rules\ValidateOrderCompany;
 
 class StoreEstimateToOrderRequest extends FormRequest
 {
@@ -28,7 +29,11 @@ class StoreEstimateToOrderRequest extends FormRequest
     public function rules()
     {
         return [
-            'order_id' => 'required|exists:orders,id',
+            'order_id' => [
+              'required',
+              'exists:orders,id',
+              new ValidateOrderCompany
+            ],
             'method' => [
               'required',
               'string',

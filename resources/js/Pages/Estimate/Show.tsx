@@ -12,6 +12,7 @@ import { createMarkWithLeadingZero } from '@/Utils/mark'
 import { PRODUCT_SYSTEMS, ESTIMATE_STATUS } from '@/Utils/constants'
 import MoneyIcon from '@/Components/Icons/MoneyIcon'
 import PrintEstimateButton from './PrintEstimateButton'
+import { getNumberWithFraction } from '@/Utils/numbers'
 
 export default function Create ({ auth, estimate }: PageProps & {
   clients: Client[]
@@ -111,10 +112,12 @@ export default function Create ({ auth, estimate }: PageProps & {
                         <EditIcon />
                         Edit Estimate
                       </Link>
-                      <Link href={ route('estimate.order', estimate.id) } className="btn btn-secondary w-full gap-2">
-                          <MoneyIcon color='#fff' />
-                          Crear Order
-                      </Link>
+                      {(estimate.products?.length ?? 0) > 0 && (
+                        <Link href={ route('estimate.order', estimate.id) } className="btn btn-secondary w-full gap-2">
+                            <MoneyIcon color='#fff' />
+                            Crear Order
+                        </Link>
+                      )}
                     </>
                   )}
                   <PrintEstimateButton id={estimate.id} />
@@ -155,7 +158,7 @@ export default function Create ({ auth, estimate }: PageProps & {
                             {qty}
                           </td>
                           <td className="border-t px-6 py-4 align-top">
-                            {width} x {height}
+                            {getNumberWithFraction(width)} x {getNumberWithFraction(height)}
                           </td>
                           <td className="border-t px-6 py-4 align-top">
                             {frame_color}
