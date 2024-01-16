@@ -5,8 +5,8 @@ import { type PageProps, type Order, type Client, type Role } from '@/types'
 import Panel from '@/Components/Panel'
 import { createMarkWithLeadingZero } from '@/Utils/mark'
 import HammerIcon from '@/Components/Icons/HammerIcon'
-import { isAccounting, isAdmin } from '@/Utils/user'
-import { ACCOUNTING_STATUS, PRODUCTION_STATUS } from '@/Utils/constants'
+import { isAccounting, isAdmin, isProduction, isClientAdmin } from '@/Utils/user'
+import { ACCOUNTING_STATUS, PRODUCTION_STATUS, PRODUCTION_IN_PROGRESS } from '@/Utils/constants'
 import OrderUpdateStatusModal from './OrderUpdateStatusModal'
 import PaymentInformation from './PaymentInformation'
 import { getSubtotal, getGrandTotal, formatPrice } from '@/Utils/price'
@@ -65,7 +65,7 @@ export default function Show ({ auth, order }: PageProps & {
                   </div>
                 </div>
                 <div className="flex flex-col gap-y-2 border-t border-white-light dark:border-white/10 py-2">
-                    {order.status === PRODUCTION_STATUS && (
+                    {(isAdmin(auth.user.roles.map((role: Role) => role.name)) || isProduction(auth.user.roles.map((role: Role) => role.name))) && (
                       <Link href={route('order.workOrder', order.id)} className="btn btn-secondary w-full gap-2">
                           <HammerIcon color="#fff" />
                           Work Order
@@ -80,7 +80,9 @@ export default function Show ({ auth, order }: PageProps & {
                         <HammerIcon color="#fff" /> Produce Order
                       </button>
                     )}
-                    <PrintEstimateButton id={order.id} />
+                    {(isAdmin(auth.user.roles.map((role: Role) => role.name)) || isAccounting(auth.user.roles.map((role: Role) => role.name)) || isClientAdmin(auth.user.roles.map((role: Role) => role.name))) && (
+                      <PrintEstimateButton id={order.id} />
+                    )}
                 </div>
               </Panel>
             </div>
@@ -162,7 +164,9 @@ export default function Show ({ auth, order }: PageProps & {
                   )}
                 </table>
               </div>
-              <PaymentInformation paymentInfo={order.payments} />
+              {(isAdmin(auth.user.roles.map((role: Role) => role.name)) || isAccounting(auth.user.roles.map((role: Role) => role.name)) || isClientAdmin(auth.user.roles.map((role: Role) => role.name))) && (
+                <PaymentInformation paymentInfo={order.payments} />
+              )}
             </div>
           </div>
           <OrderUpdateStatusModal

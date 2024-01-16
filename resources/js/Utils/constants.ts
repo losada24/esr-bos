@@ -11,6 +11,9 @@ export const ACCOUNTING_STATUS: string = 'accounting'
 export const PRODUCTION_STATUS: string = 'production'
 export const PRODUCTION_COMPLETED: string = 'production completed'
 export const READY_FOR_DELIVERY: string = 'ready for delivery'
+export const PRODUCTION_IN_PROGRESS: string = 'production in progress'
+export const SCHEDULED_PRODUCTION: string = 'scheduled production'
+
 export interface Status {
   id: string
   color: string

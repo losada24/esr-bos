@@ -6,7 +6,8 @@ class GlassTypeEnum {
 
   public static $GLASS_TYPE = [
     'EXPRESS' => 'EXPRESS',
-    'REGULAR' => 'REGULAR'
+    'REGULAR' => 'REGULAR',
+    // 'RUSH NON-IMPACT' => 'RUSH NON-IMPACT',
   ];
 
 }

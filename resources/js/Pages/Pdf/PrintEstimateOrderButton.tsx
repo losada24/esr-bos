@@ -26,7 +26,7 @@ const PrintEstimateOrderButton = ({ id, status }: { id: number, status?: string 
             <Link
               href={route('pdf.report', id)}
             >
-              Report
+              Cost Report
             </Link>
           </li>
           <li>
@@ -47,7 +47,7 @@ const PrintEstimateOrderButton = ({ id, status }: { id: number, status?: string 
             <Link
               href={route('pdf.estimate.with.total.prices', id)}
             >
-              Estimate with Total Prices
+              Estimate only Total Prices
             </Link>
           </li>
           <li>

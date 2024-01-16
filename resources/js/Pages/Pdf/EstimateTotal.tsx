@@ -2,7 +2,7 @@ import React from 'react'
 import { Text, View } from '@react-pdf/renderer'
 import { createTw } from 'react-pdf-tailwind'
 import { type Order } from '@/types'
-import { getSubtotal, getTaxAmount, getGrandTotal, formatPrice } from '@/Utils/price'
+import { getSubtotalWithMarkup, getTaxAmount, getGrandTotal, formatPrice } from '@/Utils/price'
 
 const tw = createTw({
   theme: {
@@ -38,7 +38,7 @@ const EstimateTotal = ({ order }: { order: Order }) => {
       <View style={tw('w-6/12')}>
         <View style={tw('flex flex-row justify-start gap-x-3')}>
           <Text style={tw('text-base text-gray-900 font-bold w-6/12 text-right')}>Subtotal:</Text>
-          <Text style={tw('text-base text-gray-900 font-regular w-6/12 text-left')}>{formatPrice(getSubtotal(order) ?? 0)}</Text>
+          <Text style={tw('text-base text-gray-900 font-regular w-6/12 text-left')}>{formatPrice(getSubtotalWithMarkup(order) ?? 0)}</Text>
         </View>
         <View style={tw('flex flex-row justify-start gap-x-3')}>
           <Text style={tw('text-base text-gray-900 font-bold w-6/12 text-right')}>Tax Rate:</Text>
