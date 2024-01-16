@@ -30,6 +30,8 @@ class CreateEstimate {
           'permit' => $request->permit,
           'other' => $request->other,
           'external_purchase_id' => $request->external_purchase_id,
+          'company_markup' => auth()->user()->company->markup,
+          'company_promotion' => auth()->user()->company->promotion,
         ]);
         
         if( !$estimate )

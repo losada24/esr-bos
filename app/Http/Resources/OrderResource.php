@@ -27,6 +27,12 @@ class OrderResource extends JsonResource
           'notes' => $this->notes ?? '',
           'created_at' => $this->created_at,
           'productsCount' => $this->productsCount ?? 0,
+          'installation' => $this->installation ?? 0,
+          'tax_amount' => $this->tax_amount ?? 0,
+          'tax_rate' => $this->tax_rate ?? 0,
+          'permit' => $this->permit ?? 0,
+          'other' => $this->other ?? 0,
+          'products' => $this->products ?? [],
         ];
     }
 }

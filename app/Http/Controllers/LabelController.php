@@ -25,26 +25,37 @@ class LabelController extends Controller
       
       $order->load(['products', 'client']);
       $orderCuttingList = $this->orderedCuttingList($order);
-      $reverseOrderCuttingList = array_reverse($orderCuttingList);
-
-      $callback = function() use ($reverseOrderCuttingList, $columns, $order) {
+      $callback = function() use ($orderCuttingList, $columns, $order) {
           $file = fopen('php://output', 'w');
           fputcsv($file, $columns);
-
-          foreach ($reverseOrderCuttingList as $product) {
+          $labels = [];
+          foreach ($orderCuttingList as $product) {
             foreach ($product['items'] as $item) {
               for ($i = 0; $i < $item['qty']; $i++) {
-                fputcsv($file, [
-                  $order->quoteNumber,
-                  $product['material'],
-                  $item['line_item_name'],
-                  $item['size'],
-                  ProductSystemEnum::getSystemNameAbbr($item['system']) . "/" . $item['part'],
-                  $i + 1 . "/" . $item['qty'],
-                  config('custom.labels_images_path') . $item['visual_id'] + 1 . ".jpg"
-                ]);
+                $labelsObject = new \stdClass();
+                $labelsObject->quoteNumber = $order->quoteNumber;
+                $labelsObject->material = $product['material'];
+                $labelsObject->line_item_name = $item['line_item_name'];
+                $labelsObject->size = $item['size'];
+                $labelsObject->system = ProductSystemEnum::getSystemNameAbbr($item['system']) . "/" . $item['part'];
+                $labelsObject->qty = $i + 1 . "/" . $item['qty'];
+                $labelsObject->image = config('custom.labels_images_path') . $item['visual_id'] + 1 . ".jpg";
+                $labels[] = $labelsObject;
               }
             }
+          }
+
+          $reverseCuttingList = array_reverse($labels);
+          foreach ($reverseCuttingList as $label) {
+            fputcsv($file, [
+              $label->quoteNumber,
+              $label->material,
+              $label->line_item_name,
+              $label->size,
+              $label->system,
+              $label->qty,
+              $label->image
+            ]);
           }
           
           fclose($file);

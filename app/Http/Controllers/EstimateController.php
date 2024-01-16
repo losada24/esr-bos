@@ -31,6 +31,7 @@ class EstimateController extends Controller
         return Inertia::render('Estimate/Index', [
           'estimates' => new OrderCollection(
             Order::estimates()
+              ->with(['products'])
               ->withCount('products')
               ->filter($request->only(['text']))
               ->orderBy('id', 'desc')

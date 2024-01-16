@@ -177,7 +177,7 @@ Route::middleware('auth')->group(function () {
       ->name('order.workOrder');
 
     Route::get('/order/show/{id}', [OrderController::class, 'show'])
-      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$PRODUCTION ])
+      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$PRODUCTION . "|" . RoleEnum::$CLIENT_ADMIN ])
       ->name('order.show');
 
     // PDF DOCUMENTS

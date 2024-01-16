@@ -73,7 +73,7 @@ const Header = ({ auth }: { auth: Auth }) => {
                                         </NavLink>
                                     </li>
                                     <li className="border-t border-white-light dark:border-white-light/10">
-                                        <button onClick={() => { router.post('logout') }} className="text-danger !py-3">
+                                        <button onClick={() => { router.post(route('logout')) }} className="text-danger !py-3">
                                             <SignOutIcon />
                                             Sign Out
                                         </button>

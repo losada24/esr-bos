@@ -10,13 +10,13 @@ use App\Products\SingleHuntProduct;
 trait Product {
 
   public function getCompanyMockup(): int {
-    $companyMockup = auth()->user()->company->mockup;
-    return $companyMockup ?? 0 ;
+    $companyMarkup = auth()->user()->company->markup;
+    return $companyMarkup ?? 0;
   }
 
   public function getCompanyPromotion(): int {
-    $companyMockup = auth()->user()->company->promotion;
-    return $companyMockup ?? 0 ;
+    $companyPromotion = auth()->user()->company->promotion;
+    return $companyPromotion ?? 0;
   }
 
   public function getMaterialColor($frame_color) {

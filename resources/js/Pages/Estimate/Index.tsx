@@ -10,6 +10,7 @@ import EyeIcon from '@/Components/Icons/EyeIcon'
 import { createMarkWithLeadingZero } from '@/Utils/mark'
 import MoneyIcon from '@/Components/Icons/MoneyIcon'
 import { isAdmin, isClientAdmin } from '@/Utils/user'
+import { formatPrice, getGrandTotal, getSubtotal } from '@/Utils/price'
 
 type IndexOrderProps = PageProps & {
   estimates: {
@@ -50,6 +51,8 @@ export default function Index ({ auth, estimates }: IndexOrderProps) {
                 <th className="px-6 pt-5 pb-4">Project</th>
                 <th className="px-6 pt-5 pb-4">Name</th>
                 <th className="px-6 pt-5 pb-4">Created At</th>
+                <th className="px-6 pt-5 pb-4">Subtotal</th>
+                <th className="px-6 pt-5 pb-4">Total</th>
                 <th className="px-6 pt-5 pb-4 w-14">Actions</th>
               </tr>
             </thead>
@@ -72,6 +75,12 @@ export default function Index ({ auth, estimates }: IndexOrderProps) {
                     </td>
                     <td className="border-t px-6 py-4 align-top">
                       {created_at?.toString()}
+                    </td>
+                    <td className="border-t px-6 py-4 align-top">
+                      {formatPrice(getSubtotal(estimate) ?? 0)}
+                    </td>
+                    <td className="border-t px-6 py-4 align-top">
+                      {formatPrice(getGrandTotal(estimate))}
                     </td>
                     <td className="border-t flex items-center px-6 py-4">
                         {(isAdmin(auth.user.roles.map((role: Role) => role.name)) || isClientAdmin(auth.user.roles.map((role: Role) => role.name))) && (productsCount ?? 0) > 0 && (
