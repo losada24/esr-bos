@@ -23,11 +23,6 @@ type IndexOrderProps = PageProps & {
 export default function Index ({ auth, orders }: IndexOrderProps) {
   const [showOrderModal, setShowOrderModal] = useState<boolean>(false)
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
-  /* const completeProduction = (id: number) => {
-    if (confirm('Are you sure you want complete this order?')) {
-      router.post(route('order.complete.production'), { id })
-    }
-  } */
 
   return (
       <AuthenticatedLayout
@@ -80,27 +75,18 @@ export default function Index ({ auth, orders }: IndexOrderProps) {
                         >
                           <EyeIcon />
                         </Link>
-                        {((
+                        {
                           (isAdmin(auth.user.roles.map((role: Role) => role.name)) ||
-                          isAccounting(auth.user.roles.map((role: Role) => role.name))) &&
-                            (order.status === ACCOUNTING_STATUS || order.status === PRODUCTION_COMPLETED)) ||
-                          ((
-                            (isAdmin(auth.user.roles.map((role: Role) => role.name)) ||
-                            isShipping(auth.user.roles.map((role: Role) => role.name))) &&
-                            order.status === READY_FOR_DELIVERY)) ||
-                          ((
-                            (isAdmin(auth.user.roles.map((role: Role) => role.name)) ||
-                            isProduction(auth.user.roles.map((role: Role) => role.name))) &&
-                            order.status === PRODUCTION_STATUS
-                          ))
-                        ) && (
+                          isAccounting(auth.user.roles.map((role: Role) => role.name)) ||
+                          isProduction(auth.user.roles.map((role: Role) => role.name)) ||
+                          isShipping(auth.user.roles.map((role: Role) => role.name))) && (
                           <button title='Change Order Status' onClick={() => {
                             setSelectedOrder(order)
                             setShowOrderModal(true)
                           }}>
                             <CheckIcon />
                           </button>
-                        )}
+                          )}
                         {/* ((isAdmin(auth.user.roles.map((role: Role) => role.name)) || isAccounting(auth.user.roles.map((role: Role) => role.name))) &&
                           order.status === PRODUCTION_STATUS) && (
                           <button title='Complete Production' onClick={() => { completeProduction(id) }}>

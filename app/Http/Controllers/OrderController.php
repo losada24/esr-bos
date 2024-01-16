@@ -52,28 +52,13 @@ class OrderController extends Controller
           ->with('success', 'Order updated successfully.');
     }
 
-    /* public function completeProduction(Request $request) 
-    {
-      $order = Order::find($request->id);
-      if( !$order )
-      {
-          throw new \Exception('Not not updated');
-      }
-
-      // TODO: Insert status history
-      $orderData = [
-        'status' => OrderStatusEnum::$PRODUCTION_COMPLETED
-      ];
-
-      $order->update($orderData);
-      return redirect()->route('order.index')
-          ->with('success', 'Order completed successfully.');
-    } */
-
     public function status(Order $order) {
       $statuses = [];
-      if (((auth()->user()->hasRole(RoleEnum::$ADMIN) || auth()->user()->hasRole(RoleEnum::$ACCOUNTING)) && 
-        ($order->status ==  OrderStatusEnum::$ACCOUNTING || $order->status ==  OrderStatusEnum::$PRODUCTION_COMPLETED))) {
+      if ((auth()->user()->hasRole(RoleEnum::$ADMIN) || auth()->user()->hasRole(RoleEnum::$ACCOUNTING)) && 
+        (
+          $order->status ==  OrderStatusEnum::$ACCOUNTING || 
+          $order->status ==  OrderStatusEnum::$PRODUCTION_COMPLETED
+        )) {
           if ($order->status ==  OrderStatusEnum::$ACCOUNTING) {
             $statuses = [
               OrderStatusEnum::$ESTIMATE,
@@ -86,14 +71,27 @@ class OrderController extends Controller
             ];
           }
       }
-      else if (((auth()->user()->hasRole(RoleEnum::$ADMIN) || auth()->user()->hasRole(RoleEnum::$PRODUCTION)) && 
-        $order->status ==  OrderStatusEnum::$PRODUCTION)) {
-        $statuses = [
-          OrderStatusEnum::$PARTIAL_PRODUCTION_COMPLETED,
-          OrderStatusEnum::$PRODUCTION_COMPLETED,
-          OrderStatusEnum::$SCHEDULED_PRODUCTION,
-          OrderStatusEnum::$PRODUCTION_IN_PROGRESS
-        ];
+      else if ((auth()->user()->hasRole(RoleEnum::$ADMIN) || auth()->user()->hasRole(RoleEnum::$PRODUCTION)) && 
+        (
+          $order->status ==  OrderStatusEnum::$PRODUCTION ||
+          $order->status ==  OrderStatusEnum::$PRODUCTION_IN_PROGRESS ||
+          $order->status == OrderStatusEnum::$SCHEDULED_PRODUCTION
+        )) {
+
+        if ($order->status ==  OrderStatusEnum::$PRODUCTION) {
+          $statuses = [
+            OrderStatusEnum::$SCHEDULED_PRODUCTION,
+          ];
+        } else if ($order->status ==  OrderStatusEnum::$SCHEDULED_PRODUCTION) {
+          $statuses = [
+            OrderStatusEnum::$PRODUCTION_IN_PROGRESS
+          ];
+        } else {
+          $statuses = [
+            OrderStatusEnum::$PARTIAL_PRODUCTION_COMPLETED,
+            OrderStatusEnum::$PRODUCTION_COMPLETED
+          ];
+        } 
       }
       else if (((auth()->user()->hasRole(RoleEnum::$ADMIN) || auth()->user()->hasRole(RoleEnum::$SHIPPING)) && 
         $order->status ==  OrderStatusEnum::$READY_FOR_DELIVERY)) {

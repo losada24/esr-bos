@@ -4,12 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Enum\ProductSystemEnum;
 use App\Models\Order;
+use App\Traits\Fractions;
 use App\Traits\Product;
 use Illuminate\Http\Request;
 
 class LabelController extends Controller
 {
-    use Product;
+    use Product, Fractions;
 
     public function labelsByPieces(Order $order) {
       $fileName = 'Orders.csv';
@@ -93,7 +94,7 @@ class LabelController extends Controller
                 $product->frame_color,
                 isset($product->extras['config']) ? $product->extras['config'] : '',
                 $product->glass_type,
-                $product->width . " x " . $product->height . " inches",
+                $this->getNumberWithFraction($product->width)  . " x " . $this->getNumberWithFraction($product->height) . " inches",
                 ProductSystemEnum::getSystemPressure($product->system),
                 ProductSystemEnum::getSystemNoa($product->system)
               ]);
