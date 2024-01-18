@@ -80,7 +80,7 @@ export default function Show ({ auth, order }: PageProps & {
                       </button>
                     )}
                     {(isAdmin(auth.user.roles.map((role: Role) => role.name)) || isAccounting(auth.user.roles.map((role: Role) => role.name)) || isDealer(auth.user.roles.map((role: Role) => role.name))) && (
-                      <PrintEstimateButton id={order.id} />
+                      <PrintEstimateButton id={order.id} user={auth.user} />
                     )}
                 </div>
               </Panel>
