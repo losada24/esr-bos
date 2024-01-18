@@ -6,13 +6,12 @@ import { type PageProps, type Order, type Company } from '@/types'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
 import { createTw } from 'react-pdf-tailwind'
 import ReportHeader from './ReportHeader'
-import ReportProduct from './ReportProduct'
+import EstimateProduct from './ReportProduct'
 import ReportSignature from './ReportSignature'
 import PrintEstimateOrderButton from '@/Pages/Pdf/PrintEstimateOrderButton'
 
 import logo from '../../../assets/images/logo-reylosglass.png'
 import ReportCompany from './ReportCompany'
-import EstimateTotal from './EstimateTotal'
 import { Notes } from './Notes'
 import Pagination from './Pagination'
 
@@ -41,7 +40,7 @@ const EstimateWithoutPrices = ({ order, auth, company }: IndexOrderProps) => {
           auth={auth}
           pageTitle={`Estimate without Prices: ${order.name}`}
           actions={
-            <PrintEstimateOrderButton id={order.id} status={order.status} />
+            <PrintEstimateOrderButton id={order.id} status={order.status} user={auth.user} />
           }
       >
         <Head title={`Estimate without Prices: ${order.name}`} />
@@ -57,7 +56,7 @@ const EstimateWithoutPrices = ({ order, auth, company }: IndexOrderProps) => {
             }} logo={logo} isForClient={true} />
             <ReportCompany order={order} isForClient={true} />
             {order?.products?.map((product, index) => {
-              return <ReportProduct product={product} key={index} showPrices={false} />
+              return <EstimateProduct product={product} key={index} showPrices={false} />
             })}
             {order.notes !== null && (
               <Notes notes={order.notes ?? ''} />

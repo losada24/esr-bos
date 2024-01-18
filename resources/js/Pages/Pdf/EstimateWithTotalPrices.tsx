@@ -6,7 +6,7 @@ import { type PageProps, type Order, type Company } from '@/types'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
 import { createTw } from 'react-pdf-tailwind'
 import ReportHeader from './ReportHeader'
-import ReportProduct from './ReportProduct'
+import EstimateProduct from './ReportProduct'
 import ReportSignature from './ReportSignature'
 import PrintEstimateOrderButton from '@/Pages/Pdf/PrintEstimateOrderButton'
 
@@ -41,7 +41,7 @@ const EstimateWithTotalPrices = ({ order, auth, company }: IndexOrderProps) => {
           auth={auth}
           pageTitle={`Estimate with Total Prices: ${order.name}`}
           actions={
-            <PrintEstimateOrderButton id={order.id} status={order.status} />
+            <PrintEstimateOrderButton id={order.id} status={order.status} user={auth.user} />
           }
       >
         <Head title={`Estimate with Total Prices: ${order.name}`} />
@@ -57,7 +57,7 @@ const EstimateWithTotalPrices = ({ order, auth, company }: IndexOrderProps) => {
             }} logo={logo} isForClient={true} />
             <ReportCompany order={order} isForClient={true} />
             {order?.products?.map((product, index) => {
-              return <ReportProduct product={product} key={index} showPrices={false} />
+              return <EstimateProduct product={product} key={index} showPrices={false} />
             })}
             <EstimateTotal order={order} />
             {order.notes !== null && (

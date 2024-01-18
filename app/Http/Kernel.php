@@ -66,8 +66,8 @@ class Kernel extends HttpKernel
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'role' => \Spatie\Permission\Middlewares\RoleMiddleware::class,
-        'validate.order.owner' => \App\Http\Middleware\ValidateOrderOwner::class,
-        'validate.order.owner.by.id' => \App\Http\Middleware\ValidateOrderOwnerById::class,
+        'validate.estimate.owner' => \App\Http\Middleware\ValidateEstimateOwner::class,
         'checkUserCreatedByField' => \App\Http\Middleware\CheckUserCreatedByField::class,
+        'validate.estimate.status' => \App\Http\Middleware\ValidateEstimateStatus::class,
     ];
 }

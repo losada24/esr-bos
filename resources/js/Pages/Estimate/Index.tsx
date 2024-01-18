@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
 import { Head, Link, router } from '@inertiajs/react'
 import EditIcon from '@/Components/Icons/EditIcon'
@@ -9,8 +9,11 @@ import EstimateFilter from './EstimateFilter'
 import EyeIcon from '@/Components/Icons/EyeIcon'
 import { createMarkWithLeadingZero } from '@/Utils/mark'
 import MoneyIcon from '@/Components/Icons/MoneyIcon'
-import { isAdmin, isClientAdmin } from '@/Utils/user'
-import { formatPrice, getGrandTotal, getSubtotal } from '@/Utils/price'
+import CheckIcon from '@/Components/Icons/CheckIcon'
+import { isAdmin, isDealer, isSubDealer } from '@/Utils/user'
+import { formatPrice, getDealerGrandTotal, getDealerSubtotal } from '@/Utils/price'
+import OrderUpdateStatusModal from '@/Pages/Order/OrderUpdateStatusModal'
+import { ESTIMATE_STATUS, SUB_DEALER_ESTIMATE } from '@/Utils/constants'
 
 type IndexOrderProps = PageProps & {
   estimates: {
@@ -22,6 +25,8 @@ type IndexOrderProps = PageProps & {
 }
 
 export default function Index ({ auth, estimates }: IndexOrderProps) {
+  const [showOrderModal, setShowOrderModal] = useState<boolean>(false)
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const destroy = (id: number) => {
     if (confirm('Are you sure you want to delete this Estimate?')) {
       router.delete(route('estimate.destroy', id))
@@ -58,7 +63,8 @@ export default function Index ({ auth, estimates }: IndexOrderProps) {
             </thead>
             <tbody>
               {estimates.data.map((estimate) => {
-                const { id, name, project_name, created_at, productsCount } = estimate
+                // console.log(auth.user.id, estimate.user_id)
+                const { id, name, project_name, created_at } = estimate
                 return (
                   <tr
                     key={id}
@@ -77,13 +83,21 @@ export default function Index ({ auth, estimates }: IndexOrderProps) {
                       {created_at?.toString()}
                     </td>
                     <td className="border-t px-6 py-4 align-top">
-                      {formatPrice(getSubtotal(estimate) ?? 0)}
+                      {formatPrice(getDealerSubtotal(estimate) ?? 0)}
                     </td>
                     <td className="border-t px-6 py-4 align-top">
-                      {formatPrice(getGrandTotal(estimate))}
+                      {formatPrice(getDealerGrandTotal(estimate))}
                     </td>
                     <td className="border-t flex items-center px-6 py-4">
-                        {(isAdmin(auth.user.roles.map((role: Role) => role.name)) || isClientAdmin(auth.user.roles.map((role: Role) => role.name))) && (productsCount ?? 0) > 0 && (
+                        {((isSubDealer(auth.user.roles.map((role: Role) => role.name)) && estimate.status === SUB_DEALER_ESTIMATE) || (isDealer(auth.user.roles.map((role: Role) => role.name)) && estimate.user_id !== auth.user.id)) && (
+                          <button title='Change Order Status' onClick={() => {
+                            setSelectedOrder(estimate)
+                            setShowOrderModal(true)
+                          }} className='mr-2'>
+                            <CheckIcon />
+                          </button>
+                        )}
+                        {(isAdmin(auth.user.roles.map((role: Role) => role.name)) || isDealer(auth.user.roles.map((role: Role) => role.name))) && (
                           <Link href={route('estimate.order', id) } className='mr-2' title='Create Order'>
                             <MoneyIcon />
                           </Link>
@@ -95,18 +109,24 @@ export default function Index ({ auth, estimates }: IndexOrderProps) {
                         >
                           <EyeIcon />
                         </Link>
-                        <Link
-                          href={route('estimate.edit', id)}
-                          title='Edit Estimate'
-                        >
-                          <EditIcon />
-                        </Link>
-                        <button
-                          onClick={() => { destroy(id) }}
-                          title='Delete Estimate'
-                        >
-                          <DeleteIcon />
-                        </button>
+                        {((isSubDealer(auth.user.roles.map((role: Role) => role.name)) && estimate.status === SUB_DEALER_ESTIMATE) ||
+                         ((isDealer(auth.user.roles.map((role: Role) => role.name)) || isAdmin(auth.user.roles.map((role: Role) => role.name))) && estimate.status === ESTIMATE_STATUS)) && (
+                          <>
+                            <Link
+                              href={route('estimate.edit', id)}
+                              title='Edit Estimate'
+                            >
+                              <EditIcon />
+                            </Link>
+
+                            <button
+                            onClick={() => { destroy(id) }}
+                            title='Delete Estimate'
+                            >
+                            <DeleteIcon />
+                            </button>
+                          </>
+                        )}
                     </td>
                   </tr>
                 )
@@ -122,6 +142,14 @@ export default function Index ({ auth, estimates }: IndexOrderProps) {
           </table>
         </div>
         <Pagination links={estimates.meta.links} />
+        <OrderUpdateStatusModal
+          showModal={showOrderModal}
+          onClose={() => {
+            setShowOrderModal(false)
+            setSelectedOrder(null)
+          }}
+          order={selectedOrder}
+        />
       </AuthenticatedLayout>
   )
 }

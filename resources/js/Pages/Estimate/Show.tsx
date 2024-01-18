@@ -1,6 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
 import { Head, router, Link } from '@inertiajs/react'
-import { type PageProps, type Order, type Client } from '@/types'
+import { type PageProps, type Order, type Client, Role, Product } from '@/types'
 import Panel from '@/Components/Panel'
 import EditIcon from '@/Components/Icons/EditIcon'
 import PlusIcon from '@/Components/Icons/PlusIcon'
@@ -9,10 +9,12 @@ import AngleIcon from '@/Components/Icons/AngleIcon'
 import DeleteIcon from '@/Components/Icons/DeleteIcon'
 import PriceSummary from './PriceSummary'
 import { createMarkWithLeadingZero } from '@/Utils/mark'
-import { PRODUCT_SYSTEMS, ESTIMATE_STATUS } from '@/Utils/constants'
+import { PRODUCT_SYSTEMS, ESTIMATE_STATUS, SUB_DEALER_ESTIMATE } from '@/Utils/constants'
 import MoneyIcon from '@/Components/Icons/MoneyIcon'
 import PrintEstimateButton from './PrintEstimateButton'
 import { getNumberWithFraction } from '@/Utils/numbers'
+import { isDealer, isSubDealer, isAdmin } from '@/Utils/user'
+import { formatPrice, getDealerTotalPrice, getDealerUnitPrice } from '@/Utils/price'
 
 export default function Create ({ auth, estimate }: PageProps & {
   clients: Client[]
@@ -73,54 +75,59 @@ export default function Create ({ auth, estimate }: PageProps & {
                   </div>
                 </div>
                 <div className="flex flex-col gap-y-2 border-t border-white-light dark:border-white/10 py-2">
-                  {estimate.status === ESTIMATE_STATUS && (
+                  {(estimate.status === ESTIMATE_STATUS || estimate.status === SUB_DEALER_ESTIMATE) && (
                     <>
-                      <div className='dropdown'>
-                        <Dropdown
-                            placement='bottom-start'
-                            btnClassName="btn btn-primary w-full gap-2 dropdown-toggle"
-                            button={
-                                <>
-                                    <PlusIcon />
-                                    Add Products
-                                    <span>
-                                      <AngleIcon />
-                                    </span>
-                                </>
-                            }
-                        >
-                            <ul className="w-full">
-                                <li>
-                                    <button onClick={() => {
-                                      router.get(route('fixed-windows.create', estimate.id))
-                                    }}>Fixed Windows</button>
-                                </li>
-                                <li>
-                                    <button onClick={() => {
-                                      router.get(route('single-hunt.create', estimate.id))
-                                    }}>Single Hung</button>
-                                </li>
-                                <li>
-                                    <button onClick={() => {
-                                      router.get(route('horizontal-roller.create', estimate.id))
-                                    }}>Horizontal Roller</button>
-                                </li>
-                            </ul>
-                        </Dropdown>
-                      </div>
-                      <Link href= { route('estimate.edit', estimate.id) } className="btn btn-success w-full gap-2">
-                        <EditIcon />
-                        Edit Estimate
-                      </Link>
-                      {(estimate.products?.length ?? 0) > 0 && (
+                      {((isSubDealer(auth.user.roles.map((role: Role) => role.name)) && estimate.status === SUB_DEALER_ESTIMATE) ||
+                        ((isDealer(auth.user.roles.map((role: Role) => role.name)) || isAdmin(auth.user.roles.map((role: Role) => role.name))) && estimate.status === ESTIMATE_STATUS)) && (
+                        <>
+                          <div className='dropdown'>
+                            <Dropdown
+                                placement='bottom-start'
+                                btnClassName="btn btn-primary w-full gap-2 dropdown-toggle"
+                                button={
+                                    <>
+                                        <PlusIcon />
+                                        Add Products
+                                        <span>
+                                          <AngleIcon />
+                                        </span>
+                                    </>
+                                }
+                            >
+                                <ul className="w-full">
+                                    <li>
+                                        <button onClick={() => {
+                                          router.get(route('fixed-windows.create', estimate.id))
+                                        }}>Fixed Windows</button>
+                                    </li>
+                                    <li>
+                                        <button onClick={() => {
+                                          router.get(route('single-hunt.create', estimate.id))
+                                        }}>Single Hung</button>
+                                    </li>
+                                    <li>
+                                        <button onClick={() => {
+                                          router.get(route('horizontal-roller.create', estimate.id))
+                                        }}>Horizontal Roller</button>
+                                    </li>
+                                </ul>
+                            </Dropdown>
+                          </div>
+                          <Link href= { route('estimate.edit', estimate.id) } className="btn btn-success w-full gap-2">
+                            <EditIcon />
+                            Edit Estimate
+                          </Link>
+                        </>
+                      )}
+                      {isDealer(auth.user.roles.map((role: Role) => role.name)) && (estimate.products?.length ?? 0) > 0 && (
                         <Link href={ route('estimate.order', estimate.id) } className="btn btn-secondary w-full gap-2">
-                            <MoneyIcon color='#fff' />
-                            Crear Order
+                          <MoneyIcon color='#fff' />
+                          Crear Order
                         </Link>
                       )}
                     </>
                   )}
-                  <PrintEstimateButton id={estimate.id} />
+                  <PrintEstimateButton id={estimate.id} user={auth.user} />
                 </div>
               </Panel>
             </div>
@@ -137,13 +144,16 @@ export default function Create ({ auth, estimate }: PageProps & {
                       <th className="px-6 pt-5 pb-4">Glass</th>
                       <th className="px-6 pt-5 pb-4 text-right">Price</th>
                       <th className="px-6 pt-5 pb-4 text-right">Amount</th>
-                      {estimate.status === ESTIMATE_STATUS && (
+                      {((isSubDealer(auth.user.roles.map((role: Role) => role.name)) && estimate.status === SUB_DEALER_ESTIMATE) ||
+                      ((isDealer(auth.user.roles.map((role: Role) => role.name)) || isAdmin(auth.user.roles.map((role: Role) => role.name))) && estimate.status === ESTIMATE_STATUS)) && (
                         <th className="px-6 pt-5 pb-4 w-14">Actions</th>
                       )}
                     </tr>
                   </thead>
                   <tbody>
-                    {estimate.products?.map(({ id, system, line_item_name, qty, width, height, frame_color, glass_type, unit_price, total_price }) => (
+                    {estimate.products?.map((product: Product) => {
+                      const { id, system, line_item_name, qty, width, height, frame_color, glass_type } = product
+                      return (
                         <tr
                           key={id}
                           className="hover:bg-gray-100 focus-within:bg-gray-100"
@@ -167,31 +177,33 @@ export default function Create ({ auth, estimate }: PageProps & {
                             {glass_type}
                           </td>
                           <td className="border-t px-6 py-4 align-top text-right">
-                            ${unit_price}
+                            {formatPrice(getDealerUnitPrice(product, estimate))}
                           </td>
                           <td className="border-t px-6 py-4 align-top text-right">
-                            ${total_price}
+                            {formatPrice(getDealerTotalPrice(product, estimate))}
                           </td>
-                          {estimate.status === ESTIMATE_STATUS && (
+                          {((isSubDealer(auth.user.roles.map((role: Role) => role.name)) && estimate.status === SUB_DEALER_ESTIMATE) ||
+                          ((isDealer(auth.user.roles.map((role: Role) => role.name)) || isAdmin(auth.user.roles.map((role: Role) => role.name))) && estimate.status === ESTIMATE_STATUS)) && (
                             <td className="border-t flex items-center px-6 py-4">
-                                <button
-                                  onClick={() => { router.get(getUrlBySystem(system, id)) }}
-                                >
-                                  <EditIcon />
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    if (confirm('Are you sure you want to delete this product?')) {
-                                      router.delete(route('product.destroy', id))
-                                    }
-                                  }}
-                                >
-                                  <DeleteIcon />
-                                </button>
-                            </td>
+                              <button
+                                onClick={() => { router.get(getUrlBySystem(system, id)) }}
+                              >
+                                <EditIcon />
+                              </button>
+                              <button
+                                onClick={() => {
+                                  if (confirm('Are you sure you want to delete this product?')) {
+                                    router.delete(route('product.destroy', id))
+                                  }
+                                }}
+                              >
+                                <DeleteIcon />
+                              </button>
+                          </td>
                           )}
                         </tr>
-                    ))
+                      )
+                    })
                     }
                     {estimate.products?.length === 0 && (
                       <tr>

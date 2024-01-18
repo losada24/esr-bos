@@ -4,7 +4,7 @@ import { useStore, type ThemeState } from '@/Store/theme'
 import NavLink from '@/Components/NavLink'
 import { router } from '@inertiajs/react'
 import SignOutIcon from '@/Components/Icons/SignOutIcon'
-import { isAdmin } from '@/Utils/user'
+import { getRoleName } from '@/Utils/user'
 import { type Role, type Auth } from '@/types'
 import { COMPANY_NAME } from '@/Utils/constants'
 import ProfileImage from '@/Components/ProfileImage'
@@ -57,7 +57,7 @@ const Header = ({ auth }: { auth: Auth }) => {
                                                 <h4 className="text-base">
                                                     {ellipse(auth.user.name, 10)}
                                                     <span className="text-xs bg-success-light rounded text-success px-1 ltr:ml-2 rtl:ml-2">
-                                                      {isAdmin(auth.user.roles.map((role: Role) => role.name)) ? 'Admin' : 'User'}
+                                                      {getRoleName(auth.user.roles.map((role: Role) => role.name))}
                                                     </span>
                                                 </h4>
                                                 <button type="button" className="text-black/60 hover:text-primary dark:text-dark-light/60 dark:hover:text-white">

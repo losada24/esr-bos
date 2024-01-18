@@ -34,4 +34,8 @@ export interface Order {
   balances?: Balance[]
   payments?: PaymentInfo[]
   orderCuttingList?: CuttingListProducts[]
+  company_markup?: number
+  user_markup?: number
+  company_promotion?: number
+  user_id?: number
 }

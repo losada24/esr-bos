@@ -39,6 +39,7 @@ class Order extends Model
       'glass_type',
       'company_markup',
       'company_promotion',
+      'user_markup'
     ];
 
     protected $dispatchesEvents = [
@@ -74,11 +75,7 @@ class Order extends Model
      */
     public function scopeOrders(Builder $query): void
     {
-        if (auth()->user()->hasRole(RoleEnum::$CLIENT_ADMIN)) {
-          $query->where('company_id', auth()->user()->company_id)
-            ->where('status', '<>', OrderStatusEnum::$ESTIMATE);
-        }
-        else if (auth()->user()->hasRole(RoleEnum::$ACCOUNTING)) {
+        if (auth()->user()->hasRole(RoleEnum::$ACCOUNTING)) {
           $query->where('status', OrderStatusEnum::$ACCOUNTING)
             ->orWhere('status', OrderStatusEnum::$PRODUCTION_COMPLETED)
             ->orWhere('status', OrderStatusEnum::$PRODUCTION)
@@ -95,6 +92,17 @@ class Order extends Model
         else if (auth()->user()->hasRole(RoleEnum::$SHIPPING)) {
           $query->where('status', OrderStatusEnum::$READY_FOR_DELIVERY);
         }
+        else if (auth()->user()->hasRole(RoleEnum::$SUB_DEALER)) {
+          $query->where('user_id', auth()->user()->id)
+            ->where(function (Builder $query) {
+              $query->where('status', '<>', OrderStatusEnum::$SUB_DEALER_ESTIMATE)
+                ->where('status', '<>', OrderStatusEnum::$ESTIMATE);
+            });
+        }
+        else if (auth()->user()->hasRole(RoleEnum::$DEALER)) {
+          $query->where('company_id', auth()->user()->company_id)
+            ->where('status', '<>', OrderStatusEnum::$ESTIMATE);
+        }
         else if (auth()->user()->hasRole(RoleEnum::$ADMIN)) {
           $query->where('status', '<>', OrderStatusEnum::$ESTIMATE);
         }
@@ -105,13 +113,17 @@ class Order extends Model
      */
     public function scopeEstimates(Builder $query): void
     {
-        $query->where('status', OrderStatusEnum::$ESTIMATE);
-
-        if (auth()->user()->hasRole(RoleEnum::$CLIENT_ADMIN)) {
-          $query->where('company_id', auth()->user()->company_id);
-        }
-        else if (auth()->user()->hasRole(RoleEnum::$CLIENT)) {
-          $query->where('user_id', auth()->user()->id);
+        if (auth()->user()->hasRole(RoleEnum::$DEALER)) {
+          $query->where('company_id', auth()->user()->company_id)
+            ->where('status', OrderStatusEnum::$ESTIMATE);
+        } else if (auth()->user()->hasRole(RoleEnum::$SUB_DEALER)) {
+          $query->orWhere(function(Builder $query) {
+            $query->where('status', OrderStatusEnum::$SUB_DEALER_ESTIMATE)
+              ->orWhere('status', OrderStatusEnum::$ESTIMATE);
+          })->where('user_id', auth()->user()->id);
+        } else {
+          $query->where('status', OrderStatusEnum::$ESTIMATE)
+            ->orWhere('status', OrderStatusEnum::$SUB_DEALER_ESTIMATE);
         }
     }
 

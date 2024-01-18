@@ -5,6 +5,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\Order;
 use App\Enum\OrderStatusEnum;
+use App\Enum\RoleEnum;
 
 class CreateEstimate {
 
@@ -13,6 +14,12 @@ class CreateEstimate {
       DB::beginTransaction();
 
       try {
+
+        $estimateStatus = OrderStatusEnum::$ESTIMATE;
+        if (auth()->user()->hasRole(RoleEnum::$SUB_DEALER)) {
+          $estimateStatus = OrderStatusEnum::$SUB_DEALER_ESTIMATE;
+        }
+
         $estimate = Order::create([
           'name' => $request->name,
           'project_name' => $request->project_name,
@@ -24,7 +31,7 @@ class CreateEstimate {
           'notes' => $request->notes,
           'user_id' => auth()->user()->id,
           'company_id' => auth()->user()->company_id,
-          'status' => OrderStatusEnum::$ESTIMATE,
+          'status' => $estimateStatus,
           'tax_rate' => $request->tax_rate,
           'installation' => $request->installation,
           'permit' => $request->permit,
@@ -32,6 +39,7 @@ class CreateEstimate {
           'external_purchase_id' => $request->external_purchase_id,
           'company_markup' => auth()->user()->company->markup,
           'company_promotion' => auth()->user()->company->promotion,
+          'user_markup' => auth()->user()->markup,
         ]);
         
         if( !$estimate )
@@ -40,8 +48,8 @@ class CreateEstimate {
         }
 
         $estimate->orderStatus()->create([
-          'status' => OrderStatusEnum::$ESTIMATE,
-          'notes' => "Estimate created by " . auth()->user()->name
+          'status' => $estimateStatus,
+          'notes' => "$estimateStatus created by " . auth()->user()->name
         ]);
 
         DB::commit();

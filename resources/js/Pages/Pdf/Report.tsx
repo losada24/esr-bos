@@ -41,7 +41,7 @@ const Report = ({ order, auth }: IndexOrderProps) => {
           auth={auth}
           pageTitle={`Report: ${order.name}`}
           actions={
-            <PrintEstimateOrderButton id={order.id} status={order.status} />
+            <PrintEstimateOrderButton id={order.id} status={order.status} user={auth.user} />
           }
       >
         <Head title={`Report: ${order.name}`} />

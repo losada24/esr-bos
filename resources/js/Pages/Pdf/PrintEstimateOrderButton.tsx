@@ -3,9 +3,11 @@ import Dropdown from '@/Components/Dropdown'
 import PrintIcon from '@/Components/Icons/PrintIcon'
 import AngleIcon from '@/Components/Icons/AngleIcon'
 import { Link } from '@inertiajs/react'
-import { ESTIMATE_STATUS } from '@/Utils/constants'
+import { ESTIMATE_STATUS, SUB_DEALER_ESTIMATE } from '@/Utils/constants'
+import PdfLinks from './PdfLinks'
+import { type User } from '@/types'
 
-const PrintEstimateOrderButton = ({ id, status }: { id: number, status?: string }) => {
+const PrintEstimateOrderButton = ({ id, status, user }: { id: number, status?: string, user: User }) => {
   return (
     <div className='dropdown'>
       <Dropdown
@@ -22,37 +24,10 @@ const PrintEstimateOrderButton = ({ id, status }: { id: number, status?: string 
         }
       >
         <ul className="ltr:right-0 rtl:left-0 whitespace-nowrap">
+          <PdfLinks id={id} user={user} />
           <li>
             <Link
-              href={route('pdf.report', id)}
-            >
-              Cost Report
-            </Link>
-          </li>
-          <li>
-            <Link
-              href={route('pdf.estimate.with.prices', id)}
-            >
-              Estimate with Prices
-            </Link>
-          </li>
-          <li>
-            <Link
-              href={route('pdf.estimate.without.prices', id)}
-            >
-              Estimate without Prices
-            </Link>
-          </li>
-          <li>
-            <Link
-              href={route('pdf.estimate.with.total.prices', id)}
-            >
-              Estimate only Total Prices
-            </Link>
-          </li>
-          <li>
-            <Link
-              href={status === ESTIMATE_STATUS ? route('estimate.show', id) : route('order.show', id)}
+              href={(status === ESTIMATE_STATUS || status === SUB_DEALER_ESTIMATE) ? route('estimate.show', id) : route('order.show', id)}
             >
               Go to Back
             </Link>

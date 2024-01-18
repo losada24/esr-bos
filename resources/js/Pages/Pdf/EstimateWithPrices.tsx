@@ -15,6 +15,7 @@ import ReportCompany from './ReportCompany'
 import EstimateTotal from './EstimateTotal'
 import { Notes } from './Notes'
 import Pagination from './Pagination'
+import EstimateProduct from './EstimateProduct'
 
 type IndexOrderProps = PageProps & {
   order: Order
@@ -41,7 +42,7 @@ const EstimateWithPrices = ({ order, auth, company }: IndexOrderProps) => {
           auth={auth}
           pageTitle={`Estimate with Prices: ${order.name}`}
           actions={
-            <PrintEstimateOrderButton id={order.id} status={order.status} />
+            <PrintEstimateOrderButton id={order.id} status={order.status} user={auth.user} />
           }
       >
         <Head title={`Estimate with Prices: ${order.name}`} />
@@ -57,7 +58,7 @@ const EstimateWithPrices = ({ order, auth, company }: IndexOrderProps) => {
             }} logo={logo} isForClient={true} />
             <ReportCompany order={order} isForClient={true} />
             {order?.products?.map((product, index) => {
-              return <ReportProduct product={product} key={index} showPrices={true} />
+              return <EstimateProduct product={product} key={index} showPrices={true} estimate={order} />
             })}
             <EstimateTotal order={order} />
             {order.notes !== null && (

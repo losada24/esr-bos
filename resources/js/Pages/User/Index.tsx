@@ -5,7 +5,7 @@ import DeleteIcon from '@/Components/Icons/DeleteIcon'
 import { type PageProps, type User, type PaginatorLink, type Role } from '@/types'
 import Pagination from '@/Components/Pagination'
 import UserFilter from './UserFilter'
-import { isAdmin } from '@/Utils/user'
+import { isAdmin, getRoleName } from '@/Utils/user'
 
 type IndexUserProps = PageProps & {
   users: {
@@ -65,7 +65,7 @@ export default function Index ({ auth, users }: IndexUserProps) {
                       {email}
                     </td>
                     <td className="border-t px-6 py-4 align-top">
-                      {roles.map(({ name }) => name).join(', ') || 'N/A'}
+                      {getRoleName(roles.map(({ name }) => name))}
                     </td>
                     {IS_ADMIN && (
                       <td className="border-t px-6 py-4 align-top">

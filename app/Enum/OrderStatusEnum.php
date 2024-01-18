@@ -5,6 +5,7 @@ namespace App\Enum;
 class OrderStatusEnum
 {
     public static $ESTIMATE = 'estimate';
+    public static $SUB_DEALER_ESTIMATE = 'sub_dealer_estimate';
     public static $ACCOUNTING = 'accounting';
     public static $PRODUCTION = 'production';
     public static $PRODUCTION_COMPLETED = 'production completed';

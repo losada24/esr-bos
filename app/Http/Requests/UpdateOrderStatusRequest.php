@@ -43,6 +43,7 @@ class UpdateOrderStatusRequest extends FormRequest
                 OrderStatusEnum::$PARTIAL_DELIVERED,
                 OrderStatusEnum::$PRODUCTION_IN_PROGRESS,
                 OrderStatusEnum::$SCHEDULED_PRODUCTION,
+                OrderStatusEnum::$SUB_DEALER_ESTIMATE
               ])
             ]
         ];

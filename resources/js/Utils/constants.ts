@@ -7,6 +7,7 @@ export type Animation = 'animate__fadeIn' | 'animate__fadeInDown' | 'animate__fa
 export type Navbar = 'navbar-sticky' | 'navbar-floating' | 'navbar-static'
 
 export const ESTIMATE_STATUS: string = 'estimate'
+export const SUB_DEALER_ESTIMATE: string = 'sub_dealer_estimate'
 export const ACCOUNTING_STATUS: string = 'accounting'
 export const PRODUCTION_STATUS: string = 'production'
 export const PRODUCTION_COMPLETED: string = 'production completed'
@@ -52,8 +53,9 @@ export const THEME_CONFIG: ThemeConfig = {
 
 export const ROLES = {
   ADMIN: 'admin',
-  CLIENT_ADMIN: 'client_admin',
-  CLIENT: 'client',
+  ACCOUNT_MANAGER: 'account_manager',
+  DEALER: 'dealer',
+  SUB_DEALER: 'sub_dealer',
   ACCOUNTING: 'accounting',
   PRODUCTION: 'production',
   SHIPPING: 'shipping'

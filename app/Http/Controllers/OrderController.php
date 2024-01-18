@@ -48,8 +48,11 @@ class OrderController extends Controller
     public function statusUpdate(UpdateOrderStatusRequest $updateOrderStatusRequest, ProduceOrder $produceOrder) 
     {
       $produceOrder->handle($updateOrderStatusRequest);
-      return redirect()->route('order.index')
-          ->with('success', 'Order updated successfully.');
+      return redirect()
+          ->back()
+          ->with('success', 'Status updated successfully.');
+      /*return redirect()->route('order.index')
+          ->with('success', 'Order updated successfully.');*/
     }
 
     public function status(Order $order) {
@@ -99,6 +102,16 @@ class OrderController extends Controller
           OrderStatusEnum::$DELIVERED,
           OrderStatusEnum::$PARTIAL_DELIVERED
         ];
+      }
+      else if (auth()->user()->hasRole(RoleEnum::$SUB_DEALER) && $order->status ==  OrderStatusEnum::$SUB_DEALER_ESTIMATE) {
+          $statuses = [
+            OrderStatusEnum::$ESTIMATE
+          ];
+      }
+      else if (auth()->user()->hasRole(RoleEnum::$DEALER) && $order->status == OrderStatusEnum::$ESTIMATE) {
+          $statuses = [
+            OrderStatusEnum::$SUB_DEALER_ESTIMATE
+          ];
       }
 
       return response()->json($statuses);

@@ -40,8 +40,10 @@ class Client extends Model
     protected static function booted(): void
     {
       static::addGlobalScope('role', function (Builder $query) {
-        if (auth()->user()->hasRole(RoleEnum::$CLIENT_ADMIN ) || auth()->user()->hasRole(RoleEnum::$CLIENT)) {
+        if (auth()->user()->hasRole(RoleEnum::$DEALER )) {
           $query->where('company_id', auth()->user()->company_id);
+        } else if (auth()->user()->hasRole(RoleEnum::$SUB_DEALER )) {
+          $query->where('user_id', auth()->user()->id);
         }
       });
     }

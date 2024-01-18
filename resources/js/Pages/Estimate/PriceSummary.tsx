@@ -1,5 +1,5 @@
 import { type Order } from '@/types'
-import { getSubtotal, getTaxAmount, getGrandTotal, getSubtotalWithMarkup, formatPrice } from '@/Utils/price'
+import { getDealerSubtotal, getDealerTaxAmount, getDealerGrandTotal, getDealerSubtotalWithMarkup, formatPrice } from '@/Utils/price'
 
 const PriceSummary = ({ estimate }: { estimate: Order }) => {
   return (
@@ -8,11 +8,11 @@ const PriceSummary = ({ estimate }: { estimate: Order }) => {
         <div className="space-y-2 ltr:text-right rtl:text-left">
             <div className="flex items-center">
                 <div className="flex-1">Subtotal</div>
-                <div className="w-[37%]">{`${formatPrice(getSubtotal(estimate) ?? 0)}`}</div>
+                <div className="w-[37%]">{`${formatPrice(getDealerSubtotal(estimate) ?? 0)}`}</div>
             </div>
             <div className="flex items-center">
                 <div className="flex-1">Estimate Subtotal</div>
-                <div className="w-[37%]">{`${formatPrice(getSubtotalWithMarkup(estimate) ?? 0)}`}</div>
+                <div className="w-[37%]">{`${formatPrice(getDealerSubtotalWithMarkup(estimate) ?? 0)}`}</div>
             </div>
             <div className="flex items-center">
                 <div className="flex-1">Tax Rate</div>
@@ -20,7 +20,7 @@ const PriceSummary = ({ estimate }: { estimate: Order }) => {
             </div>
             <div className="flex items-center">
                 <div className="flex-1">Tax Amount</div>
-                <div className="w-[37%]">{`${formatPrice(getTaxAmount(estimate) ?? 0)}`}</div>
+                <div className="w-[37%]">{`${formatPrice(getDealerTaxAmount(estimate) ?? 0)}`}</div>
             </div>
             <div className="flex items-center">
                 <div className="flex-1">Installation</div>
@@ -36,7 +36,7 @@ const PriceSummary = ({ estimate }: { estimate: Order }) => {
             </div>
             <div className="flex items-center text-lg font-semibold">
                 <div className="flex-1">Grand Total</div>
-                <div className="w-[37%]">{`${formatPrice(getGrandTotal(estimate) ?? 0)}`}</div>
+                <div className="w-[37%]">{`${formatPrice(getDealerGrandTotal(estimate) ?? 0)}`}</div>
             </div>
         </div>
     </div>

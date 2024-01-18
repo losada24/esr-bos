@@ -5,12 +5,11 @@ import { type PageProps, type Order, type Client, type Role } from '@/types'
 import Panel from '@/Components/Panel'
 import { createMarkWithLeadingZero } from '@/Utils/mark'
 import HammerIcon from '@/Components/Icons/HammerIcon'
-import { isAccounting, isAdmin, isProduction, isClientAdmin } from '@/Utils/user'
-import { ACCOUNTING_STATUS, PRODUCTION_STATUS, PRODUCTION_IN_PROGRESS } from '@/Utils/constants'
+import { isAccounting, isAdmin, isProduction, isDealer } from '@/Utils/user'
+import { ACCOUNTING_STATUS } from '@/Utils/constants'
 import OrderUpdateStatusModal from './OrderUpdateStatusModal'
 import PaymentInformation from './PaymentInformation'
-import { getSubtotal, getGrandTotal, formatPrice } from '@/Utils/price'
-import PrintButton from './PrintButton'
+import { getGrandTotal, formatPrice } from '@/Utils/price'
 import PrintEstimateButton from '../Estimate/PrintEstimateButton'
 
 export default function Show ({ auth, order }: PageProps & {
@@ -80,7 +79,7 @@ export default function Show ({ auth, order }: PageProps & {
                         <HammerIcon color="#fff" /> Produce Order
                       </button>
                     )}
-                    {(isAdmin(auth.user.roles.map((role: Role) => role.name)) || isAccounting(auth.user.roles.map((role: Role) => role.name)) || isClientAdmin(auth.user.roles.map((role: Role) => role.name))) && (
+                    {(isAdmin(auth.user.roles.map((role: Role) => role.name)) || isAccounting(auth.user.roles.map((role: Role) => role.name)) || isDealer(auth.user.roles.map((role: Role) => role.name))) && (
                       <PrintEstimateButton id={order.id} />
                     )}
                 </div>
@@ -132,10 +131,10 @@ export default function Show ({ auth, order }: PageProps & {
                           {(IS_ACCOUNTING || IS_ADMIN) && (
                             <>
                               <td className="border-t px-6 py-4 align-top">
-                                ${unit_price}
+                                {formatPrice(unit_price)}
                               </td>
                               <td className="border-t px-6 py-4 align-top">
-                                ${total_price}
+                                {formatPrice(total_price)}
                               </td>
                             </>
                           )}
@@ -164,7 +163,7 @@ export default function Show ({ auth, order }: PageProps & {
                   )}
                 </table>
               </div>
-              {(isAdmin(auth.user.roles.map((role: Role) => role.name)) || isAccounting(auth.user.roles.map((role: Role) => role.name)) || isClientAdmin(auth.user.roles.map((role: Role) => role.name))) && (
+              {(isAdmin(auth.user.roles.map((role: Role) => role.name)) || isAccounting(auth.user.roles.map((role: Role) => role.name)) || isDealer(auth.user.roles.map((role: Role) => role.name))) && (
                 <PaymentInformation paymentInfo={order.payments} />
               )}
             </div>

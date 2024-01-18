@@ -6,7 +6,6 @@ import Pagination from '@/Components/Pagination'
 import EyeIcon from '@/Components/Icons/EyeIcon'
 import { createMarkWithLeadingZero } from '@/Utils/mark'
 import { isAdmin, isAccounting, isShipping, isProduction } from '@/Utils/user'
-import { ACCOUNTING_STATUS, PRODUCTION_STATUS, PRODUCTION_COMPLETED, READY_FOR_DELIVERY } from '@/Utils/constants'
 import OrderFilter from './OrderFilter'
 import OrderUpdateStatusModal from './OrderUpdateStatusModal'
 import CheckIcon from '@/Components/Icons/CheckIcon'
@@ -87,12 +86,6 @@ export default function Index ({ auth, orders }: IndexOrderProps) {
                             <CheckIcon />
                           </button>
                           )}
-                        {/* ((isAdmin(auth.user.roles.map((role: Role) => role.name)) || isAccounting(auth.user.roles.map((role: Role) => role.name))) &&
-                          order.status === PRODUCTION_STATUS) && (
-                          <button title='Complete Production' onClick={() => { completeProduction(id) }}>
-                            <HammerIcon />
-                          </button>
-                        ) */}
                     </td>
                   </tr>
                 )

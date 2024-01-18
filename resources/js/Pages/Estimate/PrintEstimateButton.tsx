@@ -1,10 +1,11 @@
 import React from 'react'
-import { Link } from '@inertiajs/react'
 import PrintIcon from '@/Components/Icons/PrintIcon'
 import Dropdown from '@/Components/Dropdown'
 import AngleIcon from '@/Components/Icons/AngleIcon'
+import PdfLinks from '@/Pages/Pdf/PdfLinks'
+import { type User } from '@/types'
 
-const PrintEstimateButton = ({ id }: { id: number }) => {
+const PrintEstimateButton = ({ id, user }: { id: number, user: User }) => {
   return (
     <div className='dropdown'>
       <Dropdown
@@ -21,34 +22,7 @@ const PrintEstimateButton = ({ id }: { id: number }) => {
           }
       >
           <ul className="w-full">
-            <li>
-              <Link
-                href={route('pdf.report', id)}
-              >
-                Cost Report
-              </Link>
-            </li>
-            <li>
-              <Link
-                href={route('pdf.estimate.with.prices', id)}
-              >
-                Estimate with Prices
-              </Link>
-            </li>
-            <li>
-              <Link
-                href={route('pdf.estimate.without.prices', id)}
-              >
-                Estimate without Prices
-              </Link>
-            </li>
-            <li>
-              <Link
-                href={route('pdf.estimate.with.total.prices', id)}
-              >
-                Estimate only Total Prices
-              </Link>
-            </li>
+            <PdfLinks id={id} user={user} />
           </ul>
       </Dropdown>
     </div>
