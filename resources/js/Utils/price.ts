@@ -19,7 +19,7 @@ export const getDealerSubtotal = (estimate: Order) => {
 export const getDealerSubtotalWithMarkup = (estimate: Order) => {
   const subtotal: number | undefined = estimate.products?.reduce((acc, product) => {
     const markup = getDealerTotalPrice(product, estimate) * Number(product.markup) / 100
-    return acc + Number(product.total_price) + markup
+    return acc + Number(getDealerTotalPrice(product, estimate)) + markup
   }, 0)
 
   return subtotal
