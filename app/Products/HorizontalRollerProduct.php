@@ -276,11 +276,11 @@ class HorizontalRollerProduct implements IProduct {
     public function getCuttingList($qty) {
         $cuttingListResult = [];
         $cuttingListResult[] = $this->getCuttingListObject('Frame Head/Sill', 'VW 111 ' . $this->materialColor, 2 * $qty, $this->getNumberWithFraction($this->getFrameSill()), $this->getFrameSill());
+        $cuttingListResult[] = $this->getCuttingListObject('Frame Side Cover', 'VW 108 ' . $this->materialColor, $qty, $this->getNumberWithFraction($this->height - 5.25), $this->height - 5.25);
         $cuttingListResult[] = $this->getCuttingListObject('Jamb', 'VW 101 ' . $this->materialColor, $qty, $this->getNumberWithFraction($this->height), $this->height);
         $cuttingListResult[] = $this->getCuttingListObject('Jamb Operating', 'VW 102 ' . $this->materialColor, $qty, $this->getNumberWithFraction($this->height), $this->height);
         $cuttingListResult[] = $this->getCuttingListObject('Meeting Rail', 'VW 104 ' . $this->materialColor, $qty, $this->getNumberWithFraction($this->getFixedMeetingRail()), $this->getFixedMeetingRail());
         $cuttingListResult[] = $this->getCuttingListObject('Sill Track Rail', 'VW 112 ' . $this->materialColor, $qty, $this->getNumberWithFraction($this->getSillTrackRail()), $this->getSillTrackRail());
-        $cuttingListResult[] = $this->getCuttingListObject('Frame Side Cover', 'VW 108 ' . $this->materialColor, $qty, $this->getNumberWithFraction($this->height - 5.25), $this->height - 5.25);
         $cuttingListResult[] = $this->getCuttingListObject('Vent Jamb Meeting', 'VW 110 ' . $this->materialColor, $qty, $this->getNumberWithFraction($this->getVentJamb()), $this->getVentJamb());
         $cuttingListResult[] = $this->getCuttingListObject('Vent Jamb Lock', 'VW 106 ' . $this->materialColor, $qty, $this->getNumberWithFraction($this->getVentJamb()), $this->getVentJamb());
         $cuttingListResult[] = $this->getCuttingListObject('Vent Top/Bottom', 'VW 107 ' . $this->materialColor, $qty * 2, $this->getNumberWithFraction($this->getVentBottomAndTop()), $this->getVentBottomAndTop());
@@ -291,6 +291,7 @@ class HorizontalRollerProduct implements IProduct {
         $cuttingListResult[] = $this->getCuttingListObject('Steel Reiceforcement square', 'ST 0001', $qty, $this->getNumberWithFraction($this->getSteelReiceforment()), $this->getSteelReiceforment());
         $cuttingListResult[] = $this->getCuttingListObject('Screw Cover', 'SC 0001 ' . $this->materialColor, $qty, $this->getNumberWithFraction($this->getGlassHeigth()), $this->getGlassHeigth());
         $cuttingListResult[] = $this->getCuttingListObject('Side Sash PVC', 'SS 0001 ' . $this->materialColor, 2 * $qty, $this->getNumberWithFraction($this->getVentBottomAndTop()), $this->getVentBottomAndTop());
+         
         //SILICONE
         if ($this->screenRequired) {
           $cuttingListResult[] = $this->getCuttingListObject('Screen', '', $qty, $this->getNumberWithFraction($this->getScreenWidth()) . ' x ' . $this->getNumberWithFraction($this->getScreenHeigth()), 0);

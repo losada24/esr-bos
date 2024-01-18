@@ -45,7 +45,7 @@ const EstimateWithoutPrices = ({ order, auth, company }: IndexOrderProps) => {
       >
         <Head title={`Estimate without Prices: ${order.name}`} />
         <PrintLayout>
-          <Page size="A4" style={tw('p-6 font-regular')}>
+          <Page size="LETTER" style={tw('p-6 font-regular')}>
             <Pagination />
             <ReportHeader data={{
               id: order.id,

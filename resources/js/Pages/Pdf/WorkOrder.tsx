@@ -41,7 +41,7 @@ const WorkOrder = ({ order, auth }: IndexOrderProps) => {
       >
         <Head title={`Work Order ${order.name}`} />
         <PrintLayout>
-          <Page wrap size="A4" style={tw('p-6 font-regular')}>
+          <Page wrap size="LETTER" style={tw('p-6 font-regular')}>
             <Pagination />
             <POHeaders order={order} documentTitle='Work Order' />
             {order?.products?.map((product, index) => {

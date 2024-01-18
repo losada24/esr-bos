@@ -46,7 +46,7 @@ const Report = ({ order, auth }: IndexOrderProps) => {
       >
         <Head title={`Report: ${order.name}`} />
         <PrintLayout>
-          <Page wrap size="A4" style={tw('p-6 font-regular')}>
+          <Page wrap size="LETTER" style={tw('p-6 font-regular')}>
             <Pagination />
             <ReportHeader data={{
               id: order.id,

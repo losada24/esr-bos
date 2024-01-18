@@ -41,7 +41,7 @@ const PoScreen = ({ order, auth }: IndexOrderProps) => {
       >
         <Head title={`PO Screen ${order.name}`} />
         <PrintLayout>
-          <Page wrap size="A4" style={tw('p-6 font-regular')}>
+          <Page wrap size="LETTER" style={tw('p-6 font-regular')}>
             <Pagination />
             <POHeaders order={order} poType={PO_SCREEN} documentTitle={PO_TITLES[PO_SCREEN]} />
             {order?.products?.map((product, index) => {

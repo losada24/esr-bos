@@ -40,7 +40,7 @@ const MaterialConsumption = ({ order, auth }: IndexOrderProps) => {
       >
         <Head title={`Material Consumption: ${order.name}`} />
         <PrintLayout>
-          <Page wrap size="A4" style={tw('p-6 font-regular')}>
+          <Page wrap size="LETTER" style={tw('p-6 font-regular')}>
             <Pagination />
             <POHeaders order={order} documentTitle='Material Consumption' />
             <View style={tw('flex flex-row gap-4 justify-between border-b border-gray-200 mb-3 p-3')}>

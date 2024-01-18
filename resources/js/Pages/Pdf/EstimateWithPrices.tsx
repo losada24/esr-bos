@@ -47,7 +47,7 @@ const EstimateWithPrices = ({ order, auth, company }: IndexOrderProps) => {
       >
         <Head title={`Estimate with Prices: ${order.name}`} />
         <PrintLayout>
-          <Page size="A4" style={tw('p-6 font-regular')}>
+          <Page size="LETTER" style={tw('p-6 font-regular')}>
             <Pagination />
             <ReportHeader data={{
               id: order.id,

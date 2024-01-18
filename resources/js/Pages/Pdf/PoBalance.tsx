@@ -39,7 +39,7 @@ const PoBalance = ({ order, auth }: IndexOrderProps) => {
       >
         <Head title={`PO Balance ${order.name}`} />
         <PrintLayout>
-          <Page wrap size="A4" style={tw('p-6 font-regular')}>
+          <Page wrap size="LETTER" style={tw('p-6 font-regular')}>
             <Pagination />
             <POHeaders order={order} poType={PO_BALANCE} documentTitle={PO_TITLES[PO_BALANCE]} />
             {order?.balances?.map((balance, index) => {
