@@ -80,6 +80,8 @@ class Order extends Model
             ->orWhere('status', OrderStatusEnum::$PRODUCTION_COMPLETED)
             ->orWhere('status', OrderStatusEnum::$PRODUCTION)
             ->orWhere('status', OrderStatusEnum::$PARTIAL_PRODUCTION_COMPLETED)
+            ->orWhere('status', OrderStatusEnum::$PRODUCTION_IN_PROGRESS)
+            ->orWhere('status', OrderStatusEnum::$SCHEDULED_PRODUCTION)
             ->orWhere('status', OrderStatusEnum::$PARTIAL_DELIVERED);
         }
         else if (auth()->user()->hasRole(RoleEnum::$PRODUCTION)) {
@@ -101,10 +103,14 @@ class Order extends Model
         }
         else if (auth()->user()->hasRole(RoleEnum::$DEALER)) {
           $query->where('company_id', auth()->user()->company_id)
-            ->where('status', '<>', OrderStatusEnum::$ESTIMATE);
+          ->where(function (Builder $query) {
+              $query->where('status', '<>', OrderStatusEnum::$SUB_DEALER_ESTIMATE)
+              ->where('status', '<>', OrderStatusEnum::$ESTIMATE);
+          });
         }
         else if (auth()->user()->hasRole(RoleEnum::$ADMIN)) {
-          $query->where('status', '<>', OrderStatusEnum::$ESTIMATE);
+          $query->where('status', '<>', OrderStatusEnum::$ESTIMATE)
+            ->where('status', '<>', OrderStatusEnum::$SUB_DEALER_ESTIMATE);
         }
     }
 
