@@ -27,7 +27,7 @@ export const getDealerSubtotalWithMarkup = (estimate: Order) => {
 
 export const getDealerGrandTotal = (estimate: Order) => {
   const subtotal: number = getDealerSubtotalWithMarkup(estimate) ?? 0
-  const tax_amount: number = getTaxAmount(estimate) ?? 0
+  const tax_amount: number = getDealerTaxAmount(estimate) ?? 0
   const installation: number = estimate.installation ?? 0
   const permit: number = estimate.permit ?? 0
   const other: number = estimate.other ?? 0
