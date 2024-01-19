@@ -25,7 +25,7 @@ const SingleHuntForm = ({ submitCount, errors, isCreate, frame_colors, glass_col
     if (values.glass_color !== '' && values.low_e !== '' && values.privacy !== '') {
       const firstGlass = `1/8 HS ${values.glass_color} ${values.glass_color === 'CLEAR' && values.low_e !== 'NONE' ? values.low_e : ''}`
       const interlayer = `+0.09PVB s ${values.privacy}`
-      const lastGlass = `1/8 HS CLEAR ${values.glass_color !== 'CLEAR' && values.low_e !== 'NONE' ? values.low_e : ''}`
+      const lastGlass = `+1/8 HS CLEAR ${values.glass_color !== 'CLEAR' && values.low_e !== 'NONE' ? values.low_e : ''}`
 
       setGlassTypes([`${firstGlass} ${interlayer} ${lastGlass}(${glassType})`])
     } else {

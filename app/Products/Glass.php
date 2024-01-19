@@ -14,7 +14,7 @@ class Glass {
       $strParams = [
         ':firstGlass' => "3/16 HS {$this->glass_color} $lowEStart",
         ':interlayer' => "+0.09PVB t {$this->privacy}",
-        ':lastGlass' => "3/16 HS CLEAR $lowEEnd",
+        ':lastGlass' => "+3/16 HS CLEAR $lowEEnd",
         ':glassType' => $this->glass_type
       ];
 
@@ -29,7 +29,7 @@ class Glass {
       $strParams = [
         ':firstGlass' => "1/8 HS {$this->glass_color} $lowEStart",
         ':interlayer' => "+0.09PVB s {$this->privacy}",
-        ':lastGlass' => "1/8 HS CLEAR $lowEEnd",
+        ':lastGlass' => "+1/8 HS CLEAR $lowEEnd",
         ':glassType' => $this->glass_type
       ];
 
