@@ -213,7 +213,7 @@ class FixedWindowsProduct implements IProduct {
         $companyMockupCost = $unitPriceCost * $companyMockup / 100;
 
         $promotion = $this->getCompanyPromotion();
-        $promotionCost = $unitPriceCost * $promotion / 100;
+        $promotionCost = ($unitPriceCost + $companyMockupCost) * $promotion / 100;
         
         /* echo "unitPriceCost: " . $unitPriceCost . "<br>";
         echo "Promotion: " . $promotionCost . "<br>";

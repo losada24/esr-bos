@@ -511,7 +511,7 @@ class HorizontalRollerProduct implements IProduct {
         $companyMockupCost = $unitPriceCost * $companyMockup / 100;
 
         $promotion = $this->getCompanyPromotion();
-        $promotionCost = $unitPriceCost * $promotion / 100;
+        $promotionCost = ($unitPriceCost + $companyMockupCost) * $promotion / 100;
 
         return $unitPriceCost + $companyMockupCost - $promotionCost;
     }
