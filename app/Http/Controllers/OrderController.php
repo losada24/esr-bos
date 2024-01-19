@@ -61,7 +61,8 @@ class OrderController extends Controller
         (
           $order->status ==  OrderStatusEnum::$ACCOUNTING || 
           $order->status ==  OrderStatusEnum::$PRODUCTION_COMPLETED ||
-          $order->status ==  OrderStatusEnum::$PARTIAL_PRODUCTION_COMPLETED
+          $order->status ==  OrderStatusEnum::$PARTIAL_PRODUCTION_COMPLETED ||
+          $order->status ==  OrderStatusEnum::$DELIVERED
         )) {
           if ($order->status ==  OrderStatusEnum::$ACCOUNTING) {
             $statuses = [
@@ -77,6 +78,11 @@ class OrderController extends Controller
           else if ($order->status ==  OrderStatusEnum::$PARTIAL_PRODUCTION_COMPLETED) {
             $statuses = [
               OrderStatusEnum::$READY_FOR_PARTIAL_DELIVERY
+            ];
+          }
+          else if ($order->status ==  OrderStatusEnum::$DELIVERED) {
+            $statuses = [
+              OrderStatusEnum::$ORDER_COMPLETED
             ];
           }
       }
