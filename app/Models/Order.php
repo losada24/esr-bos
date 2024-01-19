@@ -84,7 +84,8 @@ class Order extends Model
             ->orWhere('status', OrderStatusEnum::$SCHEDULED_PRODUCTION)
             ->orWhere('status', OrderStatusEnum::$PARTIAL_DELIVERED)
             ->orWhere('status', OrderStatusEnum::$READY_FOR_DELIVERY)
-            ->orWhere('status', OrderStatusEnum::$READY_FOR_PARTIAL_DELIVERY);
+            ->orWhere('status', OrderStatusEnum::$READY_FOR_PARTIAL_DELIVERY)
+            ->orWhere('status', OrderStatusEnum::$DELIVERED);
         }
         else if (auth()->user()->hasRole(RoleEnum::$PRODUCTION)) {
           $query->where('status', OrderStatusEnum::$PRODUCTION)
