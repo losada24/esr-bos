@@ -196,11 +196,11 @@ Route::middleware('auth')->group(function () {
       ->name('order.index');
 
     Route::post('/order/status-update', [OrderController::class, 'statusUpdate'])
-      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$ACCOUNTING . "|" . RoleEnum::$SUB_DEALER . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$PRODUCTION ])
+      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$ACCOUNTING . "|" . RoleEnum::$SUB_DEALER . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$PRODUCTION . "|" . RoleEnum::$SHIPPING ])
       ->name('order.status.update');
     
     Route::get('/order/status/{order}', [OrderController::class, 'status'])
-      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$PRODUCTION . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$SUB_DEALER . "|" . RoleEnum::$DEALER])
+      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$PRODUCTION . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$SUB_DEALER . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$ACCOUNTING . "|" . RoleEnum::$SHIPPING])
       ->name('order.status');
 
     Route::get('/order/workOrder/{order}', [OrderController::class, 'workOrder'])
@@ -208,7 +208,7 @@ Route::middleware('auth')->group(function () {
       ->name('order.workOrder');
 
     Route::get('/order/show/{id}', [OrderController::class, 'show'])
-      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$PRODUCTION . "|" . RoleEnum::$DEALER ])
+      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$PRODUCTION . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$ACCOUNTING . "|" . RoleEnum::$SUB_DEALER . "|" . RoleEnum::$SHIPPING  ])
       ->name('order.show');
 
     // PDF DOCUMENTS
@@ -237,20 +237,24 @@ Route::middleware('auth')->group(function () {
       ->name('pdf.po.balance');
     
     Route::get('/pdf/estimate-with-prices/{order}', [PdfController::class, 'estimateWithPrices'])
-      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$SUB_DEALER ])
+      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$SUB_DEALER . "|" . RoleEnum::$ACCOUNTING ])
       ->name('pdf.estimate.with.prices');
     
     Route::get('/pdf/estimate-with-totals/{order}', [PdfController::class, 'estimateWithTotalPrices'])
-      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$SUB_DEALER ])
+      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$SUB_DEALER . "|" . RoleEnum::$ACCOUNTING ])
       ->name('pdf.estimate.with.total.prices');
 
     Route::get('/pdf/estimate-without/{order}', [PdfController::class, 'estimateWithoutPrices'])
-      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$SUB_DEALER ])
+      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$SUB_DEALER . "|" . RoleEnum::$ACCOUNTING ])
       ->name('pdf.estimate.without.prices');
     
     Route::get('/pdf/report/{order}', [PdfController::class, 'report'])
-      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$DEALER ])
+      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$ACCOUNTING ])
       ->name('pdf.report');
+
+    Route::get('/pdf/delivery/{order}', [PdfController::class, 'delivery'])
+      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$SHIPPING . "|" . RoleEnum::$ACCOUNT_MANAGER ])
+      ->name('pdf.delivery');
 
     // LABELS
     Route::get('/label/pieces/{order}', [LabelController::class, 'labelsByPieces'])

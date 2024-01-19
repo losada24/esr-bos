@@ -82,17 +82,25 @@ class Order extends Model
             ->orWhere('status', OrderStatusEnum::$PARTIAL_PRODUCTION_COMPLETED)
             ->orWhere('status', OrderStatusEnum::$PRODUCTION_IN_PROGRESS)
             ->orWhere('status', OrderStatusEnum::$SCHEDULED_PRODUCTION)
-            ->orWhere('status', OrderStatusEnum::$PARTIAL_DELIVERED);
+            ->orWhere('status', OrderStatusEnum::$PARTIAL_DELIVERED)
+            ->orWhere('status', OrderStatusEnum::$READY_FOR_DELIVERY)
+            ->orWhere('status', OrderStatusEnum::$READY_FOR_PARTIAL_DELIVERY);
         }
         else if (auth()->user()->hasRole(RoleEnum::$PRODUCTION)) {
           $query->where('status', OrderStatusEnum::$PRODUCTION)
             ->orWhere('status', OrderStatusEnum::$PRODUCTION_IN_PROGRESS)
             ->orWhere('status', OrderStatusEnum::$SCHEDULED_PRODUCTION)
             ->orWhere('status', OrderStatusEnum::$PARTIAL_PRODUCTION_COMPLETED)
-            ->orWhere('status', OrderStatusEnum::$PARTIAL_DELIVERED);
+            ->orWhere('status', OrderStatusEnum::$PARTIAL_DELIVERED)
+            ->orWhere('status', OrderStatusEnum::$PRODUCTION_COMPLETED)
+            ->orWhere('status', OrderStatusEnum::$READY_FOR_DELIVERY)
+            ->orWhere('status', OrderStatusEnum::$READY_FOR_PARTIAL_DELIVERY);
         }
         else if (auth()->user()->hasRole(RoleEnum::$SHIPPING)) {
-          $query->where('status', OrderStatusEnum::$READY_FOR_DELIVERY);
+          $query->where('status', OrderStatusEnum::$READY_FOR_DELIVERY)
+            ->orWhere('status', OrderStatusEnum::$DELIVERED)
+            ->orWhere('status', OrderStatusEnum::$PARTIAL_DELIVERED)
+            ->orWhere('status', OrderStatusEnum::$READY_FOR_PARTIAL_DELIVERY);
         }
         else if (auth()->user()->hasRole(RoleEnum::$SUB_DEALER)) {
           $query->where('user_id', auth()->user()->id)

@@ -60,7 +60,8 @@ class OrderController extends Controller
       if ((auth()->user()->hasRole(RoleEnum::$ADMIN) || auth()->user()->hasRole(RoleEnum::$ACCOUNTING)) && 
         (
           $order->status ==  OrderStatusEnum::$ACCOUNTING || 
-          $order->status ==  OrderStatusEnum::$PRODUCTION_COMPLETED
+          $order->status ==  OrderStatusEnum::$PRODUCTION_COMPLETED ||
+          $order->status ==  OrderStatusEnum::$PARTIAL_PRODUCTION_COMPLETED
         )) {
           if ($order->status ==  OrderStatusEnum::$ACCOUNTING) {
             $statuses = [
@@ -73,12 +74,20 @@ class OrderController extends Controller
               OrderStatusEnum::$READY_FOR_DELIVERY
             ];
           }
+          else if ($order->status ==  OrderStatusEnum::$PARTIAL_PRODUCTION_COMPLETED) {
+            $statuses = [
+              OrderStatusEnum::$READY_FOR_PARTIAL_DELIVERY
+            ];
+          }
       }
       else if ((auth()->user()->hasRole(RoleEnum::$ADMIN) || auth()->user()->hasRole(RoleEnum::$PRODUCTION)) && 
         (
           $order->status ==  OrderStatusEnum::$PRODUCTION ||
           $order->status ==  OrderStatusEnum::$PRODUCTION_IN_PROGRESS ||
-          $order->status == OrderStatusEnum::$SCHEDULED_PRODUCTION
+          $order->status == OrderStatusEnum::$SCHEDULED_PRODUCTION ||
+          $order->status == OrderStatusEnum::$PARTIAL_PRODUCTION_COMPLETED ||
+          $order->status == OrderStatusEnum::$READY_FOR_PARTIAL_DELIVERY ||
+          $order->status == OrderStatusEnum::$PARTIAL_DELIVERED
         )) {
 
         if ($order->status ==  OrderStatusEnum::$PRODUCTION) {
@@ -89,7 +98,13 @@ class OrderController extends Controller
           $statuses = [
             OrderStatusEnum::$PRODUCTION_IN_PROGRESS
           ];
-        } else {
+        }
+        else if ($order->status == OrderStatusEnum::$READY_FOR_PARTIAL_DELIVERY) {
+          $statuses = [
+            OrderStatusEnum::$PRODUCTION_COMPLETED
+          ];
+        }
+        else {
           $statuses = [
             OrderStatusEnum::$PARTIAL_PRODUCTION_COMPLETED,
             OrderStatusEnum::$PRODUCTION_COMPLETED
@@ -97,7 +112,9 @@ class OrderController extends Controller
         } 
       }
       else if (((auth()->user()->hasRole(RoleEnum::$ADMIN) || auth()->user()->hasRole(RoleEnum::$SHIPPING)) && 
-        $order->status ==  OrderStatusEnum::$READY_FOR_DELIVERY)) {
+        $order->status ==  OrderStatusEnum::$READY_FOR_DELIVERY ||
+        $order->status ==  OrderStatusEnum::$READY_FOR_PARTIAL_DELIVERY
+      )) {
         $statuses = [
           OrderStatusEnum::$DELIVERED,
           OrderStatusEnum::$PARTIAL_DELIVERED

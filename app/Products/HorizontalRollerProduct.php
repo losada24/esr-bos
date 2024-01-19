@@ -64,7 +64,7 @@ class HorizontalRollerProduct implements IProduct {
     }
 
     public function getScreenHeigth() {
-      return round($this->height - 5.5, 3);
+      return round($this->height - 5.625, 3);
     }
 
     public function getFrameSill() {

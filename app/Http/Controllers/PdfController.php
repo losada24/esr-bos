@@ -177,4 +177,12 @@ class PdfController extends Controller
         'company' => new CompanyResource($company),
       ]);
     }
+
+    public function delivery(Order $order)
+    {
+      $order->load(['products', 'client', 'user.company']);
+      return Inertia::render('Pdf/Delivery', [
+        'order' => $order,
+      ]);
+    }
 }

@@ -5,12 +5,13 @@ import { type PageProps, type Order, type Client, type Role } from '@/types'
 import Panel from '@/Components/Panel'
 import { createMarkWithLeadingZero } from '@/Utils/mark'
 import HammerIcon from '@/Components/Icons/HammerIcon'
-import { isAccounting, isAdmin, isProduction, isDealer } from '@/Utils/user'
+import { isAccounting, isAdmin, isProduction, isDealer, isShipping, isSubDealer } from '@/Utils/user'
 import { ACCOUNTING_STATUS } from '@/Utils/constants'
 import OrderUpdateStatusModal from './OrderUpdateStatusModal'
 import PaymentInformation from './PaymentInformation'
 import { getGrandTotal, formatPrice } from '@/Utils/price'
 import PrintEstimateButton from '../Estimate/PrintEstimateButton'
+import DeliveryIcon from '@/Components/Icons/DeliveryIcon'
 
 export default function Show ({ auth, order }: PageProps & {
   clients: Client[]
@@ -19,6 +20,11 @@ export default function Show ({ auth, order }: PageProps & {
 }) {
   const IS_ACCOUNTING = isAccounting(auth.user.roles.map((role: Role) => role.name))
   const IS_ADMIN = isAdmin(auth.user.roles.map((role: Role) => role.name))
+  const IS_PRODUCTION = isProduction(auth.user.roles.map((role: Role) => role.name))
+  const IS_DEALER = isDealer(auth.user.roles.map((role: Role) => role.name))
+  const IS_SHIPPING = isShipping(auth.user.roles.map((role: Role) => role.name))
+  const IS_SUB_DEALER = isSubDealer(auth.user.roles.map((role: Role) => role.name))
+
   const [showOrderModal, setShowOrderModal] = useState<boolean>(false)
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   /*  const getSubtotal = () => {
@@ -64,14 +70,13 @@ export default function Show ({ auth, order }: PageProps & {
                   </div>
                 </div>
                 <div className="flex flex-col gap-y-2 border-t border-white-light dark:border-white/10 py-2">
-                    {(isAdmin(auth.user.roles.map((role: Role) => role.name)) || isProduction(auth.user.roles.map((role: Role) => role.name))) && (
+                    {(IS_ADMIN || IS_PRODUCTION) && (
                       <Link href={route('order.workOrder', order.id)} className="btn btn-secondary w-full gap-2">
                           <HammerIcon color="#fff" />
                           Work Order
                       </Link>
                     )}
-                    {((isAdmin(auth.user.roles.map((role: Role) => role.name)) || isAccounting(auth.user.roles.map((role: Role) => role.name))) &&
-                      (order.status === ACCOUNTING_STATUS)) && (
+                    {(IS_ADMIN || IS_ACCOUNTING) && (order.status === ACCOUNTING_STATUS) && (
                       <button title='Produce Order' className="btn btn-secondary w-full gap-2" onClick={() => {
                         setSelectedOrder(order)
                         setShowOrderModal(true)
@@ -79,8 +84,13 @@ export default function Show ({ auth, order }: PageProps & {
                         <HammerIcon color="#fff" /> Produce Order
                       </button>
                     )}
-                    {(isAdmin(auth.user.roles.map((role: Role) => role.name)) || isAccounting(auth.user.roles.map((role: Role) => role.name)) || isDealer(auth.user.roles.map((role: Role) => role.name))) && (
+                    {(IS_ADMIN || IS_ACCOUNTING || IS_DEALER || IS_SUB_DEALER) && (
                       <PrintEstimateButton id={order.id} user={auth.user} />
+                    )}
+                    {(IS_ADMIN || IS_SHIPPING) && (
+                      <Link href={route('pdf.delivery', order.id)} className="btn btn-secondary w-full gap-2">
+                        <DeliveryIcon color="#fff" /> Shipping Order
+                      </Link>
                     )}
                 </div>
               </Panel>

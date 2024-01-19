@@ -13,6 +13,7 @@ class OrderStatusEnum
     public static $PRODUCTION_IN_PROGRESS = 'production in progress';
     public static $PARTIAL_PRODUCTION_COMPLETED = 'partial production completed';
     public static $READY_FOR_DELIVERY = 'ready for delivery';
+    public static $READY_FOR_PARTIAL_DELIVERY = 'ready for partial delivery';
     public static $ORDER_COMPLETED = 'order completed';
     public static $DELIVERED = 'delivered';
     public static $PARTIAL_DELIVERED = 'partial delivered';
