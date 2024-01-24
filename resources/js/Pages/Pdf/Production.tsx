@@ -42,17 +42,17 @@ const tw = createTw({
   }
 })
 
-const Report = ({ order, auth, company }: IndexOrderProps) => {
+const Production = ({ order, auth, company }: IndexOrderProps) => {
   const IS_SUBDEALER = isSubDealer(auth.user.roles.map((role) => role.name))
   return (
     <AuthenticatedLayout
           auth={auth}
-          pageTitle={`Report: ${order.name}`}
+          pageTitle={`Production Cost: ${order.name}`}
           actions={
-            <PrintEstimateOrderButton id={order.id} status={order.status} user={auth.user} />
+            <PrintEstimateOrderButton id={order.id} status={order.status} user={auth.user}/>
           }
       >
-        <Head title={`Report: ${order.name}`} />
+        <Head title={`Production Cost: ${order.name}`} />
         <PrintLayout>
           <Page wrap size="LETTER" style={tw('p-6 font-regular')}>
             <Pagination />
@@ -65,10 +65,10 @@ const Report = ({ order, auth, company }: IndexOrderProps) => {
             }} />
             <ReportCompany order={order} isForClient={false} />
             {order?.products?.map((product, index) => {
-              return <ReportProduct product={product} key={index} showPrices={true} roles={[ROLES.DEALER]} />
+              return <ReportProduct product={product} key={index} showPrices={true} roles={auth.user.roles.map((role) => role.name)} />
             })}
             <LeadTimeAlert glass_type={order.glass_type} />
-            <ReportTotal order={order} roles={[ROLES.DEALER]} />
+            <ReportTotal order={order} roles={auth.user.roles.map((role) => role.name)} />
             {order.notes !== null && (
               <Notes notes={order.notes ?? ''} />
             )}
@@ -79,4 +79,4 @@ const Report = ({ order, auth, company }: IndexOrderProps) => {
   )
 }
 
-export default Report
+export default Production

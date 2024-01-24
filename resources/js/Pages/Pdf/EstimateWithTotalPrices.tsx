@@ -40,7 +40,7 @@ const EstimateWithTotalPrices = ({ order, auth, company }: IndexOrderProps) => {
           auth={auth}
           pageTitle={`Estimate with Total Prices: ${order.name}`}
           actions={
-            <PrintEstimateOrderButton id={order.id} status={order.status} />
+            <PrintEstimateOrderButton id={order.id} status={order.status} user={auth.user} />
           }
       >
         <Head title={`Estimate with Total Prices: ${order.name}`} />

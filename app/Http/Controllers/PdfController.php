@@ -148,6 +148,17 @@ class PdfController extends Controller
       ]);
     }
 
+    public function production(Order $order)
+    {
+      $order->load(['products', 'client', 'user.company']);
+      $company = Company::where('id', $order->user->company_id)->first();
+      CompanyResource::withoutWrapping();
+      return Inertia::render('Pdf/Production', [
+        'order' => $order,
+        'company' => new CompanyResource($company),
+      ]);
+    }
+
     public function estimateWithPrices(Order $order)
     {
       $order->load(['products', 'client', 'user.company']);

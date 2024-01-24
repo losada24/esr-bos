@@ -4,8 +4,9 @@ import Dropdown from '@/Components/Dropdown'
 import AngleIcon from '@/Components/Icons/AngleIcon'
 import PdfLinks from '@/Pages/Pdf/PdfLinks'
 import { type User } from '@/types'
+import { userInfo } from 'os'
 
-const PrintEstimateButton = ({ id, user }: { id: number, user: User }) => {
+const PrintEstimateButton = ({ id, user }: { id: number, user?: User }) => {
   return (
     <div className='dropdown'>
       <Dropdown
@@ -22,7 +23,7 @@ const PrintEstimateButton = ({ id, user }: { id: number, user: User }) => {
           }
       >
           <ul className="w-full">
-            <PdfLinks id={id} />
+            <PdfLinks id={id} roles={user?.roles.map((role) => role.name)} />
           </ul>
       </Dropdown>
     </div>

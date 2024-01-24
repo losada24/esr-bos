@@ -1,7 +1,8 @@
 import React from 'react'
 import { Link } from '@inertiajs/react'
+import { isAdmin, isAccountManager, isAccounting } from '@/Utils/user'
 
-const PdfLinks = ({ id }: { id: number }) => {
+const PdfLinks = ({ id, roles }: { id: number, roles?: string[] }) => {
   return (
     <>
       <li>
@@ -32,6 +33,15 @@ const PdfLinks = ({ id }: { id: number }) => {
           Estimate without Prices
         </Link>
       </li>
+      {(isAdmin(roles ?? []) || isAccounting(roles ?? []) || isAccountManager(roles ?? [])) && (
+        <li>
+          <Link
+            href={route('pdf.production', id)}
+          >
+            Production Cost
+          </Link>
+        </li>
+      )}
     </>
   )
 }

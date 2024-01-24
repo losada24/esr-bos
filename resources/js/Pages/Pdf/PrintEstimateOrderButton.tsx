@@ -7,7 +7,7 @@ import { ESTIMATE_STATUS, SUB_DEALER_ESTIMATE } from '@/Utils/constants'
 import PdfLinks from './PdfLinks'
 import { type User } from '@/types'
 
-const PrintEstimateOrderButton = ({ id, status }: { id: number, status?: string }) => {
+const PrintEstimateOrderButton = ({ id, status, user }: { id: number, status?: string, user?: User }) => {
   return (
     <div className='dropdown'>
       <Dropdown
@@ -24,7 +24,7 @@ const PrintEstimateOrderButton = ({ id, status }: { id: number, status?: string 
         }
       >
         <ul className="ltr:right-0 rtl:left-0 whitespace-nowrap">
-          <PdfLinks id={id} />
+          <PdfLinks id={id} roles={user?.roles.map((role) => role.name)}/>
           <li>
             <Link
               href={(status === ESTIMATE_STATUS || status === SUB_DEALER_ESTIMATE) ? route('estimate.show', id) : route('order.show', id)}
