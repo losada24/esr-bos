@@ -24,7 +24,7 @@ const PrintEstimateOrderButton = ({ id, status, user }: { id: number, status?: s
         }
       >
         <ul className="ltr:right-0 rtl:left-0 whitespace-nowrap">
-          <PdfLinks id={id} user={user} />
+          <PdfLinks id={id} />
           <li>
             <Link
               href={(status === ESTIMATE_STATUS || status === SUB_DEALER_ESTIMATE) ? route('estimate.show', id) : route('order.show', id)}

@@ -53,10 +53,10 @@ const EstimateWithoutPrices = ({ order, auth, company }: IndexOrderProps) => {
               featured_image: company.featured_image,
               phone_number: company.phone_number,
               email: company.email
-            }} logo={logo} isForClient={true} />
+            }} />
             <ReportCompany order={order} isForClient={true} />
             {order?.products?.map((product, index) => {
-              return <EstimateProduct product={product} key={index} showPrices={false} />
+              return <EstimateProduct product={product} key={index} showPrices={false} roles={[]} />
             })}
             {order.notes !== null && (
               <Notes notes={order.notes ?? ''} />

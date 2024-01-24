@@ -46,7 +46,7 @@ const Delivery = ({ order, auth }: IndexOrderProps) => {
               address: '',
               featured_image: '',
               phone_number: ''
-            }} logo={logo}/>
+            }} />
             <ReportCompany order={order} isForClient={false} />
             {order?.products?.map((product, index) => {
               return <DeliveryProduct product={product} key={index} />

@@ -58,7 +58,7 @@ const EstimateWithPrices = ({ order, auth, company }: IndexOrderProps) => {
             }} />
             <ReportCompany order={order} isForClient={true} />
             {order?.products?.map((product, index) => {
-              return <EstimateProduct product={product} key={index} showPrices={true} estimate={order} />
+              return <EstimateProduct product={product} key={index} showPrices={true} />
             })}
             <EstimateTotal order={order} />
             {order.notes !== null && (

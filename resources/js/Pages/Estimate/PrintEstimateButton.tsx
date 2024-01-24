@@ -22,7 +22,7 @@ const PrintEstimateButton = ({ id, user }: { id: number, user: User }) => {
           }
       >
           <ul className="w-full">
-            <PdfLinks id={id} user={user} />
+            <PdfLinks id={id} />
           </ul>
       </Dropdown>
     </div>
