@@ -92,7 +92,7 @@ export const getUnitPriceByRole = (product: Product, role: string[]) => {
     unit_price = product.sub_dealer_unit_price
   } else if (isDealer(role)) {
     unit_price = product.dealer_unit_price
-  } else if (isProduction(role)) {
+  } else if (isAccounting(role) || isAdmin(role) || isAccounting(role)) {
     unit_price = product.unit_price
   } else {
     unit_price = product.customer_unit_price
@@ -107,7 +107,7 @@ export const getTotalPriceByRole = (product: Product, role: string[]) => {
     total_price = product.sub_dealer_total_price
   } else if (isDealer(role)) {
     total_price = product.dealer_total_price
-  } else if (isAccounting(role) || isAdmin(role)) {
+  } else if (isAccounting(role) || isAdmin(role) || isAccounting(role)) {
     total_price = product.total_price
   } else {
     total_price = product.customer_total_price
