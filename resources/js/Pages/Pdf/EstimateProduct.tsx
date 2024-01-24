@@ -63,7 +63,10 @@ const EstimateProduct = ({ product, showPrices }: { product: Product, showPrices
             <Text style={tw('text-xs text-gray-900 font-regular')}>{product.qty}</Text>
           </View>
           <View style={tw('flex flex-row justify-start items-center gap-3 w-2/12')}>
-            <Text style={tw('text-xs text-gray-900 font-regular')}>{product.system}{product.system === PRODUCT_SYSTEMS.HORIZONTAL_ROLLER ? `(${product.extras?.config})` : ''}</Text>
+            <Text style={tw('text-xs text-gray-900 font-regular')}>
+              {product.system}({product.extras?.config})
+              {(product.system === PRODUCT_SYSTEMS.HORIZONTAL_ROLLER || product.system === PRODUCT_SYSTEMS.SINGLE_HUNG) && product.extras?.screen ? ' with Screen' : ''}
+            </Text>
           </View>
           <View style={tw(`flex flex-row justify-start items-center gap-3 ${showPrices ? 'w-2/12' : 'w-3/12'}`)}>
             <Text style={tw('text-xs text-gray-900 font-regular')}>{getNumberWithFraction(product.width)} x {getNumberWithFraction(product.height)}</Text>

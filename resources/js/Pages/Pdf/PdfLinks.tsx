@@ -20,16 +20,16 @@ const PdfLinks = ({ id }: { id: number }) => {
       </li>
       <li>
         <Link
-          href={route('pdf.estimate.without.prices', id)}
+          href={route('pdf.estimate.with.total.prices', id)}
         >
-          Estimate without Prices
+          Estimate only Total Prices
         </Link>
       </li>
       <li>
         <Link
-          href={route('pdf.estimate.with.total.prices', id)}
+          href={route('pdf.estimate.without.prices', id)}
         >
-          Estimate only Total Prices
+          Estimate without Prices
         </Link>
       </li>
     </>

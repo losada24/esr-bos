@@ -64,7 +64,7 @@ const ReportProduct = ({ product, showPrices, roles }: { product: Product, showP
           </View>
           <View style={tw('flex flex-row justify-start items-center gap-3 w-2/12')}>
             <Text style={tw('text-xs text-gray-900 font-regular')}>
-              {product.system}{product.system === PRODUCT_SYSTEMS.HORIZONTAL_ROLLER ? `(${product.extras?.config})` : ''}
+              {product.system}({product.extras?.config})
               {(product.system === PRODUCT_SYSTEMS.HORIZONTAL_ROLLER || product.system === PRODUCT_SYSTEMS.SINGLE_HUNG) && product.extras?.screen ? ' with Screen' : ''}
             </Text>
           </View>
