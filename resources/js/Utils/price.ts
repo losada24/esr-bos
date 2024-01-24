@@ -1,5 +1,5 @@
 import { type Product, type Order, Role } from '@/types'
-import { isAccounting, isDealer, isProduction, isSubDealer } from './user'
+import { isAccounting, isAdmin, isDealer, isProduction, isSubDealer } from './user'
 
 export const getDealerUnitPrice = (product: Product, estimate: Order) => {
   return Number(product.unit_price) + getMarkup(product.unit_price, estimate.user_markup ?? 0)
@@ -107,7 +107,7 @@ export const getTotalPriceByRole = (product: Product, role: string[]) => {
     total_price = product.sub_dealer_total_price
   } else if (isDealer(role)) {
     total_price = product.dealer_total_price
-  } else if (isAccounting(role)) {
+  } else if (isAccounting(role) || isAdmin(role)) {
     total_price = product.total_price
   } else {
     total_price = product.customer_total_price

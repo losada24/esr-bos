@@ -7,7 +7,7 @@ import { ESTIMATE_STATUS, SUB_DEALER_ESTIMATE } from '@/Utils/constants'
 import PdfLinks from './PdfLinks'
 import { type User } from '@/types'
 
-const PrintEstimateOrderButton = ({ id, status, user }: { id: number, status?: string, user: User }) => {
+const PrintEstimateOrderButton = ({ id, status }: { id: number, status?: string }) => {
   return (
     <div className='dropdown'>
       <Dropdown

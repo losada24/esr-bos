@@ -17,6 +17,7 @@ import logo from '../../../assets/images/logo-reylosglass.png'
 import ReportCompany from './ReportCompany'
 import { Notes } from './Notes'
 import Pagination from './Pagination'
+import { ROLES } from '@/Utils/constants'
 
 const COMPANY_ADDRESS = import.meta.env.VITE_COMPANY_ADDRESS
 const COMPANY_PHONE = import.meta.env.VITE_COMPANY_PHONE
@@ -48,7 +49,7 @@ const Report = ({ order, auth, company }: IndexOrderProps) => {
           auth={auth}
           pageTitle={`Report: ${order.name}`}
           actions={
-            <PrintEstimateOrderButton id={order.id} status={order.status} user={auth.user} />
+            <PrintEstimateOrderButton id={order.id} status={order.status} />
           }
       >
         <Head title={`Report: ${order.name}`} />
@@ -64,10 +65,10 @@ const Report = ({ order, auth, company }: IndexOrderProps) => {
             }} />
             <ReportCompany order={order} isForClient={false} />
             {order?.products?.map((product, index) => {
-              return <ReportProduct product={product} key={index} showPrices={true} roles={auth.user.roles.map((role) => role.name)} />
+              return <ReportProduct product={product} key={index} showPrices={true} roles={[ROLES.DEALER]} />
             })}
             <LeadTimeAlert glass_type={order.glass_type} />
-            <ReportTotal order={order} roles={auth.user.roles.map((role) => role.name)} />
+            <ReportTotal order={order} roles={[ROLES.DEALER]} />
             {order.notes !== null && (
               <Notes notes={order.notes ?? ''} />
             )}

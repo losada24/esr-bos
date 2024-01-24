@@ -9,7 +9,6 @@ import ReportHeader from './ReportHeader'
 import DeliveryProduct from './DeliveryProduct'
 import ReportSignature from './ReportSignature'
 
-import logo from '../../../assets/images/logo-reylosglass.png'
 import ReportCompany from './ReportCompany'
 import Pagination from './Pagination'
 

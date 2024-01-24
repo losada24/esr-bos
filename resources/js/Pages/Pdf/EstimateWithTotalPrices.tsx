@@ -10,7 +10,6 @@ import EstimateProduct from './ReportProduct'
 import ReportSignature from './ReportSignature'
 import PrintEstimateOrderButton from '@/Pages/Pdf/PrintEstimateOrderButton'
 
-import logo from '../../../assets/images/logo-reylosglass.png'
 import ReportCompany from './ReportCompany'
 import EstimateTotal from './EstimateTotal'
 import { Notes } from './Notes'
