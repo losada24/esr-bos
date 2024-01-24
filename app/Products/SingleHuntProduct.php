@@ -336,9 +336,9 @@ class SingleHuntProduct implements IProduct {
         $tSlotSealFrameBottomMaterial = RawMaterial::where('name', 'TSB 0001')->first(); // TSB 0001
         $tSlotSealFrameBottomCost = $this->width * 0.083 * $tSlotSealFrameBottomMaterial->cost_per_unit;
         if ($this->frameColor == FrameColorEnum::$FRAME_COLOR["WHITE"]) {
-          $weatherStripMeetRailSashMaterial = RawMaterial::where('name', 'W 22184 W')->first(); // W 22184 W or B
+          $weatherStripMeetRailSashMaterial = RawMaterial::where('name', 'W 22174 W')->first(); // W 22184 W or B
         } else {
-          $weatherStripMeetRailSashMaterial = RawMaterial::where('name', 'W 22174 G')->first(); // W 22184 W or B
+          $weatherStripMeetRailSashMaterial = RawMaterial::where('name', 'W 22174 BL')->first(); // W 22184 W or B
         }
         $weatherStripMeetRailSashCost = $this->getWeatherStripMeetRailSash() * 0.083 * $weatherStripMeetRailSashMaterial->cost_per_unit;
         $weatherStripBottomMaterial = RawMaterial::where('name', 'W 22254 BL')->first(); // W 22254 BL
