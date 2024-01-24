@@ -356,9 +356,9 @@ class HorizontalRollerProduct implements IProduct {
         $settingBlockMaterial = RawMaterial::where('id', 10)->first(); // MATERIAL NE850062
         $settingBlockCost = 16 * $settingBlockMaterial->cost_per_unit;
         if ($this->frameColor == FrameColorEnum::$FRAME_COLOR["WHITE"]) {
-          $weatherStripMeetRailSashMaterial = RawMaterial::where('name', 'W 22184 W')->first(); // W 22184 W or B
+          $weatherStripMeetRailSashMaterial = RawMaterial::where('name', 'W 22174 W')->first(); // W 22184 W or B
         } else {
-          $weatherStripMeetRailSashMaterial = RawMaterial::where('name', 'W 22174 G')->first(); // W 22184 W or B
+          $weatherStripMeetRailSashMaterial = RawMaterial::where('name', 'W 22174 BL')->first(); // W 22184 W or B
         }
         $weatherStripMeetRailSashCost = (2 * $this->getVentBottomAndTop() + $this->getFixedMeetingRail()) * 0.083 * $weatherStripMeetRailSashMaterial->cost_per_unit;
         $wheatherStripBottomMaterial = RawMaterial::where('name', 'W 22254 BL')->first(); // MATERIAL W 22254 BL

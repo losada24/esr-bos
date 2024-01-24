@@ -149,7 +149,7 @@ class FixedWindowsProduct implements IProduct {
         $stopSashMaterial = RawMaterial::where('name', 'STS 0001 ' . $this->materialColor)->first(); // STS 0001 (W or B)
         $stopSashCost = ($this->getGlassHeigth() * 2) * 0.083 * $stopSashMaterial->cost_per_unit;
         $settingBlockMaterial = RawMaterial::where('name', 'NE 850125')->first(); // MATERIAL NE 850125
-        $settingBlockCost = 8 * $settingBlockMaterial->cost_per_unit;
+        $settingBlockCost = 1 * $settingBlockMaterial->cost_per_unit;
         $structuralSiliconeMaterial = RawMaterial::where('id', 32)->first(); // MATERIAL Structural Silicone
         $structuralSiliconeCost = (((($this->getGlassHeigth() - 0.87 + 0.3775) * 2) * 0.083) + ((($this->getGlassWidth() + 0.1875) * 2) * 0.083)) * $structuralSiliconeMaterial->cost_per_unit;
         $glassMaterial = RawMaterial::where('name', $this->glassType)->first(); // MATERIAL Glass
