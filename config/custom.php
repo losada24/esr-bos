@@ -13,4 +13,5 @@ return [
   'packing' => env('PACKING'),
   'address_required_after_amount' => env('ADDRESS_REQUIRED_AFTER_AMOUNT'),
   'labels_images_path' => env('LABELS_IMAGES_PATH'),
+  'corner_silicone' => env('CORNER_SILICONE'),
 ];

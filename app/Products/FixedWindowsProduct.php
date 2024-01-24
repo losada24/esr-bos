@@ -154,6 +154,8 @@ class FixedWindowsProduct implements IProduct {
         $structuralSiliconeCost = (((($this->getGlassHeigth() - 0.87 + 0.3775) * 2) * 0.083) + ((($this->getGlassWidth() + 0.1875) * 2) * 0.083)) * $structuralSiliconeMaterial->cost_per_unit;
         $glassMaterial = RawMaterial::where('name', $this->glassType)->first(); // MATERIAL Glass
         $glassCost = $this->getGlassHeigth() * $this->getGlassWidth() / 144 * $glassMaterial->cost_per_unit;
+
+
         //GET OTHER BILLS
         $workBill = config('custom.work_bill');
         $rentBill = config('custom.rent_bill');
@@ -161,7 +163,7 @@ class FixedWindowsProduct implements IProduct {
         $internetBill = config('custom.internet_bill');
         $otherBill = config('custom.other_bill');
         $packing = config('custom.packing');
-
+        $cornerSilicone = config('custom.corner_silicone');
 
         /* echo "Frame Head Cost: " . $frameHeadCost . "<br>";
         echo "jambCost: " . $jambCost . "<br>";
@@ -206,6 +208,7 @@ class FixedWindowsProduct implements IProduct {
           $electricityBill +
           $internetBill +
           $otherBill +
+          $cornerSilicone +
           $packing;
           
         //GET COMPANY MOCKUP

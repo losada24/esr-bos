@@ -391,6 +391,7 @@ class HorizontalRollerProduct implements IProduct {
         $otherBill = config('custom.other_bill');
         $screen_price_by_sqft = config('custom.screen_price_by_sqft');
         $packing = config('custom.packing');
+        $cornerSilicone = config('custom.corner_silicone');
 
         $glassMaterial = RawMaterial::where('name', $this->glassType)->first(); // MATERIAL Glass
         $glassCost = $this->getGlassHeigth() * $this->getGlassWidth() / 144 * $glassMaterial->cost_per_unit;
@@ -504,6 +505,7 @@ class HorizontalRollerProduct implements IProduct {
           $rentBill +
           $electricityBill +
           $internetBill +
+          $cornerSilicone +
           $otherBill;
 
         //GET COMPANY MOCKUP
