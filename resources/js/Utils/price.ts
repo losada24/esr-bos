@@ -1,4 +1,5 @@
-import { type Product, type Order } from '@/types'
+import { type Product, type Order, Role } from '@/types'
+import { isAccounting, isDealer, isProduction, isSubDealer } from './user'
 
 export const getDealerUnitPrice = (product: Product, estimate: Order) => {
   return Number(product.unit_price) + getMarkup(product.unit_price, estimate.user_markup ?? 0)
@@ -83,4 +84,57 @@ export const formatPrice = (price: number) => {
   })
 
   return USDollar.format(price)
+}
+
+export const getUnitPriceByRole = (product: Product, role: string[]) => {
+  let unit_price = 0
+  if (isSubDealer(role)) {
+    unit_price = product.sub_dealer_unit_price
+  } else if (isDealer(role)) {
+    unit_price = product.dealer_unit_price
+  } else if (isProduction(role)) {
+    unit_price = product.unit_price
+  } else {
+    unit_price = product.customer_unit_price
+  }
+
+  return unit_price
+}
+
+export const getTotalPriceByRole = (product: Product, role: string[]) => {
+  let total_price = 0
+  if (isSubDealer(role)) {
+    total_price = product.sub_dealer_total_price
+  } else if (isDealer(role)) {
+    total_price = product.dealer_total_price
+  } else if (isAccounting(role)) {
+    total_price = product.total_price
+  } else {
+    total_price = product.customer_total_price
+  }
+
+  return Number(total_price)
+}
+
+export const getSubTotalPriceByRole = (order: Order, role: string[]) => {
+  const subtotal: number | undefined = order.products?.reduce((acc, product) => {
+    return acc + getTotalPriceByRole(product, role)
+  }, 0)
+
+  return subtotal
+}
+
+export const getTaxAmountByRole = (order: Order, role: string[]) => {
+  const tax_race: number = order.tax_rate ?? 0
+  const subtotal: number = getSubTotalPriceByRole(order, role) ?? 0
+  return subtotal * tax_race / 100
+}
+
+export const getGrandTotalByRole = (order: Order, role: string[]) => {
+  const subtotal: number = getSubTotalPriceByRole(order, role) ?? 0
+  const tax_amount: number = getTaxAmountByRole(order, role) ?? 0
+  const installation: number = order.installation ?? 0
+  const permit: number = order.permit ?? 0
+  const other: number = order.other ?? 0
+  return Number(subtotal) + Number(tax_amount) + Number(installation) + Number(permit) + Number(other)
 }
