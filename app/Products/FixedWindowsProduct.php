@@ -209,18 +209,18 @@ class FixedWindowsProduct implements IProduct {
           $packing;
           
         //GET COMPANY MOCKUP
-        $companyMockup = $this->getCompanyMockup();
+        /*$companyMockup = $this->getCompanyMockup();
         $companyMockupCost = $unitPriceCost * $companyMockup / 100;
 
         $promotion = $this->getCompanyPromotion();
         $promotionCost = ($unitPriceCost + $companyMockupCost) * $promotion / 100;
         
-        /* echo "unitPriceCost: " . $unitPriceCost . "<br>";
+         echo "unitPriceCost: " . $unitPriceCost . "<br>";
         echo "Promotion: " . $promotionCost . "<br>";
         echo "Mockup: " . $companyMockupCost . "<br>";
         echo "associate cost: " . ($workBill + $rentBill + $electricityBill + $internetBill + $otherBill) . "<br>";
         echo "Valor Final cost: " . round($unitPriceCost + $companyMockupCost - $promotionCost, 2) . "<br>";
         die;*/
-        return round($unitPriceCost + $companyMockupCost - $promotionCost, 2);
+        return round($unitPriceCost, 2);
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enum\ProductSystemEnum;
+use App\Enum\RoleEnum;
 use App\Http\Resources\CompanyResource;
 use App\Models\Company;
 use App\Models\Order;
@@ -139,20 +140,32 @@ class PdfController extends Controller
     public function report(Order $order)
     {
       $order->load(['products', 'client', 'user.company']);
-      
+      $company = Company::where('id', $order->user->company_id)->first();
+      CompanyResource::withoutWrapping();
       return Inertia::render('Pdf/Report', [
-        'order' => $order
+        'order' => $order,
+        'company' => new CompanyResource($company),
       ]);
     }
 
     public function estimateWithPrices(Order $order)
     {
       $order->load(['products', 'client', 'user.company']);
-      $company = Company::where('id', $order->user->company_id)->first();
+      $company = new \stdClass();
+      $company->id = auth()->user()->company_id;
+      $company->email = auth()->user()->email;
+      $company->phone_number = '';
+      $company->address = '';
+      $company->featured_image = $order->user->company->featured_image;
+      if (auth()->user()->hasRole(RoleEnum::$DEALER)) {
+        $company = Company::where('id', $order->user->company_id)->first();
+      }
+      
+      $company = new CompanyResource($company);
       CompanyResource::withoutWrapping();
       return Inertia::render('Pdf/EstimateWithPrices', [
         'order' => $order,
-        'company' => new CompanyResource($company),
+        'company' => $company,
       ]);
     }
 
@@ -163,7 +176,7 @@ class PdfController extends Controller
       CompanyResource::withoutWrapping();
       return Inertia::render('Pdf/EstimateWithoutPrices', [
         'order' => $order,
-        'company' => new CompanyResource($company),
+        'company' => new CompanyResource($company) ,
       ]);
     }
 

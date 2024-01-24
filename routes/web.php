@@ -249,7 +249,7 @@ Route::middleware('auth')->group(function () {
       ->name('pdf.estimate.without.prices');
     
     Route::get('/pdf/report/{order}', [PdfController::class, 'report'])
-      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$ACCOUNTING ])
+      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$ACCOUNTING . "|" . RoleEnum::$SUB_DEALER ])
       ->name('pdf.report');
 
     Route::get('/pdf/delivery/{order}', [PdfController::class, 'delivery'])

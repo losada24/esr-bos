@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import Modal from '@/Components/Modal'
 import CloseIcon from '@/Components/Icons/CloseIcon'
-import { type Order } from '@/types'
+import { type Status, type Order } from '@/types'
 import { createMarkWithLeadingZero } from '@/Utils/mark'
 import { router } from '@inertiajs/react'
 import { type FormikHelpers, Formik } from 'formik'
@@ -13,7 +13,7 @@ const OrderUpdateStatusModal = ({ showModal, onClose, order }: {
   onClose: CallableFunction
   order: Order | null
 }) => {
-  const [statuses, setStatuses] = useState<string[]>([])
+  const [statuses, setStatuses] = useState<Status[]>([])
 
   useEffect(() => {
     if (order === null) return

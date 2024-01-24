@@ -1,18 +1,21 @@
 import { type Order } from '@/types'
-import { getDealerSubtotal, getDealerTaxAmount, getDealerGrandTotal, getDealerSubtotalWithMarkup, formatPrice } from '@/Utils/price'
+import { formatPrice, getSubTotalPriceByRole, getTaxAmountByRole, getGrandTotalByRole } from '@/Utils/price'
 
-const PriceSummary = ({ estimate }: { estimate: Order }) => {
+const PriceSummary = ({ estimate, roles }: { estimate: Order, roles: string[] }) => {
   return (
     <div className="mt-6 grid grid-cols-1 px-4 sm:grid-cols-2">
-        <div>&nbsp;</div>
+        <div className="space-y-2">&nbsp;</div>
         <div className="space-y-2 ltr:text-right rtl:text-left">
             <div className="flex items-center">
-                <div className="flex-1">Subtotal</div>
-                <div className="w-[37%]">{`${formatPrice(getDealerSubtotal(estimate) ?? 0)}`}</div>
+                <div className="flex-1 text-lg font-semibold">Project Price</div>
             </div>
             <div className="flex items-center">
-                <div className="flex-1">Estimate Subtotal</div>
-                <div className="w-[37%]">{`${formatPrice(getDealerSubtotalWithMarkup(estimate) ?? 0)}`}</div>
+                <div className="flex-1">Subtotal</div>
+                <div className="w-[37%]">{`${formatPrice(getSubTotalPriceByRole(estimate, roles) ?? 0)}`}</div>
+            </div>
+            <div className="flex items-center">
+                <div className="flex-1">Proposal Subtotal</div>
+                <div className="w-[37%]">{`${formatPrice(getSubTotalPriceByRole(estimate, []) ?? 0)}`}</div>
             </div>
             <div className="flex items-center">
                 <div className="flex-1">Tax Rate</div>
@@ -20,7 +23,7 @@ const PriceSummary = ({ estimate }: { estimate: Order }) => {
             </div>
             <div className="flex items-center">
                 <div className="flex-1">Tax Amount</div>
-                <div className="w-[37%]">{`${formatPrice(getDealerTaxAmount(estimate) ?? 0)}`}</div>
+                <div className="w-[37%]">{`${formatPrice(getTaxAmountByRole(estimate, []) ?? 0)}`}</div>
             </div>
             <div className="flex items-center">
                 <div className="flex-1">Installation</div>
@@ -36,7 +39,7 @@ const PriceSummary = ({ estimate }: { estimate: Order }) => {
             </div>
             <div className="flex items-center text-lg font-semibold">
                 <div className="flex-1">Grand Total</div>
-                <div className="w-[37%]">{`${formatPrice(getDealerGrandTotal(estimate) ?? 0)}`}</div>
+                <div className="w-[37%]">{`${formatPrice(getGrandTotalByRole(estimate, []) ?? 0)}`}</div>
             </div>
         </div>
     </div>

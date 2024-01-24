@@ -3,6 +3,7 @@ namespace App\Actions;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Models\Order;
 use App\Models\Product;
 use App\Enum\ProductSystemEnum;
 use App\Events\OrderCreated;
@@ -19,9 +20,17 @@ class CreateFixedWindows {
         $request->glass_type
       );
 
+      $estimate = Order::find($request->order_id);
       $unitPrice = $fixedWindowsProduct->getUnitPrice();
-      // $markupValue = $unitPrice * ($request->markup / 100);
-      // $unitPriceWithMarkup = $unitPrice + $markupValue;
+      $totalPrice = $unitPrice * $request->qty;
+      $dealerUnitPrice = $unitPrice + ($unitPrice * $estimate->company_markup / 100);
+      $dealerTotalPrice = $dealerUnitPrice * $request->qty;
+      $subdealerUnitPrice = $dealerUnitPrice + ($dealerUnitPrice * $estimate->user_markup / 100);
+      $subdealerTotalPrice = $subdealerUnitPrice * $request->qty;
+      $customerUnitPrice = $subdealerUnitPrice + ($subdealerUnitPrice * $request->markup / 100);
+      $customerTotalPrice = $customerUnitPrice * $request->qty;
+      $dealerPromotionDiscount = $dealerUnitPrice * $estimate->company_promotion / 100;
+      $dealerPromotionTotalDiscount = $dealerPromotionDiscount * $request->qty;
 
       $product = Product::create([
         'order_id' => $request->order_id,
@@ -37,7 +46,15 @@ class CreateFixedWindows {
         'low_e' => $request->low_e,
         'privacy' => $request->privacy,
         'unit_price' => $unitPrice,
-        'total_price' => $unitPrice * $request->qty,
+        'total_price' => $totalPrice,
+        'dealer_unit_price' => $dealerUnitPrice,
+        'dealer_total_price' => $dealerTotalPrice,
+        'sub_dealer_unit_price' => $subdealerUnitPrice,
+        'sub_dealer_total_price' => $subdealerTotalPrice,
+        'customer_unit_price' => $customerUnitPrice,
+        'customer_total_price' => $customerTotalPrice,
+        'dealer_promotion_discount' => $dealerPromotionDiscount,
+        'dealer_promotion_total_discount' => $dealerPromotionTotalDiscount,
         'user_id' => auth()->user()->id,
         'extras' => [
           'config' => 'O'

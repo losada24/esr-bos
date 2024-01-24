@@ -11,7 +11,7 @@ import { createMarkWithLeadingZero } from '@/Utils/mark'
 import MoneyIcon from '@/Components/Icons/MoneyIcon'
 import CheckIcon from '@/Components/Icons/CheckIcon'
 import { isAdmin, isDealer, isSubDealer } from '@/Utils/user'
-import { formatPrice, getDealerGrandTotal, getDealerSubtotal } from '@/Utils/price'
+import { formatPrice, getGrandTotalByRole, getSubTotalPriceByRole } from '@/Utils/price'
 import OrderUpdateStatusModal from '@/Pages/Order/OrderUpdateStatusModal'
 import { ESTIMATE_STATUS, SUB_DEALER_ESTIMATE } from '@/Utils/constants'
 
@@ -83,10 +83,10 @@ export default function Index ({ auth, estimates }: IndexOrderProps) {
                       {created_at?.toString()}
                     </td>
                     <td className="border-t px-6 py-4 align-top">
-                      {formatPrice(getDealerSubtotal(estimate) ?? 0)}
+                      {formatPrice(getSubTotalPriceByRole(estimate, auth.user.roles.map((role) => role.name)) ?? 0)}
                     </td>
                     <td className="border-t px-6 py-4 align-top">
-                      {formatPrice(getDealerGrandTotal(estimate))}
+                      {formatPrice(getGrandTotalByRole(estimate, auth.user.roles.map((role) => role.name)))}
                     </td>
                     <td className="border-t flex items-center px-6 py-4">
                         {((isSubDealer(auth.user.roles.map((role: Role) => role.name)) && estimate.status === SUB_DEALER_ESTIMATE) || (isDealer(auth.user.roles.map((role: Role) => role.name)) && estimate.user_id !== auth.user.id)) && (

@@ -166,7 +166,7 @@ const EstimateForm = ({ submitCount, errors, isCreate, glass_colors, frame_color
               type="number"
             />
           </div>
-          {(submitCount && errors.tax_rate) ? <InputError message={errors.tax_rate} className="mt-2" /> : ''}
+          {(submitCount && errors.installation) ? <InputError message={errors.installation} className="mt-2" /> : ''}
         </div>
         <div className={submitCount ? (errors.permit) ? 'has-error' : 'has-success' : ''}>
           <label htmlFor="name">Permit</label>

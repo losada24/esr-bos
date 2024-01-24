@@ -89,4 +89,16 @@ class User extends Authenticatable
     {
         return $this->belongsTo(Company::class);
     }
-}
+
+    public function getRedirectRoute() {
+        if ($this->hasRole(RoleEnum::$ADMIN) ||
+          $this->hasRole(RoleEnum::$PRODUCTION) ||
+          $this->hasRole(RoleEnum::$ACCOUNT_MANAGER) ||
+          $this->hasRole(RoleEnum::$SHIPPING) ||
+          $this->hasRole(RoleEnum::$ACCOUNTING)) {
+            return 'order';
+        }
+            
+        return 'estimate';
+    }
+  }

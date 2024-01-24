@@ -1,6 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
 import { Head, router, Link } from '@inertiajs/react'
-import { type PageProps, type Order, type Client, Role, Product } from '@/types'
+import { type PageProps, type Order, type Client, type Role, type Product } from '@/types'
 import Panel from '@/Components/Panel'
 import EditIcon from '@/Components/Icons/EditIcon'
 import PlusIcon from '@/Components/Icons/PlusIcon'
@@ -14,7 +14,7 @@ import MoneyIcon from '@/Components/Icons/MoneyIcon'
 import PrintEstimateButton from './PrintEstimateButton'
 import { getNumberWithFraction } from '@/Utils/numbers'
 import { isDealer, isSubDealer, isAdmin } from '@/Utils/user'
-import { formatPrice, getDealerTotalPrice, getDealerUnitPrice } from '@/Utils/price'
+import { formatPrice, getTotalPriceByRole, getUnitPriceByRole } from '@/Utils/price'
 
 export default function Create ({ auth, estimate }: PageProps & {
   clients: Client[]
@@ -177,10 +177,10 @@ export default function Create ({ auth, estimate }: PageProps & {
                             {glass_type}
                           </td>
                           <td className="border-t px-6 py-4 align-top text-right">
-                            {formatPrice(getDealerUnitPrice(product, estimate))}
+                            {formatPrice(getUnitPriceByRole(product, auth.user.roles.map((role: Role) => role.name)))}
                           </td>
                           <td className="border-t px-6 py-4 align-top text-right">
-                            {formatPrice(getDealerTotalPrice(product, estimate))}
+                            {formatPrice(getTotalPriceByRole(product, auth.user.roles.map((role: Role) => role.name)))}
                           </td>
                           {((isSubDealer(auth.user.roles.map((role: Role) => role.name)) && estimate.status === SUB_DEALER_ESTIMATE) ||
                           ((isDealer(auth.user.roles.map((role: Role) => role.name)) || isAdmin(auth.user.roles.map((role: Role) => role.name))) && estimate.status === ESTIMATE_STATUS)) && (
@@ -215,7 +215,7 @@ export default function Create ({ auth, estimate }: PageProps & {
                   </tbody>
                 </table>
               </div>
-              <PriceSummary estimate={estimate} />
+              <PriceSummary estimate={estimate} roles={auth.user.roles.map((role: Role) => role.name)} />
             </div>
           </div>
       </AuthenticatedLayout>

@@ -5,12 +5,13 @@ import PrimaryButton from '@/Components/PrimaryButton'
 import { Link } from '@inertiajs/react'
 import { type FormikErrors } from 'formik'
 import { type OrderStatusUpdate } from './OrderCommon'
+import { type Status } from '@/types'
 
 const OrderStatusUpdateForm = ({ submitCount, errors, isCreate, statuses }: {
   submitCount: number
   errors: FormikErrors<OrderStatusUpdate>
   isCreate: boolean
-  statuses: string[] }) => {
+  statuses: Status[] }) => {
   return (
     <Form className='space-y-5'>
       <div className={submitCount ? (errors.status) ? 'has-error' : 'has-success' : ''}>
@@ -25,7 +26,7 @@ const OrderStatusUpdateForm = ({ submitCount, errors, isCreate, statuses }: {
         >
           <option value="">Select Status</option>
           {statuses.map((status, index) => (
-            <option key={index} value={status}>{status.toUpperCase()}</option>
+            <option key={index} value={status.value}>{status.label.toUpperCase()}</option>
           ))}
         </Field>
         {(submitCount && errors.status) ? <InputError message={errors.status} className="mt-2" /> : ''}

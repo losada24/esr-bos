@@ -2,7 +2,7 @@ import React from 'react'
 import { Text, View } from '@react-pdf/renderer'
 import { createTw } from 'react-pdf-tailwind'
 import { type Order } from '@/types'
-import { getSubtotal, formatPrice } from '@/Utils/price'
+import { getSubTotalPriceByRole, formatPrice } from '@/Utils/price'
 
 const tw = createTw({
   theme: {
@@ -18,7 +18,7 @@ const tw = createTw({
   }
 })
 
-const ReportTotal = ({ order }: { order: Order }) => {
+const ReportTotal = ({ order, roles }: { order: Order, roles: string[] }) => {
   return (
     <View style={tw('flex flex-row mt-4')}>
       <View style={tw('w-6/12')}>
@@ -28,7 +28,7 @@ const ReportTotal = ({ order }: { order: Order }) => {
         </View>
         <View style={tw('flex flex-row justify-start gap-x-3')}>
           <Text style={tw('text-base text-gray-900 font-bold')}>Estimate:</Text>
-          <Text style={tw('text-base text-gray-900 font-regular')}>{order.client?.name}</Text>
+          <Text style={tw('text-base text-gray-900 font-regular')}>{order.user?.name}</Text>
         </View>
         <View style={tw('flex flex-row justify-start gap-x-3')}>
           <Text style={tw('text-base text-gray-900 font-bold')}>Client:</Text>
@@ -37,12 +37,8 @@ const ReportTotal = ({ order }: { order: Order }) => {
       </View>
       <View style={tw('w-6/12')}>
         <View style={tw('flex flex-row justify-start gap-x-3')}>
-          <Text style={tw('text-base text-gray-900 font-bold w-6/12 text-right')}>Subtotal:</Text>
-          <Text style={tw('text-base text-gray-900 font-regular w-6/12 text-left')}>{`${formatPrice(getSubtotal(order) ?? 0)}`}</Text>
-        </View>
-        <View style={tw('flex flex-row justify-start gap-x-3')}>
           <Text style={tw('text-base text-gray-900 font-bold w-6/12 text-right')}>Grand Total:</Text>
-          <Text style={tw('text-base text-gray-900 font-regular w-6/12 text-left')}>{`${formatPrice(getSubtotal(order) ?? 0)}`}</Text>
+          <Text style={tw('text-base text-gray-900 font-regular w-6/12 text-left')}>{`${formatPrice(getSubTotalPriceByRole(order, roles) ?? 0)}`}</Text>
         </View>
       </View>
     </View>

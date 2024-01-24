@@ -472,12 +472,12 @@ class SingleHuntProduct implements IProduct {
           $otherBill;
 
         //GET COMPANY MOCKUP
-        $companyMockup = $this->getCompanyMockup();
+        /*$companyMockup = $this->getCompanyMockup();
         $companyMockupCost = $unitPriceCost * $companyMockup / 100;
 
         $promotion = $this->getCompanyPromotion();
-        $promotionCost = ($unitPriceCost + $companyMockupCost) * $promotion / 100;
+        $promotionCost = ($unitPriceCost + $companyMockupCost) * $promotion / 100;*/
 
-        return $unitPriceCost + $companyMockupCost - $promotionCost;
+        return $unitPriceCost;
     }
 }

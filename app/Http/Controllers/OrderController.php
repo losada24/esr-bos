@@ -51,8 +51,6 @@ class OrderController extends Controller
       return redirect()
           ->back()
           ->with('success', 'Status updated successfully.');
-      /*return redirect()->route('order.index')
-          ->with('success', 'Order updated successfully.');*/
     }
 
     public function status(Order $order) {
@@ -66,23 +64,38 @@ class OrderController extends Controller
         )) {
           if ($order->status ==  OrderStatusEnum::$ACCOUNTING) {
             $statuses = [
-              OrderStatusEnum::$ESTIMATE,
-              OrderStatusEnum::$PRODUCTION
+              [
+                'label' => OrderStatusEnum::$ESTIMATE,
+                'value' => OrderStatusEnum::$ESTIMATE
+              ],
+              [
+                'label' => OrderStatusEnum::$PRODUCTION,
+                'value' => OrderStatusEnum::$PRODUCTION
+              ],
             ];
           }
           else if ($order->status ==  OrderStatusEnum::$PRODUCTION_COMPLETED) {
             $statuses = [
-              OrderStatusEnum::$READY_FOR_DELIVERY
+              [
+                'label' => OrderStatusEnum::$READY_FOR_DELIVERY,
+                'value' => OrderStatusEnum::$READY_FOR_DELIVERY
+              ],
             ];
           }
           else if ($order->status ==  OrderStatusEnum::$PARTIAL_PRODUCTION_COMPLETED) {
             $statuses = [
-              OrderStatusEnum::$READY_FOR_PARTIAL_DELIVERY
+              [
+                'label' => OrderStatusEnum::$READY_FOR_PARTIAL_DELIVERY,
+                'value' => OrderStatusEnum::$READY_FOR_PARTIAL_DELIVERY
+              ],
             ];
           }
           else if ($order->status ==  OrderStatusEnum::$DELIVERED) {
             $statuses = [
-              OrderStatusEnum::$ORDER_COMPLETED
+              [
+                'label' => OrderStatusEnum::$ORDER_COMPLETED,
+                'value' => OrderStatusEnum::$ORDER_COMPLETED
+              ],
             ];
           }
       }
@@ -98,42 +111,69 @@ class OrderController extends Controller
 
         if ($order->status ==  OrderStatusEnum::$PRODUCTION) {
           $statuses = [
-            OrderStatusEnum::$SCHEDULED_PRODUCTION,
+            [
+              'label' => OrderStatusEnum::$SCHEDULED_PRODUCTION,
+              'value' => OrderStatusEnum::$SCHEDULED_PRODUCTION
+            ],
           ];
         } else if ($order->status ==  OrderStatusEnum::$SCHEDULED_PRODUCTION) {
           $statuses = [
-            OrderStatusEnum::$PRODUCTION_IN_PROGRESS
+            [
+              'label' => OrderStatusEnum::$PRODUCTION_IN_PROGRESS,
+              'value' => OrderStatusEnum::$PRODUCTION_IN_PROGRESS
+            ]
           ];
         }
         else if ($order->status == OrderStatusEnum::$READY_FOR_PARTIAL_DELIVERY) {
           $statuses = [
-            OrderStatusEnum::$PRODUCTION_COMPLETED
+            [
+              'label' => OrderStatusEnum::$PRODUCTION_COMPLETED,
+              'value' => OrderStatusEnum::$PRODUCTION_COMPLETED
+            ]
           ];
         }
         else {
           $statuses = [
-            OrderStatusEnum::$PARTIAL_PRODUCTION_COMPLETED,
-            OrderStatusEnum::$PRODUCTION_COMPLETED
+            [
+              'label' => OrderStatusEnum::$PARTIAL_PRODUCTION_COMPLETED,
+              'value' => OrderStatusEnum::$PARTIAL_PRODUCTION_COMPLETED
+            ],
+            [
+              'label' => OrderStatusEnum::$PRODUCTION_COMPLETED,
+              'value' => OrderStatusEnum::$PRODUCTION_COMPLETED
+            ]
           ];
-        } 
+        }
       }
       else if (((auth()->user()->hasRole(RoleEnum::$ADMIN) || auth()->user()->hasRole(RoleEnum::$SHIPPING)) && 
         $order->status ==  OrderStatusEnum::$READY_FOR_DELIVERY ||
         $order->status ==  OrderStatusEnum::$READY_FOR_PARTIAL_DELIVERY
       )) {
         $statuses = [
-          OrderStatusEnum::$DELIVERED,
-          OrderStatusEnum::$PARTIAL_DELIVERED
+          [
+            'label' => OrderStatusEnum::$DELIVERED,
+            'value' => OrderStatusEnum::$DELIVERED
+          ],
+          [
+            'label' => OrderStatusEnum::$PARTIAL_DELIVERED,
+            'value' => OrderStatusEnum::$PARTIAL_DELIVERED
+          ]
         ];
       }
       else if (auth()->user()->hasRole(RoleEnum::$SUB_DEALER) && $order->status ==  OrderStatusEnum::$SUB_DEALER_ESTIMATE) {
           $statuses = [
-            OrderStatusEnum::$ESTIMATE
+            [
+              'label' => 'Estimate to Order',
+              'value' => OrderStatusEnum::$ESTIMATE
+            ]
           ];
       }
       else if (auth()->user()->hasRole(RoleEnum::$DEALER) && $order->status == OrderStatusEnum::$ESTIMATE) {
           $statuses = [
-            OrderStatusEnum::$SUB_DEALER_ESTIMATE
+            [
+              'label' => 'Return to Sub Dealer',
+              'value' => OrderStatusEnum::$SUB_DEALER_ESTIMATE
+            ],
           ];
       }
 

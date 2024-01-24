@@ -17,6 +17,7 @@ import { type CuttingList } from './interfaces/cuttingList'
 import { type MaterialConsumption } from './interfaces/materialConsumption'
 import { type Balance } from './interfaces/balance'
 import { type PaymentInfo } from './interfaces/paymentInfo'
+import { type Status } from './interfaces/status'
 
 export type {
   User,
@@ -37,5 +38,6 @@ export type {
   CuttingList,
   MaterialConsumption,
   Balance,
-  PaymentInfo
+  PaymentInfo,
+  Status
 }

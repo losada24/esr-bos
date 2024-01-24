@@ -32,6 +32,14 @@ class Product extends Model
       'user_id',
       'unit_price',
       'total_price',
+      'dealer_unit_price',
+      'dealer_total_price',
+      'sub_dealer_unit_price',
+      'sub_dealer_total_price',
+      'customer_unit_price',
+      'customer_total_price',
+      'dealer_promotion_discount',
+      'dealer_promotion_total_discount',
     ];
 
     protected $dispatchesEvents = [

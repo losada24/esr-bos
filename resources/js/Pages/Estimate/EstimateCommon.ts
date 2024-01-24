@@ -11,6 +11,9 @@ export const estimateSchema = Yup.object({
   glass_color: Yup.string().required('Glass color is required'),
   glass_type: Yup.string().required('Glass type is required'),
   markup: Yup.number().required('Markup is required'),
+  installation: Yup.number(),
+  permit: Yup.number(),
+  other: Yup.number(),
   notes: Yup.string().nullable()
 })
 

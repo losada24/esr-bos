@@ -25,4 +25,12 @@ export interface Product {
   order?: Order
   cutting_list?: CuttingList[]
   visual_id?: number
+  customer_total_price: number
+  customer_unit_price: number
+  dealer_promotion_discount: number
+  dealer_promotion_total_discount: number
+  dealer_total_price: number
+  dealer_unit_price: number
+  sub_dealer_unit_price: number
+  sub_dealer_total_price: number
 }

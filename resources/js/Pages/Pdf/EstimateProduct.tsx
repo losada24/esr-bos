@@ -5,7 +5,8 @@ import { type Product, type Order } from '@/types'
 import ReportProductImage from '@/Pages/Pdf/ReportProductImage'
 import { PRODUCT_SYSTEMS } from '@/Utils/constants'
 import { getNumberWithFraction } from '@/Utils/numbers'
-import { formatPrice, getDealerTotalPrice, getDealerUnitPrice } from '@/Utils/price'
+import { formatPrice, getTotalPriceByRole, getUnitPriceByRole } from '@/Utils/price'
+import { getProductCertification } from '@/Utils/products'
 
 const tw = createTw({
   theme: {
@@ -21,7 +22,7 @@ const tw = createTw({
   }
 })
 
-const EstimateProduct = ({ product, showPrices, estimate }: { product: Product, showPrices: boolean, estimate: Order }) => {
+const EstimateProduct = ({ product, showPrices }: { product: Product, showPrices: boolean }) => {
   return (
     <View style={tw('flex flex-col mb-4 border border-gray-200')}>
       <View style={tw('flex flex-col bg-gray-200')}>
@@ -62,7 +63,7 @@ const EstimateProduct = ({ product, showPrices, estimate }: { product: Product, 
             <Text style={tw('text-xs text-gray-900 font-regular')}>{product.qty}</Text>
           </View>
           <View style={tw('flex flex-row justify-start items-center gap-3 w-2/12')}>
-            <Text style={tw('text-xs text-gray-900 font-regular')}>{product.system}</Text>
+            <Text style={tw('text-xs text-gray-900 font-regular')}>{product.system}{product.system === PRODUCT_SYSTEMS.HORIZONTAL_ROLLER ? `(${product.extras?.config})` : ''}</Text>
           </View>
           <View style={tw(`flex flex-row justify-start items-center gap-3 ${showPrices ? 'w-2/12' : 'w-3/12'}`)}>
             <Text style={tw('text-xs text-gray-900 font-regular')}>{getNumberWithFraction(product.width)} x {getNumberWithFraction(product.height)}</Text>
@@ -73,10 +74,10 @@ const EstimateProduct = ({ product, showPrices, estimate }: { product: Product, 
           {showPrices && (
             <>
               <View style={tw('flex flex-row justify-start items-center gap-3 w-1/12')}>
-                <Text style={tw('text-xs text-gray-900 font-regular text-right')}>{formatPrice(getDealerUnitPrice(product, estimate))}</Text>
+                <Text style={tw('text-xs text-gray-900 font-regular text-right')}>{formatPrice(getUnitPriceByRole(product, []))}</Text>
               </View>
               <View style={tw('flex flex-row justify-start items-center gap-3 w-1/12')}>
-                <Text style={tw('text-xs text-gray-900 font-regular text-right')}>{formatPrice(getDealerTotalPrice(product, estimate))}</Text>
+                <Text style={tw('text-xs text-gray-900 font-regular text-right')}>{formatPrice(getTotalPriceByRole(product, []))}</Text>
               </View>
             </>
           )}
@@ -86,21 +87,29 @@ const EstimateProduct = ({ product, showPrices, estimate }: { product: Product, 
         <ReportProductImage product={product} />
       </View>
       <View style={tw('flex flex-row gap-4 justify-start bg-gray-200')}>
-        <View style={tw('flex flex-row gap-4 justify-start p-3 w-9/12')}>
+        <View style={tw('flex flex-row gap-4 justify-start p-3 w-8/12')}>
             <Text style={tw('text-xs text-gray-900 font-bold')}>Glass Type:</Text>
         </View>
-        <View style={tw('flex flex-row gap-4 justify-start p-3 w-3/12')}>
+        <View style={tw('flex flex-row gap-4 justify-start p-3 w-2/12')}>
             <Text style={tw('text-xs text-gray-900 font-bold')}>Pressure:</Text>
+        </View>
+        <View style={tw('flex flex-row gap-4 justify-start p-3 w-2/12')}>
+            <Text style={tw('text-xs text-gray-900 font-bold')}>Certification:</Text>
         </View>
       </View>
 
       <View style={tw('flex flex-row gap-4 justify-start')}>
-        <View style={tw('flex flex-row gap-4 justify-start p-3 w-9/12')}>
+        <View style={tw('flex flex-row gap-4 justify-start p-3 w-8/12')}>
           <Text style={tw('text-xs text-gray-900 font-regular')}>{product.glass_type}</Text>
         </View>
-        <View style={tw('flex flex-row gap-4 justify-start p-3 w-3/12')}>
-          <Text style={tw('text-xs text-gray-900 font-regular text-green-700')}>
+        <View style={tw('flex flex-row gap-4 justify-start p-3 w-2/12')}>
+          <Text style={tw('text-xs font-regular text-green-700')}>
             {product.system === PRODUCT_SYSTEMS.HORIZONTAL_ROLLER || product.system === PRODUCT_SYSTEMS.SINGLE_HUNG ? '+70/-70 psf' : '+75/-75 psf'}
+          </Text>
+        </View>
+        <View style={tw('flex flex-row gap-4 justify-start p-3 w-2/12')}>
+          <Text style={tw('text-xs text-gray-900 font-regular')}>
+            {getProductCertification(product.system)}
           </Text>
         </View>
       </View>

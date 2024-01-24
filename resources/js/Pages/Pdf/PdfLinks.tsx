@@ -1,20 +1,16 @@
 import React from 'react'
 import { Link } from '@inertiajs/react'
-import { isSubDealer } from '@/Utils/user'
-import { type User, type Role } from '@/types'
 
-const PdfLinks = ({ id, user }: { id: number, user: User }) => {
+const PdfLinks = ({ id }: { id: number }) => {
   return (
     <>
-      {!isSubDealer(user.roles.map((role: Role) => role.name)) && (
-        <li>
-          <Link
-            href={route('pdf.report', id)}
-          >
-            Cost Report
-          </Link>
-        </li>
-      )}
+      <li>
+        <Link
+          href={route('pdf.report', id)}
+        >
+          Cost Report
+        </Link>
+      </li>
       <li>
         <Link
           href={route('pdf.estimate.with.prices', id)}
