@@ -28,6 +28,19 @@ trait Product {
     return $result;
   }
 
+  public function getGlassSize($size) {
+    $result = $size;
+    if (is_numeric($size) && floor($size) != $size) {
+      $result = ceil($size);
+    }
+
+    if ($result % 2 != 0) {
+      $result++;
+    }
+
+    return (integer)$result;
+  }
+
   public function getCuttingListObject($part, $material, $qty, $size = 0, $rawSize = 0) {
     $cuttingListObject = new \stdClass();
     $cuttingListObject->part = $part;

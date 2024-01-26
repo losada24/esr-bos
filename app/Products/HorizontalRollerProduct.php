@@ -394,8 +394,8 @@ class HorizontalRollerProduct implements IProduct {
         $cornerSilicone = config('custom.corner_silicone');
 
         $glassMaterial = RawMaterial::where('name', $this->glassType)->first(); // MATERIAL Glass
-        $glassCost = $this->getGlassHeigth() * $this->getGlassWidth() / 144 * $glassMaterial->cost_per_unit;
-        $glassCostMove = $this->getMoveGlassHeight() * $this->getGlassWidth() / 144 * $glassMaterial->cost_per_unit;
+        $glassCost = $this->getGlassSize($this->getGlassHeigth()) * $this->getGlassSize($this->getGlassWidth()) / 144 * $glassMaterial->cost_per_unit;
+        $glassCostMove = $this->getGlassSize($this->getMoveGlassHeight()) * $this->getGlassSize($this->getGlassWidth()) / 144 * $glassMaterial->cost_per_unit;
         $screenCost = 0;
         if ($this->screenRequired) {
           $screenCost = $this->getScreenWidth() * $this->getScreenHeigth() / 144 * $screen_price_by_sqft;

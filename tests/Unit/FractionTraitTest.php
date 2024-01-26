@@ -34,5 +34,5 @@ test('check 6.454', function () {
         use App\Traits\Fractions;
     };
 
-    expect($fraction->getNumberWithFraction(6.454))->toBe('6 1/2');
+    expect($fraction->getNumberWithFraction(6.454))->toBe('6 7/16');
 });

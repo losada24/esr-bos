@@ -373,7 +373,7 @@ class SingleHuntProduct implements IProduct {
         $cornerSilicone = config('custom.corner_silicone');
 
         $glassMaterial = RawMaterial::where('name', $this->glassType)->first(); // MATERIAL Glass
-        $glassCost = $this->getGlassHeigth() * $this->getGlassWidth() / 144 * $glassMaterial->cost_per_unit;
+        $glassCost = $this->getGlassSize($this->getGlassHeigth()) * $this->getGlassSize($this->getGlassWidth()) / 144 * $glassMaterial->cost_per_unit;
         $balancePrice = 13.6;
         $screenCost = 0;
         if ($this->screenRequired) {
