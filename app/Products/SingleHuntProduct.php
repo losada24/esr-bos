@@ -114,9 +114,9 @@ class SingleHuntProduct implements IProduct {
       $stg0002 = RawMaterial::where('name', 'TSG 0002')->first();
       $tbs0001 = RawMaterial::where('name', 'TSB 0001')->first();
       if ($this->frameColor == FrameColorEnum::$FRAME_COLOR["WHITE"]) {
-        $weatherStripMeetRailSash = RawMaterial::where('name', 'W 22184 W')->first(); // W 22184 W or B
+        $weatherStripMeetRailSash = RawMaterial::where('name', 'W 22174 W')->first(); // W 22184 W or B
       } else {
-        $weatherStripMeetRailSash = RawMaterial::where('name', 'W 22174 G')->first(); // W 22184 W or B
+        $weatherStripMeetRailSash = RawMaterial::where('name', 'W 22174 BL')->first(); // W 22184 W or B
       }
       //$w22184 = RawMaterial::where('name', 'W 22184 ' . $this->materialColor)->first();
       $w22254BL = RawMaterial::where('name', 'W 22254 BL')->first();
