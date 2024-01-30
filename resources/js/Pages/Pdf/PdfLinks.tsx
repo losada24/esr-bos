@@ -5,7 +5,7 @@ import { isAdmin, isAccountManager, isAccounting, isDealer, isSubDealer } from '
 const PdfLinks = ({ id, roles }: { id: number, roles?: string[] }) => {
   return (
     <>
-      {isDealer(roles ?? []) && (
+      {(isDealer(roles ?? []) || isAccountManager(roles ?? []) || isAccounting(roles ?? []) || isAdmin(roles ?? [])) && (
         <li>
             <Link
               href={route('pdf.report', id)}
