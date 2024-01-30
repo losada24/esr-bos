@@ -52,7 +52,7 @@ const SystemSummary = ({ order }: { order: Order }) => {
           <Text style={tw('text-base text-gray-900 font-bold')}>System Summary</Text>
         </View>
         <View style={tw('flex flex-row justify-start gap-x-3')}>
-          <Text style={tw('text-base text-gray-900 font-bold w-6/12')}>Total Products</Text>
+          <Text style={tw('text-base text-gray-900 font-bold w-6/12')}>Total Systems</Text>
           <Text style={tw('text-base text-gray-900 font-regular w-3/12 text-right')}>{systemSummary.length}</Text>
         </View>
         {systemSummary.map((summaryProduct, index) => {
@@ -63,14 +63,14 @@ const SystemSummary = ({ order }: { order: Order }) => {
             </View>
           )
         })}
+        <View style={tw('flex flex-row justify-start gap-x-3')}>
+          <Text style={tw('text-base text-gray-900 font-bold w-6/12')}>Total Units</Text>
+          <Text style={tw('text-base text-gray-900 font-regular w-3/12 text-right')}>{systemSummary.reduce((acc, value) => acc + value.quantity, 0)}</Text>
+        </View>
       </View>
       <View style={tw('w-6/12')}>
         <View style={tw('flex flex-row justify-start gap-x-3')}>
           <Text style={tw('text-base text-gray-900 font-bold')}>Sqft Summary</Text>
-        </View>
-        <View style={tw('flex flex-row justify-start gap-x-3')}>
-          <Text style={tw('text-base text-gray-900 font-bold w-6/12')}>Total Sqft</Text>
-          <Text style={tw('text-base text-gray-900 font-regular w-3/12 text-right')}>{`${systemSummary.reduce((acc, value) => acc + value.sqft, 0).toFixed(2)} sqft`}</Text>
         </View>
         {systemSummary.map((summaryProduct, index) => {
           return (
@@ -80,6 +80,10 @@ const SystemSummary = ({ order }: { order: Order }) => {
             </View>
           )
         })}
+        <View style={tw('flex flex-row justify-start gap-x-3')}>
+          <Text style={tw('text-base text-gray-900 font-bold w-6/12')}>Total Sqft</Text>
+          <Text style={tw('text-base text-gray-900 font-regular w-3/12 text-right')}>{`${systemSummary.reduce((acc, value) => acc + value.sqft, 0).toFixed(2)} sqft`}</Text>
+        </View>
       </View>
     </View>
   )
