@@ -34,7 +34,7 @@ const ReportTotal = ({ order, roles }: { order: Order, roles: string[] }) => {
 
   const getTotalPrice = () => {
     let totalPrice = Number(SUB_TOTAL) + Number(RG_OTHER_PRICE)
-    if (isSubDealer(roles)) {
+    if (isDealer(roles)) {
       totalPrice -= getPromotionPrice()
     }
 
