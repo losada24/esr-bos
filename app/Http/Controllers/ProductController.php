@@ -28,6 +28,7 @@ class ProductController extends Controller
     {
         $estimate = $product->order_id;
         $newProduct = $product->replicate();
+        $newProduct->line_item_name = $newProduct->line_item_name . ' (copy)';
         $newProduct->save();
 
         return redirect()
