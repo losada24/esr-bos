@@ -53,7 +53,7 @@ const SystemSummary = ({ order }: { order: Order }) => {
         </View>
         <View style={tw('flex flex-row justify-start gap-x-3')}>
           <Text style={tw('text-base text-gray-900 font-bold w-6/12')}>Total Systems</Text>
-          <Text style={tw('text-base text-gray-900 font-regular w-3/12 text-right')}>{systemSummary.length}</Text>
+          <Text style={tw('text-base text-gray-900 font-regular w-3/12 text-right font-bold')}>{systemSummary.length}</Text>
         </View>
         {systemSummary.map((summaryProduct, index) => {
           return (
@@ -71,6 +71,10 @@ const SystemSummary = ({ order }: { order: Order }) => {
       <View style={tw('w-6/12')}>
         <View style={tw('flex flex-row justify-start gap-x-3')}>
           <Text style={tw('text-base text-gray-900 font-bold')}>Sqft Summary</Text>
+        </View>
+        <View style={tw('flex flex-row justify-start gap-x-3')}>
+          <Text style={tw('text-base text-gray-900 font-bold w-6/12')}></Text>
+          <Text style={tw('text-base text-gray-900 font-regular w-3/12 text-right')}></Text>
         </View>
         {systemSummary.map((summaryProduct, index) => {
           return (
