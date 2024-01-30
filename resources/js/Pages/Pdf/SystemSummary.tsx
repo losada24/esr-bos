@@ -37,7 +37,7 @@ const SystemSummary = ({ order }: { order: Order }) => {
       systemSummary.push({
         system: product.system,
         quantity: product.qty,
-        sqft: getSqft(product.width, product.height)
+        sqft: getSqft(product.width, product.height) * product.qty
       })
     } else {
       systemSummary[systemIndex].quantity += product.qty
