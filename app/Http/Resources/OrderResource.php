@@ -37,6 +37,7 @@ class OrderResource extends JsonResource
           'company_promotion' => $this->company_promotion ?? 0,
           'user_markup' => $this->user_markup ?? 0,
           'user_id' => $this->user_id,
+          'rg_other_price' => $this->rg_other_price ?? 0,
         ];
     }
 }

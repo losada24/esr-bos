@@ -6,6 +6,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use App\Enum\FrameColorEnum;
 use App\Enum\GlassColorEnum;
+use App\Enum\GlassTypeEnum;
 
 class UpdateFixedWindowsRequest extends FormRequest
 {
@@ -43,8 +44,24 @@ class UpdateFixedWindowsRequest extends FormRequest
           ],
           'order_id' => 'required|exists:orders,id',
           'glass_type' => 'required|string|max:255',
-          'low_e' => 'required|string|max:255',
-          'privacy' => 'required|string|max:255'
+          'low_e' => [
+            'string',
+            'nullable',
+            'max:255',
+            Rule::when(
+              fn($input) => $input->order_glass_type != GlassTypeEnum::$GLASS_TYPE['RUSH']
+              , ['required']
+            ),
+          ],
+          'privacy' => [
+            'string',
+            'nullable',
+            'max:255',
+            Rule::when(
+              fn($input) => $input->order_glass_type != GlassTypeEnum::$GLASS_TYPE['RUSH']
+              , ['required']
+            ),
+          ]
         ];
     }
 }

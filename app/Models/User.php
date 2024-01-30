@@ -80,6 +80,11 @@ class User extends Authenticatable
         return $this->hasMany(Company::class);
     }
 
+    public function orderStatus()
+    {
+        return $this->hasMany(OrderStatus::class);
+    }
+
     public function createdBy()
     {
         return $this->belongsTo(User::class, 'created_by');

@@ -136,5 +136,6 @@ export const getGrandTotalByRole = (order: Order, role: string[]) => {
   const installation: number = order.installation ?? 0
   const permit: number = order.permit ?? 0
   const other: number = order.other ?? 0
-  return Number(subtotal) + Number(tax_amount) + Number(installation) + Number(permit) + Number(other)
+  const rg_other_price: number = order.rg_other_price ?? 0
+  return Number(subtotal) + Number(tax_amount) + Number(installation) + Number(permit) + Number(other) + Number(rg_other_price)
 }

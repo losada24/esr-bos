@@ -11,10 +11,15 @@ import ReportSignature from './ReportSignature'
 
 import ReportCompany from './ReportCompany'
 import Pagination from './Pagination'
+import logo from '../../../assets/images/logo-reylosglass.png'
 
 type IndexOrderProps = PageProps & {
   order: Order
 }
+
+const COMPANY_ADDRESS = import.meta.env.VITE_COMPANY_ADDRESS
+const COMPANY_PHONE = import.meta.env.VITE_COMPANY_PHONE
+const COMPANY_EMAIL = import.meta.env.VITE_COMPANY_EMAIL
 
 const tw = createTw({
   theme: {
@@ -42,11 +47,12 @@ const Delivery = ({ order, auth }: IndexOrderProps) => {
             <Pagination />
             <ReportHeader data={{
               id: order.id,
-              address: '',
-              featured_image: '',
-              phone_number: ''
-            }} />
-            <ReportCompany order={order} isForClient={false} />
+              address: COMPANY_ADDRESS,
+              featured_image: logo,
+              phone_number: COMPANY_PHONE,
+              email: COMPANY_EMAIL
+            }} documentTitle={'Shipping #'} />
+            <ReportCompany order={order} />
             {order?.products?.map((product, index) => {
               return <DeliveryProduct product={product} key={index} />
             })}

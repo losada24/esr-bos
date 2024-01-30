@@ -1,4 +1,5 @@
 import * as Yup from 'yup'
+import { RUSH_GLASS_TYPE } from '@/Utils/constants'
 
 export const horizontalRollerSchema = Yup.object({
   id: Yup.number(),
@@ -9,8 +10,16 @@ export const horizontalRollerSchema = Yup.object({
   markup: Yup.number().required('Markup is required'),
   frame_color: Yup.string().required('Frame color is required'),
   glass_color: Yup.string().required('Glass color is required'),
-  privacy: Yup.string().required('Privacy is required'),
-  low_e: Yup.string().required('Glass coating is required'),
+  privacy: Yup.string().when(['order_glass_type'], {
+    is: (order_glass_type: string) => order_glass_type !== RUSH_GLASS_TYPE,
+    then: Yup.string().required('Privacy is required').max(255, 'Max 255 characters'),
+    otherwise: Yup.string().nullable().max(255, 'Max 255 characters')
+  }),
+  low_e: Yup.string().when(['order_glass_type'], {
+    is: (order_glass_type: string) => order_glass_type !== RUSH_GLASS_TYPE,
+    then: Yup.string().required('Glass Coating is required').max(255, 'Max 255 characters'),
+    otherwise: Yup.string().nullable().max(255, 'Max 255 characters')
+  }),
   glass_type: Yup.string().required('Glass type is required'),
   screen: Yup.boolean(),
   config: Yup.string().required('Config is required'),

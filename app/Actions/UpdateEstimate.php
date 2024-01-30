@@ -1,7 +1,9 @@
 <?php
 namespace App\Actions;
 
+use App\Enum\GlassTypeEnum;
 use App\Enum\ProductSystemEnum;
+use App\Enum\RoleEnum;
 use App\Models\Order;
 use App\Products\FixedWindowsProduct;
 use App\Products\Glass;
@@ -22,15 +24,13 @@ class UpdateEstimate {
       }
 
       if ($estimate->markup != $request->markup) {
-        $estimate->products()->update([
-          'markup' => $request->markup
-        ]);
+        $this->updateProductPricesOnMarkupChange($estimate, $request->markup);
       }
 
       if ($estimate->glass_type != $request->glass_type) {
         $this->updateProductsPricesOnGlassTypeChanged($estimate, $request->glass_type);
       }
-      
+
       $orderData = [
         'name' => $request->name,
         'project_name' => $request->project_name,
@@ -48,12 +48,16 @@ class UpdateEstimate {
         'external_purchase_id' => $request->external_purchase_id,
       ];
 
+      if ((auth()->user()->hasRole(RoleEnum::$ADMIN) || auth()->user()->hasRole(RoleEnum::$ACCOUNT_MANAGER)) && $request->rg_other_price > 0) {
+        $orderData['rg_other_price'] = $request->rg_other_price;
+      }
+
       $estimate->update($orderData);
     });
   }
 
   public function updateProductsPricesOnGlassTypeChanged($estimate, $glassType) {
-    $estimate->products()->each(function($product) use ($glassType) {
+    $estimate->products()->each(function($product) use ($glassType, $estimate) {
       $unitPrice = 0;
       $newGlassType = "";
       $glass = new Glass(
@@ -65,7 +69,7 @@ class UpdateEstimate {
       
       switch($product->system) {
         case ProductSystemEnum::$FIXED_WINDOWS:
-          $newGlassType = $glass->getGlass316();
+          $newGlassType = $glassType == GlassTypeEnum::$RUSH_GLASS_TYPE ? $glass->getRushGlass() : $glass->getGlass316();
           $cuttingListObject = new FixedWindowsProduct(
             $product->width,
             $product->height,
@@ -76,7 +80,7 @@ class UpdateEstimate {
           $unitPrice = $cuttingListObject->getUnitPrice();
           break;
         case ProductSystemEnum::$HORIZONTAL_ROLLER:
-          $newGlassType = $glass->getGlass316();
+          $newGlassType = $glassType == GlassTypeEnum::$RUSH_GLASS_TYPE ? $glass->getRushGlass() : $glass->getGlass316();
           $cuttingListObject = new HorizontalRollerProduct(
             $product->width,
             $product->height,
@@ -88,7 +92,7 @@ class UpdateEstimate {
           $unitPrice = $cuttingListObject->getUnitPrice();
           break;
         case ProductSystemEnum::$SINGLE_HUNG:
-          $newGlassType = $glass->getGlass18();
+          $newGlassType = $glassType == GlassTypeEnum::$RUSH_GLASS_TYPE ? $glass->getRushGlass() : $glass->getGlass18();
           $cuttingListObject = new SingleHuntProduct(
             $product->width,
             $product->height,
@@ -101,10 +105,58 @@ class UpdateEstimate {
           break;
       }
 
+      $unitPrice = $unitPrice;
+      $totalPrice = $unitPrice * $product->qty;
+      $dealerUnitPrice = $unitPrice + ($unitPrice * $estimate->company_markup / 100);
+      $dealerTotalPrice = $dealerUnitPrice * $product->qty;
+      $subdealerUnitPrice = $dealerUnitPrice + ($dealerUnitPrice * $estimate->user_markup / 100);
+      $subdealerTotalPrice = $subdealerUnitPrice * $product->qty;
+      $customerUnitPrice = $subdealerUnitPrice + ($subdealerUnitPrice * $product->markup / 100);
+      $customerTotalPrice = $customerUnitPrice * $product->qty;
+      $dealerPromotionDiscount = $dealerUnitPrice * $estimate->company_promotion / 100;
+      $dealerPromotionTotalDiscount = $dealerPromotionDiscount * $product->qty;
+
       $product->update([
         'unit_price' => $unitPrice,
-        'total_price' => $unitPrice * $product->qty,
+        'total_price' => $totalPrice,
+        'dealer_unit_price' => $dealerUnitPrice,
+        'dealer_total_price' => $dealerTotalPrice,
+        'sub_dealer_unit_price' => $subdealerUnitPrice,
+        'sub_dealer_total_price' => $subdealerTotalPrice,
+        'customer_unit_price' => $customerUnitPrice,
+        'customer_total_price' => $customerTotalPrice,
+        'dealer_promotion_discount' => $dealerPromotionDiscount,
+        'dealer_promotion_total_discount' => $dealerPromotionTotalDiscount,
         'glass_type' => $newGlassType
+      ]);
+    });
+  }
+
+  public function updateProductPricesOnMarkupChange($estimate, $markup) {
+    $estimate->products()->each(function($product) use ($markup, $estimate) {
+      $unitPrice = $product->unit_price;
+      $totalPrice = $unitPrice * $product->qty;
+      $dealerUnitPrice = $unitPrice + ($unitPrice * $estimate->company_markup / 100);
+      $dealerTotalPrice = $dealerUnitPrice * $product->qty;
+      $subdealerUnitPrice = $dealerUnitPrice + ($dealerUnitPrice * $estimate->user_markup / 100);
+      $subdealerTotalPrice = $subdealerUnitPrice * $product->qty;
+      $customerUnitPrice = $subdealerUnitPrice + ($subdealerUnitPrice * $markup / 100);
+      $customerTotalPrice = $customerUnitPrice * $product->qty;
+      $dealerPromotionDiscount = $dealerUnitPrice * $estimate->company_promotion / 100;
+      $dealerPromotionTotalDiscount = $dealerPromotionDiscount * $product->qty;
+
+      $product->update([
+        'unit_price' => $unitPrice,
+        'total_price' => $totalPrice,
+        'dealer_unit_price' => $dealerUnitPrice,
+        'dealer_total_price' => $dealerTotalPrice,
+        'sub_dealer_unit_price' => $subdealerUnitPrice,
+        'sub_dealer_total_price' => $subdealerTotalPrice,
+        'customer_unit_price' => $customerUnitPrice,
+        'customer_total_price' => $customerTotalPrice,
+        'dealer_promotion_discount' => $dealerPromotionDiscount,
+        'dealer_promotion_total_discount' => $dealerPromotionTotalDiscount,
+        'markup' => $markup
       ]);
     });
   }

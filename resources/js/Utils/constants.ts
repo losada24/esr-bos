@@ -90,6 +90,8 @@ export const PRODUCT_SYSTEMS = {
   HORIZONTAL_ROLLER: 'HORIZONTAL ROLLER'
 }
 export const EXPRESS_GLASS_TYPE: string = 'EXPRESS'
+export const REGULAR_GLASS_TYPE: string = 'REGULAR'
+export const RUSH_GLASS_TYPE: string = 'RUSH'
 
 export const COLORS: string[] = [
   '#020617',
@@ -145,8 +147,8 @@ export const PAYMENT_METHODS = {
 }
 export const ADDRESS_REQUIRED_AFTER_AMOUNT: number = import.meta.env.VITE_ADDRESS_REQUIRED_AFTER_AMOUNT
 export const GLASS_TYPE = {
-  REGULAR: 'REGULAR',
-  EXPRESS: 'EXPRESS'
+  REGULAR: REGULAR_GLASS_TYPE,
+  EXPRESS: EXPRESS_GLASS_TYPE
 }
 
 export const PO_SCREEN: string = 'SC'
@@ -158,3 +160,11 @@ export const PO_TITLES: Record<string, string> = {
   [PO_GLASS]: 'PO GLASS',
   [PO_BALANCE]: 'PO BALANCE'
 }
+
+export const RUSH_GLASS_NEW_COLOR: string = 'OBSCURE/PRIVACY'
+export const LEAD_TIME_BY_GLASS_TYPE: Record<string, string> = {
+  [RUSH_GLASS_TYPE]: 'RUSH (2-3 WEEKS)',
+  [EXPRESS_GLASS_TYPE]: 'EXPRESS (3-4 WEEKS)',
+  [REGULAR_GLASS_TYPE]: 'REGULAR (6-8 WEEKS)'
+}
+export const CERTIFICATION_SQFT: number = 27.24

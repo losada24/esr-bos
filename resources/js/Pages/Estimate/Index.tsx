@@ -14,6 +14,7 @@ import { isAdmin, isDealer, isSubDealer } from '@/Utils/user'
 import { formatPrice, getGrandTotalByRole, getSubTotalPriceByRole } from '@/Utils/price'
 import OrderUpdateStatusModal from '@/Pages/Order/OrderUpdateStatusModal'
 import { ESTIMATE_STATUS, SUB_DEALER_ESTIMATE } from '@/Utils/constants'
+import CopyIcon from '@/Components/Icons/CopyIcon'
 
 type IndexOrderProps = PageProps & {
   estimates: {
@@ -32,6 +33,13 @@ export default function Index ({ auth, estimates }: IndexOrderProps) {
       router.delete(route('estimate.destroy', id))
     }
   }
+
+  const duplicate = (id: number) => {
+    if (confirm('Are you sure you want to duplicate this Estimate?')) {
+      router.get(route('estimate.duplicate', id))
+    }
+  }
+
   return (
       <AuthenticatedLayout
           auth={auth}
@@ -112,6 +120,12 @@ export default function Index ({ auth, estimates }: IndexOrderProps) {
                         {((isSubDealer(auth.user.roles.map((role: Role) => role.name)) && estimate.status === SUB_DEALER_ESTIMATE) ||
                          ((isDealer(auth.user.roles.map((role: Role) => role.name)) || isAdmin(auth.user.roles.map((role: Role) => role.name))) && estimate.status === ESTIMATE_STATUS)) && (
                           <>
+                            <button
+                                onClick={() => { duplicate(id) }}
+                                title='Duplicate Estimate'
+                              >
+                                <CopyIcon className='mr-2'/>
+                            </button>
                             <Link
                               href={route('estimate.edit', id)}
                               title='Edit Estimate'

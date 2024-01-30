@@ -104,9 +104,9 @@ class HorizontalRollerProduct implements IProduct {
       $ss0001 = RawMaterial::where('name', 'SS 0001 ' . $this->materialColor)->first();
       
       if ($this->frameColor == FrameColorEnum::$FRAME_COLOR["WHITE"]) {
-        $weatherStripMeetRailSash = RawMaterial::where('name', 'W 22174 W')->first(); // W 22174 W or B
+        $weatherStripMeetRailSash = RawMaterial::where('name', 'W 22174 W')->first(); // W 22174 W or BL
       } else {
-        $weatherStripMeetRailSash = RawMaterial::where('name', 'W 22174 BL')->first(); // W 22174 W or B
+        $weatherStripMeetRailSash = RawMaterial::where('name', 'W 22174 BL')->first(); // W 22174 W or BL
       }
       $w22254 = RawMaterial::where('name', 'W 22254 BL')->first();
       $rh0001 = RawMaterial::where('name', 'RH 0001')->first();

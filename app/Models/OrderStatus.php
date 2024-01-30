@@ -15,11 +15,27 @@ class OrderStatus extends Model
     protected $fillable = [
         'status',
         'order_id',
-        'notes'
+        'notes',
+        'user_id'
     ];
+
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array<string, string>
+     */
+    public function getCreatedAtAttribute($value)
+    {
+        return date('m/d/Y', strtotime($value));
+    }
 
     public function order()
     {
         return $this->belongsTo(Order::class);
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
     }
 }

@@ -18,6 +18,7 @@ import ReportCompany from './ReportCompany'
 import { Notes } from './Notes'
 import Pagination from './Pagination'
 import { ROLES } from '@/Utils/constants'
+import SystemSummary from './SystemSummary'
 
 const COMPANY_ADDRESS = import.meta.env.VITE_COMPANY_ADDRESS
 const COMPANY_PHONE = import.meta.env.VITE_COMPANY_PHONE
@@ -63,7 +64,7 @@ const Report = ({ order, auth, company }: IndexOrderProps) => {
               phone_number: IS_SUBDEALER ? company.phone_number : COMPANY_PHONE,
               email: IS_SUBDEALER ? company.email : COMPANY_EMAIL
             }} />
-            <ReportCompany order={order} isForClient={false} />
+            <ReportCompany order={order} />
             {order?.products?.map((product, index) => {
               return <ReportProduct product={product} key={index} showPrices={true} roles={[ROLES.DEALER]} />
             })}
@@ -72,6 +73,7 @@ const Report = ({ order, auth, company }: IndexOrderProps) => {
             {order.notes !== null && (
               <Notes notes={order.notes ?? ''} />
             )}
+            <SystemSummary order={order} />
             <ReportSignature />
           </Page>
         </PrintLayout>

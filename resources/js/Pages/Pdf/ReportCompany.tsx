@@ -17,17 +17,17 @@ const tw = createTw({
   }
 })
 
-const ReportCompany = ({ order, isForClient }: { order: Order, isForClient: boolean }) => {
+const ReportCompany = ({ order }: { order: Order }) => {
   return (
     <View style={tw('flex flex-row gap-4 justify-between mt-6 border-b border-gray-200 pb-3')}>
       <View style={tw('flex flex-row justify-start w-6/12 gap-x-4')}>
-        <Text style={tw('text-xs text-gray-900 font-bold')}>Client Name:</Text>
-        <Text style={tw('text-xs text-gray-900 font-regular')}>{isForClient ? order.client?.name : order.user?.company?.name}</Text>
+        <Text style={tw('text-xs text-gray-900 font-bold')}>Job Name:</Text>
+        <Text style={tw('text-xs text-gray-900 font-regular')}>{order.name}</Text>
       </View>
-      <View style={tw('flex flex-row justify-start w-6/12 gap-x-4')}>
+      {/* <View style={tw('flex flex-row justify-start w-6/12 gap-x-4')}>
         <Text style={tw('text-xs text-gray-900 font-bold')}>Client Address:</Text>
         <Text style={tw('text-xs text-gray-900 font-regular')}>{isForClient ? order.client?.address : order.user?.company?.address}</Text>
-      </View>
+      </View> */}
     </View>
   )
 }

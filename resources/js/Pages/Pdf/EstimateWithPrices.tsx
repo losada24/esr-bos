@@ -14,6 +14,7 @@ import EstimateTotal from './EstimateTotal'
 import { Notes } from './Notes'
 import Pagination from './Pagination'
 import EstimateProduct from './EstimateProduct'
+import SystemSummary from './SystemSummary'
 
 type IndexOrderProps = PageProps & {
   order: Order
@@ -54,7 +55,7 @@ const EstimateWithPrices = ({ order, auth, company }: IndexOrderProps) => {
               phone_number: company.phone_number,
               email: company.email
             }} />
-            <ReportCompany order={order} isForClient={true} />
+            <ReportCompany order={order} />
             {order?.products?.map((product, index) => {
               return <EstimateProduct product={product} key={index} showPrices={true} />
             })}
@@ -62,6 +63,7 @@ const EstimateWithPrices = ({ order, auth, company }: IndexOrderProps) => {
             {order.notes !== null && (
               <Notes notes={order.notes ?? ''} />
             )}
+            <SystemSummary order={order} />
             <ReportSignature />
           </Page>
         </PrintLayout>

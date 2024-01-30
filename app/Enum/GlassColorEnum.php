@@ -9,6 +9,7 @@ class GlassColorEnum {
     'CLEAR' => 'CLEAR',
     'GRAY' => 'GRAY',
     'GREEN' => 'GREEN',
+    'OBSCURE/PRIVACY' => 'OBSCURE/PRIVACY',
   ];
-
+  
 }

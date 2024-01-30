@@ -78,6 +78,14 @@ Route::middleware('auth')->group(function () {
     Route::resource('estimate', EstimateController::class)
       ->only(['index', 'create', 'store'])
       ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$SUB_DEALER]);
+    
+    Route::get('estimate/{id}/duplicate', [EstimateController::class, 'duplicate'])
+      ->middleware([
+        "role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$SUB_DEALER,
+        "validate.estimate.status:" . OrderStatusEnum::$ESTIMATE . "|" . OrderStatusEnum::$SUB_DEALER_ESTIMATE . ",id",
+        "validate.estimate.owner:id"  
+      ])
+      ->name('estimate.duplicate');
 
     Route::resource('estimate', EstimateController::class)
       ->only(['edit', 'update', 'destroy'])
@@ -189,6 +197,14 @@ Route::middleware('auth')->group(function () {
         "validate.estimate.owner:product"
       ])
       ->name('product.destroy');
+
+    Route::post('product/duplicate/{product}', [ProductController::class, 'duplicate'])
+      ->middleware([
+        "role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$SUB_DEALER,
+        "validate.estimate.status:" . OrderStatusEnum::$ESTIMATE . "|" . OrderStatusEnum::$SUB_DEALER_ESTIMATE . ",product",
+        "validate.estimate.owner:product"
+      ])
+      ->name('product.duplicate');
     
     // ORDERS
     Route::get('/order', [OrderController::class, 'index'])
@@ -202,6 +218,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/order/status/{order}', [OrderController::class, 'status'])
       ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$PRODUCTION . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$SUB_DEALER . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$ACCOUNTING . "|" . RoleEnum::$SHIPPING])
       ->name('order.status');
+
+    Route::get('/order/history/{order}', [OrderController::class, 'history'])
+      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$PRODUCTION . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$SUB_DEALER . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$ACCOUNTING . "|" . RoleEnum::$SHIPPING])
+      ->name('order.history');
 
     Route::get('/order/workOrder/{order}', [OrderController::class, 'workOrder'])
       ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$PRODUCTION ])

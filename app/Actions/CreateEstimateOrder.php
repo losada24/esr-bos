@@ -36,6 +36,11 @@ class CreateEstimateOrder {
       ];
 
       $estimate->update($estimateData);
+      $estimate->orderStatus()->create([
+        'status' => OrderStatusEnum::$ACCOUNTING,
+        'user_id' => auth()->user()->id,
+        'notes' => "Payment was submitted by " . auth()->user()->name . " using " . $request->method
+      ]);
 
     });
   }

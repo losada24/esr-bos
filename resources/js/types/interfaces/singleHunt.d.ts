@@ -12,4 +12,5 @@ export interface SingleHunt {
   low_e: string
   privacy: string
   screen: boolean
+  order_glass_type: string
 }

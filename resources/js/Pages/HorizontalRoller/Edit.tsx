@@ -36,7 +36,8 @@ export default function Edit ({ auth, product, frame_colors, glass_colors, handl
     markup: product.markup,
     screen: product.extras.screen,
     handle: product.extras.handle,
-    config: product.extras.config
+    config: product.extras.config,
+    order_glass_type: product?.order?.glass_type ?? ''
   }
 
   const handleSubmit = async (values: any, helpers: FormikHelpers<HorizontalRoller>) => {
@@ -67,7 +68,6 @@ export default function Edit ({ auth, product, frame_colors, glass_colors, handl
               frame_colors={frame_colors}
               estimate_id={product.order_id}
               values={values}
-              glassType={product?.order?.glass_type ?? ''}
               handle={handle}
               config={config}
             />

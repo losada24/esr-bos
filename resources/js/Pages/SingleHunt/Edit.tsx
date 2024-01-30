@@ -30,7 +30,8 @@ export default function Edit ({ auth, product, frame_colors, glass_colors }: Pag
     privacy: product.privacy,
     qty: product.qty,
     markup: product.markup,
-    screen: product.extras.screen
+    screen: product.extras.screen,
+    order_glass_type: product?.order?.glass_type ?? ''
   }
 
   const handleSubmit = async (values: any, helpers: FormikHelpers<SingleHunt>) => {
@@ -61,7 +62,7 @@ export default function Edit ({ auth, product, frame_colors, glass_colors }: Pag
               frame_colors={frame_colors}
               estimate_id={product.order_id}
               values={values}
-              glassType={product?.order?.glass_type ?? ''}
+              // glassType={product?.order?.glass_type ?? ''}
             />
           )}
         </Formik>

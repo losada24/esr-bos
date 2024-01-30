@@ -25,7 +25,8 @@ export default function Create ({ auth, frame_colors, glass_colors, clients, gla
     permit: 0,
     other: 0,
     external_purchase_id: '',
-    glass_type: ''
+    glass_type: '',
+    rg_other_price: 0
   }
 
   const handleSubmit = async (values: any, helpers: FormikHelpers<Order>) => {
@@ -48,7 +49,7 @@ export default function Create ({ auth, frame_colors, glass_colors, clients, gla
             validationSchema={estimateSchema}
             onSubmit={handleSubmit}
           >
-            {({ errors, submitCount, setFieldValue }) => (
+            {({ errors, submitCount, setFieldValue, values }) => (
               <EstimateForm
                 errors={errors}
                 submitCount={submitCount}
@@ -58,6 +59,8 @@ export default function Create ({ auth, frame_colors, glass_colors, clients, gla
                 glass_types={glass_types}
                 clients={clients}
                 setFieldValue={setFieldValue}
+                values={values}
+                user={auth.user}
               />
             )}
           </Formik>

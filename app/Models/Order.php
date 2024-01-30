@@ -39,7 +39,8 @@ class Order extends Model
       'glass_type',
       'company_markup',
       'company_promotion',
-      'user_markup'
+      'user_markup',
+      'rg_other_price',
     ];
 
     protected $dispatchesEvents = [

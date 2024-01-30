@@ -35,4 +35,13 @@ class Glass {
 
       return strtr(":firstGlass :interlayer :lastGlass(:glassType)", $strParams);
   }
+
+  public function getRushGlass() {
+    $strParams = [
+      ':firstGlass' => "3/16 HS {$this->glass_color}",
+      ':glassType' => $this->glass_type
+    ];
+
+    return strtr(":firstGlass (:glassType)", $strParams);
+  }
 }

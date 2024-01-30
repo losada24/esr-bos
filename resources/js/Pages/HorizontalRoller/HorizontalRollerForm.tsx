@@ -6,15 +6,15 @@ import { Link } from '@inertiajs/react'
 import { type FormikErrors } from 'formik'
 import { type HorizontalRoller } from '@/types'
 import HorizontalRollerDrawing from './HorizontalRollerDrawing'
+import { EXPRESS_GLASS_TYPE, NO_CERTIFICATION_STANDARD_MESSAGE, RUSH_GLASS_NEW_COLOR, RUSH_GLASS_TYPE } from '@/Utils/constants'
 
-const HorizontalRollerForm = ({ submitCount, errors, isCreate, frame_colors, glass_colors, estimate_id, values, glassType, handle, config }: {
+const HorizontalRollerForm = ({ submitCount, errors, isCreate, frame_colors, glass_colors, estimate_id, values, handle, config }: {
   submitCount: number
   errors: FormikErrors<HorizontalRoller>
   isCreate: boolean
   frame_colors: string[]
   glass_colors: string[]
   estimate_id: number
-  glassType: string
   values: HorizontalRoller
   config: string[]
   handle: string[]
@@ -23,15 +23,23 @@ const HorizontalRollerForm = ({ submitCount, errors, isCreate, frame_colors, gla
     return (width / 2) - (5.25 / 2) - 0.125 + 2.188
   }
   const [glassTypes, setGlassTypes] = useState<string[]>([])
+  const [colors, setColors] = useState<string[]>(glass_colors)
+  const LOW_E_OPTIONS: string[] = values.order_glass_type === EXPRESS_GLASS_TYPE ? ['NONE', 'LOW E Q366'] : ['NONE', 'LOW E SB70']
   useEffect(() => {
-    if (values.glass_color !== '' && values.low_e !== '' && values.privacy !== '') {
-      const firstGlass = `3/16 HS ${values.glass_color} ${values.glass_color === 'CLEAR' && values.low_e !== 'NONE' ? values.low_e : ''}`
-      const interlayer = `+0.09PVB t ${values.privacy}`
-      const lastGlass = `+3/16 HS CLEAR ${values.glass_color !== 'CLEAR' && values.low_e !== 'NONE' ? values.low_e : ''}`
-
-      setGlassTypes([`${firstGlass} ${interlayer} ${lastGlass}(${glassType})`])
+    if (values.order_glass_type === RUSH_GLASS_TYPE) {
+      const glass = `3/16 HS ${values.glass_color} (${values.order_glass_type})`
+      setGlassTypes([glass])
+      setColors([...glass_colors])
     } else {
-      setGlassTypes([])
+      setColors(glass_colors.filter((color) => color !== RUSH_GLASS_NEW_COLOR))
+      if (values.glass_color !== '' && values.low_e !== '' && values.privacy !== '') {
+        const firstGlass = `3/16 HS ${values.glass_color} ${values.glass_color === 'CLEAR' && values.low_e !== 'NONE' ? values.low_e : ''}`
+        const interlayer = `+0.09PVB t ${values.privacy}`
+        const lastGlass = `+3/16 HS CLEAR ${values.glass_color !== 'CLEAR' && values.low_e !== 'NONE' ? values.low_e : ''}`
+        setGlassTypes([`${firstGlass} ${interlayer} ${lastGlass}(${values.order_glass_type})`])
+      } else {
+        setGlassTypes([])
+      }
     }
   }, [values])
 
@@ -80,7 +88,7 @@ const HorizontalRollerForm = ({ submitCount, errors, isCreate, frame_colors, gla
                   <div className="flex items-center p-3.5 rounded text-warning bg-danger-light dark:bg-danger-dark-light mt-3">
                     <span className="ltr:pr-2 rtl:pl-2">
                       <strong className="ltr:mr-1 rtl:ml-1">Warning!</strong>
-                      The windows does not comply with certification standards
+                      {NO_CERTIFICATION_STANDARD_MESSAGE}
                     </span>
                   </div>
                 )}
@@ -100,7 +108,7 @@ const HorizontalRollerForm = ({ submitCount, errors, isCreate, frame_colors, gla
                   <div className="flex items-center p-3.5 rounded text-warning bg-danger-light dark:bg-danger-dark-light mt-3">
                     <span className="ltr:pr-2 rtl:pl-2">
                       <strong className="ltr:mr-1 rtl:ml-1">Warning!</strong>
-                      The windows does not comply with certification standards
+                      {NO_CERTIFICATION_STANDARD_MESSAGE}
                     </span>
                   </div>
                 )}
@@ -197,13 +205,13 @@ const HorizontalRollerForm = ({ submitCount, errors, isCreate, frame_colors, gla
                   as="select"
                 >
                   <option value="">Select Glass Color</option>
-                  {glass_colors.map((color, index) => (
+                  {colors.map((color, index) => (
                     <option key={index} value={color}>{color}</option>
                   ))}
                 </Field>
                 {(submitCount && errors.glass_color) ? <InputError message={errors.glass_color} className="mt-2" /> : ''}
               </div>
-              <div className={submitCount ? (errors.low_e) ? 'has-error' : 'has-success' : ''}>
+              <div className={submitCount ? (errors.low_e) ? `has-error ${values.order_glass_type === RUSH_GLASS_TYPE ? 'hidden' : ''}` : `has-success ${values.order_glass_type === RUSH_GLASS_TYPE ? 'hidden' : ''}` : `${values.order_glass_type === RUSH_GLASS_TYPE ? 'hidden' : ''}`}>
                 <label htmlFor="low_e">Glass Coating</label>
                 <Field
                   id="low_e"
@@ -213,13 +221,13 @@ const HorizontalRollerForm = ({ submitCount, errors, isCreate, frame_colors, gla
                   placeholder='Low E'
                   as="select"
                 >
-                  {['NONE', 'LOW E'].map((type, index) => (
+                  {LOW_E_OPTIONS.map((type, index) => (
                     <option key={index} value={type}>{type}</option>
                   ))}
                 </Field>
                 {(submitCount && errors.low_e) ? <InputError message={errors.low_e} className="mt-2" /> : ''}
               </div>
-              <div className={submitCount ? (errors.privacy) ? 'has-error' : 'has-success' : ''}>
+              <div className={submitCount ? (errors.privacy) ? `has-error ${values.order_glass_type === RUSH_GLASS_TYPE ? 'hidden' : ''}` : `has-success ${values.order_glass_type === RUSH_GLASS_TYPE ? 'hidden' : ''}` : `${values.order_glass_type === RUSH_GLASS_TYPE ? 'hidden' : ''}`}>
                 <label htmlFor="privacy">Privacy</label>
                 <Field
                   id="privacy"

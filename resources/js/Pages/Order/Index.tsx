@@ -9,6 +9,7 @@ import { isAdmin, isAccounting, isShipping, isProduction } from '@/Utils/user'
 import OrderFilter from './OrderFilter'
 import OrderUpdateStatusModal from './OrderUpdateStatusModal'
 import CheckIcon from '@/Components/Icons/CheckIcon'
+import OrderShowStatusModal from './OrderShowStatusModal'
 
 type IndexOrderProps = PageProps & {
   orders: {
@@ -22,6 +23,8 @@ type IndexOrderProps = PageProps & {
 export default function Index ({ auth, orders }: IndexOrderProps) {
   const [showOrderModal, setShowOrderModal] = useState<boolean>(false)
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
+  const [showStatusModal, setShowStatusModal] = useState<boolean>(false)
+  const [selectedStatusOrder, setSelectedStatusOrder] = useState<Order | null>(null)
 
   return (
       <AuthenticatedLayout
@@ -61,7 +64,10 @@ export default function Index ({ auth, orders }: IndexOrderProps) {
                       {name}
                     </td>
                     <td className="border-t px-6 py-4 align-top">
-                      {status?.toUpperCase()}
+                      <button onClick={() => {
+                        setSelectedStatusOrder(order)
+                        setShowStatusModal(true)
+                      }} title='Show Status History' className="btn btn-outline-primary">{status?.toUpperCase()}</button>
                     </td>
                     <td className="border-t px-6 py-4 align-top">
                       {created_at?.toString()}
@@ -109,6 +115,14 @@ export default function Index ({ auth, orders }: IndexOrderProps) {
           }}
           order={selectedOrder}
           // statuses={statuses}
+        />
+        <OrderShowStatusModal
+          showModal={showStatusModal}
+          onClose={() => {
+            setShowStatusModal(false)
+            setSelectedStatusOrder(null)
+          }}
+          order={selectedStatusOrder}
         />
       </AuthenticatedLayout>
   )

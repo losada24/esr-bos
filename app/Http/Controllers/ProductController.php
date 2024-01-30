@@ -23,4 +23,15 @@ class ProductController extends Controller
           ->route('estimate.show', ['estimate' => $estimate])
           ->with('success', 'Product deleted successfully.');
     }
+
+    public function duplicate(Product $product)
+    {
+        $estimate = $product->order_id;
+        $newProduct = $product->replicate();
+        $newProduct->save();
+
+        return redirect()
+          ->route('estimate.show', ['estimate' => $estimate])
+          ->with('success', 'Product duplicated successfully.');
+    }
 }

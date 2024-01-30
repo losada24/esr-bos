@@ -25,7 +25,8 @@ export default function Create ({ auth, frame_colors, glass_colors, estimate }: 
     privacy: '',
     qty: 0,
     markup: estimate.markup,
-    screen: false
+    screen: false,
+    order_glass_type: estimate.glass_type
   }
 
   const handleSubmit = async (values: any, helpers: FormikHelpers<SingleHunt>) => {
@@ -54,7 +55,7 @@ export default function Create ({ auth, frame_colors, glass_colors, estimate }: 
                 isCreate={true}
                 glass_colors={glass_colors}
                 frame_colors={frame_colors}
-                glassType={estimate.glass_type}
+                // glassType={estimate.glass_type}
                 estimate_id={estimate.id}
                 values={values}
               />

@@ -1,0 +1,88 @@
+import React from 'react'
+import { Text, View } from '@react-pdf/renderer'
+import { createTw } from 'react-pdf-tailwind'
+import { type Order } from '@/types'
+import { getSubTotalPriceByRole, formatPrice } from '@/Utils/price'
+
+const tw = createTw({
+  theme: {
+    extend: {
+      fontFamily: {
+        regular: 'NunitoRegular',
+        bold: 'NunitoBold'
+      },
+      colors: {
+        custom: '#bada55'
+      }
+    }
+  }
+})
+
+interface SummaryProduct {
+  system: string
+  quantity: number
+  sqft: number
+}
+
+const SystemSummary = ({ order }: { order: Order }) => {
+  const systemSummary: SummaryProduct[] = []
+
+  const getSqft = (width: number, height: number) => {
+    return (width * height) / 144
+  }
+
+  order?.products?.forEach((product) => {
+    const systemIndex = systemSummary.findIndex((summaryProduct) => summaryProduct.system === product.system)
+    if (systemIndex === -1) {
+      systemSummary.push({
+        system: product.system,
+        quantity: product.qty,
+        sqft: getSqft(product.width, product.height)
+      })
+    } else {
+      systemSummary[systemIndex].quantity += product.qty
+      systemSummary[systemIndex].sqft += getSqft(product.width, product.height)
+    }
+  })
+
+  return (
+    <View style={tw('flex flex-row mt-4 gap-4')}>
+      <View style={tw('w-6/12')}>
+        <View style={tw('flex flex-row justify-start gap-x-3')}>
+          <Text style={tw('text-base text-gray-900 font-bold')}>System Summary</Text>
+        </View>
+        <View style={tw('flex flex-row justify-start gap-x-3')}>
+          <Text style={tw('text-base text-gray-900 font-bold w-6/12')}>Total Products</Text>
+          <Text style={tw('text-base text-gray-900 font-regular w-3/12 text-right')}>{systemSummary.length}</Text>
+        </View>
+        {systemSummary.map((summaryProduct, index) => {
+          return (
+            <View key={`productSummary${index}`} style={tw('flex flex-row justify-start gap-x-3')}>
+              <Text style={tw('text-base text-gray-900 font-bold w-6/12')}>{summaryProduct.system}</Text>
+              <Text style={tw('text-base text-gray-900 font-regular w-3/12 text-right')}>{summaryProduct.quantity}</Text>
+            </View>
+          )
+        })}
+      </View>
+      <View style={tw('w-6/12')}>
+        <View style={tw('flex flex-row justify-start gap-x-3')}>
+          <Text style={tw('text-base text-gray-900 font-bold')}>Sqft Summary</Text>
+        </View>
+        <View style={tw('flex flex-row justify-start gap-x-3')}>
+          <Text style={tw('text-base text-gray-900 font-bold w-6/12')}>Total Sqft</Text>
+          <Text style={tw('text-base text-gray-900 font-regular w-3/12 text-right')}>{`${systemSummary.reduce((acc, value) => acc + value.sqft, 0).toFixed(2)} sqft`}</Text>
+        </View>
+        {systemSummary.map((summaryProduct, index) => {
+          return (
+            <View key={`productSummary${index}`} style={tw('flex flex-row justify-start gap-x-3')}>
+              <Text style={tw('text-base text-gray-900 font-bold w-6/12')}>{summaryProduct.system}</Text>
+              <Text style={tw('text-base text-gray-900 font-regular w-3/12 text-right')}>{`${summaryProduct.sqft.toFixed(2)} sqft`}</Text>
+            </View>
+          )
+        })}
+      </View>
+    </View>
+  )
+}
+
+export default SystemSummary

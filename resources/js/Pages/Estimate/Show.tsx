@@ -14,6 +14,7 @@ import MoneyIcon from '@/Components/Icons/MoneyIcon'
 import PrintEstimateButton from './PrintEstimateButton'
 import { getNumberWithFraction } from '@/Utils/numbers'
 import { isDealer, isSubDealer, isAdmin } from '@/Utils/user'
+import CopyIcon from '@/Components/Icons/CopyIcon'
 import { formatPrice, getTotalPriceByRole, getUnitPriceByRole } from '@/Utils/price'
 
 export default function Create ({ auth, estimate }: PageProps & {
@@ -185,6 +186,12 @@ export default function Create ({ auth, estimate }: PageProps & {
                           {((isSubDealer(auth.user.roles.map((role: Role) => role.name)) && estimate.status === SUB_DEALER_ESTIMATE) ||
                           ((isDealer(auth.user.roles.map((role: Role) => role.name)) || isAdmin(auth.user.roles.map((role: Role) => role.name))) && estimate.status === ESTIMATE_STATUS)) && (
                             <td className="border-t flex items-center px-6 py-4">
+                              <button
+                                onClick={() => { router.post(route('product.duplicate', id)) }}
+                                title='Duplicate Product'
+                              >
+                                <CopyIcon className='mr-2'/>
+                              </button>
                               <button
                                 onClick={() => { router.get(getUrlBySystem(system, id)) }}
                               >

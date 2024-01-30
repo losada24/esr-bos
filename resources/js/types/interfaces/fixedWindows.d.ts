@@ -11,4 +11,5 @@ export interface FixedWindows {
   glass_color: string
   low_e: string
   privacy: string
+  order_glass_type: string
 }

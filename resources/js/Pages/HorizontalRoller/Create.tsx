@@ -29,7 +29,8 @@ export default function Create ({ auth, frame_colors, glass_colors, estimate, ha
     markup: estimate.markup,
     screen: false,
     handle: '',
-    config: ''
+    config: '',
+    order_glass_type: estimate.glass_type
   }
 
   const handleSubmit = async (values: any, helpers: FormikHelpers<HorizontalRoller>) => {
@@ -58,7 +59,6 @@ export default function Create ({ auth, frame_colors, glass_colors, estimate, ha
                 isCreate={true}
                 glass_colors={glass_colors}
                 frame_colors={frame_colors}
-                glassType={estimate.glass_type}
                 estimate_id={estimate.id}
                 values={values}
                 handle={handle}

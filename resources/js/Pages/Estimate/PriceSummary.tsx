@@ -37,6 +37,12 @@ const PriceSummary = ({ estimate, roles }: { estimate: Order, roles: string[] })
                 <div className="flex-1">Other</div>
                 <div className="w-[37%]">{`${formatPrice(estimate.other ?? 0)}`}</div>
             </div>
+            {(estimate?.rg_other_price ?? 0) > 0 && (
+              <div className="flex items-center">
+                  <div className="flex-1">RG Other</div>
+                  <div className="w-[37%]">{`${formatPrice(estimate.rg_other_price ?? 0)}`}</div>
+              </div>
+            )}
             <div className="flex items-center text-lg font-semibold">
                 <div className="flex-1">Grand Total</div>
                 <div className="w-[37%]">{`${formatPrice(getGrandTotalByRole(estimate, []) ?? 0)}`}</div>

@@ -44,6 +44,7 @@ class StoreEstimateRequest extends FormRequest
             'installation' => 'required|numeric',
             'permit' => 'required|numeric',
             'other' => 'required|numeric',
+            'rg_other_price' => 'nullable|numeric',
             'notes' => 'nullable|string',
             'external_purchase_id' => 'nullable|string|max:255',
             'glass_type' => [

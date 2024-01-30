@@ -18,6 +18,7 @@ import { type MaterialConsumption } from './interfaces/materialConsumption'
 import { type Balance } from './interfaces/balance'
 import { type PaymentInfo } from './interfaces/paymentInfo'
 import { type Status } from './interfaces/status'
+import { type OrderStatus } from './interfaces/orderStatus'
 
 export type {
   User,
@@ -39,5 +40,6 @@ export type {
   MaterialConsumption,
   Balance,
   PaymentInfo,
-  Status
+  Status,
+  OrderStatus
 }

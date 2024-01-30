@@ -16,7 +16,7 @@ use App\Products\FixedWindowsProduct;
 use App\Products\HorizontalRollerProduct;
 use App\Products\SingleHuntProduct;
 use App\Traits\Product;
-
+use Illuminate\Contracts\Database\Eloquent\Builder;
 
 class OrderController extends Controller
 {
@@ -211,5 +211,12 @@ class OrderController extends Controller
             OrderStatusEnum::$READY_FOR_DELIVERY
           ]
         ]);
+    }
+
+    public function history(Order $order) {
+      $order->load(['orderStatus' => function(Builder $query) {
+        $query->orderBy('id', 'desc');
+      }, 'orderStatus.user']);
+      return response()->json($order->orderStatus);
     }
 }

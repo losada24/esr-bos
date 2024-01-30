@@ -38,4 +38,5 @@ export interface Order {
   user_markup?: number
   company_promotion?: number
   user_id?: number
+  rg_other_price?: number
 }

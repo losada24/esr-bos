@@ -27,7 +27,8 @@ export default function Edit ({ auth, estimate, frame_colors, glass_colors, clie
     permit: estimate.permit,
     other: estimate.other,
     external_purchase_id: estimate.external_purchase_id ?? '',
-    glass_type: estimate.glass_type
+    glass_type: estimate.glass_type,
+    rg_other_price: estimate.rg_other_price
   }
 
   const handleSubmit = async (values: any, helpers: FormikHelpers<Order>) => {
@@ -49,7 +50,7 @@ export default function Edit ({ auth, estimate, frame_colors, glass_colors, clie
           validationSchema={estimateSchema}
           onSubmit={handleSubmit}
         >
-          {({ errors, submitCount, setFieldValue }) => (
+          {({ errors, submitCount, setFieldValue, values }) => (
             <EstimateForm
               errors={errors}
               submitCount={submitCount}
@@ -60,6 +61,8 @@ export default function Edit ({ auth, estimate, frame_colors, glass_colors, clie
               clients={clients}
               setFieldValue={setFieldValue}
               selectedClient={{ label: estimate.client?.name ?? '', value: estimate.client_id }}
+              values={values}
+              user={auth.user}
             />
           )}
         </Formik>

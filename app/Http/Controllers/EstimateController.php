@@ -148,4 +148,21 @@ class EstimateController extends Controller
         return redirect()->route('estimate.index')
           ->with('success', 'Order created successfully.');
     }
+
+    public function duplicate($id)
+    {
+        $estimate = Order::findOrFail($id);
+        $newEstimate = $estimate->replicate();
+        $newEstimate->name = $newEstimate->name . ' (copy)';
+        $newEstimate->push();
+
+        foreach ($estimate->products as $product) {
+          $newProduct = $product->replicate();
+          $newEstimate->products()->save($newProduct);
+        }
+
+        return redirect()
+          ->route('estimate.index')
+          ->with('success', 'Estimate duplicated successfully.');
+    }
 }

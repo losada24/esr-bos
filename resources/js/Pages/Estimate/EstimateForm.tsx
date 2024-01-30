@@ -1,12 +1,15 @@
+import { useState, useEffect } from 'react'
 import { Field, Form } from 'formik'
 import InputError from '@/Components/InputError'
 import PrimaryButton from '@/Components/PrimaryButton'
 import { Link } from '@inertiajs/react'
 import { type FormikErrors } from 'formik'
-import { type Order, type Client } from '@/types'
+import { type Order, type Client, type User } from '@/types'
 import Select from 'react-select'
+import { RUSH_GLASS_TYPE, RUSH_GLASS_NEW_COLOR, LEAD_TIME_BY_GLASS_TYPE, NO_CERTIFICATION_STANDARD_MESSAGE } from '@/Utils/constants'
+import { isAccountManager, isAdmin } from '@/Utils/user'
 
-const EstimateForm = ({ submitCount, errors, isCreate, glass_colors, frame_colors, clients, setFieldValue, selectedClient, glass_types }: {
+const EstimateForm = ({ submitCount, errors, isCreate, glass_colors, frame_colors, clients, setFieldValue, selectedClient, glass_types, values, user }: {
   submitCount: number
   errors: FormikErrors<Order>
   isCreate: boolean
@@ -17,7 +20,18 @@ const EstimateForm = ({ submitCount, errors, isCreate, glass_colors, frame_color
   clients: Client[]
   setFieldValue: (field: string, value: any) => void
   selectedClient?: { label: string, value: number }
+  values: Order
+  user: User
 }) => {
+  const [colors, setColors] = useState<string[]>([])
+  useEffect(() => {
+    if (values.glass_type === RUSH_GLASS_TYPE) {
+      setColors([...glass_colors])
+    } else {
+      setColors(glass_colors.filter((color) => color !== RUSH_GLASS_NEW_COLOR))
+    }
+  }, [values.glass_type])
+
   return (
     <Form className='space-y-5'>
       <div className='grid gap-4 grid-cols-3'>
@@ -102,23 +116,6 @@ const EstimateForm = ({ submitCount, errors, isCreate, glass_colors, frame_color
           </Field>
           {(submitCount && errors.frame_color) ? <InputError message={errors.frame_color} className="mt-2" /> : ''}
         </div>
-        <div className={submitCount ? (errors.glass_color) ? 'has-error' : 'has-success' : ''}>
-          <label htmlFor="glass_colors">Glass Color</label>
-          <Field
-            id="glass_color"
-            name="glass_color"
-            className="form-select"
-            autoComplete="glass_color"
-            placeholder='Glass Color'
-            as="select"
-          >
-            <option value="">Select Glass Color</option>
-            {glass_colors.map((color, index) => (
-              <option key={index} value={color}>{color}</option>
-            ))}
-          </Field>
-          {(submitCount && errors.glass_color) ? <InputError message={errors.glass_color} className="mt-2" /> : ''}
-        </div>
         <div className={submitCount ? (errors.glass_type) ? 'has-error' : 'has-success' : ''}>
           <label htmlFor="glass_type">Glass Lead Time</label>
           <Field
@@ -131,10 +128,35 @@ const EstimateForm = ({ submitCount, errors, isCreate, glass_colors, frame_color
           >
             <option value="">Select Glass Type</option>
             {glass_types.map((type, index) => (
-              <option key={index} value={type}>{type}</option>
+              <option key={index} value={type}>{LEAD_TIME_BY_GLASS_TYPE[type]}</option>
             ))}
           </Field>
           {(submitCount && errors.glass_type) ? <InputError message={errors.glass_type} className="mt-2" /> : ''}
+          {values.glass_type === RUSH_GLASS_TYPE && (
+            <div className="flex items-center p-3.5 rounded text-warning bg-danger-light dark:bg-danger-dark-light mt-3">
+              <span className="ltr:pr-2 rtl:pl-2">
+                <strong className="ltr:mr-1 rtl:ml-1">Warning!</strong>
+                {NO_CERTIFICATION_STANDARD_MESSAGE}
+              </span>
+            </div>
+          )}
+        </div>
+        <div className={submitCount ? (errors.glass_color) ? 'has-error' : 'has-success' : ''}>
+          <label htmlFor="glass_colors">Glass Color</label>
+          <Field
+            id="glass_color"
+            name="glass_color"
+            className="form-select"
+            autoComplete="glass_color"
+            placeholder='Glass Color'
+            as="select"
+          >
+            <option value="">Select Glass Color</option>
+            {colors.map((color, index) => (
+              <option key={index} value={color}>{color}</option>
+            ))}
+          </Field>
+          {(submitCount && errors.glass_color) ? <InputError message={errors.glass_color} className="mt-2" /> : ''}
         </div>
       </div>
       <div className='grid gap-4 grid-cols-2'>
@@ -198,6 +220,23 @@ const EstimateForm = ({ submitCount, errors, isCreate, glass_colors, frame_color
           </div>
           {(submitCount && errors.other) ? <InputError message={errors.other} className="mt-2" /> : ''}
         </div>
+        {(isAdmin(user.roles.map((role) => role.name)) || isAccountManager(user.roles.map((role) => role.name))) && (
+          <div className={submitCount ? (errors.other) ? 'has-error' : 'has-success' : ''}>
+            <label htmlFor="name">RG Other</label>
+            <div className="flex flex-1">
+              <div className="bg-[#eee] flex justify-center items-center px-3 font-semibold border border-[#e0e6ed] dark:border-[#17263c] dark:bg-[#1b2e4b] rounded-l-md">$</div>
+              <Field
+                id="rg_other_price"
+                name="rg_other_price"
+                className="form-input text-right rounded-l-none"
+                autoComplete="rg_other_price"
+                placeholder='RG Other'
+                type="number"
+              />
+            </div>
+            {(submitCount && errors.rg_other_price) ? <InputError message={errors.rg_other_price} className="mt-2" /> : ''}
+          </div>
+        )}
       </div>
       <div className={submitCount ? (errors.notes) ? 'has-error' : 'has-success' : ''}>
         <label htmlFor="notes">Notes</label>

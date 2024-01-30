@@ -14,4 +14,5 @@ export interface HorizontalRoller {
   screen: boolean
   config: string
   handle: string
+  order_glass_type: string
 }

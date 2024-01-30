@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use App\Enum\FrameColorEnum;
 use App\Enum\GlassColorEnum;
+use App\Enum\GlassTypeEnum;
 use Illuminate\Validation\Rule;
 
 class StoreSingleHuntRequest extends FormRequest
@@ -42,8 +43,24 @@ class StoreSingleHuntRequest extends FormRequest
             ],
             'order_id' => 'required|exists:orders,id',
             'glass_type' => 'required|string|max:255',
-            'low_e' => 'required|string|max:255',
-            'privacy' => 'required|string|max:255',
+            'low_e' => [
+              'string',
+              'nullable',
+              'max:255',
+              Rule::when(
+                fn($input) => $input->order_glass_type != GlassTypeEnum::$GLASS_TYPE['RUSH']
+                , ['required']
+              ),
+            ],
+            'privacy' => [
+              'string',
+              'nullable',
+              'max:255',
+              Rule::when(
+                fn($input) => $input->order_glass_type != GlassTypeEnum::$GLASS_TYPE['RUSH']
+                , ['required']
+              ),
+            ],
             'screen' => 'required|boolean'
         ];
     }

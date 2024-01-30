@@ -20,7 +20,7 @@ class CreateEstimate {
           $estimateStatus = OrderStatusEnum::$SUB_DEALER_ESTIMATE;
         }
 
-        $estimate = Order::create([
+        $estimateValues = [
           'name' => $request->name,
           'project_name' => $request->project_name,
           'client_id' => $request->client_id,
@@ -40,8 +40,13 @@ class CreateEstimate {
           'company_markup' => auth()->user()->company->markup,
           'company_promotion' => auth()->user()->company->promotion,
           'user_markup' => auth()->user()->markup,
-        ]);
-        
+        ];
+
+        if ((auth()->user()->hasRole(RoleEnum::$ADMIN) || auth()->user()->hasRole(RoleEnum::$ACCOUNT_MANAGER)) && $request->rg_other_price > 0) {
+          $estimateValues['rg_other_price'] = $request->rg_other_price;
+        }
+
+        $estimate = Order::create($estimateValues);
         if( !$estimate )
         {
             throw new \Exception('Estimate not created');
@@ -49,6 +54,7 @@ class CreateEstimate {
 
         $estimate->orderStatus()->create([
           'status' => $estimateStatus,
+          'user_id' => auth()->user()->id,
           'notes' => "$estimateStatus created by " . auth()->user()->name
         ]);
 

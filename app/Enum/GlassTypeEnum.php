@@ -4,10 +4,12 @@ namespace App\Enum;
 
 class GlassTypeEnum {
 
+  public static $RUSH_GLASS_TYPE = 'RUSH';
+
   public static $GLASS_TYPE = [
-    'EXPRESS' => 'EXPRESS',
     'REGULAR' => 'REGULAR',
-    // 'RUSH NON-IMPACT' => 'RUSH NON-IMPACT',
+    'EXPRESS' => 'EXPRESS',
+    'RUSH' => 'RUSH',
   ];
 
 }
