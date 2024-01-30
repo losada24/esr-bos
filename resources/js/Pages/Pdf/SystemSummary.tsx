@@ -41,7 +41,7 @@ const SystemSummary = ({ order }: { order: Order }) => {
       })
     } else {
       systemSummary[systemIndex].quantity += product.qty
-      systemSummary[systemIndex].sqft += getSqft(product.width, product.height)
+      systemSummary[systemIndex].sqft += getSqft(product.width, product.height) * product.qty
     }
   })
 
