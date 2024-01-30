@@ -26,7 +26,7 @@ class OrderStatus extends Model
      */
     public function getCreatedAtAttribute($value)
     {
-        return date('m/d/Y', strtotime($value));
+        return date('m/d/Y H:i:s', strtotime($value));
     }
 
     public function order()

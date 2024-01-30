@@ -14,7 +14,9 @@ class ProduceOrder {
 
       $order = Order::find($request->id);
       $orderStatus = [
-        'status' => $request->status
+        'status' => $request->status,
+        'user_id' => auth()->user()->id,
+        'notes' => $request->notes,
       ];
       
       if( !$order )
@@ -23,9 +25,7 @@ class ProduceOrder {
       }
 
       $orderData = [
-        'status' => $request->status,
-        'user_id' => auth()->user()->id,
-        'notes' => $request->notes,
+        'status' => $request->status
       ];
 
       $order->update($orderData);
