@@ -1,17 +1,28 @@
 import React from 'react'
 import { Link } from '@inertiajs/react'
-import { isAdmin, isAccountManager, isAccounting } from '@/Utils/user'
+import { isAdmin, isAccountManager, isAccounting, isDealer, isSubDealer } from '@/Utils/user'
 
 const PdfLinks = ({ id, roles }: { id: number, roles?: string[] }) => {
   return (
     <>
-      <li>
-        <Link
-          href={route('pdf.report', id)}
-        >
-          Cost Report
-        </Link>
-      </li>
+      {isDealer(roles ?? []) && (
+        <li>
+            <Link
+              href={route('pdf.report', id)}
+            >
+              Cost Report
+            </Link>
+        </li>
+      )}
+      {isSubDealer(roles ?? []) && (
+        <li>
+            <Link
+              href={route('pdf.subreport', id)}
+            >
+              Cost Report
+            </Link>
+        </li>
+      )}
       <li>
         <Link
           href={route('pdf.estimate.with.prices', id)}

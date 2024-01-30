@@ -148,6 +148,17 @@ class PdfController extends Controller
       ]);
     }
 
+    public function subDealerReport(Order $order)
+    {
+      $order->load(['products', 'client', 'user.company']);
+      $company = Company::where('id', $order->user->company_id)->first();
+      CompanyResource::withoutWrapping();
+      return Inertia::render('Pdf/SubDealerReport', [
+        'order' => $order,
+        'company' => new CompanyResource($company),
+      ]);
+    }
+
     public function production(Order $order)
     {
       $order->load(['products', 'client', 'user.company']);

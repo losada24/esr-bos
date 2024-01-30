@@ -73,8 +73,8 @@ const SystemSummary = ({ order }: { order: Order }) => {
           <Text style={tw('text-base text-gray-900 font-bold')}>Sqft Summary</Text>
         </View>
         <View style={tw('flex flex-row justify-start gap-x-3')}>
-          <Text style={tw('text-base text-gray-900 font-bold w-6/12')}></Text>
-          <Text style={tw('text-base text-gray-900 font-regular w-3/12 text-right')}></Text>
+          <Text style={tw('text-base text-gray-900 font-bold w-6/12')}> </Text>
+          <Text style={tw('text-base text-gray-900 font-regular w-3/12 text-right')}> </Text>
         </View>
         {systemSummary.map((summaryProduct, index) => {
           return (

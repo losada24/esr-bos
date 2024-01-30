@@ -269,8 +269,12 @@ Route::middleware('auth')->group(function () {
       ->name('pdf.estimate.without.prices');
     
     Route::get('/pdf/report/{order}', [PdfController::class, 'report'])
-      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$ACCOUNTING . "|" . RoleEnum::$SUB_DEALER ])
+      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$ACCOUNTING ])
       ->name('pdf.report');
+
+    Route::get('/pdf/sub-report/{order}', [PdfController::class, 'report'])
+      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$ACCOUNTING . "|" . RoleEnum::$SUB_DEALER ])
+      ->name('pdf.subreport');
     
     Route::get('/pdf/production/{order}', [PdfController::class, 'production'])
       ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$ACCOUNTING . "|" . RoleEnum::$ACCOUNT_MANAGER ])
