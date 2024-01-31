@@ -28,9 +28,9 @@ const FixedWindowsForm = ({ submitCount, errors, isCreate, frame_colors, glass_c
     } else {
       setColors(glass_colors.filter((color) => color !== RUSH_GLASS_NEW_COLOR))
       if (values.glass_color !== '' && values.low_e !== '' && values.privacy !== '') {
-        const firstGlass = `3/16 HS ${values.glass_color} ${values.glass_color === 'CLEAR' && values.low_e !== 'NONE' ? values.low_e : ''}`
+        const firstGlass = `3/16 HS ${values.glass_color}${values.glass_color === 'CLEAR' && values.low_e !== 'NONE' ? ` ${values.low_e}` : ''}`
         const interlayer = `+0.09PVB t ${values.privacy}`
-        const lastGlass = `+3/16 HS CLEAR ${values.glass_color !== 'CLEAR' && values.low_e !== 'NONE' ? values.low_e : ''}`
+        const lastGlass = `+3/16 HS CLEAR${values.glass_color !== 'CLEAR' && values.low_e !== 'NONE' ? ` ${values.low_e}` : ''}`
         setGlassTypes([`${firstGlass} ${interlayer} ${lastGlass} (${values.order_glass_type})`])
       } else {
         setGlassTypes([])
