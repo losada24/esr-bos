@@ -17,18 +17,17 @@ class CheckUserCreatedByField
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if ($request->user()->hasRole(RoleEnum::$ADMIN) || $this->CheckCreatedByAttribute($request)) {
+        if ($request->user()->hasRole(RoleEnum::$ADMIN) || ($request->user()->hasRole(RoleEnum::$DEALER) && $this->CheckCompanyAttribute($request))) {
             return $next($request);
         }
 
-        return redirect()->route('client.index')
+        return redirect()->route('user.index')
             ->with('error', 'You are not authorized to access this page.');
     }
 
-    function CheckCreatedByAttribute($request)
+    function CheckCompanyAttribute($request)
     {
-        $user = User::find($request->id);
-        if ($user != null && $user->company_id == auth()->user()->company_id) {
+        if ($request->user != null && $request->user->company_id == auth()->user()->company_id) {
             return true;
         } else {
             return false;

@@ -14,7 +14,6 @@ class CreateEstimate {
       DB::beginTransaction();
 
       try {
-
         $estimateStatus = OrderStatusEnum::$ESTIMATE;
         if (auth()->user()->hasRole(RoleEnum::$SUB_DEALER)) {
           $estimateStatus = OrderStatusEnum::$SUB_DEALER_ESTIMATE;
@@ -42,8 +41,13 @@ class CreateEstimate {
           'user_markup' => auth()->user()->markup,
         ];
 
-        if ((auth()->user()->hasRole(RoleEnum::$ADMIN) || auth()->user()->hasRole(RoleEnum::$ACCOUNT_MANAGER)) && $request->rg_other_price > 0) {
+        if (auth()->user()->hasRole(RoleEnum::$ADMIN) || auth()->user()->hasRole(RoleEnum::$ACCOUNT_MANAGER)) {
           $estimateValues['rg_other_price'] = $request->rg_other_price;
+          $estimateValues['order_promotion'] = $request->order_promotion;
+        }
+
+        if (auth()->user()->hasRole(RoleEnum::$ADMIN) || auth()->user()->hasRole(RoleEnum::$ACCOUNT_MANAGER) || auth()->user()->hasRole(RoleEnum::$DEALER)) {
+          $estimateValues['subdealer_other'] = $request->subdealer_other;
         }
 
         $estimate = Order::create($estimateValues);

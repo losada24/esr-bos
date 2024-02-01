@@ -40,7 +40,6 @@ class UpdateEstimate {
         'glass_type' => $request->glass_type,
         'markup' => $request->markup,
         'notes' => $request->notes,
-        'user_id' => auth()->user()->id,
         'tax_rate' => $request->tax_rate,
         'installation' => $request->installation,
         'permit' => $request->permit,
@@ -48,8 +47,13 @@ class UpdateEstimate {
         'external_purchase_id' => $request->external_purchase_id,
       ];
 
-      if ((auth()->user()->hasRole(RoleEnum::$ADMIN) || auth()->user()->hasRole(RoleEnum::$ACCOUNT_MANAGER)) && $request->rg_other_price > 0) {
-        $orderData['rg_other_price'] = $request->rg_other_price;
+      if (auth()->user()->hasRole(RoleEnum::$ADMIN) || auth()->user()->hasRole(RoleEnum::$ACCOUNT_MANAGER)) {
+          $orderData['rg_other_price'] = $request->rg_other_price;
+          $orderData['order_promotion'] = $request->order_promotion;
+      }
+
+      if (auth()->user()->hasRole(RoleEnum::$ADMIN) || auth()->user()->hasRole(RoleEnum::$ACCOUNT_MANAGER) || auth()->user()->hasRole(RoleEnum::$DEALER)) {
+        $estimateValues['subdealer_other'] = $request->subdealer_other;
       }
 
       $estimate->update($orderData);

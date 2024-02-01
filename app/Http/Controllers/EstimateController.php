@@ -154,6 +154,7 @@ class EstimateController extends Controller
         $estimate = Order::findOrFail($id);
         $newEstimate = $estimate->replicate();
         $newEstimate->name = $newEstimate->name . ' (copy)';
+        $newEstimate->user_id = auth()->user()->id;
         $newEstimate->push();
 
         foreach ($estimate->products as $product) {

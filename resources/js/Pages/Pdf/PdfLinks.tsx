@@ -6,13 +6,22 @@ const PdfLinks = ({ id, roles }: { id: number, roles?: string[] }) => {
   return (
     <>
       {(isDealer(roles ?? []) || isAccountManager(roles ?? []) || isAccounting(roles ?? []) || isAdmin(roles ?? [])) && (
-        <li>
+        <>
+          <li>
+              <Link
+                href={route('pdf.report', id)}
+              >
+                Cost Report
+              </Link>
+          </li>
+          <li>
             <Link
-              href={route('pdf.report', id)}
+              href={route('pdf.subreport', id)}
             >
-              Cost Report
+              Sub Deader Cost Report
             </Link>
-        </li>
+          </li>
+        </>
       )}
       {isSubDealer(roles ?? []) && (
         <li>

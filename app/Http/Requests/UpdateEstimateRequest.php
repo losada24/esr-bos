@@ -46,6 +46,8 @@ class UpdateEstimateRequest extends FormRequest
           'permit' => 'required|numeric',
           'other' => 'required|numeric',
           'rg_other_price' => 'nullable|numeric',
+          'order_promotion' => 'nullable|numeric',
+          'subdealer_other' => 'nullable|numeric',
           'notes' => 'nullable|string',
           'external_purchase_id' => 'nullable|string|max:255',
           'glass_type' => [

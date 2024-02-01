@@ -14,6 +14,9 @@ export const estimateSchema = Yup.object({
   installation: Yup.number(),
   permit: Yup.number(),
   other: Yup.number(),
+  rg_other_price: Yup.number(),
+  order_promotion: Yup.number(),
+  subdealer_other: Yup.number(),
   notes: Yup.string().nullable()
 })
 

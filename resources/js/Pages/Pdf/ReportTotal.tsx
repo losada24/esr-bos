@@ -2,7 +2,7 @@ import React from 'react'
 import { Text, View } from '@react-pdf/renderer'
 import { createTw } from 'react-pdf-tailwind'
 import { type Order } from '@/types'
-import { getSubTotalPriceByRole, formatPrice } from '@/Utils/price'
+import { getSubTotalPriceByRole, formatPrice, getGrandTotalByRole } from '@/Utils/price'
 import { isAccountManager, isAdmin, isDealer, isSubDealer } from '@/Utils/user'
 
 const tw = createTw({
@@ -74,9 +74,15 @@ const ReportTotal = ({ order, roles }: { order: Order, roles: string[] }) => {
             <Text style={tw('text-base text-gray-900 font-regular w-6/12 text-left')}>{`${formatPrice(getPromotionPrice())}`}</Text>
           </View>
         )}
+        {((isDealer(roles) || isSubDealer(roles)) && (order?.subdealer_other ?? 0) > 0) && (
+          <View style={tw('flex flex-row justify-start gap-x-3')}>
+            <Text style={tw('text-base text-gray-900 font-bold w-6/12 text-right')}>Sub Dealer Other:</Text>
+            <Text style={tw('text-base text-gray-900 font-regular w-6/12 text-left')}>{`${formatPrice(order?.subdealer_other ?? 0)}`}</Text>
+          </View>
+        )}
         <View style={tw('flex flex-row justify-start gap-x-3')}>
           <Text style={tw('text-base text-gray-900 font-bold w-6/12 text-right')}>Total:</Text>
-          <Text style={tw('text-base text-gray-900 font-regular w-6/12 text-left')}>{`${formatPrice(getTotalPrice())}`}</Text>
+          <Text style={tw('text-base text-gray-900 font-regular w-6/12 text-left')}>{`${formatPrice(getGrandTotalByRole(order, roles))}`}</Text>
         </View>
       </View>
     </View>

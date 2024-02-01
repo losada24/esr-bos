@@ -23,6 +23,8 @@ class UserResource extends JsonResource
           'created_at' => $this->created_at,
           'updated_at' => $this->updated_at,
           'company_id' => $this->company_id ?? '',
+          'markup' => $this->markup ?? 0,
+          'featured_image' => $this->featured_image ? asset('storage/'.$this->featured_image) : '',
         ];
     }
 }

@@ -13,7 +13,7 @@ import CheckIcon from '@/Components/Icons/CheckIcon'
 import { isAdmin, isDealer, isSubDealer } from '@/Utils/user'
 import { formatPrice, getGrandTotalByRole, getSubTotalPriceByRole } from '@/Utils/price'
 import OrderUpdateStatusModal from '@/Pages/Order/OrderUpdateStatusModal'
-import { ESTIMATE_STATUS, SUB_DEALER_ESTIMATE } from '@/Utils/constants'
+import { ESTIMATE_STATUS, ROLES, SUB_DEALER_ESTIMATE } from '@/Utils/constants'
 import CopyIcon from '@/Components/Icons/CopyIcon'
 
 type IndexOrderProps = PageProps & {
@@ -28,6 +28,17 @@ type IndexOrderProps = PageProps & {
 export default function Index ({ auth, estimates }: IndexOrderProps) {
   const [showOrderModal, setShowOrderModal] = useState<boolean>(false)
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
+  const IS_DEALER = isDealer(auth.user.roles.map((role: Role) => role.name))
+  const IS_SUB_DEALER = isSubDealer(auth.user.roles.map((role: Role) => role.name))
+  const IS_ADMIN = isAdmin(auth.user.roles.map((role: Role) => role.name))
+  const IS_ACCOUNT_MANAGER = isAdmin(auth.user.roles.map((role: Role) => role.name))
+  const granTotalRole: string[] = []
+  if (IS_DEALER) {
+    granTotalRole.push(ROLES.SUB_DEALER)
+  } else if (IS_ADMIN || IS_ACCOUNT_MANAGER) {
+    granTotalRole.push(ROLES.DEALER)
+  }
+
   const destroy = (id: number) => {
     if (confirm('Are you sure you want to delete this Estimate?')) {
       router.delete(route('estimate.destroy', id))
@@ -71,7 +82,6 @@ export default function Index ({ auth, estimates }: IndexOrderProps) {
             </thead>
             <tbody>
               {estimates.data.map((estimate) => {
-                // console.log(auth.user.id, estimate.user_id)
                 const { id, name, project_name, created_at } = estimate
                 return (
                   <tr
@@ -94,10 +104,10 @@ export default function Index ({ auth, estimates }: IndexOrderProps) {
                       {formatPrice(getSubTotalPriceByRole(estimate, auth.user.roles.map((role) => role.name)) ?? 0)}
                     </td>
                     <td className="border-t px-6 py-4 align-top">
-                      {formatPrice(getGrandTotalByRole(estimate, auth.user.roles.map((role) => role.name)))}
+                      {formatPrice(getGrandTotalByRole(estimate, granTotalRole))}
                     </td>
                     <td className="border-t flex items-center px-6 py-4">
-                        {((isSubDealer(auth.user.roles.map((role: Role) => role.name)) && estimate.status === SUB_DEALER_ESTIMATE) || (isDealer(auth.user.roles.map((role: Role) => role.name)) && estimate.user_id !== auth.user.id)) && (
+                        {((IS_SUB_DEALER && estimate.status === SUB_DEALER_ESTIMATE) || (IS_DEALER && estimate.user_id !== auth.user.id)) && (
                           <button title='Change Order Status' onClick={() => {
                             setSelectedOrder(estimate)
                             setShowOrderModal(true)
@@ -105,7 +115,7 @@ export default function Index ({ auth, estimates }: IndexOrderProps) {
                             <CheckIcon />
                           </button>
                         )}
-                        {(isAdmin(auth.user.roles.map((role: Role) => role.name)) || isDealer(auth.user.roles.map((role: Role) => role.name))) && (
+                        {(IS_ADMIN || IS_DEALER) && (
                           <Link href={route('estimate.order', id) } className='mr-2' title='Create Order'>
                             <MoneyIcon />
                           </Link>
@@ -117,8 +127,8 @@ export default function Index ({ auth, estimates }: IndexOrderProps) {
                         >
                           <EyeIcon />
                         </Link>
-                        {((isSubDealer(auth.user.roles.map((role: Role) => role.name)) && estimate.status === SUB_DEALER_ESTIMATE) ||
-                         ((isDealer(auth.user.roles.map((role: Role) => role.name)) || isAdmin(auth.user.roles.map((role: Role) => role.name))) && estimate.status === ESTIMATE_STATUS)) && (
+                        {((IS_SUB_DEALER && estimate.status === SUB_DEALER_ESTIMATE) ||
+                         ((IS_DEALER || IS_ADMIN) && estimate.status === ESTIMATE_STATUS)) && (
                           <>
                             <button
                                 onClick={() => { duplicate(id) }}

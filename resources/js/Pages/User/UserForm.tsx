@@ -2,11 +2,24 @@ import { Field, Form } from 'formik'
 import InputError from '@/Components/InputError'
 import PrimaryButton from '@/Components/PrimaryButton'
 import { Link } from '@inertiajs/react'
-import { type Role, type Company } from '@/types'
+import { type Role, type Company, type ModalProps } from '@/types'
 import { type FormikErrors } from 'formik'
 import { type User } from './UserCommon'
+import FeaturedImageModal from '../RawMaterial/FeaturedImageModal'
+import { useState } from 'react'
 
-const UserForm = ({ submitCount, errors, roles, isCreate, companies, isAdmin }: { submitCount: number, errors: FormikErrors<User>, roles: Role[], isCreate: boolean, companies: Company[], isAdmin: boolean }) => {
+const UserForm = ({ submitCount, errors, roles, isCreate, companies, isAdmin, featured_image, setFieldValue, modalProps }: {
+  submitCount: number
+  errors: FormikErrors<User>
+  roles: Role[]
+  isCreate: boolean
+  companies: Company[]
+  isAdmin: boolean
+  featured_image?: string
+  modalProps: ModalProps | null
+  setFieldValue: (field: string, value: any, shouldValidate?: boolean | undefined) => void
+}) => {
+  const [showModal, setShowModal] = useState(false)
   return (
     <Form className='space-y-5'>
       <div className={submitCount ? (errors.name) ? 'has-error' : 'has-success' : ''}>
@@ -95,12 +108,38 @@ const UserForm = ({ submitCount, errors, roles, isCreate, companies, isAdmin }: 
         />
         <InputError message={errors.password_confirmation} className="mt-2" />
       </div>
+      <div className={submitCount ? (errors.featured_image) ? 'has-error' : 'has-success' : ''}>
+        <label htmlFor="featured_image">Feature Image</label>
+        <input
+          id="featured_image"
+          name="featured_image"
+          type="file"
+          accept="image/*"
+          className="form-input file:py-2 file:px-4 file:border-0 file:font-semibold p-0 file:bg-primary/90 ltr:file:mr-5 rtl:file:ml-5 file:text-white file:hover:bg-primary"
+          placeholder="Qty"
+          onChange={(event: any) => {
+            setFieldValue('featured_image', event.currentTarget.files[0])
+          }}
+        />
+        {(submitCount && errors.featured_image) ? <InputError message={errors.featured_image} className="mt-2" /> : ''}
+        {featured_image && (
+          <div className="mt-2">
+            <button onClick={(e) => {
+              e.preventDefault()
+              setShowModal(true)
+            }}>
+             <img src={featured_image} className="w-20 h-20 object-cover rounded-md overflow-hidden" />
+            </button>
+          </div>
+        )}
+      </div>
       <div className="flex items-center justify-between mt-4">
         <Link className='btn btn-danger uppercase' href={route('user.index')}>Cancel</Link>
         <PrimaryButton className="btn btn-primary" type='submit'>
           {isCreate ? 'Create' : 'Save'}
         </PrimaryButton>
       </div>
+      {modalProps && <FeaturedImageModal showModal={showModal} onClose={setShowModal} selectedModalProps={modalProps} />}
     </Form>
   )
 }

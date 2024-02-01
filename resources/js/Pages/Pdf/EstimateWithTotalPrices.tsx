@@ -15,6 +15,7 @@ import EstimateTotal from './EstimateTotal'
 import { Notes } from './Notes'
 import Pagination from './Pagination'
 import SystemSummary from './SystemSummary'
+import { GLASS_TYPE } from '@/Utils/constants'
 
 type IndexOrderProps = PageProps & {
   order: Order
@@ -36,6 +37,7 @@ const tw = createTw({
 })
 
 const EstimateWithTotalPrices = ({ order, auth, company }: IndexOrderProps) => {
+  const IS_IMPACT_GLASS = order.glass_type !== GLASS_TYPE.RUSH
   return (
     <AuthenticatedLayout
           auth={auth}
@@ -57,7 +59,7 @@ const EstimateWithTotalPrices = ({ order, auth, company }: IndexOrderProps) => {
             }} />
             <ReportCompany order={order} />
             {order?.products?.map((product, index) => {
-              return <EstimateProduct product={product} key={index} showPrices={false} roles={[]} />
+              return <EstimateProduct product={product} key={index} showPrices={false} roles={[]} isImpactGlass={IS_IMPACT_GLASS} />
             })}
             <EstimateTotal order={order} />
             {order.notes !== null && (

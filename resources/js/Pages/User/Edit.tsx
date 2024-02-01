@@ -3,10 +3,12 @@ import { Head, router } from '@inertiajs/react'
 import { Formik, type FormikHelpers } from 'formik'
 import { userUpdateSchema, type UserPageProps, type User } from './UserCommon'
 import UserForm from './UserForm'
-import { type Role } from '@/types'
+import { type ModalProps, type Role } from '@/types'
 import { isAdmin } from '@/Utils/user'
+import { useEffect, useState } from 'react'
 
 export default function Edit ({ auth, roles, user, companies }: UserPageProps) {
+  const [modalProps, setModalProps] = useState<ModalProps | null>(null)
   const IS_ADMIN = isAdmin(auth.user.roles.map((role: Role) => role.name))
   const initialValues: User = {
     id: user?.data.id ?? 0,
@@ -16,11 +18,23 @@ export default function Edit ({ auth, roles, user, companies }: UserPageProps) {
     password_confirmation: '',
     role: user?.data.role ?? 0,
     company_id: user?.data.company_id ?? 0,
-    markup: user?.data.markup ?? 0
+    markup: user?.data.markup ?? 0,
+    featured_image: ''
   }
 
+  useEffect(() => {
+    setModalProps({
+      title: user?.data.name ?? '',
+      image: user?.data.featured_image ?? ''
+    })
+  }, [])
+
   const handleSubmit = async (values: any, helpers: FormikHelpers<User>) => {
-    router.put(route('user.update', values.id), values, {
+    router.post(route('user.update', values.id), {
+      _method: 'PUT',
+      ...values
+    }, {
+      forceFormData: true,
       onError: (errors: any) => {
         helpers.setErrors(errors)
       }
@@ -38,7 +52,7 @@ export default function Edit ({ auth, roles, user, companies }: UserPageProps) {
           validationSchema={userUpdateSchema}
           onSubmit={handleSubmit}
         >
-          {({ errors, submitCount }) => (
+          {({ errors, submitCount, setFieldValue }) => (
             <UserForm
               errors={errors}
               submitCount={submitCount}
@@ -46,6 +60,9 @@ export default function Edit ({ auth, roles, user, companies }: UserPageProps) {
               isCreate={false}
               companies={companies}
               isAdmin={IS_ADMIN}
+              setFieldValue={setFieldValue}
+              featured_image={user?.data.featured_image ?? ''}
+              modalProps={modalProps}
             />
           )}
         </Formik>

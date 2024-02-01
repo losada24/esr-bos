@@ -272,7 +272,7 @@ Route::middleware('auth')->group(function () {
       ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$ACCOUNTING ])
       ->name('pdf.report');
 
-    Route::get('/pdf/sub-report/{order}', [PdfController::class, 'report'])
+    Route::get('/pdf/sub-report/{order}', [PdfController::class, 'subDealerReport'])
       ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$ACCOUNTING . "|" . RoleEnum::$SUB_DEALER ])
       ->name('pdf.subreport');
     

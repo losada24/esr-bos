@@ -1,7 +1,8 @@
-import { type Product, type Order, Role } from '@/types'
-import { isAccounting, isAdmin, isDealer, isProduction, isSubDealer } from './user'
+import { type Product, type Order } from '@/types'
+import { isAccounting, isAdmin, isDealer, isSubDealer } from './user'
+import { ROLES } from './constants'
 
-export const getDealerUnitPrice = (product: Product, estimate: Order) => {
+ /* export const getDealerUnitPrice = (product: Product, estimate: Order) => {
   return Number(product.unit_price) + getMarkup(product.unit_price, estimate.user_markup ?? 0)
 }
 
@@ -75,7 +76,7 @@ export const getGrandTotal = (estimate: Order) => {
 
 export const getMarkup = (price: number, markup: number) => {
   return Number(price) * Number(markup) / 100
-}
+} */
 
 export const formatPrice = (price: number) => {
   const USDollar = new Intl.NumberFormat('en-US', {
@@ -130,12 +131,34 @@ export const getTaxAmountByRole = (order: Order, role: string[]) => {
   return subtotal * tax_race / 100
 }
 
+export const getDealerPromotion = (order: Order) => {
+  const subtotal: number | undefined = order.products?.reduce((acc, product) => {
+    return acc + Number(product.dealer_promotion_total_discount)
+  }, 0)
+
+  return subtotal
+}
+
 export const getGrandTotalByRole = (order: Order, role: string[]) => {
   const subtotal: number = getSubTotalPriceByRole(order, role) ?? 0
-  const tax_amount: number = getTaxAmountByRole(order, role) ?? 0
-  const installation: number = order.installation ?? 0
-  const permit: number = order.permit ?? 0
-  const other: number = order.other ?? 0
   const rg_other_price: number = order.rg_other_price ?? 0
-  return Number(subtotal) + Number(tax_amount) + Number(installation) + Number(permit) + Number(other) + Number(rg_other_price)
+
+  if (isDealer(role)) {
+    const order_promotion: number = getOrderPromotion(order) ?? 0
+    return Number(subtotal) - Number(order_promotion) + Number(rg_other_price) - Number(getDealerPromotion(order))
+  } else if (isSubDealer(role)) {
+    return Number(subtotal) + Number(rg_other_price) + Number(order.subdealer_other)
+  } else {
+    const tax_amount: number = getTaxAmountByRole(order, role) ?? 0
+    const installation: number = order.installation ?? 0
+    const permit: number = order.permit ?? 0
+    const other: number = order.other ?? 0
+    return Number(subtotal) + Number(tax_amount) + Number(installation) + Number(permit) + Number(other) + Number(rg_other_price)
+  }
+}
+
+export const getOrderPromotion = (order: Order) => {
+  const subtotal: number = getSubTotalPriceByRole(order, [ROLES.DEALER]) ?? 0
+  const promotionAmount: number = Number(order.order_promotion) ?? 0
+  return subtotal * promotionAmount / 100
 }

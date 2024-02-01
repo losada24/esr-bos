@@ -29,7 +29,8 @@ class User extends Authenticatable
         'company_id',
         'markup',
         'promotion',
-        'created_by'
+        'created_by',
+        'featured_image',
     ];
 
     /**

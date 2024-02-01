@@ -18,7 +18,7 @@ const tw = createTw({
   }
 })
 
-const ReportProductImage = ({ product }: { product: Product }) => {
+const ReportProductImage = ({ product, isImpactGlass }: { product: Product, isImpactGlass?: boolean }) => {
   // TODO: Create helper function to check if product is certified
   // TODO: Fix Image
   return (
@@ -34,6 +34,11 @@ const ReportProductImage = ({ product }: { product: Product }) => {
         </View>
       )}
       {product.system === PRODUCT_SYSTEMS.HORIZONTAL_ROLLER && (product.width > 74 || product.height > 53) && (
+        <View style={tw('flex flex-row mb-4 p-3')}>
+          <Text style={tw('text-xs text-red-700 font-regular text-center')}>{NO_CERTIFICATION_STANDARD_MESSAGE}</Text>
+        </View>
+      )}
+      {!isImpactGlass && (
         <View style={tw('flex flex-row mb-4 p-3')}>
           <Text style={tw('text-xs text-red-700 font-regular text-center')}>{NO_CERTIFICATION_STANDARD_MESSAGE}</Text>
         </View>

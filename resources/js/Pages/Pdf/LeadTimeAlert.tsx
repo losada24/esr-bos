@@ -17,10 +17,21 @@ const tw = createTw({
 })
 
 const LeadTimeAlert = ({ glass_type }: { glass_type: string }) => {
+  const getLeadTime = () => {
+    let leadTime = '2-3 WEEKS'
+    if (glass_type === GLASS_TYPE.EXPRESS) {
+      leadTime = '3-4 WEEKS'
+    } else if (glass_type === GLASS_TYPE.REGULAR) {
+      leadTime = '6-8 WEEKS'
+    }
+
+    return leadTime
+  }
+
   return (
     <View style={tw('flex flex-row justify-between bg-gray-200 p-3 border border-gray-400')}>
       <Text style={tw('text-xs font-bold')}>ESTIMATED DELIVERY</Text>
-      <Text style={tw('text-xs')}>{glass_type === GLASS_TYPE.EXPRESS ? '3-4 WEEKS' : '6-8 WEEKS'}</Text>
+      <Text style={tw('text-xs')}>{getLeadTime()}</Text>
     </View>
   )
 }

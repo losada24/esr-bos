@@ -12,6 +12,7 @@ import ReportSignature from './ReportSignature'
 import ReportCompany from './ReportCompany'
 import Pagination from './Pagination'
 import logo from '../../../assets/images/logo-reylosglass.png'
+import DeliverySummary from './DeliverySummary'
 
 type IndexOrderProps = PageProps & {
   order: Order
@@ -56,6 +57,7 @@ const Delivery = ({ order, auth }: IndexOrderProps) => {
             {order?.products?.map((product, index) => {
               return <DeliveryProduct product={product} key={index} />
             })}
+            <DeliverySummary order={order} />
             <ReportSignature />
           </Page>
         </PrintLayout>

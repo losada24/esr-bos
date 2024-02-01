@@ -15,11 +15,13 @@ export default function Create ({ auth, roles, companies }: UserPageProps) {
     password_confirmation: '',
     role: 0,
     company_id: 0,
-    markup: 0
+    markup: 0,
+    featured_image: ''
   }
 
   const handleSubmit = async (values: any, helpers: FormikHelpers<User>) => {
     router.post(route('user.store'), values, {
+      forceFormData: true,
       onError: (errors: any) => {
         helpers.setErrors(errors)
       }
@@ -37,7 +39,7 @@ export default function Create ({ auth, roles, companies }: UserPageProps) {
             validationSchema={userSchema}
             onSubmit={handleSubmit}
           >
-            {({ errors, submitCount }) => (
+            {({ errors, submitCount, setFieldValue }) => (
               <UserForm
                 errors={errors}
                 submitCount={submitCount}
@@ -45,6 +47,8 @@ export default function Create ({ auth, roles, companies }: UserPageProps) {
                 isCreate={true}
                 companies={companies}
                 isAdmin={IS_ADMIN}
+                setFieldValue={setFieldValue}
+                modalProps={null}
               />
             )}
           </Formik>

@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use App\Enum\RoleEnum;
+use Illuminate\Support\Facades\Storage;
 
 class UpdateUser {
 
@@ -23,11 +24,22 @@ class UpdateUser {
         $company_id = $request->company_id;
       }
 
+      $reaturedImagePath = $user->featured_image;
+      if ($request->hasFile('featured_image')) {
+        $fileName = time() . '_' . $request->file('featured_image')->getClientOriginalName();
+        $tempOldImagePath = $reaturedImagePath;
+        $reaturedImagePath = $request->file('featured_image')->storeAs('user_images', $fileName, 'public');
+        if ($reaturedImagePath && $tempOldImagePath) {
+          Storage::disk('public')->delete($tempOldImagePath);
+        }
+      }
+
       $userData = [
         'name' => $request->name,
         'email' => $request->email,
         'company_id' => $company_id,
         'markup' => $request->markup,
+        'featured_image' => $reaturedImagePath,
       ];
 
       if ($request->password) {

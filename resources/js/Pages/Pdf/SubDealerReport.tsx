@@ -17,7 +17,7 @@ import logo from '../../../assets/images/logo-reylosglass.png'
 import ReportCompany from './ReportCompany'
 import { Notes } from './Notes'
 import Pagination from './Pagination'
-import { ROLES } from '@/Utils/constants'
+import { GLASS_TYPE, ROLES } from '@/Utils/constants'
 import SystemSummary from './SystemSummary'
 
 const COMPANY_ADDRESS = import.meta.env.VITE_COMPANY_ADDRESS
@@ -43,8 +43,9 @@ const tw = createTw({
   }
 })
 
-const Report = ({ order, auth, company }: IndexOrderProps) => {
+const SubDealerReport = ({ order, auth, company }: IndexOrderProps) => {
   const IS_SUBDEALER = isSubDealer(auth.user.roles.map((role) => role.name))
+  const IS_IMPACT_GLASS = order.glass_type !== GLASS_TYPE.RUSH
   return (
     <AuthenticatedLayout
           auth={auth}
@@ -66,7 +67,7 @@ const Report = ({ order, auth, company }: IndexOrderProps) => {
             }} />
             <ReportCompany order={order} />
             {order?.products?.map((product, index) => {
-              return <ReportProduct product={product} key={index} showPrices={true} roles={[ROLES.SUB_DEALER]} />
+              return <ReportProduct product={product} key={index} showPrices={true} roles={[ROLES.SUB_DEALER]} isImpactGlass={IS_IMPACT_GLASS}/>
             })}
             <LeadTimeAlert glass_type={order.glass_type} />
             <ReportTotal order={order} roles={[ROLES.SUB_DEALER]} />
@@ -81,4 +82,4 @@ const Report = ({ order, auth, company }: IndexOrderProps) => {
   )
 }
 
-export default Report
+export default SubDealerReport

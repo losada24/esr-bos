@@ -9,4 +9,5 @@ export interface User {
   roles: Role[]
   company_id: number
   company?: Company
+  featured_image?: string
 }

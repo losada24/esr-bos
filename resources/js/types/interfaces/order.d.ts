@@ -39,4 +39,6 @@ export interface Order {
   company_promotion?: number
   user_id?: number
   rg_other_price?: number
+  order_promotion?: number
+  subdealer_other?: number
 }

@@ -38,6 +38,8 @@ class OrderResource extends JsonResource
           'user_markup' => $this->user_markup ?? 0,
           'user_id' => $this->user_id,
           'rg_other_price' => $this->rg_other_price ?? 0,
+          'order_promotion' => $this->order_promotion ?? 0,
+          'subdealer_other' => $this->subdealer_other ?? 0,
         ];
     }
 }

@@ -7,7 +7,7 @@ import { type FormikErrors } from 'formik'
 import { type Order, type Client, type User } from '@/types'
 import Select from 'react-select'
 import { RUSH_GLASS_TYPE, RUSH_GLASS_NEW_COLOR, LEAD_TIME_BY_GLASS_TYPE, NO_CERTIFICATION_STANDARD_MESSAGE } from '@/Utils/constants'
-import { isAccountManager, isAdmin } from '@/Utils/user'
+import { isAccountManager, isAdmin, isDealer } from '@/Utils/user'
 
 const EstimateForm = ({ submitCount, errors, isCreate, glass_colors, frame_colors, clients, setFieldValue, selectedClient, glass_types, values, user }: {
   submitCount: number
@@ -221,21 +221,57 @@ const EstimateForm = ({ submitCount, errors, isCreate, glass_colors, frame_color
           {(submitCount && errors.other) ? <InputError message={errors.other} className="mt-2" /> : ''}
         </div>
         {(isAdmin(user.roles.map((role) => role.name)) || isAccountManager(user.roles.map((role) => role.name))) && (
-          <div className={submitCount ? (errors.other) ? 'has-error' : 'has-success' : ''}>
-            <label htmlFor="name">RG Other</label>
-            <div className="flex flex-1">
-              <div className="bg-[#eee] flex justify-center items-center px-3 font-semibold border border-[#e0e6ed] dark:border-[#17263c] dark:bg-[#1b2e4b] rounded-l-md">$</div>
-              <Field
-                id="rg_other_price"
-                name="rg_other_price"
-                className="form-input text-right rounded-l-none"
-                autoComplete="rg_other_price"
-                placeholder='RG Other'
-                type="number"
-              />
+          <>
+            <div className={submitCount ? (errors.other) ? 'has-error' : 'has-success' : ''}>
+              <label htmlFor="rg_other_price">RG Other</label>
+              <div className="flex flex-1">
+                <div className="bg-[#eee] flex justify-center items-center px-3 font-semibold border border-[#e0e6ed] dark:border-[#17263c] dark:bg-[#1b2e4b] rounded-l-md">$</div>
+                <Field
+                  id="rg_other_price"
+                  name="rg_other_price"
+                  className="form-input text-right rounded-l-none"
+                  autoComplete="rg_other_price"
+                  placeholder='RG Other'
+                  type="number"
+                />
+              </div>
+              {(submitCount && errors.rg_other_price) ? <InputError message={errors.rg_other_price} className="mt-2" /> : ''}
             </div>
-            {(submitCount && errors.rg_other_price) ? <InputError message={errors.rg_other_price} className="mt-2" /> : ''}
-          </div>
+            <div className={submitCount ? (errors.other) ? 'has-error' : 'has-success' : ''}>
+              <label htmlFor="name">Promotion</label>
+              <div className="flex flex-1">
+                <Field
+                  id="order_promotion"
+                  name="order_promotion"
+                  className="form-input text-right rounded-r-none"
+                  autoComplete="order_promotion"
+                  placeholder='Promotion'
+                  type="number"
+                />
+                <div className="bg-[#eee] flex justify-center items-center px-3 font-semibold border border-[#e0e6ed] dark:border-[#17263c] dark:bg-[#1b2e4b] rounded-r-md">%</div>
+              </div>
+              {(submitCount && errors.order_promotion) ? <InputError message={errors.order_promotion} className="mt-2" /> : ''}
+            </div>
+          </>
+        )}
+        {(isAdmin(user.roles.map((role) => role.name)) || isAccountManager(user.roles.map((role) => role.name)) || isDealer(user.roles.map((role) => role.name))) && (
+          <>
+            <div className={submitCount ? (errors.other) ? 'has-error' : 'has-success' : ''}>
+              <label htmlFor="name">Sub Dealer Other</label>
+              <div className="flex flex-1">
+                <div className="bg-[#eee] flex justify-center items-center px-3 font-semibold border border-[#e0e6ed] dark:border-[#17263c] dark:bg-[#1b2e4b] rounded-l-md">$</div>
+                <Field
+                  id="subdealer_other"
+                  name="subdealer_other"
+                  className="form-input text-right rounded-l-none"
+                  autoComplete="subdealer_other"
+                  placeholder='Subdealer Other'
+                  type="number"
+                />
+              </div>
+              {(submitCount && errors.subdealer_other) ? <InputError message={errors.subdealer_other} className="mt-2" /> : ''}
+            </div>
+          </>
         )}
       </div>
       <div className={submitCount ? (errors.notes) ? 'has-error' : 'has-success' : ''}>

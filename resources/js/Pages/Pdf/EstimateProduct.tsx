@@ -22,7 +22,7 @@ const tw = createTw({
   }
 })
 
-const EstimateProduct = ({ product, showPrices }: { product: Product, showPrices: boolean }) => {
+const EstimateProduct = ({ product, showPrices, isImpactGlass }: { product: Product, showPrices: boolean, isImpactGlass?: boolean }) => {
   return (
     <View style={tw('flex flex-col mb-4 border border-gray-200')}>
       <View style={tw('flex flex-col bg-gray-200')}>
@@ -93,28 +93,36 @@ const EstimateProduct = ({ product, showPrices }: { product: Product, showPrices
         <View style={tw('flex flex-row gap-4 justify-start p-3 w-8/12')}>
             <Text style={tw('text-xs text-gray-900 font-bold')}>Glass Type:</Text>
         </View>
-        <View style={tw('flex flex-row gap-4 justify-start p-3 w-2/12')}>
-            <Text style={tw('text-xs text-gray-900 font-bold')}>Pressure:</Text>
-        </View>
-        <View style={tw('flex flex-row gap-4 justify-start p-3 w-2/12')}>
-            <Text style={tw('text-xs text-gray-900 font-bold')}>Certification:</Text>
-        </View>
+        {isImpactGlass && (
+          <>
+            <View style={tw('flex flex-row gap-4 justify-start p-3 w-2/12')}>
+                <Text style={tw('text-xs text-gray-900 font-bold')}>Pressure:</Text>
+            </View>
+            <View style={tw('flex flex-row gap-4 justify-start p-3 w-2/12')}>
+                <Text style={tw('text-xs text-gray-900 font-bold')}>Certification:</Text>
+            </View>
+          </>
+        )}
       </View>
 
       <View style={tw('flex flex-row gap-4 justify-start')}>
         <View style={tw('flex flex-row gap-4 justify-start p-3 w-8/12')}>
           <Text style={tw('text-xs text-gray-900 font-regular')}>{product.glass_type}</Text>
         </View>
-        <View style={tw('flex flex-row gap-4 justify-start p-3 w-2/12')}>
-          <Text style={tw('text-xs font-regular text-green-700')}>
-            {product.system === PRODUCT_SYSTEMS.HORIZONTAL_ROLLER || product.system === PRODUCT_SYSTEMS.SINGLE_HUNG ? '+70/-70 psf' : '+75/-75 psf'}
-          </Text>
-        </View>
-        <View style={tw('flex flex-row gap-4 justify-start p-3 w-2/12')}>
-          <Text style={tw('text-xs text-gray-900 font-regular')}>
-            {getProductCertification(product.system)}
-          </Text>
-        </View>
+        {isImpactGlass && (
+          <>
+            <View style={tw('flex flex-row gap-4 justify-start p-3 w-2/12')}>
+              <Text style={tw('text-xs font-regular text-green-700')}>
+                {product.system === PRODUCT_SYSTEMS.HORIZONTAL_ROLLER || product.system === PRODUCT_SYSTEMS.SINGLE_HUNG ? '+70/-70 psf' : '+75/-75 psf'}
+              </Text>
+            </View>
+            <View style={tw('flex flex-row gap-4 justify-start p-3 w-2/12')}>
+              <Text style={tw('text-xs text-gray-900 font-regular')}>
+                {getProductCertification(product.system)}
+              </Text>
+            </View>
+          </>
+        )}
       </View>
     </View>
   )
