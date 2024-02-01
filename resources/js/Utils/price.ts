@@ -2,7 +2,7 @@ import { type Product, type Order } from '@/types'
 import { isAccounting, isAdmin, isDealer, isSubDealer } from './user'
 import { ROLES } from './constants'
 
- /* export const getDealerUnitPrice = (product: Product, estimate: Order) => {
+export const getDealerUnitPrice = (product: Product, estimate: Order) => {
   return Number(product.unit_price) + getMarkup(product.unit_price, estimate.user_markup ?? 0)
 }
 
@@ -76,7 +76,7 @@ export const getGrandTotal = (estimate: Order) => {
 
 export const getMarkup = (price: number, markup: number) => {
   return Number(price) * Number(markup) / 100
-} */
+}
 
 export const formatPrice = (price: number) => {
   const USDollar = new Intl.NumberFormat('en-US', {
