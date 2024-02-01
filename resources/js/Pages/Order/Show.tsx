@@ -6,10 +6,10 @@ import Panel from '@/Components/Panel'
 import { createMarkWithLeadingZero } from '@/Utils/mark'
 import HammerIcon from '@/Components/Icons/HammerIcon'
 import { isAccounting, isAdmin, isProduction, isDealer, isShipping, isSubDealer } from '@/Utils/user'
-import { ACCOUNTING_STATUS } from '@/Utils/constants'
+import { ACCOUNTING_STATUS, ROLES } from '@/Utils/constants'
 import OrderUpdateStatusModal from './OrderUpdateStatusModal'
 import PaymentInformation from './PaymentInformation'
-import { getGrandTotal, formatPrice } from '@/Utils/price'
+import { formatPrice, getSubTotalPriceByRole } from '@/Utils/price'
 import PrintEstimateButton from '../Estimate/PrintEstimateButton'
 import DeliveryIcon from '@/Components/Icons/DeliveryIcon'
 
@@ -115,7 +115,7 @@ export default function Show ({ auth, order }: PageProps & {
                     </tr>
                   </thead>
                   <tbody>
-                    {order.products?.map(({ id, system, line_item_name, qty, width, height, frame_color, glass_type, unit_price, total_price }) => (
+                    {order.products?.map(({ id, system, line_item_name, qty, width, height, frame_color, glass_type, dealer_unit_price, dealer_total_price }) => (
                         <tr
                           key={id}
                           className="hover:bg-gray-100 focus-within:bg-gray-100"
@@ -141,10 +141,10 @@ export default function Show ({ auth, order }: PageProps & {
                           {(IS_ACCOUNTING || IS_ADMIN) && (
                             <>
                               <td className="border-t px-6 py-4 align-top">
-                                {formatPrice(unit_price)}
+                                {formatPrice(dealer_unit_price)}
                               </td>
                               <td className="border-t px-6 py-4 align-top">
-                                {formatPrice(total_price)}
+                                {formatPrice(dealer_total_price)}
                               </td>
                             </>
                           )}
@@ -166,7 +166,7 @@ export default function Show ({ auth, order }: PageProps & {
                           Grand Total
                         </td>
                         <td className="border-t px-6 py-4 align-top">
-                          {formatPrice(getGrandTotal(order))}
+                          {formatPrice(getSubTotalPriceByRole(order, [ROLES.DEALER]) ?? 0)}
                         </td>
                       </tr>
                     </tfoot>

@@ -4,8 +4,8 @@ import { Formik, type FormikHelpers } from 'formik'
 import { paymentInfoSchema } from './EstimateCommon'
 import PaymentForm from './PaymentForm'
 import { type PageProps, type Order, type PaymentInfo } from '@/types'
-import { PAYMENT_METHODS } from '@/Utils/constants'
-import { getSubtotal } from '@/Utils/price'
+import { PAYMENT_METHODS, ROLES } from '@/Utils/constants'
+import { getSubTotalPriceByRole } from '@/Utils/price'
 
 export default function Payment ({ estimate, auth, states }: PageProps & {
   estimate: Order
@@ -25,7 +25,7 @@ export default function Payment ({ estimate, auth, states }: PageProps & {
     notes: '',
     first_name: '',
     last_name: '',
-    amount: getSubtotal(estimate) ?? 0
+    amount: getSubTotalPriceByRole(estimate, [ROLES.DEALER]) ?? 0
   }
 
   const handleSubmit = async (values: any, helpers: FormikHelpers<PaymentInfo>) => {

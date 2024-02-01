@@ -15,7 +15,6 @@ const OrderShowStatusModal = ({ showModal, onClose, order }: {
   useEffect(() => {
     if (order === null) return
     fetch(route('order.history', { order: order?.id ?? 0 })).then(async (response) => { return await response.json() }).then((data) => {
-      console.log(data)
       setOrderStatus(data)
     })
   }, [order])

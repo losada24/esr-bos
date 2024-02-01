@@ -4,9 +4,9 @@ import PrimaryButton from '@/Components/PrimaryButton'
 import { Link } from '@inertiajs/react'
 import { type FormikErrors } from 'formik'
 import { type PaymentInfo, type Order } from '@/types'
-import { PAYMENT_METHODS, ADDRESS_REQUIRED_AFTER_AMOUNT } from '@/Utils/constants'
+import { PAYMENT_METHODS, ADDRESS_REQUIRED_AFTER_AMOUNT, ROLES } from '@/Utils/constants'
 import Alert from '@/Components/Alert'
-import { getSubtotal } from '@/Utils/price'
+import { getSubTotalPriceByRole } from '@/Utils/price'
 import PaymentSummary from './PaymentSummary'
 
 const PaymentForm = ({ submitCount, errors, estimate, values, states }: {
@@ -16,7 +16,7 @@ const PaymentForm = ({ submitCount, errors, estimate, values, states }: {
   values: PaymentInfo
   states: string[]
 }) => {
-  const subtotal = getSubtotal(estimate) ?? 0
+  const subtotal = getSubTotalPriceByRole(estimate, [ROLES.DEALER]) ?? 0
   return (
     <Form className='w-full'>
       <div className='grid grid-cols-12 gap-4 mb-4'>

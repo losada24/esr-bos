@@ -1,5 +1,6 @@
 import { type Order } from '@/types'
-import { getSubtotal, formatPrice } from '@/Utils/price'
+import { ROLES } from '@/Utils/constants'
+import { getSubTotalPriceByRole, formatPrice } from '@/Utils/price'
 
 export default function PaymentSummary ({ estimate }: {
   estimate: Order
@@ -20,7 +21,7 @@ export default function PaymentSummary ({ estimate }: {
           </tr>
         </thead>
         <tbody>
-          {estimate.products?.map(({ id, system, line_item_name, qty, width, height, frame_color, glass_type, unit_price, total_price }) => (
+          {estimate.products?.map(({ id, system, line_item_name, qty, width, height, frame_color, glass_type, dealer_unit_price, dealer_total_price }) => (
               <tr
                 key={id}
                 className="hover:bg-gray-100 focus-within:bg-gray-100"
@@ -44,10 +45,10 @@ export default function PaymentSummary ({ estimate }: {
                   {glass_type}
                 </td>
                 <td className="border-t px-6 py-4 align-top text-right">
-                  {formatPrice(unit_price)}
+                  {formatPrice(dealer_unit_price)}
                 </td>
                 <td className="border-t px-6 py-4 align-top text-right">
-                  {formatPrice(total_price)}
+                  {formatPrice(dealer_total_price)}
                 </td>
               </tr>
           ))
@@ -66,7 +67,7 @@ export default function PaymentSummary ({ estimate }: {
               Subtotal
             </td>
             <td className="px-6 py-4 border-t text-right">
-              {formatPrice(getSubtotal(estimate) ?? 0)}
+              {formatPrice(getSubTotalPriceByRole(estimate, [ROLES.DEALER]) ?? 0)}
             </td>
           </tr>
         </tfoot>

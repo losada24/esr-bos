@@ -4,7 +4,6 @@ import Dropdown from '@/Components/Dropdown'
 import AngleIcon from '@/Components/Icons/AngleIcon'
 import PdfLinks from '@/Pages/Pdf/PdfLinks'
 import { type User } from '@/types'
-import { userInfo } from 'os'
 
 const PrintEstimateButton = ({ id, user }: { id: number, user?: User }) => {
   return (
