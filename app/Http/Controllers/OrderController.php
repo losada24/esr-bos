@@ -60,7 +60,8 @@ class OrderController extends Controller
           $order->status ==  OrderStatusEnum::$ACCOUNTING || 
           $order->status ==  OrderStatusEnum::$PRODUCTION_COMPLETED ||
           $order->status ==  OrderStatusEnum::$PARTIAL_PRODUCTION_COMPLETED ||
-          $order->status ==  OrderStatusEnum::$DELIVERED
+          $order->status ==  OrderStatusEnum::$DELIVERED ||
+          $order->status ==  OrderStatusEnum::$PICKED_UP
         )) {
           if ($order->status ==  OrderStatusEnum::$ACCOUNTING) {
             $statuses = [
