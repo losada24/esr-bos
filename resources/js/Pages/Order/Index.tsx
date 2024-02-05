@@ -5,7 +5,7 @@ import { type PageProps, type Order, type PaginatorLink, type Role } from '@/typ
 import Pagination from '@/Components/Pagination'
 import EyeIcon from '@/Components/Icons/EyeIcon'
 import { createMarkWithLeadingZero } from '@/Utils/mark'
-import { isAdmin, isAccounting, isShipping, isProduction } from '@/Utils/user'
+import { isAdmin, isAccounting, isShipping, isProduction, isSubDealer } from '@/Utils/user'
 import OrderFilter from './OrderFilter'
 import OrderUpdateStatusModal from './OrderUpdateStatusModal'
 import CheckIcon from '@/Components/Icons/CheckIcon'
@@ -65,8 +65,10 @@ export default function Index ({ auth, orders }: IndexOrderProps) {
                     </td>
                     <td className="border-t px-6 py-4 align-top">
                       <button onClick={() => {
-                        setSelectedStatusOrder(order)
-                        setShowStatusModal(true)
+                        if (!isSubDealer(auth.user.roles.map((role: Role) => role.name))) {
+                          setSelectedStatusOrder(order)
+                          setShowStatusModal(true)
+                        }
                       }} title='Show Status History' className="btn btn-outline-primary">{status?.toUpperCase()}</button>
                     </td>
                     <td className="border-t px-6 py-4 align-top">

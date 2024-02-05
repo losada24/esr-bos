@@ -14,7 +14,11 @@ class OrderStatusEnum
     public static $PARTIAL_PRODUCTION_COMPLETED = 'partial production completed';
     public static $READY_FOR_DELIVERY = 'ready for delivery';
     public static $READY_FOR_PARTIAL_DELIVERY = 'ready for partial delivery';
+    public static $READY_FOR_PICKUP = 'ready for pickup';
+    public static $READY_FOR_PARTIAL_PICKUP = 'ready for partial pickup';
     public static $ORDER_COMPLETED = 'order completed';
     public static $DELIVERED = 'delivered';
     public static $PARTIAL_DELIVERED = 'partial delivered';
+    public static $PICKED_UP = 'picked up';
+    public static $PARTIAL_PICKED_UP = 'partial picked up';
 }

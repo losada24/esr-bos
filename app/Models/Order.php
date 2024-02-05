@@ -60,6 +60,16 @@ class Order extends Model
         return date('m/d/Y', strtotime($value));
     }
 
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array<string, string>
+     */
+    public function getUpdatedAtAttribute($value)
+    {
+        return date('m/d/Y', strtotime($value));
+    }
+
     public function getQuoteNumberAttribute()
     {
         return str_pad($this->id, 6, '0', STR_PAD_LEFT);
@@ -85,10 +95,12 @@ class Order extends Model
             ->orWhere('status', OrderStatusEnum::$PARTIAL_PRODUCTION_COMPLETED)
             ->orWhere('status', OrderStatusEnum::$PRODUCTION_IN_PROGRESS)
             ->orWhere('status', OrderStatusEnum::$SCHEDULED_PRODUCTION)
-            ->orWhere('status', OrderStatusEnum::$PARTIAL_DELIVERED)
             ->orWhere('status', OrderStatusEnum::$READY_FOR_DELIVERY)
             ->orWhere('status', OrderStatusEnum::$READY_FOR_PARTIAL_DELIVERY)
             ->orWhere('status', OrderStatusEnum::$ORDER_COMPLETED)
+            ->orWhere('status', OrderStatusEnum::$PICKED_UP)
+            ->orWhere('status', OrderStatusEnum::$PARTIAL_PICKED_UP)
+            ->orWhere('status', OrderStatusEnum::$PARTIAL_DELIVERED)
             ->orWhere('status', OrderStatusEnum::$DELIVERED);
         }
         else if (auth()->user()->hasRole(RoleEnum::$PRODUCTION)) {
@@ -97,15 +109,21 @@ class Order extends Model
             ->orWhere('status', OrderStatusEnum::$SCHEDULED_PRODUCTION)
             ->orWhere('status', OrderStatusEnum::$PARTIAL_PRODUCTION_COMPLETED)
             ->orWhere('status', OrderStatusEnum::$PARTIAL_DELIVERED)
+            ->orWhere('status', OrderStatusEnum::$PARTIAL_PICKED_UP)
             ->orWhere('status', OrderStatusEnum::$READY_FOR_DELIVERY)
             ->orWhere('status', OrderStatusEnum::$ORDER_COMPLETED)
+            ->orWhere('status', OrderStatusEnum::$READY_FOR_PARTIAL_PICKUP)
             ->orWhere('status', OrderStatusEnum::$READY_FOR_PARTIAL_DELIVERY);
         }
         else if (auth()->user()->hasRole(RoleEnum::$SHIPPING)) {
           $query->where('status', OrderStatusEnum::$READY_FOR_DELIVERY)
+            ->orWhere('status', OrderStatusEnum::$READY_FOR_PARTIAL_DELIVERY)
+            ->orWhere('status', OrderStatusEnum::$READY_FOR_PICKUP)
+            ->orWhere('status', OrderStatusEnum::$READY_FOR_PARTIAL_PICKUP)
             ->orWhere('status', OrderStatusEnum::$DELIVERED)
+            ->orWhere('status', OrderStatusEnum::$PICKED_UP)
             ->orWhere('status', OrderStatusEnum::$PARTIAL_DELIVERED)
-            ->orWhere('status', OrderStatusEnum::$READY_FOR_PARTIAL_DELIVERY);
+            ->orWhere('status', OrderStatusEnum::$PARTIAL_PICKED_UP);
         }
         else if (auth()->user()->hasRole(RoleEnum::$SUB_DEALER)) {
           $query->where('user_id', auth()->user()->id)

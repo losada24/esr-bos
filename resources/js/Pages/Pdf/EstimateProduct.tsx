@@ -87,7 +87,7 @@ const EstimateProduct = ({ product, showPrices, isImpactGlass }: { product: Prod
         </View>
       </View>
       <View>
-        <ReportProductImage product={product} />
+        <ReportProductImage product={product} isImpactGlass={isImpactGlass} />
       </View>
       <View style={tw('flex flex-row gap-4 justify-start bg-gray-200')}>
         <View style={tw('flex flex-row gap-4 justify-start p-3 w-8/12')}>

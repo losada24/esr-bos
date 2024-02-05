@@ -114,7 +114,6 @@ export const getTotalPriceByRole = (product: Product, role: string[]) => {
   } else {
     total_price = product.customer_total_price
   }
-
   return Number(total_price)
 }
 

@@ -17,6 +17,7 @@ use App\Http\Controllers\HorizontalRollerController;
 use App\Http\Controllers\LabelController;
 use App\Http\Controllers\PdfController;
 use App\Http\Controllers\ProductController;
+use App\Models\User;
 
 /*
 |--------------------------------------------------------------------------
@@ -31,14 +32,11 @@ use App\Http\Controllers\ProductController;
 
 Route::get('/', [DashboardController::class, 'index'])->middleware(['auth'])->name('dashboard');
 
-/*Route::get('/mailable', function () {
+Route::get('/mailable', function () {
+  $order = App\Models\Order::find(44);
 
-  dd(config('custom', 'admin_emails'));
-
-  $referrer = App\Models\Referred::find(1);
-
-  return new App\Mail\NewReferred($referrer);
-});*/
+  return new App\Mail\OrderCompletion($order, 'DELIVERED');
+});
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

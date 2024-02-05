@@ -49,7 +49,7 @@ const SubDealerReport = ({ order, auth, company }: IndexOrderProps) => {
   return (
     <AuthenticatedLayout
           auth={auth}
-          pageTitle={`Report: ${order.name}`}
+          pageTitle={`Cost Report: ${order.name}`}
           actions={
             <PrintEstimateOrderButton id={order.id} status={order.status} user={auth.user} />
           }
@@ -64,16 +64,13 @@ const SubDealerReport = ({ order, auth, company }: IndexOrderProps) => {
               featured_image: IS_SUBDEALER ? company.featured_image : logo,
               phone_number: IS_SUBDEALER ? company.phone_number : COMPANY_PHONE,
               email: IS_SUBDEALER ? company.email : COMPANY_EMAIL
-            }} />
+            }} documentTitle='Cost Report #' />
             <ReportCompany order={order} />
             {order?.products?.map((product, index) => {
               return <ReportProduct product={product} key={index} showPrices={true} roles={[ROLES.SUB_DEALER]} isImpactGlass={IS_IMPACT_GLASS}/>
             })}
             <LeadTimeAlert glass_type={order.glass_type} />
             <ReportTotal order={order} roles={[ROLES.SUB_DEALER]} />
-            {order.notes !== null && (
-              <Notes notes={order.notes ?? ''} />
-            )}
             <SystemSummary order={order} />
             <ReportSignature />
           </Page>
