@@ -63,6 +63,10 @@ class UpdateSingleHunt {
         'customer_total_price' => $customerTotalPrice,
         'dealer_promotion_discount' => $dealerPromotionDiscount,
         'dealer_promotion_total_discount' => $dealerPromotionTotalDiscount,
+        'extras' => [
+          'screen' => $request->screen,
+          'config' => 'OX'
+        ],
         'user_id' => auth()->user()->id,
       ];
 

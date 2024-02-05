@@ -52,8 +52,9 @@ trait Prices {
     }
 
     public function formatPrice($price) {
-      $formatter = new \NumberFormatter('en_US', \NumberFormatter::CURRENCY);
-      return $formatter->formatCurrency($price, 'USD');
+      //$formatter = new \NumberFormatter('en_US', \NumberFormatter::CURRENCY);
+      //return $formatter->formatCurrency($price, 'USD');
+      return '$' . number_format($price, 2);
     }
 
 }
