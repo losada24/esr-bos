@@ -27,8 +27,9 @@ class ProductionScheduled extends Mailable
      */
     public function envelope(): Envelope
     {
+      $appName = config('app.name');
         return new Envelope(
-            subject: 'Order Update: Scheduled for Production',
+            subject: "[$appName] Order Update: Scheduled for Production",
         );
     }
 

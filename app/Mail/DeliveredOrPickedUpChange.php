@@ -29,8 +29,9 @@ class DeliveredOrPickedUpChange extends Mailable
      */
     public function envelope(): Envelope
     {
+        $appName = config('app.name');
         return new Envelope(
-            subject: 'Order Update: ' . strtoupper($this->status),
+            subject: "[$appName] Order Update: " . strtoupper($this->status),
         );
     }
 

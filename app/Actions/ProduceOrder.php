@@ -56,7 +56,7 @@ class ProduceOrder {
           ];
 
           foreach ($users as $recipient) {
-            Mail::to($recipient->email, $recipient->name)->send(new \App\Mail\EstimateCreated($order));
+            Mail::to($recipient->email, $recipient->name)->send(new \App\Mail\EstimateCreated($order, [RoleEnum::$DEALER]));
           }
       } elseif ($request->status == OrderStatusEnum::$PRODUCTION) {
         $productionUsers = User::whereHas('roles', function($q) {

@@ -26,8 +26,9 @@ class OrderCompletion extends Mailable
      */
     public function envelope(): Envelope
     {
+        $appName = config('app.name');
         return new Envelope(
-            subject: 'Order Update: Order Completion',
+            subject: "[$appName] Order Update: Order Completion",
         );
     }
 

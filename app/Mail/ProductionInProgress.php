@@ -26,8 +26,9 @@ class ProductionInProgress extends Mailable
      */
     public function envelope(): Envelope
     {
+      $appName = config('app.name');
         return new Envelope(
-            subject: 'Order Update: Production in Progress',
+            subject: "[$appName] Order Update: Production in Progress",
         );
     }
 

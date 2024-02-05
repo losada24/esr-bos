@@ -26,8 +26,9 @@ class ProductionOrder extends Mailable
      */
     public function envelope(): Envelope
     {
+      $appName = config('app.name');
         return new Envelope(
-            subject: 'Order Update: Transition to Production',
+            subject: "[$appName] Order Update: Transition to Production",
         );
     }
 

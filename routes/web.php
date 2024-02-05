@@ -35,7 +35,7 @@ Route::get('/', [DashboardController::class, 'index'])->middleware(['auth'])->na
 Route::get('/mailable', function () {
   $order = App\Models\Order::find(44);
 
-  return new App\Mail\OrderCompletion($order, 'DELIVERED');
+  return new App\Mail\EstimateCreated($order, [RoleEnum::$DEALER]);
 });
 
 Route::middleware('auth')->group(function () {

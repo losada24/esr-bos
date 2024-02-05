@@ -27,8 +27,9 @@ class OrderCreated extends Mailable
      */
     public function envelope(): Envelope
     {
+        $appName = config('app.name');
         return new Envelope(
-            subject: 'Estimate Status Update: Order Created',
+            subject: "[$appName]Estimate Status Update: Order Created",
         );
     }
 

@@ -3,6 +3,7 @@
 namespace App\Mail;
 
 use App\Models\Order;
+use App\Traits\Fractions;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
@@ -13,13 +14,14 @@ use App\Traits\Marks;
 
 class EstimateCreated extends Mailable
 {
-    use Queueable, SerializesModels, Marks;
+    use Queueable, SerializesModels, Marks, Fractions;
 
     /**
      * Create a new message instance.
      */
     public function __construct(
-      protected Order $order
+      protected Order $order,
+      protected array $role
     ) {}
 
     /**
@@ -44,6 +46,8 @@ class EstimateCreated extends Mailable
               'name' => $this->order->user->name,
               'quote_number' => $this->createMarkWithLeadingZero($this->order->id, 6),
               'created_at' => $this->order->created_at,
+              'order' => $this->order,
+              'role' => $this->role
             ]
         );
     }
