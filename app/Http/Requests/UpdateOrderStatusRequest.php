@@ -47,7 +47,8 @@ class UpdateOrderStatusRequest extends FormRequest
                 OrderStatusEnum::$READY_FOR_PARTIAL_DELIVERY,
                 OrderStatusEnum::$READY_FOR_PICKUP,
                 OrderStatusEnum::$READY_FOR_PARTIAL_PICKUP,
-                OrderStatusEnum::$PICKED_UP
+                OrderStatusEnum::$PICKED_UP,
+                OrderStatusEnum::$PARTIAL_PICKED_UP
               ])
             ]
         ];

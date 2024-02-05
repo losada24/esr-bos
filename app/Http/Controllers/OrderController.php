@@ -98,7 +98,7 @@ class OrderController extends Controller
               ],
             ];
           }
-          else if ($order->status ==  OrderStatusEnum::$DELIVERED) {
+          else if ($order->status ==  OrderStatusEnum::$DELIVERED || $order->status ==  OrderStatusEnum::$PICKED_UP) {
             $statuses = [
               [
                 'label' => OrderStatusEnum::$ORDER_COMPLETED,
