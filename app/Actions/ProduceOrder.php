@@ -58,15 +58,37 @@ class ProduceOrder {
           foreach ($users as $recipient) {
             Mail::to($recipient->email, $recipient->name)->send(new \App\Mail\EstimateCreated($order, [RoleEnum::$DEALER]));
           }
-      } elseif ($request->status == OrderStatusEnum::$PRODUCTION) {
+      } 
+      elseif ($request->status == OrderStatusEnum::$ACCOUNTING) {
+        $accountingUsers = User::whereHas('roles', function($q) {
+          $q->where('name', RoleEnum::$ACCOUNTING);
+        })->get();
+
+        $users = [
+          ...$adminUsers,
+          ...$accountManager,
+          ...$accountingUsers,
+          ...$dealersUsers
+        ];
+
+        foreach ($users as $recipient) {
+          Mail::to($recipient->email, $recipient->name)->send(new \App\Mail\EstimateCreated($order, [RoleEnum::$DEALER]));
+        }
+      }
+      elseif ($request->status == OrderStatusEnum::$PRODUCTION) {
         $productionUsers = User::whereHas('roles', function($q) {
           $q->where('name', RoleEnum::$PRODUCTION);
+        })->get();
+
+        $accountingUsers = User::whereHas('roles', function($q) {
+          $q->where('name', RoleEnum::$ACCOUNTING);
         })->get();
 
         $users = [
           ...$adminUsers,
           ...$accountManager,
           ...$productionUsers,
+          ...$accountingUsers,
           ...$dealersUsers
         ];
 
@@ -82,7 +104,6 @@ class ProduceOrder {
           ...$adminUsers,
           ...$accountManager,
           ...$productionUsers,
-          ...$dealersUsers
         ];
 
         foreach ($users as $recipient) {
@@ -96,8 +117,7 @@ class ProduceOrder {
         $users = [
           ...$adminUsers,
           ...$accountManager,
-          ...$productionUsers,
-          ...$dealersUsers
+          ...$productionUsers
         ];
 
         foreach ($users as $recipient) {
@@ -132,10 +152,15 @@ class ProduceOrder {
             $q->where('name', RoleEnum::$SHIPPING);
           })->get();
 
+          $accountingUsers = User::whereHas('roles', function($q) {
+            $q->where('name', RoleEnum::$ACCOUNTING);
+          })->get();
+
           $users = [
             ...$adminUsers,
             ...$accountManager,
             ...$shippingUsers,
+            ...$accountingUsers,
             ...$dealersUsers
           ];
 
@@ -178,8 +203,7 @@ class ProduceOrder {
             ...$adminUsers,
             ...$accountManager,
             ...$accountingUsers,
-            ...$dealersUsers,
-            $order->user
+            ...$dealersUsers
           ];
 
           foreach ($users as $recipient) {
