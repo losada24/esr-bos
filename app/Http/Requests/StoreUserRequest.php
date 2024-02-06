@@ -30,7 +30,7 @@ class StoreUserRequest extends FormRequest
             'role' => 'required|numeric|exists:roles,id',
             'company_id' => 'nullable|numeric',
             'markup' => 'nullable|numeric|integer|min:0|max:100',
-            'featured_image' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:512',
+            'featured_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:512',
         ];
     }
 }

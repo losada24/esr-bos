@@ -171,13 +171,13 @@ class PdfController extends Controller
     }
 
     public function estimateWithPrices(Order $order)
-    {
+    { // TODO: Add Address and phone number to subdealers
       $order->load(['products', 'client', 'user.company']);
       $company = new \stdClass();
       $company->id = auth()->user()->company_id;
       $company->email = auth()->user()->email;
-      $company->phone_number = '';
-      $company->address = '';
+      $company->phone_number = $order->user->company->phone_number;
+      $company->address = $order->user->company->address;
       $company->featured_image = $order->user->company->featured_image;
       if (auth()->user()->hasRole(RoleEnum::$DEALER)) {
         $company = Company::where('id', $order->user->company_id)->first();
@@ -194,7 +194,17 @@ class PdfController extends Controller
     public function estimateWithoutPrices(Order $order)
     {
       $order->load(['products', 'client', 'user.company']);
-      $company = Company::where('id', $order->user->company_id)->first();
+      $company = new \stdClass();
+      $company->id = auth()->user()->company_id;
+      $company->email = auth()->user()->email;
+      $company->phone_number = $order->user->company->phone_number;
+      $company->address = $order->user->company->address;
+      $company->featured_image = $order->user->company->featured_image;
+      if (auth()->user()->hasRole(RoleEnum::$DEALER)) {
+        $company = Company::where('id', $order->user->company_id)->first();
+      }
+      
+      $company = new CompanyResource($company);
       CompanyResource::withoutWrapping();
       return Inertia::render('Pdf/EstimateWithoutPrices', [
         'order' => $order,
@@ -205,7 +215,17 @@ class PdfController extends Controller
     public function estimateWithTotalPrices(Order $order)
     {
       $order->load(['products', 'client', 'user.company']);
-      $company = Company::where('id', $order->user->company_id)->first();
+      $company = new \stdClass();
+      $company->id = auth()->user()->company_id;
+      $company->email = auth()->user()->email;
+      $company->phone_number = $order->user->company->phone_number;
+      $company->address = $order->user->company->address;
+      $company->featured_image = $order->user->company->featured_image;
+      if (auth()->user()->hasRole(RoleEnum::$DEALER)) {
+        $company = Company::where('id', $order->user->company_id)->first();
+      }
+      
+      $company = new CompanyResource($company);
       CompanyResource::withoutWrapping();
       return Inertia::render('Pdf/EstimateWithTotalPrices', [
         'order' => $order,

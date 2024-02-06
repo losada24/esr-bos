@@ -6,8 +6,7 @@
     <p><strong>Estimate Number:</strong> {{ $quote_number }}</p>
     <p><strong>Date Created:</strong> {{ $created_at }}</p>
 
-    <p>Estimate Summary</p>
-
-    @include('emails.products-summary', ['order' => $order, 'role' => $role])
+    {{-- <p>Estimate Summary</p> --}}
+    {{-- @include('emails.products-summary', ['order' => $order, 'role' => $role]) --}}
     <p>Please log in to the system to review the details and take any necessary actions. If you have any questions or concerns regarding this estimate, feel free to contact us or reply to this email.</p>
 </div>

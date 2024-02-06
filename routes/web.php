@@ -32,11 +32,11 @@ use App\Models\User;
 
 Route::get('/', [DashboardController::class, 'index'])->middleware(['auth'])->name('dashboard');
 
-Route::get('/mailable', function () {
+/* Route::get('/mailable', function () {
   $order = App\Models\Order::find(44);
 
   return new App\Mail\EstimateCreated($order, [RoleEnum::$DEALER]);
-});
+}); */
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
