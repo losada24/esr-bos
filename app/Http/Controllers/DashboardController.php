@@ -9,12 +9,13 @@ use App\Traits\Reports;
 
 class DashboardController extends Controller
 {
+  use Reports;
 
   public function index(Request $request): Response
   {
       return Inertia::render('Dashboard/Index', [
-        // 'referralsByMonth' => $this->GetReferralsByMonths(),
-        // 'referralsByStatus' => $this->GetReferralsByStatus()
+        'estimatesByMonth' => $this->GetEstimatesByMonths(),
+        'ordersByStatus' => $this->GetOrdersByStatus()
       ]);
   }
 }

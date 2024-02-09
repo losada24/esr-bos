@@ -11,18 +11,129 @@ export const SUB_DEALER_ESTIMATE: string = 'sub_dealer_estimate'
 export const ACCOUNTING_STATUS: string = 'accounting'
 export const PRODUCTION_STATUS: string = 'production'
 export const PRODUCTION_COMPLETED: string = 'production completed'
-export const READY_FOR_DELIVERY: string = 'ready for delivery'
-export const PRODUCTION_IN_PROGRESS: string = 'production in progress'
 export const SCHEDULED_PRODUCTION: string = 'scheduled production'
+export const PRODUCTION_IN_PROGRESS: string = 'production in progress'
+export const PARTIAL_PRODUCTION_COMPLETED: string = 'partial production completed'
+export const READY_FOR_DELIVERY: string = 'ready for delivery'
+export const READY_FOR_PARTIAL_DELIVERY: string = 'ready for partial delivery'
+export const READY_FOR_PICKUP: string = 'ready for pickup'
+export const READY_FOR_PARTIAL_PICKUP: string = 'ready for partial pickup'
+export const ORDER_COMPLETED: string = 'order completed'
+export const DELIVERED: string = 'delivered'
+export const PARTIAL_DELIVERED: string = 'partial delivered'
+export const PICKED_UP: string = 'picked up'
+export const PARTIAL_PICKED_UP: string = 'partial picked up'
 
 export interface Status {
   id: string
   color: string
   label: string
+  hex?: string
 }
 
 export const STATUS: Status[] = [
-  { id: ESTIMATE_STATUS, color: 'bg-primary', label: ESTIMATE_STATUS.toUpperCase() }
+  {
+    id: ESTIMATE_STATUS,
+    color: 'bg-primary',
+    label: ESTIMATE_STATUS.toUpperCase(),
+    hex: '#FFC107'
+  },
+  {
+    id: SUB_DEALER_ESTIMATE,
+    color: 'bg-primary',
+    label: 'SUB ESTIMATE',
+    hex: '#007bff'
+  },
+  {
+    id: ACCOUNTING_STATUS,
+    color: 'bg-primary',
+    label: ACCOUNTING_STATUS.toUpperCase(),
+    hex: '#28a745'
+  },
+  {
+    id: PRODUCTION_STATUS,
+    color: 'bg-primary',
+    label: PRODUCTION_STATUS.toUpperCase(),
+    hex: '#dc3545'
+  },
+  {
+    id: PRODUCTION_COMPLETED,
+    color: 'bg-primary',
+    label: PRODUCTION_COMPLETED.toUpperCase(),
+    hex: '#dc3545'
+  },
+  {
+    id: SCHEDULED_PRODUCTION,
+    color: 'bg-primary',
+    label: SCHEDULED_PRODUCTION.toUpperCase(),
+    hex: '#4ade80'
+  },
+  {
+    id: PRODUCTION_IN_PROGRESS,
+    color: 'bg-primary',
+    label: PRODUCTION_IN_PROGRESS.toUpperCase(),
+    hex: '#9a3412'
+  },
+  {
+    id: PARTIAL_PRODUCTION_COMPLETED,
+    color: 'bg-primary',
+    label: PARTIAL_PRODUCTION_COMPLETED.toUpperCase(),
+    hex: '#c084fc'
+  },
+  {
+    id: READY_FOR_DELIVERY,
+    color: 'bg-primary',
+    label: READY_FOR_DELIVERY.toUpperCase(),
+    hex: '#e11d48'
+  },
+  {
+    id: READY_FOR_PARTIAL_DELIVERY,
+    color: 'bg-primary',
+    label: READY_FOR_PARTIAL_DELIVERY.toUpperCase(),
+    hex: '#881337'
+  },
+  {
+    id: READY_FOR_PICKUP,
+    color: 'bg-primary',
+    label: READY_FOR_PICKUP.toUpperCase(),
+    hex: '#9a3412'
+  },
+  {
+    id: READY_FOR_PARTIAL_PICKUP,
+    color: 'bg-primary',
+    label: READY_FOR_PARTIAL_PICKUP.toUpperCase(),
+    hex: '#b91c1c'
+  },
+  {
+    id: ORDER_COMPLETED,
+    color: 'bg-primary',
+    label: ORDER_COMPLETED.toUpperCase(),
+    hex: '#4d7c0f'
+  },
+  {
+    id: DELIVERED,
+    color: 'bg-primary',
+    label: DELIVERED.toUpperCase(),
+    hex: '#fbbf24'
+  },
+  {
+    id: PARTIAL_DELIVERED,
+    color: 'bg-primary',
+    label: PARTIAL_DELIVERED.toUpperCase(),
+    hex: '#f97316'
+  },
+  {
+    id: PICKED_UP,
+    color: 'bg-primary',
+    label: PICKED_UP.toUpperCase(),
+    hex: '#bef264'
+  },
+  {
+    id: PARTIAL_PICKED_UP,
+    color: 'bg-primary',
+    label: PARTIAL_PICKED_UP.toUpperCase(),
+    hex: '##3f3f46'
+  }
 ]
 
 export interface ThemeConfig {

@@ -164,6 +164,15 @@ class Order extends Model
         }
     }
 
+    public function scopeReports(Builder $query): void
+    {
+        if (auth()->user()->hasRole(RoleEnum::$DEALER)) {
+          $query->where('company_id', auth()->user()->company_id);
+        } else if (auth()->user()->hasRole(RoleEnum::$SUB_DEALER)) {
+          $query->where('user_id', auth()->user()->id);
+        }
+    }
+
     public function user()
     {
         return $this->belongsTo(User::class);
