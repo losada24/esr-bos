@@ -11,6 +11,7 @@ import CuttingListItems from './CuttingListItems'
 import VisualId from './VisualId'
 import Pagination from './Pagination'
 import { getNumberWithFraction } from '@/Utils/numbers'
+import SystemSummary from './SystemSummary'
 
 type IndexOrderProps = PageProps & {
   order: Order
@@ -44,6 +45,9 @@ const WorkOrder = ({ order, auth }: IndexOrderProps) => {
           <Page wrap size="LETTER" style={tw('p-6 font-regular')}>
             <Pagination />
             <POHeaders order={order} documentTitle='Work Order' />
+            <View style={tw('mt-2 mb-4 px-3 pb-3 border border-gray-200')}>
+              <SystemSummary order={order} />
+            </View>
             {order?.products?.map((product, index) => {
               return <Fragment key={index}>
                 <View style={tw('flex flex-row gap-4 justify-between bg-gray-200 mb-3 p-3')}>

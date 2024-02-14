@@ -1,7 +1,7 @@
 import React from 'react'
 import PrintLayout from '@/Layouts/PrintLayout'
 import { Head } from '@inertiajs/react'
-import { Page, Text, View } from '@react-pdf/renderer'
+import { Page, Text, View, Image } from '@react-pdf/renderer'
 import { type PageProps, type Order } from '@/types'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
 import { createTw } from 'react-pdf-tailwind'
@@ -9,6 +9,15 @@ import PrintButton from '@/Pages/Order/PrintButton'
 import POHeaders from './POHeaders'
 import VisualId from './VisualId'
 import Pagination from './Pagination'
+
+import { PRODUCT_SYSTEMS } from '@/Utils/constants'
+import cut103fw from '../../../assets/images/cut103fw.jpg'
+import cut103sh from '../../../assets/images/cut103sh.jpg'
+import cut111hroxxo from '../../../assets/images/cut111hrox-xo.jpg'
+
+const FW_MATERIAL_WITH_IMAGES = ['VW 103 W', 'VW 103 BR']
+const SH_MATERIAL_WITH_IMAGES = ['VW 103 W', 'VW 103 BR']
+const HR_OXXO_MATERIAL_WITH_IMAGES = ['VW 111 W', 'VW 111 BR']
 
 type IndexOrderProps = PageProps & {
   order: Order
@@ -38,6 +47,7 @@ interface CuttingListProps {
   part: string
   visual_id: number
   line_item_name: string
+  system: string
 }
 
 const CuttingList = ({ order, auth }: IndexOrderProps) => {
@@ -53,7 +63,8 @@ const CuttingList = ({ order, auth }: IndexOrderProps) => {
         size: item.size,
         part: item.part,
         visual_id: item.visual_id,
-        line_item_name: item.line_item_name
+        line_item_name: item.line_item_name,
+        system: item.system
       })
     })
   })
@@ -82,7 +93,16 @@ const CuttingList = ({ order, auth }: IndexOrderProps) => {
             {orderCuttingList.map((product, index) => {
               return <View style={tw('flex flex-row gap-4 items-center justify-between border-b border-gray-200 mb-3 p-3')} key={index}>
                 <Text style={tw('text-xs text-gray-900 font-regular w-3/12')}>{product.material} ({product.frame_color})</Text>
-                <Text style={tw('text-xs text-gray-900 font-regular w-3/12')}>{product.part}</Text>
+                <View style={tw('w-3/12')}>
+                  <View style={tw('flex flex-col')}>
+                    <Text style={tw('text-xs text-gray-900 font-regular')}>
+                      {product.part}
+                    </Text>
+                    {product.system === PRODUCT_SYSTEMS.FIXED_WINDOWS && FW_MATERIAL_WITH_IMAGES.findIndex(x => x === product.material) !== -1 && <Image src={cut103fw} style={tw('w-10 h-10')} />}
+                    {product.system === PRODUCT_SYSTEMS.SINGLE_HUNG && SH_MATERIAL_WITH_IMAGES.findIndex(x => x === product.material) !== -1 && <Image src={cut103sh} style={tw('w-10 h-10')} />}
+                    {product.system === PRODUCT_SYSTEMS.HORIZONTAL_ROLLER && HR_OXXO_MATERIAL_WITH_IMAGES.findIndex(x => x === product.material) !== -1 && <Image src={cut111hroxxo} style={tw('w-10 h-10')} />}
+                  </View>
+                </View>
                 <Text style={tw('text-xs text-gray-900 font-regular w-2/12')}>{product.line_item_name}</Text>
                 <Text style={tw('text-xs text-gray-900 font-regular w-1/12 text-right')}>{product.qty}</Text>
                 <Text style={tw('text-xs text-gray-900 font-regular w-2/12 text-right')}>{product.size}</Text>
