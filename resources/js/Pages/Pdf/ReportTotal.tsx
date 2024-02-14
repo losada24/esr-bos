@@ -2,8 +2,8 @@ import React from 'react'
 import { Text, View } from '@react-pdf/renderer'
 import { createTw } from 'react-pdf-tailwind'
 import { type Order } from '@/types'
-import { getSubTotalPriceByRole, formatPrice, getGrandTotalByRole, getOrderPromotion } from '@/Utils/price'
-import { isAccountManager, isAdmin, isDealer, isSubDealer } from '@/Utils/user'
+import { getSubTotalPriceByRole, formatPrice, getGrandTotalByRole, getOrderPromotion, getDealerPromotion } from '@/Utils/price'
+import { isAccountManager, isAccounting, isAdmin, isDealer, isSubDealer } from '@/Utils/user'
 
 const tw = createTw({
   theme: {
@@ -22,10 +22,13 @@ const tw = createTw({
 const ReportTotal = ({ order, roles }: { order: Order, roles: string[] }) => {
   const SUB_TOTAL: number = Number(getSubTotalPriceByRole(order, roles) ?? 0)
   const RG_OTHER_PRICE: number = Number(order?.rg_other_price ?? 0)
+  const ORDER_PROMOTION = getOrderPromotion(order)
+  const DEALER_PROMOTION = getDealerPromotion(order) ?? 0
   const IS_DEALER = isDealer(roles)
   const IS_SUBDEALER = isSubDealer(roles)
   const IS_ACCOUNT_MANAGER = isAccountManager(roles)
   const IS_ADMIN = isAdmin(roles)
+  const IS_ACCOUNTING = isAccounting(roles)
 
   return (
     <View style={tw('flex flex-row mt-4')}>
@@ -54,10 +57,16 @@ const ReportTotal = ({ order, roles }: { order: Order, roles: string[] }) => {
             <Text style={tw('text-base text-gray-900 font-regular w-6/12 text-left')}>{`${formatPrice(RG_OTHER_PRICE)}`}</Text>
           </View>
         )}
-        {((IS_DEALER || IS_SUBDEALER || IS_ACCOUNT_MANAGER || IS_ADMIN) && (order?.company_promotion ?? 0) > 0) && (
+        {((IS_DEALER || IS_SUBDEALER || IS_ACCOUNT_MANAGER || IS_ADMIN) && ORDER_PROMOTION > 0) && (
           <View style={tw('flex flex-row justify-start gap-x-3')}>
-            <Text style={tw('text-base text-gray-900 font-bold w-6/12 text-right')}>Discount:</Text>
-            <Text style={tw('text-base text-gray-900 font-regular w-6/12 text-left')}>{formatPrice(getOrderPromotion(order))}</Text>
+            <Text style={tw('text-base text-gray-900 font-bold w-6/12 text-right')}>Order Discount:</Text>
+            <Text style={tw('text-base text-gray-900 font-regular w-6/12 text-left')}>{`-${formatPrice(ORDER_PROMOTION)}`}</Text>
+          </View>
+        )}
+        {((IS_DEALER || IS_ACCOUNT_MANAGER || IS_ADMIN) && DEALER_PROMOTION > 0) && (
+          <View style={tw('flex flex-row justify-start gap-x-3')}>
+            <Text style={tw('text-base text-gray-900 font-bold w-6/12 text-right')}>Dealer Discount:</Text>
+            <Text style={tw('text-base text-gray-900 font-regular w-6/12 text-left')}>{`-${formatPrice(DEALER_PROMOTION)}`}</Text>
           </View>
         )}
         {((IS_DEALER || IS_SUBDEALER || IS_ACCOUNT_MANAGER || IS_ADMIN) && (order?.subdealer_other ?? 0) > 0) && (

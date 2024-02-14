@@ -27,8 +27,9 @@ class OrderCompletion extends Mailable
     public function envelope(): Envelope
     {
         $appName = config('app.name');
+        $quoteNumber = '#' . $this->order->getQuoteNumberAttribute();
         return new Envelope(
-            subject: "[$appName] Order Update: Order Completion",
+            subject: "[$appName] Order $quoteNumber Update: Order Completion",
         );
     }
 

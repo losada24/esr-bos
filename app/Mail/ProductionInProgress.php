@@ -27,8 +27,9 @@ class ProductionInProgress extends Mailable
     public function envelope(): Envelope
     {
       $appName = config('app.name');
+      $quoteNumber = '#' . $this->order->getQuoteNumberAttribute();
         return new Envelope(
-            subject: "[$appName] Order Update: Production in Progress",
+            subject: "[$appName] Order $quoteNumber Update: Production in Progress",
         );
     }
 

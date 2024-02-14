@@ -30,8 +30,9 @@ class EstimateCreated extends Mailable
     public function envelope(): Envelope
     {
         $appName = config('app.name');
+        $quoteNumber = '#' . $this->order->getQuoteNumberAttribute();
         return new Envelope(
-            subject: "[$appName] Estimate Created",
+            subject: "[$appName] Estimate $quoteNumber Created",
         );
     }
 

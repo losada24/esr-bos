@@ -28,8 +28,9 @@ class DeliveryOrPickupChange extends Mailable
     public function envelope(): Envelope
     {
         $appName = config('app.name');
+        $quoteNumber = '#' . $this->order->getQuoteNumberAttribute();
         return new Envelope(
-            subject: "[$appName] Order Update: " . strtoupper($this->status),
+            subject: "[$appName] Order $quoteNumber Update: " . strtoupper($this->status),
         );
     }
 

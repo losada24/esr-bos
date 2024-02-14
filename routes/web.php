@@ -18,6 +18,7 @@ use App\Http\Controllers\LabelController;
 use App\Http\Controllers\PdfController;
 use App\Http\Controllers\ProductController;
 use App\Models\User;
+use Illuminate\Support\Facades\Mail;
 
 /*
 |--------------------------------------------------------------------------
@@ -32,11 +33,12 @@ use App\Models\User;
 
 Route::get('/', [DashboardController::class, 'index'])->middleware(['auth'])->name('dashboard');
 
-/* Route::get('/mailable', function () {
+/*Route::get('/mailable', function () {
   $order = App\Models\Order::find(44);
 
+  Mail::to('efrain@reylosglass.com', 'Efrain')->send(new App\Mail\EstimateCreated($order, [RoleEnum::$DEALER]));
   return new App\Mail\EstimateCreated($order, [RoleEnum::$DEALER]);
-}); */
+});*/
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

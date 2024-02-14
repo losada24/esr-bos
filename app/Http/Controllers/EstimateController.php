@@ -135,6 +135,13 @@ class EstimateController extends Controller
      */
     public function order($id)
     {
+        $estimate = Order::findOrFail($id); //TODO: not allow pay two times same order
+        if ($estimate->status != OrderStatusEnum::$ESTIMATE) {
+          return redirect()
+            ->route('estimate.index')
+            ->with('error', 'This estimate is not available for payment.');
+        }
+
         return Inertia::render('Estimate/Payment', [
           'estimate' => Order::with(['client', 'products', 'user.company'])->findOrFail($id),
           'states' => array_values(States::$USA_STATES),
@@ -144,6 +151,12 @@ class EstimateController extends Controller
     public function orderStore(StoreEstimateToOrderRequest $request, CreateEstimateOrder $createEstimateOrder)
     {
         $estimate = Order::findOrFail($request->order_id); //TODO: not allow pay two times same order
+        if (empty($estimate->external_purchase_id)) {
+          return redirect()
+            ->back()
+            ->with('error', 'To create an order, you must first fill in the External Purchase Id.');
+        }
+
         $createEstimateOrder->handle($request, $estimate);
         return redirect()->route('estimate.index')
           ->with('success', 'Order created successfully.');

@@ -64,7 +64,7 @@ class SingleHuntProduct implements IProduct {
     }
 
     public function getScreenWidth() {
-      return round($this->width - 4.687, 3);
+      return round($this->width - 4.687 - 0.125, 3);
     }
 
     public function getScreenHeigth() {

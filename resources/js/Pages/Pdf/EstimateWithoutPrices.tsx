@@ -10,11 +10,11 @@ import EstimateProduct from './ReportProduct'
 import ReportSignature from './ReportSignature'
 import PrintEstimateOrderButton from '@/Pages/Pdf/PrintEstimateOrderButton'
 
-import ReportCompany from './ReportCompany'
 import { Notes } from './Notes'
 import Pagination from './Pagination'
 import SystemSummary from './SystemSummary'
 import { GLASS_TYPE } from '@/Utils/constants'
+import EstimateCompany from './EstimateCompany'
 
 type IndexOrderProps = PageProps & {
   order: Order
@@ -56,7 +56,7 @@ const EstimateWithoutPrices = ({ order, auth, company }: IndexOrderProps) => {
               phone_number: company.phone_number,
               email: company.email
             }} />
-            <ReportCompany order={order} />
+            <EstimateCompany order={order} />
             {order?.products?.map((product, index) => {
               return <EstimateProduct product={product} key={index} showPrices={false} roles={[]} isImpactGlass={IS_IMPACT_GLASS} />
             })}

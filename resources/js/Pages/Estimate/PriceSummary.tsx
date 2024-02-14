@@ -1,10 +1,17 @@
 import { type Order } from '@/types'
 import { ROLES } from '@/Utils/constants'
-import { formatPrice, getSubTotalPriceByRole, getTaxAmountByRole, getGrandTotalByRole, getOrderPromotion } from '@/Utils/price'
+import { formatPrice, getSubTotalPriceByRole, getTaxAmountByRole, getGrandTotalByRole, getOrderPromotion, getDealerPromotion } from '@/Utils/price'
 import { isAccounting, isAccountManager, isAdmin, isDealer, isSubDealer } from '@/Utils/user'
 
 const PriceSummary = ({ estimate, roles }: { estimate: Order, roles: string[] }) => {
   const orderPromotion = getOrderPromotion(estimate)
+  const dealerPromotion = getDealerPromotion(estimate)
+  const IS_DEALER = isDealer(roles)
+  const IS_SUB_DEALER = isSubDealer(roles)
+  const IS_ADMIN = isAdmin(roles)
+  const IS_ACCOUNT_MANAGER = isAccountManager(roles)
+  const IS_ACCOUNTING = isAccounting(roles)
+
   return (
     <div className="mt-6 grid grid-cols-1 px-4 sm:grid-cols-2">
         <div className="space-y-2">&nbsp;</div>
@@ -52,10 +59,16 @@ const PriceSummary = ({ estimate, roles }: { estimate: Order, roles: string[] })
                   <div className="w-[37%]">{`${formatPrice(estimate.rg_other_price ?? 0)}`}</div>
               </div>
             )}
-            {((isSubDealer(roles) || isDealer(roles) || isAdmin(roles) || isAccountManager(roles) || isAccounting(roles)) && orderPromotion !== 0) && (
+            {((IS_SUB_DEALER || IS_DEALER || IS_ADMIN || IS_ACCOUNTING || IS_ACCOUNT_MANAGER) && orderPromotion !== 0) && (
               <div className="flex items-center">
                   <div className="flex-1">Order Promotion</div>
-                  <div className="w-[37%]">{`${formatPrice(getOrderPromotion(estimate))}`}</div>
+                  <div className="w-[37%]">{`-${formatPrice(getOrderPromotion(estimate))}`}</div>
+              </div>
+            )}
+            {((IS_DEALER || IS_ADMIN || IS_ACCOUNTING || IS_ACCOUNT_MANAGER) && dealerPromotion !== 0) && (
+              <div className="flex items-center">
+                  <div className="flex-1">Dealer Promotion</div>
+                  <div className="w-[37%]">{`-${formatPrice(dealerPromotion ?? 0)}`}</div>
               </div>
             )}
             <div className="flex items-center text-lg font-semibold">

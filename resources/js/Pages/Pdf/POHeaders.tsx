@@ -3,7 +3,6 @@ import { Text, View, Image } from '@react-pdf/renderer'
 import { createTw } from 'react-pdf-tailwind'
 import { createMarkWithLeadingZero } from '@/Utils/mark'
 import { type Order } from '@/types'
-import { PO_TITLES } from '@/Utils/constants'
 import logo from '../../../assets/images/logo-reylosglass.png'
 
 const COMPANY_ADDRESS = import.meta.env.VITE_COMPANY_ADDRESS
