@@ -147,7 +147,7 @@ class FixedWindowsProduct implements IProduct {
         $glazingBeadVerticalCost = $this->getGlazingBeatVertical() * 0.083 * $glazingBeadMaterial->cost_per_unit * 2;
         $glazingBeadHorizontalCost = $this->getGlazingBeatHorizontal() * 0.083 * $glazingBeadMaterial->cost_per_unit * 2;
         $screwCoverMaterial = RawMaterial::where('name', 'SC 0001 ' . $this->materialColor)->first(); // SC 001 (W or B)
-        $screwCoverCost =  $this->getScrewCover() * 2 * $screwCoverMaterial->cost_per_unit;
+        $screwCoverCost =  $this->getScrewCover()* 0.083 * 2 * $screwCoverMaterial->cost_per_unit;
         $tSlotSealGlazingBeatMaterial = RawMaterial::where('name', 'TSG 0003')->first(); // MATERIAL TSG 0003
         $tSlotSealGlazingBeatCost = (($this->getGlazingBeatHorizontal() * 2) + ($this->getGlazingBeatVertical() * 2)) * 0.083 * $tSlotSealGlazingBeatMaterial->cost_per_unit;
         $stopSashMaterial = RawMaterial::where('name', 'STS 0001 ' . $this->materialColor)->first(); // STS 0001 (W or B)
@@ -158,6 +158,8 @@ class FixedWindowsProduct implements IProduct {
         $structuralSiliconeCost = (((($this->getGlassHeigth() - 0.87 + 0.3775) * 2) * 0.083) + ((($this->getGlassWidth() + 0.1875) * 2) * 0.083)) * $structuralSiliconeMaterial->cost_per_unit;
         $glassMaterial = RawMaterial::where('name', $this->glassType)->first(); // MATERIAL Glass
         $glassCost = $this->getGlassSize($this->getGlassHeigth()) * $this->getGlassSize($this->getGlassWidth()) / 144 * $glassMaterial->cost_per_unit;
+
+        
         
         //GET OTHER BILLS
         $workBill = config('custom.work_bill');
@@ -168,7 +170,12 @@ class FixedWindowsProduct implements IProduct {
         $packing = config('custom.packing');
         $cornerSilicone = config('custom.corner_silicone');
 
-        /* echo "Frame Head Cost: " . $frameHeadCost . "<br>";
+        /*echo "Precio del Cristal:" . $glassMaterial->cost_per_unit . "<br/>";
+        echo "Glass Width:" . $this->getGlassWidth() . "<br/>"; 
+        echo "Glass Height:" . $this->getGlassHeigth() . "<br/>"; 
+        echo "Pulgada Height:" . $this->getGlassSize($this->getGlassHeigth()) . "<br/>";
+        echo "Pulgada Width:" . $this->getGlassSize($this->getGlassWidth()) . "<br/>";
+        echo "Frame Head Cost: " . $frameHeadCost . "<br>";
         echo "jambCost: " . $jambCost . "<br>";
         echo "screwMaterialCost: " . $screwMaterialCost . "<br>";
         echo "glazingBeadVerticalCost: " . $glazingBeadVerticalCost . "<br>";
@@ -190,9 +197,8 @@ class FixedWindowsProduct implements IProduct {
             $stopSashCost +
             $settingBlockCost +
             $structuralSiliconeCost +
-            $packing +
             $glassCost, 2);
-        die;*/
+        die; */
 
         $unitPriceCost = 
           $frameHeadCost + 
