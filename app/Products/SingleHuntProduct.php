@@ -79,6 +79,10 @@ class SingleHuntProduct implements IProduct {
       return (2 * $this->getJamb()) + $this->getVentTopAndBottom();
     }
 
+    public function getScrewCover() {
+      return round($this->width - 3.437, 3);
+    }
+
     public function getBalancesBySize() {
       $singleHuntBalanceInformationPath = realpath(dirname(__FILE__) . '/../../resources/files/SingleHuntBalanceInformation.csv');
       
@@ -225,7 +229,7 @@ class SingleHuntProduct implements IProduct {
           'notes' => $w22254BL->notes
         ],
         'SC 0001 ' . $this->materialColor => [
-          'amount' => $this->getGlassWidth() * 0.083 * $qty,
+          'amount' => $this->getScrewCover() * 0.083 * $qty,
           'unit_of_measurement' => $sc0001->unit_of_measurement,
           'storage_measure' => $sc0001->storage_measure,
           'notes' => $sc0001->notes
@@ -276,7 +280,7 @@ class SingleHuntProduct implements IProduct {
       $cuttingListResult[] = $this->getCuttingListObject('Glazing Bead Vertical', 'VW 108 ' . $this->materialColor, 4 * $qty, $this->getNumberWithFraction($this->getGlazingBeatVertical()), $this->getGlazingBeatVertical());
       $cuttingListResult[] = $this->getCuttingListObject('Glazing Bead Horizontal', 'VW 108 ' . $this->materialColor, 4 * $qty, $this->getNumberWithFraction($this->getGlazingBeatHorizontal()), $this->getGlazingBeatHorizontal());
       $cuttingListResult[] = $this->getCuttingListObject('Steel Reiceforcement square', 'ST 0001', $qty, $this->getNumberWithFraction($this->getSteelReiceforment()), $this->getSteelReiceforment());
-      $cuttingListResult[] = $this->getCuttingListObject('Screw Cover', 'SC 0001 ' . $this->materialColor, $qty, $this->getNumberWithFraction($this->getGlassWidth()), $this->getGlassWidth());
+      $cuttingListResult[] = $this->getCuttingListObject('Screw Cover', 'SC 0001 ' . $this->materialColor, $qty, $this->getNumberWithFraction($this->getScrewCover()), $this->getScrewCover());
       $cuttingListResult[] = $this->getCuttingListObject('Side Sash Clip', 'SS 0001 ' . $this->materialColor, 2 * $qty, $this->getNumberWithFraction($this->getJamb()), $this->getJamb());
       
       $balanceData = $this->getBalancesBySize();
@@ -346,7 +350,7 @@ class SingleHuntProduct implements IProduct {
         $steelReiceformentMaterial = RawMaterial::where('name', 'ST 0001')->first(); // ST 0001
         $steelReiceformentCost = $this->getSteelReiceforment() * 0.083 * $steelReiceformentMaterial->cost_per_unit;
         $screwCoverMaterial = RawMaterial::where('name', 'SC 0001 ' . $this->materialColor)->first(); // SC 001 (W or B)
-        $screwCoverCost =  $this->getGlassWidth() * 0.083 * $screwCoverMaterial->cost_per_unit;
+        $screwCoverCost =  $this->getScrewCover() * 0.083 * $screwCoverMaterial->cost_per_unit;
         $sideSashClipMaterial = RawMaterial::where('name', 'SS 0001 ' . $this->materialColor)->first(); // SS 0001 (W or B)
         $sideSashClipCost = $this->getJamb() * 0.083 * $sideSashClipMaterial->cost_per_unit * 2;
         $settingBlockMaterial = RawMaterial::where('name', 'NE 850125')->first(); // MATERIAL NE 850062

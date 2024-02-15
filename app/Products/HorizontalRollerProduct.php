@@ -87,6 +87,10 @@ class HorizontalRollerProduct implements IProduct {
       return round((4 * $this->getGlassWidth()) + (2 * $this->getGlassHeigth()) + (2 * $this->getMoveGlazingBead()), 3);
     }
 
+    public function getScrewCover() {
+      return round($this->height - 5.5, 3);
+    }
+
     public function getMaterialConsumption($qty) {
       $vw110 = RawMaterial::where('name', 'VW 110 ' . $this->materialColor)->first();
       $vw106 = RawMaterial::where('name', 'VW 106 ' . $this->materialColor)->first();
@@ -199,7 +203,7 @@ class HorizontalRollerProduct implements IProduct {
             'notes' => $sts0001->notes
           ],
           'SC 0001 ' . $this->materialColor => [
-            'amount' =>  $this->getGlassHeigth() * $qty * 0.083,
+            'amount' =>  $this->getScrewCover() * $qty * 0.083,
             'unit_of_measurement' => $sc0001->unit_of_measurement,
             'storage_measure' => $sc0001->storage_measure,
             'notes' => $sc0001->notes
@@ -289,7 +293,7 @@ class HorizontalRollerProduct implements IProduct {
         $cuttingListResult[] = $this->getCuttingListObject('Glazing Bead Width Horizontal', 'VW 108 ' . $this->materialColor, 4 * $qty, $this->getNumberWithFraction($this->getGlazingBeadWidth()), $this->getGlazingBeadWidth());
         $cuttingListResult[] = $this->getCuttingListObject('Punch M.R', ' - ', '-', $this->getNumberWithFraction($this->getGlassWidth() + 0.44), 0);
         $cuttingListResult[] = $this->getCuttingListObject('Steel Reiceforcement square', 'ST 0001', $qty, $this->getNumberWithFraction($this->getSteelReiceforment()), $this->getSteelReiceforment());
-        $cuttingListResult[] = $this->getCuttingListObject('Screw Cover', 'SC 0001 ' . $this->materialColor, $qty, $this->getNumberWithFraction($this->getGlassHeigth()), $this->getGlassHeigth());
+        $cuttingListResult[] = $this->getCuttingListObject('Screw Cover', 'SC 0001 ' . $this->materialColor, $qty, $this->getNumberWithFraction($this->getScrewCover()), $this->getScrewCover());
         $cuttingListResult[] = $this->getCuttingListObject('Side Sash PVC', 'SS 0001 ' . $this->materialColor, 2 * $qty, $this->getNumberWithFraction($this->getVentBottomAndTop()), $this->getVentBottomAndTop());
          
         //SILICONE
@@ -350,7 +354,7 @@ class HorizontalRollerProduct implements IProduct {
         $stopSashMaterial = RawMaterial::where('name', 'STS 0001 ' . $firstFrameColorLetter)->first(); // MATERIAL STS 0001 (W or B)
         $stopSashCost = 3 * 0.083 * $stopSashMaterial->cost_per_unit * 2;
         $screwCoverMaterial = RawMaterial::where('name', 'SC 0001 ' . $firstFrameColorLetter)->first(); // SC 0001 (W or B)
-        $screwCoverCost =  $this->getGlassHeigth() * 0.083 * $screwCoverMaterial->cost_per_unit;
+        $screwCoverCost =  $this->getScrewCover() * 0.083 * $screwCoverMaterial->cost_per_unit;
         $sideSashClipMaterial = RawMaterial::where('name', 'SS 0001 ' . $firstFrameColorLetter)->first(); // MATERIAL SS 0001 (W or B)
         $sideSashClipCost = ($this->getGlassWidth() + 2.188) * 0.083 * $sideSashClipMaterial->cost_per_unit * 2;
         $settingBlockMaterial = RawMaterial::where('id', 10)->first(); // MATERIAL NE850062

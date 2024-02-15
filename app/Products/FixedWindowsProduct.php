@@ -51,6 +51,10 @@ class FixedWindowsProduct implements IProduct {
       return round($this->getGlassWidth() + 0.1875, 3);
     }
 
+    public function getScrewCover() {
+      return round($this->width - 3.437, 3);
+    }
+
     public function getMaterialConsumption($qty) {
       $vw101 = RawMaterial::where('name', 'VW 101 ' . $this->materialColor)->first();
       $vw103 = RawMaterial::where('name', 'VW 103 ' . $this->materialColor)->first();
@@ -81,7 +85,7 @@ class FixedWindowsProduct implements IProduct {
           'notes' => $vw108->notes,
         ],
         'SC 0001 ' . $this->materialColor => [
-          'amount' => ($this->getGlassWidth() * 2) * $qty * 0.083,
+          'amount' => ($this->getScrewCover() * 2) * $qty * 0.083,
           'unit_of_measurement' => $sc0001->unit_of_measurement,
           'storage_measure' => $sc0001->storage_measure,
           'notes' => $sc0001->notes,
@@ -119,7 +123,7 @@ class FixedWindowsProduct implements IProduct {
       $cuttingListResult[] = $this->getCuttingListObject('Jamb', 'VW 103 ' . $this->materialColor, 2 * $qty, $this->getNumberWithFraction($this->getJamb()), $this->getJamb());
       $cuttingListResult[] = $this->getCuttingListObject('Glazing Bead Vertical', 'VW 108 ' . $this->materialColor, 2 * $qty, $this->getNumberWithFraction($this->getGlazingBeatVertical()), $this->getGlazingBeatVertical());
       $cuttingListResult[] = $this->getCuttingListObject('Glazing Bead Horizontal', 'VW 108 ' . $this->materialColor, 2 * $qty, $this->getNumberWithFraction($this->getGlazingBeatHorizontal()), $this->getGlazingBeatHorizontal());
-      $cuttingListResult[] = $this->getCuttingListObject('Screw Cover', 'SC 0001 ' . $this->materialColor, 2 * $qty, $this->getNumberWithFraction($this->getGlassWidth()), $this->getGlassWidth());
+      $cuttingListResult[] = $this->getCuttingListObject('Screw Cover', 'SC 0001 ' . $this->materialColor, 2 * $qty, $this->getNumberWithFraction($this->getScrewCover()), $this->getScrewCover());
       $cuttingListResult[] = $this->getCuttingListObject('Stop Sash', 'STS 0001 ' . $this->materialColor, 2 * $qty, $this->getNumberWithFraction($this->getGlassHeigth()), $this->getGlassHeigth());
       $cuttingListResult[] = $this->getCuttingListObject('Glass', $this->glassType, $qty, $this->getNumberWithFraction($this->getGlassWidth()) . ' x ' . $this->getNumberWithFraction($this->getGlassHeigth()), 0);
 
@@ -143,7 +147,7 @@ class FixedWindowsProduct implements IProduct {
         $glazingBeadVerticalCost = $this->getGlazingBeatVertical() * 0.083 * $glazingBeadMaterial->cost_per_unit * 2;
         $glazingBeadHorizontalCost = $this->getGlazingBeatHorizontal() * 0.083 * $glazingBeadMaterial->cost_per_unit * 2;
         $screwCoverMaterial = RawMaterial::where('name', 'SC 0001 ' . $this->materialColor)->first(); // SC 001 (W or B)
-        $screwCoverCost =  $this->getGlassWidth() * 0.083 * 2 * $screwCoverMaterial->cost_per_unit;
+        $screwCoverCost =  $this->getScrewCover() * 2 * $screwCoverMaterial->cost_per_unit;
         $tSlotSealGlazingBeatMaterial = RawMaterial::where('name', 'TSG 0003')->first(); // MATERIAL TSG 0003
         $tSlotSealGlazingBeatCost = (($this->getGlazingBeatHorizontal() * 2) + ($this->getGlazingBeatVertical() * 2)) * 0.083 * $tSlotSealGlazingBeatMaterial->cost_per_unit;
         $stopSashMaterial = RawMaterial::where('name', 'STS 0001 ' . $this->materialColor)->first(); // STS 0001 (W or B)
