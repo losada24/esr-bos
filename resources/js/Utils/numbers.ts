@@ -78,7 +78,7 @@ export const FRACTION_TABLE_ARRAY: Fraction[] = [
   {
     label: '15/16',
     min: 0.907,
-    max: 1
+    max: 0.968
   }
 ]
 
@@ -99,5 +99,9 @@ export const getFractionFromDecimal = (value: number): string => {
 
 export const getNumberWithFraction = (value: number): string => {
   const fraction = getFractionFromDecimal(value)
+  if (fraction === '') {
+    return `${Math.ceil(value)}`
+  }
+
   return `${Math.trunc(value)} ${fraction}`
 }

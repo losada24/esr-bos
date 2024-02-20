@@ -3,6 +3,7 @@
 namespace App\Products;
 
 use App\Enum\FrameColorEnum;
+use App\Enum\UnitOfMeasurement;
 use App\Interfaces\IProduct;
 use App\Models\RawMaterial;
 use App\Traits\Fractions;
@@ -130,8 +131,9 @@ class SingleHuntProduct implements IProduct {
       $ppa081 = RawMaterial::where('name', 'PPA 08-1')->first();
       $ls0001 = RawMaterial::where('name', 'LS 0001')->first(); // MATERIAL LS 0001
       $clb0001 = RawMaterial::where('name', 'CLB 0001')->first(); // MATERIAL CLB 0001
+      $balanceData = $this->getBalancesBySize();
 
-      return [
+      $result = [
         'VW 107 ' . $this->materialColor => [
           'amount' => $this->getJamb() * 0.083 * 2 * $qty,
           'unit_of_measurement' => $vw107->unit_of_measurement,
@@ -265,6 +267,16 @@ class SingleHuntProduct implements IProduct {
           'notes' => $clb0001->notes
         ],
       ];
+
+      if (!empty($balanceData)) {
+        $result[$balanceData[3]] = [
+          'amount' => 2 * $qty,
+          'unit_of_measurement' => UnitOfMeasurement::$UNIT_OF_MEASUREMENT["UNIT"],
+          'storage_measure' => UnitOfMeasurement::$UNIT_OF_MEASUREMENT["UNIT"],
+          'notes' => "Balance size: " . $balanceData[2]
+        ];
+      }
+      return $result;
     }
 
     public function getCuttingList($qty) {
@@ -286,7 +298,7 @@ class SingleHuntProduct implements IProduct {
       $balanceData = $this->getBalancesBySize();
       //SILICONE
       if (!empty($balanceData)) {
-        $cuttingListResult[] = $this->getCuttingListObject('Balance', $balanceData[3], 2, $balanceData[2], 0);
+        $cuttingListResult[] = $this->getCuttingListObject('Balance', $balanceData[3], 2 * $qty, $balanceData[2], 0);
       }
       
       if ($this->screenRequired) {

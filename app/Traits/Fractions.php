@@ -51,6 +51,11 @@ trait Fractions {
         }
       }
 
+      if (empty($result)) {
+        $result = ceil($number);
+        return (integer) $result;
+      }
+
       return floor($number) . " " . $result;
     }
 
