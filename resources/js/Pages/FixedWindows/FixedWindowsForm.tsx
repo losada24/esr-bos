@@ -7,6 +7,7 @@ import { type FormikErrors } from 'formik'
 import { type FixedWindows } from '@/types'
 import FixedWindowsDrawing from './FixedWindowsDrawing'
 import { EXPRESS_GLASS_TYPE, NO_CERTIFICATION_STANDARD_MESSAGE, RUSH_GLASS_TYPE, RUSH_GLASS_NEW_COLOR, CERTIFICATION_SQFT } from '@/Utils/constants'
+import ReactPDF from '@react-pdf/renderer'
 
 const FixedWindowsForm = ({ submitCount, errors, isCreate, frame_colors, glass_colors, estimate_id, values }: {
   submitCount: number
@@ -214,8 +215,7 @@ const FixedWindowsForm = ({ submitCount, errors, isCreate, frame_colors, glass_c
           </div>
         </Form>
       </div>
-      <div className='p-2 col-span-6 border border-dashed w-full'>
-        <h3 className='text-lg font-semibold'>Preview</h3>
+      <div className='p-2 col-span-6 w-full'>
         <div className='h-full flex justify-center align-middle'>
           {values.width !== 0 && values.height !== 0
             ? <FixedWindowsDrawing width={values.width} height={values.height} />

@@ -3,6 +3,9 @@ import { Text, View } from '@react-pdf/renderer'
 import { createTw } from 'react-pdf-tailwind'
 import { type Product } from '@/types'
 import { PRODUCT_SYSTEMS, NO_CERTIFICATION_STANDARD_MESSAGE, CERTIFICATION_SQFT } from '@/Utils/constants'
+import FixedWindowsTall from '../FixedWindows/FixedWindowsTall'
+import FixedWindowsWider from '../FixedWindows/FixedWindowsWider'
+import FixedWindowsSquared from '../FixedWindows/FixedWindowsSquared'
 
 const tw = createTw({
   theme: {
@@ -41,6 +44,13 @@ const ReportProductImage = ({ product, isImpactGlass }: { product: Product, isIm
       {!isImpactGlass && (
         <View style={tw('flex flex-row mb-4 p-3')}>
           <Text style={tw('text-xs text-red-700 font-regular text-center')}>{NO_CERTIFICATION_STANDARD_MESSAGE}</Text>
+        </View>
+      )}
+      {product.system === PRODUCT_SYSTEMS.FIXED_WINDOWS && (
+        <View style={tw('flex flex-row mb-4 p-3 justify-center')}>
+          {product.height > product.width && <FixedWindowsTall width={product.width} height={product.height} svgHeight={250} svgWidth={250} /> }
+          {product.width > product.height && <FixedWindowsWider width={product.width} height={product.height} svgHeight={250} svgWidth={250}/> }
+          {product.height === product.width && <FixedWindowsSquared width={product.width} height={product.height} svgHeight={250} svgWidth={250} />}
         </View>
       )}
     </View>

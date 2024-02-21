@@ -105,3 +105,7 @@ export const getNumberWithFraction = (value: number): string => {
 
   return `${Math.trunc(value)} ${fraction}`
 }
+
+export const getNumberWithFractionAndInches = (value: number): string => {
+  return `${getNumberWithFraction(value)}"`
+}
