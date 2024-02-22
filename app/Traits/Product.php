@@ -180,10 +180,36 @@ trait Product {
 
   public function orderedCuttingList($order) {
     $cuttingList = $this->getCuttingList($order);
-    $orderedCuttingList = [];
+    $orderedCuttingList = [
+      [
+        'material' => 'VW 111 W',
+        'items' => []
+      ],
+      [
+        'material' => 'VW 111 BR',
+        'items' => []
+      ],
+      [
+        'material' => 'VW 103 W',
+        'items' => []
+      ],
+      [
+        'material' => 'VW 103 BR',
+        'items' => []
+      ],
+      [
+        'material' => 'VW 112 W',
+        'items' => []
+      ],
+      [
+        'material' => 'VW 112 BR',
+        'items' => []
+      ]
+    ];
+
     collect($cuttingList)->each(function($cuttingListForProduct) use (&$orderedCuttingList) {
-      collect($cuttingListForProduct['cutting_list'])->each(function($productItem) use (&$orderedCuttingList, $cuttingListForProduct) {   
-        if ($productItem->rawSize != 0) {
+      collect($cuttingListForProduct['cutting_list'])->each(function($productItem) use (&$orderedCuttingList, $cuttingListForProduct) {
+        if ($productItem->rawSize != 0 && ($productItem->material != 'SS 0001 W' && $productItem->material != 'SS 0001 BR')) {
           $index = array_search($productItem->material, array_column($orderedCuttingList, 'material'));
           if ($index !== false) {
             $orderedCuttingList[$index]['items'][] = $this->createCuttingListItem($productItem, $cuttingListForProduct);
@@ -200,7 +226,11 @@ trait Product {
       });
     });
 
-    return $orderedCuttingList;
+    $result = array_filter($orderedCuttingList, function ($material) {
+      return count($material['items']) > 0;
+    }, ARRAY_FILTER_USE_BOTH);
+
+    return array_values($result);
   }
 
   public function getPOGlass($order) {

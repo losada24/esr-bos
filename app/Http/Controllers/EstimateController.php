@@ -34,6 +34,7 @@ class EstimateController extends Controller
               ->with(['products'])
               ->withCount('products')
               ->filter($request->only(['text']))
+              ->orderBy('updated_at', 'desc')
               ->orderBy('id', 'desc')
               ->paginate()
               ->withQueryString()

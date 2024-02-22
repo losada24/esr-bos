@@ -33,6 +33,7 @@ class OrderController extends Controller
           'orders' => new OrderCollection(
             Order::orders()
               ->filter($request->only(['text']))
+              ->orderBy('updated_at', 'desc')
               ->orderBy('id', 'desc')
               ->paginate()
               ->withQueryString()
