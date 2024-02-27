@@ -7,6 +7,7 @@ import { type FormikErrors } from 'formik'
 import { type SingleHunt } from '@/types'
 import SingleHuntDrawing from './SingleHuntDrawing'
 import { EXPRESS_GLASS_TYPE, NO_CERTIFICATION_STANDARD_MESSAGE, RUSH_GLASS_NEW_COLOR, RUSH_GLASS_TYPE } from '@/Utils/constants'
+import { getFrameJambs } from '@/Utils/SingleHung'
 
 const SingleHuntForm = ({ submitCount, errors, isCreate, frame_colors, glass_colors, estimate_id, values }: {
   submitCount: number
@@ -17,9 +18,6 @@ const SingleHuntForm = ({ submitCount, errors, isCreate, frame_colors, glass_col
   estimate_id: number
   values: SingleHunt
 }) => {
-  const getFrameJambs = (height: number) => {
-    return (height / 2) - (5.25 / 2) - 0.0625
-  }
   const [glassTypes, setGlassTypes] = useState<string[]>([])
   const [colors, setColors] = useState<string[]>(glass_colors)
   const LOW_E_OPTIONS: string[] = values.order_glass_type === EXPRESS_GLASS_TYPE ? ['NONE', 'LOW E Q366'] : ['NONE', 'LOW E SB70']
@@ -235,8 +233,7 @@ const SingleHuntForm = ({ submitCount, errors, isCreate, frame_colors, glass_col
           </div>
         </Form>
       </div>
-      <div className='p-2 col-span-6 border border-dashed w-full'>
-        <h3 className='text-lg font-semibold'>Preview</h3>
+      <div className='p-2 col-span-6 w-full'>
         <div className='h-full flex justify-center align-middle'>
           {values.width !== 0 && values.height !== 0
             ? <SingleHuntDrawing width={values.width} height={values.height} heightOfMovementPart={getFrameJambs(values.height)} />

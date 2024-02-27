@@ -6,6 +6,10 @@ import { PRODUCT_SYSTEMS, NO_CERTIFICATION_STANDARD_MESSAGE, CERTIFICATION_SQFT 
 import FixedWindowsTall from '../FixedWindows/FixedWindowsTall'
 import FixedWindowsWider from '../FixedWindows/FixedWindowsWider'
 import FixedWindowsSquared from '../FixedWindows/FixedWindowsSquared'
+import SingleHungTall from '../SingleHunt/SingleHungTall'
+import SingleHungWider from '../SingleHunt/SingleHungWider'
+import SingleHungSquared from '../SingleHunt/SingleHungSquared'
+import { getFrameJambs } from '@/Utils/SingleHung'
 
 const tw = createTw({
   theme: {
@@ -51,6 +55,13 @@ const ReportProductImage = ({ product, isImpactGlass }: { product: Product, isIm
           {product.height > product.width && <FixedWindowsTall width={product.width} height={product.height} svgHeight={250} svgWidth={250} /> }
           {product.width > product.height && <FixedWindowsWider width={product.width} height={product.height} svgHeight={250} svgWidth={250}/> }
           {product.height === product.width && <FixedWindowsSquared width={product.width} height={product.height} svgHeight={250} svgWidth={250} />}
+        </View>
+      )}
+      {product.system === PRODUCT_SYSTEMS.SINGLE_HUNG && (
+        <View style={tw('flex flex-row mb-4 p-3 justify-center')}>
+          {product.height > product.width && <SingleHungTall width={product.width} height={product.height} svgHeight={250} svgWidth={250} heightOfMovementPart={getFrameJambs(product.height)} /> }
+          {product.width > product.height && <SingleHungWider width={product.width} height={product.height} svgHeight={250} svgWidth={250} heightOfMovementPart={getFrameJambs(product.height)}/> }
+          {product.height === product.width && <SingleHungSquared width={product.width} height={product.height} svgHeight={250} svgWidth={250} heightOfMovementPart={getFrameJambs(product.height)} />}
         </View>
       )}
     </View>
