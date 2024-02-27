@@ -55,10 +55,11 @@ const FixedWindowsTall = ({ width, height, svgHeight, svgWidth }: {
       <G clip-path="url(#c20fdbf784)">
         <Path stroke-linecap="butt" transform="matrix(0.75, 0, 0, 0.75, 118.795837, 103.188984)" fill="none" stroke-linejoin="miter" d="M 0.00138333 -0.00197923 L 186.563884 -0.00197923 L 186.563884 291.362605 L 0.00138333 291.362605 Z M 0.00138333 -0.00197923 " stroke="#000000" strokeWidth="2" strokeOpacity="1" stroke-miterlimit="4"/>
       </G>
-      <Path stroke-linecap="butt" transform="matrix(0, 0.75, -0.75, 0, 264.28947, 30.524853)" fill="none" stroke-linejoin="miter" d="M -0.0018877 0.500544 L 54.763741 0.500544 " stroke="#000000" strokeWidth="1" strokeOpacity="1" stroke-miterlimit="4"/>
-      <Path stroke-linecap="butt" transform="matrix(0.75, 0, 0, 0.75, 113.837803, 34.431311)" fill="none" stroke-linejoin="miter" d="M 0.497513 0.497835 L 199.294401 0.497835 " stroke="#000000" strokeWidth="1" strokeOpacity="1" stroke-miterlimit="4"/>
-      <Path stroke-linecap="round" transform="matrix(0.75, 0, 0, 0.75, 113.837803, 34.431311)" fill="none" stroke-linejoin="round" d="M 2.497513 -1.002165 L 0.497513 0.497835 L 2.497513 1.997835 " stroke="#000000" strokeWidth="1" strokeOpacity="1" stroke-miterlimit="4"/>
-      <Path stroke-linecap="round" transform="matrix(0.75, 0, 0, 0.75, 113.837803, 34.431311)" fill="none" stroke-linejoin="round" d="M 197.294401 -1.002165 L 199.294401 0.497835 L 197.294401 1.997835 " stroke="#000000" strokeWidth="1" strokeOpacity="1" stroke-miterlimit="4"/>
+      <Path stroke-linecap="butt" transform="matrix(0.75, 0, 0, 0.75, 97.572368, 34.431311)" fill="none" stroke-linejoin="miter" d="M 0.502468 0.497835 L 241.851442 0.497835 " stroke="#000000" strokeWidth="1" strokeOpacity="1" stroke-miterlimit="4"/>
+      <Path stroke-linecap="round" transform="matrix(0.75, 0, 0, 0.75, 97.572368, 34.431311)" fill="none" stroke-linejoin="round" d="M 2.502468 -1.002165 L 0.502468 0.497835 L 2.502468 1.997835 " stroke="#000000" strokeWidth="1" strokeOpacity="1" stroke-miterlimit="4"/>
+      <Path stroke-linecap="round" transform="matrix(0.75, 0, 0, 0.75, 97.572368, 34.431311)" fill="none" stroke-linejoin="round" d="M 239.851442 -1.002165 L 241.851442 0.497835 L 239.851442 1.997835 " stroke="#000000" strokeWidth="1" strokeOpacity="1" stroke-miterlimit="4"/>
+      <Path stroke-linecap="butt" transform="matrix(0, 0.75, -0.75, 0, 281, 30.524853)" fill="none" stroke-linejoin="miter" d="M -0.0018877 0.499526 L 54.763741 0.499526 " stroke="#000000" strokeWidth="1" strokeOpacity="1" stroke-miterlimit="4"/>
+      <Path stroke-linecap="butt" transform="matrix(0, 0.75, -0.75, 0, 97, 30.524853)" fill="none" stroke-linejoin="miter" d="M -0.0018877 0.50027 L 54.763741 0.50027 " stroke="#000000" strokeWidth="1" strokeOpacity="1" stroke-miterlimit="4"/>
       <Path stroke-linecap="butt" transform="matrix(0.000000001309, -0.75, 0.75, 0.000000001309, 320.378304, 350.912322)" fill="none" stroke-linejoin="miter" d="M 0.497679 0.500803 L 367.185203 0.500802 " stroke="#000000" strokeWidth="1" strokeOpacity="1" stroke-miterlimit="4"/>
       <Path stroke-linecap="round" transform="matrix(0.000000001309, -0.75, 0.75, 0.000000001309, 320.378304, 350.912322)" fill="none" stroke-linejoin="round" d="M 2.497679 -0.999197 L 0.497679 0.500803 L 2.497679 2.000803 " stroke="#000000" strokeWidth="1" strokeOpacity="1" stroke-miterlimit="4"/>
       <Path stroke-linecap="round" transform="matrix(0.000000001309, -0.75, 0.75, 0.000000001309, 320.378304, 350.912322)" fill="none" stroke-linejoin="round" d="M 365.185203 -0.999198 L 367.185203 0.500802 L 365.185203 2.000802 " stroke="#000000" strokeWidth="1" strokeOpacity="1" stroke-miterlimit="4"/>
@@ -66,7 +67,6 @@ const FixedWindowsTall = ({ width, height, svgHeight, svgWidth }: {
       <Path stroke-linecap="butt" transform="matrix(0, -0.75, 0.75, 0, 111, 350)" fill="none" stroke-linejoin="miter" d="M -0.0000580495 1.998482 L 27.82286 1.998482 " stroke="#000000" strokeWidth="4" strokeOpacity="1" stroke-miterlimit="4"/>
       <Path stroke-linecap="butt" transform="matrix(0, -0.75, 0.75, 0, 111, 96)" fill="none" stroke-linejoin="miter" d="M 0.00124664 1.999808 L 27.824165 1.999808 " stroke="#000000" strokeWidth="4" strokeOpacity="1" stroke-miterlimit="4"/>
       <Path stroke-linecap="butt" transform="matrix(0, -0.75, 0.75, 0, 263, 96)" fill="none" stroke-linejoin="miter" d="M 0.00246449 1.999211 L 27.820175 1.999211 " stroke="#000000" strokeWidth="4" strokeOpacity="1" stroke-miterlimit="4"/>
-      <Path stroke-linecap="butt" transform="matrix(0, 0.75, -0.75, 0, 114.520406, 30.524853)" fill="none" stroke-linejoin="miter" d="M -0.0018877 0.501166 L 54.763741 0.501166 " stroke="#000000" strokeWidth="1" strokeOpacity="1" stroke-miterlimit="4"/>
       <Path stroke-linecap="butt" transform="matrix(-0.464699, 0.588689, -0.588689, -0.464699, 261.35776, 99.983043)" fill="none" stroke-linejoin="miter" d="M 0.0000309481 0.501531 L 7.628326 0.498311 " stroke="#000000" strokeWidth="1" strokeOpacity="1" stroke-miterlimit="4"/>
       <Path stroke-linecap="butt" transform="matrix(-0.464699, 0.588689, -0.588689, -0.464699, 118.793939, 322.183484)" fill="none" stroke-linejoin="miter" d="M -0.00233915 0.501158 L 7.629183 0.502026 " stroke="#000000" strokeWidth="1" strokeOpacity="1" stroke-miterlimit="4"/>
       <Path stroke-linecap="butt" transform="matrix(-0.462819, -0.590168, 0.590168, -0.462819, 118.485261, 103.731197)" fill="none" stroke-linejoin="miter" d="M -0.000967858 0.500775 L 7.629952 0.501601 " stroke="#000000" strokeWidth="1" strokeOpacity="1" stroke-miterlimit="4"/>
@@ -81,7 +81,7 @@ const FixedWindowsTall = ({ width, height, svgHeight, svgWidth }: {
       <Text
         fill='#000000'
         stroke='transparent'
-        strokeWidth='1' transform="matrix(0 -1 1 0 340 230)"
+        strokeWidth='1' transform="matrix(0 -1 1 0 315 230)"
       >{getNumberWithFractionAndInches(height)}</Text>
     </Svg>
   )

@@ -120,7 +120,7 @@ const SingleHungTall = ({ width, height, svgHeight, svgWidth, heightOfMovementPa
       <Text
         fill='#000000'
         stroke='transparent'
-        strokeWidth='1' transform="matrix(0 -1 1 0 340 320)"
+        strokeWidth='1' transform="matrix(0 -1 1 0 310 320)"
       >{getNumberWithFractionAndInches(heightOfMovementPart)}</Text>
     </Svg>
   )
