@@ -80,6 +80,8 @@ class Order extends Model
         $query->when($filters['text'] ?? null, function ($query, $search) {
           $searchStr = ltrim($search, "0");
           $query->where(DB::raw("CONCAT(id, ' ', name, ' ', project_name)"), 'like', '%'. $searchStr .'%');
+        })->when($filters['status'] ?? null, function($query, $search) {
+          $query->where('status', $search);
         });
     }
 

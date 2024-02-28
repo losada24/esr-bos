@@ -1,7 +1,7 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
 import { Head, Link } from '@inertiajs/react'
-import { type PageProps, type Order, type PaginatorLink, type Role } from '@/types'
+import { type PageProps, type Order, type PaginatorLink, type Role, type Status } from '@/types'
 import Pagination from '@/Components/Pagination'
 import EyeIcon from '@/Components/Icons/EyeIcon'
 import { createMarkWithLeadingZero } from '@/Utils/mark'
@@ -26,13 +26,21 @@ export default function Index ({ auth, orders }: IndexOrderProps) {
   const [showStatusModal, setShowStatusModal] = useState<boolean>(false)
   const [selectedStatusOrder, setSelectedStatusOrder] = useState<Order | null>(null)
 
+  const [statuses, setStatuses] = useState<Status[]>([])
+
+  useEffect(() => {
+    fetch(route('order.status.filter', { })).then(async (response) => { return await response.json() }).then((data) => {
+      setStatuses(data)
+    })
+  }, [])
+
   return (
       <AuthenticatedLayout
           auth={auth}
           pageTitle='Orders'
       >
         <Head title="Orders" />
-        <OrderFilter />
+        <OrderFilter statuses={statuses} />
 
         <div className='table-responsive'>
           <table className="w-full whitespace-nowrap">
