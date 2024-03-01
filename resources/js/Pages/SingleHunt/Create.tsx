@@ -25,7 +25,7 @@ export default function Create ({ auth, frame_colors, glass_colors, estimate }: 
     privacy: '',
     qty: 0,
     markup: estimate.markup,
-    screen: false,
+    screen: true,
     order_glass_type: estimate.glass_type
   }
 
