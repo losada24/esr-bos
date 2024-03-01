@@ -44,7 +44,8 @@ class DeliveredOrPickedUpChange extends Mailable
         return new Content(
             view: 'emails.delivered-or-picked-up-change',
             with: [
-                'name' => $this->order->user->name,
+                'job_name' => $this->order->name,
+                'created_by' => $this->order->user->name,
                 'quote_number' => $this->order->getQuoteNumberAttribute(),
                 'status' => strtoupper($this->status),
                 'updated_at' => $this->order->updated_at,

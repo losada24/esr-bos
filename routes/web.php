@@ -33,12 +33,12 @@ use Illuminate\Support\Facades\Mail;
 
 Route::get('/', [DashboardController::class, 'index'])->middleware(['auth'])->name('dashboard');
 
-/*Route::get('/mailable', function () {
-  $order = App\Models\Order::find(44);
+/* Route::get('/mailable', function () {
+  $order = App\Models\Order::find(47);
 
-  Mail::to('efrain@reylosglass.com', 'Efrain')->send(new App\Mail\EstimateCreated($order, [RoleEnum::$DEALER]));
-  return new App\Mail\EstimateCreated($order, [RoleEnum::$DEALER]);
-});*/
+  // Mail::to('efrain@reylosglass.com', 'Efrain')->send(new App\Mail\EstimateCreated($order, [RoleEnum::$DEALER]));
+  return new App\Mail\ProductionScheduled($order, 'This is a test');
+}); */
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

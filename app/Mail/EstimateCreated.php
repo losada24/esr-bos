@@ -44,11 +44,12 @@ class EstimateCreated extends Mailable
         return new Content(
             view: 'emails.estimate-created',
             with: [
-              'name' => $this->order->user->name,
+              'job_name' => $this->order->name,
+              'created_by' => $this->order->user->name,
               'quote_number' => $this->createMarkWithLeadingZero($this->order->id, 6),
               'created_at' => $this->order->created_at,
-              'order' => $this->order,
-              'role' => $this->role
+              // 'order' => $this->order,
+              // 'role' => $this->role
             ]
         );
     }

@@ -42,7 +42,8 @@ class DeliveryOrPickupChange extends Mailable
         return new Content(
             view: 'emails.delivery-or-pickup-change',
             with: [
-              'name' => $this->order->user->name,
+              'job_name' => $this->order->name,
+              'created_by' => $this->order->user->name,
               'quote_number' => $this->order->getQuoteNumberAttribute(),
               'updated_at' => $this->order->updated_at,
               'status' => $this->status,

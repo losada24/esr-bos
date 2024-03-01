@@ -42,8 +42,9 @@ class OrderCreated extends Mailable
         return new Content(
             view: 'emails.order-created',
             with: [
-              'name' => $this->order->user->name,
+              'job_name' => $this->order->name,
               'quote_number' => $this->order->getQuoteNumberAttribute(),
+              'created_by' => $this->order->user->name,
               'updated_at' => $this->order->updated_at,
             ]
         );
