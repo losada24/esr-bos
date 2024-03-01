@@ -116,7 +116,8 @@ class OrderController extends Controller
           $order->status == OrderStatusEnum::$SCHEDULED_PRODUCTION ||
           $order->status == OrderStatusEnum::$PARTIAL_PRODUCTION_COMPLETED ||
           $order->status == OrderStatusEnum::$READY_FOR_PARTIAL_DELIVERY ||
-          $order->status == OrderStatusEnum::$PARTIAL_DELIVERED
+          $order->status == OrderStatusEnum::$PARTIAL_DELIVERED ||
+          $order->status == OrderStatusEnum::$PARTIAL_PICKED_UP
         )) {
 
         if ($order->status ==  OrderStatusEnum::$PRODUCTION) {
