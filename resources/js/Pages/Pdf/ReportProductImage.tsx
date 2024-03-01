@@ -35,9 +35,9 @@ const ReportProductImage = ({ product, isImpactGlass }: { product: Product, isIm
           <Text style={tw('text-xs text-red-700 font-regular text-center')}>{NO_CERTIFICATION_STANDARD_MESSAGE}</Text>
         </View>
       )}
-      {product.system === PRODUCT_SYSTEMS.SINGLE_HUNG && (product.width > 53.125 || product.height > 74) && (
+      {product.system === PRODUCT_SYSTEMS.SINGLE_HUNG && (product.width > 53.13 || product.height > 74) && (
         <View style={tw('flex flex-row mb-4 p-3')}>
-          <Text style={tw('text-xs text-red-700 font-regular text-center')}>{NO_CERTIFICATION_STANDARD_MESSAGE}</Text>
+          <Text style={tw('text-xs text-red-700 font-regular text-center')}>{product.width} {NO_CERTIFICATION_STANDARD_MESSAGE}</Text>
         </View>
       )}
       {product.system === PRODUCT_SYSTEMS.HORIZONTAL_ROLLER && (product.width > 74 || product.height > 53) && (

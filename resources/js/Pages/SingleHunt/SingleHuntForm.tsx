@@ -80,7 +80,7 @@ const SingleHuntForm = ({ submitCount, errors, isCreate, frame_colors, glass_col
                   type='number'
                 />
                 {(submitCount && errors.width) ? <InputError message={errors.width} className="mt-2" /> : ''}
-                {values.width > 53.125 && (
+                {values.width > 53.13 && (
                   <div className="flex items-center p-3.5 rounded text-warning bg-danger-light dark:bg-danger-dark-light mt-3">
                     <span className="ltr:pr-2 rtl:pl-2">
                       <strong className="ltr:mr-1 rtl:ml-1">Warning!</strong>
