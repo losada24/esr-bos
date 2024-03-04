@@ -88,7 +88,7 @@ class HorizontalRollerProduct implements IProduct {
     }
 
     public function getScrewCover() {
-      return round($this->height - 5.5, 3);
+      return round($this->height - 6.125, 3);
     }
 
     public function getMaterialConsumption($qty) {
