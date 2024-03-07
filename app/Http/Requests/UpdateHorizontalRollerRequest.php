@@ -8,6 +8,10 @@ use App\Enum\FrameColorEnum;
 use App\Enum\GlassColorEnum;
 use App\Enum\HorizontalRollerConfigEnum;
 use App\Enum\HorizontalRollerHandleEnum;
+use App\Enum\ProductSystemEnum;
+use App\Rules\ValidateMuntingHorizontalLines;
+use App\Rules\ValidateMuntingVerticalLines;
+use App\Rules\ValidateMuntinStyle;
 
 class UpdateHorizontalRollerRequest extends FormRequest
 {
@@ -56,6 +60,56 @@ class UpdateHorizontalRollerRequest extends FormRequest
             'required',
             Rule::in(array_values(HorizontalRollerHandleEnum::$HANDLE))
           ],
+          'muntin_panels' => 'boolean',
+            'panel_a' => [
+              'boolean',
+              Rule::when(
+                fn($input) => $input->muntin_panels
+                , [new ValidateMuntinPanels]
+              ),
+            ],
+            'panel_b' => [
+              'boolean'
+            ],
+            'muntin_pattern' => [
+              'string',
+              'nullable',
+              'max:255',
+              Rule::when(
+                fn($input) => $input->muntin_panels
+                , ['required']
+              ),
+            ],
+            'muntin_interior_style' => [
+              'string',
+              'nullable',
+              'max:255',
+              Rule::when(
+                fn($input) => $input->muntin_panels
+                , [new ValidateMuntinStyle]
+              )
+            ],
+            'muntin_exterior_style' => [
+              'string',
+              'nullable',
+              'max:255'
+            ],
+            'horizontal_lines' => [
+              'numeric',
+              'nullable',
+              Rule::when(
+                fn($input) => $input->muntin_panels
+                , [new ValidateMuntingHorizontalLines(ProductSystemEnum::$HORIZONTAL_ROLLER)]
+              ),
+            ],
+            'vertical_lines' => [
+              'numeric',
+              'nullable',
+              Rule::when(
+                fn($input) => $input->muntin_panels
+                , [new ValidateMuntingVerticalLines(ProductSystemEnum::$HORIZONTAL_ROLLER)]
+              ),
+            ],
         ];
     }
 }

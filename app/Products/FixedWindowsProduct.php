@@ -15,12 +15,31 @@ class FixedWindowsProduct implements IProduct {
     public $frameColor;
     public $glassType;
     public $materialColor;
+    public $muntinPanels;
+    public $panelA;
+    public $muntinPattern;
+    public $muntinInteriorStyle;
+    public $muntinExteriorStyle;
+    public $verticalLines;
+    public $horizontalLines;
     
-    public function __construct($width, $height, $frameColor, $glassType) {
+    public function __construct(
+      $width, 
+      $height, 
+      $frameColor, 
+      $glassType,
+      $muntinPanels = false,
+      $panelA = false,
+      $muntinPattern = "",
+      $muntinInteriorStyle = "",
+      $muntinExteriorStyle = "",
+      $verticalLines = 0,
+      $horizontalLines = 0
+    ) {
 
-        if ($width  > 53) {
-            $this->height = $width;
-            $this->width = $height;
+        if ($width > 53 && $width > $height) {
+          $this->height = $width;
+          $this->width = $height;
         } else {
           $this->width = (float) $width;
           $this->height = (float) $height;
@@ -29,6 +48,13 @@ class FixedWindowsProduct implements IProduct {
         $this->frameColor = $frameColor;
         $this->glassType = $glassType;
         $this->materialColor = $this->getMaterialColor($frameColor);
+        $this->muntinPanels = $muntinPanels;
+        $this->panelA = $panelA;
+        $this->muntinPattern = $muntinPattern;
+        $this->muntinInteriorStyle = $muntinInteriorStyle;
+        $this->muntinExteriorStyle = $muntinExteriorStyle;
+        $this->verticalLines = $verticalLines;
+        $this->horizontalLines = $horizontalLines;
     }
 
     public function getGlassHeigth() {
@@ -53,6 +79,13 @@ class FixedWindowsProduct implements IProduct {
 
     public function getScrewCover() {
       return round($this->width - 3.437, 3);
+    }
+
+    public function getMaterialRelease($qty) {
+      
+      return [
+      ];
+
     }
 
     public function getMaterialConsumption($qty) {
@@ -159,8 +192,6 @@ class FixedWindowsProduct implements IProduct {
         $glassMaterial = RawMaterial::where('name', $this->glassType)->first(); // MATERIAL Glass
         $glassCost = $this->getGlassSize($this->getGlassHeigth()) * $this->getGlassSize($this->getGlassWidth()) / 144 * $glassMaterial->cost_per_unit;
 
-        
-        
         //GET OTHER BILLS
         $workBill = config('custom.work_bill');
         $rentBill = config('custom.rent_bill');
@@ -169,6 +200,21 @@ class FixedWindowsProduct implements IProduct {
         $otherBill = config('custom.other_bill');
         $packing = config('custom.packing');
         $cornerSilicone = config('custom.corner_silicone');
+
+        //GET MUNTIN COST
+        $muntinPriceBySqft = config('custom.muntin_price_by_sqft');
+        $muntinCost = 0;
+        if ($this->muntinPanels) {
+          $horizontalMuntinsCost = ($this->horizontalLines - 1) * $this->getGlassWidth() * $muntinPriceBySqft * 0.083;
+          $verticalMuntingCost = ($this->verticalLines - 1) * $this->getGlassHeigth() * $muntinPriceBySqft * 0.083;
+
+          if (!empty($this->muntinInteriorStyle)) {
+            $muntinCost = $horizontalMuntinsCost + $verticalMuntingCost;
+          }
+          if(!empty($this->muntinExteriorStyle)) {
+            $muntinCost += $horizontalMuntinsCost + $verticalMuntingCost;
+          }
+        }
 
         /*echo "Precio del Cristal:" . $glassMaterial->cost_per_unit . "<br/>";
         echo "Glass Width:" . $this->getGlassWidth() . "<br/>"; 
@@ -186,6 +232,7 @@ class FixedWindowsProduct implements IProduct {
         echo "settingBlockCost: " . $settingBlockCost . "<br>";
         echo "structuralSiliconeCost: " . $structuralSiliconeCost . "<br>";
         echo "glassCost: " . $glassCost . "<br>";
+        echo "MuntinCost: " . $muntinCost . "<br>";
         echo 'Suma Total: ' . round(
             $frameHeadCost + 
             $jambCost + 
@@ -197,6 +244,7 @@ class FixedWindowsProduct implements IProduct {
             $stopSashCost +
             $settingBlockCost +
             $structuralSiliconeCost +
+            $muntinCost +
             $glassCost, 2);
         die; */
 
@@ -218,6 +266,7 @@ class FixedWindowsProduct implements IProduct {
           $internetBill +
           $otherBill +
           $cornerSilicone +
+          $muntinCost +
           $packing;
           
         //GET COMPANY MOCKUP

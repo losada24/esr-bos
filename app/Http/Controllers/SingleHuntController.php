@@ -12,6 +12,8 @@ use App\Http\Requests\UpdateFixedWindowsRequest;
 use App\Actions\CreateSingleHunt;
 use App\Models\Product;
 use App\Actions\UpdateSingleHunt;
+use App\Enum\MuntinPatternEnum;
+use App\Enum\MuntinStyleEnum;
 
 class SingleHuntController extends Controller
 {
@@ -27,6 +29,8 @@ class SingleHuntController extends Controller
         'frame_colors' => array_values(FrameColorEnum::$FRAME_COLOR),
         'glass_colors' => array_values(GlassColorEnum::$GLASS_COLOR),
         'estimate' => Order::with(['client'])->withCount(['products'])->findOrFail($id),
+        'muntin_patterns' => array_values(MuntinPatternEnum::$MUNTIN_PATTERN),
+        'muntin_styles' => array_values(MuntinStyleEnum::$MUNTIN_STYLE),
       ]);
   }
 
@@ -55,6 +59,8 @@ class SingleHuntController extends Controller
       return Inertia::render('SingleHunt/Edit', [
           'frame_colors' => array_values(FrameColorEnum::$FRAME_COLOR),
           'glass_colors' => array_values(GlassColorEnum::$GLASS_COLOR),
+          'muntin_patterns' => array_values(MuntinPatternEnum::$MUNTIN_PATTERN),
+          'muntin_styles' => array_values(MuntinStyleEnum::$MUNTIN_STYLE),
           'product' => $product,
         ]);
     }

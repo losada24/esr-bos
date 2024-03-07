@@ -12,6 +12,8 @@ use App\Http\Requests\UpdateFixedWindowsRequest;
 use App\Actions\CreateFixedWindows;
 use App\Models\Product;
 use App\Actions\UpdateFixedWindows;
+use App\Enum\MuntinPatternEnum;
+use App\Enum\MuntinStyleEnum;
 
 class FixedWindowsController extends Controller
 {
@@ -26,6 +28,8 @@ class FixedWindowsController extends Controller
       return Inertia::render('FixedWindows/Create', [
         'frame_colors' => array_values(FrameColorEnum::$FRAME_COLOR),
         'glass_colors' => array_values(GlassColorEnum::$GLASS_COLOR),
+        'muntin_patterns' => array_values(MuntinPatternEnum::$MUNTIN_PATTERN),
+        'muntin_styles' => array_values(MuntinStyleEnum::$MUNTIN_STYLE),
         'estimate' => Order::with(['client'])->withCount(['products'])->findOrFail($id),
       ]);
   }
@@ -55,6 +59,8 @@ class FixedWindowsController extends Controller
       return Inertia::render('FixedWindows/Edit', [
           'frame_colors' => array_values(FrameColorEnum::$FRAME_COLOR),
           'glass_colors' => array_values(GlassColorEnum::$GLASS_COLOR),
+          'muntin_patterns' => array_values(MuntinPatternEnum::$MUNTIN_PATTERN),
+          'muntin_styles' => array_values(MuntinStyleEnum::$MUNTIN_STYLE),
           'product' => $product,
         ]);
     }

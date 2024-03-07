@@ -75,6 +75,25 @@ class PdfController extends Controller
       ]);
     }
 
+    public function materialRelease(Order $order)
+    {
+      $order->load(['products', 'client']);
+      
+      $materialRelease = $this->getMaterialRelease($order);
+
+      $orderData = [
+        'id' => $order->id,
+        'name' => $order->name,
+        'client' => $order->client,
+        'created_at' => $order->created_at,
+        'project_name' => $order->project_name,
+        'materialConsumption' => $materialRelease
+      ];
+      return Inertia::render('Pdf/MaterialRelease', [
+        'order' => $orderData
+      ]);
+    }
+
     public function poScreen(Order $order)
     {
       $order->load(['products' => function($query) {

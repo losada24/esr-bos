@@ -6,13 +6,15 @@ import HorizontalRollerForm from './HorizontalRollerForm'
 import { horizontalRollerSchema } from './HorizontalRollerCommon'
 import { createNextMarkWithLeadingZero } from '@/Utils/mark'
 
-export default function Create ({ auth, frame_colors, glass_colors, estimate, handle, config }: PageProps & {
+export default function Create ({ auth, frame_colors, glass_colors, estimate, handle, config, muntin_patterns, muntin_styles }: PageProps & {
   frame_colors: string[]
   glass_colors: string[]
   config: string[]
   handle: string[]
   clients: Client[]
   estimate: Order
+  muntin_patterns: string[]
+  muntin_styles: string[]
 }) {
   const initialValues: HorizontalRoller = {
     id: 0,
@@ -30,7 +32,15 @@ export default function Create ({ auth, frame_colors, glass_colors, estimate, ha
     screen: true,
     handle: '',
     config: '',
-    order_glass_type: estimate.glass_type
+    order_glass_type: estimate.glass_type,
+    muntin_panels: false,
+    panel_a: false,
+    panel_b: false,
+    muntin_pattern: '',
+    muntin_interior_style: '',
+    muntin_exterior_style: '',
+    horizontal_lines: 0,
+    vertical_lines: 0
   }
 
   const handleSubmit = async (values: any, helpers: FormikHelpers<HorizontalRoller>) => {
@@ -63,6 +73,8 @@ export default function Create ({ auth, frame_colors, glass_colors, estimate, ha
                 values={values}
                 handle={handle}
                 config={config}
+                muntin_patterns={muntin_patterns}
+                muntin_styles={muntin_styles}
               />
             )}
           </Formik>

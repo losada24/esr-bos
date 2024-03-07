@@ -249,6 +249,7 @@ export const UNIT: string = 'UNIT'
 export const SQFT: string = 'SQFT'
 export const LENGTH_OF_BARS: number = 16
 export const CONFIG_XO: string = 'XO'
+export const CONFIG_OX: string = 'OX'
 export const NO_CERTIFICATION_STANDARD_MESSAGE: string = 'The windows does not comply with certification standards'
 export const PAYMENT_METHODS = {
   CASH: 'CASH',

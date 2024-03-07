@@ -6,7 +6,6 @@ use Illuminate\Support\Facades\DB;
 use App\Models\Order;
 use App\Models\Product;
 use App\Enum\ProductSystemEnum;
-use App\Events\OrderCreated;
 use App\Products\FixedWindowsProduct;
 
 class CreateFixedWindows {
@@ -17,7 +16,14 @@ class CreateFixedWindows {
         $request->width,
         $request->height,
         $request->frame_color,
-        $request->glass_type
+        $request->glass_type,
+        $request->muntin_panels,
+        $request->panel_a,
+        $request->muntin_pattern,
+        $request->muntin_interior_style,
+        $request->muntin_exterior_style,
+        $request->vertical_lines,
+        $request->horizontal_lines
       );
 
       $estimate = Order::find($request->order_id);
@@ -57,7 +63,14 @@ class CreateFixedWindows {
         'dealer_promotion_total_discount' => $dealerPromotionTotalDiscount,
         'user_id' => auth()->user()->id,
         'extras' => [
-          'config' => 'O'
+          'config' => 'O',
+          'muntin_panels' => $request->muntin_panels,
+          'panel_a' => $request->panel_a,
+          'muntin_pattern' => $request->muntin_pattern,
+          'muntin_interior_style' => $request->muntin_interior_style,
+          'muntin_exterior_style' => $request->muntin_exterior_style,
+          'horizontal_lines' => $request->horizontal_lines,
+          'vertical_lines' => $request->vertical_lines
         ],
       ]);
       

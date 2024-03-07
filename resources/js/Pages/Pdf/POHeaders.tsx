@@ -46,8 +46,8 @@ const POHeaders = ({ order, poType, documentTitle }: { order: Order, poType?: st
     </View>
     <View style={tw('flex flex-row gap-4 justify-between')}>
       <View style={tw('flex flex-row justify-start items-center gap-3')}>
-        <Text style={tw('text-base text-white-dark text-black')}>Client</Text>
-        <Text style={tw('text-base text-white-dark dark:text-gray-500')}>{order.client?.name}</Text>
+        <Text style={tw('text-base text-white-dark text-black')}>Job Name</Text>
+        <Text style={tw('text-base text-white-dark dark:text-gray-500')}>{order.name}</Text>
       </View>
       <View style={tw('flex flex-row justify-start items-center gap-3')}>
         <Text style={tw('text-base text-white-dark text-black')}>Project</Text>

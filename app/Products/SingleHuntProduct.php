@@ -18,14 +18,44 @@ class SingleHuntProduct implements IProduct {
     public $glassType;
     public $screenRequired;
     public $materialColor;
+    public $muntinPanels;
+    public $panelA;
+    public $panelB;
+    public $muntinPattern;
+    public $muntinInteriorStyle;
+    public $muntinExteriorStyle;
+    public $verticalLines;
+    public $horizontalLines;
     
-    public function __construct($width, $height, $frameColor, $glassType, $screenRequired) {
+    public function __construct(
+      $width, 
+      $height, 
+      $frameColor, 
+      $glassType, 
+      $screenRequired,
+      $muntinPanels = false,
+      $panelA = false,
+      $panelB = false,
+      $muntinPattern = "",
+      $muntinInteriorStyle = "",
+      $muntinExteriorStyle = "",
+      $verticalLines = 0,
+      $horizontalLines = 0
+    ) {
         $this->width = (float) $width;
         $this->height = (float) $height;
         $this->frameColor = $frameColor;
         $this->glassType = $glassType;
         $this->screenRequired = $screenRequired;
         $this->materialColor = $this->getMaterialColor($frameColor);
+        $this->muntinPanels = $muntinPanels;
+        $this->panelA = $panelA;
+        $this->panelB = $panelB;
+        $this->muntinPattern = $muntinPattern;
+        $this->muntinInteriorStyle = $muntinInteriorStyle;
+        $this->muntinExteriorStyle = $muntinExteriorStyle;
+        $this->verticalLines = $verticalLines;
+        $this->horizontalLines = $horizontalLines;
     }
 
     public function getGlassHeigth() {
@@ -101,6 +131,37 @@ class SingleHuntProduct implements IProduct {
       }
 
       return $balanceInfo;
+    }
+
+    public function getMaterialRelease($qty) {
+      $balanceData = $this->getBalancesBySize();
+      $clb0001 = RawMaterial::where('name', 'CLB 0001')->first();
+
+      $materials = [
+        'CLB 0001' => [
+          'amount' => 2 * $qty,
+          'unit_of_measurement' => $clb0001->unit_of_measurement,
+          'storage_measure' => $clb0001->storage_measure,
+          'notes' => $clb0001->notes
+        ],
+        'VENT LACH W CLIP ' . $this->materialColor => [
+          'amount' => 2 * $qty,
+          'unit_of_measurement' => UnitOfMeasurement::$UNIT_OF_MEASUREMENT["UNIT"],
+          'storage_measure' => 0,
+          'notes' => ""
+        ],
+      ];
+
+      if (!empty($balanceData)) {
+        $materials[$balanceData[3]] = [
+          'amount' => 2 * $qty,
+          'unit_of_measurement' => UnitOfMeasurement::$UNIT_OF_MEASUREMENT["UNIT"],
+          'storage_measure' => UnitOfMeasurement::$UNIT_OF_MEASUREMENT["UNIT"],
+          'notes' => "Balance size: " . $balanceData[2]
+        ];
+      }
+      
+      return $materials;
     }
 
     public function getMaterialConsumption($qty) {
@@ -388,6 +449,25 @@ class SingleHuntProduct implements IProduct {
         $packing = config('custom.packing');
         $cornerSilicone = config('custom.corner_silicone');
 
+        //GET MUNTIN COST
+        $muntinPriceBySqft = config('custom.muntin_price_by_sqft');
+        $muntinCost = 0;
+        if ($this->muntinPanels) {
+          $horizontalMuntinsCost = ($this->horizontalLines - 1) * $this->getGlassWidth() * $muntinPriceBySqft * 0.083;
+          $verticalMuntingCost = ($this->verticalLines - 1) * $this->getGlassHeigth() * $muntinPriceBySqft * 0.083;
+
+          if (!empty($this->muntinInteriorStyle)) {
+            $muntinCost = $horizontalMuntinsCost + $verticalMuntingCost;
+          }
+          if(!empty($this->muntinExteriorStyle)) {
+            $muntinCost += $horizontalMuntinsCost + $verticalMuntingCost;
+          }
+
+          if ($this->panelA == true && $this->panelB == true) {
+            $muntinCost *= 2;
+          }
+        }
+
         $glassMaterial = RawMaterial::where('name', $this->glassType)->first(); // MATERIAL Glass
         $glassCost = $this->getGlassSize($this->getGlassHeigth()) * $this->getGlassSize($this->getGlassWidth()) / 144 * $glassMaterial->cost_per_unit;
         $balancePrice = 13.6;
@@ -424,6 +504,7 @@ class SingleHuntProduct implements IProduct {
             echo  "Screws: " . $screwMaterialCost . "<br>" ;
             echo  "LockSpringCost: " . $lockSprignMaterialCost . "<br>" ;
             echo  "clipTakeOffBalanceCost: " . $clipTakeOffBalanceCost . "<br>" ;
+            echo  "muntin Cost: " . $muntinCost . "<br>" ;
             echo "Total:" . round($ventJambCost +
                         $ventBottomCost +
                         $ventTopCost +
@@ -450,8 +531,9 @@ class SingleHuntProduct implements IProduct {
                         $screenCost +
                         $screwMaterialCost +
                         $lockSprignMaterialCost +
+                        $muntinCost +
                         $packing, 2) . "<br>";
-        die;*/
+        die; */
 
         $unitPriceCost = 
           $ventJambCost +
@@ -487,6 +569,7 @@ class SingleHuntProduct implements IProduct {
           $electricityBill +
           $internetBill +
           $cornerSilicone +
+          $muntinCost +
           $otherBill;
 
         //GET COMPANY MOCKUP

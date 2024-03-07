@@ -6,9 +6,11 @@ import { type PageProps, type Product, type Client, type FixedWindows } from '@/
 import FixedWindowsForm from './FixedWindowsForm'
 import { fixedWindowsSchema } from './FixedWindowsCommon'
 
-export default function Edit ({ auth, product, frame_colors, glass_colors }: PageProps & {
+export default function Edit ({ auth, product, frame_colors, glass_colors, muntin_patterns, muntin_styles }: PageProps & {
   frame_colors: string[]
   glass_colors: string[]
+  muntin_patterns: string[]
+  muntin_styles: string[]
   clients: Client[]
   product: Product }) {
   const initialValues: FixedWindows = {
@@ -24,7 +26,14 @@ export default function Edit ({ auth, product, frame_colors, glass_colors }: Pag
     privacy: product.privacy,
     qty: product.qty,
     markup: product.markup,
-    order_glass_type: product?.order?.glass_type ?? ''
+    order_glass_type: product?.order?.glass_type ?? '',
+    muntin_panels: product?.extras?.muntin_panels ?? false,
+    panel_a: product?.extras?.panel_a ?? false,
+    muntin_pattern: product?.extras?.muntin_pattern ?? '',
+    muntin_interior_style: product?.extras?.muntin_interior_style ?? '',
+    muntin_exterior_style: product?.extras?.muntin_exterior_style ?? '',
+    horizontal_lines: product?.extras?.horizontal_lines ?? 0,
+    vertical_lines: product?.extras?.vertical_lines ?? 0
   }
 
   const handleSubmit = async (values: any, helpers: FormikHelpers<FixedWindows>) => {
@@ -55,7 +64,8 @@ export default function Edit ({ auth, product, frame_colors, glass_colors }: Pag
               frame_colors={frame_colors}
               estimate_id={product.order_id}
               values={values}
-              // glassType={product?.order?.glass_type ?? ''}
+              muntin_patterns={muntin_patterns}
+              muntin_styles={muntin_styles}
             />
           )}
         </Formik>

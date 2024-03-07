@@ -2,7 +2,7 @@ import React from 'react'
 import { Text, View } from '@react-pdf/renderer'
 import { createTw } from 'react-pdf-tailwind'
 import { type Product } from '@/types'
-import { PRODUCT_SYSTEMS, NO_CERTIFICATION_STANDARD_MESSAGE, CERTIFICATION_SQFT } from '@/Utils/constants'
+import { PRODUCT_SYSTEMS, NO_CERTIFICATION_STANDARD_MESSAGE, CERTIFICATION_SQFT, CONFIG_XO, CONFIG_OX } from '@/Utils/constants'
 import FixedWindowsTall from '../FixedWindows/FixedWindowsTall'
 import FixedWindowsWider from '../FixedWindows/FixedWindowsWider'
 import FixedWindowsSquared from '../FixedWindows/FixedWindowsSquared'
@@ -10,6 +10,8 @@ import SingleHungTall from '../SingleHunt/SingleHungTall'
 import SingleHungWider from '../SingleHunt/SingleHungWider'
 import SingleHungSquared from '../SingleHunt/SingleHungSquared'
 import { getFrameJambs } from '@/Utils/SingleHung'
+import { getVentBottomAndTop } from '@/Utils/HorizontalRoller'
+import HorizontalRollerXOSquared from '../HorizontalRoller/HorizontalRollerXOSquared'
 
 const tw = createTw({
   theme: {
@@ -27,7 +29,6 @@ const tw = createTw({
 
 const ReportProductImage = ({ product, isImpactGlass }: { product: Product, isImpactGlass?: boolean }) => {
   // TODO: Create helper function to check if product is certified
-  // TODO: Fix Image
   return (
     <View>
       {product.system === PRODUCT_SYSTEMS.FIXED_WINDOWS && ((product.width * product.height / 144) > CERTIFICATION_SQFT) && (
@@ -62,6 +63,12 @@ const ReportProductImage = ({ product, isImpactGlass }: { product: Product, isIm
           {product.height > product.width && <SingleHungTall width={product.width} height={product.height} svgHeight={250} svgWidth={250} heightOfMovementPart={getFrameJambs(product.height)} /> }
           {product.width > product.height && <SingleHungWider width={product.width} height={product.height} svgHeight={250} svgWidth={250} heightOfMovementPart={getFrameJambs(product.height)}/> }
           {product.height === product.width && <SingleHungSquared width={product.width} height={product.height} svgHeight={250} svgWidth={250} heightOfMovementPart={getFrameJambs(product.height)} />}
+        </View>
+      )}
+      {product.system === PRODUCT_SYSTEMS.HORIZONTAL_ROLLER && (
+        <View style={tw('flex flex-row mb-4 p-3 justify-center')}>
+          {product.extras?.config === CONFIG_XO && <HorizontalRollerXOSquared width={product.width} height={product.height} svgHeight={250} svgWidth={250} widthtOfMovementPart={getVentBottomAndTop(product.width)} /> }
+          {product.extras?.config === CONFIG_OX && <HorizontalRollerXOSquared width={product.width} height={product.height} svgHeight={250} svgWidth={250} widthtOfMovementPart={getVentBottomAndTop(product.width)} /> }
         </View>
       )}
     </View>

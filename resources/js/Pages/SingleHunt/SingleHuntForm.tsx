@@ -8,13 +8,16 @@ import { type SingleHunt } from '@/types'
 import SingleHuntDrawing from './SingleHuntDrawing'
 import { EXPRESS_GLASS_TYPE, NO_CERTIFICATION_STANDARD_MESSAGE, RUSH_GLASS_NEW_COLOR, RUSH_GLASS_TYPE } from '@/Utils/constants'
 import { getFrameJambs } from '@/Utils/SingleHung'
+import Details from './Details'
 
-const SingleHuntForm = ({ submitCount, errors, isCreate, frame_colors, glass_colors, estimate_id, values }: {
+const SingleHuntForm = ({ submitCount, errors, isCreate, frame_colors, glass_colors, estimate_id, values, muntin_patterns, muntin_styles }: {
   submitCount: number
   errors: FormikErrors<SingleHunt>
   isCreate: boolean
   frame_colors: string[]
   glass_colors: string[]
+  muntin_patterns: string[]
+  muntin_styles: string[]
   estimate_id: number
   values: SingleHunt
 }) => {
@@ -225,6 +228,13 @@ const SingleHuntForm = ({ submitCount, errors, isCreate, frame_colors, glass_col
               </div>
             </div>
           </fieldset>
+          <Details
+            submitCount={submitCount}
+            errors={errors}
+            muntin_patterns={muntin_patterns}
+            muntin_styles={muntin_styles}
+            values={values}
+          />
           <div className="flex items-center justify-between mt-4">
             <Link className='btn btn-danger uppercase' href={route('estimate.show', estimate_id)}>Cancel</Link>
             <PrimaryButton className="btn btn-primary" type='submit'>

@@ -7,14 +7,16 @@ import { type FormikErrors } from 'formik'
 import { type FixedWindows } from '@/types'
 import FixedWindowsDrawing from './FixedWindowsDrawing'
 import { EXPRESS_GLASS_TYPE, NO_CERTIFICATION_STANDARD_MESSAGE, RUSH_GLASS_TYPE, RUSH_GLASS_NEW_COLOR, CERTIFICATION_SQFT } from '@/Utils/constants'
-import ReactPDF from '@react-pdf/renderer'
+import Details from './Details'
 
-const FixedWindowsForm = ({ submitCount, errors, isCreate, frame_colors, glass_colors, estimate_id, values }: {
+const FixedWindowsForm = ({ submitCount, errors, isCreate, frame_colors, glass_colors, estimate_id, values, muntin_patterns, muntin_styles }: {
   submitCount: number
   errors: FormikErrors<FixedWindows>
   isCreate: boolean
   frame_colors: string[]
   glass_colors: string[]
+  muntin_patterns: string[]
+  muntin_styles: string[]
   estimate_id: number
   values: FixedWindows
 }) => {
@@ -207,6 +209,13 @@ const FixedWindowsForm = ({ submitCount, errors, isCreate, frame_colors, glass_c
               </div>
             </div>
           </fieldset>
+          <Details
+            submitCount={submitCount}
+            errors={errors}
+            muntin_patterns={muntin_patterns}
+            muntin_styles={muntin_styles}
+            values={values}
+          />
           <div className="flex items-center justify-between mt-4">
             <Link className='btn btn-danger uppercase' href={route('estimate.show', estimate_id)}>Cancel</Link>
             <PrimaryButton className="btn btn-primary" type='submit'>

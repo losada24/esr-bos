@@ -287,7 +287,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/pdf/delivery/{order}', [PdfController::class, 'delivery'])
       ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$SHIPPING . "|" . RoleEnum::$ACCOUNT_MANAGER ])
       ->name('pdf.delivery');
-
+    
+    Route::get('/pdf/material-release/{order}', [PdfController::class, 'materialRelease'])
+      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$PRODUCTION ])
+      ->name('pdf.material.release');
     // LABELS
     Route::get('/label/pieces/{order}', [LabelController::class, 'labelsByPieces'])
       ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$PRODUCTION ])

@@ -44,6 +44,13 @@ const PrintButton = ({ id }: { id: number }) => {
           </li>
           <li>
             <Link
+              href={route('pdf.material.release', id)}
+            >
+              Material Release
+            </Link>
+          </li>
+          <li>
+            <Link
               href={route('pdf.po.screen', id)}
             >
               PO Screens

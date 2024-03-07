@@ -7,21 +7,22 @@ import { type FormikErrors } from 'formik'
 import { type HorizontalRoller } from '@/types'
 import HorizontalRollerDrawing from './HorizontalRollerDrawing'
 import { EXPRESS_GLASS_TYPE, NO_CERTIFICATION_STANDARD_MESSAGE, RUSH_GLASS_NEW_COLOR, RUSH_GLASS_TYPE } from '@/Utils/constants'
+import { getVentBottomAndTop } from '@/Utils/HorizontalRoller'
+import Details from './Details'
 
-const HorizontalRollerForm = ({ submitCount, errors, isCreate, frame_colors, glass_colors, estimate_id, values, handle, config }: {
+const HorizontalRollerForm = ({ submitCount, errors, isCreate, frame_colors, glass_colors, estimate_id, values, handle, config, muntin_patterns, muntin_styles }: {
   submitCount: number
   errors: FormikErrors<HorizontalRoller>
   isCreate: boolean
   frame_colors: string[]
   glass_colors: string[]
+  muntin_patterns: string[]
+  muntin_styles: string[]
   estimate_id: number
   values: HorizontalRoller
   config: string[]
   handle: string[]
 }) => {
-  const getVentBottom = (width: number) => {
-    return (width / 2) - (5.25 / 2) - 0.125 + 2.188
-  }
   const [glassTypes, setGlassTypes] = useState<string[]>([])
   const [colors, setColors] = useState<string[]>(glass_colors)
   const LOW_E_OPTIONS: string[] = values.order_glass_type === EXPRESS_GLASS_TYPE ? ['NONE', 'LOW E Q366'] : ['NONE', 'LOW E SB70']
@@ -263,6 +264,13 @@ const HorizontalRollerForm = ({ submitCount, errors, isCreate, frame_colors, gla
               </div>
             </div>
           </fieldset>
+          <Details
+            submitCount={submitCount}
+            errors={errors}
+            muntin_patterns={muntin_patterns}
+            muntin_styles={muntin_styles}
+            values={values}
+          />
           <div className="flex items-center justify-between mt-4">
             <Link className='btn btn-danger uppercase' href={route('estimate.show', estimate_id)}>Cancel</Link>
             <PrimaryButton className="btn btn-primary" type='submit'>
@@ -271,15 +279,14 @@ const HorizontalRollerForm = ({ submitCount, errors, isCreate, frame_colors, gla
           </div>
         </Form>
       </div>
-      <div className='p-2 col-span-6 border border-dashed w-full'>
-        <h3 className='text-lg font-semibold'>Preview</h3>
+      <div className='p-2 col-span-6 w-full'>
         <div className='h-full flex justify-center align-middle'>
           {values.width !== 0 && values.height !== 0
             ? <HorizontalRollerDrawing
                 width={values.width}
                 height={values.height}
                 config={values.config}
-                widthtOfMovementPart={getVentBottom(values.height)}
+                widthtOfMovementPart={getVentBottomAndTop(values.width)}
               />
             : ''
           }

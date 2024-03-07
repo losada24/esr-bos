@@ -14,6 +14,8 @@ use App\Models\Product;
 use App\Actions\UpdateHorizontalRoller;
 use App\Enum\HorizontalRollerConfigEnum;
 use App\Enum\HorizontalRollerHandleEnum;
+use App\Enum\MuntinPatternEnum;
+use App\Enum\MuntinStyleEnum;
 
 class HorizontalRollerController extends Controller
 {
@@ -30,6 +32,8 @@ class HorizontalRollerController extends Controller
         'glass_colors' => array_values(GlassColorEnum::$GLASS_COLOR),
         'config' => array_values(HorizontalRollerConfigEnum::$CONFIG),
         'handle' => array_values(HorizontalRollerHandleEnum::$HANDLE),
+        'muntin_patterns' => array_values(MuntinPatternEnum::$MUNTIN_PATTERN),
+        'muntin_styles' => array_values(MuntinStyleEnum::$MUNTIN_STYLE),
         'estimate' => Order::with(['client'])->withCount(['products'])->findOrFail($id),
       ]);
   }
@@ -61,6 +65,8 @@ class HorizontalRollerController extends Controller
           'glass_colors' => array_values(GlassColorEnum::$GLASS_COLOR),
           'config' => array_values(HorizontalRollerConfigEnum::$CONFIG),
           'handle' => array_values(HorizontalRollerHandleEnum::$HANDLE),
+          'muntin_patterns' => array_values(MuntinPatternEnum::$MUNTIN_PATTERN),
+          'muntin_styles' => array_values(MuntinStyleEnum::$MUNTIN_STYLE),
           'product' => $product,
         ]);
     }

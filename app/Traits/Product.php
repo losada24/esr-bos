@@ -113,6 +113,51 @@ trait Product {
       return $materialConsumption;
   }
 
+  public function getMaterialRelease($order) {
+      $materialRelease = [];
+      $order->products->each(function($product) use (&$materialRelease) {
+        switch($product->system) {
+          case ProductSystemEnum::$FIXED_WINDOWS:
+            $cuttingListObject = new FixedWindowsProduct(
+              $product->width,
+              $product->height,
+              $product->frame_color,
+              $product->glass_type
+            );
+
+            $materialReleaseForProduct = $cuttingListObject->getMaterialRelease($product->qty);
+            $this->updateMaterialsConsumption($materialReleaseForProduct, $materialRelease);
+            break;
+          case ProductSystemEnum::$HORIZONTAL_ROLLER:
+            $cuttingListObject = new HorizontalRollerProduct(
+              $product->width,
+              $product->height,
+              $product->frame_color,
+              $product->glass_type,
+              $product->extras['screen']
+            );
+
+            $materialReleaseForProduct = $cuttingListObject->getMaterialRelease($product->qty);
+            $this->updateMaterialsConsumption($materialReleaseForProduct, $materialRelease);
+            break;
+          case ProductSystemEnum::$SINGLE_HUNG:
+            $cuttingListObject = new SingleHuntProduct(
+              $product->width,
+              $product->height,
+              $product->frame_color,
+              $product->glass_type,
+              $product->extras['screen']
+            );
+
+            $materialReleaseForProduct = $cuttingListObject->getMaterialRelease($product->qty);
+            $this->updateMaterialsConsumption($materialReleaseForProduct, $materialRelease);
+            break;
+        }
+      });
+
+      return $materialRelease;
+  }
+
   public function getCuttingList($order) {
     return $order->products->map(function($product, $key) {
       $cuttingList = [];

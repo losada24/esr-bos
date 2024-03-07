@@ -6,9 +6,11 @@ import SingleHuntForm from './SingleHuntForm'
 import { singleHuntSchema } from './SingleHuntCommon'
 import { createNextMarkWithLeadingZero } from '@/Utils/mark'
 
-export default function Create ({ auth, frame_colors, glass_colors, estimate }: PageProps & {
+export default function Create ({ auth, frame_colors, glass_colors, estimate, muntin_patterns, muntin_styles }: PageProps & {
   frame_colors: string[]
   glass_colors: string[]
+  muntin_patterns: string[]
+  muntin_styles: string[]
   clients: Client[]
   estimate: Order
 }) {
@@ -26,7 +28,15 @@ export default function Create ({ auth, frame_colors, glass_colors, estimate }: 
     qty: 0,
     markup: estimate.markup,
     screen: true,
-    order_glass_type: estimate.glass_type
+    order_glass_type: estimate.glass_type,
+    muntin_panels: false,
+    panel_a: false,
+    panel_b: false,
+    muntin_pattern: '',
+    muntin_interior_style: '',
+    muntin_exterior_style: '',
+    horizontal_lines: 0,
+    vertical_lines: 0
   }
 
   const handleSubmit = async (values: any, helpers: FormikHelpers<SingleHunt>) => {
@@ -55,9 +65,10 @@ export default function Create ({ auth, frame_colors, glass_colors, estimate }: 
                 isCreate={true}
                 glass_colors={glass_colors}
                 frame_colors={frame_colors}
-                // glassType={estimate.glass_type}
                 estimate_id={estimate.id}
                 values={values}
+                muntin_patterns={muntin_patterns}
+                muntin_styles={muntin_styles}
               />
             )}
           </Formik>

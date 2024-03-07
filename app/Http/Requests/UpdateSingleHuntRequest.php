@@ -7,6 +7,11 @@ use Illuminate\Validation\Rule;
 use App\Enum\FrameColorEnum;
 use App\Enum\GlassColorEnum;
 use App\Enum\GlassTypeEnum;
+use App\Enum\ProductSystemEnum;
+use App\Rules\ValidateMuntingHorizontalLines;
+use App\Rules\ValidateMuntingVerticalLines;
+use App\Rules\ValidateMuntinPanels;
+use App\Rules\ValidateMuntinStyle;
 
 class UpdateSingleHuntRequest extends FormRequest
 {
@@ -61,7 +66,58 @@ class UpdateSingleHuntRequest extends FormRequest
               fn($input) => $input->order_glass_type != GlassTypeEnum::$GLASS_TYPE['RUSH']
               , ['required']
             ),
-          ]
+          ],
+          'screen' => 'required|boolean',
+          'muntin_panels' => 'boolean',
+            'panel_a' => [
+              'boolean',
+              Rule::when(
+                fn($input) => $input->muntin_panels
+                , [new ValidateMuntinPanels]
+              ),
+            ],
+            'panel_b' => [
+              'boolean'
+            ],
+            'muntin_pattern' => [
+              'string',
+              'nullable',
+              'max:255',
+              Rule::when(
+                fn($input) => $input->muntin_panels
+                , ['required']
+              ),
+            ],
+            'muntin_interior_style' => [
+              'string',
+              'nullable',
+              'max:255',
+              Rule::when(
+                fn($input) => $input->muntin_panels
+                , [new ValidateMuntinStyle]
+              )
+            ],
+            'muntin_exterior_style' => [
+              'string',
+              'nullable',
+              'max:255'
+            ],
+            'horizontal_lines' => [
+              'numeric',
+              'nullable',
+              Rule::when(
+                fn($input) => $input->muntin_panels
+                , [new ValidateMuntingHorizontalLines(ProductSystemEnum::$SINGLE_HUNG)]
+              ),
+            ],
+            'vertical_lines' => [
+              'numeric',
+              'nullable',
+              Rule::when(
+                fn($input) => $input->muntin_panels
+                , [new ValidateMuntingVerticalLines(ProductSystemEnum::$SINGLE_HUNG)]
+              ),
+            ],
         ];
     }
 }

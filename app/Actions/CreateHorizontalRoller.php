@@ -17,7 +17,15 @@ class CreateHorizontalRoller {
         $request->height,
         $request->frame_color,
         $request->glass_type,
-        $request->screen
+        $request->screen,
+        $request->muntin_panels,
+        $request->panel_a,
+        $request->panel_b,
+        $request->muntin_pattern,
+        $request->muntin_interior_style,
+        $request->muntin_exterior_style,
+        $request->vertical_lines,
+        $request->horizontal_lines
       );
 
       $estimate = Order::find($request->order_id);
@@ -60,6 +68,14 @@ class CreateHorizontalRoller {
           'screen' => $request->screen,
           'config' => $request->config,
           'handle' => $request->handle,
+          'muntin_panels' => $request->muntin_panels,
+          'panel_a' => $request->panel_a,
+          'panel_b' => $request->panel_b,
+          'muntin_pattern' => $request->muntin_pattern,
+          'muntin_interior_style' => $request->muntin_interior_style,
+          'muntin_exterior_style' => $request->muntin_exterior_style,
+          'horizontal_lines' => $request->horizontal_lines,
+          'vertical_lines' => $request->vertical_lines
         ],
         'user_id' => auth()->user()->id,
       ]);

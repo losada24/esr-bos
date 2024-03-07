@@ -23,7 +23,14 @@ class UpdateFixedWindows {
         $request->width,
         $request->height,
         $request->frame_color,
-        $request->glass_type
+        $request->glass_type,
+        $request->muntin_panels,
+        $request->panel_a,
+        $request->muntin_pattern,
+        $request->muntin_interior_style,
+        $request->muntin_exterior_style,
+        $request->vertical_lines,
+        $request->horizontal_lines
       );
 
       $estimate = Order::find($request->order_id);
@@ -62,6 +69,16 @@ class UpdateFixedWindows {
         'dealer_promotion_discount' => $dealer_promotion_discount,
         'dealer_promotion_total_discount' => $dealer_promotion_total_discount,
         'user_id' => auth()->user()->id,
+        'extras' => [
+          'config' => 'O',
+          'muntin_panels' => $request->muntin_panels,
+          'panel_a' => $request->panel_a,
+          'muntin_pattern' => $request->muntin_pattern,
+          'muntin_interior_style' => $request->muntin_interior_style,
+          'muntin_exterior_style' => $request->muntin_exterior_style,
+          'horizontal_lines' => $request->horizontal_lines,
+          'vertical_lines' => $request->vertical_lines
+        ],
       ];
 
       $product->update($productData);

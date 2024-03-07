@@ -3,6 +3,7 @@
 namespace App\Products;
 
 use App\Enum\FrameColorEnum;
+use App\Enum\UnitOfMeasurement;
 use App\Interfaces\IProduct;
 use App\Models\RawMaterial;
 use App\Traits\Fractions;
@@ -17,14 +18,44 @@ class HorizontalRollerProduct implements IProduct {
     public $glassType;
     public $screenRequired;
     public $materialColor;
+    public $muntinPanels;
+    public $panelA;
+    public $panelB;
+    public $muntinPattern;
+    public $muntinInteriorStyle;
+    public $muntinExteriorStyle;
+    public $verticalLines;
+    public $horizontalLines;
     
-    public function __construct($width, $height, $frameColor, $glassType, $screenRequired) {
+    public function __construct(
+      $width, 
+      $height, 
+      $frameColor, 
+      $glassType, 
+      $screenRequired,
+      $muntinPanels = false,
+      $panelA = false,
+      $panelB = false,
+      $muntinPattern = "",
+      $muntinInteriorStyle = "",
+      $muntinExteriorStyle = "",
+      $verticalLines = 0,
+      $horizontalLines = 0
+    ) {
         $this->width = (float) $width;
         $this->height = (float) $height;
         $this->frameColor = $frameColor;
         $this->glassType = $glassType;
         $this->screenRequired = $screenRequired;
         $this->materialColor = $this->getMaterialColor($frameColor);
+        $this->muntinPanels = $muntinPanels;
+        $this->panelA = $panelA;
+        $this->panelB = $panelB;
+        $this->muntinPattern = $muntinPattern;
+        $this->muntinInteriorStyle = $muntinInteriorStyle;
+        $this->muntinExteriorStyle = $muntinExteriorStyle;
+        $this->verticalLines = $verticalLines;
+        $this->horizontalLines = $horizontalLines;
     }
 
     public function getGlassHeigth() {
@@ -89,6 +120,32 @@ class HorizontalRollerProduct implements IProduct {
 
     public function getScrewCover() {
       return round($this->height - 6.125, 3);
+    }
+
+    public function getMaterialRelease($qty) {
+      $rh0001 = RawMaterial::where('name', 'RH 0001')->first();
+      $vh0001 = RawMaterial::where('name', 'WH 0001 ' . $this->materialColor)->first();
+
+      return [
+        'RH 0001' => [
+          'amount' => 2 * $qty,
+          'unit_of_measurement' => $rh0001->unit_of_measurement,
+          'storage_measure' => $rh0001->storage_measure,
+          'notes' => $rh0001->notes
+        ],
+        'WH 0001 ' . $this->materialColor => [
+          'amount' => 2 * $qty,
+          'unit_of_measurement' => $vh0001->unit_of_measurement,
+          'storage_measure' => $vh0001->storage_measure,
+          'notes' => $vh0001->notes
+        ],
+        'VENT LACH W CLIP ' . $this->materialColor => [
+          'amount' => 2 * $qty,
+          'unit_of_measurement' => UnitOfMeasurement::$UNIT_OF_MEASUREMENT["UNIT"],
+          'storage_measure' => 0,
+          'notes' => ""
+        ],
+      ];
     }
 
     public function getMaterialConsumption($qty) {
@@ -397,6 +454,25 @@ class HorizontalRollerProduct implements IProduct {
         $packing = config('custom.packing');
         $cornerSilicone = config('custom.corner_silicone');
 
+        //GET MUNTIN COST
+        $muntinPriceBySqft = config('custom.muntin_price_by_sqft');
+        $muntinCost = 0;
+        if ($this->muntinPanels) {
+          $horizontalMuntinsCost = ($this->horizontalLines - 1) * $this->getGlassWidth() * $muntinPriceBySqft * 0.083;
+          $verticalMuntingCost = ($this->verticalLines - 1) * $this->getMoveGlassHeight() * $muntinPriceBySqft * 0.083;
+
+          if (!empty($this->muntinInteriorStyle)) {
+            $muntinCost = $horizontalMuntinsCost + $verticalMuntingCost;
+          }
+          if(!empty($this->muntinExteriorStyle)) {
+            $muntinCost += $horizontalMuntinsCost + $verticalMuntingCost;
+          }
+
+          if ($this->panelA == true && $this->panelB == true) {
+            $muntinCost *= 2;
+          }
+        }
+
         $glassMaterial = RawMaterial::where('name', $this->glassType)->first(); // MATERIAL Glass
         $glassCost = $this->getGlassSize($this->getGlassHeigth()) * $this->getGlassSize($this->getGlassWidth()) / 144 * $glassMaterial->cost_per_unit;
         $glassCostMove = $this->getGlassSize($this->getMoveGlassHeight()) * $this->getGlassSize($this->getGlassWidth()) / 144 * $glassMaterial->cost_per_unit;
@@ -405,7 +481,7 @@ class HorizontalRollerProduct implements IProduct {
           $screenCost = $this->getScreenWidth() * $this->getScreenHeigth() / 144 * $screen_price_by_sqft;
         }
 
-          /*echo "ventJamb110Cost : " . $ventJamb110Cost . "<br/>";
+        /*  echo "ventJamb110Cost : " . $ventJamb110Cost . "<br/>";
           echo "ventJamb106Cost : " . $ventJamb106Cost . "<br/>";
           echo "ventBottomCost : " . $ventBottomCost . "<br/>";
           echo "ventTopCost : " . $ventTopCost . "<br/>";
@@ -436,6 +512,7 @@ class HorizontalRollerProduct implements IProduct {
           echo "Doble Face: " . $dobleFacenMaterialCost . "<br/>";
           echo "lockSprignMaterialCost: " . $lockSprignMaterialCost . "<br/>";
           echo "packing: " . $packing . "<br/>";
+          echo "Mounting Cost: " . $muntinCost . "<br/>";
           echo "Total: " . round($ventJamb106Cost +
           $ventJamb110Cost +
           $ventBottomCost +
@@ -468,6 +545,7 @@ class HorizontalRollerProduct implements IProduct {
           $glassCost +
           $glassCostMove +
           $packing +
+          $muntinCost +
           $screenCost, 2);
           die;*/
 
@@ -510,6 +588,7 @@ class HorizontalRollerProduct implements IProduct {
           $electricityBill +
           $internetBill +
           $cornerSilicone +
+          $muntinCost +
           $otherBill;
 
         //GET COMPANY MOCKUP
