@@ -4,12 +4,12 @@ import { Formik, type FormikHelpers } from 'formik'
 import { userUpdateSchema, type UserPageProps, type User } from './UserCommon'
 import UserForm from './UserForm'
 import { type ModalProps, type Role } from '@/types'
-import { isAdmin } from '@/Utils/user'
+import { isAccountManager, isAdmin } from '@/Utils/user'
 import { useEffect, useState } from 'react'
 
 export default function Edit ({ auth, roles, user, companies }: UserPageProps) {
   const [modalProps, setModalProps] = useState<ModalProps | null>(null)
-  const IS_ADMIN = isAdmin(auth.user.roles.map((role: Role) => role.name))
+  const IS_ADMIN = isAdmin(auth.user.roles.map((role: Role) => role.name)) || isAccountManager(auth.user.roles.map((role: Role) => role.name))
   const initialValues: User = {
     id: user?.data.id ?? 0,
     name: user?.data.name ?? '',

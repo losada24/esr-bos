@@ -19,6 +19,15 @@ trait RoleManagement {
                   RoleEnum::$SHIPPING,
                 ];
                 break;
+            case RoleEnum::$ACCOUNT_MANAGER:
+                $roles = [
+                  RoleEnum::$DEALER,
+                  RoleEnum::$SUB_DEALER,
+                  RoleEnum::$ACCOUNTING,
+                  RoleEnum::$PRODUCTION,
+                  RoleEnum::$SHIPPING,
+                ];
+              break;
             case RoleEnum::$DEALER:
                 $roles = [
                   RoleEnum::$SUB_DEALER

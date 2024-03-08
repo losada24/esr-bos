@@ -16,7 +16,7 @@ class CreateUser {
 
       $company_id = auth()->user()->company_id;
 
-      if (auth()->user()->hasRole(RoleEnum::$ADMIN) && $request->company_id != 0) {
+      if ((auth()->user()->hasRole(RoleEnum::$ADMIN) || auth()->user()->hasRole(RoleEnum::$ACCOUNT_MANAGER)) && $request->company_id != 0) {
         $company_id = $request->company_id;
       }
 

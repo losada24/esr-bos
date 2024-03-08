@@ -17,7 +17,7 @@ class CheckUserCreatedByField
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if ($request->user()->hasRole(RoleEnum::$ADMIN) || ($request->user()->hasRole(RoleEnum::$DEALER) && $this->CheckCompanyAttribute($request))) {
+        if (($request->user()->hasRole(RoleEnum::$ADMIN) || $request->user()->hasRole(RoleEnum::$ACCOUNT_MANAGER)) || ($request->user()->hasRole(RoleEnum::$DEALER) && $this->CheckCompanyAttribute($request))) {
             return $next($request);
         }
 

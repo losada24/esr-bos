@@ -4,10 +4,10 @@ import { Formik, type FormikHelpers } from 'formik'
 import { clientSchema, type Client } from './ClientCommon'
 import ClientForm from './ClientForm'
 import { type PageProps, type Role, type Company } from '@/types'
-import { isAdmin } from '@/Utils/user'
+import { isAccountManager, isAdmin } from '@/Utils/user'
 
 export default function Create ({ auth, states, companies }: PageProps & { states: string[], companies: Company[] }) {
-  const IS_ADMIN = isAdmin(auth.user.roles.map((role: Role) => role.name))
+  const IS_ADMIN = isAdmin(auth.user.roles.map((role: Role) => role.name)) || isAccountManager(auth.user.roles.map((role: Role) => role.name))
   const initialValues: Client = {
     id: 0,
     name: '',

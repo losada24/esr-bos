@@ -13,7 +13,7 @@ class CreateClient {
     DB::transaction(function() use ($request) {
 
       $company_id = auth()->user()->company_id;
-      if (auth()->user()->hasRole(RoleEnum::$ADMIN)) {
+      if (auth()->user()->hasRole(RoleEnum::$ADMIN) || auth()->user()->hasRole(RoleEnum::$ACCOUNT_MANAGER)) {
         $company_id = $request->company_id;
       }
 

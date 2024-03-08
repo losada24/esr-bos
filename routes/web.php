@@ -48,11 +48,11 @@ Route::middleware('auth')->group(function () {
     // USERS
     Route::resource('user', UserController::class)
       ->only(['index', 'create', 'store'])
-      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$DEALER]);
+      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$ACCOUNT_MANAGER . "|" . RoleEnum::$DEALER]);
     
     Route::resource('user', UserController::class)
       ->only(['edit', 'update', 'destroy'])
-      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$DEALER, 'checkUserCreatedByField']);
+      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$ACCOUNT_MANAGER . "|" . RoleEnum::$DEALER, 'checkUserCreatedByField']);
 
     // COMPANIES
     Route::get('/company/profile', [CompanyController::class, 'profile'])
@@ -64,15 +64,15 @@ Route::middleware('auth')->group(function () {
       ->name('company.updateProfile');
 
     Route::resource('company', CompanyController::class)
-      ->middleware(["role:" . RoleEnum::$ADMIN]);
+      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$ACCOUNT_MANAGER]);
 
     // CLIENTS
     Route::resource('client', ClientController::class)
-      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$SUB_DEALER]);
+      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$ACCOUNT_MANAGER . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$SUB_DEALER]);
 
     // RAW MATERIALS
     Route::resource('raw-material', RawMaterialController::class)
-      ->middleware(["role:" . RoleEnum::$ADMIN]);
+      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$ACCOUNT_MANAGER]);
     
     // ESTIMATES
     Route::resource('estimate', EstimateController::class)

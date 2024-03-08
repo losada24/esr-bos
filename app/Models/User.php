@@ -55,8 +55,15 @@ class User extends Authenticatable
 
     public function scopeCreatedByCheck(Builder $query): void
     {
-      if (!auth()->user()->hasRole(RoleEnum::$ADMIN)) {
+      $isAccountManager = auth()->user()->hasRole(RoleEnum::$ACCOUNT_MANAGER);
+      if (!auth()->user()->hasRole(RoleEnum::$ADMIN) && !$isAccountManager) {
         $query->where('created_by', auth()->user()->id);
+      }
+
+      if ($isAccountManager) {
+        $query->whereHas('roles', function ($query) {
+          $query->where('name', '<>', RoleEnum::$ADMIN);
+        });
       }
     }
 

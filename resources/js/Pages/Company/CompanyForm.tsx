@@ -7,7 +7,7 @@ import { type FormikErrors } from 'formik'
 import { type Company } from './CompanyCommon'
 import { type ModalProps, type Role, type PageProps } from '@/types'
 import FeaturedImageModal from '@/Pages/RawMaterial/FeaturedImageModal'
-import { isAdmin } from '@/Utils/user'
+import { isAccountManager, isAdmin } from '@/Utils/user'
 
 const CompanyForm = ({ submitCount, errors, isCreate, states, setFieldValue, featured_image, modalProps }: {
   submitCount: number
@@ -19,6 +19,7 @@ const CompanyForm = ({ submitCount, errors, isCreate, states, setFieldValue, fea
   setFieldValue: (field: string, value: any, shouldValidate?: boolean | undefined) => void }) => {
   const [showModal, setShowModal] = useState(false)
   const { auth } = usePage<PageProps>().props
+
   return (
     <Form className='space-y-5'>
       <div className={submitCount ? (errors.name) ? 'has-error' : 'has-success' : ''}>
@@ -105,8 +106,8 @@ const CompanyForm = ({ submitCount, errors, isCreate, states, setFieldValue, fea
         />
         {(submitCount && errors.zip) ? <InputError message={errors.zip} className="mt-2" /> : ''}
       </div>
-      {isAdmin(auth.user.roles.map((role: Role) => role.name)) && (
-        <div className='grid grid-cols-2 gap-4'>
+      <div className='grid grid-cols-2 gap-4'>
+      {(isAdmin(auth.user.roles.map((role: Role) => role.name)) || (isAccountManager(auth.user.roles.map((role: Role) => role.name)) && isCreate)) && (
           <div className={submitCount ? (errors.markup) ? 'has-error' : 'has-success' : ''}>
             <label htmlFor="markup">Markup</label>
             <div className='flex flex-1'>
@@ -122,6 +123,9 @@ const CompanyForm = ({ submitCount, errors, isCreate, states, setFieldValue, fea
             </div>
             {(submitCount && errors.markup) ? <InputError message={errors.markup} className="mt-2" /> : ''}
           </div>
+      )}
+      {(isAdmin(auth.user.roles.map((role: Role) => role.name)) || (isAccountManager(auth.user.roles.map((role: Role) => role.name)))) && (
+        <>
           <div className={submitCount ? (errors.promotion) ? 'has-error' : 'has-success' : ''}>
             <label htmlFor="promotion">Promotion</label>
             <div className='flex flex-1'>
@@ -147,8 +151,9 @@ const CompanyForm = ({ submitCount, errors, isCreate, states, setFieldValue, fea
             <label htmlFor="allow_credit_payment">Allow Credit Payment</label>
             {(submitCount && errors.allow_credit_payment) ? <InputError message={errors.allow_credit_payment} className="mt-2" /> : ''}
           </div>
-        </div>
+        </>
       )}
+      </div>
       <div className={submitCount ? (errors.featured_image) ? 'has-error' : 'has-success' : ''}>
         <label htmlFor="featured_image">Feature Image</label>
         <input
