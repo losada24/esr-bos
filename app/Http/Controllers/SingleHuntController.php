@@ -8,12 +8,12 @@ use App\Enum\FrameColorEnum;
 use App\Enum\GlassColorEnum;
 use App\Models\Order;
 use App\Http\Requests\StoreSingleHuntRequest;
-use App\Http\Requests\UpdateFixedWindowsRequest;
 use App\Actions\CreateSingleHunt;
 use App\Models\Product;
 use App\Actions\UpdateSingleHunt;
 use App\Enum\MuntinPatternEnum;
 use App\Enum\MuntinStyleEnum;
+use App\Http\Requests\UpdateSingleHuntRequest;
 
 class SingleHuntController extends Controller
 {
@@ -72,7 +72,7 @@ class SingleHuntController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(UpdateFixedWindowsRequest $updateFixedWindowsRequest, UpdateSingleHunt $updateFixedWindows, Product $product)
+    public function update(UpdateSingleHuntRequest $updateFixedWindowsRequest, UpdateSingleHunt $updateFixedWindows, Product $product)
     {
         $updateFixedWindows->handle($updateFixedWindowsRequest, $product);
         return redirect()->route('estimate.show', ['estimate' => $product->order_id])

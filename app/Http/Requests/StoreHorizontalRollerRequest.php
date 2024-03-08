@@ -36,8 +36,8 @@ class StoreHorizontalRollerRequest extends FormRequest
     { // TODO: Manage glass type, low e and privacy from enums
         return [
             'mark' => 'required|string|max:255',
-            'width' => 'required|numeric', // TODO: Manage width and height limits
-            'height' => 'required|numeric',
+            'width' => 'required|numeric|min:20|max:111',
+            'height' => 'required|numeric|min:19|max:74',
             'qty' => 'required|numeric|min:1',
             'markup' => 'required|numeric|min:0',
             'frame_color' => [

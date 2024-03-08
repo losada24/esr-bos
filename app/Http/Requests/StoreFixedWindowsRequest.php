@@ -33,8 +33,8 @@ class StoreFixedWindowsRequest extends FormRequest
     {
         return [
             'mark' => 'required|string|max:255',
-            'width' => 'required|numeric',
-            'height' => 'required|numeric',
+            'width' => 'required|numeric|min:12|max:74',
+            'height' => 'required|numeric|min:12|max:120',
             'qty' => 'required|numeric|min:1',
             'markup' => 'required|numeric|min:0',
             'frame_color' => [

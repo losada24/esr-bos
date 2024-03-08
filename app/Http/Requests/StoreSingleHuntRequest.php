@@ -34,8 +34,8 @@ class StoreSingleHuntRequest extends FormRequest
     { // TODO: Manage glass type, low e and privacy from enums
         return [
             'mark' => 'required|string|max:255',
-            'width' => 'required|numeric', // TODO: Manage width and height limits
-            'height' => 'required|numeric',
+            'width' => 'required|numeric|min:18.5|max:54',
+            'height' => 'required|numeric|min:20.5|max:77',
             'qty' => 'required|numeric|min:1',
             'markup' => 'required|numeric|min:0',
             'frame_color' => [

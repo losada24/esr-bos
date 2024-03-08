@@ -11,6 +11,7 @@ use App\Enum\HorizontalRollerHandleEnum;
 use App\Enum\ProductSystemEnum;
 use App\Rules\ValidateMuntingHorizontalLines;
 use App\Rules\ValidateMuntingVerticalLines;
+use App\Rules\ValidateMuntinPanels;
 use App\Rules\ValidateMuntinStyle;
 
 class UpdateHorizontalRollerRequest extends FormRequest
@@ -35,8 +36,8 @@ class UpdateHorizontalRollerRequest extends FormRequest
         return [
           'id' => 'required|exists:products,id',
           'mark' => 'required|string|max:255',
-          'width' => 'required|numeric',
-          'height' => 'required|numeric',
+          'width' => 'required|numeric|min:20|max:111',
+          'height' => 'required|numeric|min:19|max:74',
           'qty' => 'required|numeric|min:1',
           'markup' => 'required|numeric|min:0',
           'frame_color' => [
