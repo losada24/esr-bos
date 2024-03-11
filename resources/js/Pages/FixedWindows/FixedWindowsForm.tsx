@@ -22,7 +22,7 @@ const FixedWindowsForm = ({ submitCount, errors, isCreate, frame_colors, glass_c
 }) => {
   const [glassTypes, setGlassTypes] = useState<string[]>([])
   const [colors, setColors] = useState<string[]>(glass_colors)
-  const LOW_E_OPTIONS: string[] = values.order_glass_type === EXPRESS_GLASS_TYPE ? ['NONE', 'LOW E Q366'] : ['NONE', 'LOW E SB70']
+  const LOW_E_OPTIONS: string[] = values.order_glass_type === EXPRESS_GLASS_TYPE ? ['NONE', 'LOW E Q366'] : ['NONE'] /* , 'LOW E SB70' */
   useEffect(() => {
     if (values.order_glass_type === RUSH_GLASS_TYPE) {
       const glass = `3/16 HS ${values.glass_color} (${values.order_glass_type})`

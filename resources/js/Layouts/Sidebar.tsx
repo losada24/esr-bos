@@ -144,7 +144,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                 </NavLink>
                               </li>
                             )}
-                            {(IS_ADMIN || IS_DEALER || IS_SUB_DEALER) && (
+                            {(IS_ADMIN || IS_ACCOUNT_MANAGER || IS_DEALER || IS_SUB_DEALER) && (
                               <>
                                 <li className="menu nav-item">
                                     <NavLink href={route('estimate.index')} active={route().current('estimate.index') || route().current('estimate.create') || route().current('estimate.edit') || route().current('estimate.show')} className="group">

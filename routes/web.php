@@ -77,11 +77,11 @@ Route::middleware('auth')->group(function () {
     // ESTIMATES
     Route::resource('estimate', EstimateController::class)
       ->only(['index', 'create', 'store'])
-      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$SUB_DEALER]);
+      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$ACCOUNT_MANAGER . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$SUB_DEALER]);
     
     Route::get('estimate/{id}/duplicate', [EstimateController::class, 'duplicate'])
       ->middleware([
-        "role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$SUB_DEALER,
+        "role:" . RoleEnum::$ADMIN. "|" . RoleEnum::$ACCOUNT_MANAGER . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$SUB_DEALER,
         "validate.estimate.status:" . OrderStatusEnum::$ESTIMATE . "|" . OrderStatusEnum::$SUB_DEALER_ESTIMATE . ",id",
         "validate.estimate.owner:id"  
       ])
@@ -90,7 +90,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('estimate', EstimateController::class)
       ->only(['edit', 'update', 'destroy'])
       ->middleware([
-        "role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$SUB_DEALER,
+        "role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$ACCOUNT_MANAGER . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$SUB_DEALER,
         "validate.estimate.owner:estimate"
       ]);
 

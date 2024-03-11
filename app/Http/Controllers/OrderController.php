@@ -215,44 +215,48 @@ class OrderController extends Controller
               'value' => OrderStatusEnum::$ACCOUNTING
             ],
             [
-              'label' => OrderStatusEnum::$PRODUCTION_COMPLETED,
-              'value' => OrderStatusEnum::$PRODUCTION_COMPLETED
-            ],
-            [
               'label' => OrderStatusEnum::$PRODUCTION,
               'value' => OrderStatusEnum::$PRODUCTION
-            ],
-            [
-              'label' => OrderStatusEnum::$PARTIAL_PRODUCTION_COMPLETED,
-              'value' => OrderStatusEnum::$PARTIAL_PRODUCTION_COMPLETED
-            ],
-            [
-              'label' => OrderStatusEnum::$PRODUCTION_IN_PROGRESS,
-              'value' => OrderStatusEnum::$PRODUCTION_IN_PROGRESS
             ],
             [
               'label' => OrderStatusEnum::$SCHEDULED_PRODUCTION,
               'value' => OrderStatusEnum::$SCHEDULED_PRODUCTION
             ],
             [
-              'label' => OrderStatusEnum::$READY_FOR_DELIVERY,
-              'value' => OrderStatusEnum::$READY_FOR_DELIVERY
+              'label' => OrderStatusEnum::$PRODUCTION_IN_PROGRESS,
+              'value' => OrderStatusEnum::$PRODUCTION_IN_PROGRESS
+            ],
+            [
+              'label' => OrderStatusEnum::$PARTIAL_PRODUCTION_COMPLETED,
+              'value' => OrderStatusEnum::$PARTIAL_PRODUCTION_COMPLETED
+            ],
+            [
+              'label' => OrderStatusEnum::$PRODUCTION_COMPLETED,
+              'value' => OrderStatusEnum::$PRODUCTION_COMPLETED
+            ],
+            [
+              'label' => OrderStatusEnum::$READY_FOR_PARTIAL_PICKUP,
+              'value' => OrderStatusEnum::$READY_FOR_PARTIAL_PICKUP
+            ],
+            [
+              'label' => OrderStatusEnum::$READY_FOR_PICKUP,
+              'value' => OrderStatusEnum::$READY_FOR_PICKUP
             ],
             [
               'label' => OrderStatusEnum::$READY_FOR_PARTIAL_DELIVERY,
               'value' => OrderStatusEnum::$READY_FOR_PARTIAL_DELIVERY
             ],
             [
-              'label' => OrderStatusEnum::$ORDER_COMPLETED,
-              'value' => OrderStatusEnum::$ORDER_COMPLETED
-            ],
-            [
-              'label' => OrderStatusEnum::$PICKED_UP,
-              'value' => OrderStatusEnum::$PICKED_UP
+              'label' => OrderStatusEnum::$READY_FOR_DELIVERY,
+              'value' => OrderStatusEnum::$READY_FOR_DELIVERY
             ],
             [
               'label' => OrderStatusEnum::$PARTIAL_PICKED_UP,
               'value' => OrderStatusEnum::$PARTIAL_PICKED_UP
+            ],
+            [
+              'label' => OrderStatusEnum::$PICKED_UP,
+              'value' => OrderStatusEnum::$PICKED_UP
             ],
             [
               'label' => OrderStatusEnum::$PARTIAL_DELIVERED,
@@ -261,6 +265,10 @@ class OrderController extends Controller
             [
               'label' => OrderStatusEnum::$DELIVERED,
               'value' => OrderStatusEnum::$DELIVERED
+            ],
+            [
+              'label' => OrderStatusEnum::$ORDER_COMPLETED,
+              'value' => OrderStatusEnum::$ORDER_COMPLETED
             ]
           ];
       }
@@ -271,16 +279,20 @@ class OrderController extends Controller
             'value' => OrderStatusEnum::$PRODUCTION
           ],
           [
-            'label' => OrderStatusEnum::$PRODUCTION_IN_PROGRESS,
-            'value' => OrderStatusEnum::$PRODUCTION_IN_PROGRESS
-          ],
-          [
             'label' => OrderStatusEnum::$SCHEDULED_PRODUCTION,
             'value' => OrderStatusEnum::$SCHEDULED_PRODUCTION
           ],
           [
+            'label' => OrderStatusEnum::$PRODUCTION_IN_PROGRESS,
+            'value' => OrderStatusEnum::$PRODUCTION_IN_PROGRESS
+          ],
+          [
             'label' => OrderStatusEnum::$PARTIAL_PRODUCTION_COMPLETED,
             'value' => OrderStatusEnum::$PARTIAL_PRODUCTION_COMPLETED
+          ],
+          [
+            'label' => OrderStatusEnum::$PRODUCTION_COMPLETED,
+            'value' => OrderStatusEnum::$PRODUCTION_COMPLETED
           ],
           [
             'label' => OrderStatusEnum::$PARTIAL_PICKED_UP,
@@ -295,14 +307,6 @@ class OrderController extends Controller
             'value' => OrderStatusEnum::$READY_FOR_DELIVERY
           ],
           [
-            'label' => OrderStatusEnum::$PRODUCTION_COMPLETED,
-            'value' => OrderStatusEnum::$PRODUCTION_COMPLETED
-          ],
-          [
-            'label' => OrderStatusEnum::$PRODUCTION_IN_PROGRESS,
-            'value' => OrderStatusEnum::$PRODUCTION_IN_PROGRESS
-          ],
-          [
             'label' => OrderStatusEnum::$READY_FOR_PARTIAL_DELIVERY,
             'value' => OrderStatusEnum::$READY_FOR_PARTIAL_DELIVERY
           ],
@@ -313,8 +317,7 @@ class OrderController extends Controller
           [
             'label' => OrderStatusEnum::$ORDER_COMPLETED,
             'value' => OrderStatusEnum::$ORDER_COMPLETED
-          ],
-          
+          ]
         ];
       }
       else if (auth()->user()->hasRole(RoleEnum::$SHIPPING)) {
