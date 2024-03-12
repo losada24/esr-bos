@@ -5,7 +5,7 @@ import { type PageProps, type Order, type Client, type Role } from '@/types'
 import Panel from '@/Components/Panel'
 import { createMarkWithLeadingZero } from '@/Utils/mark'
 import HammerIcon from '@/Components/Icons/HammerIcon'
-import { isAccounting, isAdmin, isProduction, isDealer, isShipping, isSubDealer } from '@/Utils/user'
+import { isAccounting, isAdmin, isProduction, isDealer, isShipping, isSubDealer, isAccountManager } from '@/Utils/user'
 import { ACCOUNTING_STATUS, ROLES } from '@/Utils/constants'
 import OrderUpdateStatusModal from './OrderUpdateStatusModal'
 import PaymentInformation from './PaymentInformation'
@@ -19,6 +19,7 @@ export default function Show ({ auth, order }: PageProps & {
   statuses: string[]
 }) {
   const IS_ACCOUNTING = isAccounting(auth.user.roles.map((role: Role) => role.name))
+  const IS_ACCOUNT_MANAGER = isAccountManager(auth.user.roles.map((role: Role) => role.name))
   const IS_ADMIN = isAdmin(auth.user.roles.map((role: Role) => role.name))
   const IS_PRODUCTION = isProduction(auth.user.roles.map((role: Role) => role.name))
   const IS_DEALER = isDealer(auth.user.roles.map((role: Role) => role.name))
@@ -27,18 +28,6 @@ export default function Show ({ auth, order }: PageProps & {
 
   const [showOrderModal, setShowOrderModal] = useState<boolean>(false)
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
-  /*  const getSubtotal = () => {
-    const subtotal: number | undefined = order.products?.reduce((acc, product) => {
-      return acc + Number(product.total_price)
-    }, 0)
-
-    return Math.round(subtotal ?? 0)
-  }
-
-  const getGrandTotal = () => {
-    const subtotal: number = getSubtotal() ?? 0
-    return Math.round(Number(subtotal))
-  } */
 
   return (
       <AuthenticatedLayout
@@ -84,7 +73,7 @@ export default function Show ({ auth, order }: PageProps & {
                         <HammerIcon color="#fff" /> Produce Order
                       </button>
                     )}
-                    {(IS_ADMIN || IS_ACCOUNTING || IS_DEALER || IS_SUB_DEALER) && (
+                    {(IS_ADMIN || IS_ACCOUNT_MANAGER || IS_ACCOUNTING || IS_DEALER || IS_SUB_DEALER) && (
                       <PrintEstimateButton id={order.id} user={auth.user} />
                     )}
                     {(IS_ADMIN || IS_SHIPPING) && (

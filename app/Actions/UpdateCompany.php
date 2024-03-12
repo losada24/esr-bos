@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use App\Enum\RoleEnum;
+use App\Models\User;
+use Illuminate\Support\Facades\Mail;
 
 class UpdateCompany {
 
@@ -45,7 +47,18 @@ class UpdateCompany {
       }
 
       if (auth()->user()->hasRole(RoleEnum::$ADMIN) || auth()->user()->hasRole(RoleEnum::$ACCOUNT_MANAGER)) {
-        $companyData['promotion'] = $request->promotion;
+        if ($request->promotion != $company->promotion) {
+          $adminUsers = User::whereHas('roles', function($q) {
+            $q->where('name', RoleEnum::$ADMIN);
+          })->get();
+          
+          foreach ($adminUsers as $recipient) {
+            Mail::to($recipient->email, $recipient->name)->send(new \App\Mail\CompanyPromotionModified($company, $company->promotion, $request->promotion, auth()->user()->name));
+          }
+
+          $companyData['promotion'] = $request->promotion;
+
+        }
         $companyData['allow_credit_payment'] = $request->allow_credit_payment;
       }
 

@@ -97,25 +97,25 @@ Route::middleware('auth')->group(function () {
     Route::resource('estimate', EstimateController::class)
       ->only(['show'])
       ->middleware([
-        "role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$SUB_DEALER,
+        "role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$ACCOUNT_MANAGER . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$SUB_DEALER,
         "validate.estimate.owner:estimate"
       ]);
 
     Route::get('/estimate/{id}/order', [EstimateController::class, 'order'])
       ->middleware([
-        "role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$DEALER,
+        "role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$ACCOUNT_MANAGER . "|" . RoleEnum::$DEALER,
         "validate.estimate.owner:id"
       ])
       ->name('estimate.order');
 
     Route::post('/estimate/order/store', [EstimateController::class, 'orderStore'])
-      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$DEALER])
+      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$ACCOUNT_MANAGER . "|" . RoleEnum::$DEALER])
       ->name('estimate.order.store');
 
     // FIXED WINDOWS
     Route::get('/fixed-windows/{id}/create', [FixedWindowsController::class, 'create'])
       ->middleware([
-        "role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$SUB_DEALER,
+        "role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$ACCOUNT_MANAGER . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$SUB_DEALER,
         "validate.estimate.status:" . OrderStatusEnum::$ESTIMATE . "|" . OrderStatusEnum::$SUB_DEALER_ESTIMATE . ",id",
         "validate.estimate.owner:id"
       ])
@@ -123,38 +123,38 @@ Route::middleware('auth')->group(function () {
     
     Route::post('/fix-windows/store', [FixedWindowsController::class, 'store'])
       ->middleware([
-        "role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$SUB_DEALER,
+        "role:" . RoleEnum::$ADMIN. "|" . RoleEnum::$ACCOUNT_MANAGER . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$SUB_DEALER,
       ])
       ->name('fixed-windows.store');
 
     Route::get('/fixed-windows/edit/{product}', [FixedWindowsController::class, 'edit'])
       ->middleware([
-        "role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$SUB_DEALER,
+        "role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$ACCOUNT_MANAGER . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$SUB_DEALER,
         "validate.estimate.owner:product",
         "validate.estimate.status:" . OrderStatusEnum::$ESTIMATE . "|" . OrderStatusEnum::$SUB_DEALER_ESTIMATE . ",product",
       ])
       ->name('fixed-windows.edit');
 
     Route::put('/fixed-windows/update/{product}', [FixedWindowsController::class, 'update'])
-      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$SUB_DEALER]) // TODO: Validate if the user is the owner of the order
+      ->middleware(["role:" . RoleEnum::$ADMIN. "|" . RoleEnum::$ACCOUNT_MANAGER . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$SUB_DEALER]) // TODO: Validate if the user is the owner of the order
       ->name('fixed-windows.update');
 
     // SINGLE HUNT
     Route::get('/single-hung/{id}/create', [SingleHuntController::class, 'create'])
       ->middleware([
-        "role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$SUB_DEALER,
+        "role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$ACCOUNT_MANAGER . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$SUB_DEALER,
         "validate.estimate.status:" . OrderStatusEnum::$ESTIMATE . "|" . OrderStatusEnum::$SUB_DEALER_ESTIMATE . ",id",
         "validate.estimate.owner:id"
       ])
       ->name('single-hunt.create');
     
     Route::post('/single-hung/store', [SingleHuntController::class, 'store'])
-      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$SUB_DEALER])
+      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$ACCOUNT_MANAGER . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$SUB_DEALER])
       ->name('single-hunt.store');
     
     Route::get('/single-hung/edit/{product}', [SingleHuntController::class, 'edit'])
       ->middleware([
-        "role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$SUB_DEALER,
+        "role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$ACCOUNT_MANAGER . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$SUB_DEALER,
         "validate.estimate.status:" . OrderStatusEnum::$ESTIMATE . "|" . OrderStatusEnum::$SUB_DEALER_ESTIMATE . ",product",
         "validate.estimate.owner:product"
       ])
@@ -167,32 +167,32 @@ Route::middleware('auth')->group(function () {
     // HORIZONTAL ROLLER
     Route::get('/horizontal-roller/{id}/create', [HorizontalRollerController::class, 'create'])
       ->middleware([
-        "role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$SUB_DEALER,
+        "role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$ACCOUNT_MANAGER . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$SUB_DEALER,
         "validate.estimate.status:" . OrderStatusEnum::$ESTIMATE . "|" . OrderStatusEnum::$SUB_DEALER_ESTIMATE . ",id",
         "validate.estimate.owner:id"
       ])
       ->name('horizontal-roller.create');
     
     Route::post('/horizontal-roller/store', [HorizontalRollerController::class, 'store'])
-      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$SUB_DEALER])
+      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$ACCOUNT_MANAGER . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$SUB_DEALER])
       ->name('horizontal-roller.store'); // TODO: Validate if the user is the owner of the order
     
     Route::get('/horizontal-roller/edit/{product}', [HorizontalRollerController::class, 'edit'])
       ->middleware([
-        "role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$SUB_DEALER,
+        "role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$ACCOUNT_MANAGER . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$SUB_DEALER,
         "validate.estimate.status:" . OrderStatusEnum::$ESTIMATE . "|" . OrderStatusEnum::$SUB_DEALER_ESTIMATE . ",product",
         "validate.estimate.owner:product"
       ])
       ->name('horizontal-roller.edit');
 
     Route::put('/horizontal-roller/update/{product}', [HorizontalRollerController::class, 'update'])
-      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$SUB_DEALER]) // TODO: Validate if the user is the owner of the order
+      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$ACCOUNT_MANAGER . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$SUB_DEALER]) // TODO: Validate if the user is the owner of the order
       ->name('horizontal-roller.update');
 
     // PRODUCT DELETE
     Route::delete('/product/{product}', [ProductController::class, 'destroy'])
       ->middleware([
-        "role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$SUB_DEALER,
+        "role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$ACCOUNT_MANAGER . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$SUB_DEALER,
         "validate.estimate.status:" . OrderStatusEnum::$ESTIMATE . "|" . OrderStatusEnum::$SUB_DEALER_ESTIMATE . ",product",
         "validate.estimate.owner:product"
       ])
@@ -208,7 +208,7 @@ Route::middleware('auth')->group(function () {
     
     // ORDERS
     Route::get('/order', [OrderController::class, 'index'])
-      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$PRODUCTION . "|" . RoleEnum::$ACCOUNTING ."|" . RoleEnum::$SUB_DEALER . "|" . RoleEnum::$SHIPPING])
+      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$ACCOUNT_MANAGER . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$PRODUCTION . "|" . RoleEnum::$ACCOUNTING ."|" . RoleEnum::$SUB_DEALER . "|" . RoleEnum::$SHIPPING])
       ->name('order.index');
 
     Route::post('/order/status-update', [OrderController::class, 'statusUpdate'])
@@ -232,7 +232,7 @@ Route::middleware('auth')->group(function () {
       ->name('order.workOrder');
 
     Route::get('/order/show/{id}', [OrderController::class, 'show'])
-      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$PRODUCTION . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$ACCOUNTING . "|" . RoleEnum::$SUB_DEALER . "|" . RoleEnum::$SHIPPING  ])
+      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$ACCOUNT_MANAGER . "|" . RoleEnum::$PRODUCTION . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$ACCOUNTING . "|" . RoleEnum::$SUB_DEALER . "|" . RoleEnum::$SHIPPING  ])
       ->name('order.show');
 
     // PDF DOCUMENTS

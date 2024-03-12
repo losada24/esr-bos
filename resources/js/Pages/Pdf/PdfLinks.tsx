@@ -53,7 +53,7 @@ const PdfLinks = ({ id, roles }: { id: number, roles?: string[] }) => {
           Estimate without Prices
         </Link>
       </li>
-      {(isAdmin(roles ?? []) || isAccounting(roles ?? []) || isAccountManager(roles ?? [])) && (
+      {(isAdmin(roles ?? [])) && (
         <li>
           <Link
             href={route('pdf.production', id)}

@@ -156,7 +156,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                 </li>
                               </>
                             )}
-                            {(IS_ADMIN || IS_DEALER || IS_ACCOUNTING || IS_PRODUCTION || IS_SUB_DEALER || IS_SHIPPING) && (
+                            {(IS_ADMIN || IS_ACCOUNT_MANAGER || IS_DEALER || IS_ACCOUNTING || IS_PRODUCTION || IS_SUB_DEALER || IS_SHIPPING) && (
                               <>
                                 <li className="menu nav-item">
                                     <NavLink href={route('order.index')} active={route().current('order.index') || route().current('order.show') || route().current('order.workOrder')} className="group">
