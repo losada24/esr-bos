@@ -13,7 +13,7 @@ import { PRODUCT_SYSTEMS, ESTIMATE_STATUS, SUB_DEALER_ESTIMATE } from '@/Utils/c
 import MoneyIcon from '@/Components/Icons/MoneyIcon'
 import PrintEstimateButton from './PrintEstimateButton'
 import { getNumberWithFraction } from '@/Utils/numbers'
-import { isDealer, isSubDealer, isAdmin } from '@/Utils/user'
+import { isDealer, isSubDealer, isAdmin, isAccountManager } from '@/Utils/user'
 import CopyIcon from '@/Components/Icons/CopyIcon'
 import { formatPrice, getTotalPriceByRole, getUnitPriceByRole } from '@/Utils/price'
 
@@ -79,7 +79,7 @@ export default function Create ({ auth, estimate }: PageProps & {
                   {(estimate.status === ESTIMATE_STATUS || estimate.status === SUB_DEALER_ESTIMATE) && (
                     <>
                       {((isSubDealer(auth.user.roles.map((role: Role) => role.name)) && estimate.status === SUB_DEALER_ESTIMATE) ||
-                        ((isDealer(auth.user.roles.map((role: Role) => role.name)) || isAdmin(auth.user.roles.map((role: Role) => role.name))) && estimate.status === ESTIMATE_STATUS)) && (
+                        ((isDealer(auth.user.roles.map((role: Role) => role.name)) || isAccountManager(auth.user.roles.map((role: Role) => role.name)) || isAdmin(auth.user.roles.map((role: Role) => role.name))) && estimate.status === ESTIMATE_STATUS)) && (
                         <>
                           <div className='dropdown'>
                             <Dropdown
