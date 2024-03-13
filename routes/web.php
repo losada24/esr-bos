@@ -200,7 +200,7 @@ Route::middleware('auth')->group(function () {
 
     Route::post('product/duplicate/{product}', [ProductController::class, 'duplicate'])
       ->middleware([
-        "role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$SUB_DEALER,
+        "role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$ACCOUNT_MANAGER . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$SUB_DEALER,
         "validate.estimate.status:" . OrderStatusEnum::$ESTIMATE . "|" . OrderStatusEnum::$SUB_DEALER_ESTIMATE . ",product",
         "validate.estimate.owner:product"
       ])

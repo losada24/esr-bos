@@ -146,7 +146,7 @@ export default function Create ({ auth, estimate }: PageProps & {
                       <th className="px-6 pt-5 pb-4 text-right">Price</th>
                       <th className="px-6 pt-5 pb-4 text-right">Amount</th>
                       {((isSubDealer(auth.user.roles.map((role: Role) => role.name)) && estimate.status === SUB_DEALER_ESTIMATE) ||
-                      ((isDealer(auth.user.roles.map((role: Role) => role.name)) || isAdmin(auth.user.roles.map((role: Role) => role.name))) && estimate.status === ESTIMATE_STATUS)) && (
+                      ((isDealer(auth.user.roles.map((role: Role) => role.name)) || isAdmin(auth.user.roles.map((role: Role) => role.name)) || isAccountManager(auth.user.roles.map((role: Role) => role.name))) && estimate.status === ESTIMATE_STATUS)) && (
                         <th className="px-6 pt-5 pb-4 w-14">Actions</th>
                       )}
                     </tr>
@@ -184,7 +184,7 @@ export default function Create ({ auth, estimate }: PageProps & {
                             {formatPrice(getTotalPriceByRole(product, auth.user.roles.map((role: Role) => role.name)))}
                           </td>
                           {((isSubDealer(auth.user.roles.map((role: Role) => role.name)) && estimate.status === SUB_DEALER_ESTIMATE) ||
-                          ((isDealer(auth.user.roles.map((role: Role) => role.name)) || isAdmin(auth.user.roles.map((role: Role) => role.name))) && estimate.status === ESTIMATE_STATUS)) && (
+                          ((isDealer(auth.user.roles.map((role: Role) => role.name)) || isAdmin(auth.user.roles.map((role: Role) => role.name)) || isAccountManager(auth.user.roles.map((role: Role) => role.name))) && estimate.status === ESTIMATE_STATUS)) && (
                             <td className="border-t flex items-center px-6 py-4">
                               <button
                                 onClick={() => { router.post(route('product.duplicate', id)) }}
