@@ -5,7 +5,7 @@ import { type PageProps, type Order, type PaginatorLink, type Role, type Status 
 import Pagination from '@/Components/Pagination'
 import EyeIcon from '@/Components/Icons/EyeIcon'
 import { createMarkWithLeadingZero } from '@/Utils/mark'
-import { isAdmin, isAccounting, isShipping, isProduction, isSubDealer } from '@/Utils/user'
+import { isAdmin, isAccounting, isShipping, isProduction, isSubDealer, isAccountManager } from '@/Utils/user'
 import OrderFilter from './OrderFilter'
 import OrderUpdateStatusModal from './OrderUpdateStatusModal'
 import CheckIcon from '@/Components/Icons/CheckIcon'
@@ -93,6 +93,7 @@ export default function Index ({ auth, orders }: IndexOrderProps) {
                         {
                           (isAdmin(auth.user.roles.map((role: Role) => role.name)) ||
                           isAccounting(auth.user.roles.map((role: Role) => role.name)) ||
+                          isAccountManager(auth.user.roles.map((role: Role) => role.name)) ||
                           isProduction(auth.user.roles.map((role: Role) => role.name)) ||
                           isShipping(auth.user.roles.map((role: Role) => role.name))) && (
                           <button title='Change Order Status' onClick={() => {

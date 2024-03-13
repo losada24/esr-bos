@@ -56,7 +56,7 @@ class OrderController extends Controller
 
     public function status(Order $order) {
       $statuses = [];
-      if ((auth()->user()->hasRole(RoleEnum::$ADMIN) || auth()->user()->hasRole(RoleEnum::$ACCOUNT_MANAGER) || auth()->user()->hasRole(RoleEnum::$ACCOUNTING)) && 
+      if ((auth()->user()->hasRole(RoleEnum::$ADMIN) || auth()->user()->hasRole(RoleEnum::$ACCOUNTING)) && 
         (
           $order->status ==  OrderStatusEnum::$ACCOUNTING || 
           $order->status ==  OrderStatusEnum::$PRODUCTION_COMPLETED ||
@@ -109,7 +109,48 @@ class OrderController extends Controller
             ];
           }
       }
-      else if ((auth()->user()->hasRole(RoleEnum::$ADMIN) || auth()->user()->hasRole(RoleEnum::$ACCOUNT_MANAGER) || auth()->user()->hasRole(RoleEnum::$PRODUCTION)) && 
+      else if ((auth()->user()->hasRole(RoleEnum::$ADMIN) || auth()->user()->hasRole(RoleEnum::$ACCOUNT_MANAGER)) && 
+        (
+          $order->status ==  OrderStatusEnum::$PARTIAL_PRODUCTION_COMPLETED ||
+          $order->status ==  OrderStatusEnum::$PRODUCTION_COMPLETED ||
+          $order->status ==  OrderStatusEnum::$PARTIAL_DELIVERED ||
+          $order->status ==  OrderStatusEnum::$DELIVERED ||
+          $order->status ==  OrderStatusEnum::$PARTIAL_PICKED_UP ||
+          $order->status ==  OrderStatusEnum::$PICKED_UP
+        )) {
+
+          if ($order->status == OrderStatusEnum::$PARTIAL_PRODUCTION_COMPLETED) {
+            $statuses = [
+              [
+                'label' => OrderStatusEnum::$READY_FOR_PARTIAL_DELIVERY,
+                'value' => OrderStatusEnum::$READY_FOR_PARTIAL_DELIVERY
+              ],
+              [
+                'label' => OrderStatusEnum::$READY_FOR_PARTIAL_PICKUP,
+                'value' => OrderStatusEnum::$READY_FOR_PARTIAL_PICKUP
+              ],
+            ];
+          } else if ($order->status == OrderStatusEnum::$PRODUCTION_COMPLETED) {
+            $statuses = [
+              [
+                'label' => OrderStatusEnum::$READY_FOR_DELIVERY,
+                'value' => OrderStatusEnum::$READY_FOR_DELIVERY
+              ],
+              [
+                'label' => OrderStatusEnum::$READY_FOR_PICKUP,
+                'value' => OrderStatusEnum::$READY_FOR_PICKUP
+              ],
+            ];
+          } else if ($order->status == OrderStatusEnum::$DELIVERED || $order->status == OrderStatusEnum::$PICKED_UP) {
+            $statuses = [
+              [
+                'label' => OrderStatusEnum::$ORDER_COMPLETED,
+                'value' => OrderStatusEnum::$ORDER_COMPLETED
+              ],
+            ];
+          }
+      }
+      else if ((auth()->user()->hasRole(RoleEnum::$ADMIN) || auth()->user()->hasRole(RoleEnum::$PRODUCTION)) && 
         (
           $order->status ==  OrderStatusEnum::$PRODUCTION ||
           $order->status ==  OrderStatusEnum::$PRODUCTION_IN_PROGRESS ||
@@ -119,7 +160,6 @@ class OrderController extends Controller
           $order->status == OrderStatusEnum::$PARTIAL_DELIVERED ||
           $order->status == OrderStatusEnum::$PARTIAL_PICKED_UP
         )) {
-
         if ($order->status ==  OrderStatusEnum::$PRODUCTION) {
           $statuses = [
             [
@@ -156,7 +196,7 @@ class OrderController extends Controller
           ];
         }
       }
-      else if (((auth()->user()->hasRole(RoleEnum::$ADMIN) || auth()->user()->hasRole(RoleEnum::$ACCOUNT_MANAGER) || auth()->user()->hasRole(RoleEnum::$SHIPPING)) && 
+      else if (((auth()->user()->hasRole(RoleEnum::$ADMIN) || auth()->user()->hasRole(RoleEnum::$SHIPPING)) && 
         $order->status ==  OrderStatusEnum::$READY_FOR_DELIVERY ||
         $order->status ==  OrderStatusEnum::$READY_FOR_PARTIAL_DELIVERY ||
         $order->status ==  OrderStatusEnum::$READY_FOR_PICKUP ||
