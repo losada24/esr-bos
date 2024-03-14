@@ -161,7 +161,7 @@ Route::middleware('auth')->group(function () {
       ->name('single-hunt.edit');
 
     Route::put('/single-hung/update/{product}', [SingleHuntController::class, 'update'])
-      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$SUB_DEALER]) // TODO: Validate if the user is the owner of the order
+      ->middleware(["role:" . RoleEnum::$ADMIN. "|" . RoleEnum::$ACCOUNT_MANAGER  . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$SUB_DEALER]) // TODO: Validate if the user is the owner of the order
       ->name('single-hunt.update');
 
     // HORIZONTAL ROLLER
