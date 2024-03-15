@@ -76,7 +76,7 @@ export default function Show ({ auth, order }: PageProps & {
                     {(IS_ADMIN || IS_ACCOUNT_MANAGER || IS_ACCOUNTING || IS_DEALER || IS_SUB_DEALER) && (
                       <PrintEstimateButton id={order.id} user={auth.user} />
                     )}
-                    {(IS_ADMIN || IS_SHIPPING) && (
+                    {(IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SHIPPING) && (
                       <Link href={route('pdf.delivery', order.id)} className="btn btn-secondary w-full gap-2">
                         <DeliveryIcon color="#fff" /> Shipping Order
                       </Link>
