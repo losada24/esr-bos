@@ -11,6 +11,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\RawMaterialController;
 use App\Http\Controllers\FixedWindowsController;
 use App\Http\Controllers\CompanyController;
+use App\Http\Controllers\ExternalProductController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\SingleHuntController;
 use App\Http\Controllers\HorizontalRollerController;
@@ -299,7 +300,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/label/product/{order}', [LabelController::class, 'productLabels'])
       ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$PRODUCTION ])
       ->name('labels.productLabels');
-    
+    //EXTERNAL PRODUCTS
+    Route::resource('external-products', ExternalProductController::class)
+      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$ACCOUNT_MANAGER]);
 });
 
 require __DIR__.'/auth.php';

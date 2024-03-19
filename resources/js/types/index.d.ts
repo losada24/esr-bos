@@ -19,6 +19,7 @@ import { type Balance } from './interfaces/balance'
 import { type PaymentInfo } from './interfaces/paymentInfo'
 import { type Status } from './interfaces/status'
 import { type OrderStatus } from './interfaces/orderStatus'
+import { type ExternalProducts } from './interfaces/externalProducts'
 
 export type {
   User,
@@ -41,5 +42,6 @@ export type {
   Balance,
   PaymentInfo,
   Status,
-  OrderStatus
+  OrderStatus,
+  ExternalProducts
 }

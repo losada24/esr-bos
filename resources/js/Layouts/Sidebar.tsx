@@ -12,6 +12,7 @@ import MoneyIcon from '@/Components/Icons/MoneyIcon'
 import CompanyIcon from '@/Components/Icons/CompanyIcon'
 import { isAdmin, isDealer, isSubDealer, isAccounting, isProduction, isAccountManager, isShipping } from '@/Utils/user'
 import { type Role, type Auth } from '@/types'
+import WindowsIcon from '@/Components/Icons/WindowsIcon'
 
 const Sidebar = ({ auth }: { auth: Auth }) => {
   const [themeState, toggleSidebar] = useStore((state: ThemeState) => [
@@ -99,6 +100,14 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                                 <div className="flex items-center">
                                                   <CompanyIcon />
                                                   <SidebarLinkLabel>Companies</SidebarLinkLabel>
+                                                </div>
+                                            </NavLink>
+                                        </li>
+                                        <li className="nav-item">
+                                            <NavLink href={route('external-products.index')} active={route().current('external-products.index') || route().current('external-products.create') || route().current('external-products.edit')} className="group">
+                                                <div className="flex items-center">
+                                                  <WindowsIcon />
+                                                  <SidebarLinkLabel>External Products</SidebarLinkLabel>
                                                 </div>
                                             </NavLink>
                                         </li>
