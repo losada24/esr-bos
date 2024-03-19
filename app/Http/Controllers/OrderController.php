@@ -116,7 +116,11 @@ class OrderController extends Controller
           $order->status ==  OrderStatusEnum::$PARTIAL_DELIVERED ||
           $order->status ==  OrderStatusEnum::$DELIVERED ||
           $order->status ==  OrderStatusEnum::$PARTIAL_PICKED_UP ||
-          $order->status ==  OrderStatusEnum::$PICKED_UP
+          $order->status ==  OrderStatusEnum::$PICKED_UP ||
+          $order->status ==  OrderStatusEnum::$READY_FOR_DELIVERY ||
+          $order->status ==  OrderStatusEnum::$READY_FOR_PARTIAL_DELIVERY ||
+          $order->status ==  OrderStatusEnum::$READY_FOR_PICKUP ||
+          $order->status ==  OrderStatusEnum::$READY_FOR_PARTIAL_PICKUP
         )) {
 
           if ($order->status == OrderStatusEnum::$PARTIAL_PRODUCTION_COMPLETED) {
@@ -146,6 +150,25 @@ class OrderController extends Controller
               [
                 'label' => OrderStatusEnum::$ORDER_COMPLETED,
                 'value' => OrderStatusEnum::$ORDER_COMPLETED
+              ],
+            ];
+          } else if ($order->status == OrderStatusEnum::$READY_FOR_DELIVERY || $order->status == OrderStatusEnum::$READY_FOR_PARTIAL_DELIVERY || $order->status == OrderStatusEnum::$READY_FOR_PICKUP || $order->status == OrderStatusEnum::$READY_FOR_PARTIAL_PICKUP) {
+            $statuses = [
+              [
+                'label' => OrderStatusEnum::$DELIVERED,
+                'value' => OrderStatusEnum::$DELIVERED
+              ],
+              [
+                'label' => OrderStatusEnum::$PARTIAL_DELIVERED,
+                'value' => OrderStatusEnum::$PARTIAL_DELIVERED
+              ],
+              [
+                'label' => OrderStatusEnum::$PICKED_UP,
+                'value' => OrderStatusEnum::$PICKED_UP
+              ],
+              [
+                'label' => OrderStatusEnum::$PARTIAL_PICKED_UP,
+                'value' => OrderStatusEnum::$PARTIAL_PICKED_UP
               ],
             ];
           }
