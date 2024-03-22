@@ -1,4 +1,4 @@
-export interface ExternalProductsExtras {
+export interface ExternalProductsExtrasMullion {
   configuration?: string
 }
 
@@ -8,6 +8,6 @@ export interface ExternalProducts {
   width: number
   height: number
   price: number
-  extras: string | ExternalProductsExtras
+  extras: string | ExternalProductsExtrasMullion
   notes?: string
 }

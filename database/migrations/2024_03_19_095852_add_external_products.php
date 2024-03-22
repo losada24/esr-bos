@@ -18,6 +18,7 @@ return new class extends Migration
         $table->decimal('height', 10, 3);
         $table->decimal('price', 10, 2);
         $table->json('extras')->nullable();
+        $table->text('notes')->nullable();
         $table->softDeletes();
         $table->timestamps();
       });

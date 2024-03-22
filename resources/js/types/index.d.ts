@@ -19,7 +19,8 @@ import { type Balance } from './interfaces/balance'
 import { type PaymentInfo } from './interfaces/paymentInfo'
 import { type Status } from './interfaces/status'
 import { type OrderStatus } from './interfaces/orderStatus'
-import { type ExternalProducts } from './interfaces/externalProducts'
+import { type ExternalProductsExtrasMullion, type ExternalProducts } from './interfaces/externalProducts'
+import { type Mullion } from './interfaces/mullion'
 
 export type {
   User,
@@ -43,5 +44,7 @@ export type {
   PaymentInfo,
   Status,
   OrderStatus,
-  ExternalProducts
+  ExternalProducts,
+  ExternalProductsExtrasMullion,
+  Mullion
 }

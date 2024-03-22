@@ -3,7 +3,7 @@ import { Text, View } from '@react-pdf/renderer'
 import { createTw } from 'react-pdf-tailwind'
 import { type Product } from '@/types'
 import ReportProductImage from '@/Pages/Pdf/ReportProductImage'
-import { PRODUCT_SYSTEMS } from '@/Utils/constants'
+import { EXTERNAL_PRODUCTS, PRODUCT_SYSTEMS } from '@/Utils/constants'
 import { getNumberWithFraction } from '@/Utils/numbers'
 import { formatPrice, getUnitPriceByRole, getTotalPriceByRole } from '@/Utils/price'
 import { getProductCertification } from '@/Utils/products'
@@ -97,41 +97,44 @@ const ReportProduct = ({ product, showPrices, roles, isImpactGlass }: { product:
       <View>
         <ReportProductImage product={product} isImpactGlass={isImpactGlass} />
       </View>
-      <View style={tw('flex flex-row gap-4 justify-start bg-gray-200')}>
-        <View style={tw('flex flex-row gap-4 justify-start p-3 w-8/12')}>
-            <Text style={tw('text-xs text-gray-900 font-bold')}>Glass Type:</Text>
-        </View>
-        {isImpactGlass && (
-          <>
-            <View style={tw('flex flex-row gap-4 justify-start p-3 w-2/12')}>
-                <Text style={tw('text-xs text-gray-900 font-bold')}>Pressure:</Text>
+      {product.system !== EXTERNAL_PRODUCTS.MULLION && (
+        <>
+          <View style={tw('flex flex-row gap-4 justify-start bg-gray-200')}>
+            <View style={tw('flex flex-row gap-4 justify-start p-3 w-8/12')}>
+                <Text style={tw('text-xs text-gray-900 font-bold')}>Glass Type:</Text>
             </View>
-            <View style={tw('flex flex-row gap-4 justify-start p-3 w-2/12')}>
-                <Text style={tw('text-xs text-gray-900 font-bold')}>Certification:</Text>
+            {isImpactGlass && (
+              <>
+                <View style={tw('flex flex-row gap-4 justify-start p-3 w-2/12')}>
+                    <Text style={tw('text-xs text-gray-900 font-bold')}>Pressure:</Text>
+                </View>
+                <View style={tw('flex flex-row gap-4 justify-start p-3 w-2/12')}>
+                    <Text style={tw('text-xs text-gray-900 font-bold')}>Certification:</Text>
+                </View>
+              </>
+            )}
+          </View>
+          <View style={tw('flex flex-row gap-4 justify-start')}>
+            <View style={tw('flex flex-row gap-4 justify-start p-3 w-8/12')}>
+              <Text style={tw('text-xs text-gray-900 font-regular')}>{product.glass_type}</Text>
             </View>
-          </>
-        )}
-      </View>
-
-      <View style={tw('flex flex-row gap-4 justify-start')}>
-        <View style={tw('flex flex-row gap-4 justify-start p-3 w-8/12')}>
-          <Text style={tw('text-xs text-gray-900 font-regular')}>{product.glass_type}</Text>
-        </View>
-        {isImpactGlass && (
-          <>
-            <View style={tw('flex flex-row gap-4 justify-start p-3 w-2/12')}>
-              <Text style={tw('text-xs text-gray-900 font-regular text-green-700')}>
-                {product.system === PRODUCT_SYSTEMS.HORIZONTAL_ROLLER || product.system === PRODUCT_SYSTEMS.SINGLE_HUNG ? '+70/-70 psf' : '+75/-75 psf'}
-              </Text>
-            </View>
-            <View style={tw('flex flex-row gap-4 justify-start p-3 w-2/12')}>
-              <Text style={tw('text-xs text-gray-900 font-regular')}>
-                {getProductCertification(product.system)}
-              </Text>
-            </View>
-          </>
-        )}
-      </View>
+            {isImpactGlass && (
+              <>
+                <View style={tw('flex flex-row gap-4 justify-start p-3 w-2/12')}>
+                  <Text style={tw('text-xs text-gray-900 font-regular text-green-700')}>
+                    {product.system === PRODUCT_SYSTEMS.HORIZONTAL_ROLLER || product.system === PRODUCT_SYSTEMS.SINGLE_HUNG ? '+70/-70 psf' : '+75/-75 psf'}
+                  </Text>
+                </View>
+                <View style={tw('flex flex-row gap-4 justify-start p-3 w-2/12')}>
+                  <Text style={tw('text-xs text-gray-900 font-regular')}>
+                    {getProductCertification(product.system)}
+                  </Text>
+                </View>
+              </>
+            )}
+          </View>
+        </>
+      )}
     </View>
   )
 }

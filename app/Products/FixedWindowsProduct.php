@@ -82,10 +82,7 @@ class FixedWindowsProduct implements IProduct {
     }
 
     public function getMaterialRelease($qty) {
-      
-      return [
-      ];
-
+      return [];
     }
 
     public function getMaterialConsumption($qty) {

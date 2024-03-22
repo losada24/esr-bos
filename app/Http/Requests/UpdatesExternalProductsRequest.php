@@ -6,7 +6,7 @@ use App\Enum\ExternalProductEnum;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class StoreExternalProductsRequest extends FormRequest
+class UpdatesExternalProductsRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -26,6 +26,7 @@ class StoreExternalProductsRequest extends FormRequest
     public function rules()
     {
         return [
+            'id' => 'required|exists:external_products_configurations,id',
             'external_product' => [
               'required',
               'max:255',
@@ -34,7 +35,7 @@ class StoreExternalProductsRequest extends FormRequest
             'width' => 'required|numeric|min:0',
             'height' => 'required|numeric|min:0',
             'price' => 'required|numeric|min:0',
-            'extras' => 'nullable|array',
+            'extras' => 'nullable|JSON',
             'notes' => 'nullable|string',
         ];
     }

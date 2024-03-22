@@ -127,12 +127,6 @@ class HorizontalRollerProduct implements IProduct {
       $vh0001 = RawMaterial::where('name', 'WH 0001 ' . $this->materialColor)->first();
 
       return [
-        'RH 0001' => [
-          'amount' => 2 * $qty,
-          'unit_of_measurement' => $rh0001->unit_of_measurement,
-          'storage_measure' => $rh0001->storage_measure,
-          'notes' => $rh0001->notes
-        ],
         'WH 0001 ' . $this->materialColor => [
           'amount' => 2 * $qty,
           'unit_of_measurement' => $vh0001->unit_of_measurement,

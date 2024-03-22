@@ -38,6 +38,7 @@ class CreateEstimate {
           'external_purchase_id' => $request->external_purchase_id,
           'company_markup' => auth()->user()->company->markup,
           'company_promotion' => auth()->user()->company->promotion,
+          'external_products_markup' => auth()->user()->company->external_products_markup,
           'user_markup' => auth()->user()->markup,
         ];
 

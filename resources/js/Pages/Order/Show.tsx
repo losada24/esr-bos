@@ -6,7 +6,7 @@ import Panel from '@/Components/Panel'
 import { createMarkWithLeadingZero } from '@/Utils/mark'
 import HammerIcon from '@/Components/Icons/HammerIcon'
 import { isAccounting, isAdmin, isProduction, isDealer, isShipping, isSubDealer, isAccountManager } from '@/Utils/user'
-import { ACCOUNTING_STATUS, ROLES } from '@/Utils/constants'
+import { ACCOUNTING_STATUS, EXTERNAL_PRODUCTS, ROLES } from '@/Utils/constants'
 import OrderUpdateStatusModal from './OrderUpdateStatusModal'
 import PaymentInformation from './PaymentInformation'
 import { formatPrice, getSubTotalPriceByRole } from '@/Utils/price'
@@ -104,13 +104,13 @@ export default function Show ({ auth, order }: PageProps & {
                     </tr>
                   </thead>
                   <tbody>
-                    {order.products?.map(({ id, system, line_item_name, qty, width, height, frame_color, glass_type, dealer_unit_price, dealer_total_price }) => (
+                    {order.products?.map(({ id, system, line_item_name, qty, width, height, frame_color, glass_type, dealer_unit_price, dealer_total_price, extras }) => (
                         <tr
                           key={id}
                           className="hover:bg-gray-100 focus-within:bg-gray-100"
                         >
                           <td className="border-t px-6 py-4 align-top">
-                            {system}
+                            {system} {system === EXTERNAL_PRODUCTS.MULLION && `(${extras?.config})`}
                           </td>
                           <td className="border-t px-6 py-4 align-top">
                             {line_item_name}
@@ -125,7 +125,7 @@ export default function Show ({ auth, order }: PageProps & {
                             {frame_color}
                           </td>
                           <td className="border-t px-6 py-4 align-top">
-                            {glass_type}
+                            {system !== EXTERNAL_PRODUCTS.MULLION ? glass_type : 'N/A'}
                           </td>
                           {(IS_ACCOUNTING || IS_ADMIN) && (
                             <>

@@ -29,6 +29,7 @@ class CreateCompany {
         'user_id' => auth()->user()->id,
         'markup' => $request->markup,
         'promotion' => $request->promotion,
+        'external_products_markup' => $request->external_products_markup,
         'allow_credit_payment' => $request->allow_credit_payment,
       ]);
 

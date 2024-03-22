@@ -2,7 +2,7 @@ import React from 'react'
 import { Text, View } from '@react-pdf/renderer'
 import { createTw } from 'react-pdf-tailwind'
 import { type Product } from '@/types'
-import { PRODUCT_SYSTEMS, NO_CERTIFICATION_STANDARD_MESSAGE, CERTIFICATION_SQFT, CONFIG_XO, CONFIG_OX } from '@/Utils/constants'
+import { PRODUCT_SYSTEMS, NO_CERTIFICATION_STANDARD_MESSAGE, CERTIFICATION_SQFT, CONFIG_XO, CONFIG_OX, EXTERNAL_PRODUCTS } from '@/Utils/constants'
 import FixedWindowsTall from '../FixedWindows/FixedWindowsTall'
 import FixedWindowsWider from '../FixedWindows/FixedWindowsWider'
 import FixedWindowsSquared from '../FixedWindows/FixedWindowsSquared'
@@ -12,6 +12,7 @@ import SingleHungSquared from '../SingleHunt/SingleHungSquared'
 import { getFrameJambs } from '@/Utils/SingleHung'
 import { getVentBottomAndTop } from '@/Utils/HorizontalRoller'
 import HorizontalRollerXOSquared from '../HorizontalRoller/HorizontalRollerXOSquared'
+import MullionSGV from '../Mullion/MullionCSV'
 
 const tw = createTw({
   theme: {
@@ -69,6 +70,11 @@ const ReportProductImage = ({ product, isImpactGlass }: { product: Product, isIm
         <View style={tw('flex flex-row mb-4 p-3 justify-center')}>
           {product.extras?.config === CONFIG_XO && <HorizontalRollerXOSquared width={product.width} height={product.height} svgHeight={250} svgWidth={250} widthtOfMovementPart={getVentBottomAndTop(product.width)} /> }
           {product.extras?.config === CONFIG_OX && <HorizontalRollerXOSquared width={product.width} height={product.height} svgHeight={250} svgWidth={250} widthtOfMovementPart={getVentBottomAndTop(product.width)} /> }
+        </View>
+      )}
+      {product.system === EXTERNAL_PRODUCTS.MULLION && (
+        <View style={tw('flex flex-row mb-4 p-3 justify-center')}>
+          <MullionSGV width={product.width} height={product.height} svgHeight={250} svgWidth={250} />
         </View>
       )}
     </View>

@@ -1,26 +1,24 @@
 <?php
 
 namespace App\Http\Controllers;
-use App\Models\RawMaterial;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
-use App\Actions\CreateEstimate;
 use App\Actions\CreateEstimateOrder;
 use App\Actions\CreateExternalProduct;
 use App\Actions\UpdateEstimate;
+use App\Actions\UpdateExternalProduct;
 use App\Enum\ExternalProductEnum;
-use App\Http\Requests\StoreEstimateRequest;
 use App\Http\Requests\UpdateEstimateRequest;
 use App\Http\Requests\StoreEstimateToOrderRequest;
 use App\Enum\FrameColorEnum;
 use App\Enum\GlassColorEnum;
 use App\Enum\GlassTypeEnum;
-use App\Http\Resources\OrderCollection;
 use App\Models\Client;
 use App\Models\Order;
 use App\Enum\OrderStatusEnum;
 use App\Enum\States;
 use App\Http\Requests\StoreExternalProductsRequest;
+use App\Http\Requests\UpdatesExternalProductsRequest;
 use App\Models\ExternalProductConfiguration;
 
 class ExternalProductController extends Controller
@@ -63,7 +61,7 @@ class ExternalProductController extends Controller
      */
     public function store(StoreExternalProductsRequest $storeExternalProductRequest, CreateExternalProduct $createExternalProduct)
     {
-        $estimate = $createExternalProduct->handle($storeExternalProductRequest);
+        $externalProduct = $createExternalProduct->handle($storeExternalProductRequest);
         return redirect()->route('external-products.index')
           ->with('success', 'External Product created successfully.');
     }
@@ -74,15 +72,13 @@ class ExternalProductController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function edit(Order $estimate)
+    public function edit(ExternalProductConfiguration $externalProduct)
     {
-        $estimate->load(['client']);
-        return Inertia::render('Estimate/Edit', [
-          'estimate' => $estimate,
-          'frame_colors' => array_values(FrameColorEnum::$FRAME_COLOR),
-          'glass_colors' => array_values(GlassColorEnum::$GLASS_COLOR),
-          'glass_types' => array_values(GlassTypeEnum::$GLASS_TYPE),
-          'clients' => Client::all(),
+        return Inertia::render('ExternalProducts/Edit', [
+          'externalProduct' => $externalProduct,
+          'externalProducts' => [
+            ExternalProductEnum::$MULLION
+          ],
         ]);
     }
 
@@ -93,11 +89,11 @@ class ExternalProductController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(UpdateEstimateRequest $updateEstimateRequest, UpdateEstimate $updateEstimate, Order $estimate)
+    public function update(UpdatesExternalProductsRequest $updateProductsRequest, UpdateExternalProduct $updateExternalProduct, ExternalProductConfiguration $externalProduct)
     {
-        $updateEstimate->handle($updateEstimateRequest, $estimate);
-        return redirect()->route('estimate.index')
-          ->with('success', 'Estimate updated successfully.');
+        $updateExternalProduct->handle($updateProductsRequest, $externalProduct);
+        return redirect()->route('external-products.index')
+          ->with('success', 'External Product updated successfully.');
     }
 
     /**
@@ -106,77 +102,11 @@ class ExternalProductController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function destroy(Order $estimate)
+    public function destroy(ExternalProductConfiguration $externalProduct)
     {
-        $estimate->delete();
+        $externalProduct->delete();
         return redirect()
           ->back()
-          ->with('success', 'Estimate deleted successfully.');
-    }
-
-     /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function show($id)
-    {
-        return Inertia::render('Estimate/Show', [
-          'estimate' => Order::with(['client', 'products', 'user.company'])->findOrFail($id)
-        ]);
-    }
-
-    /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function order($id)
-    {
-        $estimate = Order::findOrFail($id); //TODO: not allow pay two times same order
-        if ($estimate->status != OrderStatusEnum::$ESTIMATE) {
-          return redirect()
-            ->route('estimate.index')
-            ->with('error', 'This estimate is not available for payment.');
-        }
-
-        return Inertia::render('Estimate/Payment', [
-          'estimate' => Order::with(['client', 'products', 'user.company'])->findOrFail($id),
-          'states' => array_values(States::$USA_STATES),
-        ]);
-    }
-
-    public function orderStore(StoreEstimateToOrderRequest $request, CreateEstimateOrder $createEstimateOrder)
-    {
-        $estimate = Order::findOrFail($request->order_id); //TODO: not allow pay two times same order
-        if (empty($estimate->external_purchase_id)) {
-          return redirect()
-            ->back()
-            ->with('error', 'To create an order, you must first fill in the External Purchase Id.');
-        }
-
-        $createEstimateOrder->handle($request, $estimate);
-        return redirect()->route('estimate.index')
-          ->with('success', 'Order created successfully.');
-    }
-
-    public function duplicate($id)
-    {
-        $estimate = Order::findOrFail($id);
-        $newEstimate = $estimate->replicate();
-        $newEstimate->name = $newEstimate->name . ' (copy)';
-        $newEstimate->user_id = auth()->user()->id;
-        $newEstimate->push();
-
-        foreach ($estimate->products as $product) {
-          $newProduct = $product->replicate();
-          $newEstimate->products()->save($newProduct);
-        }
-
-        return redirect()
-          ->route('estimate.index')
-          ->with('success', 'Estimate duplicated successfully.');
+          ->with('success', 'External product deleted successfully.');
     }
 }

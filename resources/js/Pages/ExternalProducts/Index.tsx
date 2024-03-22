@@ -2,9 +2,12 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
 import { Head, Link, router } from '@inertiajs/react'
 import EditIcon from '@/Components/Icons/EditIcon'
 import DeleteIcon from '@/Components/Icons/DeleteIcon'
-import { type PageProps, type ExternalProducts, type PaginatorLink, type Role } from '@/types'
+import { type PageProps, type ExternalProducts, type PaginatorLink, type ExternalProductsExtrasMullion } from '@/types'
 import Pagination from '@/Components/Pagination'
 import ExternalProductsFilter from './ExternalProductsFilter'
+import { EXTERNAL_PRODUCT_MULLION } from '@/Utils/constants'
+import Mullion from './Mullion'
+import { formatPrice } from '@/Utils/price'
 
 type IndexUserProps = PageProps & {
   externalProducts: {
@@ -15,7 +18,7 @@ type IndexUserProps = PageProps & {
 
 export default function Index ({ auth, externalProducts }: IndexUserProps) {
   const destroy = (id: number) => {
-    if (confirm('Are you sure you want to delete this User?')) {
+    if (confirm('Are you sure you want to delete this External Product?')) {
       router.delete(route('external-products.destroy', id))
     }
   }
@@ -44,7 +47,7 @@ export default function Index ({ auth, externalProducts }: IndexUserProps) {
                 <th className="px-6 pt-5 pb-4">Width</th>
                 <th className="px-6 pt-5 pb-4">Heigth</th>
                 <th className="px-6 pt-5 pb-4">Price</th>
-                <th className="px-6 pt-5 pb-4">Configuration</th>
+                <th className="px-6 pt-5 pb-4">Extras</th>
                 <th className="px-6 pt-5 pb-4 w-14">Actions</th>
               </tr>
             </thead>
@@ -65,10 +68,10 @@ export default function Index ({ auth, externalProducts }: IndexUserProps) {
                       {height}
                     </td>
                     <td className="border-t px-6 py-4 align-top">
-                      {price}
+                      {formatPrice(price)}
                     </td>
                     <td className="border-t px-6 py-4 align-top">
-                      {extras.configuration ?? ''}
+                      {external_product === EXTERNAL_PRODUCT_MULLION && <Mullion extras={(extras as ExternalProductsExtrasMullion)} /> }
                     </td>
                     <td className="border-t flex items-center px-6 py-4">
                         <Link

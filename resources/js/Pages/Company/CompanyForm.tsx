@@ -108,6 +108,7 @@ const CompanyForm = ({ submitCount, errors, isCreate, states, setFieldValue, fea
       </div>
       <div className='grid grid-cols-2 gap-4'>
       {(isAdmin(auth.user.roles.map((role: Role) => role.name)) || (isAccountManager(auth.user.roles.map((role: Role) => role.name)) && isCreate)) && (
+        <>
           <div className={submitCount ? (errors.markup) ? 'has-error' : 'has-success' : ''}>
             <label htmlFor="markup">Markup</label>
             <div className='flex flex-1'>
@@ -123,6 +124,22 @@ const CompanyForm = ({ submitCount, errors, isCreate, states, setFieldValue, fea
             </div>
             {(submitCount && errors.markup) ? <InputError message={errors.markup} className="mt-2" /> : ''}
           </div>
+          <div className={submitCount ? (errors.external_products_markup) ? 'has-error' : 'has-success' : ''}>
+            <label htmlFor="external_products_markup">External Product Markup</label>
+            <div className='flex flex-1'>
+              <Field
+                id="external_products_markup"
+                name="external_products_markup"
+                className="form-input text-right rounded-r-none"
+                autoComplete="external_products_markup"
+                placeholder='External Products Markup'
+                type='number'
+              />
+              <div className="bg-[#eee] flex justify-center items-center px-3 font-semibold border border-[#e0e6ed] dark:border-[#17263c] dark:bg-[#1b2e4b] rounded-r-md">%</div>
+            </div>
+            {(submitCount && errors.markup) ? <InputError message={errors.markup} className="mt-2" /> : ''}
+          </div>
+        </>
       )}
       {(isAdmin(auth.user.roles.map((role: Role) => role.name)) || (isAccountManager(auth.user.roles.map((role: Role) => role.name)))) && (
         <>

@@ -43,6 +43,7 @@ class Order extends Model
       'rg_other_price',
       'order_promotion',
       'subdealer_other',
+      'external_products_markup'
     ];
 
     protected $dispatchesEvents = [

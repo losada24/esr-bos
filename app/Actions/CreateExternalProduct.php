@@ -11,7 +11,7 @@ class CreateExternalProduct {
 
   public function handle(Request $request) {
     
-    dd($request->all());
+   // dd($request->all());
     DB::transaction(function() use ($request) {
 
       $externalProduct = ExternalProductConfiguration::create([
@@ -19,13 +19,13 @@ class CreateExternalProduct {
         'width' => $request->width,
         'height' => $request->height,
         'price' => $request->price,
-        'extras' => $request->extras,
-        'notes' => $request->extras,
+        'extras' => json_decode($request->extras),
+        'notes' => $request->notes,
       ]);
 
       if( !$externalProduct )
       {
-          throw new \Exception('Client not created');
+          throw new \Exception('External product not created');
       }
 
     });

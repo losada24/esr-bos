@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enum\ExternalProductEnum;
 use App\Enum\ProductSystemEnum;
 use App\Enum\RoleEnum;
 use App\Http\Resources\CompanyResource;
@@ -20,8 +21,6 @@ class PdfController extends Controller
     public function workOrder(Order $order)
     {
       $order->load(['products', 'client']);
-      
-      // $materialConsumption = $this->getMaterialConsumption($order);
       $cuttingList = $this->getCuttingList($order);
 
       $orderData = [
@@ -31,8 +30,8 @@ class PdfController extends Controller
         'created_at' => $order->created_at,
         'project_name' => $order->project_name,
         'products' => $cuttingList,
-        // 'materialConsumption' => $materialConsumption
       ];
+
       return Inertia::render('Pdf/WorkOrder', [
         'order' => $orderData
       ]);
@@ -152,6 +151,27 @@ class PdfController extends Controller
         'products' => $poGlass,
       ];
       return Inertia::render('Pdf/POGlass', [
+        'order' => $orderData
+      ]);
+    }
+
+    public function poExternalProducts(Order $order)
+    {
+      $order->load(['products' => function($query) {
+        $query->whereIn('system', [
+          ExternalProductEnum::$MULLION
+        ]);
+      }, 'client']);
+
+      $orderData = [
+        'id' => $order->id,
+        'name' => $order->name,
+        'client' => $order->client,
+        'created_at' => $order->created_at,
+        'project_name' => $order->project_name,
+        'products' => $order->products,
+      ];
+      return Inertia::render('Pdf/POExternalProducts', [
         'order' => $orderData
       ]);
     }

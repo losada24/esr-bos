@@ -140,7 +140,11 @@ class UpdateEstimate {
     $estimate->products()->each(function($product) use ($markup, $estimate) {
       $unitPrice = $product->unit_price;
       $totalPrice = $unitPrice * $product->qty;
-      $dealerUnitPrice = $unitPrice + ($unitPrice * $estimate->company_markup / 100);
+      $markup_to_apply = $estimate->company_markup;
+      if ($product->system != ProductSystemEnum::$FIXED_WINDOWS && $product->system != ProductSystemEnum::$HORIZONTAL_ROLLER && $product->system != ProductSystemEnum::$SINGLE_HUNG) {
+        $markup_to_apply = $estimate->external_products_markup;
+      }
+      $dealerUnitPrice = $unitPrice + ($unitPrice * $markup_to_apply / 100);
       $dealerTotalPrice = $dealerUnitPrice * $product->qty;
       $subdealerUnitPrice = $dealerUnitPrice + ($dealerUnitPrice * $estimate->user_markup / 100);
       $subdealerTotalPrice = $subdealerUnitPrice * $product->qty;

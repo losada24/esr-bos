@@ -1,7 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
 import { Head, router } from '@inertiajs/react'
 import { Formik, type FormikHelpers } from 'formik'
-import { type PageProps, type Order, type Client, type FixedWindows } from '@/types'
+import { type PageProps, type Order, type FixedWindows } from '@/types'
 import FixedWindowsForm from './FixedWindowsForm'
 import { fixedWindowsSchema } from './FixedWindowsCommon'
 import { createNextMarkWithLeadingZero } from '@/Utils/mark'
@@ -11,7 +11,6 @@ export default function Create ({ auth, frame_colors, glass_colors, estimate, mu
   glass_colors: string[]
   muntin_patterns: string[]
   muntin_styles: string[]
-  clients: Client[]
   estimate: Order
 }) {
   const initialValues: FixedWindows = {

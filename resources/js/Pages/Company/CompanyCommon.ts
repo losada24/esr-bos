@@ -38,5 +38,6 @@ export interface Company {
   featured_image: string
   markup?: number
   promotion?: number
+  external_products_markup?: number
   allow_credit_payment: boolean
 }

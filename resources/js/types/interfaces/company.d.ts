@@ -13,4 +13,5 @@ export interface Company {
   user: User
   featured_image: string
   allow_credit_payment: boolean
+  external_products_markup: number
 }

@@ -15,8 +15,9 @@ export default function Create ({ auth, externalProducts }: ExternalProductsCrea
     external_product: '',
     width: 0,
     height: 0,
-    extras: '',
-    price: 0
+    extras: '{"configuration": "1 x 3 x 1/8"}',
+    price: 0,
+    notes: ''
   }
 
   const handleSubmit = async (values: any, helpers: FormikHelpers<ExternalProducts>) => {

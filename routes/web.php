@@ -16,6 +16,7 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\SingleHuntController;
 use App\Http\Controllers\HorizontalRollerController;
 use App\Http\Controllers\LabelController;
+use App\Http\Controllers\MullionController;
 use App\Http\Controllers\PdfController;
 use App\Http\Controllers\ProductController;
 use App\Models\User;
@@ -260,6 +261,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/pdf/po-balance/{order}', [PdfController::class, 'poBalance'])
       ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$ACCOUNT_MANAGER . "|" . RoleEnum::$PRODUCTION ])
       ->name('pdf.po.balance');
+
+    Route::get('/pdf/po-external-products/{order}', [PdfController::class, 'poExternalProducts'])
+      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$ACCOUNT_MANAGER . "|" . RoleEnum::$PRODUCTION ])
+      ->name('pdf.po.external.products');
     
     Route::get('/pdf/estimate-with-prices/{order}', [PdfController::class, 'estimateWithPrices'])
       ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$ACCOUNT_MANAGER . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$SUB_DEALER . "|" . RoleEnum::$ACCOUNTING ])
@@ -303,6 +308,32 @@ Route::middleware('auth')->group(function () {
     //EXTERNAL PRODUCTS
     Route::resource('external-products', ExternalProductController::class)
       ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$ACCOUNT_MANAGER]);
+    // MULLION
+    Route::get('/mullion/{id}/create', [MullionController::class, 'create'])
+      ->middleware([
+        "role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$ACCOUNT_MANAGER . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$SUB_DEALER,
+        "validate.estimate.status:" . OrderStatusEnum::$ESTIMATE . "|" . OrderStatusEnum::$SUB_DEALER_ESTIMATE . ",id",
+        "validate.estimate.owner:id"
+      ])
+      ->name('mullion.create');
+    
+    Route::post('/mullion/store', [MullionController::class, 'store'])
+      ->middleware([
+        "role:" . RoleEnum::$ADMIN. "|" . RoleEnum::$ACCOUNT_MANAGER . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$SUB_DEALER,
+      ])
+      ->name('mullion.store');
+
+    Route::get('/mullion/edit/{product}', [MullionController::class, 'edit'])
+      ->middleware([
+        "role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$ACCOUNT_MANAGER . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$SUB_DEALER,
+        "validate.estimate.owner:product",
+        "validate.estimate.status:" . OrderStatusEnum::$ESTIMATE . "|" . OrderStatusEnum::$SUB_DEALER_ESTIMATE . ",product",
+      ])
+      ->name('mullion.edit');
+
+    Route::put('/mullion/update/{product}', [MullionController::class, 'update'])
+      ->middleware(["role:" . RoleEnum::$ADMIN. "|" . RoleEnum::$ACCOUNT_MANAGER . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$SUB_DEALER]) // TODO: Validate if the user is the owner of the order
+      ->name('mullion.update');
 });
 
 require __DIR__.'/auth.php';

@@ -200,6 +200,9 @@ export const PRODUCT_SYSTEMS = {
   SINGLE_HUNG: 'SINGLE HUNG',
   HORIZONTAL_ROLLER: 'HORIZONTAL ROLLER'
 }
+export const EXTERNAL_PRODUCTS = {
+  MULLION: 'MULLION'
+}
 export const EXPRESS_GLASS_TYPE: string = 'EXPRESS'
 export const REGULAR_GLASS_TYPE: string = 'REGULAR'
 export const RUSH_GLASS_TYPE: string = 'RUSH'
@@ -267,11 +270,13 @@ export const GLASS_TYPE = {
 export const PO_SCREEN: string = 'SC'
 export const PO_GLASS: string = 'GL'
 export const PO_BALANCE: string = 'BL'
+export const PO_EXTERNAL_PRODUCTS: string = 'EP'
 
 export const PO_TITLES: Record<string, string> = {
   [PO_SCREEN]: 'PO SCREEN',
   [PO_GLASS]: 'PO GLASS',
-  [PO_BALANCE]: 'PO BALANCE'
+  [PO_BALANCE]: 'PO BALANCE',
+  [PO_EXTERNAL_PRODUCTS]: 'EXTERNAL PRODUCTS'
 }
 
 export const RUSH_GLASS_NEW_COLOR: string = 'OBSCURE/PRIVACY'
@@ -281,3 +286,4 @@ export const LEAD_TIME_BY_GLASS_TYPE: Record<string, string> = {
   [REGULAR_GLASS_TYPE]: 'REGULAR (6-8 WEEKS)'
 }
 export const CERTIFICATION_SQFT: number = 27.24
+export const EXTERNAL_PRODUCT_MULLION = 'MULLION'

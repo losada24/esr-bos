@@ -44,6 +44,7 @@ class UpdateCompany {
 
       if (auth()->user()->hasRole(RoleEnum::$ADMIN)) {
         $companyData['markup'] = $request->markup;
+        $companyData['external_products_markup'] = $request->external_products_markup;
       }
 
       if (auth()->user()->hasRole(RoleEnum::$ADMIN) || auth()->user()->hasRole(RoleEnum::$ACCOUNT_MANAGER)) {

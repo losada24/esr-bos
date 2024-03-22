@@ -9,7 +9,7 @@ import AngleIcon from '@/Components/Icons/AngleIcon'
 import DeleteIcon from '@/Components/Icons/DeleteIcon'
 import PriceSummary from './PriceSummary'
 import { createMarkWithLeadingZero } from '@/Utils/mark'
-import { PRODUCT_SYSTEMS, ESTIMATE_STATUS, SUB_DEALER_ESTIMATE } from '@/Utils/constants'
+import { PRODUCT_SYSTEMS, ESTIMATE_STATUS, SUB_DEALER_ESTIMATE, EXTERNAL_PRODUCTS } from '@/Utils/constants'
 import MoneyIcon from '@/Components/Icons/MoneyIcon'
 import PrintEstimateButton from './PrintEstimateButton'
 import { getNumberWithFraction } from '@/Utils/numbers'
@@ -29,6 +29,8 @@ export default function Create ({ auth, estimate }: PageProps & {
         return route('single-hunt.edit', id)
       case PRODUCT_SYSTEMS.HORIZONTAL_ROLLER:
         return route('horizontal-roller.edit', id)
+      case EXTERNAL_PRODUCTS.MULLION:
+        return route('mullion.edit', id)
       default:
         return ''
     }
@@ -111,6 +113,11 @@ export default function Create ({ auth, estimate }: PageProps & {
                                           router.get(route('horizontal-roller.create', estimate.id))
                                         }}>Horizontal Roller</button>
                                     </li>
+                                    <li>
+                                        <button onClick={() => {
+                                          router.get(route('mullion.create', estimate.id))
+                                        }}>Mullion</button>
+                                    </li>
                                 </ul>
                             </Dropdown>
                           </div>
@@ -160,7 +167,7 @@ export default function Create ({ auth, estimate }: PageProps & {
                           className="hover:bg-gray-100 focus-within:bg-gray-100"
                         >
                           <td className="border-t px-6 py-4 align-top">
-                            {system}
+                            {system} {product.system === EXTERNAL_PRODUCTS.MULLION && `(${product.extras?.config})`}
                           </td>
                           <td className="border-t px-6 py-4 align-top">
                             {line_item_name}
@@ -175,7 +182,7 @@ export default function Create ({ auth, estimate }: PageProps & {
                             {frame_color}
                           </td>
                           <td className="border-t px-6 py-4 align-top">
-                            {glass_type}
+                            {product.system !== EXTERNAL_PRODUCTS.MULLION ? glass_type : 'N/A'}
                           </td>
                           <td className="border-t px-6 py-4 align-top text-right">
                             {formatPrice(getUnitPriceByRole(product, auth.user.roles.map((role: Role) => role.name)))}

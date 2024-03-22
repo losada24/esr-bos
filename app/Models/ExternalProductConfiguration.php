@@ -25,6 +25,10 @@ class ExternalProductConfiguration extends Model
       'notes',
     ];
 
+    protected $casts = [
+      'extras' => 'array'
+    ];
+
     /*public function externalProduct()
     {
         return $this->belongsTo(ExternalProduct::class);

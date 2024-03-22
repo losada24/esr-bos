@@ -40,6 +40,7 @@ class StoreCompanyRequest extends FormRequest
             'zip' => 'required|numeric|max_digits:5|min_digits:5',
             'featured_image' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:512',
             'markup' => 'nullable|integer|min:0|max:100',
+            'external_products_markup' => 'nullable|integer|min:0|max:100',
             'promotion' => 'nullable|numeric|min:0|max:100',
             'allow_credit_payment' => 'nullable|boolean',
         ];

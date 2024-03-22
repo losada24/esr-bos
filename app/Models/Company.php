@@ -34,7 +34,8 @@ class Company extends Model
       'user_id',
       'markup',
       'promotion',
-      'allow_credit_payment'
+      'allow_credit_payment',
+      'external_products_markup'
     ];
 
     public function scopeFilter($query, array $filters)

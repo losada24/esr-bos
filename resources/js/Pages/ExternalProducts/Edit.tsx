@@ -1,40 +1,28 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
 import { Head, router } from '@inertiajs/react'
 import { Formik, type FormikHelpers } from 'formik'
-import { userUpdateSchema, type UserPageProps, type User } from './ExternalProductsCommon'
-import UserForm from './ExternalProductsForm'
-import { type ModalProps, type Role } from '@/types'
-import { isAccountManager, isAdmin } from '@/Utils/user'
-import { useEffect, useState } from 'react'
+import { externalProductSchema } from './ExternalProductsCommon'
+import { type PageProps, type ExternalProducts } from '@/types'
+import ExternalProductsForm from './ExternalProductsForm'
 
-export default function Edit ({ auth, roles, user, companies }: UserPageProps) {
-  const [modalProps, setModalProps] = useState<ModalProps | null>(null)
-  const IS_ADMIN = isAdmin(auth.user.roles.map((role: Role) => role.name)) || isAccountManager(auth.user.roles.map((role: Role) => role.name))
-  const initialValues: User = {
-    id: user?.data.id ?? 0,
-    name: user?.data.name ?? '',
-    email: user?.data.email ?? '',
-    password: '',
-    password_confirmation: '',
-    role: user?.data.role ?? 0,
-    company_id: user?.data.company_id ?? 0,
-    markup: user?.data.markup ?? 0,
-    featured_image: ''
+type ExternalProductsCreateProps = PageProps & {
+  externalProducts: string[]
+  externalProduct: ExternalProducts
+}
+
+export default function Edit ({ auth, externalProducts, externalProduct }: ExternalProductsCreateProps) {
+  const initialValues: ExternalProducts = {
+    id: externalProduct.id,
+    external_product: externalProduct.external_product,
+    width: externalProduct.width,
+    height: externalProduct.height,
+    extras: JSON.stringify(externalProduct.extras) ?? '',
+    price: externalProduct.price ?? 0,
+    notes: externalProduct.notes ?? ''
   }
 
-  useEffect(() => {
-    setModalProps({
-      title: user?.data.name ?? '',
-      image: user?.data.featured_image ?? ''
-    })
-  }, [])
-
-  const handleSubmit = async (values: any, helpers: FormikHelpers<User>) => {
-    router.post(route('user.update', values.id), {
-      _method: 'PUT',
-      ...values
-    }, {
-      forceFormData: true,
+  const handleSubmit = async (values: any, helpers: FormikHelpers<ExternalProducts>) => {
+    router.put(route('external-products.update', values.id), values, {
       onError: (errors: any) => {
         helpers.setErrors(errors)
       }
@@ -44,25 +32,20 @@ export default function Edit ({ auth, roles, user, companies }: UserPageProps) {
   return (
       <AuthenticatedLayout
           auth={auth}
-          pageTitle='Edit User'
+          pageTitle='Edit External Products'
       >
         <Head title="Edit" />
-        <Formik<User>
+        <Formik<ExternalProducts>
           initialValues={initialValues}
-          validationSchema={userUpdateSchema}
+          validationSchema={externalProductSchema}
           onSubmit={handleSubmit}
         >
-          {({ errors, submitCount, setFieldValue }) => (
-            <UserForm
+          {({ errors, submitCount }) => (
+            <ExternalProductsForm
               errors={errors}
               submitCount={submitCount}
-              roles={roles}
               isCreate={false}
-              companies={companies}
-              isAdmin={IS_ADMIN}
-              setFieldValue={setFieldValue}
-              featured_image={user?.data.featured_image ?? ''}
-              modalProps={modalProps}
+              externalProducts={externalProducts}
             />
           )}
         </Formik>

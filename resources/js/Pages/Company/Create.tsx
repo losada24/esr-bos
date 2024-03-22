@@ -18,6 +18,7 @@ export default function Create ({ auth, states }: PageProps & { states: string[]
     featured_image: '',
     markup: 0,
     promotion: 0,
+    external_products_markup: 0,
     allow_credit_payment: false
   }
 

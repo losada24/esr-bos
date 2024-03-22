@@ -71,6 +71,13 @@ const PrintButton = ({ id }: { id: number }) => {
             </Link>
           </li>
           <li>
+            <Link
+              href={route('pdf.po.external.products', id)}
+            >
+              PO External Products
+            </Link>
+          </li>
+          <li>
             <button
               onClick={() => {
                 const url = route('labels.labelsByPieces', id)

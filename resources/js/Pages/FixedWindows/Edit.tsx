@@ -2,7 +2,7 @@ import React from 'react'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
 import { Head, router } from '@inertiajs/react'
 import { Formik, type FormikHelpers } from 'formik'
-import { type PageProps, type Product, type Client, type FixedWindows } from '@/types'
+import { type PageProps, type Product, type FixedWindows } from '@/types'
 import FixedWindowsForm from './FixedWindowsForm'
 import { fixedWindowsSchema } from './FixedWindowsCommon'
 
@@ -11,7 +11,6 @@ export default function Edit ({ auth, product, frame_colors, glass_colors, munti
   glass_colors: string[]
   muntin_patterns: string[]
   muntin_styles: string[]
-  clients: Client[]
   product: Product }) {
   const initialValues: FixedWindows = {
     id: product.id,
