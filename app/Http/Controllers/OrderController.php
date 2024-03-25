@@ -219,7 +219,8 @@ class OrderController extends Controller
           ];
         }
       }
-      else if (((auth()->user()->hasRole(RoleEnum::$ADMIN) || auth()->user()->hasRole(RoleEnum::$SHIPPING)) && 
+      else if ((auth()->user()->hasRole(RoleEnum::$ADMIN) || auth()->user()->hasRole(RoleEnum::$SHIPPING)) && 
+      ( 
         $order->status ==  OrderStatusEnum::$READY_FOR_DELIVERY ||
         $order->status ==  OrderStatusEnum::$READY_FOR_PARTIAL_DELIVERY ||
         $order->status ==  OrderStatusEnum::$READY_FOR_PICKUP ||
@@ -252,13 +253,27 @@ class OrderController extends Controller
             ]
           ];
       }
-      else if (auth()->user()->hasRole(RoleEnum::$DEALER) && $order->status == OrderStatusEnum::$ESTIMATE) {
-          $statuses = [
-            [
-              'label' => 'Return to Sub Dealer',
-              'value' => OrderStatusEnum::$SUB_DEALER_ESTIMATE
-            ],
-          ];
+      else if (auth()->user()->hasRole(RoleEnum::$DEALER) && 
+      (
+        $order->status == OrderStatusEnum::$ESTIMATE ||
+        $order->status == OrderStatusEnum::$SUB_DEALER_ESTIMATE 
+      )) {
+          if ($order->status == OrderStatusEnum::$ESTIMATE) {
+            $statuses = [
+              [
+                'label' => 'Return to Sub Dealer',
+                'value' => OrderStatusEnum::$SUB_DEALER_ESTIMATE
+              ],
+            ];
+          }
+          else if ($order->status == OrderStatusEnum::$SUB_DEALER_ESTIMATE) {
+            $statuses = [
+              [
+                'label' => 'Estimate to Order',
+                'value' => OrderStatusEnum::$ESTIMATE
+              ]
+            ];
+          }
       }
 
       return response()->json($statuses);

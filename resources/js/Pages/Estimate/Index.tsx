@@ -128,7 +128,7 @@ export default function Index ({ auth, estimates }: IndexOrderProps) {
                           <EyeIcon />
                         </Link>
                         {((IS_SUB_DEALER && estimate.status === SUB_DEALER_ESTIMATE) ||
-                         ((IS_DEALER || IS_ADMIN || IS_ACCOUNT_MANAGER) && estimate.status === ESTIMATE_STATUS)) && (
+                         (IS_DEALER || IS_ADMIN || IS_ACCOUNT_MANAGER)) && (
                           <>
                             <button
                                 onClick={() => { duplicate(id) }}
