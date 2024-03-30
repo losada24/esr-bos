@@ -15,7 +15,7 @@ export default function Create ({ auth, externalProducts }: ExternalProductsCrea
     external_product: '',
     width: 0,
     height: 0,
-    extras: '{"configuration": "1 x 3 x 1/8"}',
+    extras: '',
     price: 0,
     notes: ''
   }
@@ -40,12 +40,13 @@ export default function Create ({ auth, externalProducts }: ExternalProductsCrea
             validationSchema={externalProductSchema}
             onSubmit={handleSubmit}
           >
-            {({ errors, submitCount }) => (
+            {({ errors, submitCount, setFieldValue }) => (
               <ExternalProductsForm
                 errors={errors}
                 submitCount={submitCount}
                 isCreate={true}
                 externalProducts={externalProducts}
+                setFieldValue={setFieldValue}
               />
             )}
           </Formik>

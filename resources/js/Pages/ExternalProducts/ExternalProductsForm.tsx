@@ -4,18 +4,30 @@ import PrimaryButton from '@/Components/PrimaryButton'
 import { Link } from '@inertiajs/react'
 import { type ExternalProducts } from '@/types'
 import { type FormikErrors } from 'formik'
+import CodeIcon from '@/Components/Icons/CodeIcon'
+import { useState } from 'react'
+import ConfigurationCode from './ConfigurationCode'
 
-const ExternalProductsForm = ({ submitCount, errors, externalProducts, isCreate }: {
+const ExternalProductsForm = ({ submitCount, errors, externalProducts, isCreate, setFieldValue, defaultProduct }: {
   submitCount: number
   errors: FormikErrors<ExternalProducts>
   externalProducts: string[]
+  defaultProduct?: string
   isCreate: boolean
+  setFieldValue: (field: string, value: any, shouldValidate?: boolean | undefined) => void
 }) => {
+  const [showCode, setShowCode] = useState<boolean>(false)
+  const [product, setProduct] = useState<string>(defaultProduct ?? '')
+
   return (
     <Form className='space-y-5'>
       <div className={submitCount ? (errors.external_product ? 'has-error' : 'has-success') : ''}>
         <label htmlFor="external_product">Product</label>
-        <Field as="select" name="external_product" className="form-select">
+        <Field as="select" name="external_product" className="form-select" onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+          setShowCode(false)
+          setProduct(e.target.value)
+          setFieldValue('external_product', e.target.value)
+        }}>
             <option value="">Select Product</option>
             {externalProducts.map((externalProduct: string, index) => {
               return (
@@ -62,16 +74,19 @@ const ExternalProductsForm = ({ submitCount, errors, externalProducts, isCreate 
         {(submitCount && errors.price) ? <InputError message={errors.price} className="mt-2" /> : ''}
       </div>
       <div className={submitCount ? (errors.extras) ? 'has-error' : 'has-success' : ''}>
-        <label htmlFor="extras">Configurations</label>
+        <label htmlFor="extras">Configurations <button onClick={() => { setShowCode(!showCode) }} type='button' className='flex font-semibold hover:text-gray-400d'><CodeIcon className='me-2'/> Code</button></label>
         <Field
           id="extras"
           name="extras"
           component="textarea"
           rows="4"
-          className="form-textarea resize-none placeholder:text-white-dark"
+          className="form-textarea resize-y placeholder:text-white-dark"
           placeholder='Extras'
         />
         {(submitCount && errors.extras) ? <InputError message={errors.extras} className="mt-2" /> : ''}
+        {showCode && product !== '' && (
+          <ConfigurationCode product={product} />
+        )}
       </div>
       <div className={submitCount ? (errors.notes) ? 'has-error' : 'has-success' : ''}>
         <label htmlFor="notes">Notes</label>

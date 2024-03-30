@@ -3,22 +3,11 @@
 namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
-use App\Actions\CreateEstimateOrder;
 use App\Actions\CreateExternalProduct;
-use App\Actions\UpdateEstimate;
 use App\Actions\UpdateExternalProduct;
 use App\Enum\ExternalProductEnum;
-use App\Http\Requests\UpdateEstimateRequest;
-use App\Http\Requests\StoreEstimateToOrderRequest;
-use App\Enum\FrameColorEnum;
-use App\Enum\GlassColorEnum;
-use App\Enum\GlassTypeEnum;
-use App\Models\Client;
-use App\Models\Order;
-use App\Enum\OrderStatusEnum;
-use App\Enum\States;
 use App\Http\Requests\StoreExternalProductsRequest;
-use App\Http\Requests\UpdatesExternalProductsRequest;
+use App\Http\Requests\UpdateExternalProductsRequest;
 use App\Models\ExternalProductConfiguration;
 
 class ExternalProductController extends Controller
@@ -48,7 +37,8 @@ class ExternalProductController extends Controller
     {
         return Inertia::render('ExternalProducts/Create', [
           'externalProducts' => [
-            ExternalProductEnum::$MULLION
+            ExternalProductEnum::$MULLION,
+            ExternalProductEnum::$CASEMENT,
           ],
         ]);
     }
@@ -77,7 +67,8 @@ class ExternalProductController extends Controller
         return Inertia::render('ExternalProducts/Edit', [
           'externalProduct' => $externalProduct,
           'externalProducts' => [
-            ExternalProductEnum::$MULLION
+            ExternalProductEnum::$MULLION,
+            ExternalProductEnum::$CASEMENT,
           ],
         ]);
     }
@@ -89,7 +80,7 @@ class ExternalProductController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(UpdatesExternalProductsRequest $updateProductsRequest, UpdateExternalProduct $updateExternalProduct, ExternalProductConfiguration $externalProduct)
+    public function update(UpdateExternalProductsRequest $updateProductsRequest, UpdateExternalProduct $updateExternalProduct, ExternalProductConfiguration $externalProduct)
     {
         $updateExternalProduct->handle($updateProductsRequest, $externalProduct);
         return redirect()->route('external-products.index')

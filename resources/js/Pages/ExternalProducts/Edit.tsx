@@ -40,12 +40,14 @@ export default function Edit ({ auth, externalProducts, externalProduct }: Exter
           validationSchema={externalProductSchema}
           onSubmit={handleSubmit}
         >
-          {({ errors, submitCount }) => (
+          {({ errors, submitCount, setFieldValue }) => (
             <ExternalProductsForm
               errors={errors}
               submitCount={submitCount}
               isCreate={false}
               externalProducts={externalProducts}
+              setFieldValue={setFieldValue}
+              defaultProduct={externalProduct.external_product}
             />
           )}
         </Formik>
