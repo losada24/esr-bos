@@ -287,3 +287,5 @@ export const LEAD_TIME_BY_GLASS_TYPE: Record<string, string> = {
 }
 export const CERTIFICATION_SQFT: number = 27.24
 export const EXTERNAL_PRODUCT_MULLION = 'MULLION'
+export const EXTERNAL_PRODUCT_CASEMENT = 'CASEMENT'
+export const CASEMENT_MULTIPOINT_CONFIG = 'MULTIPOINT'
