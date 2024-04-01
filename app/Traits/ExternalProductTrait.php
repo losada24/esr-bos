@@ -2,6 +2,8 @@
 
 namespace App\Traits;
 
+use App\Enum\ExternalProductEnum;
+use App\Models\ExternalProductConfiguration;
 
 trait ExternalProductTrait {
 
@@ -21,5 +23,18 @@ trait ExternalProductTrait {
           }
       }
       return $result;
+  }
+
+  public function getCasementOpeningOptions() {
+    $result = [];
+    $casementsProducts = ExternalProductConfiguration::where('external_product', ExternalProductEnum::$CASEMENT)->get();
+
+    foreach ($casementsProducts as $casementProduct) {
+      if (isset($casementProduct->extras['opening']) && !isset($result[$casementProduct->extras['opening']])) {
+        $result[$casementProduct->extras['opening']] = $casementProduct->extras['opening'];
+      }
+  }
+
+  return $result;
   }
 }

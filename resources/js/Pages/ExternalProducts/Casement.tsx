@@ -11,6 +11,7 @@ const Casement = ({ extras }: { extras: ExternalProductsExtrasCasement }) => {
       <li><strong>Limit Device:</strong> {extras.limit_device}</li>
       <li><strong>Protective Film:</strong> {extras.protective_film}</li>
       <li><strong>Locking Mechanism:</strong> {extras.locking_mechanism}</li>
+      <li><strong>Glass Type:</strong> {extras.glass_type}</li>
     </ul>
   )
 }

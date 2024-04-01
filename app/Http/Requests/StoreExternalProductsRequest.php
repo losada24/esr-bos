@@ -29,7 +29,10 @@ class StoreExternalProductsRequest extends FormRequest
             'external_product' => [
               'required',
               'max:255',
-              Rule::in([ExternalProductEnum::$MULLION])
+              Rule::in([
+                ExternalProductEnum::$MULLION,
+                ExternalProductEnum::$CASEMENT
+              ])
             ],
             'width' => 'required|numeric|min:0',
             'height' => 'required|numeric|min:0',

@@ -10,4 +10,5 @@ export interface Extras {
   muntin_exterior_style?: string
   vertical_lines?: number
   horizontal_lines?: number
+  opening?: string
 }

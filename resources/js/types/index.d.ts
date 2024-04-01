@@ -21,6 +21,7 @@ import { type Status } from './interfaces/status'
 import { type OrderStatus } from './interfaces/orderStatus'
 import { type ExternalProductsExtrasMullion, type ExternalProducts } from './interfaces/externalProducts'
 import { type Mullion } from './interfaces/mullion'
+import { type Casement } from './interfaces/casement'
 
 export type {
   User,
@@ -46,5 +47,6 @@ export type {
   OrderStatus,
   ExternalProducts,
   ExternalProductsExtrasMullion,
-  Mullion
+  Mullion,
+  Casement
 }

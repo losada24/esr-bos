@@ -5,9 +5,11 @@ import DeleteIcon from '@/Components/Icons/DeleteIcon'
 import { type PageProps, type ExternalProducts, type PaginatorLink, type ExternalProductsExtrasMullion } from '@/types'
 import Pagination from '@/Components/Pagination'
 import ExternalProductsFilter from './ExternalProductsFilter'
-import { EXTERNAL_PRODUCT_MULLION } from '@/Utils/constants'
+import { EXTERNAL_PRODUCT_CASEMENT, EXTERNAL_PRODUCT_MULLION } from '@/Utils/constants'
 import Mullion from './Mullion'
 import { formatPrice } from '@/Utils/price'
+import { ExternalProductsExtrasCasement } from '@/types/interfaces/externalProducts'
+import Casement from './Casement'
 
 type IndexUserProps = PageProps & {
   externalProducts: {
@@ -72,6 +74,7 @@ export default function Index ({ auth, externalProducts }: IndexUserProps) {
                     </td>
                     <td className="border-t px-6 py-4 align-top">
                       {external_product === EXTERNAL_PRODUCT_MULLION && <Mullion extras={(extras as ExternalProductsExtrasMullion)} /> }
+                      {external_product === EXTERNAL_PRODUCT_CASEMENT && <Casement extras={(extras as ExternalProductsExtrasCasement)} /> }
                     </td>
                     <td className="border-t flex items-center px-6 py-4">
                         <Link

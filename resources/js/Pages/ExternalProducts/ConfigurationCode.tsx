@@ -17,7 +17,8 @@ const ConfigurationCode = ({ product }: { product: string }) => {
     "frame_type": "FLANGE",
     "limit_device": "NO",
     "protective_film": "NO",
-    "locking_mechanism": "MULTIPOINT LOCK"
+    "locking_mechanism": "MULTIPOINT LOCK",
+    "glass_type": "3/16 HS CLEAR +0.09PVB t Clear +3/16 HS CLEAR (REGULAR)"
   }`
 }
   </>

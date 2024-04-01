@@ -11,6 +11,7 @@ export interface ExternalProductsExtrasCasement {
   limit_device?: string
   protective_film?: string
   locking_mechanism?: string
+  glass_type?: string
 }
 
 export interface ExternalProducts {

@@ -31,6 +31,8 @@ export default function Create ({ auth, estimate }: PageProps & {
         return route('horizontal-roller.edit', id)
       case EXTERNAL_PRODUCTS.MULLION:
         return route('mullion.edit', id)
+      case EXTERNAL_PRODUCTS.CASEMENT:
+        return route('casement.edit', id)
       default:
         return ''
     }
@@ -118,6 +120,11 @@ export default function Create ({ auth, estimate }: PageProps & {
                                           router.get(route('mullion.create', estimate.id))
                                         }}>Mullion</button>
                                     </li>
+                                    <li>
+                                        <button onClick={() => {
+                                          router.get(route('casement.create', estimate.id))
+                                        }}>Casement</button>
+                                    </li>
                                 </ul>
                             </Dropdown>
                           </div>
@@ -167,7 +174,7 @@ export default function Create ({ auth, estimate }: PageProps & {
                           className="hover:bg-gray-100 focus-within:bg-gray-100"
                         >
                           <td className="border-t px-6 py-4 align-top">
-                            {system} {product.system === EXTERNAL_PRODUCTS.MULLION && `(${product.extras?.config})`}
+                            {system} {(product.system === EXTERNAL_PRODUCTS.MULLION || product.system === EXTERNAL_PRODUCTS.CASEMENT) && `(${product.extras?.config})`}
                           </td>
                           <td className="border-t px-6 py-4 align-top">
                             {line_item_name}

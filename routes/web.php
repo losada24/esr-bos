@@ -2,6 +2,7 @@
 
 use App\Enum\OrderStatusEnum;
 use App\Enum\RoleEnum;
+use App\Http\Controllers\CasementController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ClientController;
@@ -334,6 +335,32 @@ Route::middleware('auth')->group(function () {
     Route::put('/mullion/update/{product}', [MullionController::class, 'update'])
       ->middleware(["role:" . RoleEnum::$ADMIN. "|" . RoleEnum::$ACCOUNT_MANAGER . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$SUB_DEALER]) // TODO: Validate if the user is the owner of the order
       ->name('mullion.update');
+    // CASEMENT
+    Route::get('/casement/{id}/create', [CasementController::class, 'create'])
+      ->middleware([
+        "role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$ACCOUNT_MANAGER . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$SUB_DEALER,
+        "validate.estimate.status:" . OrderStatusEnum::$ESTIMATE . "|" . OrderStatusEnum::$SUB_DEALER_ESTIMATE . ",id",
+        "validate.estimate.owner:id"
+      ])
+      ->name('casement.create');
+    
+    Route::post('/casement/store', [CasementController::class, 'store'])
+      ->middleware([
+        "role:" . RoleEnum::$ADMIN. "|" . RoleEnum::$ACCOUNT_MANAGER . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$SUB_DEALER,
+      ])
+      ->name('casement.store');
+
+    Route::get('/casement/edit/{product}', [CasementController::class, 'edit'])
+      ->middleware([
+        "role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$ACCOUNT_MANAGER . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$SUB_DEALER,
+        "validate.estimate.owner:product",
+        "validate.estimate.status:" . OrderStatusEnum::$ESTIMATE . "|" . OrderStatusEnum::$SUB_DEALER_ESTIMATE . ",product",
+      ])
+      ->name('casement.edit');
+
+    Route::put('/casement/update/{product}', [CasementController::class, 'update'])
+      ->middleware(["role:" . RoleEnum::$ADMIN. "|" . RoleEnum::$ACCOUNT_MANAGER . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$SUB_DEALER]) // TODO: Validate if the user is the owner of the order
+      ->name('casement.update');
 });
 
 require __DIR__.'/auth.php';

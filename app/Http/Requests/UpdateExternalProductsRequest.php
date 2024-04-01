@@ -6,7 +6,7 @@ use App\Enum\ExternalProductEnum;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class UpdatesExternalProductsRequest extends FormRequest
+class UpdateExternalProductsRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -30,7 +30,10 @@ class UpdatesExternalProductsRequest extends FormRequest
             'external_product' => [
               'required',
               'max:255',
-              Rule::in([ExternalProductEnum::$MULLION])
+              Rule::in([
+                ExternalProductEnum::$MULLION,
+                ExternalProductEnum::$CASEMENT
+              ])
             ],
             'width' => 'required|numeric|min:0',
             'height' => 'required|numeric|min:0',

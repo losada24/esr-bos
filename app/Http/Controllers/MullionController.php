@@ -2,21 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Enum\FrameColorEnum;
-use App\Enum\GlassColorEnum;
 use App\Models\Order;
-use App\Http\Requests\StoreFixedWindowsRequest;
-use App\Http\Requests\UpdateFixedWindowsRequest;
-use App\Actions\CreateFixedWindows;
 use App\Actions\CreateMullion;
 use App\Models\Product;
-use App\Actions\UpdateFixedWindows;
 use App\Actions\UpdateMullion;
 use App\Enum\ExternalProductEnum;
-use App\Enum\MuntinPatternEnum;
-use App\Enum\MuntinStyleEnum;
 use App\Http\Requests\StoreMullionRequest;
 use App\Http\Requests\UpdateMullionRequest;
 use App\Models\ExternalProductConfiguration;
