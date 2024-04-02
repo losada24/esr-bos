@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Traits\Fractions;
 use App\Traits\Product;
 use Illuminate\Http\Request;
+use Illuminate\Contracts\Database\Eloquent\Builder;
 
 class LabelController extends Controller
 {
@@ -24,7 +25,13 @@ class LabelController extends Controller
 
       $columns = array('Order', 'Material', 'Mark', 'Size', 'Part', 'Qty', 'Image');
       
-      $order->load(['products', 'client']);
+      $order->load(['products' => function (Builder $query) {
+        $query->whereIn('system', [
+          ProductSystemEnum::$FIXED_WINDOWS,
+          ProductSystemEnum::$SINGLE_HUNG,
+          ProductSystemEnum::$HORIZONTAL_ROLLER
+        ]);
+    } , 'client']);
       $orderCuttingList = $this->orderedCuttingList($order);
       $callback = function() use ($orderCuttingList, $columns, $order) {
           $file = fopen('php://output', 'w');
@@ -38,7 +45,7 @@ class LabelController extends Controller
                 $labelsObject->material = $product['material'];
                 $labelsObject->line_item_name = $item['line_item_name'];
                 $labelsObject->size = $item['size'];
-                $labelsObject->system = ProductSystemEnum::getSystemNameAbbr($item['system']) . "/" . $item['part'];
+                $labelsObject->system = ProductSystemEnum::getSystemNameAbbr($item['system']) . "(" .$item['extras']['config'] . ")/" . $item['part'];
                 $labelsObject->qty = $i + 1 . "/" . $item['qty'];
                 $labelsObject->image = config('custom.labels_images_path') . $item['visual_id'] + 1 . ".jpg";
                 $labels[] = $labelsObject;
