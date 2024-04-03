@@ -208,7 +208,6 @@ Route::middleware('auth')->group(function () {
         "validate.estimate.owner:product"
       ])
       ->name('product.duplicate');
-    
     // ORDERS
     Route::get('/order', [OrderController::class, 'index'])
       ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$ACCOUNT_MANAGER . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$PRODUCTION . "|" . RoleEnum::$ACCOUNTING ."|" . RoleEnum::$SUB_DEALER . "|" . RoleEnum::$SHIPPING])
@@ -309,6 +308,11 @@ Route::middleware('auth')->group(function () {
     //EXTERNAL PRODUCTS
     Route::resource('external-products', ExternalProductController::class)
       ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$ACCOUNT_MANAGER]);
+    Route::post('external-products/duplicate/{externalProduct}', [ExternalProductController::class, 'duplicate'])
+      ->middleware([
+        "role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$ACCOUNT_MANAGER
+      ])
+      ->name('external-products.duplicate');
     // MULLION
     Route::get('/mullion/{id}/create', [MullionController::class, 'create'])
       ->middleware([

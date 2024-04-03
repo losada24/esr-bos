@@ -8,8 +8,9 @@ import ExternalProductsFilter from './ExternalProductsFilter'
 import { EXTERNAL_PRODUCT_CASEMENT, EXTERNAL_PRODUCT_MULLION } from '@/Utils/constants'
 import Mullion from './Mullion'
 import { formatPrice } from '@/Utils/price'
-import { ExternalProductsExtrasCasement } from '@/types/interfaces/externalProducts'
+import { type ExternalProductsExtrasCasement } from '@/types/interfaces/externalProducts'
 import Casement from './Casement'
+import CopyIcon from '@/Components/Icons/CopyIcon'
 
 type IndexUserProps = PageProps & {
   externalProducts: {
@@ -77,6 +78,12 @@ export default function Index ({ auth, externalProducts }: IndexUserProps) {
                       {external_product === EXTERNAL_PRODUCT_CASEMENT && <Casement extras={(extras as ExternalProductsExtrasCasement)} /> }
                     </td>
                     <td className="border-t flex items-center px-6 py-4">
+                        <button
+                          onClick={() => { router.post(route('external-products.duplicate', id)) }}
+                          title='Duplicate Product'
+                        >
+                          <CopyIcon className='mr-2'/>
+                        </button>
                         <Link
                           href={route('external-products.edit', id)}
                         >

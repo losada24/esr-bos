@@ -9,7 +9,7 @@ import AngleIcon from '@/Components/Icons/AngleIcon'
 import DeleteIcon from '@/Components/Icons/DeleteIcon'
 import PriceSummary from './PriceSummary'
 import { createMarkWithLeadingZero } from '@/Utils/mark'
-import { PRODUCT_SYSTEMS, ESTIMATE_STATUS, SUB_DEALER_ESTIMATE, EXTERNAL_PRODUCTS } from '@/Utils/constants'
+import { PRODUCT_SYSTEMS, ESTIMATE_STATUS, SUB_DEALER_ESTIMATE, EXTERNAL_PRODUCTS, REGULAR_GLASS_TYPE } from '@/Utils/constants'
 import MoneyIcon from '@/Components/Icons/MoneyIcon'
 import PrintEstimateButton from './PrintEstimateButton'
 import { getNumberWithFraction } from '@/Utils/numbers'
@@ -120,11 +120,13 @@ export default function Create ({ auth, estimate }: PageProps & {
                                           router.get(route('mullion.create', estimate.id))
                                         }}>Mullion</button>
                                     </li>
-                                    <li>
-                                        <button onClick={() => {
-                                          router.get(route('casement.create', estimate.id))
-                                        }}>Casement</button>
-                                    </li>
+                                    {estimate.glass_type === REGULAR_GLASS_TYPE && (
+                                      <li>
+                                          <button onClick={() => {
+                                            router.get(route('casement.create', estimate.id))
+                                          }}>Casement</button>
+                                      </li>
+                                    )}
                                 </ul>
                             </Dropdown>
                           </div>

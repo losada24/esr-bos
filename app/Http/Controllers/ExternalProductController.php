@@ -100,4 +100,14 @@ class ExternalProductController extends Controller
           ->back()
           ->with('success', 'External product deleted successfully.');
     }
+
+    public function duplicate(ExternalProductConfiguration $externalProduct)
+    {
+        $newProduct = $externalProduct->replicate();
+        $newProduct->save();
+
+        return redirect()
+        ->back()
+        ->with('success', 'Product duplicated successfully.');
+    }
 }
