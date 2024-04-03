@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Enum\PaymentMethodEnum;
+use App\Enum\RoleEnum;
 use App\Enum\States;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -32,7 +33,10 @@ class StoreEstimateToOrderRequest extends FormRequest
             'order_id' => [
               'required',
               'exists:orders,id',
-              new ValidateOrderCompany
+              Rule::when(
+                fn($input) => !auth()->user()->hasRole(RoleEnum::$ADMIN) && !auth()->user()->hasRole(RoleEnum::$ACCOUNT_MANAGER),
+                [new ValidateOrderCompany]
+              )
             ],
             'method' => [
               'required',
