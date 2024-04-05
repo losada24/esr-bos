@@ -30,7 +30,6 @@ export interface Order {
   external_purchase_id?: string
   glass_type: string
   materialConsumption?: MaterialConsumption[]
-  productsCount?: number
   balances?: Balance[]
   payments?: PaymentInfo[]
   orderCuttingList?: CuttingListProducts[]

@@ -35,6 +35,11 @@ class OrderController extends Controller
               ->filter($request->only(['text', 'status']))
               ->orderBy('updated_at', 'desc')
               ->orderBy('id', 'desc')
+              ->withCount(['products' => function($query) {
+                $query->where('system', ProductSystemEnum::$FIXED_WINDOWS)
+                      ->orWhere('system', ProductSystemEnum::$HORIZONTAL_ROLLER)
+                      ->orWhere('system', ProductSystemEnum::$SINGLE_HUNG);
+              }])
               ->paginate()
               ->withQueryString()
           ),
@@ -111,8 +116,6 @@ class OrderController extends Controller
       }
       else if ((auth()->user()->hasRole(RoleEnum::$ADMIN) || auth()->user()->hasRole(RoleEnum::$ACCOUNT_MANAGER)) && 
         (
-          $order->status ==  OrderStatusEnum::$PARTIAL_PRODUCTION_COMPLETED ||
-          $order->status ==  OrderStatusEnum::$PRODUCTION_COMPLETED ||
           $order->status ==  OrderStatusEnum::$PARTIAL_DELIVERED ||
           $order->status ==  OrderStatusEnum::$DELIVERED ||
           $order->status ==  OrderStatusEnum::$PARTIAL_PICKED_UP ||
@@ -123,29 +126,7 @@ class OrderController extends Controller
           $order->status ==  OrderStatusEnum::$READY_FOR_PARTIAL_PICKUP
         )) {
 
-          if ($order->status == OrderStatusEnum::$PARTIAL_PRODUCTION_COMPLETED) {
-            $statuses = [
-              [
-                'label' => OrderStatusEnum::$READY_FOR_PARTIAL_DELIVERY,
-                'value' => OrderStatusEnum::$READY_FOR_PARTIAL_DELIVERY
-              ],
-              [
-                'label' => OrderStatusEnum::$READY_FOR_PARTIAL_PICKUP,
-                'value' => OrderStatusEnum::$READY_FOR_PARTIAL_PICKUP
-              ],
-            ];
-          } else if ($order->status == OrderStatusEnum::$PRODUCTION_COMPLETED) {
-            $statuses = [
-              [
-                'label' => OrderStatusEnum::$READY_FOR_DELIVERY,
-                'value' => OrderStatusEnum::$READY_FOR_DELIVERY
-              ],
-              [
-                'label' => OrderStatusEnum::$READY_FOR_PICKUP,
-                'value' => OrderStatusEnum::$READY_FOR_PICKUP
-              ],
-            ];
-          } else if ($order->status == OrderStatusEnum::$DELIVERED || $order->status == OrderStatusEnum::$PICKED_UP) {
+          if ($order->status == OrderStatusEnum::$DELIVERED || $order->status == OrderStatusEnum::$PICKED_UP) {
             $statuses = [
               [
                 'label' => OrderStatusEnum::$ORDER_COMPLETED,

@@ -50,6 +50,7 @@ export default function Index ({ auth, orders }: IndexOrderProps) {
                 <th className="px-6 pt-5 pb-4">Project</th>
                 <th className="px-6 pt-5 pb-4">Name</th>
                 <th className="px-6 pt-5 pb-4">Status</th>
+                <th className="px-6 pt-5 pb-4">Product Count</th>
                 <th className="px-6 pt-5 pb-4">Created At</th>
                 <th className="px-6 pt-5 pb-4 w-14">Actions</th>
               </tr>
@@ -78,6 +79,9 @@ export default function Index ({ auth, orders }: IndexOrderProps) {
                           setShowStatusModal(true)
                         }
                       }} title='Show Status History' className="btn btn-outline-primary">{status?.toUpperCase()}</button>
+                    </td>
+                    <td className="border-t px-6 py-4 align-top text-right">
+                      <span className="badge my-0 bg-white-light text-black ltr:ml-4 rtl:mr-4">{order.products_count}</span>
                     </td>
                     <td className="border-t px-6 py-4 align-top">
                       {created_at?.toString()}
