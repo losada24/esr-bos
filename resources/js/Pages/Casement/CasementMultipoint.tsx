@@ -83,7 +83,7 @@ const CasementMultipoint = ({ width, height, svgHeight, svgWidth }: {
       <Path stroke-linecap="butt" transform="matrix(0, -0.75, 0.75, 0, 46, 101)" fill="none" stroke-linejoin="miter" d="M -0.00180272 2.001959 L 28.154449 2.001959 " stroke="#000000" strokeWidth="4" strokeOpacity="1" stroke-miterlimit="4"/>
       <Path stroke-linecap="butt" transform="matrix(0, -0.75, 0.75, 0, 46, 358)" fill="none" stroke-linejoin="miter" d="M -0.00206305 2.002225 L 28.154189 2.002225 " stroke="#000000" strokeWidth="4" strokeOpacity="1" stroke-miterlimit="4"/>
       <Path stroke-linecap="butt" transform="matrix(0, -0.75, 0.75, 0, 282, 358)" fill="none" stroke-linejoin="miter" d="M -0.00206305 2.002225 L 28.154189 2.002225 " stroke="#000000" strokeWidth="4" strokeOpacity="1" stroke-miterlimit="4"/>
-      <Path stroke-linecap="butt" transform="matrix(0, -0.75, 0.75, 0, 36, 130)" fill="none" stroke-linejoin="miter" d="M -0.00180272 2.001959 L 28.154449 2.001959 " stroke="#000000" strokeWidth="4" strokeOpacity="1" stroke-miterlimit="4"/>
+      <Path stroke-linecap="butt" transform="matrix(0, -0.75, 0.75, 0, 36, 330)" fill="none" stroke-linejoin="miter" d="M -0.00180272 2.001959 L 28.154449 2.001959 " stroke="#000000" strokeWidth="4" strokeOpacity="1" stroke-miterlimit="4"/>
       <Path stroke-linecap="butt" transform="matrix(0.75, 0, 0, 0.75, 240, 348)" fill="none" stroke-linejoin="miter" d="M -0.00147737 1.500547 L 24.154774 1.500547 " stroke="#000000" strokeWidth="4" stroke-opacity="1" stroke-miterlimit="4"/>
     </Svg>
   )

@@ -26,15 +26,20 @@ trait ExternalProductTrait {
   }
 
   public function getCasementOpeningOptions() {
-    $result = [];
-    $casementsProducts = ExternalProductConfiguration::where('external_product', ExternalProductEnum::$CASEMENT)->get();
+    $result = [
+      'RIGHT OPENING (XR)',
+      'LEFT OPENING (XR)'
+    ];
+    
+    return $result;
+    /* $casementsProducts = ExternalProductConfiguration::where('external_product', ExternalProductEnum::$CASEMENT)->get();
 
     foreach ($casementsProducts as $casementProduct) {
       if (isset($casementProduct->extras['opening']) && !isset($result[$casementProduct->extras['opening']])) {
         $result[$casementProduct->extras['opening']] = $casementProduct->extras['opening'];
       }
-  }
+    }
 
-  return $result;
+    return $result; */
   }
 }

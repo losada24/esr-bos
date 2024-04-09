@@ -96,12 +96,10 @@ const CasementMultipointXX = ({ width, height, svgHeight, svgWidth, widthtOfMove
       <Path stroke-linecap="round" transform="matrix(-0.75, -0.000000001309, 0.000000001309, -0.75, 316.655053, 31.340506)" fill="none" stroke-linejoin="round" d="M 2.498404 -0.999117 L 0.498403 0.500883 L 2.498404 2.000883 " stroke="#000000" strokeWidth="1" stroke-opacity="1" stroke-miterlimit="4"/>
       <Path stroke-linecap="round" transform="matrix(-0.75, -0.000000001309, 0.000000001309, -0.75, 316.655053, 31.340506)" fill="none" stroke-linejoin="round" d="M 316.680716 -0.999118 L 318.680716 0.500882 L 316.680716 2.000882 " stroke="#000000" strokeWidth="1" stroke-opacity="1" stroke-miterlimit="4"/>
       <Path stroke-linecap="butt" transform="matrix(0, -0.75, 0.75, 0, 76.902297, 62.956263)" fill="none" stroke-linejoin="miter" d="M -0.00102425 0.500062 L 47.540646 0.500062 " stroke="#000000" strokeWidth="1" stroke-opacity="1" stroke-miterlimit="4"/>
-      
-      <Path stroke-linecap="butt" transform="matrix(0, -0.75, 0.75, 0, 192, 130)" fill="none" stroke-linejoin="miter" d="M -0.00180272 2.001959 L 28.154449 2.001959 " stroke="#000000" strokeWidth="4" strokeOpacity="1" stroke-miterlimit="4"/>
-      <Path stroke-linecap="butt" transform="matrix(0, -0.75, 0.75, 0, 200, 130)" fill="none" stroke-linejoin="miter" d="M -0.00180272 2.001959 L 28.154449 2.001959 " stroke="#000000" strokeWidth="4" strokeOpacity="1" stroke-miterlimit="4"/>
+      <Path stroke-linecap="butt" transform="matrix(0, -0.75, 0.75, 0, 192, 265)" fill="none" stroke-linejoin="miter" d="M -0.00180272 2.001959 L 28.154449 2.001959 " stroke="#000000" strokeWidth="4" strokeOpacity="1" stroke-miterlimit="4"/>
+      <Path stroke-linecap="butt" transform="matrix(0, -0.75, 0.75, 0, 200, 265)" fill="none" stroke-linejoin="miter" d="M -0.00180272 2.001959 L 28.154449 2.001959 " stroke="#000000" strokeWidth="4" strokeOpacity="1" stroke-miterlimit="4"/>
       <Path stroke-linecap="butt" transform="matrix(0.75, 0, 0, 0.75, 95, 296)" fill="none" stroke-linejoin="miter" d="M -0.00147737 1.500547 L 24.154774 1.500547 " stroke="#000000" strokeWidth="4" stroke-opacity="1" stroke-miterlimit="4"/>
       <Path stroke-linecap="butt" transform="matrix(0.75, 0, 0, 0.75, 280, 296)" fill="none" stroke-linejoin="miter" d="M -0.00147737 1.500547 L 24.154774 1.500547 " stroke="#000000" strokeWidth="4" stroke-opacity="1" stroke-miterlimit="4"/>
-      
       <Text x="48%" y="25"
         fill='#000000'
         stroke='transparent'

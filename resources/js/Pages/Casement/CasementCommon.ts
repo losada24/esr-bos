@@ -1,5 +1,5 @@
 import * as Yup from 'yup'
-import { CASEMENT_MULTIPOINT_CONFIG, RUSH_GLASS_TYPE } from '@/Utils/constants'
+import { RUSH_GLASS_TYPE } from '@/Utils/constants'
 import { getGlassHeight, getGlassWidth } from '@/Utils/FixedWindows'
 
 export const casementSchema = Yup.object({
@@ -7,11 +7,7 @@ export const casementSchema = Yup.object({
   mark: Yup.string().required('Name is required').max(255, 'Max 255 characters'),
   qty: Yup.number().required('Qty is required').min(1, 'Min 1'),
   config: Yup.string().required('Configuration is required'),
-  opening: Yup.string()
-    .when(['config'], {
-      is: (config: string) => config === CASEMENT_MULTIPOINT_CONFIG,
-      then: Yup.string().required('Opening is required')
-    }),
+  opening: Yup.string().required('Opening is required'),
   width: Yup.number().required('Width is required').min(12, 'Min width 12').max(74, 'Max width 74'),
   height: Yup.number().required('Height is required').min(12, 'Min height 12').max(120, 'Max height 120'),
   markup: Yup.number().required('Markup is required'),

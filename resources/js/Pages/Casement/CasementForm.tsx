@@ -25,7 +25,8 @@ const CasementForm = ({ submitCount, errors, isCreate, frame_colors, glass_color
   setFieldValue: (field: string, value: any, shouldValidate?: boolean) => void
 }) => {
   const [glassTypes, setGlassTypes] = useState<string[]>([])
-  const [openingEnabled, setOpeningEnabled] = useState<boolean>(values.config === CASEMENT_MULTIPOINT_CONFIG)
+  // const [openingEnabled, setOpeningEnabled] = useState<boolean>(values.config === CASEMENT_MULTIPOINT_CONFIG)
+  const [openingOptions, setOpeningOptions] = useState<string[]>(values.config === CASEMENT_MULTIPOINT_CONFIG ? opening : ['NONE'])
   const LOW_E_OPTIONS: string[] = values.order_glass_type === EXPRESS_GLASS_TYPE ? ['NONE', 'LOW E Q366'] : ['NONE'] // 'LOW E SB70'
   useEffect(() => {
     if (values.glass_color !== '' && values.low_e !== '' && values.privacy !== '') {
@@ -41,11 +42,11 @@ const CasementForm = ({ submitCount, errors, isCreate, frame_colors, glass_color
   const changeConfiguration = (configuration: string) => {
     setFieldValue('config', configuration)
     if (configuration === CASEMENT_MULTIPOINT_CONFIG) {
-      setOpeningEnabled(true)
+      setOpeningOptions(opening)
       setFieldValue('panel_b', false)
     } else {
+      setOpeningOptions(['NONE'])
       setFieldValue('opening', configuration)
-      setOpeningEnabled(false)
     }
   }
 
@@ -76,6 +77,7 @@ const CasementForm = ({ submitCount, errors, isCreate, frame_colors, glass_color
                   autoComplete="qty"
                   placeholder='Qty'
                   type='number'
+                  min='1'
                 />
                 {(submitCount && errors.qty) ? <InputError message={errors.qty} className="mt-2" /> : ''}
               </div>
@@ -105,11 +107,10 @@ const CasementForm = ({ submitCount, errors, isCreate, frame_colors, glass_color
                   className="form-select"
                   autoComplete="opening"
                   placeholder='Opening'
-                  disabled={!openingEnabled}
                   as="select"
                 >
                   <option value="">Select Opening</option>
-                  {opening.map((opening, index) => (
+                  {openingOptions.map((opening, index) => (
                     <option key={index} value={opening}>{opening}</option>
                   ))}
                 </Field>

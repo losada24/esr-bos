@@ -14,6 +14,7 @@ use App\Rules\ValidateMuntingHorizontalLines;
 use App\Rules\ValidateMuntingVerticalLines;
 use App\Rules\ValidateMuntinStyle;
 use App\Traits\ExternalProductTrait;
+use App\Enum\CasementEnum;
 
 class StoreCasementRequest extends FormRequest
 {
@@ -55,8 +56,12 @@ class StoreCasementRequest extends FormRequest
               'string',
               'nullable',
               Rule::when(
-                fn($input) => $input->config == "MULTIPOINT"
+                fn($input) => $input->config == CasementEnum::$MULTIPOINT
                 , ['required', Rule::in(array_values($this->getCasementOpeningOptions()))]
+              ),
+              Rule::when(
+                fn($input) => $input->config == CasementEnum::$MULTIPOINT_XX
+                , ['required', Rule::in(["NONE"])]
               ),
             ],
             'frame_color' => [

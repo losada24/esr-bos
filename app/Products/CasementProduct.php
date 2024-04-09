@@ -77,12 +77,21 @@ class CasementProduct implements IProduct {
           ->get();
 
         foreach ($casementProducts as $casementProduct) {
-          if ($this->width > $casementProduct->width && $this->height > $casementProduct->height) {
+          if ($this->width > $casementProduct->width) {
             break;
           }
-          $unitPriceCost = $casementProduct->price;
+          $lastWidth = $casementProduct->width;
         }
 
+        //dd($casementProducts);
+
+        $casementProducts->where('width', $lastWidth)->each(function ($product) use (&$unitPriceCost) {
+          if ($this->height > $product->height) {
+            return;
+          }
+          $unitPriceCost = $product->price;
+        });
+        
         $screenCost = 0;
         $screen_price_by_sqft = config('custom.screen_price_by_sqft');
         if ($this->screenRequired) {
