@@ -8,11 +8,9 @@ use App\Enum\RoleEnum;
 use App\Http\Resources\CompanyResource;
 use App\Models\Company;
 use App\Models\Order;
-use App\Models\User;
-use Illuminate\Http\Request;
 use App\Traits\Product;
 use Inertia\Inertia;
-use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Contracts\Database\Eloquent\Builder;
 
 class PdfController extends Controller
 {
@@ -20,7 +18,9 @@ class PdfController extends Controller
 
     public function workOrder(Order $order)
     {
-      $order->load(['products', 'client']);
+      $order->load(['products' => function (Builder $builder) {
+        $builder->orderBy('product_sort', 'asc');
+      }, 'client']);
       $cuttingList = $this->getCuttingList($order);
 
       $orderData = [
@@ -39,7 +39,9 @@ class PdfController extends Controller
 
     public function cuttingList(Order $order)
     {
-      $order->load(['products', 'client']);
+      $order->load(['products' => function (Builder $builder) {
+        $builder->orderBy('product_sort', 'asc');
+      }, 'client']);
       $orderCuttingList = $this->orderedCuttingList($order);
 
       $orderData = [
@@ -57,7 +59,9 @@ class PdfController extends Controller
 
     public function materialConsumption(Order $order)
     {
-      $order->load(['products', 'client']);
+      $order->load(['products' => function (Builder $builder) {
+        $builder->orderBy('product_sort', 'asc');
+      }, 'client']);
       
       $materialConsumption = $this->getMaterialConsumption($order);
 
@@ -76,7 +80,9 @@ class PdfController extends Controller
 
     public function materialRelease(Order $order)
     {
-      $order->load(['products', 'client']);
+      $order->load(['products'=> function (Builder $builder) {
+        $builder->orderBy('product_sort', 'asc');
+      }, 'client']);
       
       $materialRelease = $this->getMaterialRelease($order);
 
@@ -97,7 +103,8 @@ class PdfController extends Controller
     {
       $order->load(['products' => function($query) {
         $query->where('system', '<>', ProductSystemEnum::$FIXED_WINDOWS)
-          ->where('extras->screen', true);
+          ->where('extras->screen', true)
+          ->orderBy('product_sort', 'asc');
       }, 'client']);
       
       $poScreen = $this->getPOScreen($order);
@@ -118,7 +125,8 @@ class PdfController extends Controller
     public function poBalance(Order $order)
     {
       $order->load(['products' => function($query) {
-        $query->where('system', ProductSystemEnum::$SINGLE_HUNG);
+        $query->where('system', ProductSystemEnum::$SINGLE_HUNG)
+        ->orderBy('product_sort', 'asc');
       }, 'client']);
       
       $poBalance = $this->getBalancePO($order);
@@ -138,7 +146,9 @@ class PdfController extends Controller
 
     public function poGlass(Order $order)
     {
-      $order->load(['products', 'client']);
+      $order->load(['products' => function (Builder $builder) {
+        $builder->orderBy('product_sort', 'asc');
+      }, 'client']);
       
       $poGlass = $this->getPOGlass($order);
 
@@ -160,7 +170,7 @@ class PdfController extends Controller
       $order->load(['products' => function($query) {
         $query->whereIn('system', [
           ExternalProductEnum::$MULLION
-        ]);
+        ])->orderBy('product_sort', 'asc');
       }, 'client']);
 
       $orderData = [
@@ -178,7 +188,9 @@ class PdfController extends Controller
 
     public function report(Order $order)
     {
-      $order->load(['products', 'client', 'user.company']);
+      $order->load(['products' => function (Builder $builder) {
+        $builder->orderBy('product_sort', 'asc');
+      }, 'client', 'user.company']);
       $company = Company::where('id', $order->user->company_id)->first();
       CompanyResource::withoutWrapping();
       return Inertia::render('Pdf/Report', [
@@ -189,7 +201,9 @@ class PdfController extends Controller
 
     public function subDealerReport(Order $order)
     {
-      $order->load(['products', 'client', 'user.company']);
+      $order->load(['products'=> function (Builder $builder) {
+        $builder->orderBy('product_sort', 'asc');
+      }, 'client', 'user.company']);
       $company = Company::where('id', $order->user->company_id)->first();
       CompanyResource::withoutWrapping();
       return Inertia::render('Pdf/SubDealerReport', [
@@ -200,7 +214,9 @@ class PdfController extends Controller
 
     public function production(Order $order)
     {
-      $order->load(['products', 'client', 'user.company']);
+      $order->load(['products'=> function (Builder $builder) {
+        $builder->orderBy('product_sort', 'asc');
+      }, 'client', 'user.company']);
       $company = Company::where('id', $order->user->company_id)->first();
       CompanyResource::withoutWrapping();
       return Inertia::render('Pdf/Production', [
@@ -211,7 +227,9 @@ class PdfController extends Controller
 
     public function estimateWithPrices(Order $order)
     { // TODO: Add Address and phone number to subdealers
-      $order->load(['products', 'client', 'user.company']);
+      $order->load(['products'=> function (Builder $builder) {
+        $builder->orderBy('product_sort', 'asc');
+      }, 'client', 'user.company']);
       $company = new \stdClass();
       $company->id = auth()->user()->company_id;
       $company->email = auth()->user()->email;
@@ -232,7 +250,9 @@ class PdfController extends Controller
 
     public function estimateWithoutPrices(Order $order)
     {
-      $order->load(['products', 'client', 'user.company']);
+      $order->load(['products'=> function (Builder $builder) {
+        $builder->orderBy('product_sort', 'asc');
+      }, 'client', 'user.company']);
       $company = new \stdClass();
       $company->id = auth()->user()->company_id;
       $company->email = auth()->user()->email;
@@ -253,7 +273,9 @@ class PdfController extends Controller
 
     public function estimateWithTotalPrices(Order $order)
     {
-      $order->load(['products', 'client', 'user.company']);
+      $order->load(['products' => function (Builder $builder) {
+        $builder->orderBy('product_sort', 'asc');
+      }, 'client', 'user.company']);
       $company = new \stdClass();
       $company->id = auth()->user()->company_id;
       $company->email = auth()->user()->email;
@@ -274,7 +296,9 @@ class PdfController extends Controller
 
     public function delivery(Order $order)
     {
-      $order->load(['products', 'client', 'user.company']);
+      $order->load(['products' => function (Builder $builder) {
+        $builder->orderBy('product_sort', 'asc');
+      }, 'client', 'user.company']);
       return Inertia::render('Pdf/Delivery', [
         'order' => $order,
       ]);

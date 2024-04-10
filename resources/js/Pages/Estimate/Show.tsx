@@ -16,11 +16,28 @@ import { getNumberWithFraction } from '@/Utils/numbers'
 import { isDealer, isSubDealer, isAdmin, isAccountManager } from '@/Utils/user'
 import CopyIcon from '@/Components/Icons/CopyIcon'
 import { formatPrice, getTotalPriceByRole, getUnitPriceByRole } from '@/Utils/price'
+import { useEffect, useRef, useState } from 'react'
+import { Reorder } from 'framer-motion'
+import Loader from '@/Components/Loader'
+
+interface BulkActions {
+  order_id: number
+  selected: boolean
+}
 
 export default function Create ({ auth, estimate }: PageProps & {
   clients: Client[]
   estimate: Order
 }) {
+  const IS_SUB_DEALER = isSubDealer(auth.user.roles.map((role: Role) => role.name))
+  const IS_DEALER = isDealer(auth.user.roles.map((role: Role) => role.name))
+  const IS_ADMIN = isAdmin(auth.user.roles.map((role: Role) => role.name))
+  const IS_ACCOUNT_MANAGER = isAccountManager(auth.user.roles.map((role: Role) => role.name))
+
+  const [products, setProducts] = useState<Product[]>(estimate.products ?? [])
+  const [selectedBulkActions, setSelectedBulkActions] = useState<BulkActions[]>([])
+  const [loading, setLoading] = useState<boolean>(false)
+  const firstUpdate = useRef(true)
   const getUrlBySystem = (system: string, id: number) => {
     switch (system) {
       case PRODUCT_SYSTEMS.FIXED_WINDOWS:
@@ -37,6 +54,49 @@ export default function Create ({ auth, estimate }: PageProps & {
         return ''
     }
   }
+
+  useEffect(() => {
+    const selectedBulkActions = estimate.products?.map((product: Product) => {
+      return {
+        order_id: product.id,
+        selected: false
+      }
+    })
+    setSelectedBulkActions(selectedBulkActions ?? [])
+  }, [estimate])
+
+  useEffect(() => {
+    if (firstUpdate.current) {
+      firstUpdate.current = false
+      return
+    }
+
+    const fetchData = async () => {
+      setLoading(true)
+      const values = products.map((product: Product, index) => {
+        return {
+          id: product.id,
+          order: index
+        }
+      })
+
+      router.post(route('product.sort'), {
+        order_id: estimate.id,
+        products: values
+      }, {
+        preserveState: true,
+        preserveScroll: true,
+        onError: (errors) => {
+          console.log(errors)
+        },
+        onFinish: () => {
+          setLoading(false)
+        }
+      })
+    }
+
+    fetchData()
+  }, [products])
 
   return (
       <AuthenticatedLayout
@@ -82,8 +142,8 @@ export default function Create ({ auth, estimate }: PageProps & {
                 <div className="flex flex-col gap-y-2 border-t border-white-light dark:border-white/10 py-2">
                   {(estimate.status === ESTIMATE_STATUS || estimate.status === SUB_DEALER_ESTIMATE) && (
                     <>
-                      {((isSubDealer(auth.user.roles.map((role: Role) => role.name)) && estimate.status === SUB_DEALER_ESTIMATE) ||
-                        ((isDealer(auth.user.roles.map((role: Role) => role.name)) || isAccountManager(auth.user.roles.map((role: Role) => role.name)) || isAdmin(auth.user.roles.map((role: Role) => role.name))) && estimate.status === ESTIMATE_STATUS)) && (
+                      {((IS_SUB_DEALER && estimate.status === SUB_DEALER_ESTIMATE) ||
+                          (IS_DEALER || IS_ADMIN || IS_ACCOUNT_MANAGER)) && (
                         <>
                           <div className='dropdown'>
                             <Dropdown
@@ -149,10 +209,66 @@ export default function Create ({ auth, estimate }: PageProps & {
               </Panel>
             </div>
             <div className='col-span-10'>
+              {loading && <Loader />}
+                {selectedBulkActions.filter((action) => action.selected).length > 0 && (
+                  <div className='flex justify-end items-end mb-3'>
+                      <button onClick={() => {
+                        if (confirm('Are you sure you want to delete selected products?')) {
+                          setLoading(true)
+                          router.post(route('product.bulk.destroy'), {
+                            order_id: estimate.id,
+                            products: selectedBulkActions.filter((action) => action.selected).map((action) => action.order_id)
+                          }, {
+                            onSuccess: () => {
+                              setProducts(products.filter((product) => {
+                                return selectedBulkActions.find((action) => {
+                                  return action.selected && action.order_id === product.id
+                                }) === undefined
+                              }))
+                            },
+                            onFinish: () => {
+                              setLoading(false)
+                            }
+                          })
+                        }
+                      }} className='btn btn-danger'>
+                        <DeleteIcon /> Delete
+                      </button>
+                  </div>
+                )}
               <div className='table-responsive'>
                 <table className="w-full whitespace-nowrap">
                   <thead>
                     <tr className="font-bold text-left">
+                      <th className="px-6 pt-5 pb-4">
+                        <label className="flex items-center cursor-pointer">
+                            <input
+                              name='select_all'
+                              type="checkbox"
+                              className="form-checkbox"
+                              checked={selectedBulkActions.filter((action) => action.selected).length === estimate.products?.length}
+                              onChange={(e) => {
+                                const selected = e.target.checked
+                                if (selected) {
+                                  setSelectedBulkActions(selectedBulkActions.map((action) => {
+                                    return {
+                                      ...action,
+                                      selected: true
+                                    }
+                                  }))
+                                } else {
+                                  setSelectedBulkActions(selectedBulkActions.map((action) => {
+                                    return {
+                                      ...action,
+                                      selected: false
+                                    }
+                                  }))
+                                }
+                              }}
+                            />
+                        </label>
+                      </th>
+                      <th className="px-6 pt-5 pb-4">#</th>
                       <th className="px-6 pt-5 pb-4">System</th>
                       <th className="px-6 pt-5 pb-4">Mark</th>
                       <th className="px-6 pt-5 pb-4 text-right">Qty</th>
@@ -161,73 +277,103 @@ export default function Create ({ auth, estimate }: PageProps & {
                       <th className="px-6 pt-5 pb-4">Glass</th>
                       <th className="px-6 pt-5 pb-4 text-right">Price</th>
                       <th className="px-6 pt-5 pb-4 text-right">Amount</th>
-                      {((isSubDealer(auth.user.roles.map((role: Role) => role.name)) && estimate.status === SUB_DEALER_ESTIMATE) ||
-                      ((isDealer(auth.user.roles.map((role: Role) => role.name)) || isAdmin(auth.user.roles.map((role: Role) => role.name)) || isAccountManager(auth.user.roles.map((role: Role) => role.name))) && estimate.status === ESTIMATE_STATUS)) && (
+                      {((IS_SUB_DEALER && estimate.status === SUB_DEALER_ESTIMATE) ||
+                            (IS_DEALER || IS_ADMIN || IS_ACCOUNT_MANAGER)) && (
                         <th className="px-6 pt-5 pb-4 w-14">Actions</th>
                       )}
                     </tr>
                   </thead>
-                  <tbody>
-                    {estimate.products?.map((product: Product) => {
-                      const { id, system, line_item_name, qty, width, height, frame_color, glass_type } = product
-                      return (
-                        <tr
-                          key={id}
-                          className="hover:bg-gray-100 focus-within:bg-gray-100"
-                        >
-                          <td className="border-t px-6 py-4 align-top">
-                            {system} {(product.system === EXTERNAL_PRODUCTS.MULLION || product.system === EXTERNAL_PRODUCTS.CASEMENT) && `(${product.extras?.config})`}
-                          </td>
-                          <td className="border-t px-6 py-4 align-top">
-                            {line_item_name}
-                          </td>
-                          <td className="border-t px-6 py-4 align-top text-right">
-                            {qty}
-                          </td>
-                          <td className="border-t px-6 py-4 align-top">
-                            {getNumberWithFraction(width)} x {getNumberWithFraction(height)}
-                          </td>
-                          <td className="border-t px-6 py-4 align-top">
-                            {frame_color}
-                          </td>
-                          <td className="border-t px-6 py-4 align-top">
-                            {product.system !== EXTERNAL_PRODUCTS.MULLION ? glass_type : 'N/A'}
-                          </td>
-                          <td className="border-t px-6 py-4 align-top text-right">
-                            {formatPrice(getUnitPriceByRole(product, auth.user.roles.map((role: Role) => role.name)))}
-                          </td>
-                          <td className="border-t px-6 py-4 align-top text-right">
-                            {formatPrice(getTotalPriceByRole(product, auth.user.roles.map((role: Role) => role.name)))}
-                          </td>
-                          {((isSubDealer(auth.user.roles.map((role: Role) => role.name)) && estimate.status === SUB_DEALER_ESTIMATE) ||
-                          (isDealer(auth.user.roles.map((role: Role) => role.name)) || isAdmin(auth.user.roles.map((role: Role) => role.name)) || isAccountManager(auth.user.roles.map((role: Role) => role.name)))) && (
-                            <td className="border-t flex items-center px-6 py-4">
-                              <button
-                                onClick={() => { router.post(route('product.duplicate', id)) }}
-                                title='Duplicate Product'
-                              >
-                                <CopyIcon className='mr-2'/>
-                              </button>
-                              <button
-                                onClick={() => { router.get(getUrlBySystem(system, id)) }}
-                              >
-                                <EditIcon />
-                              </button>
-                              <button
-                                onClick={() => {
-                                  if (confirm('Are you sure you want to delete this product?')) {
-                                    router.delete(route('product.destroy', id))
-                                  }
-                                }}
-                              >
-                                <DeleteIcon />
-                              </button>
-                          </td>
-                          )}
-                        </tr>
-                      )
-                    })
-                    }
+                    <Reorder.Group as='tbody' axis='y' values={products ?? []} onReorder={setProducts}>
+                      {products.map((product: Product, index: number) => {
+                        const { id, system, line_item_name, qty, width, height, frame_color, glass_type } = product
+                        return (
+                          <Reorder.Item
+                            as='tr'
+                            key={id}
+                            value={product}
+                            className="hover:bg-gray-100 focus-within:bg-gray-100"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                          >
+                            <td>
+                              <label className="flex items-center cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  className="form-checkbox"
+                                  checked={ selectedBulkActions[index] !== undefined ? selectedBulkActions[index].selected : false }
+                                  onChange={(e) => {
+                                    const selected = e.target.checked
+                                    setSelectedBulkActions(selectedBulkActions.map((action, i) => {
+                                      if (i === index) {
+                                        return {
+                                          ...action,
+                                          selected
+                                        }
+                                      }
+                                      return action
+                                    }))
+                                  }}
+                                />
+                              </label>
+                            </td>
+                            <td className="border-t px-6 py-4 align-top">
+                              {index + 1}
+                            </td>
+                            <td className="border-t px-6 py-4 align-top">
+                              {system} {(product.system === EXTERNAL_PRODUCTS.MULLION || product.system === EXTERNAL_PRODUCTS.CASEMENT) && `(${product.extras?.config})`}
+                            </td>
+                            <td className="border-t px-6 py-4 align-top">
+                              {line_item_name}
+                            </td>
+                            <td className="border-t px-6 py-4 align-top text-right">
+                              {qty}
+                            </td>
+                            <td className="border-t px-6 py-4 align-top">
+                              {getNumberWithFraction(width)} x {getNumberWithFraction(height)}
+                            </td>
+                            <td className="border-t px-6 py-4 align-top">
+                              {frame_color}
+                            </td>
+                            <td className="border-t px-6 py-4 align-top">
+                              {product.system !== EXTERNAL_PRODUCTS.MULLION ? glass_type : 'N/A'}
+                            </td>
+                            <td className="border-t px-6 py-4 align-top text-right">
+                              {formatPrice(getUnitPriceByRole(product, auth.user.roles.map((role: Role) => role.name)))}
+                            </td>
+                            <td className="border-t px-6 py-4 align-top text-right">
+                              {formatPrice(getTotalPriceByRole(product, auth.user.roles.map((role: Role) => role.name)))}
+                            </td>
+                            {((IS_SUB_DEALER && estimate.status === SUB_DEALER_ESTIMATE) ||
+                            (IS_DEALER || IS_ADMIN || IS_ACCOUNT_MANAGER)) && (
+                              <td className="border-t flex items-center px-6 py-4">
+                                <button
+                                  onClick={() => { router.post(route('product.duplicate', id)) }}
+                                  title='Duplicate Product'
+                                >
+                                  <CopyIcon className='mr-2'/>
+                                </button>
+                                <button
+                                  onClick={() => { router.get(getUrlBySystem(system, id)) }}
+                                >
+                                  <EditIcon />
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    if (confirm('Are you sure you want to delete this product?')) {
+                                      router.delete(route('product.destroy', id))
+                                    }
+                                  }}
+                                >
+                                  <DeleteIcon />
+                                </button>
+                            </td>
+                            )}
+                          </Reorder.Item>
+                        )
+                      })
+                      }
+                    </Reorder.Group>
                     {estimate.products?.length === 0 && (
                       <tr>
                         <td className="px-6 py-4 border-t" colSpan={9}>
@@ -235,7 +381,6 @@ export default function Create ({ auth, estimate }: PageProps & {
                         </td>
                       </tr>
                     )}
-                  </tbody>
                 </table>
               </div>
               <PriceSummary estimate={estimate} roles={auth.user.roles.map((role: Role) => role.name)} />

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
 import { Head, Link, router } from '@inertiajs/react'
 import EditIcon from '@/Components/Icons/EditIcon'
@@ -13,7 +13,7 @@ import CheckIcon from '@/Components/Icons/CheckIcon'
 import { isAccountManager, isAdmin, isDealer, isSubDealer } from '@/Utils/user'
 import { formatPrice, getGrandTotalByRole, getSubTotalPriceByRole } from '@/Utils/price'
 import OrderUpdateStatusModal from '@/Pages/Order/OrderUpdateStatusModal'
-import { ESTIMATE_STATUS, ROLES, SUB_DEALER_ESTIMATE } from '@/Utils/constants'
+import { ROLES, SUB_DEALER_ESTIMATE } from '@/Utils/constants'
 import CopyIcon from '@/Components/Icons/CopyIcon'
 
 type IndexOrderProps = PageProps & {

@@ -200,6 +200,14 @@ Route::middleware('auth')->group(function () {
         "validate.estimate.owner:product"
       ])
       ->name('product.destroy');
+    
+    Route::post('/bulk-delete-product', [ProductController::class, 'bulkDestroy'])
+      ->middleware([
+        "role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$ACCOUNT_MANAGER . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$SUB_DEALER,
+        // "validate.estimate.status:" . OrderStatusEnum::$ESTIMATE . "|" . OrderStatusEnum::$SUB_DEALER_ESTIMATE . ",product",
+        "validate.estimate.owner:product"
+      ])
+      ->name('product.bulk.destroy');
 
     Route::post('product/duplicate/{product}', [ProductController::class, 'duplicate'])
       ->middleware([
@@ -208,6 +216,14 @@ Route::middleware('auth')->group(function () {
         "validate.estimate.owner:product"
       ])
       ->name('product.duplicate');
+
+    Route::post('product/sort', [ProductController::class, 'sort'])
+      ->middleware([
+        "role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$ACCOUNT_MANAGER . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$SUB_DEALER,
+        // "validate.estimate.status:" . OrderStatusEnum::$ESTIMATE . "|" . OrderStatusEnum::$SUB_DEALER_ESTIMATE . ",product",
+        "validate.estimate.owner:product"
+      ])
+      ->name('product.sort');
     // ORDERS
     Route::get('/order', [OrderController::class, 'index'])
       ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$ACCOUNT_MANAGER . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$PRODUCTION . "|" . RoleEnum::$ACCOUNTING ."|" . RoleEnum::$SUB_DEALER . "|" . RoleEnum::$SHIPPING])

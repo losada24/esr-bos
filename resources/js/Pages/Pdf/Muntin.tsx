@@ -39,7 +39,6 @@ const Muntin = ({ product }: { product: Product }) => {
           <Text style={tw('text-xs font-bold w-3/12')}>
             Muntin Exterior Style
           </Text>
-
         </View>
       </View>
       <View style={tw('flex flex-col')}>

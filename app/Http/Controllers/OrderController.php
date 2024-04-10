@@ -11,10 +11,6 @@ use App\Enum\OrderStatusEnum;
 use App\Http\Requests\UpdateOrderStatusRequest;
 use App\Enum\ProductSystemEnum;
 use App\Enum\RoleEnum;
-use App\Models\OrderStatus;
-use App\Products\FixedWindowsProduct;
-use App\Products\HorizontalRollerProduct;
-use App\Products\SingleHuntProduct;
 use App\Traits\Product;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 
@@ -420,7 +416,9 @@ class OrderController extends Controller
     }
 
     public function workOrder(Order $order) {
-      $order->load(['products', 'client']);
+      $order->load(['products' => function (Builder $builder) {
+        $builder->orderBy('product_sort', 'asc');
+      }, 'client']);
       
       $materialConsumption = $this->getMaterialConsumption($order);
       $cuttingList = $this->getCuttingList($order);
@@ -443,7 +441,9 @@ class OrderController extends Controller
     public function show($id)
     {   // TODO: Send roles by auth user to always use same modal form to update status
         return Inertia::render('Order/Show', [
-          'order' => Order::with(['client', 'products', 'payments'])->findOrFail($id),
+          'order' => Order::with(['client', 'products' => function (Builder $builder) {
+            $builder->orderBy('product_sort', 'asc');
+          }, 'payments'])->findOrFail($id),
           'statuses' => [
             OrderStatusEnum::$ESTIMATE,
             OrderStatusEnum::$PRODUCTION,

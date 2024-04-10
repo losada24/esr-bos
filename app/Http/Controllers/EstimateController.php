@@ -18,6 +18,7 @@ use App\Models\Client;
 use App\Models\Order;
 use App\Enum\OrderStatusEnum;
 use App\Enum\States;
+use Illuminate\Contracts\Database\Eloquent\Builder;
 
 class EstimateController extends Controller
 {
@@ -124,7 +125,9 @@ class EstimateController extends Controller
     public function show($id)
     {
         return Inertia::render('Estimate/Show', [
-          'estimate' => Order::with(['client', 'products', 'user.company'])->findOrFail($id)
+          'estimate' => Order::with(['client', 'products' => function (Builder $builder) {
+            $builder->orderBy('product_sort', 'asc');
+          }, 'user.company'])->findOrFail($id)
         ]);
     }
 

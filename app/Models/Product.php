@@ -40,6 +40,7 @@ class Product extends Model
       'customer_total_price',
       'dealer_promotion_discount',
       'dealer_promotion_total_discount',
+      'product_sort'
     ];
 
     protected $dispatchesEvents = [
