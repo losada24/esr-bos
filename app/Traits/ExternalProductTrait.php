@@ -28,7 +28,7 @@ trait ExternalProductTrait {
   public function getCasementOpeningOptions() {
     $result = [
       'RIGHT OPENING (XR)',
-      'LEFT OPENING (XR)'
+      'LEFT OPENING (XL)'
     ];
     
     return $result;
