@@ -342,7 +342,7 @@ class HorizontalRollerProduct implements IProduct {
         $cuttingListResult[] = $this->getCuttingListObject('Glazing Bead Fix Vertical', 'VW 108 ' . $this->materialColor, 2 * $qty, $this->getNumberWithFraction($this->getGlassHeigth()), $this->getGlassHeigth());
         $cuttingListResult[] = $this->getCuttingListObject('Glazing Bead Move Vertical', 'VW 108 ' . $this->materialColor, 2 * $qty, $this->getNumberWithFraction($this->getMoveGlazingBead()), $this->getMoveGlazingBead());
         $cuttingListResult[] = $this->getCuttingListObject('Glazing Bead Width Horizontal', 'VW 108 ' . $this->materialColor, 4 * $qty, $this->getNumberWithFraction($this->getGlazingBeadWidth()), $this->getGlazingBeadWidth());
-        $cuttingListResult[] = $this->getCuttingListObject('Punch M.R', ' - ', '-', $this->getNumberWithFraction($this->getGlassWidth() + 0.44), 0);
+        $cuttingListResult[] = $this->getCuttingListObject('Punch M.R', ' - ', '-', $this->getNumberWithFraction($this->getGlassWidth() + 0.44 + 0.125), 0);
         $cuttingListResult[] = $this->getCuttingListObject('Steel Reiceforcement square', 'ST 0001', $qty, $this->getNumberWithFraction($this->getSteelReiceforment()), $this->getSteelReiceforment());
         $cuttingListResult[] = $this->getCuttingListObject('Screw Cover', 'SC 0001 ' . $this->materialColor, $qty, $this->getNumberWithFraction($this->getScrewCover()), $this->getScrewCover());
         $cuttingListResult[] = $this->getCuttingListObject('Side Sash PVC', 'SS 0001 ' . $this->materialColor, 2 * $qty, $this->getNumberWithFraction($this->getVentBottomAndTop()), $this->getVentBottomAndTop());

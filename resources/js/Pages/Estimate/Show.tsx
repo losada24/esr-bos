@@ -269,12 +269,11 @@ export default function Create ({ auth, estimate }: PageProps & {
                         </label>
                       </th>
                       <th className="px-6 pt-5 pb-4">#</th>
-                      <th className="px-6 pt-5 pb-4">System</th>
+                      <th className="px-6 pt-5 pb-4">System / Glass</th>
                       <th className="px-6 pt-5 pb-4">Mark</th>
                       <th className="px-6 pt-5 pb-4 text-right">Qty</th>
                       <th className="px-6 pt-5 pb-4">Size</th>
                       <th className="px-6 pt-5 pb-4">Frame Color</th>
-                      <th className="px-6 pt-5 pb-4">Glass</th>
                       <th className="px-6 pt-5 pb-4 text-right">Price</th>
                       <th className="px-6 pt-5 pb-4 text-right">Amount</th>
                       {((IS_SUB_DEALER && estimate.status === SUB_DEALER_ESTIMATE) ||
@@ -321,7 +320,12 @@ export default function Create ({ auth, estimate }: PageProps & {
                               {index + 1}
                             </td>
                             <td className="border-t px-6 py-4 align-top">
+                              <div className='font-bold'>
                               {system} {(product.system === EXTERNAL_PRODUCTS.MULLION || product.system === EXTERNAL_PRODUCTS.CASEMENT) && `(${product.extras?.config})`}
+                              </div>
+                              <div className='font-semibold text-xs'>
+                                {product.system !== EXTERNAL_PRODUCTS.MULLION ? glass_type : 'N/A'}
+                              </div>
                             </td>
                             <td className="border-t px-6 py-4 align-top">
                               {line_item_name}
@@ -334,9 +338,6 @@ export default function Create ({ auth, estimate }: PageProps & {
                             </td>
                             <td className="border-t px-6 py-4 align-top">
                               {frame_color}
-                            </td>
-                            <td className="border-t px-6 py-4 align-top">
-                              {product.system !== EXTERNAL_PRODUCTS.MULLION ? glass_type : 'N/A'}
                             </td>
                             <td className="border-t px-6 py-4 align-top text-right">
                               {formatPrice(getUnitPriceByRole(product, auth.user.roles.map((role: Role) => role.name)))}
