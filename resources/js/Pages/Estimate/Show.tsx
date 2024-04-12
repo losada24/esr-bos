@@ -253,11 +253,13 @@ export default function Create ({ auth, estimate }: PageProps & {
                             products: selectedBulkActions.filter((action) => action.selected).map((action) => action.order_id)
                           }, {
                             onSuccess: () => {
-                              setProducts(products.filter((product) => {
+                              const newProductsList = products.filter((product) => {
                                 return selectedBulkActions.find((action) => {
                                   return action.selected && action.order_id === product.id
                                 }) === undefined
-                              }))
+                              })
+                              setProducts(newProductsList)
+                              setOrderedProducts(newProductsList)
                             },
                             onFinish: () => {
                               setLoading(false)
