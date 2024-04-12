@@ -19,6 +19,7 @@ import { formatPrice, getTotalPriceByRole, getUnitPriceByRole } from '@/Utils/pr
 import { useEffect, useRef, useState } from 'react'
 import { Reorder } from 'framer-motion'
 import Loader from '@/Components/Loader'
+import ReorderIcon from '@/Components/Icons/ReorderIcon'
 
 interface BulkActions {
   order_id: number
@@ -35,9 +36,19 @@ export default function Create ({ auth, estimate }: PageProps & {
   const IS_ACCOUNT_MANAGER = isAccountManager(auth.user.roles.map((role: Role) => role.name))
 
   const [products, setProducts] = useState<Product[]>(estimate.products ?? [])
+  const [orderedProducts, setOrderedProducts] = useState<Product[]>(estimate.products ?? [])
   const [selectedBulkActions, setSelectedBulkActions] = useState<BulkActions[]>([])
   const [loading, setLoading] = useState<boolean>(false)
-  const firstUpdate = useRef(true)
+  // const firstUpdate = useRef(true)
+
+  const compareOrder = () => {
+    return products.map((product) => {
+      return product.id
+    }).join(',') === orderedProducts.map((product) => {
+      return product.id
+    }).join(',')
+  }
+
   const getUrlBySystem = (system: string, id: number) => {
     switch (system) {
       case PRODUCT_SYSTEMS.FIXED_WINDOWS:
@@ -65,7 +76,7 @@ export default function Create ({ auth, estimate }: PageProps & {
     setSelectedBulkActions(selectedBulkActions ?? [])
   }, [estimate])
 
-  useEffect(() => {
+  /* useEffect(() => {
     if (firstUpdate.current) {
       firstUpdate.current = false
       return
@@ -86,9 +97,6 @@ export default function Create ({ auth, estimate }: PageProps & {
       }, {
         preserveState: true,
         preserveScroll: true,
-        onError: (errors) => {
-          console.log(errors)
-        },
         onFinish: () => {
           setLoading(false)
         }
@@ -96,7 +104,7 @@ export default function Create ({ auth, estimate }: PageProps & {
     }
 
     fetchData()
-  }, [products])
+  }, [products]) */
 
   return (
       <AuthenticatedLayout
@@ -210,8 +218,33 @@ export default function Create ({ auth, estimate }: PageProps & {
             </div>
             <div className='col-span-10'>
               {loading && <Loader />}
-                {selectedBulkActions.filter((action) => action.selected).length > 0 && (
-                  <div className='flex justify-end items-end mb-3'>
+                  <div className='flex justify-end items-end mb-3 h-11 gap-x-3'>
+                    {!compareOrder() && (
+                      <button onClick={() => {
+                        setLoading(true)
+                        const values = products.map((product: Product, index) => {
+                          return {
+                            id: product.id,
+                            order: index
+                          }
+                        })
+
+                        router.post(route('product.sort'), {
+                          order_id: estimate.id,
+                          products: values
+                        }, {
+                          preserveState: true,
+                          preserveScroll: true,
+                          onFinish: () => {
+                            setOrderedProducts(products)
+                            setLoading(false)
+                          }
+                        })
+                      }} className='btn btn-primary h-9'>
+                        <ReorderIcon /> Save Order
+                      </button>
+                    )}
+                    {selectedBulkActions.filter((action) => action.selected).length > 0 && (
                       <button onClick={() => {
                         if (confirm('Are you sure you want to delete selected products?')) {
                           setLoading(true)
@@ -231,11 +264,11 @@ export default function Create ({ auth, estimate }: PageProps & {
                             }
                           })
                         }
-                      }} className='btn btn-danger'>
+                      }} className='btn btn-danger  h-9'>
                         <DeleteIcon /> Delete
                       </button>
+                    )}
                   </div>
-                )}
               <div className='table-responsive'>
                 <table className="w-full whitespace-nowrap">
                   <thead>
@@ -282,7 +315,9 @@ export default function Create ({ auth, estimate }: PageProps & {
                       )}
                     </tr>
                   </thead>
-                    <Reorder.Group as='tbody' axis='y' values={products ?? []} onReorder={setProducts}>
+                    <Reorder.Group as='tbody' axis='y' values={products ?? []} onReorder={(newOrder) => {
+                      setProducts(newOrder)
+                    }}>
                       {products.map((product: Product, index: number) => {
                         const { id, system, line_item_name, qty, width, height, frame_color, glass_type } = product
                         return (
@@ -349,7 +384,9 @@ export default function Create ({ auth, estimate }: PageProps & {
                             (IS_DEALER || IS_ADMIN || IS_ACCOUNT_MANAGER)) && (
                               <td className="border-t flex items-center px-6 py-4">
                                 <button
-                                  onClick={() => { router.post(route('product.duplicate', id)) }}
+                                  onClick={() => {
+                                    router.post(route('product.duplicate', id))
+                                  } }
                                   title='Duplicate Product'
                                 >
                                   <CopyIcon className='mr-2'/>

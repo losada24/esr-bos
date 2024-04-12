@@ -44,10 +44,8 @@ class ProductController extends Controller
         $newProduct = $product->replicate();
         $newProduct->line_item_name = $newProduct->line_item_name . ' (copy)';
         $newProduct->save();
-
-        return redirect()
-          ->route('estimate.show', ['estimate' => $estimate])
-          ->with('success', 'Product duplicated successfully.');
+        
+        return Inertia::location(route('estimate.show', ['estimate' => $estimate]));
     }
 
     public function sort(Request $request)
