@@ -221,7 +221,7 @@ export const COLORS: string[] = [
   '#1e40af',
   '#93c5fd',
   '#6b21a8',
-  '#4c0519'
+  '#134e4a'
 ]
 
 export const SQUARE = 'SQUARE'

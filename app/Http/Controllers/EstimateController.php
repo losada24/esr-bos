@@ -139,7 +139,10 @@ class EstimateController extends Controller
      */
     public function order($id)
     {
-        $estimate = Order::findOrFail($id); //TODO: not allow pay two times same order
+        $estimate = Order::with(['client', 'products'  => function (Builder $builder) {
+          $builder->orderBy('product_sort', 'asc');
+        }, 'user.company'])->findOrFail($id); //TODO: not allow pay two times same order
+
         if ($estimate->status != OrderStatusEnum::$ESTIMATE) {
           return redirect()
             ->route('estimate.index')
@@ -147,7 +150,7 @@ class EstimateController extends Controller
         }
 
         return Inertia::render('Estimate/Payment', [
-          'estimate' => Order::with(['client', 'products', 'user.company'])->findOrFail($id),
+          'estimate' => $estimate,
           'states' => array_values(States::$USA_STATES),
         ]);
     }
