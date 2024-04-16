@@ -386,6 +386,54 @@ class OrderController extends Controller
             'value' => OrderStatusEnum::$READY_FOR_DELIVERY
           ],
           [
+            'label' => OrderStatusEnum::$READY_FOR_PICKUP,
+            'value' => OrderStatusEnum::$READY_FOR_PICKUP
+          ],
+          [
+            'label' => OrderStatusEnum::$READY_FOR_PARTIAL_DELIVERY,
+            'value' => OrderStatusEnum::$READY_FOR_PARTIAL_DELIVERY
+          ],
+          [
+            'label' => OrderStatusEnum::$READY_FOR_PARTIAL_PICKUP,
+            'value' => OrderStatusEnum::$READY_FOR_PARTIAL_PICKUP
+          ],
+          [
+            'label' => OrderStatusEnum::$ORDER_COMPLETED,
+            'value' => OrderStatusEnum::$ORDER_COMPLETED
+          ]
+        ];
+      }
+      else if (auth()->user()->hasRole(RoleEnum::$PLANT_MANAGER)) {
+        $statuses = [
+          [
+            'label' => OrderStatusEnum::$PRODUCTION_IN_PROGRESS,
+            'value' => OrderStatusEnum::$PRODUCTION_IN_PROGRESS
+          ],
+          [
+            'label' => OrderStatusEnum::$PARTIAL_PRODUCTION_COMPLETED,
+            'value' => OrderStatusEnum::$PARTIAL_PRODUCTION_COMPLETED
+          ],
+          [
+            'label' => OrderStatusEnum::$PRODUCTION_COMPLETED,
+            'value' => OrderStatusEnum::$PRODUCTION_COMPLETED
+          ],
+          [
+            'label' => OrderStatusEnum::$PARTIAL_PICKED_UP,
+            'value' => OrderStatusEnum::$PARTIAL_PICKED_UP
+          ],
+          [
+            'label' => OrderStatusEnum::$PARTIAL_DELIVERED,
+            'value' => OrderStatusEnum::$PARTIAL_DELIVERED
+          ],
+          [
+            'label' => OrderStatusEnum::$READY_FOR_DELIVERY,
+            'value' => OrderStatusEnum::$READY_FOR_DELIVERY
+          ],
+          [
+            'label' => OrderStatusEnum::$READY_FOR_PICKUP,
+            'value' => OrderStatusEnum::$READY_FOR_PICKUP
+          ],
+          [
             'label' => OrderStatusEnum::$READY_FOR_PARTIAL_DELIVERY,
             'value' => OrderStatusEnum::$READY_FOR_PARTIAL_DELIVERY
           ],
