@@ -13,4 +13,5 @@ class RoleEnum
     public static $ACCOUNT_MANAGER = 'account_manager';
     public static $DEALER = 'dealer';
     public static $SUB_DEALER = 'sub_dealer';
+    public static $PLANT_MANAGER = 'plant_manager';
 }

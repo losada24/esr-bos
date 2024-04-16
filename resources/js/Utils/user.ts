@@ -32,6 +32,10 @@ export const isShipping = (roles: string[]): boolean => {
   return roles.find((role) => role === ROLES.SHIPPING) !== undefined
 }
 
+export const isPlantManager = (roles: string[]): boolean => {
+  return roles.find((role) => role === ROLES.PLANT_MANAGER) !== undefined
+}
+
 export const getRoleName = (roles: string[]): string => {
   if (isAdmin(roles)) {
     return 'Admin'
@@ -47,6 +51,8 @@ export const getRoleName = (roles: string[]): string => {
     return 'Accounting'
   } else if (isShipping(roles)) {
     return 'Shipping'
+  } else if (isPlantManager(roles)) {
+    return 'Plant Manager'
   } else {
     return 'User'
   }

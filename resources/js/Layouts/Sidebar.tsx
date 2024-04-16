@@ -10,7 +10,7 @@ import DashboardIcon from '@/Components/Icons/DashboardIcon'
 import BookIcon from '@/Components/Icons/BookIcon'
 import MoneyIcon from '@/Components/Icons/MoneyIcon'
 import CompanyIcon from '@/Components/Icons/CompanyIcon'
-import { isAdmin, isDealer, isSubDealer, isAccounting, isProduction, isAccountManager, isShipping } from '@/Utils/user'
+import { isAdmin, isDealer, isSubDealer, isAccounting, isProduction, isAccountManager, isShipping, isPlantManager } from '@/Utils/user'
 import { type Role, type Auth } from '@/types'
 import WindowsIcon from '@/Components/Icons/WindowsIcon'
 
@@ -27,6 +27,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
   const IS_ACCOUNTING = isAccounting(auth.user.roles.map((role: Role) => role.name))
   const IS_PRODUCTION = isProduction(auth.user.roles.map((role: Role) => role.name))
   const IS_SHIPPING = isShipping(auth.user.roles.map((role: Role) => role.name))
+  const IS_PLANT_MANAGER = isPlantManager(auth.user.roles.map((role: Role) => role.name))
 
   return (
         <div className={`${themeState.semidark ? 'dark' : ''}`}>
@@ -165,7 +166,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                 </li>
                               </>
                             )}
-                            {(IS_ADMIN || IS_ACCOUNT_MANAGER || IS_DEALER || IS_ACCOUNTING || IS_PRODUCTION || IS_SUB_DEALER || IS_SHIPPING) && (
+                            {(IS_ADMIN || IS_ACCOUNT_MANAGER || IS_DEALER || IS_ACCOUNTING || IS_PRODUCTION || IS_SUB_DEALER || IS_SHIPPING || IS_PLANT_MANAGER) && (
                               <>
                                 <li className="menu nav-item">
                                     <NavLink href={route('order.index')} active={route().current('order.index') || route().current('order.show') || route().current('order.workOrder')} className="group">

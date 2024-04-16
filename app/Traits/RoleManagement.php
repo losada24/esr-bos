@@ -16,6 +16,7 @@ trait RoleManagement {
                   RoleEnum::$SUB_DEALER,
                   RoleEnum::$ACCOUNTING,
                   RoleEnum::$PRODUCTION,
+                  RoleEnum::$PLANT_MANAGER,
                   RoleEnum::$SHIPPING,
                 ];
                 break;
@@ -25,6 +26,7 @@ trait RoleManagement {
                   RoleEnum::$SUB_DEALER,
                   RoleEnum::$ACCOUNTING,
                   RoleEnum::$PRODUCTION,
+                  RoleEnum::$PLANT_MANAGER,
                   RoleEnum::$SHIPPING,
                 ];
               break;

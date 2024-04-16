@@ -31,11 +31,7 @@ class OrderController extends Controller
               ->filter($request->only(['text', 'status']))
               ->orderBy('updated_at', 'desc')
               ->orderBy('id', 'desc')
-              ->withCount(['products' => function($query) {
-                $query->where('system', ProductSystemEnum::$FIXED_WINDOWS)
-                      ->orWhere('system', ProductSystemEnum::$HORIZONTAL_ROLLER)
-                      ->orWhere('system', ProductSystemEnum::$SINGLE_HUNG);
-              }])
+              ->with(['products'])
               ->paginate()
               ->withQueryString()
           ),
@@ -203,24 +199,52 @@ class OrderController extends Controller
         $order->status ==  OrderStatusEnum::$READY_FOR_PICKUP ||
         $order->status ==  OrderStatusEnum::$READY_FOR_PARTIAL_PICKUP
       )) {
-        $statuses = [
-          [
-            'label' => OrderStatusEnum::$DELIVERED,
-            'value' => OrderStatusEnum::$DELIVERED
-          ],
-          [
-            'label' => OrderStatusEnum::$PARTIAL_DELIVERED,
-            'value' => OrderStatusEnum::$PARTIAL_DELIVERED
-          ],
-          [
-            'label' => OrderStatusEnum::$PICKED_UP,
-            'value' => OrderStatusEnum::$PICKED_UP
-          ],
-          [
-            'label' => OrderStatusEnum::$PARTIAL_PICKED_UP,
-            'value' => OrderStatusEnum::$PARTIAL_PICKED_UP
-          ],
-        ];
+
+        if ($order->status == OrderStatusEnum::$READY_FOR_PARTIAL_DELIVERY || $order->status == OrderStatusEnum::$READY_FOR_PARTIAL_PICKUP) {
+          $statuses = [
+            [
+              'label' => OrderStatusEnum::$PARTIAL_DELIVERED,
+              'value' => OrderStatusEnum::$PARTIAL_DELIVERED
+            ],
+            [
+              'label' => OrderStatusEnum::$PARTIAL_PICKED_UP,
+              'value' => OrderStatusEnum::$PARTIAL_PICKED_UP
+            ],
+          ];
+        } else if ($order->status == OrderStatusEnum::$READY_FOR_DELIVERY || $order->status == OrderStatusEnum::$READY_FOR_PICKUP) {
+          $statuses = [
+            [
+              'label' => OrderStatusEnum::$DELIVERED,
+              'value' => OrderStatusEnum::$DELIVERED
+            ],
+            [
+              'label' => OrderStatusEnum::$PICKED_UP,
+              'value' => OrderStatusEnum::$PICKED_UP
+            ],
+          ];
+        }
+      }
+      else if ((auth()->user()->hasRole(RoleEnum::$ADMIN) || auth()->user()->hasRole(RoleEnum::$PLANT_MANAGER)) && 
+      ( 
+        $order->status ==  OrderStatusEnum::$PRODUCTION_IN_PROGRESS ||
+        $order->status ==  OrderStatusEnum::$READY_FOR_DELIVERY ||
+        $order->status ==  OrderStatusEnum::$READY_FOR_PARTIAL_DELIVERY ||
+        $order->status ==  OrderStatusEnum::$READY_FOR_PICKUP ||
+        $order->status ==  OrderStatusEnum::$READY_FOR_PARTIAL_PICKUP ||
+        $order->status ==  OrderStatusEnum::$PARTIAL_PRODUCTION_COMPLETED ||
+        $order->status ==  OrderStatusEnum::$PRODUCTION_COMPLETED
+      )) {
+          $statuses = [
+            [
+              'label' => OrderStatusEnum::$PARTIAL_PRODUCTION_COMPLETED,
+              'value' => OrderStatusEnum::$PARTIAL_PRODUCTION_COMPLETED
+            ],
+            [
+              'label' => OrderStatusEnum::$PRODUCTION_COMPLETED,
+              'value' => OrderStatusEnum::$PRODUCTION_COMPLETED
+            ]
+          ];
+        
       }
       else if (auth()->user()->hasRole(RoleEnum::$SUB_DEALER) && $order->status ==  OrderStatusEnum::$SUB_DEALER_ESTIMATE) {
           $statuses = [

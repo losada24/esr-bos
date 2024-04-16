@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
 import { Head, Link } from '@inertiajs/react'
-import { type PageProps, type Order, type PaginatorLink, type Role, type Status } from '@/types'
+import { type PageProps, type Order, type PaginatorLink, type Role, type Status, Product } from '@/types'
 import Pagination from '@/Components/Pagination'
 import EyeIcon from '@/Components/Icons/EyeIcon'
 import { createMarkWithLeadingZero } from '@/Utils/mark'
-import { isAdmin, isAccounting, isShipping, isProduction, isSubDealer, isAccountManager } from '@/Utils/user'
+import { isAdmin, isAccounting, isShipping, isProduction, isSubDealer, isAccountManager, isPlantManager } from '@/Utils/user'
 import OrderFilter from './OrderFilter'
 import OrderUpdateStatusModal from './OrderUpdateStatusModal'
 import CheckIcon from '@/Components/Icons/CheckIcon'
 import OrderShowStatusModal from './OrderShowStatusModal'
+import { PRODUCT_SYSTEMS } from '@/Utils/constants'
 
 type IndexOrderProps = PageProps & {
   orders: {
@@ -21,11 +22,17 @@ type IndexOrderProps = PageProps & {
 }
 
 export default function Index ({ auth, orders }: IndexOrderProps) {
+  const IS_ADMIN = isAdmin(auth.user.roles.map((role: Role) => role.name))
+  const IS_ACCOUNTING = isAccounting(auth.user.roles.map((role: Role) => role.name))
+  const IS_SHIPPING = isShipping(auth.user.roles.map((role: Role) => role.name))
+  const IS_PRODUCTION = isProduction(auth.user.roles.map((role: Role) => role.name))
+  const IS_ACCOUNT_MANAGER = isAccountManager(auth.user.roles.map((role: Role) => role.name))
+  const IS_PLANT_MANAGER = isPlantManager(auth.user.roles.map((role: Role) => role.name))
+
   const [showOrderModal, setShowOrderModal] = useState<boolean>(false)
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [showStatusModal, setShowStatusModal] = useState<boolean>(false)
   const [selectedStatusOrder, setSelectedStatusOrder] = useState<Order | null>(null)
-
   const [statuses, setStatuses] = useState<Status[]>([])
 
   useEffect(() => {
@@ -33,6 +40,15 @@ export default function Index ({ auth, orders }: IndexOrderProps) {
       setStatuses(data)
     })
   }, [])
+
+  const getProductCount = (products: Product[]) => {
+    return products.filter((product) =>
+      product.system === PRODUCT_SYSTEMS.FIXED_WINDOWS ||
+      product.system === PRODUCT_SYSTEMS.HORIZONTAL_ROLLER ||
+      product.system === PRODUCT_SYSTEMS.SINGLE_HUNG).reduce((acc, product) => {
+      return acc + product.qty
+    }, 0)
+  }
 
   return (
       <AuthenticatedLayout
@@ -81,7 +97,7 @@ export default function Index ({ auth, orders }: IndexOrderProps) {
                       }} title='Show Status History' className="btn btn-outline-primary">{status?.toUpperCase()}</button>
                     </td>
                     <td className="border-t px-6 py-4 align-top text-right">
-                      <span className="badge my-0 bg-white-light text-black ltr:ml-4 rtl:mr-4">{order.products_count}</span>
+                      <span className="badge my-0 bg-white-light text-black ltr:ml-4 rtl:mr-4">{getProductCount(order.products ?? [])}</span>
                     </td>
                     <td className="border-t px-6 py-4 align-top">
                       {created_at?.toString()}
@@ -95,11 +111,7 @@ export default function Index ({ auth, orders }: IndexOrderProps) {
                           <EyeIcon />
                         </Link>
                         {
-                          (isAdmin(auth.user.roles.map((role: Role) => role.name)) ||
-                          isAccounting(auth.user.roles.map((role: Role) => role.name)) ||
-                          isAccountManager(auth.user.roles.map((role: Role) => role.name)) ||
-                          isProduction(auth.user.roles.map((role: Role) => role.name)) ||
-                          isShipping(auth.user.roles.map((role: Role) => role.name))) && (
+                          (IS_ADMIN || IS_ACCOUNTING || IS_ACCOUNT_MANAGER || IS_PRODUCTION || IS_SHIPPING || IS_PLANT_MANAGER) && (
                           <button title='Change Order Status' onClick={() => {
                             setSelectedOrder(order)
                             setShowOrderModal(true)

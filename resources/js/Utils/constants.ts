@@ -169,7 +169,8 @@ export const ROLES = {
   SUB_DEALER: 'sub_dealer',
   ACCOUNTING: 'accounting',
   PRODUCTION: 'production',
-  SHIPPING: 'shipping'
+  SHIPPING: 'shipping',
+  PLANT_MANAGER: 'plant_manager'
 }
 
 export const PERSMISSION_USERS_LIST = 'users list'

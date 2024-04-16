@@ -128,6 +128,18 @@ class Order extends Model
             ->orWhere('status', OrderStatusEnum::$PARTIAL_DELIVERED)
             ->orWhere('status', OrderStatusEnum::$PARTIAL_PICKED_UP);
         }
+        else if (auth()->user()->hasRole(RoleEnum::$PLANT_MANAGER)) {
+          $query->where('status', OrderStatusEnum::$PRODUCTION_IN_PROGRESS)
+            ->orWhere('status', OrderStatusEnum::$PARTIAL_PRODUCTION_COMPLETED)
+            ->orWhere('status', OrderStatusEnum::$PRODUCTION_COMPLETED)
+            ->orWhere('status', OrderStatusEnum::$READY_FOR_PARTIAL_DELIVERY)
+            ->orWhere('status', OrderStatusEnum::$READY_FOR_PICKUP)
+            ->orWhere('status', OrderStatusEnum::$READY_FOR_PARTIAL_PICKUP)
+            ->orWhere('status', OrderStatusEnum::$DELIVERED)
+            ->orWhere('status', OrderStatusEnum::$PICKED_UP)
+            ->orWhere('status', OrderStatusEnum::$PARTIAL_DELIVERED)
+            ->orWhere('status', OrderStatusEnum::$PARTIAL_PICKED_UP);
+        }
         else if (auth()->user()->hasRole(RoleEnum::$SUB_DEALER)) {
           $query->where('user_id', auth()->user()->id)
             ->where(function (Builder $query) {
