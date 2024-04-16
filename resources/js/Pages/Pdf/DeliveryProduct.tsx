@@ -2,10 +2,7 @@ import React from 'react'
 import { Text, View } from '@react-pdf/renderer'
 import { createTw } from 'react-pdf-tailwind'
 import { type Product } from '@/types'
-import ReportProductImage from '@/Pages/Pdf/ReportProductImage'
-import { PRODUCT_SYSTEMS } from '@/Utils/constants'
 import { getNumberWithFraction } from '@/Utils/numbers'
-import { formatPrice } from '@/Utils/price'
 
 const tw = createTw({
   theme: {
@@ -44,6 +41,9 @@ const DeliveryProduct = ({ product }: { product: Product }) => {
           <View style={tw('flex flex-row justify-start items-center gap-3 w-2/12')}>
             <Text style={tw('text-xs text-gray-900 font-bold')}>Pending</Text>
           </View>
+          <View style={tw('flex flex-row justify-start items-center gap-3 w-2/12')}>
+            <Text style={tw('text-xs text-gray-900 font-bold')}>Total Completed</Text>
+          </View>
         </View>
       </View>
       <View style={tw('flex flex-col')}>
@@ -62,6 +62,9 @@ const DeliveryProduct = ({ product }: { product: Product }) => {
           </View>
           <View style={tw('flex flex-row justify-start items-center gap-3 w-2/12')}>
             <Text style={tw('text-xs text-gray-900 font-regular')}>{product.qty}</Text>
+          </View>
+          <View style={tw('flex flex-row justify-start items-center gap-3 w-2/12')}>
+            <Text style={tw('text-xs text-gray-900 font-regular border-b border-gray-200')}></Text>
           </View>
           <View style={tw('flex flex-row justify-start items-center gap-3 w-2/12')}>
             <Text style={tw('text-xs text-gray-900 font-regular border-b border-gray-200')}></Text>

@@ -31,7 +31,7 @@ class ProductionStatusChange extends Mailable
       $appName = config('app.name');
       $quoteNumber = '#' . $this->order->getQuoteNumberAttribute();
         return new Envelope(
-            subject: "[$appName] Order $quoteNumber Update: Production Status Change",
+            subject: "[$appName] Order $quoteNumber Update: Production Status Changed to " . strtoupper($this->status),
         );
     }
 

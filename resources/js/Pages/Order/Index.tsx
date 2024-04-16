@@ -10,7 +10,8 @@ import OrderFilter from './OrderFilter'
 import OrderUpdateStatusModal from './OrderUpdateStatusModal'
 import CheckIcon from '@/Components/Icons/CheckIcon'
 import OrderShowStatusModal from './OrderShowStatusModal'
-import { PRODUCT_SYSTEMS } from '@/Utils/constants'
+import { PRODUCT_SYSTEMS, ROLES } from '@/Utils/constants'
+import { formatPrice, getGrandTotalByRole } from '@/Utils/price'
 
 type IndexOrderProps = PageProps & {
   orders: {
@@ -50,6 +51,25 @@ export default function Index ({ auth, orders }: IndexOrderProps) {
     }, 0)
   }
 
+  const getGlassCount = (products: Product[]) => {
+    return products.filter((product) =>
+      product.system === PRODUCT_SYSTEMS.FIXED_WINDOWS ||
+      product.system === PRODUCT_SYSTEMS.HORIZONTAL_ROLLER ||
+      product.system === PRODUCT_SYSTEMS.SINGLE_HUNG).reduce((acc, product) => {
+      let glassCount = 1
+      if (product.system !== PRODUCT_SYSTEMS.FIXED_WINDOWS) {
+        glassCount = 2
+      }
+      return acc + (product.qty * glassCount)
+    }, 0)
+  }
+
+  const getTotals = () => {
+    return orders.data.reduce((acc, order) => {
+      return acc + getGrandTotalByRole(order, [ROLES.DEALER])
+    }, 0)
+  }
+
   return (
       <AuthenticatedLayout
           auth={auth}
@@ -66,7 +86,10 @@ export default function Index ({ auth, orders }: IndexOrderProps) {
                 <th className="px-6 pt-5 pb-4">Project</th>
                 <th className="px-6 pt-5 pb-4">Name</th>
                 <th className="px-6 pt-5 pb-4">Status</th>
-                <th className="px-6 pt-5 pb-4">Product Count</th>
+                <th className="px-6 pt-5 pb-4">Counts</th>
+                {(IS_ADMIN || IS_ACCOUNTING) && (
+                  <th className="px-6 pt-5 pb-4 text-right">Price</th>
+                )}
                 <th className="px-6 pt-5 pb-4">Created At</th>
                 <th className="px-6 pt-5 pb-4 w-14">Actions</th>
               </tr>
@@ -97,8 +120,22 @@ export default function Index ({ auth, orders }: IndexOrderProps) {
                       }} title='Show Status History' className="btn btn-outline-primary">{status?.toUpperCase()}</button>
                     </td>
                     <td className="border-t px-6 py-4 align-top text-right">
-                      <span className="badge my-0 bg-white-light text-black ltr:ml-4 rtl:mr-4">{getProductCount(order.products ?? [])}</span>
+                      <ul>
+                        <li className='flex justify-between mb-1'>
+                          <span className='font-semibold text-left'>Product count:</span>
+                          <span className="badge my-0 bg-white-light text-black ltr:ml-4 rtl:mr-4">{getProductCount(order.products ?? [])}</span>
+                        </li>
+                        <li className='flex justify-between'>
+                          <span className='font-semibold text-left'>Glass count:</span>
+                          <span className="badge my-0 bg-white-light text-black ltr:ml-4 rtl:mr-4">{getGlassCount(order.products ?? [])}</span>
+                        </li>
+                      </ul>
                     </td>
+                    {(IS_ADMIN || IS_ACCOUNTING) && (
+                      <td className="border-t px-6 py-4 align-top text-right">
+                        {`${formatPrice(getGrandTotalByRole(order, [ROLES.DEALER]))}`}
+                      </td>
+                    )}
                     <td className="border-t px-6 py-4 align-top">
                       {created_at?.toString()}
                     </td>
@@ -131,6 +168,17 @@ export default function Index ({ auth, orders }: IndexOrderProps) {
                 </tr>
               )}
             </tbody>
+            {(IS_ACCOUNTING || IS_ADMIN) && (
+              <tfoot>
+                <tr>
+                  <td className="px-6 py-4 border-t" colSpan={5}>&nbsp;</td>
+                  <td className='px-6 py-4 border-t text-right'>
+                    {formatPrice(getTotals())}
+                  </td>
+                  <td className="px-6 py-4 border-t" colSpan={2}>&nbsp;</td>
+                </tr>
+              </tfoot>
+            )}
           </table>
         </div>
         <Pagination links={orders.meta.links} />

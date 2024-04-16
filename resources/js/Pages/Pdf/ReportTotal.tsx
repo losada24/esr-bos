@@ -57,19 +57,19 @@ const ReportTotal = ({ order, roles }: { order: Order, roles: string[] }) => {
             <Text style={tw('text-base text-gray-900 font-regular w-6/12 text-left')}>{`${formatPrice(RG_OTHER_PRICE)}`}</Text>
           </View>
         )}
-        {((IS_DEALER || IS_SUBDEALER || IS_ACCOUNT_MANAGER || IS_ADMIN) && ORDER_PROMOTION > 0) && (
+        {((IS_DEALER || IS_SUBDEALER || IS_ACCOUNT_MANAGER || IS_ADMIN || IS_ACCOUNTING) && ORDER_PROMOTION > 0) && (
           <View style={tw('flex flex-row justify-start gap-x-3')}>
             <Text style={tw('text-base text-gray-900 font-bold w-6/12 text-right')}>Order Discount:</Text>
             <Text style={tw('text-base text-gray-900 font-regular w-6/12 text-left')}>{`-${formatPrice(ORDER_PROMOTION)}`}</Text>
           </View>
         )}
-        {((IS_DEALER || IS_ACCOUNT_MANAGER || IS_ADMIN) && DEALER_PROMOTION > 0) && (
+        {((IS_DEALER || IS_ACCOUNT_MANAGER || IS_ADMIN || IS_ACCOUNTING) && DEALER_PROMOTION > 0) && (
           <View style={tw('flex flex-row justify-start gap-x-3')}>
             <Text style={tw('text-base text-gray-900 font-bold w-6/12 text-right')}>Dealer Discount:</Text>
             <Text style={tw('text-base text-gray-900 font-regular w-6/12 text-left')}>{`-${formatPrice(DEALER_PROMOTION)}`}</Text>
           </View>
         )}
-        {((IS_DEALER || IS_SUBDEALER || IS_ACCOUNT_MANAGER || IS_ADMIN) && (order?.subdealer_other ?? 0) > 0) && (
+        {((IS_DEALER || IS_SUBDEALER || IS_ACCOUNT_MANAGER || IS_ADMIN || IS_ACCOUNTING) && (order?.subdealer_other ?? 0) > 0) && (
           <View style={tw('flex flex-row justify-start gap-x-3')}>
             <Text style={tw('text-base text-gray-900 font-bold w-6/12 text-right')}>Sub Dealer Other:</Text>
             <Text style={tw('text-base text-gray-900 font-regular w-6/12 text-left')}>{`${formatPrice(order?.subdealer_other ?? 0)}`}</Text>

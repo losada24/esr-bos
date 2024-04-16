@@ -76,36 +76,6 @@ export default function Create ({ auth, estimate }: PageProps & {
     setSelectedBulkActions(selectedBulkActions ?? [])
   }, [estimate])
 
-  /* useEffect(() => {
-    if (firstUpdate.current) {
-      firstUpdate.current = false
-      return
-    }
-
-    const fetchData = async () => {
-      setLoading(true)
-      const values = products.map((product: Product, index) => {
-        return {
-          id: product.id,
-          order: index
-        }
-      })
-
-      router.post(route('product.sort'), {
-        order_id: estimate.id,
-        products: values
-      }, {
-        preserveState: true,
-        preserveScroll: true,
-        onFinish: () => {
-          setLoading(false)
-        }
-      })
-    }
-
-    fetchData()
-  }, [products]) */
-
   return (
       <AuthenticatedLayout
           auth={auth}
@@ -281,7 +251,7 @@ export default function Create ({ auth, estimate }: PageProps & {
                               name='select_all'
                               type="checkbox"
                               className="form-checkbox"
-                              checked={selectedBulkActions.filter((action) => action.selected).length === estimate.products?.length}
+                              checked={selectedBulkActions.filter((action) => action.selected).length === estimate.products?.length && estimate.products?.length > 0}
                               onChange={(e) => {
                                 const selected = e.target.checked
                                 if (selected) {
@@ -358,7 +328,7 @@ export default function Create ({ auth, estimate }: PageProps & {
                             </td>
                             <td className="border-t px-6 py-4 align-top">
                               <div className='font-bold'>
-                              {system} {(product.system === EXTERNAL_PRODUCTS.MULLION || product.system === EXTERNAL_PRODUCTS.CASEMENT) && `(${product.extras?.config})`}
+                              {system} {product.extras?.config && `(${product.extras?.config})`}
                               </div>
                               <div className='font-semibold text-xs'>
                                 {product.system !== EXTERNAL_PRODUCTS.MULLION ? glass_type : 'N/A'}

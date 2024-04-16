@@ -70,6 +70,11 @@ const DeliverySummary = ({ order }: { order: Order }) => {
           <Text style={tw('text-base text-gray-900 font-regular w-3/12 text-right')}>{systemSummary.reduce((acc, value) => acc + value.quantity, 0)}</Text>
           <Text style={tw('text-base text-gray-900 font-regular w-3/12 text-right border-b border-gray-200')}></Text>
         </View>
+        <View style={tw('flex flex-row justify-start gap-x-6')}>
+          <Text style={tw('text-base text-gray-900 font-bold w-6/12')}>Total Completed</Text>
+          <Text style={tw('text-base text-gray-900 font-regular w-3/12 text-right')}></Text>
+          <Text style={tw('text-base text-gray-900 font-regular w-3/12 text-right border-b border-gray-200')}></Text>
+        </View>
       </View>
     </View>
   )
