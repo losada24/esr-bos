@@ -2,7 +2,6 @@ import React from 'react'
 import { Text, View } from '@react-pdf/renderer'
 import { createTw } from 'react-pdf-tailwind'
 import { type Order } from '@/types'
-import { getSubTotalPriceByRole, formatPrice } from '@/Utils/price'
 
 const tw = createTw({
   theme: {

@@ -27,7 +27,7 @@ const CasementForm = ({ submitCount, errors, isCreate, frame_colors, glass_color
   const [glassTypes, setGlassTypes] = useState<string[]>([])
   // const [openingEnabled, setOpeningEnabled] = useState<boolean>(values.config === CASEMENT_MULTIPOINT_CONFIG)
   const [openingOptions, setOpeningOptions] = useState<string[]>(values.config === CASEMENT_MULTIPOINT_CONFIG ? opening : ['NONE'])
-  const LOW_E_OPTIONS: string[] = values.order_glass_type === EXPRESS_GLASS_TYPE ? ['NONE', 'LOW E Q366'] : ['NONE'] // 'LOW E SB70'
+  const LOW_E_OPTIONS: string[] = values.order_glass_type === EXPRESS_GLASS_TYPE ? ['NONE', 'LOW E Q366'] : ['NONE', 'LOW E SB70']
   useEffect(() => {
     if (values.glass_color !== '' && values.low_e !== '' && values.privacy !== '') {
       const firstGlass = `1/8 HS ${values.glass_color}${values.glass_color === 'CLEAR' && values.low_e !== 'NONE' ? ` ${values.low_e}` : ''}`
