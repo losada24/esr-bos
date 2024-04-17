@@ -26,6 +26,7 @@ interface SummaryProduct {
 
 const SystemSummary = ({ order }: { order: Order }) => {
   const systemSummary: SummaryProduct[] = []
+  let screenTotal = 0
 
   const getSqft = (width: number, height: number) => {
     return (width * height) / 144
@@ -43,6 +44,10 @@ const SystemSummary = ({ order }: { order: Order }) => {
       systemSummary[systemIndex].quantity += product.qty
       systemSummary[systemIndex].sqft += getSqft(product.width, product.height) * product.qty
     }
+
+    if (product.extras?.screen) {
+      screenTotal += product.qty
+    }
   })
 
   return (
@@ -54,6 +59,10 @@ const SystemSummary = ({ order }: { order: Order }) => {
         <View style={tw('flex flex-row justify-start gap-x-3')}>
           <Text style={tw('text-base text-gray-900 font-bold w-6/12')}>Total Systems</Text>
           <Text style={tw('text-base text-gray-900 font-regular w-3/12 text-right font-bold')}>{systemSummary.length}</Text>
+        </View>
+        <View style={tw('flex flex-row justify-start gap-x-3')}>
+          <Text style={tw('text-base text-gray-900 font-bold w-6/12')}>Screens</Text>
+          <Text style={tw('text-base text-gray-900 font-regular w-3/12 text-right font-bold')}>{screenTotal > 0 ? screenTotal : 'No' }</Text>
         </View>
         {systemSummary.map((summaryProduct, index) => {
           return (
@@ -71,6 +80,10 @@ const SystemSummary = ({ order }: { order: Order }) => {
       <View style={tw('w-6/12')}>
         <View style={tw('flex flex-row justify-start gap-x-3')}>
           <Text style={tw('text-base text-gray-900 font-bold')}>Sqft Summary</Text>
+        </View>
+        <View style={tw('flex flex-row justify-start gap-x-3')}>
+          <Text style={tw('text-base text-gray-900 font-bold w-6/12')}> </Text>
+          <Text style={tw('text-base text-gray-900 font-regular w-3/12 text-right')}> </Text>
         </View>
         <View style={tw('flex flex-row justify-start gap-x-3')}>
           <Text style={tw('text-base text-gray-900 font-bold w-6/12')}> </Text>
