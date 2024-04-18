@@ -1,6 +1,7 @@
 <?php
 namespace App\Actions;
 
+use App\Enum\GlassLowEEnum;
 use App\Enum\GlassTypeEnum;
 use App\Enum\ProductSystemEnum;
 use App\Enum\RoleEnum;
@@ -67,7 +68,7 @@ class UpdateEstimate {
       $glass = new Glass(
         $glassType,
         $product->glass_color,
-        $product->low_e,
+        $product->low_e != 'NONE' ? GlassLowEEnum::$GLASS_TYPE[$glassType] : 'NONE',
         $product->privacy
       );
       

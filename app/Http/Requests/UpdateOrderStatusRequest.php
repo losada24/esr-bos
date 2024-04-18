@@ -27,7 +27,7 @@ class UpdateOrderStatusRequest extends FormRequest
     {
         return [
             'id' => 'required|exists:orders,id',
-            'notes' => 'nullable|string|max:500',
+            'notes' => 'required|string|max:500',
             'status' => [
               'required',
               'string',
