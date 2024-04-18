@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\DB;
 use App\Models\Order;
 use App\Enum\OrderStatusEnum;
 use App\Enum\RoleEnum;
+use App\Models\Email;
 use App\Models\User;
 use Illuminate\Support\Facades\Mail;
 
@@ -46,34 +47,20 @@ class CreateEstimateOrder {
       ]);
 
       // SEND EMAILS
-      $adminUsers = User::whereHas('roles', function($q) {
-        $q->where('name', RoleEnum::$ADMIN);
-      })->get();
-    
-      $accountManager = User::whereHas('roles', function($q) {
-        $q->where('name', RoleEnum::$ACCOUNT_MANAGER);
-      })->get();
-
-      $accounting = User::whereHas('roles', function($q) {
-        $q->where('name', RoleEnum::$ACCOUNTING);
-      })->get();
+      $emailsForStatus = Email::where('status', OrderStatusEnum::$ACCOUNTING)->first();
+      $recipientsArray = [];
+      if ($emailsForStatus) {
+        $recipientsArray = explode(',', $emailsForStatus->recipients);
+      }
 
       $dealersUsers = User::whereHas('roles', function($q) {
         $q->where('name', RoleEnum::$DEALER);
       })->where('company_id', $estimate->company_id)->get();
+      $dealersEmails = $dealersUsers->pluck('email')->toArray();
 
-      $users = [
-        ...$adminUsers,
-        ...$accountManager,
-        ...$accounting,
-        ...$dealersUsers,
-        $estimate->user
-      ];
-
-      foreach ($users as $recipient) {
-        Mail::to($recipient->email, $recipient->name)->send(new \App\Mail\OrderCreated($estimate));
+      foreach ([...$recipientsArray, ...$dealersEmails] as $recipient) {
+        Mail::to($recipient)->send(new \App\Mail\OrderCreated($estimate));
       }
-
     });
   }
 }
