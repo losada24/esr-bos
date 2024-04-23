@@ -61,7 +61,7 @@ export const singleHuntSchema = Yup.object({
   vertical_lines: Yup.number()
     .when(['muntin_panels'], {
       is: (muntin_panels: boolean) => muntin_panels,
-      then: Yup.number().test('width', 'Invalid horizontal lines', (value, validationContext) => {
+      then: Yup.number().test('width', 'Invalid horizontal lites', (value, validationContext) => {
         const {
           createError,
           parent: { width }
@@ -70,7 +70,7 @@ export const singleHuntSchema = Yup.object({
         const totalWhiteSpaces = value ?? 0
         if (totalWhiteSpaces !== 0 && totalWhiteSpaces < 2) {
           return createError({
-            message: 'Minimun amount of lines is 2. Please adjust the number of lines.',
+            message: 'Minimun amount of lites is 2. Please adjust the number of lites.',
             path: 'vertical_lines'
           })
         }
@@ -80,7 +80,7 @@ export const singleHuntSchema = Yup.object({
 
         if (glassWidth < whiteSpaceAndMuntinSize) {
           return createError({
-            message: 'Horizontal lines exceed glass width. Please adjust the number of lines.',
+            message: 'Horizontal lites exceed glass width. Please adjust the number of lites.',
             path: 'vertical_lines'
           })
         }
@@ -90,7 +90,7 @@ export const singleHuntSchema = Yup.object({
   horizontal_lines: Yup.number()
     .when(['muntin_panels'], {
       is: (muntin_panels: boolean) => muntin_panels,
-      then: Yup.number().test('height', 'Invalid vertical lines', (value, validationContext) => {
+      then: Yup.number().test('height', 'Invalid vertical lites', (value, validationContext) => {
         const {
           createError,
           parent: { height }
@@ -99,7 +99,7 @@ export const singleHuntSchema = Yup.object({
         const totalWhiteSpaces = value ?? 0
         if (totalWhiteSpaces !== 0 && totalWhiteSpaces < 2) {
           return createError({
-            message: 'Minimun amount of lines is 2. Please adjust the number of lines.',
+            message: 'Minimun amount of lites is 2. Please adjust the number of lites.',
             path: 'horizontal_lines'
           })
         }
@@ -109,7 +109,7 @@ export const singleHuntSchema = Yup.object({
 
         if (glassHeight < whiteSpaceAndMuntinSize) {
           return createError({
-            message: 'Vertical lines exceed glass height. Please adjust the number of lines.',
+            message: 'Vertical lites exceed glass height. Please adjust the number of lites.',
             path: 'horizontal_lines'
           })
         }

@@ -39,7 +39,7 @@ class ValidateMuntingVerticalLines implements DataAwareRule, ValidationRule
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
       if ($value != 0 && $value < 2) {
-        $fail('Minimun amount of lines is 2. Please adjust the number of lines.');
+        $fail('Minimun amount of lites is 2. Please adjust the number of lites.');
       }
 
       $glassWidth = 0;
@@ -76,7 +76,7 @@ class ValidateMuntingVerticalLines implements DataAwareRule, ValidationRule
       $whiteSpaceAndMuntinSize = ($value - 1) + ($value * 2);
 
       if ($glassWidth < $whiteSpaceAndMuntinSize) {
-        $fail('Vertical lines exceed glass width. Please adjust the number of lines.');
+        $fail('Vertical lites exceed glass width. Please adjust the number of lites.');
       }
     }
 }

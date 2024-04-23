@@ -105,7 +105,7 @@ const Details = ({ submitCount, errors, muntin_patterns, muntin_styles, values }
               {(submitCount && errors.muntin_exterior_style) ? <InputError message={errors.muntin_exterior_style} className="mt-2" /> : ''}
             </div>
             <div className={submitCount ? (errors.vertical_lines) ? 'has-error' : 'has-success' : ''}>
-              <label htmlFor="vertical_lines">Vertical Lines</label>
+              <label htmlFor="vertical_lines">Vertical Lites</label>
               <Field
                 id="vertical_lines"
                 name="vertical_lines"
@@ -117,7 +117,7 @@ const Details = ({ submitCount, errors, muntin_patterns, muntin_styles, values }
               {(submitCount && errors.vertical_lines) ? <InputError message={errors.vertical_lines} className="mt-2" /> : ''}
             </div>
             <div className={submitCount ? (errors.horizontal_lines) ? 'has-error' : 'has-success' : ''}>
-              <label htmlFor="horizontal_lines">Horizontal Lines</label>
+              <label htmlFor="horizontal_lines">Horizontal Lites</label>
               <Field
                 id="horizontal_lines"
                 name="horizontal_lines"

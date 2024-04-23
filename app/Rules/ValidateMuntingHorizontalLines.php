@@ -2,6 +2,7 @@
 
 namespace App\Rules;
 
+use App\Enum\ExternalProductEnum;
 use App\Enum\ProductSystemEnum;
 use App\Products\FixedWindowsProduct;
 use App\Products\HorizontalRollerProduct;
@@ -39,11 +40,11 @@ class ValidateMuntingHorizontalLines implements DataAwareRule, ValidationRule
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
       if ($value != 0 && $value < 2) {
-        $fail('Minimun amount of lines is 2. Please adjust the number of lines.');
+        $fail('Minimun amount of lites is 2. Please adjust the number of lites.');
       }
       
       $glassHeight = 0;
-      if ($this->system == ProductSystemEnum::$FIXED_WINDOWS) {
+      if ($this->system == ProductSystemEnum::$FIXED_WINDOWS || $this->system == ExternalProductEnum::$CASEMENT) {
         $fixedWindows = new FixedWindowsProduct(
           $this->data['width'],
           $this->data['height'],
@@ -76,7 +77,7 @@ class ValidateMuntingHorizontalLines implements DataAwareRule, ValidationRule
       $whiteSpaceAndMuntinSize = ($value - 1) + ($value * 2);
 
       if ($glassHeight < $whiteSpaceAndMuntinSize) {
-        $fail('Horizontal lines exceed glass width. Please adjust the number of lines.');
+        $fail('Horizontal lites exceed glass width. Please adjust the number of lites.');
       }
     }
 }

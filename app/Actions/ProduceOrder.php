@@ -7,7 +7,6 @@ use App\Models\Email;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\Order;
-use App\Models\OrderStatus;
 use App\Models\User;
 use Illuminate\Support\Facades\Mail;
 
