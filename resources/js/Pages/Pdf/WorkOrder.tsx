@@ -12,6 +12,7 @@ import VisualId from './VisualId'
 import Pagination from './Pagination'
 import { getNumberWithFraction } from '@/Utils/numbers'
 import SystemSummary from './SystemSummary'
+import Muntin from './Muntin'
 
 type IndexOrderProps = PageProps & {
   order: Order
@@ -72,6 +73,9 @@ const WorkOrder = ({ order, auth }: IndexOrderProps) => {
                     <VisualId index={product.visual_id ?? 0} />
                   </View>
                 </View>
+                {product.extras?.muntin_panels && (
+                  <Muntin product={product} />
+                )}
                 <CuttingListItems cuttingList={product?.cutting_list ?? []} productId={product.id} />
               </Fragment>
             })}

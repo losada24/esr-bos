@@ -26,6 +26,7 @@ interface SummaryProduct {
 const SystemSummary = ({ order }: { order: Order }) => {
   const systemSummary: SummaryProduct[] = []
   let screenTotal = 0
+  let muntinTotal = 0
 
   const getSqft = (width: number, height: number) => {
     return (width * height) / 144
@@ -47,6 +48,10 @@ const SystemSummary = ({ order }: { order: Order }) => {
     if (product.extras?.screen) {
       screenTotal += product.qty
     }
+
+    if (product.extras?.muntin_panels) {
+      muntinTotal += 1
+    }
   })
 
   return (
@@ -62,6 +67,10 @@ const SystemSummary = ({ order }: { order: Order }) => {
         <View style={tw('flex flex-row justify-start gap-x-3')}>
           <Text style={tw('text-base text-gray-900 font-bold w-6/12')}>Screens</Text>
           <Text style={tw('text-base text-gray-900 font-regular w-3/12 text-right font-bold')}>{screenTotal > 0 ? screenTotal : 'No' }</Text>
+        </View>
+        <View style={tw('flex flex-row justify-start gap-x-3')}>
+          <Text style={tw('text-base text-gray-900 font-bold w-6/12')}>Muntins</Text>
+          <Text style={tw('text-base text-gray-900 font-regular w-3/12 text-right font-bold')}>{muntinTotal > 0 ? muntinTotal : 'No' }</Text>
         </View>
         {systemSummary.map((summaryProduct, index) => {
           return (
