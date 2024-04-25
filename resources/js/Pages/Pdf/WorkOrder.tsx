@@ -15,9 +15,8 @@ import SystemSummary from './SystemSummary'
 import Muntin from './Muntin'
 
 type IndexOrderProps = PageProps & {
-  order: Order & {
-    totalStickers: number
-  }
+  order: Order
+  totalStickers: number
 }
 
 const tw = createTw({
@@ -34,7 +33,7 @@ const tw = createTw({
   }
 })
 
-const WorkOrder = ({ order, auth }: IndexOrderProps) => {
+const WorkOrder = ({ order, totalStickers, auth }: IndexOrderProps) => {
   return (
     <AuthenticatedLayout
           auth={auth}
@@ -49,7 +48,7 @@ const WorkOrder = ({ order, auth }: IndexOrderProps) => {
             <Pagination />
             <POHeaders order={order} documentTitle='Work Order' />
             <View style={tw('mt-2 mb-4 px-3 pb-3 border border-gray-200')}>
-              <SystemSummary order={order} />
+              <SystemSummary order={order} totalStickers={totalStickers} />
             </View>
             {order?.products?.map((product, index) => {
               return <Fragment key={index}>

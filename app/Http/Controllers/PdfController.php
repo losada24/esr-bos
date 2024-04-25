@@ -44,11 +44,11 @@ class PdfController extends Controller
         'created_at' => $order->created_at,
         'project_name' => $order->project_name,
         'products' => $cuttingList,
-        'totalStickers' => $totalStickers,
       ];
-
+      
       return Inertia::render('Pdf/WorkOrder', [
-        'order' => $orderData
+        'order' => $orderData,
+        'totalStickers' => $totalStickers,
       ]);
     }
 
