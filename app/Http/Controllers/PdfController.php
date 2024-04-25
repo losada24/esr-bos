@@ -19,9 +19,23 @@ class PdfController extends Controller
     public function workOrder(Order $order)
     {
       $order->load(['products' => function (Builder $builder) {
-        $builder->orderBy('product_sort', 'asc');
+        $builder->whereIn('system', [
+          ProductSystemEnum::$FIXED_WINDOWS,
+          ProductSystemEnum::$SINGLE_HUNG,
+          ProductSystemEnum::$HORIZONTAL_ROLLER
+        ])->orderBy('product_sort', 'asc');
       }, 'client']);
+
       $cuttingList = $this->getCuttingList($order);
+      $orderedCuttingList = $this->orderedCuttingList($order);
+      $totalStickers = 0;
+      foreach ($orderedCuttingList as $product) {
+        foreach ($product['items'] as $item) {
+          for ($i = 0; $i < $item['qty']; $i++) {
+            $totalStickers++;
+          }
+        }
+      }
 
       $orderData = [
         'id' => $order->id,
@@ -30,6 +44,7 @@ class PdfController extends Controller
         'created_at' => $order->created_at,
         'project_name' => $order->project_name,
         'products' => $cuttingList,
+        'totalStickers' => $totalStickers,
       ];
 
       return Inertia::render('Pdf/WorkOrder', [

@@ -15,7 +15,9 @@ import SystemSummary from './SystemSummary'
 import Muntin from './Muntin'
 
 type IndexOrderProps = PageProps & {
-  order: Order
+  order: Order & {
+    totalStickers: number
+  }
 }
 
 const tw = createTw({

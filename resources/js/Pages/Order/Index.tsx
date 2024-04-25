@@ -12,6 +12,7 @@ import CheckIcon from '@/Components/Icons/CheckIcon'
 import OrderShowStatusModal from './OrderShowStatusModal'
 import { PRODUCT_SYSTEMS, ROLES } from '@/Utils/constants'
 import { formatPrice, getGrandTotalByRole } from '@/Utils/price'
+import { getGlassCount } from '@/Utils/products'
 
 type IndexOrderProps = PageProps & {
   orders: {
@@ -51,20 +52,7 @@ export default function Index ({ auth, orders }: IndexOrderProps) {
       return acc + product.qty
     }, 0)
   }
-
-  const getGlassCount = (products: Product[]) => {
-    return products.filter((product) =>
-      product.system === PRODUCT_SYSTEMS.FIXED_WINDOWS ||
-      product.system === PRODUCT_SYSTEMS.HORIZONTAL_ROLLER ||
-      product.system === PRODUCT_SYSTEMS.SINGLE_HUNG).reduce((acc, product) => {
-      let glassCount = 1
-      if (product.system !== PRODUCT_SYSTEMS.FIXED_WINDOWS) {
-        glassCount = 2
-      }
-      return acc + (product.qty * glassCount)
-    }, 0)
-  }
-
+  
   const getTotals = () => {
     return orders.data.reduce((acc, order) => {
       return acc + getGrandTotalByRole(order, [ROLES.DEALER])

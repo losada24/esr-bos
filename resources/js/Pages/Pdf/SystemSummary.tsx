@@ -2,6 +2,7 @@ import React from 'react'
 import { Text, View } from '@react-pdf/renderer'
 import { createTw } from 'react-pdf-tailwind'
 import { type Order } from '@/types'
+import { getGlassCount } from '@/Utils/products'
 
 const tw = createTw({
   theme: {
@@ -23,7 +24,7 @@ interface SummaryProduct {
   sqft: number
 }
 
-const SystemSummary = ({ order }: { order: Order }) => {
+const SystemSummary = ({ order }: { order: Order & { totalStickers: number } }) => {
   const systemSummary: SummaryProduct[] = []
   let screenTotal = 0
   let muntinTotal = 0
@@ -63,6 +64,14 @@ const SystemSummary = ({ order }: { order: Order }) => {
         <View style={tw('flex flex-row justify-start gap-x-3')}>
           <Text style={tw('text-base text-gray-900 font-bold w-6/12')}>Total Systems</Text>
           <Text style={tw('text-base text-gray-900 font-regular w-3/12 text-right font-bold')}>{systemSummary.length}</Text>
+        </View>
+        <View style={tw('flex flex-row justify-start gap-x-3')}>
+          <Text style={tw('text-base text-gray-900 font-bold w-6/12')}>Total Glases</Text>
+          <Text style={tw('text-base text-gray-900 font-regular w-3/12 text-right font-bold')}>{getGlassCount(order.products ?? [])}</Text>
+        </View>
+        <View style={tw('flex flex-row justify-start gap-x-3')}>
+          <Text style={tw('text-base text-gray-900 font-bold w-6/12')}>Stickers</Text>
+          <Text style={tw('text-base text-gray-900 font-regular w-3/12 text-right font-bold')}>{order.totalStickers}</Text>
         </View>
         <View style={tw('flex flex-row justify-start gap-x-3')}>
           <Text style={tw('text-base text-gray-900 font-bold w-6/12')}>Screens</Text>

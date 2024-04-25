@@ -11,6 +11,7 @@ import CuttingListItems from './CuttingListItems'
 import { PO_GLASS, PO_TITLES } from '@/Utils/constants'
 import Pagination from './Pagination'
 import { getNumberWithFraction } from '@/Utils/numbers'
+import { getGlassCount } from '@/Utils/products'
 
 type IndexOrderProps = PageProps & {
   order: Order
@@ -63,6 +64,16 @@ const POGlass = ({ order, auth }: IndexOrderProps) => {
                 <CuttingListItems cuttingList={product?.cutting_list ?? []} productId={product.id} />
               </Fragment>
             })}
+            <View style={tw('mt-2 mb-4 px-3 pb-3 border border-gray-200')}>
+              <View style={tw('flex flex-row mt-4 gap-4 justify-end')}>
+                <View style={tw('w-6/12')}>
+                  <View style={tw('flex flex-row justify-start gap-x-3')}>
+                    <Text style={tw('text-base text-gray-900 font-bold w-6/12 text-right')}>Total Glases</Text>
+                    <Text style={tw('text-base text-gray-900 font-regular w-3/12 text-right font-bold')}>{getGlassCount(order.products ?? [])}</Text>
+                  </View>
+                </View>
+              </View>
+            </View>
           </Page>
         </PrintLayout>
     </AuthenticatedLayout>
