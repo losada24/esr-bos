@@ -23,6 +23,7 @@ type IndexOrderProps = PageProps & {
 }
 
 export default function Index ({ auth, orders }: IndexOrderProps) {
+  console.log(orders)
   const IS_ADMIN = isAdmin(auth.user.roles.map((role: Role) => role.name))
   const IS_ACCOUNTING = isAccounting(auth.user.roles.map((role: Role) => role.name))
   const IS_SHIPPING = isShipping(auth.user.roles.map((role: Role) => role.name))
@@ -96,7 +97,7 @@ export default function Index ({ auth, orders }: IndexOrderProps) {
             </thead>
             <tbody>
               {orders.data.map((order) => {
-                const { id, name, project_name, created_at, status } = order
+                const { id, name, project_name, glass_type, created_at, status } = order
                 return (
                   <tr
                     key={id}
@@ -106,7 +107,7 @@ export default function Index ({ auth, orders }: IndexOrderProps) {
                       {createMarkWithLeadingZero(id, 6)}
                     </td>
                     <td className="border-t px-6 py-4 align-top">
-                      {project_name}
+                      {project_name} ({glass_type})
                     </td>
                     <td className="border-t px-6 py-4 align-top">
                       {name}
