@@ -199,7 +199,7 @@ export default function Create ({ auth, estimate }: PageProps & {
                           }
                         })
 
-                        router.post(route('product.sort'), {
+                        router.post(route('product.sort', estimate.id), {
                           order_id: estimate.id,
                           products: values
                         }, {
@@ -218,7 +218,7 @@ export default function Create ({ auth, estimate }: PageProps & {
                       <button onClick={() => {
                         if (confirm('Are you sure you want to delete selected products?')) {
                           setLoading(true)
-                          router.post(route('product.bulk.destroy'), {
+                          router.post(route('product.bulk.destroy', estimate.id), {
                             order_id: estimate.id,
                             products: selectedBulkActions.filter((action) => action.selected).map((action) => action.order_id)
                           }, {
