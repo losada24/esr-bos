@@ -58,12 +58,13 @@ const OrderUpdateStatusModal = ({ showModal, onClose, order }: {
               validationSchema={orderStatusUpdateSchema}
               onSubmit={handleSubmit}
             >
-              {({ errors, submitCount }) => (
+              {({ errors, submitCount, setFieldValue }) => (
                 <OrderStatusUpdateForm
                   submitCount={submitCount}
                   errors={errors}
                   isCreate={false}
                   statuses={statuses}
+                  setFieldValue={setFieldValue}
                 />
               )}
             </Formik>

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Actions\ProduceOrder;
+use App\Actions\UpdateOrderStatusNote;
 use App\Http\Resources\OrderCollection;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -11,6 +12,7 @@ use App\Enum\OrderStatusEnum;
 use App\Http\Requests\UpdateOrderStatusRequest;
 use App\Enum\ProductSystemEnum;
 use App\Enum\RoleEnum;
+use App\Http\Requests\UpdateOrderStatusNoteRequest;
 use App\Traits\Product;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 
@@ -49,6 +51,14 @@ class OrderController extends Controller
       return redirect()
           ->back()
           ->with('success', 'Status updated successfully.');
+    }
+
+    public function noteUpdate(UpdateOrderStatusNoteRequest $updateOrderStatusNoteRequest, UpdateOrderStatusNote $statusOrderNote) 
+    {
+      $statusOrderNote->handle($updateOrderStatusNoteRequest);
+      return redirect()
+          ->back()
+          ->with('success', 'Status Note updated successfully.');
     }
 
     public function status(Order $order) {

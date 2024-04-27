@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { Field, Form } from 'formik'
 import InputError from '@/Components/InputError'
 import PrimaryButton from '@/Components/PrimaryButton'
@@ -6,12 +6,16 @@ import { Link } from '@inertiajs/react'
 import { type FormikErrors } from 'formik'
 import { type OrderStatusUpdate } from './OrderCommon'
 import { type Status } from '@/types'
+import ReactQuill from 'react-quill'
+import { modules, textFormats } from '@/Utils/ReactQuillConfig'
 
-const OrderStatusUpdateForm = ({ submitCount, errors, isCreate, statuses }: {
+const OrderStatusUpdateForm = ({ submitCount, errors, isCreate, statuses, setFieldValue }: {
   submitCount: number
   errors: FormikErrors<OrderStatusUpdate>
   isCreate: boolean
+  setFieldValue: CallableFunction
   statuses: Status[] }) => {
+  const [noteValue, setNoteValue] = useState('')
   return (
     <Form className='space-y-5'>
       <div className={submitCount ? (errors.status) ? 'has-error' : 'has-success' : ''}>
@@ -33,13 +37,17 @@ const OrderStatusUpdateForm = ({ submitCount, errors, isCreate, statuses }: {
       </div>
       <div className={submitCount ? (errors.notes) ? 'has-error' : 'has-success' : ''}>
         <label htmlFor="notes">Notes</label>
-        <Field
-          id="notes"
-          name="notes"
-          component="textarea"
-          rows="4"
-          className="form-textarea resize-none placeholder:text-white-dark"
-          placeholder='Notes'
+        <ReactQuill
+          theme="snow"
+          value={noteValue}
+          defaultValue={noteValue}
+          onChange={(note) => {
+            setNoteValue(note)
+            setFieldValue('notes', note)
+          }}
+          style={{ minHeight: '200px' }}
+          modules={modules}
+          formats={textFormats}
         />
         {(submitCount && errors.notes) ? <InputError message={errors.notes} className="mt-2" /> : ''}
       </div>

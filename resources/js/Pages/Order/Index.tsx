@@ -24,7 +24,6 @@ type IndexOrderProps = PageProps & {
 }
 
 export default function Index ({ auth, orders }: IndexOrderProps) {
-  console.log(orders)
   const IS_ADMIN = isAdmin(auth.user.roles.map((role: Role) => role.name))
   const IS_ACCOUNTING = isAccounting(auth.user.roles.map((role: Role) => role.name))
   const IS_SHIPPING = isShipping(auth.user.roles.map((role: Role) => role.name))
@@ -52,7 +51,7 @@ export default function Index ({ auth, orders }: IndexOrderProps) {
       return acc + product.qty
     }, 0)
   }
-  
+
   const getTotals = () => {
     return orders.data.reduce((acc, order) => {
       return acc + getGrandTotalByRole(order, [ROLES.DEALER])
@@ -178,7 +177,6 @@ export default function Index ({ auth, orders }: IndexOrderProps) {
             setSelectedOrder(null)
           }}
           order={selectedOrder}
-          // statuses={statuses}
         />
         <OrderShowStatusModal
           showModal={showStatusModal}
@@ -187,6 +185,7 @@ export default function Index ({ auth, orders }: IndexOrderProps) {
             setSelectedStatusOrder(null)
           }}
           order={selectedStatusOrder}
+          user={auth.user}
         />
       </AuthenticatedLayout>
   )

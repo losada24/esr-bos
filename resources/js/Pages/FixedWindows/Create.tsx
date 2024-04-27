@@ -66,7 +66,6 @@ export default function Create ({ auth, frame_colors, glass_colors, estimate, mu
                 muntin_styles={muntin_styles}
                 estimate_id={estimate.id}
                 values={values}
-                // glassType={estimate.glass_type}
               />
             )}
           </Formik>
