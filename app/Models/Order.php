@@ -88,11 +88,10 @@ class Order extends Model
           }
         })->when($filters['dates'] ?? null, function($query, $search) use ($filters) {
           if (count($filters['dates']) === 2) {
-              // dd($filters['dates']);
               $startDate = Carbon::createFromFormat('Y-m-d\TH:i:s.u\Z', $filters['dates'][0])->startOfDay();
               $endDate = Carbon::createFromFormat('Y-m-d\TH:i:s.u\Z', $filters['dates'][1])->endOfDay();
               $defaultStatus = OrderStatusEnum::$ACCOUNTING;
-              if ($filters['status'] != '') {
+              if (isset($filters['status']) && $filters['status'] != '') {
                 $defaultStatus = $filters['status'];
               }
               $query->join('order_status', function($join) {
