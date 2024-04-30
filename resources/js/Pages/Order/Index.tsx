@@ -10,7 +10,7 @@ import OrderFilter from './OrderFilter'
 import OrderUpdateStatusModal from './OrderUpdateStatusModal'
 import CheckIcon from '@/Components/Icons/CheckIcon'
 import OrderShowStatusModal from './OrderShowStatusModal'
-import { PRODUCT_SYSTEMS, ROLES } from '@/Utils/constants'
+import { PRODUCTION_STATUS, PRODUCT_SYSTEMS, ROLES } from '@/Utils/constants'
 import { formatPrice, getGrandTotalByRole } from '@/Utils/price'
 import { getGlassCount } from '@/Utils/products'
 
@@ -24,6 +24,7 @@ type IndexOrderProps = PageProps & {
 }
 
 export default function Index ({ auth, orders }: IndexOrderProps) {
+  console.log(orders)
   const IS_ADMIN = isAdmin(auth.user.roles.map((role: Role) => role.name))
   const IS_ACCOUNTING = isAccounting(auth.user.roles.map((role: Role) => role.name))
   const IS_SHIPPING = isShipping(auth.user.roles.map((role: Role) => role.name))
@@ -71,20 +72,19 @@ export default function Index ({ auth, orders }: IndexOrderProps) {
             <thead>
               <tr className="font-bold text-left">
                 <th className="px-6 pt-5 pb-4">Quote #</th>
-                <th className="px-6 pt-5 pb-4">Project</th>
-                <th className="px-6 pt-5 pb-4">Name</th>
+                <th className="px-6 pt-5 pb-4">Name / Project</th>
                 <th className="px-6 pt-5 pb-4">Status</th>
                 <th className="px-6 pt-5 pb-4">Counts</th>
                 {(IS_ADMIN || IS_ACCOUNTING) && (
                   <th className="px-6 pt-5 pb-4 text-right">Price</th>
                 )}
-                <th className="px-6 pt-5 pb-4">Created At</th>
+                <th className="px-6 pt-5 pb-4">Dates</th>
                 <th className="px-6 pt-5 pb-4 w-14">Actions</th>
               </tr>
             </thead>
             <tbody>
               {orders.data.map((order) => {
-                const { id, name, project_name, glass_type, created_at, status } = order
+                const { id, name, project_name, glass_type, created_at, status, order_status } = order
                 return (
                   <tr
                     key={id}
@@ -94,10 +94,10 @@ export default function Index ({ auth, orders }: IndexOrderProps) {
                       {createMarkWithLeadingZero(id, 6)}
                     </td>
                     <td className="border-t px-6 py-4 align-top">
-                      {project_name} ({glass_type})
-                    </td>
-                    <td className="border-t px-6 py-4 align-top">
-                      {name}
+                      <div className='font-bold'>{name}</div>
+                      <div className='font-semibold text-xs'>
+                        {project_name} ({glass_type})
+                      </div>
                     </td>
                     <td className="border-t px-6 py-4 align-top">
                       <button onClick={() => {
@@ -125,7 +125,20 @@ export default function Index ({ auth, orders }: IndexOrderProps) {
                       </td>
                     )}
                     <td className="border-t px-6 py-4 align-top">
-                      {created_at?.toString()}
+                    <ul>
+                        <li className='flex justify-between mb-1'>
+                          <span className='font-semibold text-left'>Created At:</span>
+                          <span className="badge my-0 bg-white-light text-black ltr:ml-4 rtl:mr-4">{created_at?.toString()}</span>
+                        </li>
+                        {order_status !== undefined && order_status.length > 0 && (
+                          <li className='flex justify-between'>
+                            <span className='font-semibold text-left'>Production At:</span>
+                            <span className="badge my-0 bg-white-light text-black ltr:ml-4 rtl:mr-4">
+                              {order_status.filter((status) => status.status === PRODUCTION_STATUS).length > 0 ? order_status.filter((status) => status.status === PRODUCTION_STATUS)[0].created_at : ''}
+                            </span>
+                          </li>
+                        )}
+                      </ul>
                     </td>
                     <td className="border-t flex items-center px-6 py-4">
                         <Link

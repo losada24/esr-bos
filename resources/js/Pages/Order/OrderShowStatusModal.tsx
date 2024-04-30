@@ -4,7 +4,7 @@ import CloseIcon from '@/Components/Icons/CloseIcon'
 import { type User, type Order, type OrderStatus, type Role } from '@/types'
 import { createMarkWithLeadingZero } from '@/Utils/mark'
 import { getInitials } from '@/Utils/string'
-import { isAccountManager, isAdmin } from '@/Utils/user'
+import { isAccountManager, isAdmin, isDealer, isSubDealer } from '@/Utils/user'
 import EditIcon from '@/Components/Icons/EditIcon'
 import EditNote from './EditNote'
 
@@ -17,6 +17,8 @@ const OrderShowStatusModal = ({ showModal, onClose, order, user }: {
   const [orderStatus, setOrderStatus] = useState<OrderStatus[]>([])
   const IS_ADMIN = isAdmin(user.roles.map((role: Role) => role.name))
   const IS_ACCOUNT_MANAGER = isAccountManager(user.roles.map((role: Role) => role.name))
+  const IS_DEALER = isDealer(user.roles.map((role: Role) => role.name))
+  const IS_SUB_DEALER = isSubDealer(user.roles.map((role: Role) => role.name))
   const [editNote, setEditNote] = useState<number | null>(null)
 
   useEffect(() => {
@@ -65,7 +67,7 @@ const OrderShowStatusModal = ({ showModal, onClose, order, user }: {
                       </div>
                       <div className="mt-3 sm:mt-3 mb-8">
                           {editNote !== status.id
-                            ? <div className="ql-editor" dangerouslySetInnerHTML={{ __html: status.notes }} />
+                            ? !IS_DEALER && !IS_SUB_DEALER ? <div className="ql-editor" dangerouslySetInnerHTML={{ __html: status.notes }} /> : ''
                             : <EditNote
                                 status={status}
                                 onComplete={(updatedStatus: OrderStatus | null) => {

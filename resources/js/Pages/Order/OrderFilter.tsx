@@ -1,4 +1,6 @@
 import { type SyntheticEvent } from 'react'
+import Flatpickr from 'react-flatpickr'
+import 'flatpickr/dist/flatpickr.css'
 import { useForm, router } from '@inertiajs/react'
 import TextInput from '@/Components/TextInput'
 import PrimaryButton from '@/Components/PrimaryButton'
@@ -7,17 +9,21 @@ import { type Status } from '@/types'
 const OrderFilter = ({ statuses }: { statuses: Status[] }) => {
   const { data, setData } = useForm({
     text: '',
-    status: ''
+    status: '',
+    dates: [] as Date[] | []
   })
 
   const reset = () => {
     setData({
       text: '',
-      status: ''
+      status: '',
+      dates: []
     })
 
     router.get(route('order.index'), {
-      text: ''
+      text: '',
+      status: '',
+      dates: []
     }, {
       replace: true,
       preserveState: false
@@ -71,6 +77,22 @@ const OrderFilter = ({ statuses }: { statuses: Status[] }) => {
               <option key={index} value={status.value}>{status.label.toUpperCase()}</option>
             ))}
           </select>
+        </div>
+        <div className='mb-3 w-64'>
+          <label htmlFor="role">Dates</label>
+          <Flatpickr
+            options={{
+              mode: 'range',
+              dateFormat: 'Y-m-d',
+              position: 'auto right'
+            }}
+            name="dates"
+            value={[data.dates[0], data.dates[1]]}
+            className="form-input"
+            onChange={(date: Date[]) => {
+              setData('dates', date)
+            }}
+          />
         </div>
         <div className="flex items-end justify-between w-44 pb-3">
           <PrimaryButton className="btn btn-primary">

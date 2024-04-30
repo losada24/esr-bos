@@ -33,6 +33,7 @@ class OrderResource extends JsonResource
           'permit' => $this->permit ?? 0,
           'other' => $this->other ?? 0,
           'products' => $this->products ?? [],
+          'order_status' => $this->orderStatus ?? [],
           'company_markup' => $this->company_markup ?? 0,
           'company_promotion' => $this->company_promotion ?? 0,
           'user_markup' => $this->user_markup ?? 0,

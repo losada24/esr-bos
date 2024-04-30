@@ -328,7 +328,7 @@ export default function Create ({ auth, estimate }: PageProps & {
                             </td>
                             <td className="border-t px-6 py-4 align-top">
                               <div className='font-bold'>
-                              {system} {product.extras?.config && `(${product.extras?.config})`}
+                                {system} {product.extras?.config && `(${product.extras?.config})`}
                               </div>
                               <div className='font-semibold text-xs'>
                                 {product.system !== EXTERNAL_PRODUCTS.MULLION ? glass_type : 'N/A'}

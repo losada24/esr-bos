@@ -30,9 +30,12 @@ class OrderController extends Controller
         return Inertia::render('Order/Index', [
           'orders' => new OrderCollection(
             Order::orders()
-              ->filter($request->only(['text', 'status']))
-              ->orderBy('updated_at', 'desc')
-              ->orderBy('id', 'desc')
+              ->with(['orderStatus' => function (Builder $builder) {
+                $builder->where('status', OrderStatusEnum::$PRODUCTION);
+              }])
+              ->filter($request->only(['text', 'status', 'dates']))
+              ->orderBy('orders.updated_at', 'desc')
+              ->orderBy('orders.id', 'desc')
               ->with(['products'])
               ->paginate()
               ->withQueryString()

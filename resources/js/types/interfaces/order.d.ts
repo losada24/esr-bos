@@ -5,6 +5,7 @@ import { type Balance } from '@/types/interfaces/balance'
 import { type MaterialConsumption } from './materialConsumption'
 import { type PaymentInfo } from './paymentInfo'
 import { type CuttingListProducts } from './cuttingListProducts'
+import { OrderStatus } from './orderStatus'
 
 export interface Order {
   id: number
@@ -40,4 +41,5 @@ export interface Order {
   rg_other_price?: number
   order_promotion?: number
   subdealer_other?: number
+  order_status?: OrderStatus[]
 }
