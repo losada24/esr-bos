@@ -168,7 +168,7 @@ const PaymentForm = ({ submitCount, errors, estimate, values, states }: {
           className="form-checkbox"
           type='checkbox'
         />
-        <label htmlFor="terms_and_conditions_agreed">I have read and agree to the website <a target='_blank' href='/files/RG Impact System Manufacturing Terms & Conditions PDF.pdf' className='text-primary'>terms and conditions</a></label>
+        <label htmlFor="terms_and_conditions_agreed">I have read and agree to the website <a target='_blank' href='/files/RG Impact System Manufacturing Terms & Conditions PDF.pdf' className='text-primary'>terms and conditions</a> and <a target='_blank' href='/files/RG Impact System Manufacturing Warranty PDF.pdf' className='text-primary'>warranties</a></label>
       </div>
       {(submitCount && errors.terms_and_conditions_agreed)
         ? <div><InputError message={errors.terms_and_conditions_agreed} className="mt-2" /></div>

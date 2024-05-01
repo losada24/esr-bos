@@ -112,15 +112,15 @@ const CuttingList = ({ order, auth, totalStickers }: IndexOrderProps) => {
                 </View>
               </View>
             })}
-            <View style={tw('flex flex-row mt-4 gap-4 border border-gray-200 mb-3 p-3')}>
-              {totalStickers && (
+            <View style={tw('mt-2 mb-4 px-3 pb-3 border border-gray-200')}>
+              <View style={tw('flex flex-row mt-4 gap-4 justify-end')}>
                 <View style={tw('w-6/12')}>
                   <View style={tw('flex flex-row justify-start gap-x-3')}>
-                    <Text style={tw('text-base text-gray-900 font-bold w-6/12')}>Stickers</Text>
+                    <Text style={tw('text-base text-gray-900 font-bold w-6/12 text-right')}>Stickers</Text>
                     <Text style={tw('text-base text-gray-900 font-regular w-3/12 text-right font-bold')}>{totalStickers}</Text>
                   </View>
                 </View>
-              )}
+              </View>
             </View>
           </Page>
         </PrintLayout>

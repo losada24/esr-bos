@@ -31,6 +31,13 @@ const tw = createTw({
 })
 
 const PoScreen = ({ order, auth }: IndexOrderProps) => {
+  let screenTotal = 0
+  order?.products?.forEach((product) => {
+    if (product.extras?.screen) {
+      screenTotal += product.qty
+    }
+  })
+
   return (
     <AuthenticatedLayout
           auth={auth}
@@ -63,6 +70,16 @@ const PoScreen = ({ order, auth }: IndexOrderProps) => {
                 <ScreenPOItems cuttingList={product?.cutting_list ?? []} productId={product.id} system={product.system} />
               </Fragment>
             })}
+            <View style={tw('mt-2 mb-4 px-3 pb-3 border border-gray-200')}>
+              <View style={tw('flex flex-row mt-4 gap-4 justify-end')}>
+                <View style={tw('w-6/12')}>
+                  <View style={tw('flex flex-row justify-start gap-x-3')}>
+                    <Text style={tw('text-base text-gray-900 font-bold w-6/12 text-right')}>Total Screens</Text>
+                    <Text style={tw('text-base text-gray-900 font-regular w-3/12 text-right font-bold')}>{screenTotal}</Text>
+                  </View>
+                </View>
+              </View>
+            </View>
           </Page>
         </PrintLayout>
     </AuthenticatedLayout>
