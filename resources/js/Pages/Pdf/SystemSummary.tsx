@@ -24,7 +24,7 @@ interface SummaryProduct {
   sqft: number
 }
 
-const SystemSummary = ({ order, totalStickers }: { order: Order, totalStickers?: number }) => {
+const SystemSummary = ({ order }: { order: Order }) => {
   const systemSummary: SummaryProduct[] = []
   let screenTotal = 0
   let muntinTotal = 0
@@ -69,12 +69,6 @@ const SystemSummary = ({ order, totalStickers }: { order: Order, totalStickers?:
           <Text style={tw('text-base text-gray-900 font-bold w-6/12')}>Total Glases</Text>
           <Text style={tw('text-base text-gray-900 font-regular w-3/12 text-right font-bold')}>{getGlassCount(order.products ?? [])}</Text>
         </View>
-        {totalStickers && (
-          <View style={tw('flex flex-row justify-start gap-x-3')}>
-            <Text style={tw('text-base text-gray-900 font-bold w-6/12')}>Stickers</Text>
-            <Text style={tw('text-base text-gray-900 font-regular w-3/12 text-right font-bold')}>{totalStickers}</Text>
-          </View>
-        )}
         <View style={tw('flex flex-row justify-start gap-x-3')}>
           <Text style={tw('text-base text-gray-900 font-bold w-6/12')}>Screens</Text>
           <Text style={tw('text-base text-gray-900 font-regular w-3/12 text-right font-bold')}>{screenTotal > 0 ? screenTotal : 'No' }</Text>

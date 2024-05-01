@@ -21,6 +21,7 @@ const HR_OXXO_MATERIAL_WITH_IMAGES = ['VW 111 W', 'VW 111 BR']
 
 type IndexOrderProps = PageProps & {
   order: Order
+  totalStickers: number
 }
 
 const tw = createTw({
@@ -50,7 +51,7 @@ interface CuttingListProps {
   system: string
 }
 
-const CuttingList = ({ order, auth }: IndexOrderProps) => {
+const CuttingList = ({ order, auth, totalStickers }: IndexOrderProps) => {
   const orderCuttingList: CuttingListProps[] = []
   order?.orderCuttingList?.forEach((product) => {
     product.items.forEach((item) => {
@@ -111,6 +112,16 @@ const CuttingList = ({ order, auth }: IndexOrderProps) => {
                 </View>
               </View>
             })}
+            <View style={tw('flex flex-row mt-4 gap-4 border border-gray-200 mb-3 p-3')}>
+              {totalStickers && (
+                <View style={tw('w-6/12')}>
+                  <View style={tw('flex flex-row justify-start gap-x-3')}>
+                    <Text style={tw('text-base text-gray-900 font-bold w-6/12')}>Stickers</Text>
+                    <Text style={tw('text-base text-gray-900 font-regular w-3/12 text-right font-bold')}>{totalStickers}</Text>
+                  </View>
+                </View>
+              )}
+            </View>
           </Page>
         </PrintLayout>
     </AuthenticatedLayout>

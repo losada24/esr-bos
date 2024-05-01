@@ -33,7 +33,7 @@ const tw = createTw({
   }
 })
 
-const WorkOrder = ({ order, totalStickers, auth }: IndexOrderProps) => {
+const WorkOrder = ({ order, auth }: IndexOrderProps) => {
   return (
     <AuthenticatedLayout
           auth={auth}
@@ -48,7 +48,7 @@ const WorkOrder = ({ order, totalStickers, auth }: IndexOrderProps) => {
             <Pagination />
             <POHeaders order={order} documentTitle='Work Order' />
             <View style={tw('mt-2 mb-4 px-3 pb-3 border border-gray-200')}>
-              <SystemSummary order={order} totalStickers={totalStickers} />
+              <SystemSummary order={order} />
             </View>
             {order?.products?.map((product, index) => {
               return <Fragment key={index}>

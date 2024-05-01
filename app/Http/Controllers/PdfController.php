@@ -27,6 +27,31 @@ class PdfController extends Controller
       }, 'client']);
 
       $cuttingList = $this->getCuttingList($order);
+
+      $orderData = [
+        'id' => $order->id,
+        'name' => $order->name,
+        'client' => $order->client,
+        'created_at' => $order->created_at,
+        'project_name' => $order->project_name,
+        'products' => $cuttingList,
+      ];
+      
+      return Inertia::render('Pdf/WorkOrder', [
+        'order' => $orderData
+      ]);
+    }
+
+    public function cuttingList(Order $order)
+    {
+      $order->load(['products' => function (Builder $builder) {
+        $builder->whereIn('system', [
+          ProductSystemEnum::$FIXED_WINDOWS,
+          ProductSystemEnum::$SINGLE_HUNG,
+          ProductSystemEnum::$HORIZONTAL_ROLLER
+        ])->orderBy('product_sort', 'asc');
+      }, 'client']);
+      $orderCuttingList = $this->orderedCuttingList($order);
       $orderedCuttingList = $this->orderedCuttingList($order);
       $totalStickers = 0;
       foreach ($orderedCuttingList as $product) {
@@ -43,32 +68,11 @@ class PdfController extends Controller
         'client' => $order->client,
         'created_at' => $order->created_at,
         'project_name' => $order->project_name,
-        'products' => $cuttingList,
-      ];
-      
-      return Inertia::render('Pdf/WorkOrder', [
-        'order' => $orderData,
-        'totalStickers' => $totalStickers,
-      ]);
-    }
-
-    public function cuttingList(Order $order)
-    {
-      $order->load(['products' => function (Builder $builder) {
-        $builder->orderBy('product_sort', 'asc');
-      }, 'client']);
-      $orderCuttingList = $this->orderedCuttingList($order);
-
-      $orderData = [
-        'id' => $order->id,
-        'name' => $order->name,
-        'client' => $order->client,
-        'created_at' => $order->created_at,
-        'project_name' => $order->project_name,
         'orderCuttingList' => $orderCuttingList,
       ];
       return Inertia::render('Pdf/CuttingList', [
-        'order' => $orderData
+        'order' => $orderData,
+        'totalStickers' => $totalStickers
       ]);
     }
 
