@@ -171,8 +171,13 @@ class EstimateController extends Controller
 
     public function duplicate($id)
     {
+        $message = 'Estimate duplicated successfully.';
         $estimate = Order::findOrFail($id);
         $newEstimate = $estimate->replicate();
+        if ($newEstimate->status != OrderStatusEnum::$ESTIMATE && $newEstimate->status != OrderStatusEnum::$SUB_DEALER_ESTIMATE) {
+          $newEstimate->status = OrderStatusEnum::$ESTIMATE;
+          $message = 'The order was duplicated successfully as estimate.';
+        }
         $newEstimate->name = $newEstimate->name . ' (copy)';
         $newEstimate->user_id = auth()->user()->id;
         $newEstimate->push();
@@ -184,6 +189,6 @@ class EstimateController extends Controller
 
         return redirect()
           ->route('estimate.index')
-          ->with('success', 'Estimate duplicated successfully.');
+          ->with('success', $message);
     }
 }

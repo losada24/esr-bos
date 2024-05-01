@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
-import { Head, Link } from '@inertiajs/react'
+import { Head, Link, router } from '@inertiajs/react'
 import { type PageProps, type Order, type PaginatorLink, type Role, type Status, Product } from '@/types'
 import Pagination from '@/Components/Pagination'
 import EyeIcon from '@/Components/Icons/EyeIcon'
 import { createMarkWithLeadingZero } from '@/Utils/mark'
-import { isAdmin, isAccounting, isShipping, isProduction, isSubDealer, isAccountManager, isPlantManager } from '@/Utils/user'
+import { isAdmin, isAccounting, isShipping, isProduction, isSubDealer, isAccountManager, isPlantManager, isDealer } from '@/Utils/user'
 import OrderFilter from './OrderFilter'
 import OrderUpdateStatusModal from './OrderUpdateStatusModal'
 import CheckIcon from '@/Components/Icons/CheckIcon'
@@ -13,6 +13,7 @@ import OrderShowStatusModal from './OrderShowStatusModal'
 import { PRODUCTION_STATUS, PRODUCT_SYSTEMS, ROLES } from '@/Utils/constants'
 import { formatPrice, getGrandTotalByRole } from '@/Utils/price'
 import { getGlassCount } from '@/Utils/products'
+import CopyIcon from '@/Components/Icons/CopyIcon'
 
 type IndexOrderProps = PageProps & {
   orders: {
@@ -24,8 +25,8 @@ type IndexOrderProps = PageProps & {
 }
 
 export default function Index ({ auth, orders }: IndexOrderProps) {
-  console.log(orders)
   const IS_ADMIN = isAdmin(auth.user.roles.map((role: Role) => role.name))
+  const IS_DEALER = isDealer(auth.user.roles.map((role: Role) => role.name))
   const IS_ACCOUNTING = isAccounting(auth.user.roles.map((role: Role) => role.name))
   const IS_SHIPPING = isShipping(auth.user.roles.map((role: Role) => role.name))
   const IS_PRODUCTION = isProduction(auth.user.roles.map((role: Role) => role.name))
@@ -51,6 +52,12 @@ export default function Index ({ auth, orders }: IndexOrderProps) {
       product.system === PRODUCT_SYSTEMS.SINGLE_HUNG).reduce((acc, product) => {
       return acc + product.qty
     }, 0)
+  }
+
+  const duplicate = (id: number) => {
+    if (confirm('Are you sure you want to duplicate this Order?')) {
+      router.get(route('estimate.duplicate', id))
+    }
   }
 
   const getTotals = () => {
@@ -153,9 +160,17 @@ export default function Index ({ auth, orders }: IndexOrderProps) {
                           <button title='Change Order Status' onClick={() => {
                             setSelectedOrder(order)
                             setShowOrderModal(true)
-                          }}>
+                          }} className='mr-2'>
                             <CheckIcon />
                           </button>
+                          )}
+                          {(IS_ADMIN || IS_DEALER || IS_ACCOUNT_MANAGER) && (
+                            <button
+                            onClick={() => { duplicate(id) }}
+                            title='Duplicate Order'
+                          >
+                            <CopyIcon className='mr-2'/>
+                        </button>
                           )}
                     </td>
                   </tr>
