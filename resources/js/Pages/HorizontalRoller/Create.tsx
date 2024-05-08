@@ -62,7 +62,7 @@ export default function Create ({ auth, frame_colors, glass_colors, estimate, ha
             validationSchema={horizontalRollerSchema}
             onSubmit={handleSubmit}
           >
-            {({ errors, submitCount, values }) => (
+            {({ errors, submitCount, values, setFieldValue }) => (
               <HorizontalRollerForm
                 errors={errors}
                 submitCount={submitCount}
@@ -75,6 +75,7 @@ export default function Create ({ auth, frame_colors, glass_colors, estimate, ha
                 config={config}
                 muntin_patterns={muntin_patterns}
                 muntin_styles={muntin_styles}
+                setFieldValue={setFieldValue}
               />
             )}
           </Formik>

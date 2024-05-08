@@ -3,7 +3,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
 import { Head, router } from '@inertiajs/react'
 import { Formik, type FormikHelpers } from 'formik'
 import { type PageProps, type Product, type Client, type HorizontalRoller } from '@/types'
-import SingleHuntForm from './HorizontalRollerForm'
+import HorizontalRollerForm from './HorizontalRollerForm'
 import { horizontalRollerSchema } from './HorizontalRollerCommon'
 
 export default function Edit ({ auth, product, frame_colors, glass_colors, handle, config, muntin_patterns, muntin_styles }: PageProps & {
@@ -61,8 +61,8 @@ export default function Edit ({ auth, product, frame_colors, glass_colors, handl
           validationSchema={horizontalRollerSchema}
           onSubmit={handleSubmit}
         >
-          {({ errors, submitCount, values }) => (
-            <SingleHuntForm
+          {({ errors, submitCount, values, setFieldValue }) => (
+            <HorizontalRollerForm
               errors={errors}
               submitCount={submitCount}
               isCreate={false}
@@ -74,6 +74,7 @@ export default function Edit ({ auth, product, frame_colors, glass_colors, handl
               config={config}
               muntin_patterns={muntin_patterns}
               muntin_styles={muntin_styles}
+              setFieldValue={setFieldValue}
             />
           )}
         </Formik>

@@ -11,6 +11,7 @@ use App\Http\Requests\StoreSingleHuntRequest;
 use App\Actions\CreateSingleHunt;
 use App\Models\Product;
 use App\Actions\UpdateSingleHunt;
+use App\Enum\GlassTypeEnum;
 use App\Enum\MuntinPatternEnum;
 use App\Enum\MuntinStyleEnum;
 use App\Http\Requests\UpdateSingleHuntRequest;
@@ -25,12 +26,18 @@ class SingleHuntController extends Controller
 
   public function create($id)
   {
+      $order = Order::with(['client'])->withCount(['products'])->findOrFail($id);
+      $glass_colors = GlassColorEnum::$GLASS_COLOR;
+      if ($order->glass_type == GlassTypeEnum::$REGULAR_GLASS_TYPE) {
+        $glass_colors = GlassColorEnum::getRegularGlassColor();
+      }
+
       return Inertia::render('SingleHunt/Create', [
         'frame_colors' => array_values(FrameColorEnum::$FRAME_COLOR),
-        'glass_colors' => array_values(GlassColorEnum::$GLASS_COLOR),
-        'estimate' => Order::with(['client'])->withCount(['products'])->findOrFail($id),
+        'glass_colors' => array_values($glass_colors),
         'muntin_patterns' => array_values(MuntinPatternEnum::$MUNTIN_PATTERN),
         'muntin_styles' => array_values(MuntinStyleEnum::$MUNTIN_STYLE),
+        'estimate' => $order,
       ]);
   }
 
@@ -56,9 +63,14 @@ class SingleHuntController extends Controller
     public function edit(Product $product)
     {
       $product->loadMissing('order');
+      $glass_colors = GlassColorEnum::$GLASS_COLOR;
+      if ($product->order->glass_type == GlassTypeEnum::$REGULAR_GLASS_TYPE) {
+        $glass_colors = GlassColorEnum::getRegularGlassColor();
+      }
+      
       return Inertia::render('SingleHunt/Edit', [
           'frame_colors' => array_values(FrameColorEnum::$FRAME_COLOR),
-          'glass_colors' => array_values(GlassColorEnum::$GLASS_COLOR),
+          'glass_colors' => array_values($glass_colors),
           'muntin_patterns' => array_values(MuntinPatternEnum::$MUNTIN_PATTERN),
           'muntin_styles' => array_values(MuntinStyleEnum::$MUNTIN_STYLE),
           'product' => $product,

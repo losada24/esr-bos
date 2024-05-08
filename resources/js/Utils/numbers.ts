@@ -109,3 +109,16 @@ export const getNumberWithFraction = (value: number): string => {
 export const getNumberWithFractionAndInches = (value: number): string => {
   return `${getNumberWithFraction(value)}"`
 }
+
+export const getDecimalFromFractionNumber = (fraction: string): number => {
+  const numberArray = fraction.split(' ')
+  let fractionPart: number = 0
+  if (numberArray.length > 1) {
+    const fractionPartArray = numberArray[1].split('/')
+    if (fractionPartArray.length > 1 && fractionPartArray[0] !== '0' && fractionPartArray[1] !== '0') {
+      fractionPart = Number(fractionPartArray[0]) / Number(fractionPartArray[1])
+    }
+  }
+
+  return Number(numberArray[0]) + fractionPart
+}

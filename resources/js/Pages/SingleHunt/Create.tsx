@@ -58,7 +58,7 @@ export default function Create ({ auth, frame_colors, glass_colors, estimate, mu
             validationSchema={singleHuntSchema}
             onSubmit={handleSubmit}
           >
-            {({ errors, submitCount, values }) => (
+            {({ errors, submitCount, values, setFieldValue }) => (
               <SingleHuntForm
                 errors={errors}
                 submitCount={submitCount}
@@ -69,6 +69,7 @@ export default function Create ({ auth, frame_colors, glass_colors, estimate, mu
                 values={values}
                 muntin_patterns={muntin_patterns}
                 muntin_styles={muntin_styles}
+                setFieldValue={setFieldValue}
               />
             )}
           </Formik>

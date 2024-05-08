@@ -54,7 +54,7 @@ export default function Edit ({ auth, product, frame_colors, glass_colors, munti
           validationSchema={fixedWindowsSchema}
           onSubmit={handleSubmit}
         >
-          {({ errors, submitCount, values }) => (
+          {({ errors, submitCount, values, setFieldValue }) => (
             <FixedWindowsForm
               errors={errors}
               submitCount={submitCount}
@@ -65,6 +65,7 @@ export default function Edit ({ auth, product, frame_colors, glass_colors, munti
               values={values}
               muntin_patterns={muntin_patterns}
               muntin_styles={muntin_styles}
+              setFieldValue={setFieldValue}
             />
           )}
         </Formik>

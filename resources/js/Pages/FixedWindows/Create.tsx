@@ -55,7 +55,7 @@ export default function Create ({ auth, frame_colors, glass_colors, estimate, mu
             validationSchema={fixedWindowsSchema}
             onSubmit={handleSubmit}
           >
-            {({ errors, submitCount, values }) => (
+            {({ errors, submitCount, values, setFieldValue }) => (
               <FixedWindowsForm
                 errors={errors}
                 submitCount={submitCount}
@@ -66,6 +66,7 @@ export default function Create ({ auth, frame_colors, glass_colors, estimate, mu
                 muntin_styles={muntin_styles}
                 estimate_id={estimate.id}
                 values={values}
+                setFieldValue={setFieldValue}
               />
             )}
           </Formik>

@@ -6,6 +6,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use App\Enum\FrameColorEnum;
 use App\Enum\GlassColorEnum;
+use App\Enum\GlassTypeEnum;
 use App\Enum\HorizontalRollerConfigEnum;
 use App\Enum\HorizontalRollerHandleEnum;
 use App\Enum\ProductSystemEnum;
@@ -13,6 +14,7 @@ use App\Rules\ValidateMuntingHorizontalLines;
 use App\Rules\ValidateMuntingVerticalLines;
 use App\Rules\ValidateMuntinPanels;
 use App\Rules\ValidateMuntinStyle;
+use App\Rules\ValidateRegularGlassTypeWithLowE;
 
 class UpdateHorizontalRollerRequest extends FormRequest
 {
@@ -50,7 +52,19 @@ class UpdateHorizontalRollerRequest extends FormRequest
           ],
           'order_id' => 'required|exists:orders,id',
           'glass_type' => 'required|string|max:255',
-          'low_e' => 'required|string|max:255',
+          'low_e' => [
+            'string',
+            'nullable',
+            'max:255',
+            Rule::when(
+              fn($input) => $input->order_glass_type != GlassTypeEnum::$GLASS_TYPE['RUSH']
+              , ['required']
+            ),
+            Rule::when(
+              fn($input) => $input->order_glass_type == GlassTypeEnum::$REGULAR_GLASS_TYPE
+              , [new ValidateRegularGlassTypeWithLowE(ProductSystemEnum::$HORIZONTAL_ROLLER)]
+            ),
+          ],
           'privacy' => 'required|string|max:255',
           'screen' => 'required|boolean',
           'config' => [

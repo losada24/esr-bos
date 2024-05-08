@@ -385,11 +385,13 @@ export default function Create ({ auth, estimate }: PageProps & {
                       }
                     </Reorder.Group>
                     {estimate.products?.length === 0 && (
-                      <tr>
-                        <td className="px-6 py-4 border-t" colSpan={9}>
-                          No Products found.
-                        </td>
-                      </tr>
+                      <tbody>
+                        <tr>
+                          <td className="px-6 py-4 border-t" colSpan={10}>
+                            No Products found.
+                          </td>
+                        </tr>
+                      </tbody>
                     )}
                 </table>
               </div>

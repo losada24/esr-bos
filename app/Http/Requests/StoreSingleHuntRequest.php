@@ -11,6 +11,7 @@ use App\Rules\ValidateMuntingHorizontalLines;
 use App\Rules\ValidateMuntingVerticalLines;
 use App\Rules\ValidateMuntinPanels;
 use App\Rules\ValidateMuntinStyle;
+use App\Rules\ValidateRegularGlassTypeWithLowE;
 use Illuminate\Validation\Rule;
 
 class StoreSingleHuntRequest extends FormRequest
@@ -55,6 +56,10 @@ class StoreSingleHuntRequest extends FormRequest
               Rule::when(
                 fn($input) => $input->order_glass_type != GlassTypeEnum::$GLASS_TYPE['RUSH']
                 , ['required']
+              ),
+              Rule::when(
+                fn($input) => $input->order_glass_type == GlassTypeEnum::$REGULAR_GLASS_TYPE
+                , [new ValidateRegularGlassTypeWithLowE(ProductSystemEnum::$SINGLE_HUNG)]
               ),
             ],
             'privacy' => [

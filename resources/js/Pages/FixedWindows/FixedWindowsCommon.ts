@@ -1,5 +1,5 @@
 import * as Yup from 'yup'
-import { RUSH_GLASS_TYPE } from '@/Utils/constants'
+import { REGULAR_GLASS_TYPE, RUSH_GLASS_TYPE } from '@/Utils/constants'
 import { getGlassHeight, getGlassWidth } from '@/Utils/FixedWindows'
 
 export const fixedWindowsSchema = Yup.object({
@@ -23,7 +23,26 @@ export const fixedWindowsSchema = Yup.object({
       then: Yup.string().required('Glass coating is required').max(255, 'Max 255 characters'),
       otherwise: Yup.string().nullable().max(255, 'Glass coating is required')
     }),
-  glass_type: Yup.string().required('Glass type is required'),
+  glass_type: Yup.string().required('Glass type is required'), /* .when(['order_glass_type'], {
+      is: (order_glass_type: string) => order_glass_type === REGULAR_GLASS_TYPE,
+      then: Yup.string().test('glass_type', 'Please choose other Low-E option', (value, validationContext) => {
+        const {
+          createError,
+          parent: { width, height, low_e }
+        } = validationContext
+
+        const glassWidth = getGlassWidth(width)
+        const glassHeight = getGlassHeight(height)
+        if ((glassWidth < 13.75 || glassHeight < 13.75) && low_e !== 'NONE') {
+          return createError({
+            message: 'Glass size is too small for Low-E. Please choose other Low-E option',
+            path: 'low_e'
+          })
+        }
+
+        return true
+      })
+    }) */
   // MUNTIN VALIDATIONS
   muntin_panels: Yup.boolean(),
   panel_a: Yup.boolean()

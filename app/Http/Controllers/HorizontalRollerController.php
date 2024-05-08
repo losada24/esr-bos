@@ -16,6 +16,7 @@ use App\Enum\HorizontalRollerConfigEnum;
 use App\Enum\HorizontalRollerHandleEnum;
 use App\Enum\MuntinPatternEnum;
 use App\Enum\MuntinStyleEnum;
+use App\Http\Requests\UpdateHorizontalRollerRequest;
 
 class HorizontalRollerController extends Controller
 {
@@ -78,9 +79,9 @@ class HorizontalRollerController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(UpdateFixedWindowsRequest $updateFixedWindowsRequest, UpdateHorizontalRoller $updateFixedWindows, Product $product)
+    public function update(UpdateHorizontalRollerRequest $updateHorizontalRollerRequest, UpdateHorizontalRoller $updateHorizontalRoller, Product $product)
     {
-        $updateFixedWindows->handle($updateFixedWindowsRequest, $product);
+        $updateHorizontalRoller->handle($updateHorizontalRollerRequest, $product);
         return redirect()->route('estimate.show', ['estimate' => $product->order_id])
           ->with('success', 'Horizontal Roller updated successfully.');
     }

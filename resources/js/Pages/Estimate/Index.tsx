@@ -72,8 +72,7 @@ export default function Index ({ auth, estimates }: IndexOrderProps) {
             <thead>
               <tr className="font-bold text-left">
                 <th className="px-6 pt-5 pb-4">Quote #</th>
-                <th className="px-6 pt-5 pb-4">Project</th>
-                <th className="px-6 pt-5 pb-4">Name</th>
+                <th className="px-6 pt-5 pb-4">Name / Project</th>
                 <th className="px-6 pt-5 pb-4">Created At</th>
                 <th className="px-6 pt-5 pb-4">Subtotal</th>
                 <th className="px-6 pt-5 pb-4">Total</th>
@@ -82,7 +81,7 @@ export default function Index ({ auth, estimates }: IndexOrderProps) {
             </thead>
             <tbody>
               {estimates.data.map((estimate) => {
-                const { id, name, project_name, created_at } = estimate
+                const { id, name, project_name, created_at, glass_type } = estimate
                 return (
                   <tr
                     key={id}
@@ -92,10 +91,10 @@ export default function Index ({ auth, estimates }: IndexOrderProps) {
                       {createMarkWithLeadingZero(id, 6)}
                     </td>
                     <td className="border-t px-6 py-4 align-top">
-                      {project_name}
-                    </td>
-                    <td className="border-t px-6 py-4 align-top">
-                      {name}
+                      <div className='font-bold'>{name}</div>
+                        <div className='font-semibold text-xs'>
+                          {project_name} ({glass_type})
+                        </div>
                     </td>
                     <td className="border-t px-6 py-4 align-top">
                       {created_at?.toString()}

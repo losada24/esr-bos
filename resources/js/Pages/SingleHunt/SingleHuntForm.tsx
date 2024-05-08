@@ -1,4 +1,4 @@
-import React, { useState, useEffect} from 'react'
+import React, { useState, useEffect, useRef} from 'react'
 import { Field, Form } from 'formik'
 import InputError from '@/Components/InputError'
 import PrimaryButton from '@/Components/PrimaryButton'
@@ -10,7 +10,7 @@ import { EXPRESS_GLASS_TYPE, NO_CERTIFICATION_STANDARD_MESSAGE, RUSH_GLASS_NEW_C
 import { getFrameJambs } from '@/Utils/SingleHung'
 import Details from './Details'
 
-const SingleHuntForm = ({ submitCount, errors, isCreate, frame_colors, glass_colors, estimate_id, values, muntin_patterns, muntin_styles }: {
+const SingleHuntForm = ({ submitCount, errors, isCreate, frame_colors, glass_colors, estimate_id, values, muntin_patterns, muntin_styles, setFieldValue }: {
   submitCount: number
   errors: FormikErrors<SingleHunt>
   isCreate: boolean
@@ -20,10 +20,12 @@ const SingleHuntForm = ({ submitCount, errors, isCreate, frame_colors, glass_col
   muntin_styles: string[]
   estimate_id: number
   values: SingleHunt
+  setFieldValue: (field: string, value: any, shouldValidate?: boolean) => void
 }) => {
   const [glassTypes, setGlassTypes] = useState<string[]>([])
   const [colors, setColors] = useState<string[]>(glass_colors)
   const LOW_E_OPTIONS: string[] = values.order_glass_type === EXPRESS_GLASS_TYPE ? ['NONE', 'LOW E Q366'] : ['NONE', 'LOW E SB70']
+  const isMounted = useRef(false)
   useEffect(() => {
     if (values.order_glass_type === RUSH_GLASS_TYPE) {
       const glass = `3/16 HS ${values.glass_color} (${values.order_glass_type})`
@@ -40,7 +42,13 @@ const SingleHuntForm = ({ submitCount, errors, isCreate, frame_colors, glass_col
         setGlassTypes([])
       }
     }
-  }, [values])
+
+    if (isMounted.current) {
+      setFieldValue('glass_type', '')
+    } else {
+      isMounted.current = true
+    }
+  }, [values.glass_color, values.low_e, values.privacy])
 
   return (
     <div className='grid gap-6 grid-cols-12'>

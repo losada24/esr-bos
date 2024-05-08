@@ -11,6 +11,7 @@ use App\Enum\ProductSystemEnum;
 use App\Rules\ValidateMuntingHorizontalLines;
 use App\Rules\ValidateMuntingVerticalLines;
 use App\Rules\ValidateMuntinStyle;
+use App\Rules\ValidateRegularGlassTypeWithLowE;
 
 class UpdateFixedWindowsRequest extends FormRequest
 {
@@ -55,6 +56,10 @@ class UpdateFixedWindowsRequest extends FormRequest
             Rule::when(
               fn($input) => $input->order_glass_type != GlassTypeEnum::$GLASS_TYPE['RUSH']
               , ['required']
+            ),
+            Rule::when(
+              fn($input) => $input->order_glass_type == GlassTypeEnum::$REGULAR_GLASS_TYPE
+              , [new ValidateRegularGlassTypeWithLowE(ProductSystemEnum::$FIXED_WINDOWS)]
             ),
           ],
           'privacy' => [
