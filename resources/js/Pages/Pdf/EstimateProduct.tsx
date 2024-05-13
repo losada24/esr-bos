@@ -7,6 +7,7 @@ import { PRODUCT_SYSTEMS } from '@/Utils/constants'
 import { getNumberWithFraction } from '@/Utils/numbers'
 import { formatPrice, getTotalPriceByRole, getUnitPriceByRole } from '@/Utils/price'
 import { getProductCertification } from '@/Utils/products'
+import Muntin from './Muntin'
 
 const tw = createTw({
   theme: {
@@ -89,6 +90,9 @@ const EstimateProduct = ({ product, showPrices, isImpactGlass }: { product: Prod
             </>
           )}
         </View>
+        {product.extras?.muntin_panels && (
+          <Muntin product={product} />
+        )}
       </View>
       <View>
         <ReportProductImage product={product} isImpactGlass={isImpactGlass} />
