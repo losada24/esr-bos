@@ -166,7 +166,11 @@ class PdfController extends Controller
     public function poGlass(Order $order)
     {
       $order->load(['products' => function (Builder $builder) {
-        $builder->orderBy('product_sort', 'asc');
+        $builder->whereIn('system', [
+          ProductSystemEnum::$FIXED_WINDOWS,
+          ProductSystemEnum::$SINGLE_HUNG,
+          ProductSystemEnum::$HORIZONTAL_ROLLER
+        ])->orderBy('product_sort', 'asc');
       }, 'client']);
       
       $poGlass = $this->getPOGlass($order);

@@ -2,9 +2,12 @@
 
 namespace App\Traits;
 
+use App\Enum\ExternalProductEnum;
 use App\Enum\ProductSystemEnum;
+use App\Products\CasementProduct;
 use App\Products\FixedWindowsProduct;
 use App\Products\HorizontalRollerProduct;
+use App\Products\MullionProduct;
 use App\Products\SingleHuntProduct;
 
 trait Product {
@@ -152,7 +155,18 @@ trait Product {
             $materialReleaseForProduct = $cuttingListObject->getMaterialRelease($product->qty);
             $this->updateMaterialsConsumption($materialReleaseForProduct, $materialRelease);
             break;
-        }
+          case ExternalProductEnum::$MULLION:
+            $cuttingListObject = new MullionProduct(
+              $product->width,
+              $product->height,
+              $product->frame_color,
+              $product->extras['config']
+            );
+
+            $materialReleaseForProduct = $cuttingListObject->getMaterialRelease($product->qty);
+            $this->updateMaterialsConsumption($materialReleaseForProduct, $materialRelease);
+            break;      
+          }
       });
 
       return $materialRelease;

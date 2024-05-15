@@ -56,6 +56,10 @@ const POExternalProducts = ({ order, auth }: IndexOrderProps) => {
                     <Text style={tw('text-xs text-white-dark dark:text-gray-500')}>{product.system} ({product.frame_color}) {product?.extras?.config}</Text>
                   </View>
                   <View style={tw('flex flex-row justify-start items-center gap-3')}>
+                    <Text style={tw('text-xs text-white-dark text-black')}>Qty:</Text>
+                    <Text style={tw('text-xs text-white-dark dark:text-gray-500')}>{product.qty}</Text>
+                  </View>
+                  <View style={tw('flex flex-row justify-start items-center gap-3')}>
                     <Text style={tw('text-xs text-white-dark text-black')}>Size:</Text>
                     <Text style={tw('text-xs text-white-dark dark:text-gray-500')}>{getNumberWithFraction(product.width)} x {getNumberWithFraction(product.height)}</Text>
                   </View>

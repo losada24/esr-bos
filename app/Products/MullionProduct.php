@@ -3,10 +3,12 @@
 namespace App\Products;
 
 use App\Enum\ExternalProductEnum;
+use App\Enum\UnitOfMeasurement;
 use App\Interfaces\IProduct;
 use App\Models\ExternalProductConfiguration;
 use App\Traits\Product;
 use App\Traits\Fractions;
+use SebastianBergmann\CodeCoverage\Report\Xml\Unit;
 
 class MullionProduct implements IProduct {
 
@@ -27,6 +29,17 @@ class MullionProduct implements IProduct {
         $this->width = $width;
         $this->height = $height;
         $this->config = $config;
+    }
+
+    public function getMaterialRelease($qty) {
+      $materials['Mullion(' . $this->getNumberWithFraction($this->width) . ' x ' . $this->getNumberWithFraction($this->height) . ')'] = [
+        'amount' => $qty,
+        'unit_of_measurement' => UnitOfMeasurement::$UNIT_OF_MEASUREMENT["UNIT"],
+        'storage_measure' => UnitOfMeasurement::$UNIT_OF_MEASUREMENT["UNIT"],
+        'notes' => 'Color: ' . $this->frameColor, 
+      ];
+      
+      return $materials;
     }
 
     
