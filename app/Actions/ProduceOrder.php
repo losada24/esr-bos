@@ -72,7 +72,7 @@ class ProduceOrder {
         }
       } elseif ($request->status == OrderStatusEnum::$MATERIAL_REVIEWED) {
         foreach ([...$recipientsArray] as $recipient) {
-          Mail::to($recipient)->send(new \App\Mail\ProductionOrder($order));
+          Mail::to($recipient)->send(new \App\Mail\MaterialReviewed($order));
         }
       }
       elseif ($request->status == OrderStatusEnum::$SCHEDULED_PRODUCTION) {
