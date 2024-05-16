@@ -1,13 +1,12 @@
 import React, { useState } from 'react'
-import ReactQuill from 'react-quill'
-import 'react-quill/dist/quill.snow.css'
 import { type OrderStatus } from '@/types'
 import { Form, Formik, type FormikHelpers } from 'formik'
 import { orderStatusUpdateSchema } from './OrderCommon'
 import InputError from '@/Components/InputError'
 import PrimaryButton from '@/Components/PrimaryButton'
 import { router } from '@inertiajs/react'
-import { modules, textFormats } from '@/Utils/ReactQuillConfig'
+import { CKEditor } from '@ckeditor/ckeditor5-react'
+import ClassicEditor from '@ckeditor/ckeditor5-build-classic'
 
 const EditNote = ({ status, onComplete /* , setEditNote */ }: {
   status: OrderStatus
@@ -51,14 +50,13 @@ const EditNote = ({ status, onComplete /* , setEditNote */ }: {
         <Form>
           <div className={submitCount ? (errors.notes) ? 'has-error' : 'has-success' : ''}>
             <label htmlFor="glass_type">Notes</label>
-              <ReactQuill
-                theme="snow"
-                value={noteValue}
-                defaultValue={noteValue}
-                onChange={setNoteValue}
-                style={{ minHeight: '200px' }}
-                modules={modules}
-                formats={textFormats}
+              <CKEditor
+                editor={ ClassicEditor }
+                data={noteValue}
+                onChange={ (event, editor) => {
+                  const note = editor.getData()
+                  setNoteValue(note)
+                }}
               />
               {(submitCount && errors.notes) ? <InputError message={errors.notes} className="mt-2" /> : ''}
               {(submitCount && errors.id) ? <InputError message={errors.id} className="mt-2" /> : ''}

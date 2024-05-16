@@ -242,7 +242,7 @@ Route::middleware('auth')->group(function () {
       ->name('order.status');
 
     Route::get('/order/status-filter', [OrderController::class, 'statusFilter'])
-      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$ACCOUNT_MANAGER . "|" . RoleEnum::$PRODUCTION . "|" . RoleEnum::$DEALER . "|"  . RoleEnum::$ACCOUNTING . "|" . RoleEnum::$SHIPPING . "|" . RoleEnum::$PLANT_MANAGER])
+      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$ACCOUNT_MANAGER . "|" . RoleEnum::$PRODUCTION . "|" . RoleEnum::$DEALER . "|"  . RoleEnum::$ACCOUNTING . "|" . RoleEnum::$SHIPPING . "|" . RoleEnum::$PLANT_MANAGER . "|" . RoleEnum::$SUB_DEALER])
       ->name('order.status.filter');
 
     Route::get('/order/history/{order}', [OrderController::class, 'history'])

@@ -6,8 +6,8 @@ import { Link } from '@inertiajs/react'
 import { type FormikErrors } from 'formik'
 import { type OrderStatusUpdate } from './OrderCommon'
 import { type Status } from '@/types'
-import ReactQuill from 'react-quill'
-import { modules, textFormats } from '@/Utils/ReactQuillConfig'
+import { CKEditor } from '@ckeditor/ckeditor5-react'
+import ClassicEditor from '@ckeditor/ckeditor5-build-classic'
 
 const OrderStatusUpdateForm = ({ submitCount, errors, isCreate, statuses, setFieldValue }: {
   submitCount: number
@@ -37,17 +37,14 @@ const OrderStatusUpdateForm = ({ submitCount, errors, isCreate, statuses, setFie
       </div>
       <div className={submitCount ? (errors.notes) ? 'has-error' : 'has-success' : ''}>
         <label htmlFor="notes">Notes</label>
-        <ReactQuill
-          theme="snow"
-          value={noteValue}
-          defaultValue={noteValue}
-          onChange={(note) => {
+        <CKEditor
+          editor={ ClassicEditor }
+          data={noteValue}
+          onChange={ (event, editor) => {
+            const note = editor.getData()
             setNoteValue(note)
             setFieldValue('notes', note)
           }}
-          style={{ minHeight: '200px' }}
-          modules={modules}
-          formats={textFormats}
         />
         {(submitCount && errors.notes) ? <InputError message={errors.notes} className="mt-2" /> : ''}
       </div>

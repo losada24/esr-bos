@@ -67,7 +67,7 @@ const OrderShowStatusModal = ({ showModal, onClose, order, user }: {
                       </div>
                       <div className="mt-3 sm:mt-3 mb-8">
                           {editNote !== status.id
-                            ? !IS_DEALER && !IS_SUB_DEALER ? <div className="ql-editor" dangerouslySetInnerHTML={{ __html: status.notes }} /> : ''
+                            ? !IS_DEALER && !IS_SUB_DEALER ? <div className="ck-content" dangerouslySetInnerHTML={{ __html: status.notes }} /> : ''
                             : <EditNote
                                 status={status}
                                 onComplete={(updatedStatus: OrderStatus | null) => {

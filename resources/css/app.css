@@ -43,6 +43,9 @@
 /* Select2*/
 @import '../assets/css/select2.css';
 
+/* CK Editor */
+@import './ckeditor.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
