@@ -19,7 +19,10 @@ class EmailsOnOrderStatusChange extends Seeder
         //Monica y Lezcano reciban el correo cuando la orden está en Producción completada y Lista para pick up o delivery
         $monica_email = 'monica@reylosglass.com';
         $lezcano_email = 'lezcano@reylosglass.com';
-        $merged_emails = ',' . $monica_email . ',' . $lezcano_email;
+        $amir_email = 'amir@reylosglass.com';
+        $merged_emails = ',' . $monica_email . ',' . $lezcano_email . ',' . $amir_email;
+
+        Email::truncate();
 
         $adminUsers = User::whereHas('roles', function($q) {
           $q->where('name', RoleEnum::$ADMIN);
@@ -49,6 +52,15 @@ class EmailsOnOrderStatusChange extends Seeder
             ...$accountingUsers,
           ]),
           'status' => OrderStatusEnum::$PRODUCTION
+        ]);
+
+        Email::create([
+          'recipients' => $this->getEmails([
+            ...$adminUsers,
+            ...$accountManager,
+            ...$productionUsers,
+          ]),
+          'status' => OrderStatusEnum::$MATERIAL_REVIEWED
         ]);
 
         Email::create([

@@ -8,6 +8,7 @@ class OrderStatusEnum
     public static $ESTIMATE = 'estimate';
     public static $ACCOUNTING = 'accounting';
     public static $PRODUCTION = 'production';
+    public static $MATERIAL_REVIEWED = 'material reviewed';
     public static $PRODUCTION_COMPLETED = 'production completed';
     public static $SCHEDULED_PRODUCTION = 'scheduled production';
     public static $PRODUCTION_IN_PROGRESS = 'production in progress';

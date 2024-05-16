@@ -70,7 +70,12 @@ class ProduceOrder {
         foreach ([...$recipientsArray, ...$dealersEmails] as $recipient) {
           Mail::to($recipient)->send(new \App\Mail\ProductionOrder($order));
         }
-      } elseif ($request->status == OrderStatusEnum::$SCHEDULED_PRODUCTION) {
+      } elseif ($request->status == OrderStatusEnum::$MATERIAL_REVIEWED) {
+        foreach ([...$recipientsArray] as $recipient) {
+          Mail::to($recipient)->send(new \App\Mail\ProductionOrder($order));
+        }
+      }
+      elseif ($request->status == OrderStatusEnum::$SCHEDULED_PRODUCTION) {
         foreach ($recipientsArray as $recipient) {
           Mail::to($recipient)->send(new \App\Mail\ProductionScheduled($order, $request->notes));
         }
@@ -78,7 +83,7 @@ class ProduceOrder {
         foreach ($recipientsArray as $recipient) {
           Mail::to($recipient)->send(new \App\Mail\ProductionInProgress($order));
         }
-      } elseif ($request->status == OrderStatusEnum::$PRODUCTION_COMPLETED || $request->status == OrderStatusEnum::$PARTIAL_PRODUCTION_COMPLETED) { // OK
+      } elseif ($request->status == OrderStatusEnum::$PRODUCTION_COMPLETED || $request->status == OrderStatusEnum::$PARTIAL_PRODUCTION_COMPLETED) {
         foreach ([...$recipientsArray, ...$dealersEmails] as $recipient) {
           Mail::to($recipient)->send(new \App\Mail\ProductionStatusChange($order, $request->status, $request->notes));
         }

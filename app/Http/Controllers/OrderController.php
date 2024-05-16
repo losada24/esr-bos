@@ -162,6 +162,7 @@ class OrderController extends Controller
       else if ((auth()->user()->hasRole(RoleEnum::$ADMIN) || auth()->user()->hasRole(RoleEnum::$PRODUCTION)) && 
         (
           $order->status ==  OrderStatusEnum::$PRODUCTION ||
+          $order->status ==  OrderStatusEnum::$MATERIAL_REVIEWED ||
           $order->status ==  OrderStatusEnum::$PRODUCTION_IN_PROGRESS ||
           $order->status == OrderStatusEnum::$SCHEDULED_PRODUCTION ||
           $order->status == OrderStatusEnum::$PARTIAL_PRODUCTION_COMPLETED ||
@@ -172,11 +173,20 @@ class OrderController extends Controller
         if ($order->status ==  OrderStatusEnum::$PRODUCTION) {
           $statuses = [
             [
+              'label' => OrderStatusEnum::$MATERIAL_REVIEWED,
+              'value' => OrderStatusEnum::$MATERIAL_REVIEWED
+            ],
+          ];
+        }
+        else if ($order->status ==  OrderStatusEnum::$MATERIAL_REVIEWED) {
+          $statuses = [
+            [
               'label' => OrderStatusEnum::$SCHEDULED_PRODUCTION,
               'value' => OrderStatusEnum::$SCHEDULED_PRODUCTION
             ],
           ];
-        } else if ($order->status ==  OrderStatusEnum::$SCHEDULED_PRODUCTION) {
+        }
+        else if ($order->status ==  OrderStatusEnum::$SCHEDULED_PRODUCTION) {
           $statuses = [
             [
               'label' => OrderStatusEnum::$PRODUCTION_IN_PROGRESS,
@@ -315,6 +325,10 @@ class OrderController extends Controller
               'value' => OrderStatusEnum::$SCHEDULED_PRODUCTION
             ],
             [
+              'label' => OrderStatusEnum::$MATERIAL_REVIEWED,
+              'value' => OrderStatusEnum::$MATERIAL_REVIEWED
+            ],
+            [
               'label' => OrderStatusEnum::$PRODUCTION_IN_PROGRESS,
               'value' => OrderStatusEnum::$PRODUCTION_IN_PROGRESS
             ],
@@ -369,6 +383,10 @@ class OrderController extends Controller
           [
             'label' => OrderStatusEnum::$PRODUCTION,
             'value' => OrderStatusEnum::$PRODUCTION
+          ],
+          [
+            'label' => OrderStatusEnum::$MATERIAL_REVIEWED,
+            'value' => OrderStatusEnum::$MATERIAL_REVIEWED
           ],
           [
             'label' => OrderStatusEnum::$SCHEDULED_PRODUCTION,

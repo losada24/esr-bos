@@ -35,6 +35,7 @@ class UpdateOrderStatusRequest extends FormRequest
               Rule::in([
                 OrderStatusEnum::$ESTIMATE,
                 OrderStatusEnum::$PRODUCTION,
+                OrderStatusEnum::$MATERIAL_REVIEWED,
                 OrderStatusEnum::$ORDER_COMPLETED,
                 OrderStatusEnum::$READY_FOR_DELIVERY,
                 OrderStatusEnum::$PRODUCTION_COMPLETED,
