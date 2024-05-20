@@ -2,7 +2,6 @@ import React from 'react'
 import { Text, View } from '@react-pdf/renderer'
 import { createTw } from 'react-pdf-tailwind'
 import { type Order } from '@/types'
-import { getSubTotalPriceByRole, formatPrice } from '@/Utils/price'
 
 const tw = createTw({
   theme: {
@@ -26,6 +25,7 @@ interface SummaryProduct {
 
 const DeliverySummary = ({ order }: { order: Order }) => {
   const systemSummary: SummaryProduct[] = []
+  let screenTotal = 0
 
   const getSqft = (width: number, height: number) => {
     return (width * height) / 144
@@ -42,6 +42,10 @@ const DeliverySummary = ({ order }: { order: Order }) => {
     } else {
       systemSummary[systemIndex].quantity += product.qty
       systemSummary[systemIndex].sqft += getSqft(product.width, product.height) * product.qty
+    }
+
+    if (product.extras?.screen) {
+      screenTotal += product.qty
     }
   })
 
@@ -68,6 +72,11 @@ const DeliverySummary = ({ order }: { order: Order }) => {
         <View style={tw('flex flex-row justify-start gap-x-6')}>
           <Text style={tw('text-base text-gray-900 font-bold w-6/12')}>Total Units</Text>
           <Text style={tw('text-base text-gray-900 font-regular w-3/12 text-right')}>{systemSummary.reduce((acc, value) => acc + value.quantity, 0)}</Text>
+          <Text style={tw('text-base text-gray-900 font-regular w-3/12 text-right border-b border-gray-200')}></Text>
+        </View>
+        <View style={tw('flex flex-row justify-start gap-x-6')}>
+          <Text style={tw('text-base text-gray-900 font-bold w-6/12')}>Total Screens</Text>
+          <Text style={tw('text-base text-gray-900 font-regular w-3/12 text-right')}>{screenTotal}</Text>
           <Text style={tw('text-base text-gray-900 font-regular w-3/12 text-right border-b border-gray-200')}></Text>
         </View>
         <View style={tw('flex flex-row justify-start gap-x-6')}>
