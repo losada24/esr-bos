@@ -12,6 +12,7 @@ use App\Http\Requests\UpdateFixedWindowsRequest;
 use App\Actions\CreateHorizontalRoller;
 use App\Models\Product;
 use App\Actions\UpdateHorizontalRoller;
+use App\Enum\GlassTypeEnum;
 use App\Enum\HorizontalRollerConfigEnum;
 use App\Enum\HorizontalRollerHandleEnum;
 use App\Enum\MuntinPatternEnum;
@@ -28,9 +29,15 @@ class HorizontalRollerController extends Controller
 
   public function create($id)
   {
+      $order = Order::with(['client'])->withCount(['products'])->findOrFail($id);
+      $glass_colors = GlassColorEnum::$GLASS_COLOR;
+      if ($order->glass_type == GlassTypeEnum::$REGULAR_GLASS_TYPE) {
+        $glass_colors = GlassColorEnum::getRegularGlassColor();
+      }
+
       return Inertia::render('HorizontalRoller/Create', [
         'frame_colors' => array_values(FrameColorEnum::$FRAME_COLOR),
-        'glass_colors' => array_values(GlassColorEnum::$GLASS_COLOR),
+        'glass_colors' => array_values($glass_colors),
         'config' => array_values(HorizontalRollerConfigEnum::$CONFIG),
         'handle' => array_values(HorizontalRollerHandleEnum::$HANDLE),
         'muntin_patterns' => array_values(MuntinPatternEnum::$MUNTIN_PATTERN),
@@ -61,9 +68,14 @@ class HorizontalRollerController extends Controller
     public function edit(Product $product)
     {
       $product->loadMissing('order');
+      $glass_colors = GlassColorEnum::$GLASS_COLOR;
+      if ($product->order->glass_type == GlassTypeEnum::$REGULAR_GLASS_TYPE) {
+        $glass_colors = GlassColorEnum::getRegularGlassColor();
+      }
+      
       return Inertia::render('HorizontalRoller/Edit', [
           'frame_colors' => array_values(FrameColorEnum::$FRAME_COLOR),
-          'glass_colors' => array_values(GlassColorEnum::$GLASS_COLOR),
+          'glass_colors' => array_values($glass_colors),
           'config' => array_values(HorizontalRollerConfigEnum::$CONFIG),
           'handle' => array_values(HorizontalRollerHandleEnum::$HANDLE),
           'muntin_patterns' => array_values(MuntinPatternEnum::$MUNTIN_PATTERN),
