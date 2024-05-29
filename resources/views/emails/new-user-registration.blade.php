@@ -14,7 +14,6 @@
         <li>Click on "Save"</li>
     </ol>
     <p>If you encounter any issues during this process or have any questions, please feel free to reach out to our support team.</p>
-    <p>Thank you for choosing {{ config('app.name') }}. We look forward to providing you with a seamless and secure experience.
+    <p>Thank you for choosing {{ config('app.name') }}. We look forward to providing you with a seamless and secure experience.</p>
     <p>Best regards.</p>
-</p>
 </div>

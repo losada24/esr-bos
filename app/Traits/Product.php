@@ -72,6 +72,7 @@ trait Product {
   }
 
   public function getMaterialConsumption($order) {
+
       $materialConsumption = [];
       $order->products->each(function($product) use (&$materialConsumption) {
         switch($product->system) {
@@ -92,7 +93,8 @@ trait Product {
               $product->height,
               $product->frame_color,
               $product->glass_type,
-              $product->extras['screen']
+              $product->extras['screen'],
+              handle: $product->extras['handle']
             );
 
             $materialConsuptionForProduct = $cuttingListObject->getMaterialConsumption($product->qty);
@@ -137,7 +139,8 @@ trait Product {
               $product->height,
               $product->frame_color,
               $product->glass_type,
-              $product->extras['screen']
+              $product->extras['screen'],
+              handle: $product->extras['handle']
             );
 
             $materialReleaseForProduct = $cuttingListObject->getMaterialRelease($product->qty);

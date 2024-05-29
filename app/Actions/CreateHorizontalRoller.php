@@ -25,7 +25,8 @@ class CreateHorizontalRoller {
         $request->muntin_interior_style,
         $request->muntin_exterior_style,
         $request->vertical_lines,
-        $request->horizontal_lines
+        $request->horizontal_lines,
+        $request->handle
       );
 
       $estimate = Order::find($request->order_id);

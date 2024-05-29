@@ -16,7 +16,7 @@ import { getNumberWithFraction } from '@/Utils/numbers'
 import { isDealer, isSubDealer, isAdmin, isAccountManager } from '@/Utils/user'
 import CopyIcon from '@/Components/Icons/CopyIcon'
 import { formatPrice, getTotalPriceByRole, getUnitPriceByRole } from '@/Utils/price'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Reorder } from 'framer-motion'
 import Loader from '@/Components/Loader'
 import ReorderIcon from '@/Components/Icons/ReorderIcon'
@@ -371,7 +371,17 @@ export default function Create ({ auth, estimate }: PageProps & {
                                 <button
                                   onClick={() => {
                                     if (confirm('Are you sure you want to delete this product?')) {
-                                      router.delete(route('product.destroy', id))
+                                      setLoading(true)
+                                      router.delete(route('product.destroy', id), {
+                                        onSuccess: () => {
+                                          const newProductsList = products.filter((product) => product.id !== id)
+                                          setProducts(newProductsList)
+                                          setOrderedProducts(newProductsList)
+                                        },
+                                        onFinish: () => {
+                                          setLoading(false)
+                                        }
+                                      })
                                     }
                                   }}
                                 >

@@ -3,6 +3,7 @@
 namespace App\Products;
 
 use App\Enum\FrameColorEnum;
+use App\Enum\HorizontalRollerHandleEnum;
 use App\Enum\UnitOfMeasurement;
 use App\Interfaces\IProduct;
 use App\Models\RawMaterial;
@@ -26,6 +27,7 @@ class HorizontalRollerProduct implements IProduct {
     public $muntinExteriorStyle;
     public $verticalLines;
     public $horizontalLines;
+    public $handle;
     
     public function __construct(
       $width, 
@@ -40,7 +42,8 @@ class HorizontalRollerProduct implements IProduct {
       $muntinInteriorStyle = "",
       $muntinExteriorStyle = "",
       $verticalLines = 0,
-      $horizontalLines = 0
+      $horizontalLines = 0,
+      $handle = ""
     ) {
         $this->width = (float) $width;
         $this->height = (float) $height;
@@ -56,6 +59,7 @@ class HorizontalRollerProduct implements IProduct {
         $this->muntinExteriorStyle = $muntinExteriorStyle;
         $this->verticalLines = $verticalLines;
         $this->horizontalLines = $horizontalLines;
+        $this->handle = $handle;
     }
 
     public function getGlassHeigth() {
@@ -123,23 +127,42 @@ class HorizontalRollerProduct implements IProduct {
     }
 
     public function getMaterialRelease($qty) {
-      $rh0001 = RawMaterial::where('name', 'RH 0001')->first();
+      // $rh0001 = RawMaterial::where('name', 'RH 0001')->first();
       $vh0001 = RawMaterial::where('name', 'WH 0001 ' . $this->materialColor)->first();
 
-      return [
+      $material_release = [
         'WH 0001 ' . $this->materialColor => [
           'amount' => 2 * $qty,
           'unit_of_measurement' => $vh0001->unit_of_measurement,
           'storage_measure' => $vh0001->storage_measure,
           'notes' => $vh0001->notes
         ],
-        'VENT LACH W CLIP ' . $this->materialColor => [
+      ];
+
+      if ($this->handle == HorizontalRollerHandleEnum::$HANDLE['VENT LATCH'] || $this->handle == HorizontalRollerHandleEnum::$HANDLE['BOTH']) {
+        $material_release['VENT LACH W CLIP ' . $this->materialColor] = [
           'amount' => 2 * $qty,
           'unit_of_measurement' => UnitOfMeasurement::$UNIT_OF_MEASUREMENT["UNIT"],
           'storage_measure' => 0,
           'notes' => ""
-        ],
-      ];
+        ];
+      }
+
+      if ($this->handle == HorizontalRollerHandleEnum::$HANDLE['SWIPE LOCK'] || $this->handle == HorizontalRollerHandleEnum::$HANDLE['BOTH']) {
+        $material_name = 'SLOCK 0001 W';
+        if ($this->frameColor != FrameColorEnum::$FRAME_COLOR["WHITE"]) {
+          $material_name = 'SLOCK 0001 BL';
+        }
+        $swipeLock = RawMaterial::where('name', $material_name)->first();
+        $material_release[$material_name] = [
+          'amount' => 2 * $qty,
+          'unit_of_measurement' => UnitOfMeasurement::$UNIT_OF_MEASUREMENT["UNIT"],
+          'storage_measure' => 0,
+          'notes' => $swipeLock->notes
+        ];
+      }
+
+      return $material_release;
     }
 
     public function getMaterialConsumption($qty) {
@@ -160,8 +183,10 @@ class HorizontalRollerProduct implements IProduct {
       
       if ($this->frameColor == FrameColorEnum::$FRAME_COLOR["WHITE"]) {
         $weatherStripMeetRailSash = RawMaterial::where('name', 'W 22174 W')->first(); // W 22174 W or BL
+        $swipeLock = RawMaterial::where('name', 'SLOCK 0001 W')->first();
       } else {
         $weatherStripMeetRailSash = RawMaterial::where('name', 'W 22174 BL')->first(); // W 22174 W or BL
+        $swipeLock = RawMaterial::where('name', 'SLOCK 0001 BL')->first();
       }
       $w22254 = RawMaterial::where('name', 'W 22254 BL')->first();
       $rh0001 = RawMaterial::where('name', 'RH 0001')->first();
@@ -172,9 +197,9 @@ class HorizontalRollerProduct implements IProduct {
       $ppa081 = RawMaterial::where('name', 'PPA 08-1')->first();
       $ppa083 = RawMaterial::where('name', 'PPA 08-3')->first();
       $ls0001 = RawMaterial::where('name', 'LS 0001')->first(); // MATERIAL LS 0001
-      $df4525 = RawMaterial::where('name', 'DF 4525')->first(); 
-
-      return [
+      $df4525 = RawMaterial::where('name', 'DF 4525')->first();
+      
+      $material_consumption = [
           'VW 110 ' . $this->materialColor => [
             'amount' => $this->getVentJamb() * $qty * 0.083,
             'unit_of_measurement' => $vw110->unit_of_measurement,
@@ -228,12 +253,6 @@ class HorizontalRollerProduct implements IProduct {
             'unit_of_measurement' => $vw112->unit_of_measurement,
             'storage_measure' => $vw112->storage_measure,
             'notes' => $vw112->notes
-          ],
-          'VW 109 ' . $this->materialColor => [
-            'amount' => 2 * $qty,
-            'unit_of_measurement' => $vw109->unit_of_measurement,
-            'storage_measure' => $vw109->storage_measure,
-            'notes' => $vw109->notes
           ],
           'WH 0001 ' . $this->materialColor => [
             'amount' => 2 * $qty,
@@ -313,12 +332,7 @@ class HorizontalRollerProduct implements IProduct {
             'storage_measure' => $ppa083->storage_measure,
             'notes' => $ppa083->notes
           ],
-          'LS 0001' => [
-            'amount' => 2 * $qty,
-            'unit_of_measurement' => $ls0001->unit_of_measurement,
-            'storage_measure' => $ls0001->storage_measure,
-            'notes' => $ls0001->notes
-          ],
+          
           'DF 4525' => [
             'amount' => ($this->height - 5.25) * $qty * 0.083,
             'unit_of_measurement' => $df4525->unit_of_measurement,
@@ -326,6 +340,32 @@ class HorizontalRollerProduct implements IProduct {
             'notes' => $df4525->notes
           ],
       ];
+
+      if ($this->handle == HorizontalRollerHandleEnum::$HANDLE['VENT LATCH'] || $this->handle == HorizontalRollerHandleEnum::$HANDLE['BOTH']) {
+          $material_consumption['LS 0001'] = [
+              'amount' => 2 * $qty,
+              'unit_of_measurement' => $ls0001->unit_of_measurement,
+              'storage_measure' => $ls0001->storage_measure,
+              'notes' => $ls0001->notes
+          ];
+          $material_consumption['VW 109 ' . $this->materialColor] = [
+              'amount' => 2 * $qty,
+              'unit_of_measurement' => $vw109->unit_of_measurement,
+              'storage_measure' => $vw109->storage_measure,
+              'notes' => $vw109->notes
+          ];
+      }
+
+      if ($this->handle == HorizontalRollerHandleEnum::$HANDLE['SWIPE LOCK'] || $this->handle == HorizontalRollerHandleEnum::$HANDLE['BOTH']) {
+          $material_consumption[$swipeLock->name] = [
+              'amount' => 2 * $qty,
+              'unit_of_measurement' => $swipeLock->unit_of_measurement,
+              'storage_measure' => $swipeLock->storage_measure,
+              'notes' => $swipeLock->notes
+          ];
+      }
+
+      return $material_consumption;
     }
 
     public function getCuttingList($qty) {
@@ -375,6 +415,29 @@ class HorizontalRollerProduct implements IProduct {
         return $poScreenResult;
     }
 
+    public function getHandlePrice() {
+        $firstFrameColorLetter = $this->getMaterialColor($this->frameColor);
+        $handlePrice = 0;
+        if ($this->handle == HorizontalRollerHandleEnum::$HANDLE['VENT LATCH'] || $this->handle == HorizontalRollerHandleEnum::$HANDLE['BOTH']) {
+          $ventLatchMaterial = RawMaterial::where('name', 'VW 109 ' . $firstFrameColorLetter)->first(); // MATERIAL 109
+          $ventLatchCost = 3 * 0.083 * $ventLatchMaterial->cost_per_unit * 2;
+          $lockSprignMaterial = RawMaterial::where('name', 'LS 0001')->first(); // MATERIAL LS 0001
+          $lockSprignMaterialCost = $lockSprignMaterial->cost_per_unit * 2;
+          $handlePrice += $ventLatchCost + $lockSprignMaterialCost;
+        } 
+        
+        if ($this->handle == HorizontalRollerHandleEnum::$HANDLE['SWIPE LOCK'] || $this->handle == HorizontalRollerHandleEnum::$HANDLE['BOTH']) {
+          if ($firstFrameColorLetter == 'BR') {
+            $firstFrameColorLetter = 'BL';
+          }
+
+          $swipeLock = RawMaterial::where('name', 'SLOCK 0001 ' . $firstFrameColorLetter)->first();
+          $handlePrice += $swipeLock->cost_per_unit * 2;
+        }
+
+        return $handlePrice;
+    }
+
     public function getUnitPrice() {
         $firstFrameColorLetter = $this->getMaterialColor($this->frameColor);
         $ventJamb106Material = RawMaterial::where('name', 'VW 106 ' . $firstFrameColorLetter)->first(); // MATERIAL 106
@@ -400,8 +463,7 @@ class HorizontalRollerProduct implements IProduct {
         $rolesHousingCost = 2 * $rolesHousingMaterial->cost_per_unit;
         $steelReinforcementMaterial = RawMaterial::where('name', 'ST 0001')->first(); // MATERIAL ST 0001
         $steelReinforcementCost = $this->getSteelReiceforment() * 0.083 * $steelReinforcementMaterial->cost_per_unit;
-        $ventLatchMaterial = RawMaterial::where('name', 'VW 109 ' . $firstFrameColorLetter)->first(); // MATERIAL 109
-        $ventLatchCost = 3 * 0.083 * $ventLatchMaterial->cost_per_unit * 2;
+        
         $stopSashMaterial = RawMaterial::where('name', 'STS 0001 ' . $firstFrameColorLetter)->first(); // MATERIAL STS 0001 (W or B)
         $stopSashCost = 3 * 0.083 * $stopSashMaterial->cost_per_unit * 2;
         $screwCoverMaterial = RawMaterial::where('name', 'SC 0001 ' . $firstFrameColorLetter)->first(); // SC 0001 (W or B)
@@ -432,12 +494,9 @@ class HorizontalRollerProduct implements IProduct {
         $screwMaterialCost = $screwMaterial->cost_per_unit * 12;
         $screwMaterial3inch = RawMaterial::where('name', 'PPA 08-3')->first(); // MATERIAL Screws 8x1
         $screwMaterial3Cost = $screwMaterial3inch->cost_per_unit * 4;
-        $lockSprignMaterial = RawMaterial::where('name', 'LS 0001')->first(); // MATERIAL LS 0001
-        $lockSprignMaterialCost = $lockSprignMaterial->cost_per_unit * 2;
-        
         $dobleFaceMaterial = RawMaterial::where('name', 'DF 4525')->first(); // MATERIAL LS 0001
         $dobleFacenMaterialCost = ($this->height - 5.25) * 0.083 * $dobleFaceMaterial->cost_per_unit;
-
+        $handlePrice = $this->getHandlePrice();
         // GET OTHER BILLS
         $workBill = config('custom.work_bill');
         $rentBill = config('custom.rent_bill');
@@ -487,7 +546,7 @@ class HorizontalRollerProduct implements IProduct {
           echo "weepHoleCost : " . $weepHoleCost . "<br/>";
           echo "rolesHousingCost : " . $rolesHousingCost . "<br/>";
           echo "steelReinforcementCost : " . $steelReinforcementCost . "<br/>";
-          echo "ventLatchCost : " . $ventLatchCost . "<br/>";
+          echo "handle : " . $handlePrice . "<br/>";
           echo "stopSashCost : " . $stopSashCost . "<br/>";
           echo "screwCoverCost : " . $screwCoverCost . "<br/>";
           echo "sideSashClipCost : " . $sideSashClipCost . "<br/>";
@@ -504,7 +563,6 @@ class HorizontalRollerProduct implements IProduct {
           echo "Screws 8-1: " . $screwMaterialCost . "<br/>";
           echo "Screws 8-3: " . $screwMaterial3Cost . "<br/>";
           echo "Doble Face: " . $dobleFacenMaterialCost . "<br/>";
-          echo "lockSprignMaterialCost: " . $lockSprignMaterialCost . "<br/>";
           echo "packing: " . $packing . "<br/>";
           echo "Mounting Cost: " . $muntinCost . "<br/>";
           echo "Total: " . round($ventJamb106Cost +
@@ -519,7 +577,7 @@ class HorizontalRollerProduct implements IProduct {
           $weepHoleCost +
           $rolesHousingCost +
           $steelReinforcementCost +
-          $ventLatchCost +
+          $handlePrice +
           $stopSashCost +
           $screwCoverCost +
           $sideSashClipCost +
@@ -534,14 +592,13 @@ class HorizontalRollerProduct implements IProduct {
           $structuralSliconeMaterialCost +
           $screwMaterialCost +
           $screwMaterial3Cost +
-          $lockSprignMaterialCost +
           $dobleFacenMaterialCost +
           $glassCost +
           $glassCostMove +
           $packing +
           $muntinCost +
           $screenCost, 2);
-          die;*/
+          die; */
 
         $unitPriceCost = 
           $ventJamb106Cost +
@@ -556,7 +613,7 @@ class HorizontalRollerProduct implements IProduct {
           $weepHoleCost +
           $rolesHousingCost +
           $steelReinforcementCost +
-          $ventLatchCost +
+          $handlePrice +
           $stopSashCost +
           $screwCoverCost +
           $sideSashClipCost +
@@ -572,7 +629,6 @@ class HorizontalRollerProduct implements IProduct {
           $glassCostMove +
           $screwMaterialCost +
           $screwMaterial3Cost +
-          $lockSprignMaterialCost +
           $dobleFacenMaterialCost +
           $screenCost +
           $frameSideCoverCost +

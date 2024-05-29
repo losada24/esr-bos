@@ -13,6 +13,7 @@ import Pagination from './Pagination'
 import { getNumberWithFraction } from '@/Utils/numbers'
 import SystemSummary from './SystemSummary'
 import Muntin from './Muntin'
+import { PRODUCT_SYSTEMS } from '@/Utils/constants'
 
 type IndexOrderProps = PageProps & {
   order: Order
@@ -63,7 +64,12 @@ const WorkOrder = ({ order, auth }: IndexOrderProps) => {
                   </View>
                   <View style={tw('flex flex-row justify-start items-center gap-3')}>
                     <Text style={tw('text-xs text-white-dark text-black')}>System Product:</Text>
-                    <Text style={tw('text-xs text-white-dark dark:text-gray-500')}>{product.system} ({product.frame_color}) {product?.extras?.config}</Text>
+                    <Text style={tw('text-xs text-white-dark dark:text-gray-500')}>
+                      {product.system} ({product.frame_color}) {product?.extras?.config}
+                      {(product.system === PRODUCT_SYSTEMS.HORIZONTAL_ROLLER) && (
+                          ` | Handle: ${product.extras?.handle}`
+                      )}
+                    </Text>
                   </View>
                   <View style={tw('flex flex-row justify-start items-center gap-3')}>
                     <Text style={tw('text-xs text-white-dark text-black')}>Size:</Text>

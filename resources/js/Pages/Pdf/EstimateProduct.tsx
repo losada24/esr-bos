@@ -69,7 +69,12 @@ const EstimateProduct = ({ product, showPrices, isImpactGlass }: { product: Prod
             </Text>
             {(product.system === PRODUCT_SYSTEMS.HORIZONTAL_ROLLER || product.system === PRODUCT_SYSTEMS.SINGLE_HUNG) && (
               <Text style={tw('text-xs text-gray-900 font-regular')}>
-                {product.extras?.screen ? 'Screen Yes' : 'Screen No'}
+                {product.extras?.screen ? 'Screen: Yes' : 'Screen: No'}
+              </Text>
+            )}
+            {(product.system === PRODUCT_SYSTEMS.HORIZONTAL_ROLLER) && (
+              <Text style={tw('text-xs text-gray-900 font-regular')}>
+                Handle: {product.extras?.handle}
               </Text>
             )}
           </View>
