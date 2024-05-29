@@ -66,12 +66,31 @@ class CasementProduct implements IProduct {
     public function getScreenHeigth() {
       return round($this->height, 3);
     }
+
+    public function getGlassName() {
+      $glass_type = explode("+", $this->glass_type);
+      if (trim($glass_type[0]) != '1/8 HS CLEAR' && trim($glass_type[0]) != '1/8 HS GRAY') {
+        $glass_type[0] = '1/8 HS GRAY';
+      }
+
+      $strParams = [
+        ':firstGlass' => trim($glass_type[0]),
+        ':interlayer' => trim($glass_type[1]),
+        ':lastGlass' => trim($glass_type[2]),
+      ];
+
+      return strtr(":firstGlass +:interlayer +:lastGlass", $strParams);
+    }
     
     public function getUnitPrice() {
         $unitPriceCost = 0;
+
+        $glass_type = $this->getGlassName();
+        // dd($glass_type);
+
         $casementProducts = ExternalProductConfiguration::where('external_product', ExternalProductEnum::$CASEMENT)
           ->where('extras->configuration', $this->config)
-          ->where('extras->glass_type', $this->glass_type)
+          ->where('extras->glass_type', $glass_type)
           ->orderBy('width', 'desc')
           ->orderBy('height', 'desc')
           ->get();
@@ -82,8 +101,6 @@ class CasementProduct implements IProduct {
           }
           $lastWidth = $casementProduct->width;
         }
-
-        //dd($casementProducts);
 
         $casementProducts->where('width', $lastWidth)->each(function ($product) use (&$unitPriceCost) {
           if ($this->height > $product->height) {

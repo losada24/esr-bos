@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use App\Enum\RoleEnum;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 
 class UpdateUser {
@@ -49,6 +50,8 @@ class UpdateUser {
 
       $user->update($userData);
       $user->syncRoles([$request->role]);
+
+      Mail::to($request->email, $request->name)->send(new \App\Mail\UpdateUserInformation($request->name, $request->email, $request->password));
     });
   }
 }

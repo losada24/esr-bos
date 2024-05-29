@@ -33,7 +33,7 @@ class CasementController extends Controller
       return Inertia::render('Casement/Create', [
         'frame_colors' => array_values(FrameColorEnum::$FRAME_COLOR),
         'opening' => array_values($this->getCasementOpeningOptions()),
-        'glass_colors' => array_values(GlassColorEnum::$GLASS_COLOR),
+        'glass_colors' => array_values(GlassColorEnum::getExternalGlassColor()),
         'muntin_patterns' => array_values(MuntinPatternEnum::$MUNTIN_PATTERN),
         'muntin_styles' => array_values(MuntinStyleEnum::$MUNTIN_STYLE),
         'external_products' => $this->getExtraMullionFields($externalProducts),
@@ -67,7 +67,7 @@ class CasementController extends Controller
       return Inertia::render('Casement/Edit', [
           'frame_colors' => array_values(FrameColorEnum::$FRAME_COLOR),
           'opening' => array_values($this->getCasementOpeningOptions()),
-          'glass_colors' => array_values(GlassColorEnum::$GLASS_COLOR),
+          'glass_colors' => array_values(GlassColorEnum::getExternalGlassColor()),
           'muntin_patterns' => array_values(MuntinPatternEnum::$MUNTIN_PATTERN),
           'muntin_styles' => array_values(MuntinStyleEnum::$MUNTIN_STYLE),
           'frame_colors' => array_values(FrameColorEnum::$FRAME_COLOR),
