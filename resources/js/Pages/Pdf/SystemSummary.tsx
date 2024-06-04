@@ -55,7 +55,7 @@ const SystemSummary = ({ order }: { order: Order }) => {
       muntinTotal += 1
     }
 
-    if (product.comments !== '' || product.attachment !== '') {
+    if (product.attachment !== null || product.comments !== null) {
       hasCustomization = true
     }
   })

@@ -146,7 +146,7 @@ export default function Show ({ auth, order }: PageProps & {
                               </>
                             )}
                           <td className="border-t px-6 py-4 align-top">
-                            {(attachment !== '' || comments !== '') && (
+                            {(attachment !== null || comments !== null) && (
                               <button
                                 onClick={() => {
                                   setRequestCustomizationProduct(product)

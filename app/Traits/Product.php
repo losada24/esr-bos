@@ -220,6 +220,8 @@ trait Product {
         'height' => $product->height,
         'cutting_list' => $cuttingList,
         'frame_color' => $product->frame_color,
+        'attachment' => $product->attachment,
+        'comments' => $product->comments,
         'extras' => $product->extras,
       ];
     });
