@@ -385,6 +385,13 @@ Route::middleware('auth')->group(function () {
     Route::put('/casement/update/{product}', [CasementController::class, 'update'])
       ->middleware(["role:" . RoleEnum::$ADMIN. "|" . RoleEnum::$ACCOUNT_MANAGER . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$SUB_DEALER]) // TODO: Validate if the user is the owner of the order
       ->name('casement.update');
+    
+    Route::put('/estimate/customization/{product}', [EstimateController::class, 'customizationUpdate'])
+      ->middleware([
+        "role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$ACCOUNT_MANAGER . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$SUB_DEALER,
+        "validate.estimate.owner:product",
+      ])
+      ->name('estimate.customization.update');
 });
 
 require __DIR__.'/auth.php';

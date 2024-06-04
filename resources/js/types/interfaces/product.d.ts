@@ -33,4 +33,6 @@ export interface Product {
   dealer_unit_price: number
   sub_dealer_unit_price: number
   sub_dealer_total_price: number
+  comments?: string
+  attachment?: string
 }

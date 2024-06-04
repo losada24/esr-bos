@@ -1,5 +1,6 @@
 import * as Yup from 'yup'
 import { PAYMENT_METHODS, ADDRESS_REQUIRED_AFTER_AMOUNT } from '@/Utils/constants'
+import { isValidFileType, isValidFileSize } from '../RawMaterial/RawMaterialCommon'
 
 export const estimateSchema = Yup.object({
   id: Yup.number(),
@@ -62,3 +63,17 @@ export const paymentInfoSchema = Yup.object({
       otherwise: Yup.string().nullable().max(500, 'Max 500 characters')
     })
 })
+
+export const estimateCommentsSchema = Yup.object({
+  id: Yup.number(),
+  attachment: Yup.mixed()
+    .test('is-valid-type', 'Not a valid image type', value => isValidFileType(value?.name, 'image'))
+    .test('is-valid-size', 'Max allowed size is 500KB', value => isValidFileSize(value?.size ?? 0)),
+  comments: Yup.string().max(1000, 'Notes must be less than 1000 characters')
+})
+
+export interface EstimateCommentsUpdate {
+  id: number
+  attachment: string
+  comments: string
+}

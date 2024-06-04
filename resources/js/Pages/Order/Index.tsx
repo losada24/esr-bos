@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
 import { Head, Link, router } from '@inertiajs/react'
-import { type PageProps, type Order, type PaginatorLink, type Role, type Status, Product } from '@/types'
+import { type PageProps, type Order, type PaginatorLink, type Role, type Status, type Product } from '@/types'
 import Pagination from '@/Components/Pagination'
 import EyeIcon from '@/Components/Icons/EyeIcon'
 import { createMarkWithLeadingZero } from '@/Utils/mark'

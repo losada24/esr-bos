@@ -20,6 +20,8 @@ import { useEffect, useState } from 'react'
 import { Reorder } from 'framer-motion'
 import Loader from '@/Components/Loader'
 import ReorderIcon from '@/Components/Icons/ReorderIcon'
+import DialogIcon from '@/Components/Icons/DialogIcon'
+import RequestCustomizationModal from './RequestCustomizationModal'
 
 interface BulkActions {
   order_id: number
@@ -40,6 +42,8 @@ export default function Create ({ auth, estimate }: PageProps & {
   const [selectedBulkActions, setSelectedBulkActions] = useState<BulkActions[]>([])
   const [loading, setLoading] = useState<boolean>(false)
   // const firstUpdate = useRef(true)
+  const [showRequestCustomization, setShowRequestCustomization] = useState<boolean>(false)
+  const [requestCustomizationProduct, setRequestCustomizationProduct] = useState<Product | null>(null)
 
   const compareOrder = () => {
     return products.map((product) => {
@@ -48,6 +52,13 @@ export default function Create ({ auth, estimate }: PageProps & {
       return product.id
     }).join(',')
   }
+
+  useEffect(() => {
+    if (estimate.products) {
+      setProducts(estimate.products)
+      setOrderedProducts(estimate.products)
+    }
+  }, [estimate.products])
 
   const getUrlBySystem = (system: string, id: number) => {
     switch (system) {
@@ -357,6 +368,15 @@ export default function Create ({ auth, estimate }: PageProps & {
                               <td className="border-t flex items-center px-6 py-4">
                                 <button
                                   onClick={() => {
+                                    setRequestCustomizationProduct(product)
+                                    setShowRequestCustomization(true)
+                                  } }
+                                  title='Request Customization'
+                                >
+                                  <DialogIcon className='mr-2'/>
+                                </button>
+                                <button
+                                  onClick={() => {
                                     router.post(route('product.duplicate', id))
                                   } }
                                   title='Duplicate Product'
@@ -408,6 +428,14 @@ export default function Create ({ auth, estimate }: PageProps & {
               <PriceSummary estimate={estimate} roles={auth.user.roles.map((role: Role) => role.name)} />
             </div>
           </div>
+          <RequestCustomizationModal
+            showModal={showRequestCustomization}
+            onClose={() => {
+              setShowRequestCustomization(false)
+              setRequestCustomizationProduct(null)
+            }}
+            product={requestCustomizationProduct}
+          />
       </AuthenticatedLayout>
   )
 }

@@ -28,6 +28,7 @@ const SystemSummary = ({ order }: { order: Order }) => {
   const systemSummary: SummaryProduct[] = []
   let screenTotal = 0
   let muntinTotal = 0
+  let hasCustomization = false
 
   const getSqft = (width: number, height: number) => {
     return (width * height) / 144
@@ -53,6 +54,10 @@ const SystemSummary = ({ order }: { order: Order }) => {
     if (product.extras?.muntin_panels) {
       muntinTotal += 1
     }
+
+    if (product.comments !== '' || product.attachment !== '') {
+      hasCustomization = true
+    }
   })
 
   return (
@@ -77,6 +82,13 @@ const SystemSummary = ({ order }: { order: Order }) => {
           <Text style={tw('text-base text-gray-900 font-bold w-6/12')}>Muntins</Text>
           <Text style={tw('text-base text-gray-900 font-regular w-3/12 text-right font-bold')}>{muntinTotal > 0 ? muntinTotal : 'No' }</Text>
         </View>
+        {hasCustomization && (
+          <View style={tw('flex flex-row justify-start gap-x-3')}>
+            <Text style={tw('text-base text-gray-900 font-bold w-6/12')}>Request Customization</Text>
+            <Text style={tw('text-base text-gray-900 font-regular w-3/12 text-right font-bold')}>Yes</Text>
+          </View>
+        )}
+
         {systemSummary.map((summaryProduct, index) => {
           return (
             <View key={`productSummary${index}`} style={tw('flex flex-row justify-start gap-x-3')}>

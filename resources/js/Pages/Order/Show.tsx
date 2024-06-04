@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
 import { Head, Link } from '@inertiajs/react'
-import { type PageProps, type Order, type Client, type Role } from '@/types'
+import { type PageProps, type Order, type Client, type Role, type Product } from '@/types'
 import Panel from '@/Components/Panel'
 import { createMarkWithLeadingZero } from '@/Utils/mark'
 import HammerIcon from '@/Components/Icons/HammerIcon'
@@ -12,6 +12,8 @@ import PaymentInformation from './PaymentInformation'
 import { formatPrice, getSubTotalPriceByRole } from '@/Utils/price'
 import PrintEstimateButton from '../Estimate/PrintEstimateButton'
 import DeliveryIcon from '@/Components/Icons/DeliveryIcon'
+import DialogIcon from '@/Components/Icons/DialogIcon'
+import CustomizationModal from './CustomizationModal'
 
 export default function Show ({ auth, order }: PageProps & {
   clients: Client[]
@@ -28,6 +30,8 @@ export default function Show ({ auth, order }: PageProps & {
 
   const [showOrderModal, setShowOrderModal] = useState<boolean>(false)
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
+  const [showRequestCustomization, setShowRequestCustomization] = useState<boolean>(false)
+  const [requestCustomizationProduct, setRequestCustomizationProduct] = useState<Product | null>(null)
 
   return (
       <AuthenticatedLayout
@@ -89,56 +93,74 @@ export default function Show ({ auth, order }: PageProps & {
                 <table className="w-full whitespace-nowrap">
                   <thead>
                     <tr className="font-bold text-left">
-                      <th className="px-6 pt-5 pb-4">System</th>
+                      <th className="px-6 pt-5 pb-4">System / Glass</th>
                       <th className="px-6 pt-5 pb-4">Mark</th>
                       <th className="px-6 pt-5 pb-4 text-right">Qty</th>
                       <th className="px-6 pt-5 pb-4">Size</th>
                       <th className="px-6 pt-5 pb-4">Frame Color</th>
-                      <th className="px-6 pt-5 pb-4">Glass</th>
                       {(IS_ACCOUNTING || IS_ADMIN) && (
                         <>
                           <th className="px-6 pt-5 pb-4">Price</th>
                           <th className="px-6 pt-5 pb-4">Amount</th>
                         </>
                       )}
+                      <th className="px-6 pt-5 pb-4">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {order.products?.map(({ id, system, line_item_name, qty, width, height, frame_color, glass_type, dealer_unit_price, dealer_total_price, extras }) => (
-                        <tr
-                          key={id}
-                          className="hover:bg-gray-100 focus-within:bg-gray-100"
-                        >
+                    {order.products?.map((product) => {
+                      const { id, system, line_item_name, qty, width, height, frame_color, glass_type, dealer_unit_price, dealer_total_price, extras, attachment, comments } = product
+                      return (
+                          <tr
+                            key={id}
+                            className="hover:bg-gray-100 focus-within:bg-gray-100"
+                          >
+                            <td className="border-t px-6 py-4 align-top">
+                                <div className='font-bold'>
+                                  {system} {extras?.config && `(${extras?.config})`}
+                                </div>
+                                <div className='font-semibold text-xs'>
+                                  {system !== EXTERNAL_PRODUCTS.MULLION ? glass_type : 'N/A'}
+                              </div>
+                            </td>
+                            <td className="border-t px-6 py-4 align-top">
+                              {line_item_name}
+                            </td>
+                            <td className="border-t px-6 py-4 align-top text-right">
+                              {qty}
+                            </td>
+                            <td className="border-t px-6 py-4 align-top">
+                              {width} x {height}
+                            </td>
+                            <td className="border-t px-6 py-4 align-top">
+                              {frame_color}
+                            </td>
+                            {(IS_ACCOUNTING || IS_ADMIN) && (
+                              <>
+                                <td className="border-t px-6 py-4 align-top">
+                                  {formatPrice(dealer_unit_price)}
+                                </td>
+                                <td className="border-t px-6 py-4 align-top">
+                                  {formatPrice(dealer_total_price)}
+                                </td>
+                              </>
+                            )}
                           <td className="border-t px-6 py-4 align-top">
-                            {system} {system === EXTERNAL_PRODUCTS.MULLION && `(${extras?.config})`}
+                            {(attachment !== '' || comments !== '') && (
+                              <button
+                                onClick={() => {
+                                  setRequestCustomizationProduct(product)
+                                  setShowRequestCustomization(true)
+                                } }
+                                title='Request Customization'
+                              >
+                                <DialogIcon className='mr-2'/>
+                              </button>
+                            )}
                           </td>
-                          <td className="border-t px-6 py-4 align-top">
-                            {line_item_name}
-                          </td>
-                          <td className="border-t px-6 py-4 align-top text-right">
-                            {qty}
-                          </td>
-                          <td className="border-t px-6 py-4 align-top">
-                            {width} x {height}
-                          </td>
-                          <td className="border-t px-6 py-4 align-top">
-                            {frame_color}
-                          </td>
-                          <td className="border-t px-6 py-4 align-top">
-                            {system !== EXTERNAL_PRODUCTS.MULLION ? glass_type : 'N/A'}
-                          </td>
-                          {(IS_ACCOUNTING || IS_ADMIN) && (
-                            <>
-                              <td className="border-t px-6 py-4 align-top">
-                                {formatPrice(dealer_unit_price)}
-                              </td>
-                              <td className="border-t px-6 py-4 align-top">
-                                {formatPrice(dealer_total_price)}
-                              </td>
-                            </>
-                          )}
                         </tr>
-                    ))
+                      )
+                    })
                     }
                     {order.products?.length === 0 && (
                       <tr>
@@ -174,6 +196,13 @@ export default function Show ({ auth, order }: PageProps & {
               setSelectedOrder(null)
             }}
             order={selectedOrder}
+          />
+          <CustomizationModal
+            showModal={showRequestCustomization}
+            onClose={() => {
+              setShowRequestCustomization(false)
+            }}
+            product={requestCustomizationProduct}
           />
       </AuthenticatedLayout>
   )

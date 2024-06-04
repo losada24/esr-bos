@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Actions\CreateEstimate;
 use App\Actions\CreateEstimateOrder;
+use App\Actions\ProductCustomizationUpdate;
 use App\Actions\UpdateEstimate;
 use App\Http\Requests\StoreEstimateRequest;
 use App\Http\Requests\UpdateEstimateRequest;
@@ -18,6 +19,8 @@ use App\Models\Client;
 use App\Models\Order;
 use App\Enum\OrderStatusEnum;
 use App\Enum\States;
+use App\Http\Requests\UpdateProductCustomizationRequest;
+use App\Models\Product;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 
 class EstimateController extends Controller
@@ -190,5 +193,13 @@ class EstimateController extends Controller
         return redirect()
           ->route('estimate.index')
           ->with('success', $message);
+    }
+
+    public function customizationUpdate(ProductCustomizationUpdate $productCustomizationUpdate, UpdateProductCustomizationRequest $updateProductCustomizationRequest, Product $product) 
+    {
+      $productCustomizationUpdate->handle($updateProductCustomizationRequest, $product);
+      return redirect()
+          ->back()
+          ->with('success', 'Status updated successfully.');
     }
 }
