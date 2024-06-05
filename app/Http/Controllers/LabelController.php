@@ -84,7 +84,13 @@ class LabelController extends Controller
 
       $columns = array('Quote', 'Mark', 'Client', 'Project', 'System', 'Frame', 'Config', 'Glass Type', 'Size', 'Pressure', 'NOA Number');
       
-      $order->load(['products', 'company']);
+      $order->load(['products'  => function (Builder $builder) {
+        $builder->whereIn('system', [
+          ProductSystemEnum::$FIXED_WINDOWS,
+          ProductSystemEnum::$SINGLE_HUNG,
+          ProductSystemEnum::$HORIZONTAL_ROLLER
+        ])->orderBy('product_sort', 'asc');
+      }, 'company']);
       
       $callback = function() use ($order, $columns) {
           $file = fopen('php://output', 'w');

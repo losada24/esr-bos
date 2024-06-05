@@ -64,7 +64,7 @@ export default function Show ({ auth, order }: PageProps & {
                 </div>
                 <div className="flex flex-col gap-y-2 border-t border-white-light dark:border-white/10 py-2">
                     {(IS_ADMIN || IS_PRODUCTION) && (
-                      <Link href={route('order.workOrder', order.id)} className="btn btn-secondary w-full gap-2">
+                      <Link href={route('pdf.work.order', order.id)} className="btn btn-secondary w-full gap-2">
                           <HammerIcon color="#fff" />
                           Work Order
                       </Link>

@@ -249,10 +249,6 @@ Route::middleware('auth')->group(function () {
       ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$ACCOUNT_MANAGER . "|" . RoleEnum::$PRODUCTION . "|" . RoleEnum::$ACCOUNT_MANAGER . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$ACCOUNTING . "|" . RoleEnum::$SHIPPING . "|" . RoleEnum::$PLANT_MANAGER])
       ->name('order.history');
 
-    Route::get('/order/workOrder/{order}', [OrderController::class, 'workOrder'])
-      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$PRODUCTION ])
-      ->name('order.workOrder');
-
     Route::get('/order/show/{id}', [OrderController::class, 'show'])
       ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$ACCOUNT_MANAGER . "|" . RoleEnum::$PRODUCTION . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$ACCOUNTING . "|" . RoleEnum::$SUB_DEALER . "|" . RoleEnum::$SHIPPING . "|" . RoleEnum::$PLANT_MANAGER ])
       ->name('order.show');

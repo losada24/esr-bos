@@ -321,12 +321,12 @@ class OrderController extends Controller
               'value' => OrderStatusEnum::$PRODUCTION
             ],
             [
-              'label' => OrderStatusEnum::$SCHEDULED_PRODUCTION,
-              'value' => OrderStatusEnum::$SCHEDULED_PRODUCTION
-            ],
-            [
               'label' => OrderStatusEnum::$MATERIAL_REVIEWED,
               'value' => OrderStatusEnum::$MATERIAL_REVIEWED
+            ],
+            [
+              'label' => OrderStatusEnum::$SCHEDULED_PRODUCTION,
+              'value' => OrderStatusEnum::$SCHEDULED_PRODUCTION
             ],
             [
               'label' => OrderStatusEnum::$PRODUCTION_IN_PROGRESS,
@@ -385,12 +385,12 @@ class OrderController extends Controller
             'value' => OrderStatusEnum::$PRODUCTION
           ],
           [
-            'label' => OrderStatusEnum::$MATERIAL_REVIEWED,
-            'value' => OrderStatusEnum::$MATERIAL_REVIEWED
-          ],
-          [
             'label' => OrderStatusEnum::$SCHEDULED_PRODUCTION,
             'value' => OrderStatusEnum::$SCHEDULED_PRODUCTION
+          ],
+          [
+            'label' => OrderStatusEnum::$MATERIAL_REVIEWED,
+            'value' => OrderStatusEnum::$MATERIAL_REVIEWED
           ],
           [
             'label' => OrderStatusEnum::$PRODUCTION_IN_PROGRESS,
@@ -516,29 +516,6 @@ class OrderController extends Controller
       }
 
       return response()->json($statuses);
-    }
-
-    public function workOrder(Order $order) {
-      $order->load(['products' => function (Builder $builder) {
-        $builder->orderBy('product_sort', 'asc');
-      }, 'client']);
-      
-      $materialConsumption = $this->getMaterialConsumption($order);
-      $cuttingList = $this->getCuttingList($order);
-
-      $orderData = [
-        'id' => $order->id,
-        'name' => $order->name,
-        'client' => $order->client,
-        'created_at' => $order->created_at,
-        'project_name' => $order->project_name,
-        'products' => $cuttingList,
-        'materialConsumption' => $materialConsumption
-      ];
-
-      return Inertia::render('Order/WorkOrder', [
-        'order' => $orderData
-      ]);
     }
 
     public function show($id)
