@@ -20,13 +20,15 @@ const RequestCustomizationModal = ({ showModal, onClose, product }: {
           </button>
         </div>
         <div className='p-5'>
-          {product?.comments !== '' && (
+          {product?.comments !== null && (
             <div className='px-1 py-3 font-semibold text-white-dark'>
               <p>{product?.comments}</p>
             </div>
           )}
-          {product?.attachment !== '' && (
-            <a href={`/storage/${product?.attachment}`} target="_blank" className="text-primary underline" rel="noreferrer">View Attachment</a>
+          {product?.attachment !== null && (
+            <div className='flex flex-row justify-between rounded-md border border-[#e0e6ed] dark:border-[#1b2e4b] p-3 mt-3'>
+              <a href={`/storage/${product?.attachment}`} target="_blank" className="text-primary underline" rel="noreferrer">Download Attachment</a>
+            </div>
           )}
         </div>
     </Modal>

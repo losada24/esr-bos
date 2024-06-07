@@ -14,6 +14,7 @@ import PrintEstimateButton from '../Estimate/PrintEstimateButton'
 import DeliveryIcon from '@/Components/Icons/DeliveryIcon'
 import DialogIcon from '@/Components/Icons/DialogIcon'
 import CustomizationModal from './CustomizationModal'
+import { hasCustomization } from '@/Utils/products'
 
 export default function Show ({ auth, order }: PageProps & {
   clients: Client[]
@@ -146,7 +147,7 @@ export default function Show ({ auth, order }: PageProps & {
                               </>
                             )}
                           <td className="border-t px-6 py-4 align-top">
-                            {(attachment !== null || comments !== null) && (
+                            {hasCustomization(product) && (
                               <button
                                 onClick={() => {
                                   setRequestCustomizationProduct(product)

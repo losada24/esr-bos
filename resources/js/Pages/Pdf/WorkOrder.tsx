@@ -14,6 +14,8 @@ import { getNumberWithFraction } from '@/Utils/numbers'
 import SystemSummary from './SystemSummary'
 import Muntin from './Muntin'
 import { PRODUCT_SYSTEMS } from '@/Utils/constants'
+import { hasCustomization } from '@/Utils/products'
+import WorkOrderRequestCustomizations from './WorkOrderRequestCustomizations'
 
 type IndexOrderProps = PageProps & {
   order: Order
@@ -84,6 +86,9 @@ const WorkOrder = ({ order, auth }: IndexOrderProps) => {
                   <Muntin product={product} />
                 )}
                 <CuttingListItems cuttingList={product?.cutting_list ?? []} productId={product.id} />
+                {hasCustomization(product) && (
+                  <WorkOrderRequestCustomizations product={product} />
+                )}
               </Fragment>
             })}
           </Page>

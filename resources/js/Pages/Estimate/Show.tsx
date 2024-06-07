@@ -22,6 +22,7 @@ import Loader from '@/Components/Loader'
 import ReorderIcon from '@/Components/Icons/ReorderIcon'
 import DialogIcon from '@/Components/Icons/DialogIcon'
 import RequestCustomizationModal from './RequestCustomizationModal'
+import { hasCustomization } from '@/Utils/products'
 
 interface BulkActions {
   order_id: number
@@ -41,9 +42,15 @@ export default function Create ({ auth, estimate }: PageProps & {
   const [orderedProducts, setOrderedProducts] = useState<Product[]>(estimate.products ?? [])
   const [selectedBulkActions, setSelectedBulkActions] = useState<BulkActions[]>([])
   const [loading, setLoading] = useState<boolean>(false)
-  // const firstUpdate = useRef(true)
   const [showRequestCustomization, setShowRequestCustomization] = useState<boolean>(false)
   const [requestCustomizationProduct, setRequestCustomizationProduct] = useState<Product | null>(null)
+
+  const removeAttachment = () => {
+    if (!requestCustomizationProduct) return
+    const product = requestCustomizationProduct
+    product.attachment = ''
+    setRequestCustomizationProduct(product)
+  }
 
   const compareOrder = () => {
     return products.map((product) => {
@@ -373,7 +380,7 @@ export default function Create ({ auth, estimate }: PageProps & {
                                   } }
                                   title='Request Customization'
                                 >
-                                  <DialogIcon className='mr-2'/>
+                                  <DialogIcon className={hasCustomization(product) ? 'mr-2 fill-blue-600' : 'mr-2' } />
                                 </button>
                                 <button
                                   onClick={() => {
@@ -435,6 +442,7 @@ export default function Create ({ auth, estimate }: PageProps & {
               setRequestCustomizationProduct(null)
             }}
             product={requestCustomizationProduct}
+            removeAttachment={removeAttachment}
           />
       </AuthenticatedLayout>
   )

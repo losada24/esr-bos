@@ -388,6 +388,13 @@ Route::middleware('auth')->group(function () {
         "validate.estimate.owner:product",
       ])
       ->name('estimate.customization.update');
+    
+    Route::delete('/estimate/attachment-delete/{product}', [EstimateController::class, 'attachmentDelete'])
+      ->middleware([
+        "role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$ACCOUNT_MANAGER . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$SUB_DEALER,
+        "validate.estimate.owner:product",
+      ])
+      ->name('estimate.attachment.delete');
 });
 
 require __DIR__.'/auth.php';

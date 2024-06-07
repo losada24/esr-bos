@@ -2,7 +2,7 @@ import React from 'react'
 import { Text, View } from '@react-pdf/renderer'
 import { createTw } from 'react-pdf-tailwind'
 import { type Order } from '@/types'
-import { getGlassCount } from '@/Utils/products'
+import { getGlassCount, hasCustomization } from '@/Utils/products'
 
 const tw = createTw({
   theme: {
@@ -28,7 +28,7 @@ const SystemSummary = ({ order }: { order: Order }) => {
   const systemSummary: SummaryProduct[] = []
   let screenTotal = 0
   let muntinTotal = 0
-  let hasCustomization = false
+  let hasAnyCustomization = false
 
   const getSqft = (width: number, height: number) => {
     return (width * height) / 144
@@ -55,8 +55,8 @@ const SystemSummary = ({ order }: { order: Order }) => {
       muntinTotal += 1
     }
 
-    if (product.attachment !== null || product.comments !== null) {
-      hasCustomization = true
+    if (hasCustomization(product)) {
+      hasAnyCustomization = true
     }
   })
 
@@ -82,7 +82,7 @@ const SystemSummary = ({ order }: { order: Order }) => {
           <Text style={tw('text-base text-gray-900 font-bold w-6/12')}>Muntins</Text>
           <Text style={tw('text-base text-gray-900 font-regular w-3/12 text-right font-bold')}>{muntinTotal > 0 ? muntinTotal : 'No' }</Text>
         </View>
-        {hasCustomization && (
+        {hasAnyCustomization && (
           <View style={tw('flex flex-row justify-start gap-x-3')}>
             <Text style={tw('text-base text-gray-900 font-bold w-6/12')}>Request Customization</Text>
             <Text style={tw('text-base text-gray-900 font-regular w-3/12 text-right font-bold')}>Yes</Text>

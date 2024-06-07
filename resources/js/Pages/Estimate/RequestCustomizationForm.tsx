@@ -2,17 +2,19 @@ import React, { useState } from 'react'
 import { Field, Form } from 'formik'
 import InputError from '@/Components/InputError'
 import PrimaryButton from '@/Components/PrimaryButton'
-import { Link } from '@inertiajs/react'
+import { Link, router } from '@inertiajs/react'
 import { type FormikErrors } from 'formik'
 import { type EstimateCommentsUpdate } from './EstimateCommon'
+import DeleteIcon from '@/Components/Icons/DeleteIcon'
 
-const RequestCustomizationForm = ({ submitCount, errors, isCreate, setFieldValue, estimateId, attachment }: {
+const RequestCustomizationForm = ({ submitCount, errors, isCreate, setFieldValue, estimateId, attachment, handleDeleteAttachment }: {
   submitCount: number
   errors: FormikErrors<EstimateCommentsUpdate>
   isCreate: boolean
   setFieldValue: CallableFunction
   estimateId: number
   attachment: string
+  handleDeleteAttachment: () => void
 }) => {
   return (
     <Form className='space-y-5'>
@@ -43,7 +45,16 @@ const RequestCustomizationForm = ({ submitCount, errors, isCreate, setFieldValue
         />
         {(submitCount && errors.attachment) ? <InputError message={errors.attachment} className="mt-2" /> : ''}
         {attachment !== '' && (
-          <a href={`/storage/${attachment}`} target="_blank" className="text-primary underline" rel="noreferrer">View Attachment</a>
+          <div className='flex flex-row justify-between rounded-md border border-[#e0e6ed] dark:border-[#1b2e4b] p-3 mt-3'>
+            <a href={`/storage/${attachment}`} target="_blank" className="text-primary underline" rel="noreferrer">Download Attachment</a>
+            <button type='button' onClick={() => {
+              if (confirm('Are you sure you want to delete this attachment?')) {
+                handleDeleteAttachment()
+              }
+            }}>
+              <DeleteIcon />
+            </button>
+          </div>
         )}
       </div>
       <div className="flex items-center justify-between mt-4">

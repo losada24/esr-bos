@@ -22,6 +22,7 @@ use App\Enum\States;
 use App\Http\Requests\UpdateProductCustomizationRequest;
 use App\Models\Product;
 use Illuminate\Contracts\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Storage;
 
 class EstimateController extends Controller
 {
@@ -200,6 +201,20 @@ class EstimateController extends Controller
       $productCustomizationUpdate->handle($updateProductCustomizationRequest, $product);
       return redirect()
           ->back()
-          ->with('success', 'Status updated successfully.');
+          ->with('success', 'Customization request updated successfully.');
+    }
+
+    public function attachmentDelete(Product $product)
+    {
+      if (Storage::disk('public')->exists($product->attachment)) {
+        Storage::disk('public')->delete($product->attachment);
+      }
+
+      $product->attachment = null;
+      $product->save();
+
+      return redirect()
+          ->back()
+          ->with('success', 'Attachment deleted successfully.');
     }
 }

@@ -25,3 +25,7 @@ export const getGlassCount = (products: Product[]) => {
     return acc + (product.qty * glassCount)
   }, 0)
 }
+
+export const hasCustomization = (product: Product): boolean => {
+  return product.comments !== null || product.attachment !== null
+}

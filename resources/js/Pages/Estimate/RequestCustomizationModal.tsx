@@ -6,12 +6,17 @@ import { type FormikHelpers, Formik } from 'formik'
 import { estimateCommentsSchema, type EstimateCommentsUpdate } from './EstimateCommon'
 import RequestCustomizationForm from './RequestCustomizationForm'
 
-const RequestCustomizationModal = ({ showModal, onClose, product }: {
+const RequestCustomizationModal = ({ showModal, onClose, product, removeAttachment }: {
   showModal: boolean
   onClose: CallableFunction
   product: Product | null
+  removeAttachment: () => void
 }) => {
   const handleSubmit = async (values: any, helpers: FormikHelpers<EstimateCommentsUpdate>) => {
+    if (typeof values.attachment === 'string') {
+      values.attachment = null
+    }
+
     router.post(route('estimate.customization.update', product?.id), {
       _method: 'PUT',
       ...values
@@ -22,6 +27,14 @@ const RequestCustomizationModal = ({ showModal, onClose, product }: {
       },
       onSuccess: () => {
         onClose(false)
+      }
+    })
+  }
+
+  const handleDeleteAttachment = () => {
+    router.delete(route('estimate.attachment.delete', product?.id), {
+      onSuccess: () => {
+        removeAttachment()
       }
     })
   }
@@ -59,6 +72,7 @@ const RequestCustomizationModal = ({ showModal, onClose, product }: {
                   setFieldValue={setFieldValue}
                   estimateId={product?.order_id ?? 0}
                   attachment={product?.attachment ?? ''}
+                  handleDeleteAttachment={() => { handleDeleteAttachment() }}
                 />
               )}
             </Formik>
