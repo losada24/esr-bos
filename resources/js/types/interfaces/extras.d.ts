@@ -11,4 +11,5 @@ export interface Extras {
   vertical_lines?: number
   horizontal_lines?: number
   opening?: string
+  anchors?: boolean
 }

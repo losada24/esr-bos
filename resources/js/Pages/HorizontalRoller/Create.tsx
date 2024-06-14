@@ -5,6 +5,7 @@ import { type PageProps, type Order, type Client, type HorizontalRoller } from '
 import HorizontalRollerForm from './HorizontalRollerForm'
 import { horizontalRollerSchema } from './HorizontalRollerCommon'
 import { createNextMarkWithLeadingZero } from '@/Utils/mark'
+import { SWEEP_LOCK } from '@/Utils/constants'
 
 export default function Create ({ auth, frame_colors, glass_colors, estimate, handle, config, muntin_patterns, muntin_styles }: PageProps & {
   frame_colors: string[]
@@ -30,7 +31,7 @@ export default function Create ({ auth, frame_colors, glass_colors, estimate, ha
     qty: 0,
     markup: estimate.markup,
     screen: true,
-    handle: '',
+    handle: SWEEP_LOCK,
     config: '',
     order_glass_type: estimate.glass_type,
     muntin_panels: false,
@@ -40,7 +41,8 @@ export default function Create ({ auth, frame_colors, glass_colors, estimate, ha
     muntin_interior_style: '',
     muntin_exterior_style: '',
     horizontal_lines: 0,
-    vertical_lines: 0
+    vertical_lines: 0,
+    anchors: false
   }
 
   const handleSubmit = async (values: any, helpers: FormikHelpers<HorizontalRoller>) => {

@@ -108,7 +108,7 @@ class LabelController extends Controller
                 isset($product->extras['config']) ? $product->extras['config'] : '',
                 $product->glass_type,
                 $this->getNumberWithFraction($product->width)  . " x " . $this->getNumberWithFraction($product->height) . " inches",
-                ProductSystemEnum::getSystemPressure($product->system),
+                $this->getPressureRating($product), // ProductSystemEnum::getSystemPressure($product->system),
                 ProductSystemEnum::getSystemNoa($product->system)
               ]);
             }

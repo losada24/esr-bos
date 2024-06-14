@@ -39,7 +39,8 @@ export default function Edit ({ auth, product, frame_colors, glass_colors, handl
     muntin_interior_style: product?.extras?.muntin_interior_style ?? '',
     muntin_exterior_style: product?.extras?.muntin_exterior_style ?? '',
     horizontal_lines: product?.extras?.horizontal_lines ?? 0,
-    vertical_lines: product?.extras?.vertical_lines ?? 0
+    vertical_lines: product?.extras?.vertical_lines ?? 0,
+    anchors: product?.extras?.anchors ?? false
   }
 
   const handleSubmit = async (values: any, helpers: FormikHelpers<HorizontalRoller>) => {

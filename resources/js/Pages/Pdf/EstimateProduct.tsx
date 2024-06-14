@@ -1,12 +1,12 @@
 import React from 'react'
 import { Text, View } from '@react-pdf/renderer'
 import { createTw } from 'react-pdf-tailwind'
-import { type Product, type Order } from '@/types'
+import { type Product } from '@/types'
 import ReportProductImage from '@/Pages/Pdf/ReportProductImage'
 import { PRODUCT_SYSTEMS } from '@/Utils/constants'
 import { getNumberWithFraction } from '@/Utils/numbers'
 import { formatPrice, getTotalPriceByRole, getUnitPriceByRole } from '@/Utils/price'
-import { getProductCertification } from '@/Utils/products'
+import { getPressureRating, getProductCertification } from '@/Utils/products'
 import Muntin from './Muntin'
 
 const tw = createTw({
@@ -22,6 +22,8 @@ const tw = createTw({
     }
   }
 })
+
+// TODO: Compare this component to the other ReportProduct component
 
 const EstimateProduct = ({ product, showPrices, isImpactGlass }: { product: Product, showPrices: boolean, isImpactGlass?: boolean }) => {
   return (
@@ -126,7 +128,7 @@ const EstimateProduct = ({ product, showPrices, isImpactGlass }: { product: Prod
           <>
             <View style={tw('flex flex-row gap-4 justify-start p-3 w-2/12')}>
               <Text style={tw('text-xs font-regular text-green-700')}>
-                {product.system === PRODUCT_SYSTEMS.HORIZONTAL_ROLLER || product.system === PRODUCT_SYSTEMS.SINGLE_HUNG ? '+70/-70 psf' : '+75/-75 psf'}
+              {getPressureRating(product)}
               </Text>
             </View>
             <View style={tw('flex flex-row gap-4 justify-start p-3 w-2/12')}>

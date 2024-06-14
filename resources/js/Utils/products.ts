@@ -29,3 +29,22 @@ export const getGlassCount = (products: Product[]) => {
 export const hasCustomization = (product: Product): boolean => {
   return product.comments !== null || product.attachment !== null
 }
+
+export const getPressureRating = (product: Product): string => {
+  let $pressureRating = ''
+  if (product.system === PRODUCT_SYSTEMS.FIXED_WINDOWS) {
+    $pressureRating = '+75/-75 psf'
+  } else if (product.system === PRODUCT_SYSTEMS.SINGLE_HUNG) {
+    $pressureRating = '+70/-70 psf'
+  } else if (product.system === PRODUCT_SYSTEMS.HORIZONTAL_ROLLER) {
+    if (product.extras?.anchors === true || product.width < 53.128) {
+      $pressureRating = '+70/-70 psf'
+    } else if (product.width >= 53.128 && product.width < 61) {
+      $pressureRating = '+67.2/-67.2 psf'
+    } else {
+      $pressureRating = '+44/-44 psf'
+    }
+  }
+
+  return $pressureRating
+}

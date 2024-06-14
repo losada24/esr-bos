@@ -67,6 +67,7 @@ class UpdateHorizontalRollerRequest extends FormRequest
           ],
           'privacy' => 'required|string|max:255',
           'screen' => 'required|boolean',
+          'anchors' => 'boolean',
           'config' => [
             'required',
             Rule::in(array_values(HorizontalRollerConfigEnum::$CONFIG))

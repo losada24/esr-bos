@@ -8,7 +8,6 @@ use App\Enum\FrameColorEnum;
 use App\Enum\GlassColorEnum;
 use App\Models\Order;
 use App\Http\Requests\StoreHorizontalRollerRequest;
-use App\Http\Requests\UpdateFixedWindowsRequest;
 use App\Actions\CreateHorizontalRoller;
 use App\Models\Product;
 use App\Actions\UpdateHorizontalRoller;

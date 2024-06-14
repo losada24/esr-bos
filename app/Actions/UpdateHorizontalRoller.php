@@ -33,7 +33,8 @@ class UpdateHorizontalRoller {
         $request->muntin_exterior_style,
         $request->vertical_lines,
         $request->horizontal_lines,
-        $request->handle
+        $request->handle,
+        $request->anchors
       );
 
       $estimate = Order::find($request->order_id);
@@ -82,7 +83,8 @@ class UpdateHorizontalRoller {
           'muntin_interior_style' => $request->muntin_interior_style,
           'muntin_exterior_style' => $request->muntin_exterior_style,
           'horizontal_lines' => $request->horizontal_lines,
-          'vertical_lines' => $request->vertical_lines
+          'vertical_lines' => $request->vertical_lines,
+          'anchors' => $request->anchors,
         ],
         'user_id' => auth()->user()->id,
       ];

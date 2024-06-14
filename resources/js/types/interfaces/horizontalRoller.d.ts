@@ -23,4 +23,5 @@ export interface HorizontalRoller {
   muntin_exterior_style: string
   horizontal_lines: number
   vertical_lines: number
+  anchors: boolean
 }

@@ -28,6 +28,7 @@ class HorizontalRollerProduct implements IProduct {
     public $verticalLines;
     public $horizontalLines;
     public $handle;
+    public $anchors;
     
     public function __construct(
       $width, 
@@ -43,7 +44,8 @@ class HorizontalRollerProduct implements IProduct {
       $muntinExteriorStyle = "",
       $verticalLines = 0,
       $horizontalLines = 0,
-      $handle = ""
+      $handle = "",
+      $anchors = false
     ) {
         $this->width = (float) $width;
         $this->height = (float) $height;
@@ -60,6 +62,7 @@ class HorizontalRollerProduct implements IProduct {
         $this->verticalLines = $verticalLines;
         $this->horizontalLines = $horizontalLines;
         $this->handle = $handle;
+        $this->anchors = $anchors;
     }
 
     public function getGlassHeigth() {
@@ -148,7 +151,7 @@ class HorizontalRollerProduct implements IProduct {
         ];
       }
 
-      if ($this->handle == HorizontalRollerHandleEnum::$HANDLE['SWIPE LOCK'] || $this->handle == HorizontalRollerHandleEnum::$HANDLE['BOTH']) {
+      if ($this->handle == HorizontalRollerHandleEnum::$HANDLE['SWEEP LOCK'] || $this->handle == HorizontalRollerHandleEnum::$HANDLE['BOTH']) {
         $material_name = 'SLOCK 0001 W';
         if ($this->frameColor != FrameColorEnum::$FRAME_COLOR["WHITE"]) {
           $material_name = 'SLOCK 0001 BL';
@@ -356,7 +359,7 @@ class HorizontalRollerProduct implements IProduct {
           ];
       }
 
-      if ($this->handle == HorizontalRollerHandleEnum::$HANDLE['SWIPE LOCK'] || $this->handle == HorizontalRollerHandleEnum::$HANDLE['BOTH']) {
+      if ($this->handle == HorizontalRollerHandleEnum::$HANDLE['SWEEP LOCK'] || $this->handle == HorizontalRollerHandleEnum::$HANDLE['BOTH']) {
           $material_consumption[$swipeLock->name] = [
               'amount' => 2 * $qty,
               'unit_of_measurement' => $swipeLock->unit_of_measurement,
@@ -426,7 +429,7 @@ class HorizontalRollerProduct implements IProduct {
           $handlePrice += $ventLatchCost + $lockSprignMaterialCost;
         } 
         
-        if ($this->handle == HorizontalRollerHandleEnum::$HANDLE['SWIPE LOCK'] || $this->handle == HorizontalRollerHandleEnum::$HANDLE['BOTH']) {
+        if ($this->handle == HorizontalRollerHandleEnum::$HANDLE['SWEEP LOCK'] || $this->handle == HorizontalRollerHandleEnum::$HANDLE['BOTH']) {
           if ($firstFrameColorLetter == 'BR') {
             $firstFrameColorLetter = 'BL';
           }
@@ -497,6 +500,10 @@ class HorizontalRollerProduct implements IProduct {
         $dobleFaceMaterial = RawMaterial::where('name', 'DF 4525')->first(); // MATERIAL LS 0001
         $dobleFacenMaterialCost = ($this->height - 5.25) * 0.083 * $dobleFaceMaterial->cost_per_unit;
         $handlePrice = $this->getHandlePrice();
+        $anchorsPrice = 0;
+        if ($this->anchors) {
+          $anchorsPrice = config('custom.anchors_price');
+        }
         // GET OTHER BILLS
         $workBill = config('custom.work_bill');
         $rentBill = config('custom.rent_bill');
@@ -639,6 +646,7 @@ class HorizontalRollerProduct implements IProduct {
           $internetBill +
           $cornerSilicone +
           $muntinCost +
+          $anchorsPrice +
           $otherBill;
 
         //GET COMPANY MOCKUP

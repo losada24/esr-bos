@@ -6,7 +6,7 @@ import ReportProductImage from '@/Pages/Pdf/ReportProductImage'
 import { EXTERNAL_PRODUCTS, PRODUCT_SYSTEMS } from '@/Utils/constants'
 import { getNumberWithFraction } from '@/Utils/numbers'
 import { formatPrice, getUnitPriceByRole, getTotalPriceByRole } from '@/Utils/price'
-import { getProductCertification } from '@/Utils/products'
+import { getPressureRating, getProductCertification } from '@/Utils/products'
 import Muntin from './Muntin'
 
 const tw = createTw({
@@ -127,7 +127,7 @@ const ReportProduct = ({ product, showPrices, roles, isImpactGlass }: { product:
               <>
                 <View style={tw('flex flex-row gap-4 justify-start p-3 w-2/12')}>
                   <Text style={tw('text-xs text-gray-900 font-regular text-green-700')}>
-                    {product.system === PRODUCT_SYSTEMS.HORIZONTAL_ROLLER || product.system === PRODUCT_SYSTEMS.SINGLE_HUNG ? '+70/-70 psf' : '+75/-75 psf'}
+                    {getPressureRating(product)}
                   </Text>
                 </View>
                 <View style={tw('flex flex-row gap-4 justify-start p-3 w-2/12')}>

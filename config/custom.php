@@ -15,4 +15,5 @@ return [
   'labels_images_path' => env('LABELS_IMAGES_PATH'),
   'corner_silicone' => env('CORNER_SILICONE'),
   'muntin_price_by_sqft' => env('MUNTIN_PRICE_BY_SQFT'),
+  'anchors_price' => env('ANCHORS_PRICE'),
 ];

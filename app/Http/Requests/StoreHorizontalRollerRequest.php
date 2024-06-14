@@ -74,6 +74,7 @@ class StoreHorizontalRollerRequest extends FormRequest
               ),
             ],
             'screen' => 'required|boolean',
+            'anchors' => 'boolean',
             'config' => [
               'required',
               Rule::in(array_values(HorizontalRollerConfigEnum::$CONFIG))

@@ -6,7 +6,7 @@ class HorizontalRollerHandleEnum {
 
   public static $HANDLE = [
     'VENT LATCH' => 'VENT LATCH',
-    'SWIPE LOCK' => 'SWIPE LOCK',
+    'SWEEP LOCK' => 'SWEEP LOCK',
     'BOTH' => 'BOTH',
   ];
 

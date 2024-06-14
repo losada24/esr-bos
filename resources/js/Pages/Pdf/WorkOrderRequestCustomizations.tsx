@@ -34,7 +34,7 @@ const WorkOrderRequestCustomizations = ({ product }: { product: Product }) => {
       {product.attachment !== null && (
         <View style={tw('flex flex-row justify-start gap-x-3')}>
           <Text style={tw('text-sm text-gray-900 font-bold w-2/12')}>Attachment:</Text>
-          <Link src={`${APP_URL}/storage/${product.attachment}`} style={tw('text-sm text-blui-900 w-10/12')}>Download Attachment</Link>
+          <Link src={`${APP_URL}/storage/${product.attachment}`} style={tw('text-sm text-blue-900 w-10/12')}>Download Attachment</Link>
         </View>
       )}
     </View>

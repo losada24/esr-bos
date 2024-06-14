@@ -172,7 +172,7 @@ const HorizontalRollerForm = ({ submitCount, errors, isCreate, frame_colors, gla
                 {(submitCount && errors.config) ? <InputError message={errors.config} className="mt-2" /> : ''}
               </div>
               <div className={submitCount ? (errors.handle) ? 'has-error' : 'has-success' : ''}>
-                <label htmlFor="handle">Handle</label>
+                <label htmlFor="handle">Locking Mechanism</label>
                 <Field
                   id="handle"
                   name="handle"
@@ -181,7 +181,7 @@ const HorizontalRollerForm = ({ submitCount, errors, isCreate, frame_colors, gla
                   placeholder='Handle'
                   as="select"
                 >
-                  <option value="">Select Handle</option>
+                  <option value="">Select Locking Mechanism</option>
                   {handle.map((handle, index) => (
                     <option key={index} value={handle}>{handle}</option>
                   ))}
@@ -198,6 +198,27 @@ const HorizontalRollerForm = ({ submitCount, errors, isCreate, frame_colors, gla
                 <label htmlFor="screen">Screen</label>
                 {(submitCount && errors.screen) ? <InputError message={errors.screen} className="mt-2" /> : ''}
               </div>
+              {values.width > 53.128 && (
+                <div className={submitCount ? (errors.screen) ? 'has-error ' : 'has-success' : ''}>
+                  <div className='inline-flex'>
+                    <Field
+                      id="anchors"
+                      name="anchors"
+                      className="form-checkbox"
+                      type='checkbox'
+                    />
+                    <label htmlFor="screen">Anchors</label>
+                  </div>
+                  {(submitCount && errors.anchors) ? <InputError message={errors.anchors} className="mt-2" /> : ''}
+                  <div className="flex items-center p-3.5 rounded text-info bg-info-light dark:bg-info-dark-light">
+                    <span className="ltr:pr-2 rtl:pl-2">
+                      <strong className="ltr:mr-1 rtl:ml-1">Info!</strong>
+                      {values.width >= 53.128 && values.width < 61 && 'For this size, the maximum pressure is +67.2/-67.2 psf. To achieve +70/-70 psf, please select anchors.'}
+                      {values.width >= 61 && 'For this size, the maximum pressure is +44/-44 psf. To achieve +70/-70 psf, please select anchors.'}
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
           </fieldset>
           <fieldset>

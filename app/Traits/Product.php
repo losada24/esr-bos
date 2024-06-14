@@ -409,4 +409,23 @@ trait Product {
       ];
     });
   }
+
+  public function getPressureRating($product) {
+    $pressureRating = '';
+    if ($product->system === ProductSystemEnum::$FIXED_WINDOWS) {
+      $pressureRating = '+75/-75 psf';
+    } else if ($product->system === ProductSystemEnum::$SINGLE_HUNG) {
+      $pressureRating = '+70/-70 psf';
+    } else if ($product->system === ProductSystemEnum::$HORIZONTAL_ROLLER) {
+      if ((isset($product->extras['anchors']) && $product->extras['anchors'] === true) || $product->width < 53.128) {
+        $pressureRating = '+70/-70 psf';
+      } else if ($product->width >= 53.128 && $product->width < 61) {
+        $pressureRating = '+67.2/-67.2 psf';
+      } else {
+        $pressureRating = '+44/-44 psf';
+      }
+    }
+
+    return $pressureRating;
+  }
 }
