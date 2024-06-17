@@ -3,6 +3,7 @@
 namespace App\Traits;
 
 use App\Enum\ExternalProductEnum;
+use App\Enum\HorizontalRollerHandleEnum;
 use App\Enum\ProductSystemEnum;
 use App\Products\CasementProduct;
 use App\Products\FixedWindowsProduct;
@@ -154,7 +155,7 @@ trait Product {
               $product->frame_color,
               $product->glass_type,
               $product->extras['screen'],
-              handle: $product->extras['handle']
+              handle: isset($product->extras['handle']) ? $product->extras['handle'] : HorizontalRollerHandleEnum::$HANDLE['VENT LATCH']
             );
 
             $materialReleaseForProduct = $cuttingListObject->getMaterialRelease($product->qty);
