@@ -3,6 +3,7 @@
 namespace App\Products;
 
 use App\Enum\FrameColorEnum;
+use App\Enum\HorizontalRollerHandleEnum;
 use App\Enum\UnitOfMeasurement;
 use App\Interfaces\IProduct;
 use App\Models\RawMaterial;
@@ -26,6 +27,7 @@ class SingleHuntProduct implements IProduct {
     public $muntinExteriorStyle;
     public $verticalLines;
     public $horizontalLines;
+    public $handle;
     
     public function __construct(
       $width, 
@@ -40,7 +42,8 @@ class SingleHuntProduct implements IProduct {
       $muntinInteriorStyle = "",
       $muntinExteriorStyle = "",
       $verticalLines = 0,
-      $horizontalLines = 0
+      $horizontalLines = 0,
+      $handle = ''
     ) {
         $this->width = (float) $width;
         $this->height = (float) $height;
@@ -56,6 +59,7 @@ class SingleHuntProduct implements IProduct {
         $this->muntinExteriorStyle = $muntinExteriorStyle;
         $this->verticalLines = $verticalLines;
         $this->horizontalLines = $horizontalLines;
+        $this->handle = $handle;
     }
 
     public function getGlassHeigth() {
@@ -143,13 +147,7 @@ class SingleHuntProduct implements IProduct {
           'unit_of_measurement' => $clb0001->unit_of_measurement,
           'storage_measure' => $clb0001->storage_measure,
           'notes' => $clb0001->notes
-        ],
-        'VENT LACH W CLIP ' . $this->materialColor => [
-          'amount' => 2 * $qty,
-          'unit_of_measurement' => UnitOfMeasurement::$UNIT_OF_MEASUREMENT["UNIT"],
-          'storage_measure' => 0,
-          'notes' => ""
-        ],
+        ]
       ];
 
       if (!empty($balanceData)) {
@@ -158,6 +156,29 @@ class SingleHuntProduct implements IProduct {
           'unit_of_measurement' => UnitOfMeasurement::$UNIT_OF_MEASUREMENT["UNIT"],
           'storage_measure' => UnitOfMeasurement::$UNIT_OF_MEASUREMENT["UNIT"],
           'notes' => "Balance size: " . $balanceData[2]
+        ];
+      }
+
+      if ($this->handle == HorizontalRollerHandleEnum::$HANDLE['VENT LATCH'] || $this->handle == HorizontalRollerHandleEnum::$HANDLE['BOTH']) {
+        $materials['VENT LACH W CLIP ' . $this->materialColor] = [
+          'amount' => 2 * $qty,
+          'unit_of_measurement' => UnitOfMeasurement::$UNIT_OF_MEASUREMENT["UNIT"],
+          'storage_measure' => 0,
+          'notes' => ""
+        ];
+      }
+
+      if ($this->handle == HorizontalRollerHandleEnum::$HANDLE['SWEEP LOCK'] || $this->handle == HorizontalRollerHandleEnum::$HANDLE['BOTH']) {
+        $material_name = 'SLOCK 0001 W';
+        if ($this->frameColor != FrameColorEnum::$FRAME_COLOR["WHITE"]) {
+          $material_name = 'SLOCK 0001 BL';
+        }
+        $swipeLock = RawMaterial::where('name', $material_name)->first();
+        $materials[$material_name] = [
+          'amount' => 2 * $qty,
+          'unit_of_measurement' => UnitOfMeasurement::$UNIT_OF_MEASUREMENT["UNIT"],
+          'storage_measure' => 0,
+          'notes' => $swipeLock->notes
         ];
       }
       
@@ -181,8 +202,10 @@ class SingleHuntProduct implements IProduct {
       $tbs0001 = RawMaterial::where('name', 'TSB 0001')->first();
       if ($this->frameColor == FrameColorEnum::$FRAME_COLOR["WHITE"]) {
         $weatherStripMeetRailSash = RawMaterial::where('name', 'W 22174 W')->first(); // W 22184 W or B
+        $swipeLock = RawMaterial::where('name', 'SLOCK 0001 W')->first();
       } else {
         $weatherStripMeetRailSash = RawMaterial::where('name', 'W 22174 BL')->first(); // W 22184 W or B
+        $swipeLock = RawMaterial::where('name', 'SLOCK 0001 BL')->first();
       }
       //$w22184 = RawMaterial::where('name', 'W 22184 ' . $this->materialColor)->first();
       $w22254BL = RawMaterial::where('name', 'W 22254 BL')->first();
@@ -337,6 +360,31 @@ class SingleHuntProduct implements IProduct {
           'notes' => "Balance size: " . $balanceData[2]
         ];
       }
+
+      if ($this->handle == HorizontalRollerHandleEnum::$HANDLE['VENT LATCH'] || $this->handle == HorizontalRollerHandleEnum::$HANDLE['BOTH']) {
+        $result['LS 0001'] = [
+            'amount' => 2 * $qty,
+            'unit_of_measurement' => $ls0001->unit_of_measurement,
+            'storage_measure' => $ls0001->storage_measure,
+            'notes' => $ls0001->notes
+        ];
+        $result['VW 109 ' . $this->materialColor] = [
+            'amount' => 2 * $qty,
+            'unit_of_measurement' => $vw109->unit_of_measurement,
+            'storage_measure' => $vw109->storage_measure,
+            'notes' => $vw109->notes
+        ];
+      }
+
+      if ($this->handle == HorizontalRollerHandleEnum::$HANDLE['SWEEP LOCK'] || $this->handle == HorizontalRollerHandleEnum::$HANDLE['BOTH']) {
+          $result[$swipeLock->name] = [
+              'amount' => 2 * $qty,
+              'unit_of_measurement' => $swipeLock->unit_of_measurement,
+              'storage_measure' => $swipeLock->storage_measure,
+              'notes' => $swipeLock->notes
+          ];
+      }
+      
       return $result;
     }
 
@@ -384,6 +432,29 @@ class SingleHuntProduct implements IProduct {
       $cuttingListResult[] = $this->getCuttingListObject('Glass', $this->glassType, 2 * $qty, $this->getNumberWithFraction($this->getGlassWidth()) . ' x ' . $this->getNumberWithFraction($this->getGlassHeigth()));
 
       return $cuttingListResult;
+    }
+
+    public function getHandlePrice() {
+        $firstFrameColorLetter = $this->getMaterialColor($this->frameColor);
+        $handlePrice = 0;
+        if ($this->handle == HorizontalRollerHandleEnum::$HANDLE['VENT LATCH'] || $this->handle == HorizontalRollerHandleEnum::$HANDLE['BOTH']) {
+          $ventLatchMaterial = RawMaterial::where('name', 'VW 109 ' . $firstFrameColorLetter)->first(); // MATERIAL 109
+          $ventLatchCost = 3 * 0.083 * $ventLatchMaterial->cost_per_unit * 2;
+          $lockSprignMaterial = RawMaterial::where('name', 'LS 0001')->first(); // MATERIAL LS 0001
+          $lockSprignMaterialCost = $lockSprignMaterial->cost_per_unit * 2;
+          $handlePrice += $ventLatchCost + $lockSprignMaterialCost;
+        } 
+        
+        if ($this->handle == HorizontalRollerHandleEnum::$HANDLE['SWEEP LOCK'] || $this->handle == HorizontalRollerHandleEnum::$HANDLE['BOTH']) {
+          if ($firstFrameColorLetter == 'BR') {
+            $firstFrameColorLetter = 'BL';
+          }
+
+          $swipeLock = RawMaterial::where('name', 'SLOCK 0001 ' . $firstFrameColorLetter)->first();
+          $handlePrice += $swipeLock->cost_per_unit * 2;
+        }
+
+        return $handlePrice;
     }
 
     public function getUnitPrice() {
@@ -438,6 +509,7 @@ class SingleHuntProduct implements IProduct {
         $lockSprignMaterialCost = $lockSprignMaterial->cost_per_unit * 2;
         $clipTakeOffBalanceMaterial = RawMaterial::where('name', 'CLB 0001')->first(); // MATERIAL CLB 0001
         $clipTakeOffBalanceCost = $clipTakeOffBalanceMaterial->cost_per_unit * 2;
+        $handlePrice = $this->getHandlePrice();
 
         // GET OTHER BILLS
         $workBill = config('custom.work_bill');
@@ -570,14 +642,8 @@ class SingleHuntProduct implements IProduct {
           $internetBill +
           $cornerSilicone +
           $muntinCost +
+          $handlePrice +
           $otherBill;
-
-        //GET COMPANY MOCKUP
-        /*$companyMockup = $this->getCompanyMockup();
-        $companyMockupCost = $unitPriceCost * $companyMockup / 100;
-
-        $promotion = $this->getCompanyPromotion();
-        $promotionCost = ($unitPriceCost + $companyMockupCost) * $promotion / 100;*/
 
         return $unitPriceCost;
     }

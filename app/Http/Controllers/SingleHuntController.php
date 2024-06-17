@@ -12,6 +12,7 @@ use App\Actions\CreateSingleHunt;
 use App\Models\Product;
 use App\Actions\UpdateSingleHunt;
 use App\Enum\GlassTypeEnum;
+use App\Enum\HorizontalRollerHandleEnum;
 use App\Enum\MuntinPatternEnum;
 use App\Enum\MuntinStyleEnum;
 use App\Http\Requests\UpdateSingleHuntRequest;
@@ -37,6 +38,7 @@ class SingleHuntController extends Controller
         'glass_colors' => array_values($glass_colors),
         'muntin_patterns' => array_values(MuntinPatternEnum::$MUNTIN_PATTERN),
         'muntin_styles' => array_values(MuntinStyleEnum::$MUNTIN_STYLE),
+        'handle' => array_values(HorizontalRollerHandleEnum::$HANDLE),
         'estimate' => $order,
       ]);
   }
@@ -73,6 +75,7 @@ class SingleHuntController extends Controller
           'glass_colors' => array_values($glass_colors),
           'muntin_patterns' => array_values(MuntinPatternEnum::$MUNTIN_PATTERN),
           'muntin_styles' => array_values(MuntinStyleEnum::$MUNTIN_STYLE),
+          'handle' => array_values(HorizontalRollerHandleEnum::$HANDLE),
           'product' => $product,
         ]);
     }

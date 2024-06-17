@@ -6,13 +6,14 @@ import { type PageProps, type Product, type Client, type SingleHunt } from '@/ty
 import SingleHuntForm from './SingleHuntForm'
 import { singleHuntSchema } from './SingleHuntCommon'
 
-export default function Edit ({ auth, product, frame_colors, glass_colors, muntin_patterns, muntin_styles }: PageProps & {
+export default function Edit ({ auth, product, frame_colors, glass_colors, muntin_patterns, muntin_styles, handle }: PageProps & {
   frame_colors: string[]
   glass_colors: string[]
   muntin_patterns: string[]
   muntin_styles: string[]
   clients: Client[]
-  product: Product }) {
+  product: Product
+  handle: string[] }) {
   const initialValues: SingleHunt = {
     id: product.id,
     order_id: product.order_id,
@@ -35,7 +36,8 @@ export default function Edit ({ auth, product, frame_colors, glass_colors, munti
     muntin_interior_style: product?.extras?.muntin_interior_style ?? '',
     muntin_exterior_style: product?.extras?.muntin_exterior_style ?? '',
     horizontal_lines: product?.extras?.horizontal_lines ?? 0,
-    vertical_lines: product?.extras?.vertical_lines ?? 0
+    vertical_lines: product?.extras?.vertical_lines ?? 0,
+    handle: product?.extras?.handle ?? ''
   }
 
   const handleSubmit = async (values: any, helpers: FormikHelpers<SingleHunt>) => {
@@ -69,6 +71,7 @@ export default function Edit ({ auth, product, frame_colors, glass_colors, munti
               muntin_patterns={muntin_patterns}
               muntin_styles={muntin_styles}
               setFieldValue={setFieldValue}
+              handle={handle}
             />
           )}
         </Formik>

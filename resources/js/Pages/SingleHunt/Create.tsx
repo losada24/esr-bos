@@ -5,14 +5,16 @@ import { type PageProps, type Order, type Client, type SingleHunt } from '@/type
 import SingleHuntForm from './SingleHuntForm'
 import { singleHuntSchema } from './SingleHuntCommon'
 import { createNextMarkWithLeadingZero } from '@/Utils/mark'
+import { SWEEP_LOCK } from '@/Utils/constants'
 
-export default function Create ({ auth, frame_colors, glass_colors, estimate, muntin_patterns, muntin_styles }: PageProps & {
+export default function Create ({ auth, frame_colors, glass_colors, estimate, muntin_patterns, muntin_styles, handle }: PageProps & {
   frame_colors: string[]
   glass_colors: string[]
   muntin_patterns: string[]
   muntin_styles: string[]
   clients: Client[]
   estimate: Order
+  handle: string[]
 }) {
   const initialValues: SingleHunt = {
     id: 0,
@@ -36,7 +38,8 @@ export default function Create ({ auth, frame_colors, glass_colors, estimate, mu
     muntin_interior_style: '',
     muntin_exterior_style: '',
     horizontal_lines: 0,
-    vertical_lines: 0
+    vertical_lines: 0,
+    handle: SWEEP_LOCK
   }
 
   const handleSubmit = async (values: any, helpers: FormikHelpers<SingleHunt>) => {
@@ -70,6 +73,7 @@ export default function Create ({ auth, frame_colors, glass_colors, estimate, mu
                 muntin_patterns={muntin_patterns}
                 muntin_styles={muntin_styles}
                 setFieldValue={setFieldValue}
+                handle={handle}
               />
             )}
           </Formik>

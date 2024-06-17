@@ -6,6 +6,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use App\Enum\FrameColorEnum;
 use App\Enum\GlassColorEnum;
 use App\Enum\GlassTypeEnum;
+use App\Enum\HorizontalRollerHandleEnum;
 use App\Enum\ProductSystemEnum;
 use App\Rules\ValidateMuntingHorizontalLines;
 use App\Rules\ValidateMuntingVerticalLines;
@@ -46,6 +47,10 @@ class StoreSingleHuntRequest extends FormRequest
             'glass_color' => [
               'required',
               Rule::in(array_values(GlassColorEnum::$GLASS_COLOR))
+            ],
+            'handle' => [
+              'required',
+              Rule::in(array_values(HorizontalRollerHandleEnum::$HANDLE))
             ],
             'order_id' => 'required|exists:orders,id',
             'glass_type' => 'required|string|max:255',

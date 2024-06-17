@@ -21,4 +21,5 @@ export interface SingleHunt {
   muntin_exterior_style: string
   horizontal_lines: number
   vertical_lines: number
+  handle: string
 }

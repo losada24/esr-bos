@@ -106,7 +106,8 @@ trait Product {
               $product->height,
               $product->frame_color,
               $product->glass_type,
-              $product->extras['screen']
+              $product->extras['screen'],
+              handle: $product->extras['handle']
             );
 
             $materialConsuptionForProduct = $cuttingListObject->getMaterialConsumption($product->qty);
@@ -152,7 +153,8 @@ trait Product {
               $product->height,
               $product->frame_color,
               $product->glass_type,
-              $product->extras['screen']
+              $product->extras['screen'],
+              handle: $product->extras['handle']
             );
 
             $materialReleaseForProduct = $cuttingListObject->getMaterialRelease($product->qty);

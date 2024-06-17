@@ -10,7 +10,7 @@ import { EXPRESS_GLASS_TYPE, NO_CERTIFICATION_STANDARD_MESSAGE, RUSH_GLASS_NEW_C
 import { getFrameJambs } from '@/Utils/SingleHung'
 import Details from './Details'
 
-const SingleHuntForm = ({ submitCount, errors, isCreate, frame_colors, glass_colors, estimate_id, values, muntin_patterns, muntin_styles, setFieldValue }: {
+const SingleHuntForm = ({ submitCount, errors, isCreate, frame_colors, glass_colors, estimate_id, values, muntin_patterns, muntin_styles, setFieldValue, handle }: {
   submitCount: number
   errors: FormikErrors<SingleHunt>
   isCreate: boolean
@@ -21,6 +21,7 @@ const SingleHuntForm = ({ submitCount, errors, isCreate, frame_colors, glass_col
   estimate_id: number
   values: SingleHunt
   setFieldValue: (field: string, value: any, shouldValidate?: boolean) => void
+  handle: string[]
 }) => {
   const [glassTypes, setGlassTypes] = useState<string[]>([])
   const [colors, setColors] = useState<string[]>(glass_colors)
@@ -161,6 +162,23 @@ const SingleHuntForm = ({ submitCount, errors, isCreate, frame_colors, glass_col
                 />
                 <label htmlFor="screen">Screen</label>
                 {(submitCount && errors.screen) ? <InputError message={errors.screen} className="mt-2" /> : ''}
+              </div>
+              <div className={submitCount ? (errors.handle) ? 'has-error' : 'has-success' : ''}>
+                <label htmlFor="handle">Locking Mechanism</label>
+                <Field
+                  id="handle"
+                  name="handle"
+                  className="form-select"
+                  autoComplete="handle"
+                  placeholder='Handle'
+                  as="select"
+                >
+                  <option value="">Select Locking Mechanism</option>
+                  {handle.map((handle, index) => (
+                    <option key={index} value={handle}>{handle}</option>
+                  ))}
+                </Field>
+                {(submitCount && errors.handle) ? <InputError message={errors.handle} className="mt-2" /> : ''}
               </div>
             </div>
           </fieldset>

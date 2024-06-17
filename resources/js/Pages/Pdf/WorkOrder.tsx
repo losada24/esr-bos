@@ -69,7 +69,7 @@ const WorkOrder = ({ order, auth }: IndexOrderProps) => {
                       <Text style={tw('text-xs text-white-dark text-black')}>System Product:</Text>
                       <Text style={tw('text-xs text-white-dark dark:text-gray-500')}>
                         {product.system} ({product.frame_color}) {product?.extras?.config}
-                        {(product.system === PRODUCT_SYSTEMS.HORIZONTAL_ROLLER) && (
+                        {(product.system === PRODUCT_SYSTEMS.HORIZONTAL_ROLLER || product.system === PRODUCT_SYSTEMS.SINGLE_HUNG) && (
                             ` | Handle: ${product.extras?.handle}`
                         )}
                       </Text>

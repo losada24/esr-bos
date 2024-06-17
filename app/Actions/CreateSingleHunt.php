@@ -25,7 +25,8 @@ class CreateSingleHunt {
         $request->muntin_interior_style,
         $request->muntin_exterior_style,
         $request->vertical_lines,
-        $request->horizontal_lines
+        $request->horizontal_lines,
+        $request->handle
       );
 
       $estimate = Order::find($request->order_id);
@@ -73,7 +74,8 @@ class CreateSingleHunt {
           'muntin_interior_style' => $request->muntin_interior_style,
           'muntin_exterior_style' => $request->muntin_exterior_style,
           'horizontal_lines' => $request->horizontal_lines,
-          'vertical_lines' => $request->vertical_lines
+          'vertical_lines' => $request->vertical_lines,
+          'handle' => $request->handle,
         ],
         'user_id' => auth()->user()->id,
       ]);
