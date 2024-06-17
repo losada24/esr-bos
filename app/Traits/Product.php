@@ -108,7 +108,7 @@ trait Product {
               $product->frame_color,
               $product->glass_type,
               $product->extras['screen'],
-              handle: $product->extras['handle']
+              handle: isset($product->extras['handle']) ? $product->extras['handle'] : HorizontalRollerHandleEnum::$HANDLE['VENT LATCH']
             );
 
             $materialConsuptionForProduct = $cuttingListObject->getMaterialConsumption($product->qty);
