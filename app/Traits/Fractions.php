@@ -37,7 +37,7 @@ trait Fractions {
 
     public function getDecimalPart($number) {
       $whole = floor($number);
-      return $number - $whole;
+      return round($number - $whole, 3);
     }
 
     public function getNumberWithFraction($number) {

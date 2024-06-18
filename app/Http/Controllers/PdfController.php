@@ -36,7 +36,7 @@ class PdfController extends Controller
         'project_name' => $order->project_name,
         'products' => $cuttingList,
       ];
-      
+
       return Inertia::render('Pdf/WorkOrder', [
         'order' => $orderData
       ]);
