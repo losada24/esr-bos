@@ -71,7 +71,7 @@ const PaymentForm = ({ submitCount, errors, estimate, values, states }: {
               <Alert className="relative flex items-center border p-3.5 rounded text-dark bg-dark-light border-dark dark:bg-dark-dark-light dark:text-white-light dark:border-white-light/20">
                 <p>Make your payment directly into our bank account. Please use your Order ID as the payment reference. Your order will not be available until the funds have cleared in our account. Estimated time of 3 to 5 days.</p>
                 <p><strong>Bank name:</strong> Truist Bank</p>
-                <p><strong>Account number:</strong> 1100028830279</p>
+                <p><strong>Account number:</strong> 1100023764618</p>
                 <p><strong>Routing number:</strong> 263191387</p>
               </Alert>
             )}
