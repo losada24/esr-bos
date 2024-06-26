@@ -35,7 +35,7 @@ const PaymentForm = ({ submitCount, errors, estimate, values, states }: {
             {values.method === PAYMENT_METHODS.CASH && (
               <Alert className="relative flex items-center border p-3.5 rounded text-dark bg-dark-light border-dark dark:bg-dark-dark-light dark:text-white-light dark:border-white-light/20">
                 <p>Pay with cash in Store or Zelle transfer. Your products will be available at the time the payment is made.</p>
-                <p><strong>Zelle Number:</strong> 786-620-6183</p>
+                <p><strong>Zelle:</strong> raul@reylosglass.com </p>
               </Alert>
             )}
           </div>
