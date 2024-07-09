@@ -53,7 +53,7 @@ class User extends Authenticatable
         'password' => 'hashed',
     ];
 
-    public function scopeCreatedByCheck(Builder $query): void
+    /* public function scopeCreatedByCheck(Builder $query): void
     {
       $isAccountManager = auth()->user()->hasRole(RoleEnum::$ACCOUNT_MANAGER);
       if (!auth()->user()->hasRole(RoleEnum::$ADMIN) && !$isAccountManager) {
@@ -65,7 +65,7 @@ class User extends Authenticatable
           $query->where('name', '<>', RoleEnum::$ADMIN);
         });
       }
-    }
+    } */
 
     public function scopeFilter($query, array $filters)
     {
@@ -83,35 +83,8 @@ class User extends Authenticatable
         return $this->created_by == auth()->user()->id;
     }
 
-    public function companies()
-    {
-        return $this->hasMany(Company::class);
-    }
-
-    public function orderStatus()
-    {
-        return $this->hasMany(OrderStatus::class);
-    }
-
     public function createdBy()
     {
         return $this->belongsTo(User::class, 'created_by');
-    }
-
-    public function company()
-    {
-        return $this->belongsTo(Company::class);
-    }
-
-    public function getRedirectRoute() {
-        if ($this->hasRole(RoleEnum::$ADMIN) ||
-          $this->hasRole(RoleEnum::$PRODUCTION) ||
-          $this->hasRole(RoleEnum::$ACCOUNT_MANAGER) ||
-          $this->hasRole(RoleEnum::$SHIPPING) ||
-          $this->hasRole(RoleEnum::$ACCOUNTING)) {
-            return 'order';
-        }
-            
-        return 'estimate';
     }
   }

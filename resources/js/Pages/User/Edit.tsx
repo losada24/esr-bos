@@ -58,8 +58,6 @@ export default function Edit ({ auth, roles, user, companies }: UserPageProps) {
               submitCount={submitCount}
               roles={roles}
               isCreate={false}
-              companies={companies}
-              isAdmin={IS_ADMIN}
               setFieldValue={setFieldValue}
               featured_image={user?.data.featured_image ?? ''}
               modalProps={modalProps}

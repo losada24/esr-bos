@@ -5,7 +5,7 @@
     <p><strong>Password:</strong> {{ $password }}</p>
     <p>Please note that this password is temporary and it is crucial to change it once you log in for the first time. To enhance the security of your account, follow these steps:</p>
     <ol>
-        <li>Go to <a href="https://rgimpactsystem.com/">RG Impact System Manufacturing</a></li>
+        <li>Go to <a href="{{ config('app.url') }}">BOS website</a></li>
         <li>Log in to your account</li>
         <li>Click on your profile in the top right corner</li>
         <li>Click on "Profile"</li>

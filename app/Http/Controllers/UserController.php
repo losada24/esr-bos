@@ -12,7 +12,6 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Spatie\Permission\Models\Role;
 use App\Traits\RoleManagement;
-use App\Models\Company;
 
 class UserController extends Controller
 {
@@ -25,8 +24,7 @@ class UserController extends Controller
     public function index(Request $request)
     {
         return Inertia::render('User/Index', [
-          'users' => User::with(['roles', 'company'])
-            ->createdByCheck()
+          'users' => User::with(['roles'])
             ->filter($request->only(['text']))
             ->orderBy('name')
             ->paginate()
@@ -42,8 +40,7 @@ class UserController extends Controller
     public function create()
     {
         return Inertia::render('User/Create', [
-          'roles' => Role::whereIn('name', $this->GetChildRolesByRole(auth()->user()->roles[0]->name))->orderBy('name')->get(),
-          'companies' => Company::orderBy('name')->orderBy('name')->get()
+          'roles' => Role::orderBy('name')->get(),
         ]);
     }
 
@@ -71,8 +68,7 @@ class UserController extends Controller
         $user->loadMissing('roles');
         return Inertia::render('User/Edit', [
           'user' => new UserResource($user),
-          'roles' => Role::whereIn('name', $this->GetChildRolesByRole(auth()->user()->roles[0]->name))->orderBy('name')->get(),
-          'companies' => Company::orderBy('name')->orderBy('name')->get()
+          'roles' => Role::orderBy('name')->get(),
         ]);
     }
 

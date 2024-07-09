@@ -1,45 +1,158 @@
 import { type User } from '@/types/interfaces/user'
 import { type Client } from '@/types/interfaces/client'
-import { type Product } from '@/types/interfaces/product'
-import { type Balance } from '@/types/interfaces/balance'
-import { type MaterialConsumption } from './materialConsumption'
-import { type PaymentInfo } from './paymentInfo'
-import { type CuttingListProducts } from './cuttingListProducts'
-import { OrderStatus } from './orderStatus'
 
 export interface Order {
   id: number
   name: string
-  status?: string
-  project_name?: string
-  frame_color: string
-  glass_color: string
-  markup: number
+  order_number: number
+  job_address?: string
+  city_permits: boolean
+  association_permits: boolean
+  equipment_rental: boolean
   notes?: string
   client_id: number
+  user_id?: number
   created_at?: Date
   updated_at?: Date
+  entry_date?: Date
+  installation_date?: Date
   user?: User
   client?: Client
-  products?: Product[]
-  products_count?: number
-  tax_amount?: number
-  tax_rate?: number
-  installation?: number
-  permit?: number
-  other?: number
-  external_purchase_id?: string
-  glass_type: string
-  materialConsumption?: MaterialConsumption[]
-  balances?: Balance[]
-  payments?: PaymentInfo[]
-  orderCuttingList?: CuttingListProducts[]
-  company_markup?: number
-  user_markup?: number
-  company_promotion?: number
-  user_id?: number
-  rg_other_price?: number
-  order_promotion?: number
-  subdealer_other?: number
-  order_status?: OrderStatus[]
+  additional_travel_costs?: number
+  type_of_work_id: number
+  typeOfWork?: TypeOfWork
+  type_of_housing_id: number
+  type_of_housing?: TypeOfHousing
+  installation_teams: InstallationTeam[]
+  supervisor_id: number
+  supervisor?: User
+  travel_cost_id: number
+  travel_cost?: TravelCost
+  duration_of_work_id: number
+  duration_of_work?: DurationOfWork
+  method_of_payment: string
+  service: string
+  contract_signing_date: Date
+  payment_factory_date: Date
+  delivery_date: Date
+  owners: User[]
+  orderProducts?: OrderProduct[]
+}
+
+export interface TypeOfWork {
+  id: number
+  name: string
+  notes: string
+  productCosts: ProductCost[]
+  orders: Order[]
+  orderProducts?: OrderProduct[]
+}
+
+export interface ProductCost {
+  id: number
+  price: number
+  notes: string
+  type_of_work_id: number
+  typeOfWork: TypeOfWork
+  product_config_id: number
+  productConfig?: ProductConfig
+}
+
+export interface ProductConfig {
+  id: number
+  name: string
+  notes: string
+  product_categories_id: number
+  productCategory: ProductCategory
+  productCosts: ProductCost[]
+  orderProducts?: OrderProduct[]
+}
+
+export interface ProductCategory {
+  id: number
+  name: string
+  notes: string
+  productConfigs: ProductConfig[]
+  type_of_products_id: number
+  typeOfProduct?: TypeOfProduct
+}
+
+export interface TypeOfProduct {
+  id: number
+  name: string
+  notes: string
+  productCategories: ProductCategory[]
+}
+
+export interface OrderProduct {
+  id: number
+  order_id: number
+  qty: number
+  height: number
+  width: number
+  unit_price: number
+  total_price: number
+  notes: string
+  order: Order
+  product_config_id: number
+  productConfig?: ProductConfig
+  type_of_work_id: number
+  typeOfWork?: TypeOfWork
+  storefront_area: number
+  installation_other_level: boolean
+  extra_works?: ExtraWorks[]
+}
+
+export interface ExtraWorks {
+  id: number
+  name: string
+  price: number
+  unit: string
+  notes: string
+  orderProducts?: OrderProduct[]
+  planned: boolean
+}
+
+export interface TypeOfHousing {
+  id: number
+  name: string
+  notes: string
+  orders: Order[]
+  installationTeamTypeHousings: InstallationTeam[]
+}
+
+export interface InstallationTeam {
+  id: number
+  number_of_member: number
+  worker_compensation_expiration_date: Date
+  liability_expiration_date: Date
+  notes?: string
+  user_id: number
+  user?: User
+  attachments: Attachment[]
+  orders: Order[]
+}
+
+export interface Attachment {
+  id: number
+  filename: string
+  file_path: string
+  file_type: string
+  file_size: number
+}
+
+export interface TravelCost {
+  id: number
+  name: string
+  price: number
+  notes?: string
+  orders?: Order[]
+}
+
+export interface DurationOfWork {
+  id: number
+  name: string
+  price: number
+  notes: string
+  orders?: Order[]
 }

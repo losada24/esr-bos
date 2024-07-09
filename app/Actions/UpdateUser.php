@@ -20,12 +20,6 @@ class UpdateUser {
           throw new \Exception('Not not updated');
       }
 
-      $company_id = auth()->user()->company_id;
-
-      if (auth()->user()->hasRole(RoleEnum::$ADMIN) || auth()->user()->hasRole(RoleEnum::$ACCOUNT_MANAGER)) {
-        $company_id = $request->company_id;
-      }
-
       $reaturedImagePath = $user->featured_image;
       if ($request->hasFile('featured_image')) {
         $fileName = time() . '_' . $request->file('featured_image')->getClientOriginalName();
@@ -39,19 +33,16 @@ class UpdateUser {
       $userData = [
         'name' => $request->name,
         'email' => $request->email,
-        'company_id' => $company_id,
-        'markup' => $request->markup,
         'featured_image' => $reaturedImagePath,
       ];
 
       if ($request->password) {
         $userData['password'] = Hash::make($request->password);
+        Mail::to($request->email, $request->name)->send(new \App\Mail\UpdateUserInformation($request->name, $request->email, $request->password));
       }
 
       $user->update($userData);
       $user->syncRoles([$request->role]);
-
-      Mail::to($request->email, $request->name)->send(new \App\Mail\UpdateUserInformation($request->name, $request->email, $request->password));
     });
   }
 }

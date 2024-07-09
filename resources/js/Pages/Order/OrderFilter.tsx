@@ -4,9 +4,8 @@ import 'flatpickr/dist/flatpickr.css'
 import { useForm, router } from '@inertiajs/react'
 import TextInput from '@/Components/TextInput'
 import PrimaryButton from '@/Components/PrimaryButton'
-import { type Status } from '@/types'
 
-const OrderFilter = ({ statuses }: { statuses: Status[] }) => {
+const OrderFilter = ({ statuses }: { statuses: string[] }) => {
   const { data, setData } = useForm({
     text: '',
     status: '',
@@ -74,7 +73,7 @@ const OrderFilter = ({ statuses }: { statuses: Status[] }) => {
           >
             <option value="">Select Status</option>
             {statuses.map((status, index) => (
-              <option key={index} value={status.value}>{status.label.toUpperCase()}</option>
+              <option key={index} value={status}>{status}</option>
             ))}
           </select>
         </div>

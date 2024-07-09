@@ -14,12 +14,6 @@ class CreateUser {
     
     DB::transaction(function() use ($request) {
 
-      $company_id = auth()->user()->company_id;
-
-      if ((auth()->user()->hasRole(RoleEnum::$ADMIN) || auth()->user()->hasRole(RoleEnum::$ACCOUNT_MANAGER)) && $request->company_id != 0) {
-        $company_id = $request->company_id;
-      }
-
       $reaturedImagePath = null;
       if ($request->hasFile('featured_image')) {
         $fileName = time() . '_' . $request->file('featured_image')->getClientOriginalName();
@@ -30,9 +24,6 @@ class CreateUser {
         'name' => $request->name,
         'email' => $request->email,
         'password' => Hash::make($request->password),
-        'company_id' => $company_id,
-        'markup' => $request->markup,
-        'created_by' => auth()->user()->id,
         'featured_image' => $reaturedImagePath,
       ]);
 

@@ -7,7 +7,7 @@ import { type Role } from '@/types'
 import { isAccountManager, isAdmin } from '@/Utils/user'
 
 export default function Create ({ auth, roles, companies }: UserPageProps) {
-  const IS_ADMIN = isAdmin(auth.user.roles.map((role: Role) => role.name)) || isAccountManager(auth.user.roles.map((role: Role) => role.name))
+  // const IS_ADMIN = isAdmin(auth.user.roles.map((role: Role) => role.name)) || isAccountManager(auth.user.roles.map((role: Role) => role.name))
   const initialValues: User = {
     name: '',
     email: '',
@@ -45,8 +45,8 @@ export default function Create ({ auth, roles, companies }: UserPageProps) {
                 submitCount={submitCount}
                 roles={roles}
                 isCreate={true}
-                companies={companies}
-                isAdmin={IS_ADMIN}
+                // companies={companies}
+                // isAdmin={IS_ADMIN}
                 setFieldValue={setFieldValue}
                 modalProps={null}
               />

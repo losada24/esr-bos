@@ -10,7 +10,7 @@ import DashboardIcon from '@/Components/Icons/DashboardIcon'
 import BookIcon from '@/Components/Icons/BookIcon'
 import MoneyIcon from '@/Components/Icons/MoneyIcon'
 import CompanyIcon from '@/Components/Icons/CompanyIcon'
-import { isAdmin, isDealer, isSubDealer, isAccounting, isProduction, isAccountManager, isShipping, isPlantManager } from '@/Utils/user'
+import { isAdmin, isAccountManager /*, isDealer, isSubDealer, isAccounting, isProduction, isShipping, isPlantManager*/ } from '@/Utils/user'
 import { type Role, type Auth } from '@/types'
 import WindowsIcon from '@/Components/Icons/WindowsIcon'
 
@@ -22,12 +22,13 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
 
   const IS_ADMIN = isAdmin(auth.user.roles.map((role: Role) => role.name))
   const IS_ACCOUNT_MANAGER = isAccountManager(auth.user.roles.map((role: Role) => role.name))
+  /* 
   const IS_DEALER = isDealer(auth.user.roles.map((role: Role) => role.name))
   const IS_SUB_DEALER = isSubDealer(auth.user.roles.map((role: Role) => role.name))
   const IS_ACCOUNTING = isAccounting(auth.user.roles.map((role: Role) => role.name))
   const IS_PRODUCTION = isProduction(auth.user.roles.map((role: Role) => role.name))
   const IS_SHIPPING = isShipping(auth.user.roles.map((role: Role) => role.name))
-  const IS_PLANT_MANAGER = isPlantManager(auth.user.roles.map((role: Role) => role.name))
+  const IS_PLANT_MANAGER = isPlantManager(auth.user.roles.map((role: Role) => role.name)) */
 
   return (
         <div className={`${themeState.semidark ? 'dark' : ''}`}>
@@ -61,7 +62,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                     </div>
                                 </NavLink>
                             </li>
-                            {(IS_ADMIN || IS_ACCOUNT_MANAGER) && (
+                            {(IS_ADMIN) && (
                               <>
                                 <h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">
                                     <svg className="w-4 h-5 flex-none hidden" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
@@ -80,38 +81,6 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                                 </div>
                                             </NavLink>
                                         </li>
-                                        <li className="nav-item">
-                                            <NavLink href={route('raw-material.index')} active={route().current('raw-material.index') || route().current('raw-material.create') || route().current('raw-material.edit')} className="group">
-                                                <div className="flex items-center">
-                                                  <BookIcon />
-                                                  <SidebarLinkLabel>Raw Materials</SidebarLinkLabel>
-                                                </div>
-                                            </NavLink>
-                                        </li>
-                                        <li className="nav-item">
-                                            <NavLink href={route('client.index')} active={route().current('client.index') || route().current('client.create') || route().current('client.edit')} className="group">
-                                                <div className="flex items-center">
-                                                  <ReferralIcon />
-                                                  <SidebarLinkLabel>Clients</SidebarLinkLabel>
-                                                </div>
-                                            </NavLink>
-                                        </li>
-                                        <li className="nav-item">
-                                            <NavLink href={route('company.index')} active={route().current('company.index') || route().current('company.create') || route().current('company.edit')} className="group">
-                                                <div className="flex items-center">
-                                                  <CompanyIcon />
-                                                  <SidebarLinkLabel>Companies</SidebarLinkLabel>
-                                                </div>
-                                            </NavLink>
-                                        </li>
-                                        <li className="nav-item">
-                                            <NavLink href={route('external-products.index')} active={route().current('external-products.index') || route().current('external-products.create') || route().current('external-products.edit')} className="group">
-                                                <div className="flex items-center">
-                                                  <WindowsIcon />
-                                                  <SidebarLinkLabel>External Products</SidebarLinkLabel>
-                                                </div>
-                                            </NavLink>
-                                        </li>
                                     </ul>
                                 </li>
                               </>
@@ -122,57 +91,13 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                 </svg>
                                 <span>Actions</span>
                             </h2>
-                            {(IS_ADMIN || IS_DEALER) && (
+                            {(IS_ADMIN || IS_ACCOUNT_MANAGER) && (
                               <>
                                 <li className="menu nav-item">
-                                    <NavLink href={route('company.profile')} active={route().current('company.profile')} className="group">
+                                    <NavLink href={route('order.index')} active={route().current('order.index')} className="group">
                                         <div className="flex items-center">
                                             <CompanyIcon />
-                                            <SidebarLinkLabel>Company</SidebarLinkLabel>
-                                        </div>
-                                    </NavLink>
-                                </li>
-                              </>
-                            )}
-                            {IS_DEALER && (
-                                <li className="nav-item">
-                                  <NavLink href={route('user.index')} active={route().current('user.index') || route().current('user.create') || route().current('user.edit')} className="group">
-                                      <div className="flex items-center">
-                                        <UserIcon />
-                                        <SidebarLinkLabel>Users</SidebarLinkLabel>
-                                      </div>
-                                  </NavLink>
-                                </li>
-                            )}
-                            {(IS_DEALER || IS_SUB_DEALER) && (
-                              <li className="nav-item">
-                                <NavLink href={route('client.index')} active={route().current('client.index') || route().current('client.create') || route().current('client.edit')} className="group">
-                                    <div className="flex items-center">
-                                      <ReferralIcon />
-                                      <SidebarLinkLabel>Clients</SidebarLinkLabel>
-                                    </div>
-                                </NavLink>
-                              </li>
-                            )}
-                            {(IS_ADMIN || IS_ACCOUNT_MANAGER || IS_DEALER || IS_SUB_DEALER) && (
-                              <>
-                                <li className="menu nav-item">
-                                    <NavLink href={route('estimate.index')} active={route().current('estimate.index') || route().current('estimate.create') || route().current('estimate.edit') || route().current('estimate.show')} className="group">
-                                        <div className="flex items-center">
-                                            <MoneyBagIcon />
-                                            <SidebarLinkLabel>Estimates</SidebarLinkLabel>
-                                        </div>
-                                    </NavLink>
-                                </li>
-                              </>
-                            )}
-                            {(IS_ADMIN || IS_ACCOUNT_MANAGER || IS_DEALER || IS_ACCOUNTING || IS_PRODUCTION || IS_SUB_DEALER || IS_SHIPPING || IS_PLANT_MANAGER) && (
-                              <>
-                                <li className="menu nav-item">
-                                    <NavLink href={route('order.index')} active={route().current('order.index') || route().current('order.show') || route().current('order.workOrder')} className="group">
-                                        <div className="flex items-center">
-                                            <MoneyIcon />
-                                            <SidebarLinkLabel>Orders</SidebarLinkLabel>
+                                            <SidebarLinkLabel>Order</SidebarLinkLabel>
                                         </div>
                                     </NavLink>
                                 </li>

@@ -1,0 +1,44 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
+class OrderProduct extends Model
+{
+    use HasFactory, SoftDeletes;
+    
+    protected $fillable = [
+        'order_id',
+        'product_config_id',
+        'type_of_work_id',
+        'height',
+        'width',
+        'qty',
+        'unit_price',
+        'total_price',
+        'notes',
+        'storefront_area',
+        'installation_other_level'
+    ];
+
+    public function order(): BelongsTo {
+        return $this->belongsTo(Order::class, 'order_id', 'id');
+    }
+
+    public function productConfig(): BelongsTo {
+        return $this->belongsTo(ProductConfig::class, 'product_config_id', 'id');
+    }
+
+    public function typeOfWork(): BelongsTo {
+        return $this->belongsTo(TypeOfWork::class, 'type_of_work_id', 'id');
+    }
+
+    public function orderProductExtraWorks(): HasMany {
+        return $this->hasMany(OrderProductExtraWork::class, 'order_id', 'id');
+      }
+}

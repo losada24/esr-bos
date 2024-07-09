@@ -47,21 +47,21 @@ const Header = ({ auth }: { auth: Auth }) => {
                                 offset={[0, 8]}
                                 placement={`${isRtl ? 'bottom-start' : 'bottom-end'}`}
                                 btnClassName="relative group block"
-                                button={<ProfileImage name={auth.user.name} />}
+                                button={<ProfileImage name={ "Efrain" /*auth.user.name*/ } />}
                             >
                                 <ul className="text-dark dark:text-white-dark !py-0 w-[230px] font-semibold dark:text-white-light/90">
                                     <li>
                                         <div className="flex items-center px-4 py-4">
-                                            <ProfileImage name={auth.user.name} />
+                                            <ProfileImage name={"Efrain" /*auth.user.name*/} />
                                             <div className="ltr:pl-4 rtl:pr-4 truncate">
                                                 <h4 className="text-base">
-                                                    {ellipse(auth.user.name, 10)}
+                                                    {ellipse("Efrain" /*auth.user.name*/, 10)}
                                                     <span className="text-xs bg-success-light rounded text-success px-1 ltr:ml-2 rtl:ml-2">
-                                                      {getRoleName(auth.user.roles.map((role: Role) => role.name))}
+                                                      {getRoleName(["Admin"] /*auth.user.roles.map((role: Role) => role.name)*/)}
                                                     </span>
                                                 </h4>
                                                 <button type="button" className="text-black/60 hover:text-primary dark:text-dark-light/60 dark:hover:text-white">
-                                                    {auth.user.email}
+                                                    {"losada24@gmail.com" /*auth.user.email*/}
                                                 </button>
                                             </div>
                                         </div>

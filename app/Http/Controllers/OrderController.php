@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Actions\ProduceOrder;
 use App\Actions\UpdateOrderStatusNote;
+use App\Enum\MethodOfPayment;
 use App\Http\Resources\OrderCollection;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -12,8 +13,20 @@ use App\Enum\OrderStatusEnum;
 use App\Http\Requests\UpdateOrderStatusRequest;
 use App\Enum\ProductSystemEnum;
 use App\Enum\RoleEnum;
+use App\Enum\Service;
 use App\Http\Requests\UpdateOrderStatusNoteRequest;
+use App\Models\Client;
+use App\Models\DurationOfWork;
+use App\Models\ExtraWork;
+use App\Models\InstallationTeam;
+use App\Models\ProductConfig;
+use App\Models\TravelCost;
+use App\Models\TypeOfHousing;
+use App\Models\TypeOfProduct;
+use App\Models\TypeOfWork;
+use App\Models\User;
 use App\Traits\Product;
+use Doctrine\DBAL\Types\Type;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 
 class OrderController extends Controller
@@ -29,507 +42,66 @@ class OrderController extends Controller
     {
         return Inertia::render('Order/Index', [
           'orders' => new OrderCollection(
-            Order::orders()
-              ->with(['orderStatus' => function (Builder $builder) {
-                $builder->where('status', OrderStatusEnum::$PRODUCTION);
-              }])
-              ->filter($request->only(['text', 'status', 'dates']))
+            Order::with(['orderStatus'])
+              ->filter($request->only(['text']))
               ->orderBy('orders.updated_at', 'desc')
               ->orderBy('orders.id', 'desc')
-              ->with(['products'])
               ->paginate()
               ->withQueryString()
           ),
           'statuses' => [
-            OrderStatusEnum::$ESTIMATE,
-            OrderStatusEnum::$PRODUCTION,
-            OrderStatusEnum::$READY_FOR_DELIVERY
+            OrderStatusEnum::PLANNED->value,
+            OrderStatusEnum::CONFIRMED->value,
+            OrderStatusEnum::EXECUTION->value,
+            OrderStatusEnum::SUPERVISION->value,
+            OrderStatusEnum::INSPECTION->value,
+            OrderStatusEnum::FINISH->value,
+            OrderStatusEnum::FINAL_INSPECTION->value,
+            OrderStatusEnum::FINAL_COLLECT->value
           ]
         ]);
     }
 
-    public function statusUpdate(UpdateOrderStatusRequest $updateOrderStatusRequest, ProduceOrder $produceOrder) 
+     /**
+     * Show the form for creating a new resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function create()
     {
-      $produceOrder->handle($updateOrderStatusRequest);
-      return redirect()
-          ->back()
-          ->with('success', 'Status updated successfully.');
-    }
-
-    public function noteUpdate(UpdateOrderStatusNoteRequest $updateOrderStatusNoteRequest, UpdateOrderStatusNote $statusOrderNote) 
-    {
-      $statusOrderNote->handle($updateOrderStatusNoteRequest);
-      return redirect()
-          ->back()
-          ->with('success', 'Status Note updated successfully.');
-    }
-
-    public function status(Order $order) {
-      $statuses = [];
-      if ((auth()->user()->hasRole(RoleEnum::$ADMIN) || auth()->user()->hasRole(RoleEnum::$ACCOUNTING)) && 
-        (
-          $order->status ==  OrderStatusEnum::$ACCOUNTING || 
-          $order->status ==  OrderStatusEnum::$PRODUCTION_COMPLETED ||
-          $order->status ==  OrderStatusEnum::$PARTIAL_PRODUCTION_COMPLETED ||
-          $order->status ==  OrderStatusEnum::$DELIVERED ||
-          $order->status ==  OrderStatusEnum::$PICKED_UP
-        )) {
-          if ($order->status ==  OrderStatusEnum::$ACCOUNTING) {
-            $statuses = [
-              [
-                'label' => OrderStatusEnum::$ESTIMATE,
-                'value' => OrderStatusEnum::$ESTIMATE
-              ],
-              [
-                'label' => OrderStatusEnum::$PRODUCTION,
-                'value' => OrderStatusEnum::$PRODUCTION
-              ],
-            ];
-          }
-          else if ($order->status ==  OrderStatusEnum::$PRODUCTION_COMPLETED) {
-            $statuses = [
-              [
-                'label' => OrderStatusEnum::$READY_FOR_DELIVERY,
-                'value' => OrderStatusEnum::$READY_FOR_DELIVERY
-              ],
-              [
-                'label' => OrderStatusEnum::$READY_FOR_PICKUP,
-                'value' => OrderStatusEnum::$READY_FOR_PICKUP
-              ],
-            ];
-          }
-          else if ($order->status ==  OrderStatusEnum::$PARTIAL_PRODUCTION_COMPLETED) {
-            $statuses = [
-              [
-                'label' => OrderStatusEnum::$READY_FOR_PARTIAL_DELIVERY,
-                'value' => OrderStatusEnum::$READY_FOR_PARTIAL_DELIVERY
-              ],
-              [
-                'label' => OrderStatusEnum::$READY_FOR_PARTIAL_PICKUP,
-                'value' => OrderStatusEnum::$READY_FOR_PARTIAL_PICKUP
-              ],
-            ];
-          }
-          else if ($order->status ==  OrderStatusEnum::$DELIVERED || $order->status ==  OrderStatusEnum::$PICKED_UP) {
-            $statuses = [
-              [
-                'label' => OrderStatusEnum::$ORDER_COMPLETED,
-                'value' => OrderStatusEnum::$ORDER_COMPLETED
-              ],
-            ];
-          }
-      }
-      else if ((auth()->user()->hasRole(RoleEnum::$ADMIN) || auth()->user()->hasRole(RoleEnum::$ACCOUNT_MANAGER)) && 
-        (
-          $order->status ==  OrderStatusEnum::$PARTIAL_DELIVERED ||
-          $order->status ==  OrderStatusEnum::$DELIVERED ||
-          $order->status ==  OrderStatusEnum::$PARTIAL_PICKED_UP ||
-          $order->status ==  OrderStatusEnum::$PICKED_UP ||
-          $order->status ==  OrderStatusEnum::$READY_FOR_DELIVERY ||
-          $order->status ==  OrderStatusEnum::$READY_FOR_PARTIAL_DELIVERY ||
-          $order->status ==  OrderStatusEnum::$READY_FOR_PICKUP ||
-          $order->status ==  OrderStatusEnum::$READY_FOR_PARTIAL_PICKUP
-        )) {
-
-          if ($order->status == OrderStatusEnum::$DELIVERED || $order->status == OrderStatusEnum::$PICKED_UP) {
-            $statuses = [
-              [
-                'label' => OrderStatusEnum::$ORDER_COMPLETED,
-                'value' => OrderStatusEnum::$ORDER_COMPLETED
-              ],
-            ];
-          } else if ($order->status == OrderStatusEnum::$READY_FOR_DELIVERY || $order->status == OrderStatusEnum::$READY_FOR_PARTIAL_DELIVERY || $order->status == OrderStatusEnum::$READY_FOR_PICKUP || $order->status == OrderStatusEnum::$READY_FOR_PARTIAL_PICKUP) {
-            $statuses = [
-              [
-                'label' => OrderStatusEnum::$DELIVERED,
-                'value' => OrderStatusEnum::$DELIVERED
-              ],
-              [
-                'label' => OrderStatusEnum::$PARTIAL_DELIVERED,
-                'value' => OrderStatusEnum::$PARTIAL_DELIVERED
-              ],
-              [
-                'label' => OrderStatusEnum::$PICKED_UP,
-                'value' => OrderStatusEnum::$PICKED_UP
-              ],
-              [
-                'label' => OrderStatusEnum::$PARTIAL_PICKED_UP,
-                'value' => OrderStatusEnum::$PARTIAL_PICKED_UP
-              ],
-            ];
-          }
-      }
-      else if ((auth()->user()->hasRole(RoleEnum::$ADMIN) || auth()->user()->hasRole(RoleEnum::$PRODUCTION)) && 
-        (
-          $order->status ==  OrderStatusEnum::$PRODUCTION ||
-          $order->status ==  OrderStatusEnum::$MATERIAL_REVIEWED ||
-          $order->status ==  OrderStatusEnum::$PRODUCTION_IN_PROGRESS ||
-          $order->status == OrderStatusEnum::$SCHEDULED_PRODUCTION ||
-          $order->status == OrderStatusEnum::$PARTIAL_PRODUCTION_COMPLETED ||
-          $order->status == OrderStatusEnum::$READY_FOR_PARTIAL_DELIVERY ||
-          $order->status == OrderStatusEnum::$PARTIAL_DELIVERED ||
-          $order->status == OrderStatusEnum::$PARTIAL_PICKED_UP
-        )) {
-        if ($order->status ==  OrderStatusEnum::$PRODUCTION) {
-          $statuses = [
-            [
-              'label' => OrderStatusEnum::$MATERIAL_REVIEWED,
-              'value' => OrderStatusEnum::$MATERIAL_REVIEWED
-            ],
-          ];
-        }
-        else if ($order->status ==  OrderStatusEnum::$MATERIAL_REVIEWED) {
-          $statuses = [
-            [
-              'label' => OrderStatusEnum::$SCHEDULED_PRODUCTION,
-              'value' => OrderStatusEnum::$SCHEDULED_PRODUCTION
-            ],
-          ];
-        }
-        else if ($order->status ==  OrderStatusEnum::$SCHEDULED_PRODUCTION) {
-          $statuses = [
-            [
-              'label' => OrderStatusEnum::$PRODUCTION_IN_PROGRESS,
-              'value' => OrderStatusEnum::$PRODUCTION_IN_PROGRESS
-            ]
-          ];
-        }
-        else if ($order->status == OrderStatusEnum::$READY_FOR_PARTIAL_DELIVERY) {
-          $statuses = [
-            [
-              'label' => OrderStatusEnum::$PRODUCTION_COMPLETED,
-              'value' => OrderStatusEnum::$PRODUCTION_COMPLETED
-            ]
-          ];
-        }
-        else {
-          $statuses = [
-            [
-              'label' => OrderStatusEnum::$PARTIAL_PRODUCTION_COMPLETED,
-              'value' => OrderStatusEnum::$PARTIAL_PRODUCTION_COMPLETED
-            ],
-            [
-              'label' => OrderStatusEnum::$PRODUCTION_COMPLETED,
-              'value' => OrderStatusEnum::$PRODUCTION_COMPLETED
-            ]
-          ];
-        }
-      }
-      else if ((auth()->user()->hasRole(RoleEnum::$ADMIN) || auth()->user()->hasRole(RoleEnum::$SHIPPING)) && 
-      ( 
-        $order->status ==  OrderStatusEnum::$READY_FOR_DELIVERY ||
-        $order->status ==  OrderStatusEnum::$READY_FOR_PARTIAL_DELIVERY ||
-        $order->status ==  OrderStatusEnum::$READY_FOR_PICKUP ||
-        $order->status ==  OrderStatusEnum::$READY_FOR_PARTIAL_PICKUP
-      )) {
-
-        if ($order->status == OrderStatusEnum::$READY_FOR_PARTIAL_DELIVERY || $order->status == OrderStatusEnum::$READY_FOR_PARTIAL_PICKUP) {
-          $statuses = [
-            [
-              'label' => OrderStatusEnum::$PARTIAL_DELIVERED,
-              'value' => OrderStatusEnum::$PARTIAL_DELIVERED
-            ],
-            [
-              'label' => OrderStatusEnum::$PARTIAL_PICKED_UP,
-              'value' => OrderStatusEnum::$PARTIAL_PICKED_UP
-            ],
-          ];
-        } else if ($order->status == OrderStatusEnum::$READY_FOR_DELIVERY || $order->status == OrderStatusEnum::$READY_FOR_PICKUP) {
-          $statuses = [
-            [
-              'label' => OrderStatusEnum::$DELIVERED,
-              'value' => OrderStatusEnum::$DELIVERED
-            ],
-            [
-              'label' => OrderStatusEnum::$PICKED_UP,
-              'value' => OrderStatusEnum::$PICKED_UP
-            ],
-          ];
-        }
-      }
-      else if ((auth()->user()->hasRole(RoleEnum::$ADMIN) || auth()->user()->hasRole(RoleEnum::$PLANT_MANAGER)) && 
-      ( 
-        $order->status ==  OrderStatusEnum::$PRODUCTION_IN_PROGRESS ||
-        $order->status ==  OrderStatusEnum::$READY_FOR_DELIVERY ||
-        $order->status ==  OrderStatusEnum::$READY_FOR_PARTIAL_DELIVERY ||
-        $order->status ==  OrderStatusEnum::$READY_FOR_PICKUP ||
-        $order->status ==  OrderStatusEnum::$READY_FOR_PARTIAL_PICKUP ||
-        $order->status ==  OrderStatusEnum::$PARTIAL_PRODUCTION_COMPLETED ||
-        $order->status ==  OrderStatusEnum::$PRODUCTION_COMPLETED
-      )) {
-          $statuses = [
-            [
-              'label' => OrderStatusEnum::$PARTIAL_PRODUCTION_COMPLETED,
-              'value' => OrderStatusEnum::$PARTIAL_PRODUCTION_COMPLETED
-            ],
-            [
-              'label' => OrderStatusEnum::$PRODUCTION_COMPLETED,
-              'value' => OrderStatusEnum::$PRODUCTION_COMPLETED
-            ]
-          ];
-        
-      }
-      else if (auth()->user()->hasRole(RoleEnum::$SUB_DEALER) && $order->status ==  OrderStatusEnum::$SUB_DEALER_ESTIMATE) {
-          $statuses = [
-            [
-              'label' => 'Estimate to Order',
-              'value' => OrderStatusEnum::$ESTIMATE
-            ]
-          ];
-      }
-      else if (auth()->user()->hasRole(RoleEnum::$DEALER) && 
-      (
-        $order->status == OrderStatusEnum::$ESTIMATE ||
-        $order->status == OrderStatusEnum::$SUB_DEALER_ESTIMATE 
-      )) {
-          if ($order->status == OrderStatusEnum::$ESTIMATE) {
-            $statuses = [
-              [
-                'label' => 'Return to Sub Dealer',
-                'value' => OrderStatusEnum::$SUB_DEALER_ESTIMATE
-              ],
-            ];
-          }
-          else if ($order->status == OrderStatusEnum::$SUB_DEALER_ESTIMATE) {
-            $statuses = [
-              [
-                'label' => 'Estimate to Order',
-                'value' => OrderStatusEnum::$ESTIMATE
-              ]
-            ];
-          }
-      }
-
-      return response()->json($statuses);
-    }
-
-    public function statusFilter() {
-      $statuses = [];
-      if (
-          auth()->user()->hasRole(RoleEnum::$ADMIN) || 
-          auth()->user()->hasRole(RoleEnum::$ACCOUNT_MANAGER) || 
-          auth()->user()->hasRole(RoleEnum::$ACCOUNTING) ||
-          auth()->user()->hasRole(RoleEnum::$DEALER)
-          ) {
-          $statuses = [
-            [
-              'label' => OrderStatusEnum::$ACCOUNTING,
-              'value' => OrderStatusEnum::$ACCOUNTING
-            ],
-            [
-              'label' => OrderStatusEnum::$PRODUCTION,
-              'value' => OrderStatusEnum::$PRODUCTION
-            ],
-            [
-              'label' => OrderStatusEnum::$MATERIAL_REVIEWED,
-              'value' => OrderStatusEnum::$MATERIAL_REVIEWED
-            ],
-            [
-              'label' => OrderStatusEnum::$SCHEDULED_PRODUCTION,
-              'value' => OrderStatusEnum::$SCHEDULED_PRODUCTION
-            ],
-            [
-              'label' => OrderStatusEnum::$PRODUCTION_IN_PROGRESS,
-              'value' => OrderStatusEnum::$PRODUCTION_IN_PROGRESS
-            ],
-            [
-              'label' => OrderStatusEnum::$PARTIAL_PRODUCTION_COMPLETED,
-              'value' => OrderStatusEnum::$PARTIAL_PRODUCTION_COMPLETED
-            ],
-            [
-              'label' => OrderStatusEnum::$PRODUCTION_COMPLETED,
-              'value' => OrderStatusEnum::$PRODUCTION_COMPLETED
-            ],
-            [
-              'label' => OrderStatusEnum::$READY_FOR_PARTIAL_PICKUP,
-              'value' => OrderStatusEnum::$READY_FOR_PARTIAL_PICKUP
-            ],
-            [
-              'label' => OrderStatusEnum::$READY_FOR_PICKUP,
-              'value' => OrderStatusEnum::$READY_FOR_PICKUP
-            ],
-            [
-              'label' => OrderStatusEnum::$READY_FOR_PARTIAL_DELIVERY,
-              'value' => OrderStatusEnum::$READY_FOR_PARTIAL_DELIVERY
-            ],
-            [
-              'label' => OrderStatusEnum::$READY_FOR_DELIVERY,
-              'value' => OrderStatusEnum::$READY_FOR_DELIVERY
-            ],
-            [
-              'label' => OrderStatusEnum::$PARTIAL_PICKED_UP,
-              'value' => OrderStatusEnum::$PARTIAL_PICKED_UP
-            ],
-            [
-              'label' => OrderStatusEnum::$PICKED_UP,
-              'value' => OrderStatusEnum::$PICKED_UP
-            ],
-            [
-              'label' => OrderStatusEnum::$PARTIAL_DELIVERED,
-              'value' => OrderStatusEnum::$PARTIAL_DELIVERED
-            ],
-            [
-              'label' => OrderStatusEnum::$DELIVERED,
-              'value' => OrderStatusEnum::$DELIVERED
-            ],
-            [
-              'label' => OrderStatusEnum::$ORDER_COMPLETED,
-              'value' => OrderStatusEnum::$ORDER_COMPLETED
-            ]
-          ];
-      }
-      else if (auth()->user()->hasRole(RoleEnum::$PRODUCTION)) {
-        $statuses = [
-          [
-            'label' => OrderStatusEnum::$PRODUCTION,
-            'value' => OrderStatusEnum::$PRODUCTION
+        return Inertia::render('Order/Create', [
+          'clients' => Client::all(),
+          'type_of_works' => TypeOfWork::all(),
+          'types_of_housing' => TypeOfHousing::all(),
+          'owners' => User::role(RoleEnum::OWNER->value)->get(),
+          'installation_teams' => InstallationTeam::with(['user'])->get(),
+          'supervisors' => User::role(RoleEnum::SUPERVISOR->value)->get(),
+          'methods_of_payment' => [
+            MethodOfPayment::CASH->value,
+            MethodOfPayment::FINANCED->value
           ],
-          [
-            'label' => OrderStatusEnum::$SCHEDULED_PRODUCTION,
-            'value' => OrderStatusEnum::$SCHEDULED_PRODUCTION
+          'services' => [
+            Service::INSTALLATION->value,
+            Service::DELIVERY->value
           ],
-          [
-            'label' => OrderStatusEnum::$MATERIAL_REVIEWED,
-            'value' => OrderStatusEnum::$MATERIAL_REVIEWED
-          ],
-          [
-            'label' => OrderStatusEnum::$PRODUCTION_IN_PROGRESS,
-            'value' => OrderStatusEnum::$PRODUCTION_IN_PROGRESS
-          ],
-          [
-            'label' => OrderStatusEnum::$PARTIAL_PRODUCTION_COMPLETED,
-            'value' => OrderStatusEnum::$PARTIAL_PRODUCTION_COMPLETED
-          ],
-          [
-            'label' => OrderStatusEnum::$PRODUCTION_COMPLETED,
-            'value' => OrderStatusEnum::$PRODUCTION_COMPLETED
-          ],
-          [
-            'label' => OrderStatusEnum::$PARTIAL_PICKED_UP,
-            'value' => OrderStatusEnum::$PARTIAL_PICKED_UP
-          ],
-          [
-            'label' => OrderStatusEnum::$PARTIAL_DELIVERED,
-            'value' => OrderStatusEnum::$PARTIAL_DELIVERED
-          ],
-          [
-            'label' => OrderStatusEnum::$READY_FOR_DELIVERY,
-            'value' => OrderStatusEnum::$READY_FOR_DELIVERY
-          ],
-          [
-            'label' => OrderStatusEnum::$READY_FOR_PICKUP,
-            'value' => OrderStatusEnum::$READY_FOR_PICKUP
-          ],
-          [
-            'label' => OrderStatusEnum::$READY_FOR_PARTIAL_DELIVERY,
-            'value' => OrderStatusEnum::$READY_FOR_PARTIAL_DELIVERY
-          ],
-          [
-            'label' => OrderStatusEnum::$READY_FOR_PARTIAL_PICKUP,
-            'value' => OrderStatusEnum::$READY_FOR_PARTIAL_PICKUP
-          ],
-          [
-            'label' => OrderStatusEnum::$ORDER_COMPLETED,
-            'value' => OrderStatusEnum::$ORDER_COMPLETED
-          ]
-        ];
-      }
-      else if (auth()->user()->hasRole(RoleEnum::$PLANT_MANAGER)) {
-        $statuses = [
-          [
-            'label' => OrderStatusEnum::$PRODUCTION_IN_PROGRESS,
-            'value' => OrderStatusEnum::$PRODUCTION_IN_PROGRESS
-          ],
-          [
-            'label' => OrderStatusEnum::$PARTIAL_PRODUCTION_COMPLETED,
-            'value' => OrderStatusEnum::$PARTIAL_PRODUCTION_COMPLETED
-          ],
-          [
-            'label' => OrderStatusEnum::$PRODUCTION_COMPLETED,
-            'value' => OrderStatusEnum::$PRODUCTION_COMPLETED
-          ],
-          [
-            'label' => OrderStatusEnum::$PARTIAL_PICKED_UP,
-            'value' => OrderStatusEnum::$PARTIAL_PICKED_UP
-          ],
-          [
-            'label' => OrderStatusEnum::$PARTIAL_DELIVERED,
-            'value' => OrderStatusEnum::$PARTIAL_DELIVERED
-          ],
-          [
-            'label' => OrderStatusEnum::$READY_FOR_DELIVERY,
-            'value' => OrderStatusEnum::$READY_FOR_DELIVERY
-          ],
-          [
-            'label' => OrderStatusEnum::$READY_FOR_PICKUP,
-            'value' => OrderStatusEnum::$READY_FOR_PICKUP
-          ],
-          [
-            'label' => OrderStatusEnum::$READY_FOR_PARTIAL_DELIVERY,
-            'value' => OrderStatusEnum::$READY_FOR_PARTIAL_DELIVERY
-          ],
-          [
-            'label' => OrderStatusEnum::$READY_FOR_PARTIAL_PICKUP,
-            'value' => OrderStatusEnum::$READY_FOR_PARTIAL_PICKUP
-          ],
-          [
-            'label' => OrderStatusEnum::$ORDER_COMPLETED,
-            'value' => OrderStatusEnum::$ORDER_COMPLETED
-          ]
-        ];
-      }
-      else if (auth()->user()->hasRole(RoleEnum::$SHIPPING)) {
-        $statuses = [
-          [
-            'label' => OrderStatusEnum::$READY_FOR_DELIVERY,
-            'value' => OrderStatusEnum::$READY_FOR_DELIVERY
-          ],
-          [
-            'label' => OrderStatusEnum::$READY_FOR_PARTIAL_DELIVERY,
-            'value' => OrderStatusEnum::$READY_FOR_PARTIAL_DELIVERY
-          ],
-          [
-            'label' => OrderStatusEnum::$READY_FOR_PICKUP,
-            'value' => OrderStatusEnum::$READY_FOR_PICKUP
-          ],
-          [
-            'label' => OrderStatusEnum::$READY_FOR_PARTIAL_PICKUP,
-            'value' => OrderStatusEnum::$READY_FOR_PARTIAL_PICKUP
-          ],
-          [
-            'label' => OrderStatusEnum::$DELIVERED,
-            'value' => OrderStatusEnum::$DELIVERED
-          ],
-          [
-            'label' => OrderStatusEnum::$PICKED_UP,
-            'value' => OrderStatusEnum::$PICKED_UP
-          ],
-          [
-            'label' => OrderStatusEnum::$PARTIAL_DELIVERED,
-            'value' => OrderStatusEnum::$PARTIAL_DELIVERED
-          ],
-          [
-            'label' => OrderStatusEnum::$PARTIAL_PICKED_UP,
-            'value' => OrderStatusEnum::$PARTIAL_PICKED_UP
-          ],
-        ];
-      }
-
-      return response()->json($statuses);
-    }
-
-    public function show($id)
-    {   // TODO: Send roles by auth user to always use same modal form to update status
-        return Inertia::render('Order/Show', [
-          'order' => Order::with(['client', 'products' => function (Builder $builder) {
-            $builder->orderBy('product_sort', 'asc');
-          }, 'payments'])->findOrFail($id),
-          'statuses' => [
-            OrderStatusEnum::$ESTIMATE,
-            OrderStatusEnum::$PRODUCTION,
-            OrderStatusEnum::$READY_FOR_DELIVERY
-          ]
+          'travel_costs' => TravelCost::all(),
+          'duration_of_works' => DurationOfWork::all(),
+          'products_config' => ProductConfig::all(),
+          'type_of_products' => TypeOfProduct::all(),
+          'extra_works' => ExtraWork::all(),
         ]);
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function store(StoreEstimateRequest $storeEstimateRequest, CreateEstimate $createEstimate)
+    {
+        $estimate = $createEstimate->handle($storeEstimateRequest);
+        return redirect()->route('estimate.show', ['estimate' => $estimate->id]);
     }
 
     public function history(Order $order) {
