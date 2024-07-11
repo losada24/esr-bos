@@ -1,10 +1,20 @@
-import { Order } from '@/types'
+import { type Order } from '@/types'
 import * as Yup from 'yup'
 
 export const orderSchema = Yup.object({
   id: Yup.number(),
   //status: Yup.string().required('Status is required'),
   //notes: Yup.string().required().max(1000, 'Notes must be less than 255 characters')
+})
+
+export const orderProductSchema = Yup.object({
+  id: Yup.number(),
+  type_of_product_id: Yup.number().moreThan(0, 'Type of product is required'),
+  product_category_id: Yup.number().moreThan(0, 'Product category is required'),
+  product_config_id: Yup.number().moreThan(0, 'Product config is required'),
+  width: Yup.number().min(1),
+  height: Yup.number().min(1),
+  qty: Yup.number().min(1)
 })
 
 export interface OrderStatusUpdate {
@@ -58,4 +68,13 @@ export const orderFormObj: OrderFormValues = {
   last_name: '',
   phone: '',
   email: ''
+}
+
+export interface OrderProductExtraWorksFormValues {
+  extra_work_id: number
+  extra_work_name: string
+  extra_work_unit: string
+  number_of_sides: number
+  price: number
+  checked: boolean
 }

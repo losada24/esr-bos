@@ -14,6 +14,7 @@ class ProductCost extends Model
     protected $fillable = [
         'notes',
         'price',
+        'difficult_hight_price',
         'type_of_work_id',
         'product_config_id'
     ];

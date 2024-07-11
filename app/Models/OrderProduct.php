@@ -23,7 +23,9 @@ class OrderProduct extends Model
         'total_price',
         'notes',
         'storefront_area',
-        'installation_other_level'
+        'installation_other_level',
+        'product_category_id',
+        'type_of_product_id',
     ];
 
     public function order(): BelongsTo {
@@ -32,6 +34,14 @@ class OrderProduct extends Model
 
     public function productConfig(): BelongsTo {
         return $this->belongsTo(ProductConfig::class, 'product_config_id', 'id');
+    }
+    
+    public function productCategory(): BelongsTo {
+        return $this->belongsTo(ProductCategory::class, 'product_category_id', 'id');
+    }
+
+    public function typeOfProduct(): BelongsTo {
+        return $this->belongsTo(TypeOfProduct::class, 'type_of_product_id', 'id');
     }
 
     public function typeOfWork(): BelongsTo {

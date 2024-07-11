@@ -17,6 +17,7 @@ class ProductCostSeeder extends Seeder
             'notes' => 'Retrofit, Door',
             'price' => 290.00,
             'type_of_work_id' => 1,
+            'difficult_hight_price' => 0,
             'product_config_id' => 1,
         ]);
 
@@ -166,7 +167,6 @@ class ProductCostSeeder extends Seeder
             'type_of_work_id' => 1,
             'product_config_id' => 22,
         ]);
-
         
         ProductCost::create([
             'notes' => 'Retrofit, Mullion',

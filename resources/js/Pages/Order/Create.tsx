@@ -1,7 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
 import { Head, router } from '@inertiajs/react'
 import { Formik, type FormikHelpers } from 'formik'
-import { orderFormObj, OrderFormValues, orderSchema } from './OrderCommon'
+import { orderFormObj, type OrderFormValues, orderSchema } from './OrderCommon'
 import OrderForm from './OrderForm'
 import {
   type PageProps,
@@ -14,7 +14,10 @@ import {
   type TravelCost,
   type DurationOfWork,
   type ProductConfig,
-  type TypeOfProduct
+  type TypeOfProduct,
+  type ProductCategory,
+  type ExtraWorks,
+  ProductCost
 } from '@/types'
 
 export default function Create ({
@@ -30,7 +33,10 @@ export default function Create ({
   supervisors,
   duration_of_works,
   products_config,
-  type_of_products
+  type_of_products,
+  product_category,
+  extra_works,
+  product_costs
 }: PageProps & {
   clients: Client[]
   owners: User[]
@@ -44,6 +50,9 @@ export default function Create ({
   duration_of_works: DurationOfWork[]
   products_config: ProductConfig[]
   type_of_products: TypeOfProduct[]
+  product_category: ProductCategory[]
+  extra_works: ExtraWorks[]
+  product_costs: ProductCost[]
 }) {
   const initialValues: OrderFormValues = orderFormObj
 
@@ -86,6 +95,9 @@ export default function Create ({
                 duration_of_works={duration_of_works}
                 products_config={products_config}
                 type_of_works={type_of_works}
+                product_category={product_category}
+                extra_works={extra_works}
+                product_costs={product_costs}
               />
             )}
           </Formik>

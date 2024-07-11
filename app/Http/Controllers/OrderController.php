@@ -19,7 +19,9 @@ use App\Models\Client;
 use App\Models\DurationOfWork;
 use App\Models\ExtraWork;
 use App\Models\InstallationTeam;
+use App\Models\ProductCategory;
 use App\Models\ProductConfig;
+use App\Models\ProductCost;
 use App\Models\TravelCost;
 use App\Models\TypeOfHousing;
 use App\Models\TypeOfProduct;
@@ -88,7 +90,9 @@ class OrderController extends Controller
           'duration_of_works' => DurationOfWork::all(),
           'products_config' => ProductConfig::all(),
           'type_of_products' => TypeOfProduct::all(),
+          'product_category' => ProductCategory::all(),
           'extra_works' => ExtraWork::all(),
+          'product_costs' => ProductCost::all(),
         ]);
     }
 

@@ -51,6 +51,7 @@ export interface TypeOfWork {
 export interface ProductCost {
   id: number
   price: number
+  difficult_hight_price: number
   notes: string
   type_of_work_id: number
   typeOfWork: TypeOfWork
@@ -93,14 +94,25 @@ export interface OrderProduct {
   unit_price: number
   total_price: number
   notes: string
-  order: Order
+  order?: Order
   product_config_id: number
   productConfig?: ProductConfig
   type_of_work_id: number
   typeOfWork?: TypeOfWork
   storefront_area: number
   installation_other_level: boolean
-  extra_works?: ExtraWorks[]
+  extra_works?: OrderProductsExtraWorks[]
+  product_category_id: number
+  productCategory?: ProductCategory
+  type_of_product_id: number
+  typeOfProduct?: TypeOfProduct
+}
+
+export interface OrderProductsExtraWorks {
+  order_product_id: number
+  extra_work_id: number
+  number_of_sides: number
+  price: number
 }
 
 export interface ExtraWorks {
