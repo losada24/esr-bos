@@ -37,6 +37,7 @@ export interface Order {
   delivery_date: Date
   owners: User[]
   orderProducts?: OrderProduct[]
+  attachments?: Attachment[]
 }
 
 export interface TypeOfWork {
@@ -141,8 +142,9 @@ export interface InstallationTeam {
   notes?: string
   user_id: number
   user?: User
+  typeHousing?: TypeOfHousing[]
   attachments: Attachment[]
-  orders: Order[]
+  orders?: Order[]
 }
 
 export interface Attachment {
@@ -150,7 +152,6 @@ export interface Attachment {
   filename: string
   file_path: string
   file_type: string
-  file_size: number
 }
 
 export interface TravelCost {

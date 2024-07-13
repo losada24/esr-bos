@@ -17,7 +17,8 @@ const ProductModal = ({
   productConfigs,
   extraWorks,
   typeOfWork,
-  productCosts
+  productCosts,
+  addOrderProduct
 }: {
   showModal: boolean
   onClose: CallableFunction
@@ -28,6 +29,7 @@ const ProductModal = ({
   extraWorks: ExtraWorks[]
   typeOfWork: number
   productCosts: ProductCost[]
+  addOrderProduct: CallableFunction
 }) => {
   const [productCategoryOptions, setProductCategoryOptions] = useState<ProductCategory[]>([])
   const [productConfigOptions, setProductConfigOptions] = useState<ProductConfig[]>([])
@@ -96,8 +98,13 @@ const ProductModal = ({
         ]
       }
 
-      console.log(product, getProductPrice(product, productCosts))
-      //onClose(false)
+      const unit_price = getProductPrice(product, productCosts)
+      product.unit_price = unit_price
+      product.total_price = unit_price * product.qty
+      // setPlannedExtraWorksFormValues(plannedExtraWorksFormValues.map((extraWork) => ({ ...extraWork, checked: false })))
+      // setNotPlannedExtraWorksFormValues(plannedExtraWorksFormValues.map((extraWork) => ({ ...extraWork, checked: false })))
+      addOrderProduct(product)
+      onClose(false)
     }
   }
 

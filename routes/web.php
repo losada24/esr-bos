@@ -6,6 +6,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\InstallationTeamController;
 
 /*
 |--------------------------------------------------------------------------
@@ -46,6 +47,10 @@ Route::middleware('auth')->group(function () {
       ->middleware(["role:" . RoleEnum::ADMIN->value]);
     
     Route::resource('order', OrderController::class)
+      ->middleware(["role:" . RoleEnum::ADMIN->value]);
+
+    Route::resource('installation_team', InstallationTeamController::class)
+      ->only(['index', 'create', 'store', 'update', 'edit', 'destroy'])
       ->middleware(["role:" . RoleEnum::ADMIN->value]);
 
     // CLIENTS

@@ -7,7 +7,6 @@ import { type FormikErrors } from 'formik'
 import Flatpickr from 'react-flatpickr'
 import 'flatpickr/dist/flatpickr.css'
 import {
-  type Order,
   type Client,
   type User,
   type TypeOfWork,
@@ -18,8 +17,9 @@ import {
   type TypeOfHousing,
   type TypeOfProduct,
   type ProductCategory,
-  ExtraWorks,
-  ProductCost
+  type ExtraWorks,
+  type ProductCost,
+  type OrderProduct
 } from '@/types'
 import Select from 'react-select'
 import { type OrderFormValues } from './OrderCommon'
@@ -82,8 +82,22 @@ const OrderForm = ({
   extra_works: ExtraWorks[]
   product_costs: ProductCost[]
 }) => {
+  const [orderProducts, setOrderProducts] = useState<OrderProduct[]>([])
   const [isCreated, setIsCreated] = useState<boolean>(true)
   const [showProductModal, setShowProductModal] = useState<boolean>(false)
+
+  const addOrderProduct = (orderProduct: OrderProduct) => {
+    setOrderProducts([...orderProducts, orderProduct])
+  }
+
+  const updateOrderProduct = (index: number) => {
+    // setOrderProducts(orderProducts.filter((_, i) => i !== index))
+  }
+
+  const removeOrderProduct = (index: number) => {
+    setOrderProducts(orderProducts.filter((_, i) => i !== index))
+  }
+
   return (
     <>
       <Form className='space-y-5'>
@@ -429,6 +443,32 @@ const OrderForm = ({
                 </div>
                 {(submitCount && errors.equipment_rental) ? <div className='block'><InputError message={errors.equipment_rental} className="mt-2" /></div> : ''}
             </div>
+            <div className='col-span-4'>
+              <label htmlFor="notes">Notes</label>
+              <Field
+                id="notes"
+                name="notes"
+                component="textarea"
+                rows="4"
+                className="form-textarea resize-none placeholder:text-white-dark"
+                placeholder='Notes'
+              />
+            </div>
+            <div className='col-span-4'>
+              <label htmlFor="attachments">Attachments</label>
+              <input
+                id="attachments"
+                name="attachments"
+                type="file"
+                accept="image/*"
+                className="form-input file:py-2 file:px-4 file:border-0 file:font-semibold p-0 file:bg-primary/90 ltr:file:mr-5 rtl:file:ml-5 file:text-white file:hover:bg-primary"
+                placeholder="Qty"
+                multiple={true}
+                onChange={(event: any) => {
+                  setFieldValue('attachments', event.currentTarget.files)
+                }}
+              />
+            </div>
           </div>
         </fieldset>
         <fieldset className='p-3 border rounded-xl'>
@@ -441,7 +481,14 @@ const OrderForm = ({
               }} className="btn btn-primary">Add Product</button>
             </div>
           )}
-          <ProductTable orderProducts={[]} />
+          <ProductTable
+            orderProducts={orderProducts}
+            type_of_products={type_of_products}
+            product_category={product_category}
+            products_config={products_config}
+            removeOrderProduct={(index: number) => { removeOrderProduct(index) }}
+            updateOrderProduct={(index: number) => { updateOrderProduct(index) }}
+          />
         </fieldset>
         <div className="flex items-center justify-between mt-4">
           <Link className='btn btn-danger uppercase' href={route('order.index')}>Cancel</Link>
@@ -462,6 +509,7 @@ const OrderForm = ({
           setShowProductModal(false)
         }}
         isCreated={isCreated}
+        addOrderProduct={(product: OrderProduct) => { addOrderProduct(product) }}
       />
     </>
   )

@@ -1,5 +1,14 @@
 import { type ProductCost, type OrderProduct } from '@/types'
 
+export const formatPrice = (price: number) => {
+  const USDollar = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD'
+  })
+
+  return USDollar.format(price)
+}
+
 export const getProductPrice = (
   product: OrderProduct,
   productCost: ProductCost[]
@@ -22,12 +31,8 @@ export const getProductPrice = (
   }
 
   if (product.installation_other_level) {
-    price += parseFloat(productCostPrice?.difficult_hight_price.toString() ?? '0')
+    price += parseFloat(productCostPrice?.difficult_hight_price?.toString() ?? '0')
   }
-
-  console.log('productCost', productCost)
-  console.log('extraWorkPrice', extraWorkPrice)
-  console.log('productCostPrice', productCostPrice)
 
   return price + (extraWorkPrice ?? 0)
 }

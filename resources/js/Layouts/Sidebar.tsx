@@ -4,15 +4,11 @@ import NavLink from '@/Components/NavLink'
 import logo from '../../assets/images/logo-reylosglass.png'
 import UserIcon from '@/Components/Icons/UserIcon'
 import ReferralIcon from '@/Components/Icons/ReferralIcon'
-import MoneyBagIcon from '@/Components/Icons/MoneyBagIcon'
 import SidebarLinkLabel from '@/Components/SidebarLinkLabel'
 import DashboardIcon from '@/Components/Icons/DashboardIcon'
-import BookIcon from '@/Components/Icons/BookIcon'
-import MoneyIcon from '@/Components/Icons/MoneyIcon'
 import CompanyIcon from '@/Components/Icons/CompanyIcon'
-import { isAdmin, isAccountManager /*, isDealer, isSubDealer, isAccounting, isProduction, isShipping, isPlantManager*/ } from '@/Utils/user'
+import { isAdmin, isAccountManager } from '@/Utils/user'
 import { type Role, type Auth } from '@/types'
-import WindowsIcon from '@/Components/Icons/WindowsIcon'
 
 const Sidebar = ({ auth }: { auth: Auth }) => {
   const [themeState, toggleSidebar] = useStore((state: ThemeState) => [
@@ -22,7 +18,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
 
   const IS_ADMIN = isAdmin(auth.user.roles.map((role: Role) => role.name))
   const IS_ACCOUNT_MANAGER = isAccountManager(auth.user.roles.map((role: Role) => role.name))
-  /* 
+  /*
   const IS_DEALER = isDealer(auth.user.roles.map((role: Role) => role.name))
   const IS_SUB_DEALER = isSubDealer(auth.user.roles.map((role: Role) => role.name))
   const IS_ACCOUNTING = isAccounting(auth.user.roles.map((role: Role) => role.name))
@@ -78,6 +74,16 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                                 <div className="flex items-center">
                                                   <UserIcon />
                                                   <SidebarLinkLabel>Users</SidebarLinkLabel>
+                                                </div>
+                                            </NavLink>
+                                        </li>
+                                    </ul>
+                                    <ul>
+                                        <li className="nav-item">
+                                            <NavLink href={route('installation_team.index')} active={route().current('installation_team.index') || route().current('installation_team.create') || route().current('installation_team.edit')} className="group">
+                                                <div className="flex items-center">
+                                                  <ReferralIcon />
+                                                  <SidebarLinkLabel>Installation Team</SidebarLinkLabel>
                                                 </div>
                                             </NavLink>
                                         </li>

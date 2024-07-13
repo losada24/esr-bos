@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 
 class Order extends Model
@@ -94,8 +95,8 @@ class Order extends Model
       return $this->belongsTo(DurationOfWork::class);
     }
 
-    public function attachments(): MorphToMany {
-      return $this->morphToMany(Attachment::class, 'attachable');
+    public function attachments(): MorphMany {
+      return $this->morphMany(Attachment::class, 'attachable');
     }
 
     public function owners(): BelongsToMany

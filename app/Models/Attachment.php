@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -16,16 +17,15 @@ class Attachment extends Model
         'filename',
         'file_path',
         'file_type',
-        'file_size',
     ];
 
-    public function orderDocuments(): MorphToMany 
+    public function orderDocuments(): MorphTo
     {
-        return $this->morphedByMany(Order::class, 'attachable');
+        return $this->morphTo(Order::class, 'attachable');
     }
 
-    public function installationTeamDocuments(): MorphToMany 
+    public function installationTeamDocuments(): MorphTo
     {
-        return $this->morphedByMany(InstallationTeam::class, 'attachable');
+        return $this->morphTo(InstallationTeam::class, 'attachable');
     }
 }

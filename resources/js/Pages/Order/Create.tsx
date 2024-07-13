@@ -57,12 +57,13 @@ export default function Create ({
   const initialValues: OrderFormValues = orderFormObj
 
   const handleSubmit = async (values: any, helpers: FormikHelpers<OrderFormValues>) => {
-    router.post(route('order.store'), values, {
+    console.log('values', values)
+    /* router.post(route('order.store'), values, {
       forceFormData: true,
       onError: (errors: any) => {
         helpers.setErrors(errors)
       }
-    })
+    }) */
   }
 
   return (

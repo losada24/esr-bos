@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class InstallationTeam extends Model
 {
@@ -22,16 +22,37 @@ class InstallationTeam extends Model
         'user_id',
     ];
 
-    public function attachments(): MorphToMany {
-        return $this->morphToMany(Attachment::class, 'attachable');
+    protected $dates = [
+      'worker_compensation_expiration_date',
+      'liability_expiration_date',
+    ];
+
+    public function scopeFilter($query, array $filters)
+    {
+        /* $query->when($filters['status'] ?? null, function ($query, $search) {
+          $query->where('status', $search);
+        })->when($filters['client_id'] ?? null, function ($query, $search) {
+          // $query->where('client_id', $search);
+          $query->whereHas('client', function ($query) use ($search) {
+            //$query->where('name', 'like', '%'.$search.'%');
+            $query->where(DB::raw("CONCAT(name, ' ', email, ' ',phone)"), 'like', '%'.$search.'%');
+          });
+        })->when($filters['entry_date'] ?? null, function ($query, $search) {
+          $query->where('entry_date', $search);
+        })->when($filters['address'] ?? null, function ($query, $search) {
+          $query->where('address', 'like', '%'.$search.'%');
+        }); */
+    }
+
+    public function attachments(): MorphMany {
+        return $this->morphMany(Attachment::class, 'attachable');
     }
 
     public function user(): BelongsTo {
-        return $this->belongsTo(User::class);
-      }
-      public function installationTeamTypeHousing(): BelongsToMany
-    {
-        return $this->belongsToMany(TypeOfHousing::class, 'installation_teams_types_of_housing');
+      return $this->belongsTo(User::class);
+    }
+    public function typeHousing(): BelongsToMany {
+      return $this->belongsToMany(TypeOfHousing::class, 'installation_teams_types_of_housing');
     }
 
     public function orders(): BelongsToMany

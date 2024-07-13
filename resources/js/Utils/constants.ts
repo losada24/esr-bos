@@ -166,12 +166,9 @@ export const THEME_CONFIG: ThemeConfig = {
 export const ROLES = {
   ADMIN: 'admin',
   ACCOUNT_MANAGER: 'account_manager',
-  DEALER: 'dealer',
-  SUB_DEALER: 'sub_dealer',
-  ACCOUNTING: 'accounting',
-  PRODUCTION: 'production',
-  SHIPPING: 'shipping',
-  PLANT_MANAGER: 'plant_manager'
+  INSTALLER: 'installer',
+  SUPERVISOR: 'supervisor',
+  OWNER: 'owner'
 }
 
 export const PERSMISSION_USERS_LIST = 'users list'

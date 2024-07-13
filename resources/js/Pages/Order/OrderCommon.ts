@@ -36,6 +36,7 @@ export type OrderFormValues = Order & {
   last_name: string
   phone: string
   email: string
+  attachments: any[]
 }
 
 export const orderFormObj: OrderFormValues = {
@@ -67,7 +68,8 @@ export const orderFormObj: OrderFormValues = {
   client_name: '',
   last_name: '',
   phone: '',
-  email: ''
+  email: '',
+  attachments: []
 }
 
 export interface OrderProductExtraWorksFormValues {

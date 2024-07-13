@@ -1,0 +1,16 @@
+import * as Yup from 'yup'
+import { type OptionType, type InstallationTeam } from '@/types'
+
+export const installationTeamSchema = Yup.object({
+  id: Yup.number(),
+  // user_id: Yup.object().required('User is required'),
+  number_of_member: Yup.number().required('Number of member is required'),
+  worker_compensation_expiration_date: Yup.date().required('Worker compensation expiration date is required'),
+  liability_expiration_date: Yup.date().required('Liability expiration date is required'),
+})
+
+export type InstallationTeamFormValues = Omit<InstallationTeam, 'user_id'> & {
+  worker_compensation_attach: string
+  liability_expiration_attach: string
+  user_id: OptionType
+}
