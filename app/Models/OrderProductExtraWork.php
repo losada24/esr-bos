@@ -6,14 +6,15 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\Pivot;
 
-class OrderProductExtraWork extends Model
+class OrderProductExtraWork extends Pivot
 {
    
     use HasFactory, SoftDeletes;
     
-    protected $fillable = [
-        
+    protected $table = 'order_products_extra_works';
+    /* protected $fillable = [
         'order_product_id',
         'extra_work_id',
         'number_of_sides',
@@ -27,6 +28,6 @@ class OrderProductExtraWork extends Model
 
     public function extraWork(): BelongsTo {
         return $this->belongsTo(ExtraWork::class, 'extra_work_id', 'id');
-    }
+    }*/
 
 }

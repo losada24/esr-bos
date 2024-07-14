@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -20,8 +21,12 @@ class ExtraWork extends Model
        
     ];
 
-    public function orderProductExtraWorks(): HasMany {
-        return $this->hasMany(OrderProductExtraWork::class, 'order_id', 'id');
+    public function orderProductExtraWorks(): BelongsToMany {
+        return $this->belongsToMany(
+          OrderProduct::class, 'order_products_extra_works', 'extra_work_id', 'order_product_id'
+          )->using(OrderProductExtraWork::class)
+            ->withPivot('price', 'number_of_sides')
+            ->withTimestamps();
       }
 
 }

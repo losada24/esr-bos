@@ -41,6 +41,10 @@ export type OrderFormValues = Order & {
 
 export const orderFormObj: OrderFormValues = {
   id: 0,
+  last_name: '',
+  client_name: '',
+  phone: '',
+  email: '',
   name: '',
   order_number: 0,
   job_address: '',
@@ -65,10 +69,6 @@ export const orderFormObj: OrderFormValues = {
   delivery_date: new Date(),
   owners: [],
   orderProducts: [],
-  client_name: '',
-  last_name: '',
-  phone: '',
-  email: '',
   attachments: []
 }
 

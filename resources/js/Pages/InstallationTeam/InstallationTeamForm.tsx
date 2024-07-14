@@ -26,8 +26,6 @@ const InstallationTeamForm = ({
   users: User[]
   values: InstallationTeamFormValues
   setFieldValue: (field: string, value: any, shouldValidate?: boolean | undefined) => void }) => {
-
-  console.log('values', values)
   const selectedUser: SingleValue<OptionType> = {
     value: values.user_id.value,
     label: values.user_id.label

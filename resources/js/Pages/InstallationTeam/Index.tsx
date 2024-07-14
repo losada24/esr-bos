@@ -17,7 +17,6 @@ type IndexCompanyProps = PageProps & {
 }
 
 export default function Index ({ auth, installation_teams }: IndexCompanyProps) {
-  console.log(installation_teams)
   const destroy = (id: number) => {
     if (confirm('Are you sure you want to delete this Team?')) {
       router.delete(route('installation_team.destroy', id))

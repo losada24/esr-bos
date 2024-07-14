@@ -22,7 +22,7 @@ import {
   type OrderProduct
 } from '@/types'
 import Select from 'react-select'
-import { type OrderFormValues } from './OrderCommon'
+import { orderProductSchema, type OrderFormValues } from './OrderCommon'
 import SearchIcon from '@/Components/Icons/SearchIcon'
 import ProductModal from './ProductModal'
 import ProductTable from './ProductTable'
@@ -87,7 +87,9 @@ const OrderForm = ({
   const [showProductModal, setShowProductModal] = useState<boolean>(false)
 
   const addOrderProduct = (orderProduct: OrderProduct) => {
-    setOrderProducts([...orderProducts, orderProduct])
+    const orderProductsList = [...orderProducts, orderProduct]
+    setOrderProducts(orderProductsList)
+    setFieldValue('orderProducts', orderProductsList)
   }
 
   const updateOrderProduct = (index: number) => {
@@ -95,7 +97,9 @@ const OrderForm = ({
   }
 
   const removeOrderProduct = (index: number) => {
-    setOrderProducts(orderProducts.filter((_, i) => i !== index))
+    const orderProductList = orderProducts.filter((_, i) => i !== index)
+    setOrderProducts(orderProductList)
+    setFieldValue('orderProducts', orderProductList)
   }
 
   return (
@@ -195,13 +199,15 @@ const OrderForm = ({
               {(submitCount && errors.job_address) ? <InputError message={errors.job_address} className="mt-2" /> : ''}
             </div>
             <div className={submitCount ? (errors.owners) ? 'has-error' : 'has-success' : ''}>
-              <label htmlFor="client">Owner</label>
+              <label htmlFor="owners">Owner</label>
               <Select
                 id='owners'
                 placeholder="Select Owners"
                 name='owners'
                 defaultValue={ null /* selectedClient ?? null */ }
-                onChange={(value) => { /* setFieldValue('client_id', value?.value) */ }}
+                onChange={(value) => {
+                  setFieldValue('owners', value)
+                }}
                 isMulti={true}
                 options={owners.map((owner) => { return { label: owner.name, value: owner.id } })}
               />
@@ -252,7 +258,8 @@ const OrderForm = ({
                 placeholder="Installation Team"
                 name='installation_teams'
                 defaultValue={ null /* selectedClient ?? null */ }
-                onChange={(value) => { /* setFieldValue('client_id', value?.value) */ }}
+                isMulti={true}
+                onChange={(value) => { setFieldValue('installation_teams', value) }}
                 options={installation_teams.map((installation_team) => { return { label: installation_team.user?.name, value: installation_team.id } })}
               />
               {(submitCount && errors.installation_teams) ? <InputError message={errors.installation_teams.toString()} className="mt-2" /> : ''}
@@ -264,7 +271,7 @@ const OrderForm = ({
                 placeholder="Supervisor"
                 name='supervisor_id'
                 defaultValue={ null /* selectedClient ?? null */ }
-                onChange={(value) => { /* setFieldValue('client_id', value?.value) */ }}
+                onChange={(value) => { setFieldValue('supervisor_id', value)}}
                 options={supervisors.map((supervisor) => { return { label: supervisor.name, value: supervisor.id } })}
               />
               {(submitCount && errors.supervisor_id) ? <InputError message={errors.supervisor_id} className="mt-2" /> : ''}
@@ -276,7 +283,7 @@ const OrderForm = ({
                 placeholder="Travel Cost"
                 name='travel_cost_id'
                 defaultValue={ null /* selectedClient ?? null */ }
-                onChange={(value) => { /* setFieldValue('client_id', value?.value) */ }}
+                onChange={(value) => { setFieldValue('travel_cost_id', value) }}
                 options={travel_costs.map((travel_cost) => { return { label: travel_cost.name, value: travel_cost.id } })}
               />
               {(submitCount && errors.travel_cost_id) ? <InputError message={errors.travel_cost_id.toString()} className="mt-2" /> : ''}
@@ -288,7 +295,7 @@ const OrderForm = ({
                 placeholder="Duration of Work"
                 name='duration_of_work_id'
                 defaultValue={ null /* selectedClient ?? null */ }
-                onChange={(value) => { /* setFieldValue('client_id', value?.value) */ }}
+                onChange={(value) => { setFieldValue('duration_of_work_id', value) }}
                 options={duration_of_works.map((duration_of_work) => { return { label: duration_of_work.name, value: duration_of_work.id } })}
               />
               {(submitCount && errors.duration_of_work_id) ? <InputError message={errors.duration_of_work_id.toString()} className="mt-2" /> : ''}
@@ -350,8 +357,8 @@ const OrderForm = ({
                 name="contract_signing_date"
                 value={values.contract_signing_date}
                 className="form-input"
-                onChange={(date: Date) => {
-                  // setData('dates', date)
+                onChange={([date]) => {
+                  setFieldValue('contract_signing_date', date.toISOString().slice(0, 10))
                 }}
               />
               {(submitCount && errors.contract_signing_date) ? <InputError message={errors.contract_signing_date?.toString()} className="mt-2" /> : ''}
@@ -367,8 +374,8 @@ const OrderForm = ({
                 name="payment_factory_date"
                 value={values.payment_factory_date}
                 className="form-input"
-                onChange={(date: Date) => {
-                  // setData('dates', date)
+                onChange={([date]) => {
+                  setFieldValue('payment_factory_date', date.toISOString().slice(0, 10))
                 }}
               />
               {(submitCount && errors.payment_factory_date) ? <InputError message={errors.payment_factory_date?.toString()} className="mt-2" /> : ''}
@@ -384,8 +391,8 @@ const OrderForm = ({
                 name="delivery_date"
                 value={values.delivery_date}
                 className="form-input"
-                onChange={(date: Date) => {
-                  // setData('dates', date)
+                onChange={([date]) => {
+                  setFieldValue('delivery_date', date.toISOString().slice(0, 10))
                 }}
               />
               {(submitCount && errors.delivery_date) ? <InputError message={errors.delivery_date?.toString()} className="mt-2" /> : ''}
@@ -401,8 +408,8 @@ const OrderForm = ({
                 name="installation_date"
                 value={values.installation_date}
                 className="form-input"
-                onChange={(date: Date) => {
-                  // setData('dates', date)
+                onChange={([date]) => {
+                  setFieldValue('installation_date', date.toISOString().slice(0, 10))
                 }}
               />
               {(submitCount && errors.installation_date) ? <InputError message={errors.installation_date?.toString()} className="mt-2" /> : ''}
@@ -460,7 +467,7 @@ const OrderForm = ({
                 id="attachments"
                 name="attachments"
                 type="file"
-                accept="image/*"
+                accept="*"
                 className="form-input file:py-2 file:px-4 file:border-0 file:font-semibold p-0 file:bg-primary/90 ltr:file:mr-5 rtl:file:ml-5 file:text-white file:hover:bg-primary"
                 placeholder="Qty"
                 multiple={true}

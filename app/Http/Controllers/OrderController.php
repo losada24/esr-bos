@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\CreateOrder;
 use App\Actions\ProduceOrder;
 use App\Actions\UpdateOrderStatusNote;
 use App\Enum\MethodOfPayment;
@@ -14,6 +15,7 @@ use App\Http\Requests\UpdateOrderStatusRequest;
 use App\Enum\ProductSystemEnum;
 use App\Enum\RoleEnum;
 use App\Enum\Service;
+use App\Http\Requests\StoreOrderRequest;
 use App\Http\Requests\UpdateOrderStatusNoteRequest;
 use App\Models\Client;
 use App\Models\DurationOfWork;
@@ -102,16 +104,11 @@ class OrderController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(StoreEstimateRequest $storeEstimateRequest, CreateEstimate $createEstimate)
+    public function store(StoreOrderRequest $storeOrderRequest, CreateOrder $createOrder)
     {
-        $estimate = $createEstimate->handle($storeEstimateRequest);
-        return redirect()->route('estimate.show', ['estimate' => $estimate->id]);
+      $createOrder->handle($storeOrderRequest);
+      return redirect()->route('order.index')
+        ->with('success', 'Order created successfully.');
     }
 
-    public function history(Order $order) {
-      $order->load(['orderStatus' => function(Builder $query) {
-        $query->orderBy('id', 'desc');
-      }, 'orderStatus.user']);
-      return response()->json($order->orderStatus);
-    }
 }
