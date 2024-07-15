@@ -52,7 +52,7 @@ class InstallationTeam extends Model
       return $this->belongsTo(User::class);
     }
     public function typeHousing(): BelongsToMany {
-      return $this->belongsToMany(TypeOfHousing::class, 'installation_teams_types_of_housing');
+      return $this->belongsToMany(TypeOfHousing::class, 'installation_teams_types_of_housing', 'installation_team_id', 'type_of_housing_id', 'id', 'id');
     }
 
     public function orders(): BelongsToMany

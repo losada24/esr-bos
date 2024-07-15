@@ -13,14 +13,14 @@ type IndexOrderProps = PageProps & {
     meta: {
       links: PaginatorLink[]
     }
-  },
+  }
   statuses: string[]
 }
 
 export default function Index ({ auth, orders, statuses }: IndexOrderProps) {
   const destroy = (id: number) => {
     if (confirm('Are you sure you want to delete this Estimate?')) {
-      router.delete(route('estimate.destroy', id))
+      router.delete(route('order.destroy', id))
     }
   }
 
@@ -54,7 +54,8 @@ export default function Index ({ auth, orders, statuses }: IndexOrderProps) {
                 <th className="px-6 pt-5 pb-4">Name</th>
                 <th className="px-6 pt-5 pb-4">Job Address</th>
                 <th className="px-6 pt-5 pb-4">Client</th>
-                <th className="px-6 pt-5 pb-4 text-right">Installer</th>
+                <th className="px-6 pt-5 pb-4">Installer</th>
+                <th className="px-6 pt-5 pb-4">Supervisor</th>
                 <th className="px-6 pt-5 pb-4">Dates</th>
                 <th className="px-6 pt-5 pb-4 w-14">Actions</th>
               </tr>
@@ -75,18 +76,33 @@ export default function Index ({ auth, orders, statuses }: IndexOrderProps) {
                     <td className="border-t px-6 py-4 align-top">
                       {order.job_address}
                     </td>
-                    <td className="border-t px-6 py-4 align-top text-right">
+                    <td className="border-t px-6 py-4 align-top">
                       {order?.client?.name}
                     </td>
                     <td className="border-t px-6 py-4 align-top">
-                      {order?.installer?.name}
+                      {order.installation_teams.map((team) => {
+                        return (
+                          <span key={team.id} className="inline-block bg-gray-200 rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2">
+                            {team.user?.name}
+                          </span>
+                        )
+                      })}
                     </td>
                     <td className="border-t px-6 py-4 align-top">
-                      {order.created_at?.toString()}
+                      {order?.supervisor?.name}
+                    </td>
+                    <td className="border-t px-6 py-4 align-top">
+                      <ul>
+                        <li><strong>Entry Date:</strong> {order.entry_date?.toString()}</li>
+                        <li><strong>Contract Signing Date:</strong> {order.contract_signing_date?.toString()}</li>
+                        <li><strong>Payment Factory Date:</strong> {order.payment_factory_date?.toString()}</li>
+                        <li><strong>Delivery Date:</strong> {order.delivery_date?.toString()}</li>
+                        <li><strong>Installation Date:</strong> {order.installation_date?.toString()}</li>
+                      </ul>
                     </td>
                     <td className="border-t flex items-center px-6 py-4">
                       <Link
-                        href={route('estimate.edit', order.id)}
+                        href={route('order.edit', order.id)}
                         title='Edit Order'
                       >
                         <EditIcon />

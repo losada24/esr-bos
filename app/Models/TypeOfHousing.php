@@ -23,6 +23,6 @@ class TypeOfHousing extends Model
     }
     public function installationTeamTypeHousings(): BelongsToMany
     {
-        return $this->belongsToMany(InstallationTeam::class, 'installation_teams_types_of_housing');
+        return $this->belongsToMany(InstallationTeam::class, 'installation_teams_types_of_housing', 'type_of_housing_id', 'installation_team_id', 'id', 'id');
     }
 }

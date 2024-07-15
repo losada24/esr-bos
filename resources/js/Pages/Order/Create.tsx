@@ -67,13 +67,12 @@ export default function Create ({
     }
 
     console.log(order)
-
-    /*router.post(route('order.store'), order, {
+    router.post(route('order.store'), order, {
       forceFormData: true,
       onError: (errors: any) => {
         helpers.setErrors(errors)
       }
-    })*/
+    })
   }
 
   return (

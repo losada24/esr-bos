@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
+use Illuminate\Support\Facades\DB;
 
 class Order extends Model
 {
@@ -38,7 +39,8 @@ class Order extends Model
         'contract_signing_date',
         'payment_factory_date',
         'delivery_date',
-        'installation_date'
+        'installation_date',
+        'status',
     ];
 
     protected $dates = [
@@ -52,19 +54,11 @@ class Order extends Model
 
     public function scopeFilter($query, array $filters)
     {
-        /* $query->when($filters['status'] ?? null, function ($query, $search) {
+        $query->when($filters['status'] ?? null, function ($query, $search) {
           $query->where('status', $search);
-        })->when($filters['client_id'] ?? null, function ($query, $search) {
-          // $query->where('client_id', $search);
-          $query->whereHas('client', function ($query) use ($search) {
-            //$query->where('name', 'like', '%'.$search.'%');
-            $query->where(DB::raw("CONCAT(name, ' ', email, ' ',phone)"), 'like', '%'.$search.'%');
-          });
-        })->when($filters['entry_date'] ?? null, function ($query, $search) {
-          $query->where('entry_date', $search);
-        })->when($filters['address'] ?? null, function ($query, $search) {
-          $query->where('address', 'like', '%'.$search.'%');
-        }); */
+        })->when($filters['text'] ?? null, function ($query, $search) {
+          $query->where(DB::raw("CONCAT(name, ' ', order_number, ' ', job_address)"), 'like', '%'.$search.'%');
+        });
     }
 
     public function client(): BelongsTo {

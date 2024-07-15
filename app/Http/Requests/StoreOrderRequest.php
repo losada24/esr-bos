@@ -28,7 +28,7 @@ class StoreOrderRequest extends FormRequest
     public function rules()
     {
         return [
-            'client_id' => 'nullable|integer|exists:clients,id',
+           // 'client_id' => 'nullable|integer|exists:clients,id',
             'client_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
             'phone' => 'required|string|max:255',
@@ -39,7 +39,7 @@ class StoreOrderRequest extends FormRequest
             'owners' => 'required|array',
             'owners.*' => 'required|integer|exists:users,id',
             'type_of_work_id' => 'required|integer|exists:type_of_works,id',
-            'type_of_housing_id' => 'required|integer|exists:type_of_housings,id',
+            'type_of_housing_id' => 'required|integer|exists:types_of_housing,id',
             'installation_teams' => 'required|array',
             'installation_teams.*' => 'required|integer|exists:installation_teams,id',
             'supervisor_id' => 'required|integer|exists:users,id',
@@ -51,13 +51,14 @@ class StoreOrderRequest extends FormRequest
             'contract_signing_date' => 'required|date_format:Y-m-d',
             'payment_factory_date' => 'required|date_format:Y-m-d',
             'delivery_date' => 'nullable|date_format:Y-m-d',
+            'entry_date' => 'nullable|date_format:Y-m-d',
             'installation_date' => 'nullable|date_format:Y-m-d',
             'city_permits' => 'boolean',
             'association_permits' => 'boolean',
             'equipment_rental' => 'boolean',
             'notes' => 'nullable|string|max:1000',
             'attachments' => 'nullable|array',
-            'attachments.*' => 'file|mimes:jpeg,png,jpg,pdf,docx,doc,xlsx|max:512',
+            'attachments.*' => 'file|mimes:jpeg,png,jpg,pdf,docx,doc,xlsx|max:5120',
             'orderProducts' => 'required|array',
             'orderProducts.*.type_of_product_id' => 'required|integer|exists:type_of_products,id',
             'orderProducts.*.product_category_id' => 'required|integer|exists:product_categories,id',

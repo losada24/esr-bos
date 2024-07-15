@@ -346,6 +346,23 @@ const OrderForm = ({
               </Field>
               {(submitCount && errors.type_of_housing_id) ? <InputError message={errors.type_of_housing_id} className="mt-2" /> : ''}
             </div>
+            <div className={submitCount ? (errors.entry_date) ? 'has-error' : 'has-success' : ''}>
+              <label htmlFor="entry_date">Entry Date</label>
+              <Flatpickr
+                options={{
+                  mode: 'single',
+                  dateFormat: 'Y-m-d',
+                  position: 'auto right'
+                }}
+                name="entry_date"
+                value={values.entry_date}
+                className="form-input"
+                onChange={([date]) => {
+                  setFieldValue('entry_date', date.toISOString().slice(0, 10))
+                }}
+              />
+              {(submitCount && errors.entry_date) ? <InputError message={errors.entry_date?.toString()} className="mt-2" /> : ''}
+            </div>
             <div className={submitCount ? (errors.contract_signing_date) ? 'has-error' : 'has-success' : ''}>
               <label htmlFor="contract_signing_date">Contract Signing Date</label>
               <Flatpickr

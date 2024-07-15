@@ -56,7 +56,7 @@ const OrderFilter = ({ statuses }: { statuses: string[] }) => {
               setData('text', e.target.value)
             }}
             type='text'
-            placeholder='Search by Quote, Name or Project'
+            placeholder='Search by Order Number, Name or Address'
           />
         </div>
         <div className='mb-3 w-64'>
@@ -76,22 +76,6 @@ const OrderFilter = ({ statuses }: { statuses: string[] }) => {
               <option key={index} value={status}>{status}</option>
             ))}
           </select>
-        </div>
-        <div className='mb-3 w-64'>
-          <label htmlFor="role">Dates</label>
-          <Flatpickr
-            options={{
-              mode: 'range',
-              dateFormat: 'Y-m-d',
-              position: 'auto right'
-            }}
-            name="dates"
-            value={[data.dates[0], data.dates[1]]}
-            className="form-input"
-            onChange={(date: Date[]) => {
-              setData('dates', date)
-            }}
-          />
         </div>
         <div className="flex items-end justify-between w-44 pb-3">
           <PrimaryButton className="btn btn-primary">

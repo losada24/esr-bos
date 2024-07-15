@@ -46,8 +46,7 @@ class OrderController extends Controller
     {
         return Inertia::render('Order/Index', [
           'orders' => new OrderCollection(
-            Order::with(['orderStatus'])
-              ->filter($request->only(['text']))
+            Order::with(['installers.user'])->filter($request->only(['text', 'status']))
               ->orderBy('orders.updated_at', 'desc')
               ->orderBy('orders.id', 'desc')
               ->paginate()
