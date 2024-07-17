@@ -31,12 +31,12 @@ const InstallationTeamForm = ({
     label: values.user_id.label
   }
 
-  const selectedTypeOfHousing: MultiValue<OptionType> = values.typeHousing?.map((typeHousing: TypeOfHousing) => {
+  /*const selectedTypeOfHousing: MultiValue<OptionType> = values.type_housing?.map((typeHousing: O) => {
     return {
       value: typeHousing.id,
       label: type_of_housings.find((type_of_housing: TypeOfHousing) => type_of_housing.id === typeHousing.id)?.name ?? ''
     }
-  }) ?? []
+  }) ?? []*/
 
   return (
     <Form className='space-y-5'>
@@ -55,20 +55,20 @@ const InstallationTeamForm = ({
         />
         {(submitCount && errors.user_id) ? <InputError message={errors.user_id} className="mt-2" /> : ''}
       </div>
-      <div className={submitCount ? (errors.typeHousing) ? 'has-error' : 'has-success' : ''}>
+      <div className={submitCount ? (errors.type_housing) ? 'has-error' : 'has-success' : ''}>
         <label htmlFor="type_of_housings">Type of Housing</label>
         <Select
-          id='typeHousing'
+          id='type_housing'
           placeholder="Select User"
-          name='typeHousing'
-          defaultValue={ selectedTypeOfHousing }
+          name='type_housing'
+          defaultValue={ values.type_housing }
           onChange={(value) => {
-            setFieldValue('typeHousing', value)
+            setFieldValue('type_housing', value)
           }}
           isMulti={true}
           options={type_of_housings.map((type_of_housings: TypeOfHousing) => { return { label: type_of_housings.name, value: type_of_housings.id } })}
         />
-        {(submitCount && errors.typeHousing) ? <InputError message={errors.typeHousing.toString()} className="mt-2" /> : ''}
+        {(submitCount && errors.type_housing) ? <InputError message={errors.type_housing.toString()} className="mt-2" /> : ''}
       </div>
       <div className={submitCount ? (errors.number_of_member) ? 'has-error' : 'has-success' : ''}>
         <label htmlFor="number_of_member">Number of Member</label>

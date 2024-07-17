@@ -80,7 +80,7 @@ export default function Index ({ auth, orders, statuses }: IndexOrderProps) {
                       {order?.client?.name}
                     </td>
                     <td className="border-t px-6 py-4 align-top">
-                      {order.installation_teams.map((team) => {
+                      {order.installationTeams.map((team) => {
                         return (
                           <span key={team.id} className="inline-block bg-gray-200 rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2">
                             {team.user?.name}

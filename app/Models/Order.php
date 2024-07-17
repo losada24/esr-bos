@@ -102,7 +102,7 @@ class Order extends Model
       return $this->hasMany(OrderProduct::class, 'order_id', 'id');
     }
 
-    public function installers(): BelongsToMany
+    public function installationTeams(): BelongsToMany
     {
       return $this->belongsToMany(InstallationTeam::class, 'installation_teams_orders');
     }

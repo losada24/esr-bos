@@ -22,7 +22,7 @@ class InstallationTeamResource extends JsonResource
           'liability_expiration_date' => $this->liability_expiration_date ?? '',
           'notes' => $this->notes ?? '',
           'user' => $this->user ?? '',
-          'typeHousing' => $this->typeHousing ?? '',
+          'type_housing' => $this->typeHousing ?? '',
           'attachments' => $this->attachments ? $this->attachments->transform(function($attachment) {
             return new AttachmentResource($attachment);
           }) : []

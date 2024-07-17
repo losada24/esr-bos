@@ -24,7 +24,7 @@ class StoreInstallationTeamRequest extends FormRequest
     public function rules()
     {
         return [
-            'user_id' => 'required|exists:users,id',
+            'user_id' => 'required|exists:users,id|unique:installation_teams,user_id',
             'type_of_housings' => 'required|array',
             'number_of_member' => 'required|integer|min:1',
             'worker_compensation_expiration_date' => 'required|date_format:Y-m-d',

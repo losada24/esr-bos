@@ -36,7 +36,7 @@ export interface Order {
   payment_factory_date: Date
   delivery_date: Date
   owners: User[]
-  orderProducts?: OrderProduct[]
+  order_products?: OrderProduct[]
   attachments?: Attachment[]
 }
 
@@ -137,12 +137,12 @@ export interface TypeOfHousing {
 export interface InstallationTeam {
   id: number
   number_of_member: number
-  worker_compensation_expiration_date: Date
-  liability_expiration_date: Date
+  worker_compensation_expiration_date: Date | null
+  liability_expiration_date: Date | null
   notes?: string
   user_id: number
   user?: User
-  typeHousing?: TypeOfHousing[]
+  type_housing?: TypeOfHousing[]
   attachments: Attachment[]
   orders?: Order[]
 }

@@ -66,7 +66,7 @@ export default function Index ({ auth, installation_teams }: IndexCompanyProps) 
                       {installation_team.number_of_member}
                     </td>
                     <td className="border-t px-6 py-4 align-top">
-                      {installation_team.typeHousing?.map((typeHousing) => {
+                      {installation_team.type_housing?.map((typeHousing) => {
                         return (
                           <span key={typeHousing.id} className="inline-block bg-gray-200 rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2">
                             {typeHousing.name}

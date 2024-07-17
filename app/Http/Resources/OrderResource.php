@@ -21,7 +21,7 @@ class OrderResource extends JsonResource
           'name' => $this->name ?? '',
           'status' => $this->status ?? '',
           'client' => $this->client ?? '',
-          'installation_teams' => $this->installers ?? '',
+          'installationTeams' => $this->installationTeams ?? '',
           'supervisor' => $this->supervisor ?? '',
           'entry_date' => $this->entry_date ?? '',
           'contract_signing_date' => $this->contract_signing_date ?? '',

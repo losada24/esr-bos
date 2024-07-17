@@ -27,22 +27,6 @@ class CreateOrder {
         $client = Client::find($request->client_id);
       }
 
-      $estimate_delivery_date = $request->delivery_date;
-      if ($request->delivery_date == null) {
-        $delivery_date_object = Carbon::parse($request->payment_factory_date);
-        $delivery_week = $delivery_date_object->addWeeks(7);
-        $end_of_delivery_week = $delivery_week->endOfWeek();
-        $estimate_delivery_date = $end_of_delivery_week->previous(Carbon::FRIDAY)->format('Y-m-d');
-      }
-
-      $estimate_installation_date = $request->installation_date;
-      if ($request->installation_date == null && $request->service == 'INSTALLATION') {
-        $installation_date_object = Carbon::parse($request->payment_factory_date);
-        $installation_week = $installation_date_object->addWeeks(8);
-        $end_of_installation_week = $installation_week->endOfWeek();
-        $estimate_installation_date = $end_of_installation_week->previous(Carbon::FRIDAY)->format('Y-m-d');
-      }
-
       $order = Order::create([
         'client_id' => $client->id,
         'user_id' => auth()->user()->id,
@@ -65,8 +49,8 @@ class CreateOrder {
         'association_permits' => $request->association_permits,
         'equipment_rental' => $request->equipment_rental,
         'notes' => $request->notes,
-        'delivery_date' => $estimate_delivery_date,
-        'installation_date' => $estimate_installation_date,
+        'delivery_date' => $request->delivery_date,
+        'installation_date' => $request->installation_date,
         'status' => OrderStatusEnum::PLANNED->value,
       ]);
 
@@ -83,7 +67,7 @@ class CreateOrder {
         }
       }
 
-      $order->installers()->attach($request->installation_teams);
+      $order->installationTeams()->attach($request->installation_teams);
       $order->owners()->attach($request->owners);
 
       foreach ($request->orderProducts as $product) {

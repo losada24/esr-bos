@@ -9,11 +9,11 @@ export default function Create ({ auth, type_of_housings, users }: PageProps & {
   const initialValues: InstallationTeamFormValues = {
     id: 0,
     number_of_member: 0,
-    worker_compensation_expiration_date: new Date(),
-    liability_expiration_date: new Date(),
+    worker_compensation_expiration_date: null,
+    liability_expiration_date: null,
     user_id: { value: 0, label: '' },
     attachments: [],
-    typeHousing: [],
+    type_housing: [],
     worker_compensation_attach: '',
     liability_expiration_attach: ''
   }
@@ -26,7 +26,7 @@ export default function Create ({ auth, type_of_housings, users }: PageProps & {
       user_id: values.user_id.value,
       worker_compensation_attach: values.worker_compensation_attach,
       liability_expiration_attach: values.liability_expiration_attach,
-      type_of_housings: values.typeHousing.map((typeHousing: any) => typeHousing.value)
+      type_of_housings: values.type_housing.map((typeHousing: any) => typeHousing.value)
     }
 
     router.post(route('installation_team.store'), installation_team, {

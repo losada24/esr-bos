@@ -49,6 +49,9 @@ Route::middleware('auth')->group(function () {
     Route::resource('order', OrderController::class)
       ->middleware(["role:" . RoleEnum::ADMIN->value]);
 
+    Route::get('order/get_delivery_and_installation_date/{payment_factory_date}', [OrderController::class, 'getDeliveryAndInstallationDate'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value]);
+
     Route::resource('installation_team', InstallationTeamController::class)
       ->only(['index', 'create', 'store', 'update', 'edit', 'destroy'])
       ->middleware(["role:" . RoleEnum::ADMIN->value]);

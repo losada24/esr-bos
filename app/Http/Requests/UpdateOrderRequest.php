@@ -3,12 +3,12 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use App\Enum\GlassTypeEnum;
 use App\Enum\FrameColorEnum;
 use App\Enum\GlassColorEnum;
-use App\Enum\GlassTypeEnum;
 use Illuminate\Validation\Rule;
 
-class StoreOrderRequest extends FormRequest
+class UpdateOrderRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -28,8 +28,8 @@ class StoreOrderRequest extends FormRequest
     public function rules()
     {
         return [
-           // 'client_id' => 'nullable|integer|exists:clients,id',
-            'client_name' => 'required|string|max:255',
+          'id' => 'required|exists:orders,id',
+          'client_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
             'phone' => 'required|string|max:255',
             'email' => 'nullable|email|max:255',
@@ -40,9 +40,9 @@ class StoreOrderRequest extends FormRequest
             'owners.*' => 'required|integer|exists:users,id',
             'type_of_work_id' => 'required|integer|exists:type_of_works,id',
             'type_of_housing_id' => 'required|integer|exists:types_of_housing,id',
-            'installation_teams' => 'nullable|array',
+            'installation_teams' => 'required|array',
             'installation_teams.*' => 'required|integer|exists:installation_teams,id',
-            'supervisor_id' => 'nullable|integer|exists:users,id',
+            'supervisor_id' => 'required|integer|exists:users,id',
             'travel_cost_id' => 'required|integer|exists:travel_costs,id',
             'duration_of_work_id' => 'required|integer|exists:duration_of_works,id',
             'additional_travel_costs' => 'nullable|numeric',

@@ -1,7 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
 import { Head, router } from '@inertiajs/react'
 import { Formik, type FormikHelpers } from 'formik'
-import { orderFormObj, type OrderFormValues, orderSchema } from './OrderCommon'
+import { loadOrderFormObj, type OrderFormValues, orderSchema } from './OrderCommon'
 import OrderForm from './OrderForm'
 import {
   type PageProps,
@@ -20,7 +20,7 @@ import {
   type ProductCost
 } from '@/types'
 
-export default function Create ({
+export default function Edit ({
   auth,
   clients,
   owners,
@@ -36,7 +36,8 @@ export default function Create ({
   type_of_products,
   product_category,
   extra_works,
-  product_costs
+  product_costs,
+  order
 }: PageProps & {
   clients: Client[]
   owners: User[]
@@ -53,20 +54,20 @@ export default function Create ({
   product_category: ProductCategory[]
   extra_works: ExtraWorks[]
   product_costs: ProductCost[]
+  order: Order
 }) {
-  const initialValues: OrderFormValues = orderFormObj
-
+  const initialValues: OrderFormValues = loadOrderFormObj(order)
   const handleSubmit = async (values: any, helpers: FormikHelpers<OrderFormValues>) => {
     const order = {
       ...values,
       duration_of_work_id: values.duration_of_work_id.value,
-      installation_teams: values.installationTeams.map((installation_team: any) => installation_team.value),
+      installation_teams: values.installation_teams.map((installation_team: any) => installation_team.value),
       owners: values.owners.map((owner: any) => owner.value),
       supervisor_id: values.supervisor_id.value,
       travel_cost_id: values.travel_cost_id.value
     }
 
-    router.post(route('order.store'), order, {
+    router.post(route('order.update'), order, {
       forceFormData: true,
       onError: (errors: any) => {
         helpers.setErrors(errors)
@@ -77,9 +78,9 @@ export default function Create ({
   return (
       <AuthenticatedLayout
           auth={auth}
-          pageTitle="Create Order"
+          pageTitle="Update Order"
       >
-          <Head title="Create Order" />
+          <Head title="Update Order" />
           <Formik<OrderFormValues>
             initialValues={initialValues}
             validationSchema={orderSchema}
