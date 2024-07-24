@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Models\Order;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
@@ -9,24 +10,25 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class NewUserRegistration extends Mailable
+class DeliveryConfirmed extends Mailable
 {
     use Queueable, SerializesModels;
 
     /**
      * Create a new message instance.
      */
-    public function __construct(public string $name, public string $email, public string $password)
-    {}
+    public function __construct(
+      protected Order $order,
+    ){}
 
     /**
      * Get the message envelope.
      */
     public function envelope(): Envelope
     {
-        $appName = config('app.name');
+      $appName = config('app.name');
         return new Envelope(
-            subject: "[$appName] New User Registration",
+          subject: "Confirmed Delivery or Pickup Date for Materials. [$appName]",
         );
     }
 
@@ -36,7 +38,10 @@ class NewUserRegistration extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'emails.new-user-registration',
+            view: 'emails.confirmed-delivery-or-pickup-date',
+            with: [
+              'order' => $this->order
+            ]
         );
     }
 

@@ -9,4 +9,6 @@ enum RoleEnum: string
     case INSTALLER = 'installer';
     case SUPERVISOR = 'supervisor';
     case OWNER = 'owner';
+    case WAREHOUSE_MANAGER = 'warehouse_manager';
+    case SERVICE_MANAGER = 'service_manager';
 }

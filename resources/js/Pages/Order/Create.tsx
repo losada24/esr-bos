@@ -16,7 +16,6 @@ import {
   type ProductConfig,
   type TypeOfProduct,
   type ProductCategory,
-  type ExtraWorks,
   type ProductCost
 } from '@/types'
 
@@ -35,7 +34,6 @@ export default function Create ({
   products_config,
   type_of_products,
   product_category,
-  extra_works,
   product_costs
 }: PageProps & {
   clients: Client[]
@@ -51,7 +49,6 @@ export default function Create ({
   products_config: ProductConfig[]
   type_of_products: TypeOfProduct[]
   product_category: ProductCategory[]
-  extra_works: ExtraWorks[]
   product_costs: ProductCost[]
 }) {
   const initialValues: OrderFormValues = orderFormObj
@@ -60,7 +57,7 @@ export default function Create ({
     const order = {
       ...values,
       duration_of_work_id: values.duration_of_work_id.value,
-      installation_teams: values.installationTeams.map((installation_team: any) => installation_team.value),
+      installation_teams: values.installation_teams.map((installation_team: any) => installation_team.value) ?? [],
       owners: values.owners.map((owner: any) => owner.value),
       supervisor_id: values.supervisor_id.value,
       travel_cost_id: values.travel_cost_id.value
@@ -105,7 +102,6 @@ export default function Create ({
                 products_config={products_config}
                 type_of_works={type_of_works}
                 product_category={product_category}
-                extra_works={extra_works}
                 product_costs={product_costs}
               />
             )}

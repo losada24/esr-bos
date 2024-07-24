@@ -10,7 +10,7 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class ProductionStatusChange extends Mailable
+class EstimateDeliveryInstallationDate extends Mailable
 {
     use Queueable, SerializesModels;
 
@@ -19,8 +19,6 @@ class ProductionStatusChange extends Mailable
      */
     public function __construct(
       protected Order $order,
-      protected string $status,
-      protected string $notes
     ){}
 
     /**
@@ -29,9 +27,8 @@ class ProductionStatusChange extends Mailable
     public function envelope(): Envelope
     {
       $appName = config('app.name');
-      $quoteNumber = '#' . $this->order->getQuoteNumberAttribute();
         return new Envelope(
-            subject: "[$appName] Order $quoteNumber Update: Production Status Changed to " . strtoupper($this->status),
+          subject: "Estimate delivery and installation date. [$appName]",
         );
     }
 
@@ -41,14 +38,9 @@ class ProductionStatusChange extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'emails.production-status-change',
+            view: 'emails.estimate-delivery-installation-date',
             with: [
-              'job_name' => $this->order->name,
-              'created_by' => $this->order->user->name,
-              'quote_number' => $this->order->getQuoteNumberAttribute(),
-              'updated_at' => $this->order->updated_at,
-              'status' => $this->status,
-              'notes' => $this->notes
+              'order' => $this->order
             ]
         );
     }

@@ -1,10 +1,11 @@
-import { InstallationTeam, type Order } from '@/types'
+import { ExtraWorks, type InstallationTeam, type Order } from '@/types'
+import { type OrderProduct, type OrderProductsExtraWorks } from '@/types/interfaces/order'
 import * as Yup from 'yup'
 
 export const orderSchema = Yup.object({
-  id: Yup.number(),
-  //status: Yup.string().required('Status is required'),
-  //notes: Yup.string().required().max(1000, 'Notes must be less than 255 characters')
+  id: Yup.number()
+  // status: Yup.string().required('Status is required'),
+  // notes: Yup.string().required().max(1000, 'Notes must be less than 255 characters')
 })
 
 export const orderProductSchema = Yup.object({
@@ -31,7 +32,7 @@ export interface ProductOrderFields {
   unit?: string
 }
 
-export type OrderFormValues = Omit<Order, 'installation_date' | 'delivery_date' | 'payment_factory_date' | 'contract_signing_date'> & {
+export type OrderFormValues = Omit<Order, 'installation_date' | 'delivery_date' | 'payment_factory_date' | 'contract_signing_date' | 'eta_date' | 'installation_end_date' | 'entry_date'> & {
   client_name: string
   last_name: string
   phone: string
@@ -42,6 +43,9 @@ export type OrderFormValues = Omit<Order, 'installation_date' | 'delivery_date' 
   payment_factory_date: Date | null
   contract_signing_date: Date | null
   installation_teams: InstallationTeam[]
+  eta_date: Date | null
+  entry_date: Date | null
+  installation_end_date: Date | null
 }
 
 export const orderFormObj: OrderFormValues = {
@@ -58,7 +62,7 @@ export const orderFormObj: OrderFormValues = {
   equipment_rental: false,
   notes: '',
   client_id: 0,
-  entry_date: new Date(),
+  entry_date: null,
   installation_date: null,
   additional_travel_costs: 0,
   type_of_work_id: 0,
@@ -71,6 +75,8 @@ export const orderFormObj: OrderFormValues = {
   service: '',
   contract_signing_date: null,
   payment_factory_date: null,
+  eta_date: null,
+  installation_end_date: null,
   delivery_date: null,
   owners: [],
   order_products: [],
@@ -114,9 +120,48 @@ export const loadOrderFormObj = (order: Order): OrderFormValues => {
     service: order.service,
     contract_signing_date: order.contract_signing_date ?? null,
     payment_factory_date: order.payment_factory_date ?? null,
+    eta_date: order.eta_date ?? null,
     delivery_date: order.delivery_date ?? null,
     owners: order.owners,
     order_products: order.order_products,
-    attachments: order.attachments ?? []
+    attachments: order.attachments ?? [],
+    installation_end_date: order.installation_end_date ?? null
+  }
+}
+
+interface OrderProductEstraWorkPivot {
+  name: string
+  pivot: OrderProductsExtraWorks
+}
+
+type OrderProductFormValues = OrderProduct & {
+  order_product_extra_works: OrderProductEstraWorkPivot[]
+}
+
+export const getOrderProducts = (orderProduct: OrderProductFormValues) => {
+  return {
+    id: orderProduct.id,
+    order_id: orderProduct.order_id,
+    qty: orderProduct.qty,
+    height: orderProduct.height,
+    width: orderProduct.width,
+    unit_price: orderProduct.unit_price,
+    total_price: orderProduct.total_price,
+    notes: orderProduct.notes,
+    product_config_id: orderProduct.product_config_id,
+    type_of_work_id: orderProduct.type_of_work_id,
+    storefront_area: orderProduct.storefront_area,
+    installation_other_level: orderProduct.installation_other_level,
+    product_category_id: orderProduct.product_category_id,
+    type_of_product_id: orderProduct.type_of_product_id,
+    extra_works: orderProduct.order_product_extra_works?.map((extra_work: OrderProductEstraWorkPivot) => {
+      return {
+        order_product_id: extra_work.pivot.order_product_id,
+        extra_work_id: extra_work.pivot.extra_work_id,
+        number_of_sides: extra_work.pivot.number_of_sides,
+        extra_work_name: extra_work.name,
+        price: extra_work.pivot.price
+      }
+    })
   }
 }

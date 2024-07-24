@@ -38,6 +38,8 @@ export interface Order {
   owners: User[]
   order_products?: OrderProduct[]
   attachments?: Attachment[]
+  eta_date?: Date
+  installation_end_date?: Date
 }
 
 export interface TypeOfWork {
@@ -84,6 +86,7 @@ export interface TypeOfProduct {
   name: string
   notes: string
   productCategories: ProductCategory[]
+  extra_works: ExtraWorks[]
 }
 
 export interface OrderProduct {

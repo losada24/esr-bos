@@ -8,9 +8,13 @@ use Illuminate\Support\Facades\DB;
 use App\Enum\RoleEnum;
 use App\Models\Order;
 use App\Models\OrderProduct;
+use App\Traits\OrderEmails;
+use App\Traits\OrderStatus;
 use Carbon\Carbon;
 
 class CreateOrder {
+
+  use OrderEmails, OrderStatus;
 
   public function handle(Request $request) {
     
@@ -27,6 +31,7 @@ class CreateOrder {
         $client = Client::find($request->client_id);
       }
 
+      $status = $this->getStatus($request);
       $order = Order::create([
         'client_id' => $client->id,
         'user_id' => auth()->user()->id,
@@ -44,6 +49,8 @@ class CreateOrder {
         'contract_signing_date' => $request->contract_signing_date,
         'payment_factory_date' => $request->payment_factory_date,
         'entry_date' => $request->entry_date,
+        'eta_date' => $request->eta_date,
+        'installation_end_date' => $request->installation_end_date,
         'additional_travel_costs' => $request->additional_travel_costs,
         'city_permits' => $request->city_permits,
         'association_permits' => $request->association_permits,
@@ -51,7 +58,7 @@ class CreateOrder {
         'notes' => $request->notes,
         'delivery_date' => $request->delivery_date,
         'installation_date' => $request->installation_date,
-        'status' => OrderStatusEnum::PLANNED->value,
+        'status' => $status,
       ]);
 
       if ($request->hasFile('attachments')) {
@@ -86,28 +93,21 @@ class CreateOrder {
           'product_category_id' => $product['product_category_id'],
           'type_of_product_id' => $product['type_of_product_id'],
         ]);
-
-        // dd($product['extra_works']);
-
+        
         $extraWorks = [];
         $product_extra_works = $product['extra_works'] ?? [];
         
-        //dd($product_extra_works); die;
         for ($i = 0; $i < count($product_extra_works); $i++) {
           $extraWorks[$product_extra_works[$i]['extra_work_id']] = [
             'price' => $product_extra_works[$i]['price'],
             'number_of_sides' => $product_extra_works[$i]['number_of_sides'],
           ];
         }
-       /* foreach ($product_extra_works as $extraWork) {
-          $extraWorks[$extraWork['extra_work_id']] = [
-            'price' => $extraWork['price'],
-            'number_of_sides' => $extraWork['number_of_sides'],
-          ];
-        }*/
 
-        //$orderProduct->orderProductExtraWorks()->attach($extraWorks);
+        $orderProduct->orderProductExtraWorks()->attach($extraWorks);
       }
+
+      $this->sendEmail($order);
 
       if( !$order )
       {

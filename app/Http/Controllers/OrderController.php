@@ -93,18 +93,20 @@ class OrderController extends Controller
           'travel_costs' => TravelCost::all(),
           'duration_of_works' => DurationOfWork::all(),
           'products_config' => ProductConfig::all(),
-          'type_of_products' => TypeOfProduct::all(),
+          'type_of_products' => TypeOfProduct::with(['extraWorks'])->get(),
           'product_category' => ProductCategory::all(),
           'extra_works' => ExtraWork::all(),
           'product_costs' => ProductCost::all(),
         ]);
     }
 
-    public function getDeliveryAndInstallationDate($payment_factory_date) {
-      $estimate_delivery_date = $this->getEstimateDeliveryDate($payment_factory_date);
-      $estimate_installation_date = $this->getEstimateInstallationDate($payment_factory_date);
+    public function getDeliveryAndInstallationDate($payment_factory_date, $type_of_housing, $county_id, $service) {
+      $estimate_eta_date = $this->estimateETADate($payment_factory_date);
+      $estimate_delivery_date = $this->getEstimateDeliveryDate($payment_factory_date, $service, $county_id, $type_of_housing);
+      $estimate_installation_date = $this->getEstimateInstallationDate($estimate_delivery_date, $service);
 
       return response()->json([
+        'estimate_eta_date' => $estimate_eta_date,
         'estimate_delivery_date' => $estimate_delivery_date,
         'estimate_installation_date' => $estimate_installation_date
       ]);
@@ -138,7 +140,7 @@ class OrderController extends Controller
             'user',
             'attachments',
             'owners',
-            'orderProducts',
+            'orderProducts.orderProductExtraWorks',
             'installationTeams.user',
           ]),
           'clients' => Client::all(),
@@ -159,9 +161,8 @@ class OrderController extends Controller
           'travel_costs' => TravelCost::all(),
           'duration_of_works' => DurationOfWork::all(),
           'products_config' => ProductConfig::all(),
-          'type_of_products' => TypeOfProduct::all(),
+          'type_of_products' => TypeOfProduct::with(['extraWorks'])->get(),
           'product_category' => ProductCategory::all(),
-          'extra_works' => ExtraWork::all(),
           'product_costs' => ProductCost::all(),
         ]);
     }
@@ -178,6 +179,20 @@ class OrderController extends Controller
         $updateOrder->handle($updateOrderRequest, $order);
         return redirect()->route('order.index')
           ->with('success', 'Order updated successfully.');
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function destroy(Order $order)
+    {
+        $order->delete();
+        return redirect()
+          ->back()
+          ->with('success', 'Order deleted successfully.');
     }
 
 }

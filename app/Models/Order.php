@@ -41,6 +41,8 @@ class Order extends Model
         'delivery_date',
         'installation_date',
         'status',
+        'eta_date',
+        'installation_end_date'
     ];
 
     protected $dates = [
@@ -49,7 +51,9 @@ class Order extends Model
         'contract_signing_date',
         'payment_factory_date',
         'delivery_date',
-        'installation_date'
+        'installation_date',
+        'eta_date',
+        'installation_end_date'
     ];
 
     public function scopeFilter($query, array $filters)

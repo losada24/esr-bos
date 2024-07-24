@@ -1,7 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
 import { Head, router } from '@inertiajs/react'
 import { Formik, type FormikHelpers } from 'formik'
-import { loadOrderFormObj, type OrderFormValues, orderSchema } from './OrderCommon'
+import { getOrderProducts, loadOrderFormObj, type OrderFormValues, orderSchema } from './OrderCommon'
 import OrderForm from './OrderForm'
 import {
   type PageProps,
@@ -16,8 +16,8 @@ import {
   type ProductConfig,
   type TypeOfProduct,
   type ProductCategory,
-  type ExtraWorks,
-  type ProductCost
+  type ProductCost,
+  OptionType
 } from '@/types'
 
 export default function Edit ({
@@ -35,7 +35,6 @@ export default function Edit ({
   products_config,
   type_of_products,
   product_category,
-  extra_works,
   product_costs,
   order
 }: PageProps & {
@@ -52,7 +51,6 @@ export default function Edit ({
   products_config: ProductConfig[]
   type_of_products: TypeOfProduct[]
   product_category: ProductCategory[]
-  extra_works: ExtraWorks[]
   product_costs: ProductCost[]
   order: Order
 }) {
@@ -60,14 +58,33 @@ export default function Edit ({
   const handleSubmit = async (values: any, helpers: FormikHelpers<OrderFormValues>) => {
     const order = {
       ...values,
-      duration_of_work_id: values.duration_of_work_id.value,
-      installation_teams: values.installation_teams.map((installation_team: any) => installation_team.value),
-      owners: values.owners.map((owner: any) => owner.value),
-      supervisor_id: values.supervisor_id.value,
-      travel_cost_id: values.travel_cost_id.value
+      duration_of_work_id: typeof values.duration_of_work_id === 'number' ? values.duration_of_work_id : values.duration_of_work_id.value,
+      installation_teams: values.installation_teams.map((installation_team: any) => installation_team.value) ?? [],
+      owners: values.owners.map((owner: any) => {
+        let value = 0
+        if (Object.prototype.hasOwnProperty.call(owner, 'value')) {
+          value = owner.value
+        } else {
+          value = owner.id
+        }
+
+        return value
+      }),
+      supervisor_id: values.supervisor_id !== null ? values.supervisor_id.value : null,
+      travel_cost_id: typeof values.travel_cost_id === 'number' ? values.travel_cost_id : values.travel_cost_id.value
     }
 
-    router.post(route('order.update'), order, {
+    if (!Object.prototype.hasOwnProperty.call(order, 'orderProducts')) {
+      order.orderProducts = values.order_products.map((orderProduct: any) => {
+        return getOrderProducts(orderProduct)
+      })
+    }
+
+    delete order.order_products
+    router.post(route('order.update', values.id), {
+      _method: 'PUT',
+      ...order
+    }, {
       forceFormData: true,
       onError: (errors: any) => {
         helpers.setErrors(errors)
@@ -90,7 +107,7 @@ export default function Edit ({
               <OrderForm
                 errors={errors}
                 submitCount={submitCount}
-                isCreate={true}
+                isCreate={false}
                 clients={clients}
                 setFieldValue={setFieldValue}
                 values={values}
@@ -106,7 +123,6 @@ export default function Edit ({
                 products_config={products_config}
                 type_of_works={type_of_works}
                 product_category={product_category}
-                extra_works={extra_works}
                 product_costs={product_costs}
               />
             )}

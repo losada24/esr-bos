@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import Modal from '@/Components/Modal'
 import CloseIcon from '@/Components/Icons/CloseIcon'
-import { type OrderProduct, type ProductCategory, type ProductConfig, type TypeOfProduct, type ExtraWorks, type ProductCost } from '@/types'
+import { type OrderProduct, type ProductCategory, type ProductConfig, type TypeOfProduct, type ProductCost } from '@/types'
 import { Field, Form, Formik, type FormikHelpers } from 'formik'
 import { type OrderProductExtraWorksFormValues, orderProductSchema } from './OrderCommon'
 import InputError from '@/Components/InputError'
@@ -15,7 +15,6 @@ const ProductModal = ({
   typeOfProducts,
   productCategories,
   productConfigs,
-  extraWorks,
   typeOfWork,
   productCosts,
   addOrderProduct
@@ -26,34 +25,13 @@ const ProductModal = ({
   typeOfProducts: TypeOfProduct[]
   productCategories: ProductCategory[]
   productConfigs: ProductConfig[]
-  extraWorks: ExtraWorks[]
   typeOfWork: number
   productCosts: ProductCost[]
   addOrderProduct: CallableFunction
 }) => {
   const [productCategoryOptions, setProductCategoryOptions] = useState<ProductCategory[]>([])
   const [productConfigOptions, setProductConfigOptions] = useState<ProductConfig[]>([])
-  const [plannedExtraWorksFormValues, setPlannedExtraWorksFormValues] = useState<OrderProductExtraWorksFormValues[]>(
-    extraWorks.filter((extra) => extra.planned).map((extraWork) => ({
-      extra_work_id: extraWork.id,
-      extra_work_name: extraWork.name,
-      extra_work_unit: extraWork.unit,
-      number_of_sides: 0,
-      checked: false,
-      price: extraWork.price
-    }))
-  )
-
-  const [notPlannedtExtraWorksFormValues, setNotPlannedExtraWorksFormValues] = useState<OrderProductExtraWorksFormValues[]>(
-    extraWorks.filter((extra) => !extra.planned).map((extraWork) => ({
-      extra_work_id: extraWork.id,
-      extra_work_name: extraWork.name,
-      extra_work_unit: extraWork.unit,
-      number_of_sides: 0,
-      checked: false,
-      price: extraWork.price
-    }))
-  )
+  const [plannedExtraWorksFormValues, setPlannedExtraWorksFormValues] = useState<OrderProductExtraWorksFormValues[]>([])
 
   const initialValues: OrderProduct = {
     id: 0,
@@ -74,38 +52,17 @@ const ProductModal = ({
   }
 
   const handleSubmit = async (values: any, helpers: FormikHelpers<OrderProduct>) => {
-    let hasErrors = false
-    notPlannedtExtraWorksFormValues.forEach((extraWork) => {
-      if (extraWork.checked && extraWork.number_of_sides <= 0) {
-        hasErrors = true
-        helpers.setFieldError(`notPlannedExtraWork${extraWork.extra_work_id}_sides`, 'This field is required')
-      }
-    })
-
-    if (!hasErrors) {
-      const plannedExtraWorks = plannedExtraWorksFormValues.filter((extraWork) => extraWork.checked)
-      const notPlannedExtraWorks = notPlannedtExtraWorksFormValues.filter((extraWork) => extraWork.checked).map((extraWork) => ({
-        extra_work_id: extraWork.extra_work_id,
-        number_of_sides: extraWork.number_of_sides,
-        price: extraWork.price * extraWork.number_of_sides
-      }))
-
-      const product: OrderProduct = {
-        ...values,
-        extra_works: [
-          ...plannedExtraWorks,
-          ...notPlannedExtraWorks
-        ]
-      }
-
-      const unit_price = getProductPrice(product, productCosts)
-      product.unit_price = unit_price
-      product.total_price = unit_price * product.qty
-      // setPlannedExtraWorksFormValues(plannedExtraWorksFormValues.map((extraWork) => ({ ...extraWork, checked: false })))
-      // setNotPlannedExtraWorksFormValues(plannedExtraWorksFormValues.map((extraWork) => ({ ...extraWork, checked: false })))
-      addOrderProduct(product)
-      onClose(false)
+    const plannedExtraWorks = plannedExtraWorksFormValues.filter((extraWork) => extraWork.checked)
+    const product: OrderProduct = {
+      ...values,
+      extra_works: plannedExtraWorks
     }
+
+    const unit_price = getProductPrice(product, productCosts)
+    product.unit_price = unit_price
+    product.total_price = unit_price * product.qty
+    addOrderProduct(product)
+    onClose(false)
   }
 
   return (
@@ -147,6 +104,15 @@ const ProductModal = ({
                                 setFieldValue('storefront_area', 0)
                               }
                               setProductCategoryOptions(productCategories.filter((productCategory) => productCategory.type_of_products_id === id))
+                              const extraWorks = typeOfProducts.find((typeOfProduct) => typeOfProduct.id === id)?.extra_works.map((extraWork) => ({
+                                extra_work_id: extraWork.id,
+                                extra_work_name: extraWork.name,
+                                extra_work_unit: extraWork.unit,
+                                number_of_sides: 0,
+                                checked: false,
+                                price: extraWork.price
+                              })) ?? []
+                              setPlannedExtraWorksFormValues(extraWorks)
                             }}
                           >
                             <option value="0">Type of Product</option>
@@ -263,51 +229,21 @@ const ProductModal = ({
                           </div>
                         )}
                   </div>
-                  <fieldset className='p-3 border rounded-xl mt-3'>
-                    <legend className='text-lg font-semibold px-3'>Planned Extra Works</legend>
-                    <div className='grid gap-4 grid-cols-2'>
-                      {plannedExtraWorksFormValues.map((extraWork) => (
-                        <div key={extraWork.extra_work_id} className='inline-flex items-end'>
-                          <div className='flex'>
-                            <Field
-                              id={`plannedExtraWork${extraWork.extra_work_id}`}
-                              name={`plannedExtraWork${extraWork.extra_work_id}`}
-                              className="form-checkbox"
-                              type='checkbox'
-                              checked={extraWork.checked}
-                              onChange={(e) => {
-                                setPlannedExtraWorksFormValues(plannedExtraWorksFormValues.map((extra) => {
-                                  if (extra.extra_work_id === extraWork.extra_work_id) {
-                                    return {
-                                      ...extra,
-                                      checked: e.target.checked
-                                    }
-                                  }
-                                  return extra
-                                }))
-                              }}
-                            />
-                            <label htmlFor={`plannedExtraWork${extraWork.extra_work_id}`}>{extraWork.extra_work_name}</label>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </fieldset>
-                  <fieldset className='p-3 border rounded-xl mt-3'>
-                    <legend className='text-lg font-semibold px-3'>Not Planned Extra Works</legend>
-                    <div className='grid gap-4 grid-cols-1'>
-                      {notPlannedtExtraWorksFormValues.map((extraWork) => (
-                        <div key={extraWork.extra_work_id} className={extraWork.extra_work_unit === 'side' ? 'grid gap-4 grid-cols-12' : 'grid gap-4 grid-cols-1'}>
-                          <div className='inline-flex items-end col-span-9'>
+                  {plannedExtraWorksFormValues.length > 0 && (
+                    <fieldset className='p-3 border rounded-xl mt-3'>
+                      <legend className='text-lg font-semibold px-3'>Extra Works</legend>
+                      <div className='grid gap-4 grid-cols-2'>
+                        {plannedExtraWorksFormValues.map((extraWork) => (
+                          <div key={extraWork.extra_work_id} className='inline-flex items-end'>
                             <div className='flex'>
                               <Field
-                                id={`notPlannedExtraWork${extraWork.extra_work_id}_checkbox`}
-                                name={`notPlannedExtraWork${extraWork.extra_work_id}_checkbox`}
+                                id={`plannedExtraWork${extraWork.extra_work_id}`}
+                                name={`plannedExtraWork${extraWork.extra_work_id}`}
                                 className="form-checkbox"
                                 type='checkbox'
                                 checked={extraWork.checked}
                                 onChange={(e) => {
-                                  setNotPlannedExtraWorksFormValues(notPlannedtExtraWorksFormValues.map((extra) => {
+                                  setPlannedExtraWorksFormValues(plannedExtraWorksFormValues.map((extra) => {
                                     if (extra.extra_work_id === extraWork.extra_work_id) {
                                       return {
                                         ...extra,
@@ -321,34 +257,10 @@ const ProductModal = ({
                               <label htmlFor={`plannedExtraWork${extraWork.extra_work_id}`}>{extraWork.extra_work_name}</label>
                             </div>
                           </div>
-                          {extraWork.extra_work_unit === 'side' && (
-                            <div className={'col-span-3'}>
-                              <label htmlFor={`side${extraWork.extra_work_id}`}>Sides</label>
-                              <Field
-                                id={`notPlannedExtraWork${extraWork.extra_work_id}_sides`}
-                                name={`notPlannedExtraWork${extraWork.extra_work_id}_sides`}
-                                className="form-input text-right"
-                                value={extraWork.number_of_sides}
-                                type='number'
-                                onChange={(e) => {
-                                  setNotPlannedExtraWorksFormValues(notPlannedtExtraWorksFormValues.map((extra) => {
-                                    if (extra.extra_work_id === extraWork.extra_work_id) {
-                                      return {
-                                        ...extra,
-                                        number_of_sides: parseInt(e.target.value)
-                                      }
-                                    }
-                                    return extra
-                                  }))
-                                }}
-                              />
-                              {(submitCount && (errors as any)[`notPlannedExtraWork${extraWork.extra_work_id}_sides`]) ? <InputError message={(errors as any)[`notPlannedExtraWork${extraWork.extra_work_id}_sides`]} className="mt-2" /> : ''}
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </fieldset>
+                        ))}
+                      </div>
+                    </fieldset>
+                  )}
                   <div className="flex items-center justify-between mt-4">
                     <button className='btn btn-danger uppercase' onClick={ (e) => {
                       e.preventDefault()

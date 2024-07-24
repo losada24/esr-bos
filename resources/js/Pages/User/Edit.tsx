@@ -9,7 +9,7 @@ import { useEffect, useState } from 'react'
 
 export default function Edit ({ auth, roles, user, companies }: UserPageProps) {
   const [modalProps, setModalProps] = useState<ModalProps | null>(null)
-  const IS_ADMIN = isAdmin(auth.user.roles.map((role: Role) => role.name)) || isAccountManager(auth.user.roles.map((role: Role) => role.name))
+  // const IS_ADMIN = isAdmin(auth.user.roles.map((role: Role) => role.name)) || isAccountManager(auth.user.roles.map((role: Role) => role.name))
   const initialValues: User = {
     id: user?.data.id ?? 0,
     name: user?.data.name ?? '',
@@ -17,8 +17,8 @@ export default function Edit ({ auth, roles, user, companies }: UserPageProps) {
     password: '',
     password_confirmation: '',
     role: user?.data.role ?? 0,
-    company_id: user?.data.company_id ?? 0,
-    markup: user?.data.markup ?? 0,
+    // company_id: user?.data.company_id ?? 0,
+    // markup: user?.data.markup ?? 0,
     featured_image: ''
   }
 

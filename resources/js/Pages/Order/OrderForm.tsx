@@ -17,13 +17,12 @@ import {
   type TypeOfHousing,
   type TypeOfProduct,
   type ProductCategory,
-  type ExtraWorks,
   type ProductCost,
   type OrderProduct,
   type OptionType
 } from '@/types'
 import Select, { type SingleValue } from 'react-select'
-import { orderProductSchema, type OrderFormValues } from './OrderCommon'
+import { getOrderProducts, type OrderFormValues } from './OrderCommon'
 import SearchIcon from '@/Components/Icons/SearchIcon'
 import ProductModal from './ProductModal'
 import ProductTable from './ProductTable'
@@ -47,7 +46,6 @@ const OrderForm = ({
   products_config,
   type_of_products,
   product_category,
-  extra_works,
   product_costs
 }: {
   submitCount: number
@@ -69,35 +67,11 @@ const OrderForm = ({
   products_config: ProductConfig[]
   type_of_products: TypeOfProduct[]
   product_category: ProductCategory[]
-  extra_works: ExtraWorks[]
   product_costs: ProductCost[]
 }) => {
   const [orderProducts, setOrderProducts] = useState<OrderProduct[]>(
     values.order_products?.map((orderProduct) => {
-      return {
-        id: orderProduct.id,
-        order_id: orderProduct.order_id,
-        qty: orderProduct.qty,
-        height: orderProduct.height,
-        width: orderProduct.width,
-        unit_price: orderProduct.unit_price,
-        total_price: orderProduct.total_price,
-        notes: orderProduct.notes,
-        product_config_id: orderProduct.product_config_id,
-        type_of_work_id: orderProduct.type_of_work_id,
-        storefront_area: orderProduct.storefront_area,
-        installation_other_level: orderProduct.installation_other_level,
-        product_category_id: orderProduct.product_category_id,
-        type_of_product_id: orderProduct.type_of_product_id,
-        extra_works: orderProduct.extra_works?.map((extra_work) => {
-          return {
-            order_product_id: extra_work.order_product_id,
-            extra_work_id: extra_work.extra_work_id,
-            number_of_sides: extra_work.number_of_sides,
-            price: extra_work.price
-          }
-        })
-      }
+      return getOrderProducts(orderProduct)
     }) ?? []
   )
   const [isCreated] = useState<boolean>(true)
@@ -110,11 +84,14 @@ const OrderForm = ({
   }
 
   const selectDeliveryAndInstallationDate = async (payment_factory_date: string) => {
-    const response = await fetch(`/order/get_delivery_and_installation_date/${payment_factory_date}`)
+    const response = await fetch(
+      `/order/get_delivery_and_installation_date/${payment_factory_date}/${values.type_of_housing_id}/${values.travel_cost_id.value}/${values.service}`)
     const data = await response.json()
 
+    setFieldValue('eta_date', data.estimate_eta_date)
     setFieldValue('delivery_date', data.estimate_delivery_date)
     setFieldValue('installation_date', data.estimate_installation_date)
+    setFieldValue('installation_end_date', data.estimate_installation_date)
   }
 
   const removeOrderProduct = (index: number) => {
@@ -294,12 +271,12 @@ const OrderForm = ({
             <div className={submitCount ? (errors.installation_teams) ? 'has-error' : 'has-success' : ''}>
               <label htmlFor="installationTeams">Installation Team</label>
               <Select
-                id='installationTeams'
+                id='installation_teams'
                 placeholder="Installation Team"
-                name='installationTeams'
+                name='installation_teams'
                 defaultValue={ values.installation_teams.map((installation_team) => { return { label: installation_team.user?.name, value: installation_team.id } }) }
                 isMulti={true}
-                onChange={(value) => { setFieldValue('installationTeams', value) }}
+                onChange={(value) => { setFieldValue('installation_teams', value) }}
                 options={installation_teams.filter((team_member) =>
                   team_member.type_housing?.find((type_of_housing) => type_of_housing.id === values.type_of_housing_id)
                 ).map((installation_team) => { return { label: installation_team.user?.name, value: installation_team.id } })}
@@ -386,7 +363,7 @@ const OrderForm = ({
                   <option key={index} value={service}>{service}</option>
                 ))}
               </Field>
-              {(submitCount && errors.type_of_housing_id) ? <InputError message={errors.type_of_housing_id} className="mt-2" /> : ''}
+              {(submitCount && errors.service) ? <InputError message={errors.service} className="mt-2" /> : ''}
             </div>
             <div className={submitCount ? (errors.entry_date) ? 'has-error' : 'has-success' : ''}>
               <label htmlFor="entry_date">Entry Date</label>
@@ -430,7 +407,7 @@ const OrderForm = ({
                   dateFormat: 'Y-m-d',
                   position: 'auto right'
                 }}
-                // disabled={values.supervisor_id === ''}
+                disabled={values.type_of_work_id === 0 || values.type_of_housing_id === 0 || values.service === '' || values.travel_cost_id.value === 0}
                 name="payment_factory_date"
                 value={values.payment_factory_date}
                 className="form-input"
@@ -441,6 +418,24 @@ const OrderForm = ({
                 }}
               />
               {(submitCount && errors.payment_factory_date) ? <InputError message={errors.payment_factory_date?.toString()} className="mt-2" /> : ''}
+            </div>
+            <div className={submitCount ? (errors.eta_date) ? 'has-error' : 'has-success' : ''}>
+              <label htmlFor="eta_date">Eta Date</label>
+              <Flatpickr
+                options={{
+                  mode: 'single',
+                  dateFormat: 'Y-m-d',
+                  position: 'auto right'
+                }}
+                // disabled={values.supervisor_id === ''}
+                name="eta_date"
+                value={values.eta_date}
+                className="form-input"
+                onChange={([date]) => {
+                  setFieldValue('eta_date', date.toISOString().slice(0, 10))
+                }}
+              />
+              {(submitCount && errors.eta_date) ? <InputError message={errors.eta_date?.toString()} className="mt-2" /> : ''}
             </div>
             <div className={submitCount ? (errors.delivery_date) ? 'has-error' : 'has-success' : ''}>
               <label htmlFor="delivery_date">Delivery Date</label>
@@ -475,6 +470,23 @@ const OrderForm = ({
                 }}
               />
               {(submitCount && errors.installation_date) ? <InputError message={errors.installation_date?.toString()} className="mt-2" /> : ''}
+            </div>
+            <div className={submitCount ? (errors.installation_end_date) ? 'has-error' : 'has-success' : ''}>
+              <label htmlFor="installation_end_date">Installation End Date</label>
+              <Flatpickr
+                options={{
+                  mode: 'single',
+                  dateFormat: 'Y-m-d',
+                  position: 'auto right'
+                }}
+                name="installation_end_date"
+                value={values.installation_end_date?.toString()}
+                className="form-input"
+                onChange={([date]) => {
+                  setFieldValue('installation_end_date', date.toISOString().slice(0, 10))
+                }}
+              />
+              {(submitCount && errors.installation_end_date) ? <InputError message={errors.installation_end_date?.toString()} className="mt-2" /> : ''}
             </div>
             <div className={submitCount ? (errors.city_permits) ? 'has-error inline-flex flex-col' : 'has-success inline-flex' : 'inline-flex items-end'}>
                 <div className='flex'>
@@ -571,7 +583,6 @@ const OrderForm = ({
         typeOfProducts={type_of_products}
         productCategories={product_category}
         productConfigs={products_config}
-        extraWorks={extra_works}
         typeOfWork={values.type_of_work_id}
         productCosts={product_costs}
         onClose={() => {

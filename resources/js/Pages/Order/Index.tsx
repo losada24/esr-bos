@@ -1,4 +1,3 @@
-import React, { useState, useEffect } from 'react'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
 import { Head, Link, router } from '@inertiajs/react'
 import { type PageProps, type Order, type PaginatorLink } from '@/types'
@@ -6,6 +5,7 @@ import Pagination from '@/Components/Pagination'
 import OrderFilter from './OrderFilter'
 import EditIcon from '@/Components/Icons/EditIcon'
 import DeleteIcon from '@/Components/Icons/DeleteIcon'
+import { useEffect } from 'react'
 
 type IndexOrderProps = PageProps & {
   orders: {
@@ -19,7 +19,7 @@ type IndexOrderProps = PageProps & {
 
 export default function Index ({ auth, orders, statuses }: IndexOrderProps) {
   const destroy = (id: number) => {
-    if (confirm('Are you sure you want to delete this Estimate?')) {
+    if (confirm('Are you sure you want to delete this Order?')) {
       router.delete(route('order.destroy', id))
     }
   }
@@ -51,7 +51,7 @@ export default function Index ({ auth, orders, statuses }: IndexOrderProps) {
             <thead>
               <tr className="font-bold text-left">
                 <th className="px-6 pt-5 pb-4">Order Number</th>
-                <th className="px-6 pt-5 pb-4">Name</th>
+                <th className="px-6 pt-5 pb-4">Name / Service</th>
                 <th className="px-6 pt-5 pb-4">Job Address</th>
                 <th className="px-6 pt-5 pb-4">Client</th>
                 <th className="px-6 pt-5 pb-4">Installer</th>
@@ -72,6 +72,7 @@ export default function Index ({ auth, orders, statuses }: IndexOrderProps) {
                     </td>
                     <td className="border-t px-6 py-4 align-top">
                       <div className='font-bold'>{order.name}</div>
+                      <div>{order.service}</div>
                     </td>
                     <td className="border-t px-6 py-4 align-top">
                       {order.job_address}
@@ -80,7 +81,7 @@ export default function Index ({ auth, orders, statuses }: IndexOrderProps) {
                       {order?.client?.name}
                     </td>
                     <td className="border-t px-6 py-4 align-top">
-                      {order.installationTeams.map((team) => {
+                      {order.installation_teams.map((team) => {
                         return (
                           <span key={team.id} className="inline-block bg-gray-200 rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2">
                             {team.user?.name}

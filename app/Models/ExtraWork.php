@@ -27,6 +27,12 @@ class ExtraWork extends Model
           )->using(OrderProductExtraWork::class)
             ->withPivot('price', 'number_of_sides')
             ->withTimestamps();
-      }
+    }
+
+    public function typeOfProducts(): BelongsToMany {
+        return $this->belongsToMany(
+          TypeOfProduct::class, 'extra_work_type_of_products', 'extra_work_id', 'type_of_product_id'
+          )->withTimestamps();
+    }
 
 }

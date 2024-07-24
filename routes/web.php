@@ -49,7 +49,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('order', OrderController::class)
       ->middleware(["role:" . RoleEnum::ADMIN->value]);
 
-    Route::get('order/get_delivery_and_installation_date/{payment_factory_date}', [OrderController::class, 'getDeliveryAndInstallationDate'])
+    Route::get('order/get_delivery_and_installation_date/{payment_factory_date}/{type_of_housing}/{county_id}/{service}', [OrderController::class, 'getDeliveryAndInstallationDate'])
       ->middleware(["role:" . RoleEnum::ADMIN->value]);
 
     Route::resource('installation_team', InstallationTeamController::class)

@@ -21,8 +21,13 @@ class TypeOfHousing extends Model
     public function orders(): HasMany {
       return $this->hasMany(Order::class);
     }
+
     public function installationTeamTypeHousings(): BelongsToMany
     {
         return $this->belongsToMany(InstallationTeam::class, 'installation_teams_types_of_housing', 'type_of_housing_id', 'installation_team_id', 'id', 'id');
+    }
+
+    public function configDateEstimates(): HasMany {
+      return $this->hasMany(ConfigDateEstimation::class);
     }
 }

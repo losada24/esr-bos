@@ -20,4 +20,8 @@ class TravelCost extends Model
     public function orders(): HasMany {
       return $this->hasMany(Order::class);
     }
+
+    public function configDateEstimates(): HasMany {
+      return $this->hasMany(ConfigDateEstimation::class);
+    }
 }

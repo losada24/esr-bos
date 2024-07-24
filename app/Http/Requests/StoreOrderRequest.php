@@ -3,9 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use App\Enum\FrameColorEnum;
-use App\Enum\GlassColorEnum;
-use App\Enum\GlassTypeEnum;
+use App\Enum\Service;
 use Illuminate\Validation\Rule;
 
 class StoreOrderRequest extends FormRequest
@@ -47,7 +45,17 @@ class StoreOrderRequest extends FormRequest
             'duration_of_work_id' => 'required|integer|exists:duration_of_works,id',
             'additional_travel_costs' => 'nullable|numeric',
             'method_of_payment' => 'required|string|in:CASH,FINANCED',
-            'service' => 'required|string|in:INSTALLATION,DELIVERY',
+            'service' => [
+                'required',
+                'string',
+                Rule::in([
+                  Service::DELIVERY->value, 
+                  Service::INSTALLATION->value,
+                  Service::PICKUP->value
+                ]),
+            ],
+            'eta_date' => 'required|date_format:Y-m-d',
+            'installation_end_date' => 'nullable|date_format:Y-m-d',
             'contract_signing_date' => 'required|date_format:Y-m-d',
             'payment_factory_date' => 'required|date_format:Y-m-d',
             'delivery_date' => 'nullable|date_format:Y-m-d',
