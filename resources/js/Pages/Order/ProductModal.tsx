@@ -6,7 +6,7 @@ import { Field, Form, Formik, type FormikHelpers } from 'formik'
 import { type OrderProductExtraWorksFormValues, orderProductSchema } from './OrderCommon'
 import InputError from '@/Components/InputError'
 import PrimaryButton from '@/Components/PrimaryButton'
-import { getProductPrice } from '@/Utils/price'
+import { getProductPriceWithExtraWorks, getProductPrice } from '@/Utils/price'
 
 const ProductModal = ({
   showModal,
@@ -40,6 +40,8 @@ const ProductModal = ({
     height: 0,
     width: 0,
     unit_price: 0,
+    unit_price_with_extraworks: 0,
+    total_price_with_extraworks: 0,
     total_price: 0,
     notes: '',
     product_config_id: 0,
@@ -59,8 +61,11 @@ const ProductModal = ({
     }
 
     const unit_price = getProductPrice(product, productCosts)
+    const unit_price_with_extrawork = getProductPriceWithExtraWorks(product, productCosts)
     product.unit_price = unit_price
     product.total_price = unit_price * product.qty
+    product.unit_price_with_extraworks = unit_price_with_extrawork
+    product.total_price_with_extraworks = unit_price_with_extrawork * product.qty
     addOrderProduct(product)
     onClose(false)
   }

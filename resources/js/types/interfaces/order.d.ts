@@ -96,7 +96,9 @@ export interface OrderProduct {
   height: number
   width: number
   unit_price: number
+  unit_price_with_extraworks: number
   total_price: number
+  total_price_with_extraworks: number
   notes: string
   order?: Order
   product_config_id: number

@@ -13,7 +13,7 @@
           <li>{{ $installationTeam->user->name }}</li>
         @endforeach
       </ul>
-      <p><span style="font-weight: bold;">Permits:</span> {{ $order->city_permits ? 'Yes' : 'No' }}</p>
+      <p><span style="font-weight: bold;">City Permits:</span> {{ $order->city_permits ? 'Yes' : 'No' }}</p>
     @endif
     <p>Thank you.</p>
 </div>

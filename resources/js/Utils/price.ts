@@ -9,7 +9,7 @@ export const formatPrice = (price: number) => {
   return USDollar.format(price)
 }
 
-export const getProductPrice = (
+export const getProductPriceWithExtraWorks = (
   product: OrderProduct,
   productCost: ProductCost[]
 ) => {
@@ -21,6 +21,14 @@ export const getProductPrice = (
     return acc + price
   }, 0)
 
+  const price = getProductPrice(product, productCost)
+  return price + (extraWorkPrice ?? 0)
+}
+
+export const getProductPrice = (
+  product: OrderProduct,
+  productCost: ProductCost[]
+) => {
   const productCostPrice = productCost.find((productCost) =>
     productCost.product_config_id === product.product_config_id && productCost.type_of_work_id === product.type_of_work_id
   )
@@ -34,5 +42,5 @@ export const getProductPrice = (
     price += parseFloat(productCostPrice?.difficult_hight_price?.toString() ?? '0')
   }
 
-  return price + (extraWorkPrice ?? 0)
+  return price
 }

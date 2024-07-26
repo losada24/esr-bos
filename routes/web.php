@@ -7,6 +7,7 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\InstallationTeamController;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 /*
 |--------------------------------------------------------------------------
@@ -20,6 +21,19 @@ use App\Http\Controllers\InstallationTeamController;
 */
 
 Route::get('/', [DashboardController::class, 'index'])->middleware(['auth'])->name('dashboard');
+
+Route::get('/pdf', function () {
+  $order = App\Models\Order::with([
+    'orderProducts.productCategory',
+    'orderProducts.productConfig',
+    'orderProducts.orderProductExtraWorks',
+  ])->find(21);
+  //dd($order->orderProducts->groupBy('productCategory.name'));
+  $pdf = Pdf::loadView('pdf.payment-list', ['order' => $order]);
+  return $pdf->stream();
+
+  //return view('pdf.payment-list');
+});
 
 /* Route::get('/mailable', function () {
   $order = App\Models\Order::find(47);
@@ -55,7 +69,6 @@ Route::middleware('auth')->group(function () {
     Route::resource('installation_team', InstallationTeamController::class)
       ->only(['index', 'create', 'store', 'update', 'edit', 'destroy'])
       ->middleware(["role:" . RoleEnum::ADMIN->value]);
-
     // CLIENTS
      /*Route::resource('client', ClientController::class)
       ->middleware(["role:" . RoleEnum::$ADMIN]);

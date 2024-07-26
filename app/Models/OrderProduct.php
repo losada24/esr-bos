@@ -22,6 +22,8 @@ class OrderProduct extends Model
         'qty',
         'unit_price',
         'total_price',
+        'unit_price_with_extraworks',
+        'total_price_with_extraworks',
         'notes',
         'storefront_area',
         'installation_other_level',

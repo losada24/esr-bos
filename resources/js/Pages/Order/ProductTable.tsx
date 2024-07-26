@@ -93,7 +93,7 @@ const ProductTable = ({
               })}
               {orderProducts.length === 0 && (
                 <tr>
-                  <td className="px-6 py-4 border-t" colSpan={6}>
+                  <td className="px-6 py-4 border-t" colSpan={7}>
                     No Products found.
                   </td>
                 </tr>

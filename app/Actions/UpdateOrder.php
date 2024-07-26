@@ -86,6 +86,8 @@ class UpdateOrder {
           'qty' => $product['qty'],
           'unit_price' => $product['unit_price'],
           'total_price' => $product['total_price'],
+          'unit_price_with_extraworks' => $product['unit_price_with_extraworks'],
+          'total_price_with_extraworks' => $product['total_price_with_extraworks'],
           'notes' => $product['notes'],
           'storefront_area' => $product['storefront_area'],
           'installation_other_level' => $product['installation_other_level'],

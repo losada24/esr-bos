@@ -74,6 +74,10 @@ class StoreOrderRequest extends FormRequest
             'orderProducts.*.width' => 'required|numeric',
             'orderProducts.*.height' => 'required|numeric',
             'orderProducts.*.qty' => 'required|numeric',
+            'orderProducts.*.unit_price' => 'required|numeric',
+            'orderProducts.*.total_price' => 'required|numeric',
+            'orderProducts.*.unit_price_with_extrawork' => 'required|numeric',
+            'orderProducts.*.total_price_with_extrawork' => 'required|numeric',
             'orderProducts.*.extra_works' => 'nullable|array',
         ];
     }
