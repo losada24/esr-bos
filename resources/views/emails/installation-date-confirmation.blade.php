@@ -7,7 +7,7 @@
       <p><span style="font-weight: bold;">Order Name:</span> {{ $order->name }}</p>
       <p><span style="font-weight: bold;">Client Name:</span> {{ $order->client->name }}</p>
       <p><span style="font-weight: bold;">Supervisor:</span> {{ $order->supervisor->name }}</p>
-      <p><span style="font-weight: bold;">Installers:</span> {{ $order->client->name }}</p>
+      <p><span style="font-weight: bold;">Installer:</span></p>
       <ul>
         @foreach ($order->installationTeams as $installationTeam)
           <li>{{ $installationTeam->user->name }}</li>

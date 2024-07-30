@@ -11,6 +11,7 @@ use App\Models\OrderProduct;
 use App\Traits\OrderEmails;
 use App\Traits\OrderStatus;
 use Carbon\Carbon;
+use Illuminate\Support\Str;
 
 class CreateOrder {
 
@@ -59,15 +60,16 @@ class CreateOrder {
         'delivery_date' => $request->delivery_date,
         'installation_date' => $request->installation_date,
         'status' => $status,
+        'frame_color' => $request->frame_color,
       ]);
 
       if ($request->hasFile('attachments')) {
         $files = $request->file('attachments');
         foreach ($files as $file) {
-          $fileName = time() . '_' . $file->getClientOriginalName();
+          $fileName = time() . '_' . Str::replace(' ', '_', $file->getClientOriginalName());
           $filePath = $file->storeAs('order_files', $fileName, 'public');
           $order->attachments()->create([
-            'filename' => $fileName,
+            'filename' => $file->getClientOriginalName(),
             'file_path' => $filePath,
             'file_type' => 'order_files'
           ]);

@@ -8,6 +8,7 @@ use App\Traits\OrderEmails;
 use App\Traits\OrderStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class UpdateOrder {
 
@@ -56,23 +57,24 @@ class UpdateOrder {
         'delivery_date' => $request->delivery_date,
         'installation_date' => $request->installation_date,
         'status' => $status,
+        'frame_color' => $request->frame_color,
       ];
 
       $order->update($orderData);
       if ($request->hasFile('attachments')) {
         $files = $request->file('attachments');
         foreach ($files as $file) {
-          $fileName = time() . '_' . $file->getClientOriginalName();
+          $fileName = time() . '_' . Str::replace(' ', '_', $file->getClientOriginalName());
           $filePath = $file->storeAs('order_files', $fileName, 'public');
           $order->attachments()->create([
-            'filename' => $fileName,
+            'filename' => $file->getClientOriginalName(),
             'file_path' => $filePath,
             'file_type' => 'order_files'
           ]);
         }
       }
 
-      $order->installationTeams()->attach($request->installation_teams);
+      $order->installationTeams()->sync($request->installation_teams);
       $order->owners()->sync($request->owners);
 
       $order->orderProducts()->delete();
@@ -106,9 +108,10 @@ class UpdateOrder {
         }
 
         $orderProduct->orderProductExtraWorks()->attach($extraWorks);
-        $this->sendEmail($order);
       }
-
+      
+      $this->sendEmail($order);
+      
       if( !$order )
       {
           throw new \Exception('Not not updated');

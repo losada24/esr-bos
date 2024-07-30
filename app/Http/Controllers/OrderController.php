@@ -6,6 +6,7 @@ use App\Actions\CreateOrder;
 use App\Actions\ProduceOrder;
 use App\Actions\UpdateOrder;
 use App\Actions\UpdateOrderStatusNote;
+use App\Enum\FrameColorEnum;
 use App\Enum\MethodOfPayment;
 use App\Http\Resources\OrderCollection;
 use Illuminate\Http\Request;
@@ -19,6 +20,7 @@ use App\Enum\Service;
 use App\Http\Requests\StoreOrderRequest;
 use App\Http\Requests\UpdateOrderRequest;
 use App\Http\Requests\UpdateOrderStatusNoteRequest;
+use App\Models\Attachment;
 use App\Models\Client;
 use App\Models\DurationOfWork;
 use App\Models\ExtraWork;
@@ -90,6 +92,12 @@ class OrderController extends Controller
             Service::DELIVERY->value,
             Service::PICKUP->value
           ],
+          'frame_colors' => [
+            FrameColorEnum::WHITE->value,
+            FrameColorEnum::BLACK->value,
+            FrameColorEnum::BRONZE->value,
+            FrameColorEnum::CLEAR_ANODIZED->value
+          ],
           'travel_costs' => TravelCost::all(),
           'duration_of_works' => DurationOfWork::all(),
           'products_config' => ProductConfig::all(),
@@ -147,11 +155,17 @@ class OrderController extends Controller
           'type_of_works' => TypeOfWork::all(),
           'types_of_housing' => TypeOfHousing::all(),
           'owners' => User::role(RoleEnum::OWNER->value)->get(),
-          'installation_teams' => InstallationTeam::with(['user'])->get(),
+          'installation_teams' => InstallationTeam::with(['user', 'typeHousing'])->get(),
           'supervisors' => User::role(RoleEnum::SUPERVISOR->value)->get(),
           'methods_of_payment' => [
             MethodOfPayment::CASH->value,
             MethodOfPayment::FINANCED->value
+          ],
+          'frame_colors' => [
+            FrameColorEnum::WHITE->value,
+            FrameColorEnum::BLACK->value,
+            FrameColorEnum::BRONZE->value,
+            FrameColorEnum::CLEAR_ANODIZED->value
           ],
           'services' => [
             Service::INSTALLATION->value,
@@ -193,6 +207,11 @@ class OrderController extends Controller
         return redirect()
           ->back()
           ->with('success', 'Order deleted successfully.');
+    }
+
+    public function dropAttachment($id) {
+      $attachment = Attachment::find($id);
+      $attachment->delete();
     }
 
 }

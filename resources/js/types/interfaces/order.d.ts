@@ -40,6 +40,7 @@ export interface Order {
   attachments?: Attachment[]
   eta_date?: Date
   installation_end_date?: Date
+  frame_color: string
 }
 
 export interface TypeOfWork {

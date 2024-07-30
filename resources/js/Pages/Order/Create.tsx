@@ -34,7 +34,8 @@ export default function Create ({
   products_config,
   type_of_products,
   product_category,
-  product_costs
+  product_costs,
+  frame_colors
 }: PageProps & {
   clients: Client[]
   owners: User[]
@@ -50,10 +51,14 @@ export default function Create ({
   type_of_products: TypeOfProduct[]
   product_category: ProductCategory[]
   product_costs: ProductCost[]
+  frame_colors: string[]
 }) {
   const initialValues: OrderFormValues = orderFormObj
 
   const handleSubmit = async (values: any, helpers: FormikHelpers<OrderFormValues>) => {
+
+    console.log(values)
+    
     const order = {
       ...values,
       duration_of_work_id: values.duration_of_work_id.value,
@@ -103,6 +108,7 @@ export default function Create ({
                 type_of_works={type_of_works}
                 product_category={product_category}
                 product_costs={product_costs}
+                frame_colors={frame_colors}
               />
             )}
           </Formik>

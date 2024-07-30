@@ -48,6 +48,16 @@ class UpdateOrderRequest extends FormRequest
           'duration_of_work_id' => 'required|integer|exists:duration_of_works,id',
           'additional_travel_costs' => 'nullable|numeric',
           'method_of_payment' => 'required|string|in:CASH,FINANCED',
+          'frame_color' => [
+            'required',
+            'string',
+            Rule::in([
+              FrameColorEnum::WHITE->value,
+              FrameColorEnum::BLACK->value,
+              FrameColorEnum::BRONZE->value,
+              FrameColorEnum::CLEAR_ANODIZED->value
+            ])
+          ],
           'service' => [
               'required',
               'string',
@@ -79,8 +89,8 @@ class UpdateOrderRequest extends FormRequest
           'orderProducts.*.qty' => 'required|numeric',
           'orderProducts.*.unit_price' => 'required|numeric',
           'orderProducts.*.total_price' => 'required|numeric',
-          'orderProducts.*.unit_price_with_extrawork' => 'required|numeric',
-          'orderProducts.*.total_price_with_extrawork' => 'required|numeric',
+          'orderProducts.*.unit_price_with_extraworks' => 'required|numeric',
+          'orderProducts.*.total_price_with_extraworks' => 'required|numeric',
           'orderProducts.*.extra_works' => 'nullable|array',
         ];
     }

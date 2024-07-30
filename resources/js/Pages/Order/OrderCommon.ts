@@ -80,7 +80,8 @@ export const orderFormObj: OrderFormValues = {
   delivery_date: null,
   owners: [],
   order_products: [],
-  attachments: []
+  attachments: [],
+  frame_color: ''
 }
 
 export interface OrderProductExtraWorksFormValues {
@@ -124,8 +125,9 @@ export const loadOrderFormObj = (order: Order): OrderFormValues => {
     delivery_date: order.delivery_date ?? null,
     owners: order.owners,
     order_products: order.order_products,
-    attachments: order.attachments ?? [],
-    installation_end_date: order.installation_end_date ?? null
+    attachments: [],
+    installation_end_date: order.installation_end_date ?? null,
+    frame_color: order.frame_color
   }
 }
 
@@ -147,6 +149,8 @@ export const getOrderProducts = (orderProduct: OrderProductFormValues) => {
     width: orderProduct.width,
     unit_price: orderProduct.unit_price,
     total_price: orderProduct.total_price,
+    total_price_with_extraworks: orderProduct.total_price_with_extraworks,
+    unit_price_with_extraworks: orderProduct.unit_price_with_extraworks,
     notes: orderProduct.notes,
     product_config_id: orderProduct.product_config_id,
     type_of_work_id: orderProduct.type_of_work_id,

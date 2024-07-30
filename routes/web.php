@@ -28,10 +28,10 @@ Route::get('/pdf', function () {
     'orderProducts.productConfig',
     'orderProducts.orderProductExtraWorks',
   ])->find(21);
-  //dd($order->orderProducts->groupBy('productCategory.name'));
   $pdf = Pdf::loadView('pdf.payment-list', ['order' => $order]);
-  return $pdf->stream();
-
+  $pdfName = 'payment-list-' . $order->order_number . '.pdf';
+  $pdf->save('../storage/app/public/pdf/' . $pdfName);
+  echo 'pdf salvado';
   //return view('pdf.payment-list');
 });
 
@@ -65,10 +65,15 @@ Route::middleware('auth')->group(function () {
 
     Route::get('order/get_delivery_and_installation_date/{payment_factory_date}/{type_of_housing}/{county_id}/{service}', [OrderController::class, 'getDeliveryAndInstallationDate'])
       ->middleware(["role:" . RoleEnum::ADMIN->value]);
+    
+    Route::delete('order/drop_attachment/{id}', [OrderController::class, 'dropAttachment'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value])
+      ->name('order.drop_attachment');
 
     Route::resource('installation_team', InstallationTeamController::class)
       ->only(['index', 'create', 'store', 'update', 'edit', 'destroy'])
       ->middleware(["role:" . RoleEnum::ADMIN->value]);
+    
     // CLIENTS
      /*Route::resource('client', ClientController::class)
       ->middleware(["role:" . RoleEnum::$ADMIN]);

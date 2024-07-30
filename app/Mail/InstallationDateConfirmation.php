@@ -10,6 +10,9 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Mail\Mailables\Attachment;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Faker\Core\File;
+use Illuminate\Support\Facades\Storage;
 
 class InstallationDateConfirmation extends Mailable
 {
@@ -60,12 +63,20 @@ class InstallationDateConfirmation extends Mailable
         $attachments = [];
         if ($this->orderAttachments) {
           foreach ($this->order->attachments as $attachment) {
-            $attachments[] = Attachment::fromPath($attachment->file_path);
+            $attachments[] = Attachment::fromPath(storage_path('app/public/' . $attachment->file_path));
           }
         }
 
         if ($this->installationAttachments) {
+          $pdfName = 'payment-list-' . $this->order->order_number . '.pdf';
+          $pdfPath = storage_path('app/public/pdf/' . $pdfName);
+          if (Storage::disk('local')->exists($pdfPath)) {
+            Storage::disk('local')->delete($pdfPath);
+          }
           
+          $pdf = Pdf::loadView('pdf.payment-list', ['order' => $this->order]);
+          $pdf->save($pdfPath);
+          $attachments[] = Attachment::fromPath($pdfPath);
         }
 
         return $attachments;

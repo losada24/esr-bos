@@ -42,7 +42,8 @@ class Order extends Model
         'installation_date',
         'status',
         'eta_date',
-        'installation_end_date'
+        'installation_end_date',
+        'frame_color'
     ];
 
     protected $dates = [

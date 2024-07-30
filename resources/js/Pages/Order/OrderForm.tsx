@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Field, Form } from 'formik'
 import InputError from '@/Components/InputError'
 import PrimaryButton from '@/Components/PrimaryButton'
-import { Link } from '@inertiajs/react'
+import { Link, router } from '@inertiajs/react'
 import { type FormikErrors } from 'formik'
 import Flatpickr from 'react-flatpickr'
 import 'flatpickr/dist/flatpickr.css'
@@ -19,13 +19,15 @@ import {
   type ProductCategory,
   type ProductCost,
   type OrderProduct,
-  type OptionType
+  type OptionType,
+  type Attachment
 } from '@/types'
 import Select, { type SingleValue } from 'react-select'
 import { getOrderProducts, type OrderFormValues } from './OrderCommon'
 import SearchIcon from '@/Components/Icons/SearchIcon'
 import ProductModal from './ProductModal'
 import ProductTable from './ProductTable'
+import DeleteIcon from '@/Components/Icons/DeleteIcon'
 
 const OrderForm = ({
   submitCount,
@@ -46,7 +48,9 @@ const OrderForm = ({
   products_config,
   type_of_products,
   product_category,
-  product_costs
+  product_costs,
+  frame_colors,
+  attachments
 }: {
   submitCount: number
   errors: FormikErrors<OrderFormValues>
@@ -68,6 +72,8 @@ const OrderForm = ({
   type_of_products: TypeOfProduct[]
   product_category: ProductCategory[]
   product_costs: ProductCost[]
+  frame_colors: string[]
+  attachments?: Attachment[]
 }) => {
   const [orderProducts, setOrderProducts] = useState<OrderProduct[]>(
     values.order_products?.map((orderProduct) => {
@@ -76,6 +82,18 @@ const OrderForm = ({
   )
   const [isCreated] = useState<boolean>(true)
   const [showProductModal, setShowProductModal] = useState<boolean>(false)
+  const [attachmentsArray, setAttachmentsList] = useState<Attachment[]>(attachments ?? [])
+  const removeAttachmentProduct = (index: number) => {
+    if (confirm('Are you sure you want to delete this attachment?')) {
+      router.delete(route('order.drop_attachment', { id: attachmentsArray[index].id }), {
+        onSuccess: () => {
+          const attachmentsList = attachmentsArray.filter((_, i) => i !== index)
+          setAttachmentsList(attachmentsList)
+          setFieldValue('attachments', attachmentsList)
+        }
+      })
+    }
+  }
 
   const addOrderProduct = (orderProduct: OrderProduct) => {
     const orderProductsList = [...orderProducts, orderProduct]
@@ -365,6 +383,23 @@ const OrderForm = ({
               </Field>
               {(submitCount && errors.service) ? <InputError message={errors.service} className="mt-2" /> : ''}
             </div>
+            <div className={submitCount ? (errors.frame_color) ? 'has-error' : 'has-success' : ''}>
+              <label htmlFor="frame_color">Frame Color</label>
+              <Field
+                id="frame_color"
+                name="frame_color"
+                className="form-select"
+                autoComplete="frame_color"
+                placeholder='Frame Color'
+                as="select"
+              >
+                <option value="">Select Frame color</option>
+                {frame_colors.map((frame_color, index) => (
+                  <option key={index} value={frame_color}>{frame_color}</option>
+                ))}
+              </Field>
+              {(submitCount && errors.frame_color) ? <InputError message={errors.frame_color} className="mt-2" /> : ''}
+            </div>
             <div className={submitCount ? (errors.entry_date) ? 'has-error' : 'has-success' : ''}>
               <label htmlFor="entry_date">Entry Date</label>
               <Flatpickr
@@ -495,6 +530,9 @@ const OrderForm = ({
                     name="city_permits"
                     className="form-checkbox"
                     type='checkbox'
+                    onChange={(e) => {
+                      setFieldValue('city_permits', e.target.checked)
+                    }}
                   />
                   <label htmlFor="city_permits">City Permits</label>
                 </div>
@@ -507,6 +545,9 @@ const OrderForm = ({
                     name="association_permits"
                     className="form-checkbox"
                     type='checkbox'
+                    onChange={(e) => {
+                      setFieldValue('association_permits', e.target.checked)
+                    }}
                   />
                   <label htmlFor="association_permits">Association Permits</label>
                 </div>
@@ -519,6 +560,9 @@ const OrderForm = ({
                     name="equipment_rental"
                     className="form-checkbox"
                     type='checkbox'
+                    onChange={(e) => {
+                      setFieldValue('equipment_rental', e.target.checked)
+                    }}
                   />
                   <label htmlFor="equipment_rental">Equipment Rental</label>
                 </div>
@@ -549,6 +593,26 @@ const OrderForm = ({
                   setFieldValue('attachments', event.currentTarget.files)
                 }}
               />
+              {attachments.length > 0 && (
+                <div className="flex flex-col rounded-md border border-[#e0e6ed] dark:border-[#1b2e4b] mt-3">
+                  {attachmentsArray.map((attachment, index) => {
+                    return (
+                      <div key={index} className="border-b border-[#e0e6ed] dark:border-[#1b2e4b] px-4 py-2.5 hover:bg-[#eee] dark:hover:bg-[#eee]/10 flex justify-between">
+                        <span>{attachment.filename}</span>
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault()
+                            removeAttachmentProduct(index)
+                          }}
+                          title='Delete Attachment'
+                        >
+                          <DeleteIcon />
+                      </button>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
             </div>
           </div>
         </fieldset>
