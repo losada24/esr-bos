@@ -49,7 +49,7 @@ export default function Index ({ auth, users }: IndexUserProps) {
               </tr>
             </thead>
             <tbody>
-              {users.data.map(({ id, name, email, roles, company }) => {
+              {users.data.map(({ id, name, email, roles }) => {
                 return (
                   <tr
                     key={id}

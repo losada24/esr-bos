@@ -31,13 +31,6 @@ const InstallationTeamForm = ({
     label: values.user_id.label
   }
 
-  /*const selectedTypeOfHousing: MultiValue<OptionType> = values.type_housing?.map((typeHousing: O) => {
-    return {
-      value: typeHousing.id,
-      label: type_of_housings.find((type_of_housing: TypeOfHousing) => type_of_housing.id === typeHousing.id)?.name ?? ''
-    }
-  }) ?? []*/
-
   return (
     <Form className='space-y-5'>
       <div className={submitCount ? (errors.user_id) ? 'has-error' : 'has-success' : ''}>
@@ -53,7 +46,8 @@ const InstallationTeamForm = ({
           isMulti={false}
           options={users.map((user: User) => { return { label: user.email, value: user.id } })}
         />
-        {(submitCount && errors.user_id) ? <InputError message={errors.user_id} className="mt-2" /> : ''}
+          {/* eslint-disable-next-line @typescript-eslint/no-base-to-string */}
+          {(submitCount && errors.user_id) ? <InputError message={errors.user_id.toString()} className="mt-2" /> : ''}
       </div>
       <div className={submitCount ? (errors.type_housing) ? 'has-error' : 'has-success' : ''}>
         <label htmlFor="type_of_housings">Type of Housing</label>
@@ -91,7 +85,7 @@ const InstallationTeamForm = ({
             position: 'auto right'
           }}
           name="worker_compensation_expiration_date"
-          value={values.worker_compensation_expiration_date}
+          value={values.worker_compensation_expiration_date ?? ''}
           className="form-input"
           onChange={([date]) => {
             setFieldValue('worker_compensation_expiration_date', date.toISOString().slice(0, 10))
@@ -108,7 +102,7 @@ const InstallationTeamForm = ({
             position: 'auto right'
           }}
           name="liability_expiration_date"
-          value={values.liability_expiration_date}
+          value={values.liability_expiration_date ?? ''}
           className="form-input"
           onChange={([date]) => {
             setFieldValue('liability_expiration_date', date.toISOString().slice(0, 10))

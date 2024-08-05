@@ -75,10 +75,10 @@ export default function Index ({ auth, installation_teams }: IndexCompanyProps) 
                       })}
                     </td>
                     <td className="border-t px-6 py-4 align-top">
-                      {installation_team.worker_compensation_expiration_date.toString()}
+                      {installation_team.worker_compensation_expiration_date?.toString()}
                     </td>
                     <td className="border-t px-6 py-4 align-top">
-                      {installation_team.liability_expiration_date.toString()}
+                      {installation_team.liability_expiration_date?.toString()}
                     </td>
                     <td className="border-t px-6 py-4 align-top">
                       {installation_team.attachments.map((attachment) => {

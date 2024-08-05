@@ -9,9 +9,7 @@ export default function Dashboard ({ auth }: PageProps) {
       pageTitle='Dashboard'
     >
       <Head title="Dashboard" />
-      <div className="grid lg:grid-cols-3 gap-6 mb-6">
-        
-      </div>
+      <div className="grid lg:grid-cols-3 gap-6 mb-6"></div>
     </AuthenticatedLayout>
   )
 }
