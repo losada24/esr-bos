@@ -3,6 +3,7 @@
 namespace App\Traits;
 
 use App\Enum\OrderStatusEnum;
+use App\Enum\Service;
 
 trait OrderStatus {
 
@@ -15,5 +16,34 @@ trait OrderStatus {
     }
 
     return $status;
+  }
+
+  public function getColorByStatus($status) {
+    $color = '';
+    switch ($status) {
+      case OrderStatusEnum::PLANNED->value:
+        $color = '#5FE3FB';
+        break;
+      case OrderStatusEnum::CONFIRMED->value:
+        $color = '#F4F443';
+        break;
+      case OrderStatusEnum::DELIVERY_CONFIRMED->value:
+        $color = '#F4F443';
+        break;
+    }
+
+    return $color;
+  }
+
+  public function createEvent($order_id, $title, $tooltip, $start, $end, $color, $type_of_event) {
+    return [
+      'order_id' => $order_id,
+      'title' => $title,
+      'tooltip' => $tooltip,
+      'start' => $start,
+      'end' => $end,
+      'color' => $color,
+      'type_of_event' => $type_of_event,
+    ];
   }
 }
