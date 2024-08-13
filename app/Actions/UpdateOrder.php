@@ -110,7 +110,7 @@ class UpdateOrder {
         $orderProduct->orderProductExtraWorks()->attach($extraWorks);
       }
       
-      // $this->sendEmail($order);
+      $this->sendEmail($order);
       
       if( !$order )
       {
