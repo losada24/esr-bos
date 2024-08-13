@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import Modal from '@/Components/Modal'
 import CloseIcon from '@/Components/Icons/CloseIcon'
 import { type Order } from '@/types'
+import { formatPrice } from '@/Utils/price'
 
 const EventModal = ({
   showModal,
@@ -54,7 +55,7 @@ const EventModal = ({
             <div className='flex flex-row  gap-2'>
               <div className='w-1/3'>
                 <strong>Owner:</strong>
-                <div className='felx flex-row justify-start'>
+                <div className='flex flex-row justify-start'>
                   {event?.owners.map((owner) => {
                     return <div key={owner.id} className='badge badge-outline-dark'>{owner.name}</div>
                   })}
@@ -78,19 +79,19 @@ const EventModal = ({
             <div className='flex flex-row gap-2'>
               <div className='w-1/3'>
                 <strong>Type of Housing:</strong>
-                <div className='felx flex-row justify-start'>
+                <div className='flex flex-row justify-start'>
                   {event?.type_of_housing?.name}
                 </div>
               </div>
               <div className='w-1/3'>
                 <strong>Type of Work:</strong>
-                <div className='felx flex-row justify-start'>
+                <div className='flex flex-row justify-start'>
                   {event?.type_of_work?.name}
                 </div>
               </div>
               <div className='w-1/3'>
                 <strong>County:</strong>
-                <div className='felx flex-row justify-start'>
+                <div className='flex flex-row justify-start'>
                   {event?.travel_cost?.name}
                 </div>
               </div>
@@ -98,19 +99,19 @@ const EventModal = ({
             <div className='flex flex-row gap-2'>
               <div className='w-1/3'>
                 <strong>Duration of Work:</strong>
-                <div className='felx flex-row justify-start'>
+                <div className='flex flex-row justify-start'>
                   {event?.duration_of_work?.name}
                 </div>
               </div>
               <div className='w-1/3'>
                 <strong>Payment Method:</strong>
-                <div className='felx flex-row justify-start'>
+                <div className='flex flex-row justify-start'>
                   {event?.method_of_payment}
                 </div>
               </div>
               <div className='w-1/3'>
                 <strong>Service:</strong>
-                <div className='felx flex-row justify-start'>
+                <div className='flex flex-row justify-start'>
                   {event?.service}
                 </div>
               </div>
@@ -118,39 +119,39 @@ const EventModal = ({
             <div className='flex flex-row gap-2'>
               <div className='w-1/3'>
                 <strong>Entry Date:</strong>
-                <div className='felx flex-row justify-start'>
-                  {event?.entry_date ? new Date(event?.entry_date).toLocaleDateString() : ''}
+                <div className='flex flex-row justify-start'>
+                  {event?.entry_date ? new Date(event?.entry_date.toString() + 'T00:00:00-05:00').toLocaleDateString() : ''}
                 </div>
               </div>
               <div className='w-1/3'>
                 <strong>Contract Signing Date:</strong>
-                <div className='felx flex-row justify-start'>
-                  {event?.contract_signing_date ? new Date(event?.contract_signing_date).toLocaleDateString() : ''}
+                <div className='flex flex-row justify-start'>
+                  {event?.contract_signing_date ? new Date(event?.contract_signing_date.toString() + 'T00:00:00-05:00').toLocaleDateString() : ''}
                 </div>
               </div>
               <div className='w-1/3'>
                 <strong>Payment Factory Date:</strong>
-                <div className='felx flex-row justify-start'>
-                  {event?.payment_factory_date ? new Date(event?.payment_factory_date).toLocaleDateString() : ''}
+                <div className='flex flex-row justify-start'>
+                  {event?.payment_factory_date ? new Date(event?.payment_factory_date.toString() + 'T00:00:00-05:00').toLocaleDateString() : ''}
                 </div>
               </div>
             </div>
             <div className='flex flex-row gap-2'>
               <div className='w-1/3'>
                 <strong>ETA Date:</strong>
-                <div className='felx flex-row justify-start'>
-                  {event?.eta_date ? new Date(event?.eta_date).toLocaleDateString() : ''}
+                <div className='flex flex-row justify-start'>
+                  {event?.eta_date ? new Date(event?.eta_date.toString() + 'T00:00:00-05:00').toLocaleDateString() : ''}
                 </div>
               </div>
               <div className='w-1/3'>
                 <strong>Delivery/Pickup Date:</strong>
-                <div className='felx flex-row justify-start'>
-                  {event?.delivery_date ? new Date(event?.delivery_date).toLocaleDateString() : ''}
+                <div className='flex flex-row justify-start'>
+                  {event?.delivery_date ? new Date(event?.delivery_date.toString() + 'T00:00:00-05:00').toLocaleDateString() : ''}
                 </div>
               </div>
               <div className='w-1/3'>
                 <strong>Frame Color:</strong>
-                <div className='felx flex-row justify-start'>
+                <div className='flex flex-row justify-start'>
                   {event?.frame_color}
                 </div>
               </div>
@@ -158,40 +159,69 @@ const EventModal = ({
             <div className='flex flex-row gap-2'>
               <div className='w-1/3'>
                 <strong>Installation Date:</strong>
-                <div className='felx flex-row justify-start'>
-                  {event?.installation_date ? new Date(event?.installation_date).toLocaleDateString() : ''}
+                <div className='flex flex-row justify-start'>
+                  {event?.installation_date ? new Date(event?.installation_date.toString() + 'T00:00:00-05:00').toLocaleDateString() : ''}
                 </div>
               </div>
               <div className='w-1/3'>
                 <strong>Installation End Date:</strong>
-                <div className='felx flex-row justify-start'>
-                  {event?.installation_end_date ? new Date(event?.installation_end_date).toLocaleDateString() : ''}
+                <div className='flex flex-row justify-start'>
+                  {event?.installation_end_date ? new Date(event?.installation_end_date.toString() + 'T00:00:00-05:00').toLocaleDateString() : ''}
                 </div>
               </div>
               <div className='w-1/3'>
-                  &nbsp;
+                <strong>Other Cost:</strong>
+                <div className='flex flex-row justify-start'>
+                  {formatPrice(event?.additional_travel_costs ?? 0)}
+                </div>
               </div>
             </div>
             <div className='flex flex-row gap-2'>
               <div className='w-1/3'>
                 <strong>City Permits:</strong>
-                <div className='felx flex-row justify-start'>
-                  {event?.city_permits}
+                <div className='flex flex-row justify-start'>
+                  {event?.city_permits ?? true ? 'Yes' : 'No'}
                 </div>
               </div>
               <div className='w-1/3'>
                 <strong>Association Permits:</strong>
-                <div className='felx flex-row justify-start'>
-                  {event?.association_permits}
+                <div className='flex flex-row justify-start'>
+                  {event?.association_permits ?? true ? 'Yes' : 'No'}
                 </div>
               </div>
               <div className='w-1/3'>
                 <strong>Rental Equipment:</strong>
-                <div className='felx flex-row justify-start'>
-                  {event?.equipment_rental}
+                <div className='flex flex-row justify-start'>
+                  {event?.equipment_rental ?? true ? 'Yes' : 'No'}
                 </div>
               </div>
             </div>
+            {event?.notes && (
+              <div className='flex flex-col gap-2'>
+                  <strong>Notes:</strong>
+                  <div className='flex flex-row justify-start'>
+                    {event?.notes ?? ''}
+                  </div>
+              </div>
+            )}
+            {event?.attachments && (
+              <div className='flex flex-row gap-2'>
+                <strong>Attachments:</strong>
+                <div className='flex flex-col justify-start'>
+                  {event?.attachments.map((attachment) => {
+                    return <a key={attachment.id} href={`storage/${attachment.file_path}`} target='_blank' className='badge badge-outline-dark' rel="noreferrer">{attachment.filename}</a>
+                  })}
+                </div>
+              </div>
+            )}
+            {event?.installation_teams && event.installation_teams.length > 0 && (
+              <div className='flex flex-row gap-2'>
+                <strong>Payment List:</strong>
+                <div className='flex flex-col justify-start'>
+                  <a href={route('order.get_payment_list', { id: event?.id })} target='_blank' className='badge badge-outline-dark' rel="noreferrer">Download Payment List</a>
+                </div>
+              </div>
+            )}
           </div>
         </div>
     </Modal>

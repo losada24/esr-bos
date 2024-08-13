@@ -73,6 +73,10 @@ Route::middleware('auth')->group(function () {
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::INSTALLER->value])
       ->name('dashboard.get_event');
     
+    Route::get('order/get_payment_list/{order}', [DashboardController::class, 'getPaymentList'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value ])
+      ->name('order.get_payment_list');
+    
     Route::put('dashboard/update_events/{id}', [DashboardController::class, 'updateEvent'])
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value])
       ->name('dashboard.update_event');

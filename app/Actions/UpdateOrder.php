@@ -48,6 +48,7 @@ class UpdateOrder {
         'payment_factory_date' => $request->payment_factory_date,
         'entry_date' => $request->entry_date,
         'eta_date' => $request->eta_date,
+        'installation_date' => $request->installation_date,
         'installation_end_date' => $request->installation_end_date,
         'additional_travel_costs' => $request->additional_travel_costs,
         'city_permits' => $request->city_permits,
@@ -55,7 +56,6 @@ class UpdateOrder {
         'equipment_rental' => $request->equipment_rental,
         'notes' => $request->notes,
         'delivery_date' => $request->delivery_date,
-        'installation_date' => $request->installation_date,
         'status' => $status,
         'frame_color' => $request->frame_color,
       ];
@@ -110,7 +110,7 @@ class UpdateOrder {
         $orderProduct->orderProductExtraWorks()->attach($extraWorks);
       }
       
-      $this->sendEmail($order);
+      // $this->sendEmail($order);
       
       if( !$order )
       {

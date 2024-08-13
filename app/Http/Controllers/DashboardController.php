@@ -8,6 +8,7 @@ use App\Traits\OrderStatus;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class DashboardController extends Controller
 {
@@ -41,7 +42,7 @@ class DashboardController extends Controller
         $event = $this->createEvent(
           $order->id,
           '#' . $order->order_number . ' - ' . $order->name . ' (' . $order->service . ')',
-          $order->job_address,
+          "ESTIMATED DELIVERY DATE",
           $startDate,
           $endDate,
           $this->getColorByStatus($order->status),
@@ -56,7 +57,7 @@ class DashboardController extends Controller
         $event = $this->createEvent(
           $order->id,
           '#' . $order->order_number . ' - ' . $order->name . ' (' . $order->service . ')',
-          $order->job_address,
+          "ESTIMATED DELIVERY DATE",
           $startDeliveryDate,
           $endDeliveryDate,
           $this->getColorByStatus($order->status),
@@ -69,7 +70,7 @@ class DashboardController extends Controller
         $event = $this->createEvent(
           $order->id,
           '#' . $order->order_number . ' - ' . $order->name . ' (' . $order->service . ')',
-          $order->job_address,
+          "ESTIMATED INSTALLATION DATE",
           $startInstallationDate,
           $endInstallationDate,
           $this->getColorByStatus($order->status),
@@ -115,5 +116,25 @@ class DashboardController extends Controller
   
     return response()
       ->json($order);
+  }
+
+  public function getPaymentList(Order $order) {
+    $order->load([
+      'client',
+      'typeOfWork',
+      'typeOfHousing',
+      'user',
+      'attachments',
+      'owners',
+      'orderProducts.orderProductExtraWorks',
+      'installationTeams.user',
+      'supervisor',
+      'travelCost',
+      'durationOfWork',
+    ]);
+  
+    $pdf = Pdf::loadView('pdf.payment-list', ['order' => $order]);
+    $pdfName = 'payment-list-' . $order->order_number . '.pdf';
+    return $pdf->download($pdfName);
   }
 }

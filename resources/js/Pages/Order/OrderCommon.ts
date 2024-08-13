@@ -127,7 +127,8 @@ export const loadOrderFormObj = (order: Order): OrderFormValues => {
     order_products: order.order_products,
     attachments: [],
     installation_end_date: order.installation_end_date ?? null,
-    frame_color: order.frame_color
+    frame_color: order.frame_color,
+    status: order.status
   }
 }
 

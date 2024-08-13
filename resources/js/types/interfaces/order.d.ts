@@ -20,7 +20,8 @@ export interface Order {
   client?: Client
   additional_travel_costs?: number
   type_of_work_id: number
-  typeOfWork?: TypeOfWork
+  typeOfWork?: TypeOfWork // TODO: Remove this line
+  type_of_work?: TypeOfWork
   type_of_housing_id: number
   type_of_housing?: TypeOfHousing
   installation_teams: InstallationTeam[]
@@ -41,6 +42,7 @@ export interface Order {
   eta_date?: Date
   installation_end_date?: Date
   frame_color: string
+  status?: string
 }
 
 export interface TypeOfWork {
