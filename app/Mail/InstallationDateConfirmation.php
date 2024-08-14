@@ -11,7 +11,6 @@ use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Mail\Mailables\Attachment;
 use Barryvdh\DomPDF\Facade\Pdf;
-use Faker\Core\File;
 use Illuminate\Support\Facades\Storage;
 
 class InstallationDateConfirmation extends Mailable

@@ -67,6 +67,10 @@ export default function Edit ({
     return value
   }
   const handleSubmit = async (values: any, helpers: FormikHelpers<OrderFormValues>) => {
+    if (values.status !== 'CONFIRMED' && (values.installation_teams.length > 0 || values.supervisor_id !== null) && !confirm('Are you sure you want to change the status to confirmed?')) {
+      return
+    }
+
     const order = {
       ...values,
       duration_of_work_id: typeof values.duration_of_work_id === 'number' ? values.duration_of_work_id : values.duration_of_work_id.value,

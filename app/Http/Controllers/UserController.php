@@ -15,7 +15,6 @@ use App\Traits\RoleManagement;
 
 class UserController extends Controller
 {
-    use RoleManagement;
     /**
      * Display a listing of the resource.
      *

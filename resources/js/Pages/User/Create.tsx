@@ -3,10 +3,8 @@ import { Head, router } from '@inertiajs/react'
 import { Formik, type FormikHelpers } from 'formik'
 import { userSchema, type UserPageProps, type User } from './UserCommon'
 import UserForm from './UserForm'
-import { type Role } from '@/types'
-import { isAccountManager, isAdmin } from '@/Utils/user'
 
-export default function Create ({ auth, roles, companies }: UserPageProps) {
+export default function Create ({ auth, roles }: UserPageProps) {
   // const IS_ADMIN = isAdmin(auth.user.roles.map((role: Role) => role.name)) || isAccountManager(auth.user.roles.map((role: Role) => role.name))
   const initialValues: User = {
     name: '',
@@ -14,8 +12,6 @@ export default function Create ({ auth, roles, companies }: UserPageProps) {
     password: '',
     password_confirmation: '',
     role: 0,
-    company_id: 0,
-    markup: 0,
     featured_image: ''
   }
 

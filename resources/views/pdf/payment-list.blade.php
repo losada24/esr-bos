@@ -1,5 +1,5 @@
 @php
-  $fmt = new NumberFormatter( 'us_US', NumberFormatter::CURRENCY );
+  // $fmt = new NumberFormatter( 'us_US', NumberFormatter::CURRENCY );
   $extraWorksCollection = collect();
   $grandTotal = 0;
 @endphp
@@ -58,8 +58,8 @@
                     @endif
                   </td>
                   <td class="qty">{{ $product->qty }}</td>
-                  <td class="unit">{{ $fmt->formatCurrency($product->unit_price, 'USD') }}</td>
-                  <td class="total">{{ $fmt->formatCurrency($product->total_price, 'USD') }}</td>
+                  <td class="unit">{{ '$' . number_format($product->unit_price, 2, '.', ',') /*$fmt->formatCurrency($product->unit_price, 'USD')*/ }}</td>
+                  <td class="total">{{ '$' . number_format($product->total_price, 2, '.', ',') /* $fmt->formatCurrency($product->total_price, 'USD')*/ }}</td>
                 </tr>
               @endforeach
             @endforeach
@@ -76,17 +76,17 @@
               <tr>
                 <td class="service" colspan="2">{{ $key }}</td>
                 <td class="qty">{{ $count }}</td>
-                <td class="unit">{{ $fmt->formatCurrency($price, 'USD') }}</td>
-                <td class="total">{{ $fmt->formatCurrency($total, 'USD') }}</td>
+                <td class="unit">{{ '$' . number_format($price, 2, '.', ',') /* $fmt->formatCurrency($price, 'USD')*/ }}</td>
+                <td class="total">{{ '$' . number_format($total, 2, '.', ',')/* $fmt->formatCurrency($total, 'USD')*/ }}</td>
               </tr>
             @endforeach
             <tr>
               <td class="service" colspan="4">Travel Cost</td>
-              <td class="total">{{ $fmt->formatCurrency($order->travelCost->price, 'USD' )}}</td>
+              <td class="total">{{ '$' . number_format($order->travelCost->price, 2, '.', ',') /* $fmt->formatCurrency($order->travelCost->price, 'USD' )*/ }}</td>
             </tr>
             <tr>
               <td class="service" colspan="4">Other Cost</td>
-              <td class="total">{{ $fmt->formatCurrency($order->additional_travel_costs, 'USD' )}}</td>
+              <td class="total">{{ '$' . number_format($order->additional_travel_costs, 2, '.', ',') /* $fmt->formatCurrency($order->additional_travel_costs, 'USD' ) */}}</td>
             </tr>
             <tr>
               <td class='order-notes' colspan="3">
@@ -101,7 +101,7 @@
                 <table class='summary-table'>
                   <tr>
                     <td colspan='2' class="total border-right">Total</td>
-                    <td class="total">{{ $fmt->formatCurrency($grandTotal + $order->travelCost->price + $order->additional_travel_costs, 'USD' ) }}</td>
+                    <td class="total">{{ '$' . number_format($grandTotal + $order->travelCost->price + $order->additional_travel_costs, 2, '.', ',') /* $fmt->formatCurrency($grandTotal + $order->travelCost->price + $order->additional_travel_costs, 'USD' ) */ }}</td>
                   </tr>
                   <tr>
                     <td class="other-services border-right">Initial Deposit</td>
@@ -120,7 +120,7 @@
                   </tr>
                   <tr>
                     <td colspan='2' class="grand total border-right">Total</td>
-                    <td class="grand total">{{ $fmt->formatCurrency($grandTotal + $order->travelCost->price + $order->additional_travel_costs, 'USD' ) }}</td>
+                    <td class="grand total">{{ '$' . number_format($grandTotal + $order->travelCost->price + $order->additional_travel_costs, 2, '.', ',') /* $fmt->formatCurrency($grandTotal + $order->travelCost->price + $order->additional_travel_costs, 'USD' ) */ }}</td>
                   </tr>
                 </table>
               </td>

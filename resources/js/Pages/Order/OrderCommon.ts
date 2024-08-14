@@ -108,7 +108,7 @@ export const loadOrderFormObj = (order: Order): OrderFormValues => {
     equipment_rental: order.equipment_rental,
     notes: order.notes,
     client_id: order.client_id,
-    entry_date: order.entry_date,
+    entry_date: order.entry_date ?? null,
     installation_date: order.installation_date ?? null,
     additional_travel_costs: order.additional_travel_costs,
     type_of_work_id: order.type_of_work_id,
@@ -127,7 +127,8 @@ export const loadOrderFormObj = (order: Order): OrderFormValues => {
     order_products: order.order_products,
     attachments: [],
     installation_end_date: order.installation_end_date ?? null,
-    frame_color: order.frame_color
+    frame_color: order.frame_color,
+    status: order.status
   }
 }
 
@@ -137,7 +138,7 @@ interface OrderProductEstraWorkPivot {
 }
 
 type OrderProductFormValues = OrderProduct & {
-  order_product_extra_works: OrderProductEstraWorkPivot[]
+  order_product_extra_works?: OrderProductEstraWorkPivot[]
 }
 
 export const getOrderProducts = (orderProduct: OrderProductFormValues) => {

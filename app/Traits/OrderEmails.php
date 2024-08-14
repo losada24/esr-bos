@@ -50,16 +50,15 @@ trait OrderEmails {
       $users = $order->owners->pluck('email')->toArray();
       $users[] = $order->client->email;
       foreach ($users as $user) {
-        // Mail::to($user)->send(new InstallationDateConfirmation($order));
+        Mail::to($user)->send(new InstallationDateConfirmation($order));
       }
 
       $users = [];
       $users[] = $order->supervisor->email;
       $serviceManager = User::role([RoleEnum::SERVICE_MANAGER->value])->get();
       $users = array_merge($users, $serviceManager->pluck('email')->toArray());
-      // dd($users);
       foreach ($users as $user) {
-        //Mail::to($user)->send(new InstallationDateConfirmation($order, true, true));
+        Mail::to($user)->send(new InstallationDateConfirmation($order, true, true));
       }
 
       $users = [];

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Field, Form } from 'formik'
 import InputError from '@/Components/InputError'
 import PrimaryButton from '@/Components/PrimaryButton'
@@ -83,6 +83,7 @@ const OrderForm = ({
   const [isCreated] = useState<boolean>(true)
   const [showProductModal, setShowProductModal] = useState<boolean>(false)
   const [attachmentsArray, setAttachmentsList] = useState<Attachment[]>(attachments ?? [])
+
   const removeAttachmentProduct = (index: number) => {
     if (confirm('Are you sure you want to delete this attachment?')) {
       router.delete(route('order.drop_attachment', { id: attachmentsArray[index].id }), {
@@ -95,6 +96,10 @@ const OrderForm = ({
     }
   }
 
+  const updateOrderProduct = (index: number) => {
+    console.log('updateOrderProduct', index)
+  }
+
   const addOrderProduct = (orderProduct: OrderProduct) => {
     const orderProductsList = [...orderProducts, orderProduct]
     setOrderProducts(orderProductsList)
@@ -102,8 +107,9 @@ const OrderForm = ({
   }
 
   const selectDeliveryAndInstallationDate = async (payment_factory_date: string) => {
+    const travel_cost_id = 'value' in ((values.travel_cost_id) as any) ? (values.travel_cost_id as any).value : 0
     const response = await fetch(
-      `/order/get_delivery_and_installation_date/${payment_factory_date}/${values.type_of_housing_id}/${values.travel_cost_id.value}/${values.service}`)
+      `/order/get_delivery_and_installation_date/${payment_factory_date}/${values.type_of_housing_id}/${travel_cost_id}/${values.service}`)
     const data = await response.json()
 
     setFieldValue('eta_date', data.estimate_eta_date)
@@ -409,7 +415,7 @@ const OrderForm = ({
                   position: 'auto right'
                 }}
                 name="entry_date"
-                value={values.entry_date}
+                value={values.entry_date ?? ''}
                 className="form-input"
                 onChange={([date]) => {
                   setFieldValue('entry_date', date.toISOString().slice(0, 10))
@@ -426,7 +432,7 @@ const OrderForm = ({
                   position: 'auto right'
                 }}
                 name="contract_signing_date"
-                value={values.contract_signing_date}
+                value={values.contract_signing_date ?? ''}
                 className="form-input"
                 onChange={([date]) => {
                   setFieldValue('contract_signing_date', date.toISOString().slice(0, 10))
@@ -442,9 +448,9 @@ const OrderForm = ({
                   dateFormat: 'Y-m-d',
                   position: 'auto right'
                 }}
-                disabled={values.type_of_work_id === 0 || values.type_of_housing_id === 0 || values.service === '' || values.travel_cost_id.value === 0}
+                disabled={values.type_of_work_id === 0 || values.type_of_housing_id === 0 || values.service === '' || ((values.travel_cost_id) as any).value === 0}
                 name="payment_factory_date"
-                value={values.payment_factory_date}
+                value={values.payment_factory_date ?? ''}
                 className="form-input"
                 onChange={([date]) => {
                   const payment_factory_date = date.toISOString().slice(0, 10)
@@ -464,7 +470,7 @@ const OrderForm = ({
                 }}
                 // disabled={values.supervisor_id === ''}
                 name="eta_date"
-                value={values.eta_date}
+                value={values.eta_date ?? ''}
                 className="form-input"
                 onChange={([date]) => {
                   setFieldValue('eta_date', date.toISOString().slice(0, 10))
@@ -530,7 +536,7 @@ const OrderForm = ({
                     name="city_permits"
                     className="form-checkbox"
                     type='checkbox'
-                    onChange={(e) => {
+                    onChange={(e: any) => {
                       setFieldValue('city_permits', e.target.checked)
                     }}
                   />
@@ -545,7 +551,7 @@ const OrderForm = ({
                     name="association_permits"
                     className="form-checkbox"
                     type='checkbox'
-                    onChange={(e) => {
+                    onChange={(e: any) => {
                       setFieldValue('association_permits', e.target.checked)
                     }}
                   />
@@ -560,7 +566,7 @@ const OrderForm = ({
                     name="equipment_rental"
                     className="form-checkbox"
                     type='checkbox'
-                    onChange={(e) => {
+                    onChange={(e: any) => {
                       setFieldValue('equipment_rental', e.target.checked)
                     }}
                   />
@@ -593,7 +599,7 @@ const OrderForm = ({
                   setFieldValue('attachments', event.currentTarget.files)
                 }}
               />
-              {attachments.length > 0 && (
+              {attachments !== undefined && attachments.length > 0 && (
                 <div className="flex flex-col rounded-md border border-[#e0e6ed] dark:border-[#1b2e4b] mt-3">
                   {attachmentsArray.map((attachment, index) => {
                     return (

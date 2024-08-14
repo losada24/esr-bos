@@ -8,6 +8,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\InstallationTeamController;
 use Barryvdh\DomPDF\Facade\Pdf;
+use SebastianBergmann\CodeCoverage\Report\Html\Dashboard;
 
 /*
 |--------------------------------------------------------------------------
@@ -54,8 +55,6 @@ Route::middleware('auth')->group(function () {
     /* Route::resource('user', UserController::class)
       ->only(['index', 'create', 'store'])
       ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$ACCOUNT_MANAGER . "|" . RoleEnum::$DEALER]); */
-    
-    
 
     Route::resource('user', UserController::class)
       ->middleware(["role:" . RoleEnum::ADMIN->value]);
@@ -65,6 +64,24 @@ Route::middleware('auth')->group(function () {
 
     Route::get('order/get_delivery_and_installation_date/{payment_factory_date}/{type_of_housing}/{county_id}/{service}', [OrderController::class, 'getDeliveryAndInstallationDate'])
       ->middleware(["role:" . RoleEnum::ADMIN->value]);
+    
+    Route::get('dashboard/get_events/{year}/{month}', [DashboardController::class, 'getEvents'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::INSTALLER->value])
+      ->name('dashboard.get_events');
+    
+    Route::get('dashboard/get_event/{order}', [DashboardController::class, 'getEvent'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::INSTALLER->value])
+      ->name('dashboard.get_event');
+    
+    Route::get('order/get_payment_list/{order}', [DashboardController::class, 'getPaymentList'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value ])
+      ->name('order.get_payment_list');
+    
+    Route::put('dashboard/update_events/{id}', [DashboardController::class, 'updateEvent'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value])
+      ->name('dashboard.update_event');
+
+    
     
     Route::delete('order/drop_attachment/{id}', [OrderController::class, 'dropAttachment'])
       ->middleware(["role:" . RoleEnum::ADMIN->value])

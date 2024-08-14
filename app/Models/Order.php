@@ -66,6 +66,10 @@ class Order extends Model
         });
     }
 
+    public function scopeCalendarFilter($query) {
+      
+    }
+
     public function client(): BelongsTo {
       return $this->belongsTo(Client::class);
     }

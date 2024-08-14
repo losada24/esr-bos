@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
 import Modal from '@/Components/Modal'
 import CloseIcon from '@/Components/Icons/CloseIcon'
 import { type OrderProduct, type ProductCategory, type ProductConfig, type TypeOfProduct, type ProductCost } from '@/types'
@@ -101,7 +101,7 @@ const ProductModal = ({
                             autoComplete="type_of_product_id"
                             placeholder='Type of Product'
                             as="select"
-                            onChange={(e) => {
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                               const id = parseInt(e.target.value)
                               setFieldValue('type_of_product_id', id)
                               setProductConfigOptions([])
@@ -136,7 +136,7 @@ const ProductModal = ({
                               autoComplete="product_category_id"
                               placeholder='Product Category'
                               as="select"
-                              onChange={(e) => {
+                              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                                 const id = parseInt(e.target.value)
                                 setFieldValue('product_category_id', id)
                                 setProductConfigOptions(productConfigs.filter((productConfig) => productConfig.product_categories_id === id))
@@ -158,7 +158,7 @@ const ProductModal = ({
                               autoComplete="product_config_id"
                               placeholder='Product Config'
                               as="select"
-                              onChange={(e) => {
+                              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                                 const id = parseInt(e.target.value)
                                 setFieldValue('product_config_id', id)
                               }}
@@ -247,7 +247,7 @@ const ProductModal = ({
                                 className="form-checkbox"
                                 type='checkbox'
                                 checked={extraWork.checked}
-                                onChange={(e) => {
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                                   setPlannedExtraWorksFormValues(plannedExtraWorksFormValues.map((extra) => {
                                     if (extra.extra_work_id === extraWork.extra_work_id) {
                                       return {
