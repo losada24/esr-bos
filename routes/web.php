@@ -84,12 +84,12 @@ Route::middleware('auth')->group(function () {
     
     
     Route::delete('order/drop_attachment/{id}', [OrderController::class, 'dropAttachment'])
-      ->middleware(["role:" . RoleEnum::ADMIN->value])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value])
       ->name('order.drop_attachment');
 
     Route::resource('installation_team', InstallationTeamController::class)
       ->only(['index', 'create', 'store', 'update', 'edit', 'destroy'])
-      ->middleware(["role:" . RoleEnum::ADMIN->value]);
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value]);
     
     // CLIENTS
      /*Route::resource('client', ClientController::class)
