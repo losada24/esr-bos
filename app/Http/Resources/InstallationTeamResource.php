@@ -20,9 +20,12 @@ class InstallationTeamResource extends JsonResource
           'number_of_member' => $this->number_of_member ?? '',
           'worker_compensation_expiration_date' => $this->worker_compensation_expiration_date ?? '',
           'liability_expiration_date' => $this->liability_expiration_date ?? '',
+          'company_name' => $this->company_name ?? '',
+          'phone' => $this->phone ?? '',
           'notes' => $this->notes ?? '',
           'user' => $this->user ?? '',
           'type_housing' => $this->typeHousing ?? '',
+          'travel_costs' => $this->travelCost ?? '',
           'attachments' => $this->attachments ? $this->attachments->transform(function($attachment) {
             return new AttachmentResource($attachment);
           }) : []

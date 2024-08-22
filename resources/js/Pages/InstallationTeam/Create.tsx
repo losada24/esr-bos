@@ -3,9 +3,9 @@ import { Head, router } from '@inertiajs/react'
 import { Formik, type FormikHelpers } from 'formik'
 import { installationTeamSchema, type InstallationTeamFormValues } from './InstallationTeamCommon'
 import InstallationTeamForm from './InstallationTeamForm'
-import { type User, type PageProps, type TypeOfHousing } from '@/types'
+import { type User, type PageProps, type TypeOfHousing, type TravelCost } from '@/types'
 
-export default function Create ({ auth, type_of_housings, users }: PageProps & { users: User[], type_of_housings: TypeOfHousing[] }) {
+export default function Create ({ auth, type_of_housings, travel_costs, users }: PageProps & { users: User[], type_of_housings: TypeOfHousing[], travel_costs: TravelCost[] }) {
   const initialValues: InstallationTeamFormValues = {
     id: 0,
     number_of_member: 0,
@@ -15,7 +15,10 @@ export default function Create ({ auth, type_of_housings, users }: PageProps & {
     attachments: [],
     type_housing: [],
     worker_compensation_attach: '',
-    liability_expiration_attach: ''
+    liability_expiration_attach: '',
+    company_name: '',
+    phone: '',
+    travel_costs: []
   }
 
   const handleSubmit = async (values: any, helpers: FormikHelpers<InstallationTeamFormValues>) => {
@@ -26,8 +29,14 @@ export default function Create ({ auth, type_of_housings, users }: PageProps & {
       user_id: values.user_id.value,
       worker_compensation_attach: values.worker_compensation_attach,
       liability_expiration_attach: values.liability_expiration_attach,
-      type_of_housings: values.type_housing.map((typeHousing: any) => typeHousing.value)
+      company_name: values.company_name,
+      phone: values.phone,
+      type_of_housings: values.type_housing.map((typeHousing: any) => typeHousing.value),
+      travel_costs: values.travel_costs.map((travelCost: any) => travelCost.value)
     }
+
+    /*console.log(installation_team)
+    return*/
 
     router.post(route('installation_team.store'), installation_team, {
       forceFormData: true,
@@ -57,6 +66,7 @@ export default function Create ({ auth, type_of_housings, users }: PageProps & {
                 users={users}
                 setFieldValue={setFieldValue}
                 values={values}
+                travel_costs={travel_costs}
               />
             )}
           </Formik>

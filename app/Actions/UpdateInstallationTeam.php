@@ -49,10 +49,13 @@ class UpdateInstallationTeam {
         'number_of_member' => $request->number_of_member,
         'worker_compensation_expiration_date' => $request->worker_compensation_expiration_date,
         'liability_expiration_date' => $request->liability_expiration_date,
+        'company_name' => $request->company_name,
+        'phone' => $request->phone,
       ];
 
       $installationTeam->update($installationTeamData);
       $installationTeam->typeHousing()->sync($request->type_of_housings);
+      $installationTeam->travelCost()->sync($request->travel_costs);
       $attachments = $installationTeam->attachments()->get();
       foreach ($attachments as $attachment) {
         if ($attachment->file_type == 'worker_compensation_attach') {

@@ -153,6 +153,10 @@ export interface InstallationTeam {
   type_housing?: TypeOfHousing[]
   attachments: Attachment[]
   orders?: Order[]
+  company_name?: string
+  phone?: string 
+  travel_costs?: TravelCost[]
+  
 }
 
 export interface Attachment {

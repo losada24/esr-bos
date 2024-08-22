@@ -4,7 +4,7 @@ import InputError from '@/Components/InputError'
 import PrimaryButton from '@/Components/PrimaryButton'
 import { Link } from '@inertiajs/react'
 import { type FormikErrors } from 'formik'
-import { type OptionType, type TypeOfHousing, type User } from '@/types'
+import { TravelCost, type OptionType, type TypeOfHousing, type User } from '@/types'
 import Select, { type SingleValue, type MultiValue } from 'react-select'
 import { type InstallationTeamFormValues } from './InstallationTeamCommon'
 import Flatpickr from 'react-flatpickr'
@@ -17,6 +17,7 @@ const InstallationTeamForm = ({
   setFieldValue,
   users,
   type_of_housings,
+  travel_costs,
   values
 }: {
   submitCount: number
@@ -25,7 +26,9 @@ const InstallationTeamForm = ({
   type_of_housings: TypeOfHousing[]
   users: User[]
   values: InstallationTeamFormValues
-  setFieldValue: (field: string, value: any, shouldValidate?: boolean | undefined) => void }) => {
+  setFieldValue: (field: string, value: any, shouldValidate?: boolean | undefined) => void 
+  travel_costs: TravelCost[]
+  }) => {
   const selectedUser: SingleValue<OptionType> = {
     value: values.user_id.value,
     label: values.user_id.label
@@ -49,11 +52,49 @@ const InstallationTeamForm = ({
           {/* eslint-disable-next-line @typescript-eslint/no-base-to-string */}
           {(submitCount && errors.user_id) ? <InputError message={errors.user_id.toString()} className="mt-2" /> : ''}
       </div>
+      <div className={submitCount ? (errors.company_name) ? 'has-error' : 'has-success' : ''}>
+        <label htmlFor="company_name">Company Name</label>
+        <Field
+          id="company_name"
+          name="company_name"
+          className="form-input"
+          autoComplete="company_name"
+          placeholder='Company Name'
+        />
+        {(submitCount && errors.company_name) ? <InputError message={errors.company_name} className="mt-2" /> : ''}
+      </div>
+      <div className={submitCount ? (errors.phone) ? 'has-error' : 'has-success' : ''}>
+        <label htmlFor="phone">Phone</label>
+        <Field
+          id="phone"
+          name="phone"
+          className="form-input"
+          autoComplete="phone"
+          placeholder='Phone'
+        />
+        {(submitCount && errors.phone) ? <InputError message={errors.phone} className="mt-2" /> : ''}
+      </div>
+      <div className={submitCount ? (errors.travel_costs) ? 'has-error' : 'has-success' : ''}>
+        <label htmlFor="travel_cost">Travel Cost</label>
+        <Select
+          id='travel_costs'
+          placeholder="Select travel cost"
+          name='travel_costs'
+          defaultValue={ values.travel_costs }
+          onChange={(value) => {
+            setFieldValue('travel_costs', value)
+          }}
+          isMulti={true}
+          options={travel_costs.map((travel_costs: TravelCost) => { return { label: travel_costs.name, value: travel_costs.id } })}
+        />
+        {(submitCount && errors.travel_costs) ? <InputError message={errors.travel_costs.toString()} className="mt-2" /> : ''}
+      </div>
+      
       <div className={submitCount ? (errors.type_housing) ? 'has-error' : 'has-success' : ''}>
         <label htmlFor="type_of_housings">Type of Housing</label>
         <Select
           id='type_housing'
-          placeholder="Select User"
+          placeholder="Select type of housing"
           name='type_housing'
           defaultValue={ values.type_housing }
           onChange={(value) => {

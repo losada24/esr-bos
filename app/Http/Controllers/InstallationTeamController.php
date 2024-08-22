@@ -19,6 +19,7 @@ use App\Http\Resources\CompanyResource;
 use App\Http\Resources\InstallationTeamCollection;
 use App\Http\Resources\InstallationTeamResource;
 use App\Models\InstallationTeam;
+use App\Models\TravelCost;
 use App\Models\TypeOfHousing;
 use App\Models\User;
 use Doctrine\DBAL\Types\Type;
@@ -52,6 +53,7 @@ class InstallationTeamController extends Controller
         return Inertia::render('InstallationTeam/Create', [
           'users' => User::role(RoleEnum::INSTALLER->value)->get(),
           'type_of_housings' => TypeOfHousing::orderBy('name')->get(),
+          'travel_costs' => TravelCost::orderBy('name')->get()
         ]);
     }
 
@@ -81,6 +83,7 @@ class InstallationTeamController extends Controller
           'installation_team' => new InstallationTeamResource($installationTeam),
           'users' => User::role(RoleEnum::INSTALLER->value)->get(),
           'type_of_housings' => TypeOfHousing::orderBy('name')->get(),
+          'travel_costs' => TravelCost::orderBy('name')->get()
         ]);
     }
 

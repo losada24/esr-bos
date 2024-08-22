@@ -20,6 +20,9 @@ class InstallationTeam extends Model
         'liability_expiration_date',
         'notes',
         'user_id',
+        'company_name',
+        'phone',
+        'work_area'
     ];
 
     protected $dates = [
@@ -53,6 +56,10 @@ class InstallationTeam extends Model
     }
     public function typeHousing(): BelongsToMany {
       return $this->belongsToMany(TypeOfHousing::class, 'installation_teams_types_of_housing', 'installation_team_id', 'type_of_housing_id', 'id', 'id');
+    }
+
+    public function travelCost(): BelongsToMany {
+      return $this->belongsToMany(TravelCost::class, 'installation_teams_travel_costs', 'installation_team_id', 'travel_cost_id', 'id', 'id');
     }
 
     public function orders(): BelongsToMany

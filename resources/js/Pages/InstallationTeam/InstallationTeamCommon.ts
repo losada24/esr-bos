@@ -10,9 +10,10 @@ export const installationTeamSchema = Yup.object({
   liability_expiration_date: Yup.date().required('Liability expiration date is required')
 })
 
-export type InstallationTeamFormValues = Omit<InstallationTeam, 'user_id' | 'type_housing'> & {
+export type InstallationTeamFormValues = Omit<InstallationTeam, 'user_id' | 'type_housing' | 'travel_costs'> & {
   worker_compensation_attach: string
   liability_expiration_attach: string
   user_id: OptionType
   type_housing: MultiValue<OptionType>
+  travel_costs: MultiValue<OptionType>
 }

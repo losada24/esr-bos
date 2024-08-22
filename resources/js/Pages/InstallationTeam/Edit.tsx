@@ -2,11 +2,11 @@ import React from 'react'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
 import { Head, router } from '@inertiajs/react'
 import { Formik, type FormikHelpers } from 'formik'
-import { type PageProps, type User, type TypeOfHousing, type InstallationTeam } from '@/types'
+import { type PageProps, type User, type TypeOfHousing, type InstallationTeam, TravelCost } from '@/types'
 import { installationTeamSchema, type InstallationTeamFormValues } from './InstallationTeamCommon'
 import InstallationTeamForm from './InstallationTeamForm'
 
-export default function Edit ({ auth, type_of_housings, users, installation_team }: PageProps & { users: User[], type_of_housings: TypeOfHousing[], installation_team: InstallationTeam }) {
+export default function Edit ({ auth, type_of_housings, users, installation_team, travel_costs }: PageProps & { users: User[], type_of_housings: TypeOfHousing[], installation_team: InstallationTeam, travel_costs: TravelCost []}) {
   const initialValues: InstallationTeamFormValues = {
     id: installation_team.id,
     number_of_member: installation_team.number_of_member,
@@ -17,9 +17,18 @@ export default function Edit ({ auth, type_of_housings, users, installation_team
     type_housing: installation_team.type_housing?.map((typeOfHousing) => {
       return { value: typeOfHousing.id, label: typeOfHousing.name }
     }) ?? [],
+    travel_costs: installation_team.travel_costs?.map((travelCost) => {
+      return { value: travelCost.id, label: travelCost.name }
+    }) ?? [],
     worker_compensation_attach: '',
-    liability_expiration_attach: ''
+    liability_expiration_attach: '',
+    company_name: installation_team.company_name,
+    phone: installation_team.phone,
+    
   }
+  
+    /*console.log(installation_team)
+    return*/
 
   const handleSubmit = async (values: any, helpers: FormikHelpers<InstallationTeamFormValues>) => {
     const installation_team = {
@@ -30,8 +39,12 @@ export default function Edit ({ auth, type_of_housings, users, installation_team
       user_id: values.user_id.value,
       worker_compensation_attach: values.worker_compensation_attach,
       liability_expiration_attach: values.liability_expiration_attach,
-      type_of_housings: values.type_housing.map((typeHousing: any) => typeHousing.value)
+      company_name: values.company_name,
+      phone: values.phone,
+      type_of_housings: values.type_housing.map((typeHousing: any) => typeHousing.value),
+      travel_costs: values.travel_costs.map((travelCost: any) => travelCost.value)
     }
+
 
     router.post(route('installation_team.update', installation_team.id), {
       _method: 'PUT',
@@ -64,6 +77,7 @@ export default function Edit ({ auth, type_of_housings, users, installation_team
               users={users}
               setFieldValue={setFieldValue}
               values={values}
+              travel_costs={travel_costs}
             />
           )}
         </Formik>

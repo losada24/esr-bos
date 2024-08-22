@@ -32,9 +32,12 @@ class CreateInstallationTeam {
         'number_of_member' => $request->number_of_member,
         'worker_compensation_expiration_date' => $request->worker_compensation_expiration_date,
         'liability_expiration_date' => $request->liability_expiration_date,
+        'company_name' => $request->company_name,
+        'phone' => $request->phone,
       ]);
 
       $installationTeam->typeHousing()->attach($request->type_of_housings);
+      $installationTeam->travelCost()->attach($request->travel_costs);
       $installationTeam->attachments()->saveMany([
         new Attachment(
           [
