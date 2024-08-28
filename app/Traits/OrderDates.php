@@ -10,10 +10,13 @@ trait OrderDates {
 
   public function estimateETADate($payment_factory_date) {
     $payment_factory_date = Carbon::parse($payment_factory_date);
+    if ($payment_factory_date->dayOfWeek === Carbon::SUNDAY) {
+      $payment_factory_date = $payment_factory_date->addDay(); // Agregar un día para obtener la semana correcta
+     }
     $eta_week = $payment_factory_date->addWeeks(7);
     $end_of_eta_week = $eta_week->endOfWeek();
     $estimate_eta_date = $end_of_eta_week->previous(Carbon::FRIDAY)->format('Y-m-d');
-
+    
     return $estimate_eta_date;
   }
 

@@ -47,7 +47,7 @@ const InstallationTeamForm = ({
           }}
           defaultValue={ selectedUser }
           isMulti={false}
-          options={users.map((user: User) => { return { label: user.email, value: user.id } })}
+          options={users.map((user: User) => { return { label: user.name, value: user.id } })}
         />
           {/* eslint-disable-next-line @typescript-eslint/no-base-to-string */}
           {(submitCount && errors.user_id) ? <InputError message={errors.user_id.toString()} className="mt-2" /> : ''}

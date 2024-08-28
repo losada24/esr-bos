@@ -57,7 +57,7 @@ Route::middleware('auth')->group(function () {
       ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$ACCOUNT_MANAGER . "|" . RoleEnum::$DEALER]); */
 
     Route::resource('user', UserController::class)
-      ->middleware(["role:" . RoleEnum::ADMIN->value]);
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value ]);
     
     Route::resource('order', OrderController::class)
       ->middleware(["role:" . RoleEnum::ADMIN->value]);

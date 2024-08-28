@@ -12,7 +12,7 @@ export default function Edit ({ auth, type_of_housings, users, installation_team
     number_of_member: installation_team.number_of_member,
     worker_compensation_expiration_date: installation_team.worker_compensation_expiration_date,
     liability_expiration_date: installation_team.liability_expiration_date,
-    user_id: { value: installation_team.user_id, label: users.find((user: User) => user.id === installation_team.user_id)?.email ?? '' },
+    user_id: { value: installation_team.user_id, label: users.find((user: User) => user.id === installation_team.user_id)?.name ?? '' },
     attachments: [],
     type_housing: installation_team.type_housing?.map((typeOfHousing) => {
       return { value: typeOfHousing.id, label: typeOfHousing.name }

@@ -43,7 +43,8 @@ export default function Index ({ auth, installation_teams }: IndexCompanyProps) 
           <table className="w-full whitespace-nowrap">
             <thead>
               <tr className="font-bold text-left">
-                <th className="px-6 pt-5 pb-4">User</th>
+                <th className="px-6 pt-5 pb-4">Email</th>
+                <th className="px-6 pt-5 pb-4">Name</th>
                 <th className="px-6 pt-5 pb-4 text-right">Number of Member</th>
                 <th className="px-6 pt-5 pb-4">Type Of Housing</th>
                 <th className="px-6 pt-5 pb-4">Worker Compensation Expiration</th>
@@ -61,6 +62,9 @@ export default function Index ({ auth, installation_teams }: IndexCompanyProps) 
                   >
                     <td className="border-t px-6 py-4 align-top">
                       {installation_team.user?.email}
+                    </td>
+                    <td className="border-t px-6 py-4 align-top">
+                      {installation_team.user?.name}
                     </td>
                     <td className="border-t px-6 py-4 align-top  text-right">
                       {installation_team.number_of_member}

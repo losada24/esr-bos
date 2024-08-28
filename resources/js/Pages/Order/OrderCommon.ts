@@ -13,8 +13,8 @@ export const orderProductSchema = Yup.object({
   type_of_product_id: Yup.number().moreThan(0, 'Type of product is required'),
   product_category_id: Yup.number().moreThan(0, 'Product category is required'),
   product_config_id: Yup.number().moreThan(0, 'Product config is required'),
-  width: Yup.number().min(1),
-  height: Yup.number().min(1),
+  width: Yup.number().nullable(),
+  height: Yup.number().nullable(),
   qty: Yup.number().min(1)
 })
 

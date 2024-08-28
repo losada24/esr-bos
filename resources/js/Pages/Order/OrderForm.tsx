@@ -292,6 +292,8 @@ const OrderForm = ({
               </Field>
               {(submitCount && errors.type_of_housing_id) ? <InputError message={errors.type_of_housing_id} className="mt-2" /> : ''}
             </div>
+            {(values.service=== "DELIVERY AND INSTALLATION") && (
+            <>
             <div className={submitCount ? (errors.installation_teams) ? 'has-error' : 'has-success' : ''}>
               <label htmlFor="installationTeams">Installation Team</label>
               <Select
@@ -319,6 +321,8 @@ const OrderForm = ({
               />
               {(submitCount && errors.supervisor_id) ? <InputError message={errors.supervisor_id} className="mt-2" /> : ''}
             </div>
+            </>
+           )} 
             <div className={submitCount ? (errors.travel_cost_id) ? 'has-error' : 'has-success' : ''}>
               <label htmlFor="travel_cost_id">County</label>
               <Select
@@ -381,6 +385,13 @@ const OrderForm = ({
                 autoComplete="service"
                 placeholder='Service'
                 as="select"
+                onChange={(e: { target: { value: string } }) => {
+                  setFieldValue('service', e.target.value)
+                  setFieldValue('city_permits', false)
+                  setFieldValue('association_permits', false)
+                  setFieldValue('equipment_rental', false)
+
+                }}
               >
                 <option value="">Service</option>
                 {services.map((service, index) => (
@@ -479,7 +490,7 @@ const OrderForm = ({
               {(submitCount && errors.eta_date) ? <InputError message={errors.eta_date?.toString()} className="mt-2" /> : ''}
             </div>
             <div className={submitCount ? (errors.delivery_date) ? 'has-error' : 'has-success' : ''}>
-              <label htmlFor="delivery_date">Delivery Date</label>
+              <label htmlFor="delivery_date">Delivery/Pickup Date</label>
               <Flatpickr
                 options={{
                   mode: 'single',
@@ -529,6 +540,9 @@ const OrderForm = ({
               />
               {(submitCount && errors.installation_end_date) ? <InputError message={errors.installation_end_date?.toString()} className="mt-2" /> : ''}
             </div>
+           
+           {(values.service=== "DELIVERY AND INSTALLATION") && (
+            <>
             <div className={submitCount ? (errors.city_permits) ? 'has-error inline-flex flex-col' : 'has-success inline-flex' : 'inline-flex items-end'}>
                 <div className='flex'>
                   <Field
@@ -574,6 +588,10 @@ const OrderForm = ({
                 </div>
                 {(submitCount && errors.equipment_rental) ? <div className='block'><InputError message={errors.equipment_rental} className="mt-2" /></div> : ''}
             </div>
+            </>
+           )} 
+            
+              
             <div className='col-span-4'>
               <label htmlFor="notes">Notes</label>
               <Field
@@ -585,6 +603,7 @@ const OrderForm = ({
                 placeholder='Notes'
               />
             </div>
+     
             <div className='col-span-4'>
               <label htmlFor="attachments">Attachments</label>
               <input
