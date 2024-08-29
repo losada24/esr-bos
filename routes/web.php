@@ -56,6 +56,10 @@ Route::middleware('auth')->group(function () {
       ->only(['index', 'create', 'store'])
       ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$ACCOUNT_MANAGER . "|" . RoleEnum::$DEALER]); */
 
+    Route::get('myphpinfo', function() {
+      phpinfo();
+    })->name('myphpinfo');
+
     Route::resource('user', UserController::class)
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value ]);
     
