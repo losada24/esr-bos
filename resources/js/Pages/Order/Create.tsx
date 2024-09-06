@@ -57,7 +57,7 @@ export default function Create ({
 
   const handleSubmit = async (values: any, helpers: FormikHelpers<OrderFormValues>) => {
 
-    console.log(values)
+    //console.log(values)
     
     const order = {
       ...values,

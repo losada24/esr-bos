@@ -9,18 +9,22 @@ export const formatPrice = (price: number) => {
   return USDollar.format(price)
 }
 
+export const getProductExtraWorkPrice = (product: OrderProduct,) => {
+  return product?.extra_works?.reduce((acc, extraWork) => {
+    let price = parseFloat(extraWork.price.toString())
+    if (extraWork.amount !== 0) {
+      price = price * extraWork.amount
+    }
+    return acc + price
+  }, 0)
+}
+
 export const getProductPriceWithExtraWorks = (
   product: OrderProduct,
   productCost: ProductCost[]
 ) => {
-  const extraWorkPrice = product?.extra_works?.reduce((acc, extraWork) => {
-    let price = parseFloat(extraWork.price.toString())
-    if (extraWork.number_of_sides !== 0) {
-      price = price * extraWork.number_of_sides
-    }
-    return acc + price
-  }, 0)
-
+  
+  const extraWorkPrice = getProductExtraWorkPrice(product)
   const price = getProductPrice(product, productCost)
   return price + (extraWorkPrice ?? 0)
 }

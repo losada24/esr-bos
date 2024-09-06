@@ -56,7 +56,7 @@ export default function Edit ({
   frame_colors: string[]
 }) {
   const initialValues: OrderFormValues = loadOrderFormObj(order)
-  const getSupervisorId = (supervisor: any) => {
+    const getSupervisorId = (supervisor: any) => {
     let value = null
     if (supervisor !== null && Object.prototype.hasOwnProperty.call(supervisor, 'value')) {
       value = supervisor.value
@@ -66,8 +66,23 @@ export default function Edit ({
 
     return value
   }
+ 
+  let messageconfirm = 'Are you sure you want to change the status to confirmed?'
+  const isRentalEquipment: boolean = !!order.equipment_rental
+  const isAssociationPermit: boolean = !!order.association_permits
+ 
+  if (isRentalEquipment === true){
+       messageconfirm += 'This order required EQUIPMENT RENTAL.'
+  }
+
+  if (isAssociationPermit === true) {
+       messageconfirm += 'This order required ASSOCIATION PERMIT.'
+  }
+//  console.log(messageconfirm)
+  //return
+  
   const handleSubmit = async (values: any, helpers: FormikHelpers<OrderFormValues>) => {
-    if (values.status !== 'CONFIRMED' && (values.installation_teams.length > 0 || values.supervisor_id !== null) && !confirm('Are you sure you want to change the status to confirmed?')) {
+    if (values.status !== 'CONFIRMED' && (values.installation_teams.length > 0 && values.supervisor_id !== null) && !confirm(messageconfirm )) {
       return
     }
 
@@ -103,6 +118,9 @@ export default function Edit ({
         return getOrderProducts(orderProduct)
       })
     }
+
+    //console.log(order)
+    //return
 
     delete order.order_products
     router.post(route('order.update', values.id), {

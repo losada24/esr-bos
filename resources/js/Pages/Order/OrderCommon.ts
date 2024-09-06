@@ -72,6 +72,7 @@ export const orderFormObj: OrderFormValues = {
   travel_cost_id: 0,
   duration_of_work_id: 0,
   method_of_payment: '',
+  cost_delivery: 0,
   service: '',
   contract_signing_date: null,
   payment_factory_date: null,
@@ -88,7 +89,7 @@ export interface OrderProductExtraWorksFormValues {
   extra_work_id: number
   extra_work_name: string
   extra_work_unit: string
-  number_of_sides: number
+  amount: number
   price: number
   checked: boolean
 }
@@ -106,7 +107,7 @@ export const loadOrderFormObj = (order: Order): OrderFormValues => {
     city_permits: order.city_permits,
     association_permits: order.association_permits,
     equipment_rental: order.equipment_rental,
-    notes: order.notes,
+    notes: order.notes ?? '',
     client_id: order.client_id,
     entry_date: order.entry_date ?? null,
     installation_date: order.installation_date ?? null,
@@ -116,6 +117,8 @@ export const loadOrderFormObj = (order: Order): OrderFormValues => {
     installation_teams: order.installation_teams,
     supervisor_id: order.supervisor_id,
     travel_cost_id: order.travel_cost_id,
+    cost_delivery: order.cost_delivery,
+
     duration_of_work_id: order.duration_of_work_id,
     method_of_payment: order.method_of_payment,
     service: order.service,
@@ -152,6 +155,7 @@ export const getOrderProducts = (orderProduct: OrderProductFormValues) => {
     total_price: orderProduct.total_price,
     total_price_with_extraworks: orderProduct.total_price_with_extraworks,
     unit_price_with_extraworks: orderProduct.unit_price_with_extraworks,
+    extra_work_price: orderProduct.extra_work_price,
     notes: orderProduct.notes,
     product_config_id: orderProduct.product_config_id,
     type_of_work_id: orderProduct.type_of_work_id,
@@ -163,7 +167,7 @@ export const getOrderProducts = (orderProduct: OrderProductFormValues) => {
       return {
         order_product_id: extra_work.pivot.order_product_id,
         extra_work_id: extra_work.pivot.extra_work_id,
-        number_of_sides: extra_work.pivot.number_of_sides,
+        amount: extra_work.pivot.amount,
         extra_work_name: extra_work.name,
         price: extra_work.pivot.price
       }

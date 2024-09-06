@@ -25,7 +25,7 @@ class ExtraWork extends Model
         return $this->belongsToMany(
           OrderProduct::class, 'order_products_extra_works', 'extra_work_id', 'order_product_id'
           )->using(OrderProductExtraWork::class)
-            ->withPivot('price', 'number_of_sides')
+            ->withPivot('price', 'amount')
             ->withTimestamps();
     }
 

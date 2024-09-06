@@ -43,6 +43,7 @@ export interface Order {
   installation_end_date?: Date
   frame_color: string
   status?: string
+  cost_delivery?: number
 }
 
 export interface TypeOfWork {
@@ -102,6 +103,7 @@ export interface OrderProduct {
   unit_price_with_extraworks: number
   total_price: number
   total_price_with_extraworks: number
+  extra_work_price: number
   notes: string
   order?: Order
   product_config_id: number
@@ -120,7 +122,7 @@ export interface OrderProduct {
 export interface OrderProductsExtraWorks {
   order_product_id: number
   extra_work_id: number
-  number_of_sides: number
+  amount: number
   price: number
 }
 

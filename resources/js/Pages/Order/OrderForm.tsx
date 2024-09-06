@@ -250,6 +250,47 @@ const OrderForm = ({
               />
               {(submitCount && errors.owners) ? <InputError message={errors.owners.toString()} className="mt-2" /> : ''}
             </div>
+            <div className={submitCount ? (errors.frame_color) ? 'has-error' : 'has-success' : ''}>
+              <label htmlFor="frame_color">Frame Color</label>
+              <Field
+                id="frame_color"
+                name="frame_color"
+                className="form-select"
+                autoComplete="frame_color"
+                placeholder='Frame Color'
+                as="select"
+              >
+                <option value="">Select Frame color</option>
+                {frame_colors.map((frame_color, index) => (
+                  <option key={index} value={frame_color}>{frame_color}</option>
+                ))}
+              </Field>
+              {(submitCount && errors.frame_color) ? <InputError message={errors.frame_color} className="mt-2" /> : ''}
+            </div>
+            <div className={submitCount ? (errors.service) ? 'has-error' : 'has-success' : ''}>
+              <label htmlFor="service">Service</label>
+              <Field
+                id="service"
+                name="service"
+                className="form-select"
+                autoComplete="service"
+                placeholder='Service'
+                as="select"
+                onChange={(e: { target: { value: string } }) => {
+                  setFieldValue('service', e.target.value)
+                  setFieldValue('city_permits', false)
+                  setFieldValue('association_permits', false)
+                  setFieldValue('equipment_rental', false)
+
+                }}
+              >
+                <option value="">Service</option>
+                {services.map((service, index) => (
+                  <option key={index} value={service}>{service}</option>
+                ))}
+              </Field>
+              {(submitCount && errors.service) ? <InputError message={errors.service} className="mt-2" /> : ''}
+            </div>
             <div className={submitCount ? (errors.type_of_work_id) ? 'has-error' : 'has-success' : ''}>
               <label htmlFor="type_of_work">Type of Work</label>
               <Field
@@ -292,37 +333,6 @@ const OrderForm = ({
               </Field>
               {(submitCount && errors.type_of_housing_id) ? <InputError message={errors.type_of_housing_id} className="mt-2" /> : ''}
             </div>
-            {(values.service=== "DELIVERY AND INSTALLATION") && (
-            <>
-            <div className={submitCount ? (errors.installation_teams) ? 'has-error' : 'has-success' : ''}>
-              <label htmlFor="installationTeams">Installation Team</label>
-              <Select
-                id='installation_teams'
-                placeholder="Installation Team"
-                name='installation_teams'
-                defaultValue={ values.installation_teams.map((installation_team) => { return { label: installation_team.user?.name, value: installation_team.id } }) }
-                isMulti={true}
-                onChange={(value) => { setFieldValue('installation_teams', value) }}
-                options={installation_teams.filter((team_member) =>
-                  team_member.type_housing?.find((type_of_housing) => type_of_housing.id === values.type_of_housing_id)
-                ).map((installation_team) => { return { label: installation_team.user?.name, value: installation_team.id } })}
-              />
-              {(submitCount && errors.installation_teams) ? <InputError message={errors.installation_teams.toString()} className="mt-2" /> : ''}
-            </div>
-            <div className={submitCount ? (errors.supervisor_id) ? 'has-error' : 'has-success' : ''}>
-              <label htmlFor="supervisor_id">Supervisor</label>
-              <Select
-                id='supervisor_id'
-                placeholder="Supervisor"
-                name='supervisor_id'
-                defaultValue={ selectedSupervisor }
-                onChange={(value) => { setFieldValue('supervisor_id', value) }}
-                options={supervisors.map((supervisor) => { return { label: supervisor.name, value: supervisor.id } })}
-              />
-              {(submitCount && errors.supervisor_id) ? <InputError message={errors.supervisor_id} className="mt-2" /> : ''}
-            </div>
-            </>
-           )} 
             <div className={submitCount ? (errors.travel_cost_id) ? 'has-error' : 'has-success' : ''}>
               <label htmlFor="travel_cost_id">County</label>
               <Select
@@ -358,64 +368,6 @@ const OrderForm = ({
                 type='number'
               />
               {(submitCount && errors.additional_travel_costs) ? <InputError message={errors.additional_travel_costs} className="mt-2" /> : ''}
-            </div>
-            <div className={submitCount ? (errors.method_of_payment) ? 'has-error' : 'has-success' : ''}>
-              <label htmlFor="method_of_payment">Project Payment Method</label>
-              <Field
-                id="method_of_payment"
-                name="method_of_payment"
-                className="form-select"
-                autoComplete="method_of_payment"
-                placeholder='Method of Payment'
-                as="select"
-              >
-                <option value="">Method of Payment</option>
-                {methods_of_payment.map((method_of_payment, index) => (
-                  <option key={index} value={method_of_payment}>{method_of_payment}</option>
-                ))}
-              </Field>
-              {(submitCount && errors.type_of_housing_id) ? <InputError message={errors.type_of_housing_id} className="mt-2" /> : ''}
-            </div>
-            <div className={submitCount ? (errors.service) ? 'has-error' : 'has-success' : ''}>
-              <label htmlFor="service">Service</label>
-              <Field
-                id="service"
-                name="service"
-                className="form-select"
-                autoComplete="service"
-                placeholder='Service'
-                as="select"
-                onChange={(e: { target: { value: string } }) => {
-                  setFieldValue('service', e.target.value)
-                  setFieldValue('city_permits', false)
-                  setFieldValue('association_permits', false)
-                  setFieldValue('equipment_rental', false)
-
-                }}
-              >
-                <option value="">Service</option>
-                {services.map((service, index) => (
-                  <option key={index} value={service}>{service}</option>
-                ))}
-              </Field>
-              {(submitCount && errors.service) ? <InputError message={errors.service} className="mt-2" /> : ''}
-            </div>
-            <div className={submitCount ? (errors.frame_color) ? 'has-error' : 'has-success' : ''}>
-              <label htmlFor="frame_color">Frame Color</label>
-              <Field
-                id="frame_color"
-                name="frame_color"
-                className="form-select"
-                autoComplete="frame_color"
-                placeholder='Frame Color'
-                as="select"
-              >
-                <option value="">Select Frame color</option>
-                {frame_colors.map((frame_color, index) => (
-                  <option key={index} value={frame_color}>{frame_color}</option>
-                ))}
-              </Field>
-              {(submitCount && errors.frame_color) ? <InputError message={errors.frame_color} className="mt-2" /> : ''}
             </div>
             <div className={submitCount ? (errors.entry_date) ? 'has-error' : 'has-success' : ''}>
               <label htmlFor="entry_date">Entry Date</label>
@@ -540,6 +492,73 @@ const OrderForm = ({
               />
               {(submitCount && errors.installation_end_date) ? <InputError message={errors.installation_end_date?.toString()} className="mt-2" /> : ''}
             </div>
+            <div className={submitCount ? (errors.method_of_payment) ? 'has-error' : 'has-success' : ''}>
+              <label htmlFor="method_of_payment">Project Payment Method</label>
+              <Field
+                id="method_of_payment"
+                name="method_of_payment"
+                className="form-select"
+                autoComplete="method_of_payment"
+                placeholder='Method of Payment'
+                as="select"
+                onChange={(e: { target: { value: string } }) => {
+                  setFieldValue('method_of_payment', e.target.value)
+                  setFieldValue('cost_delivery', 0)
+                }}
+              >
+                <option value="">Method of Payment</option>
+                {methods_of_payment.map((method_of_payment, index) => (
+                  <option key={index} value={method_of_payment}>{method_of_payment}</option>
+                ))}
+              </Field>
+              {(submitCount && errors.type_of_housing_id) ? <InputError message={errors.type_of_housing_id} className="mt-2" /> : ''}
+            </div>
+
+            {(values.method_of_payment=== "CASH" || values.method_of_payment=== "CASH AND FINANCED"  ) && (
+            <div className={submitCount ? (errors.cost_delivery) ? 'has-error' : 'has-success' : ''}>
+              <label htmlFor="cost_delivery">Delivery Cost</label>
+              <Field
+                id="cost_delivery"
+                name="cost_delivery"
+                className="form-input text-right"
+                autoComplete="cost_delivery"
+                placeholder='Delivery Cost'
+                type='number'
+              />
+              {(submitCount && errors.cost_delivery) ? <InputError message={errors.cost_delivery} className="mt-2" /> : ''}
+            </div>
+            )}
+            {(values.service=== "DELIVERY AND INSTALLATION") && (
+            <>
+            <div className={submitCount ? (errors.installation_teams) ? 'has-error' : 'has-success' : ''}>
+              <label htmlFor="installationTeams">Installation Team</label>
+              <Select
+                id='installation_teams'
+                placeholder="Installation Team"
+                name='installation_teams'
+                defaultValue={ values.installation_teams.map((installation_team) => { return { label: installation_team.user?.name, value: installation_team.id } }) }
+                isMulti={true}
+                onChange={(value) => { setFieldValue('installation_teams', value) }}
+                options={installation_teams.filter((team_member) =>
+                  team_member.type_housing?.find((type_of_housing) => type_of_housing.id === values.type_of_housing_id)
+                ).map((installation_team) => { return { label: installation_team.user?.name, value: installation_team.id } })}
+              />
+              {(submitCount && errors.installation_teams) ? <InputError message={errors.installation_teams.toString()} className="mt-2" /> : ''}
+            </div>
+            <div className={submitCount ? (errors.supervisor_id) ? 'has-error' : 'has-success' : ''}>
+              <label htmlFor="supervisor_id">Supervisor</label>
+              <Select
+                id='supervisor_id'
+                placeholder="Supervisor"
+                name='supervisor_id'
+                defaultValue={ selectedSupervisor }
+                onChange={(value) => { setFieldValue('supervisor_id', value) }}
+                options={supervisors.map((supervisor) => { return { label: supervisor.name, value: supervisor.id } })}
+              />
+              {(submitCount && errors.supervisor_id) ? <InputError message={errors.supervisor_id} className="mt-2" /> : ''}
+            </div>
+            </>
+           )} 
            
            {(values.service=== "DELIVERY AND INSTALLATION") && (
             <>
@@ -590,8 +609,7 @@ const OrderForm = ({
             </div>
             </>
            )} 
-            
-              
+      
             <div className='col-span-4'>
               <label htmlFor="notes">Notes</label>
               <Field

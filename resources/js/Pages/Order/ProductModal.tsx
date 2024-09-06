@@ -6,7 +6,7 @@ import { Field, Form, Formik, type FormikHelpers } from 'formik'
 import { type OrderProductExtraWorksFormValues, orderProductSchema } from './OrderCommon'
 import InputError from '@/Components/InputError'
 import PrimaryButton from '@/Components/PrimaryButton'
-import { getProductPriceWithExtraWorks, getProductPrice } from '@/Utils/price'
+import { getProductPriceWithExtraWorks, getProductPrice, getProductExtraWorkPrice } from '@/Utils/price'
 
 const ProductModal = ({
   showModal,
@@ -42,6 +42,7 @@ const ProductModal = ({
     unit_price: 0,
     unit_price_with_extraworks: 0,
     total_price_with_extraworks: 0,
+    extra_work_price: 0,
     total_price: 0,
     notes: '',
     product_config_id: 0,
@@ -62,6 +63,7 @@ const ProductModal = ({
 
     const unit_price = getProductPrice(product, productCosts)
     const unit_price_with_extrawork = getProductPriceWithExtraWorks(product, productCosts)
+    product.extra_work_price = getProductExtraWorkPrice(product) ?? 0
     product.unit_price = unit_price
     product.total_price = unit_price * product.qty
     product.unit_price_with_extraworks = unit_price_with_extrawork
@@ -113,7 +115,7 @@ const ProductModal = ({
                                 extra_work_id: extraWork.id,
                                 extra_work_name: extraWork.name,
                                 extra_work_unit: extraWork.unit,
-                                number_of_sides: 0,
+                                amount: 0,
                                 checked: false,
                                 price: extraWork.price
                               })) ?? []
@@ -206,6 +208,19 @@ const ProductModal = ({
                           />
                           {(submitCount && errors.qty) ? <InputError message={errors.qty} className="mt-2" /> : ''}
                         </div>
+
+                        <div className='col-span-3'>
+                            <label htmlFor="notes">Notes</label>
+                              <Field
+                                id="notes"
+                                name="notes"
+                                component="textarea"
+                                rows="4"
+                                className="form-textarea resize-none placeholder:text-white-dark"
+                                placeholder='Notes'
+                              />
+                               {(submitCount && errors.notes) ? <InputError message={errors.notes} className="mt-2" /> : ''}
+                        </div>
                         {values.type_of_product_id === 3 && (
                           <div className={submitCount ? (errors.storefront_area) ? 'has-error' : 'has-success' : ''}>
                             <label htmlFor="storefront_area">Storefront Area</label>
@@ -239,29 +254,53 @@ const ProductModal = ({
                       <legend className='text-lg font-semibold px-3'>Extra Works</legend>
                       <div className='grid gap-4 grid-cols-2'>
                         {plannedExtraWorksFormValues.map((extraWork) => (
-                          <div key={extraWork.extra_work_id} className='inline-flex items-end'>
-                            <div className='flex'>
+                          <>
+                            <div key={extraWork.extra_work_id} className='inline-flex items-end'>
+                              <div className='flex'>
+                                <Field
+                                  id={`plannedExtraWork${extraWork.extra_work_id}`}
+                                  name={`plannedExtraWork${extraWork.extra_work_id}`}
+                                  className="form-checkbox"
+                                  type='checkbox'
+                                  checked={extraWork.checked}
+                                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                                    setPlannedExtraWorksFormValues(plannedExtraWorksFormValues.map((extra) => {
+                                      if (extra.extra_work_id === extraWork.extra_work_id) {
+                                        return {
+                                          ...extra,
+                                          checked: e.target.checked
+                                        }
+                                      }
+                                      return extra
+                                    }))
+                                  }}
+                                />
+                                <label htmlFor={`plannedExtraWork${extraWork.extra_work_id}`}>{extraWork.extra_work_name}</label>
+                              </div>
+                            </div>
+                            <div className={submitCount ? (errors.storefront_area) ? 'has-error' : 'has-success' : ''}>
+                              <label htmlFor={`extraWorkAmount${extraWork.extra_work_id}`}>Amount</label>
                               <Field
-                                id={`plannedExtraWork${extraWork.extra_work_id}`}
-                                name={`plannedExtraWork${extraWork.extra_work_id}`}
-                                className="form-checkbox"
-                                type='checkbox'
-                                checked={extraWork.checked}
+                                id={`extraWorkAmount${extraWork.extra_work_id}`}
+                                name={`extraWorkAmount${extraWork.extra_work_id}`}
+                                className="form-input text-right"
+                                placeholder='Qty'
+                                type='number'
+                                value={extraWork.amount}
                                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                                   setPlannedExtraWorksFormValues(plannedExtraWorksFormValues.map((extra) => {
                                     if (extra.extra_work_id === extraWork.extra_work_id) {
                                       return {
                                         ...extra,
-                                        checked: e.target.checked
+                                        amount: parseInt(e.target.value)
                                       }
                                     }
                                     return extra
                                   }))
                                 }}
                               />
-                              <label htmlFor={`plannedExtraWork${extraWork.extra_work_id}`}>{extraWork.extra_work_name}</label>
                             </div>
-                          </div>
+                          </>
                         ))}
                       </div>
                     </fieldset>

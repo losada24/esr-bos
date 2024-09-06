@@ -43,7 +43,8 @@ class Order extends Model
         'status',
         'eta_date',
         'installation_end_date',
-        'frame_color'
+        'frame_color',
+        'cost_delivery'
     ];
 
     protected $dates = [

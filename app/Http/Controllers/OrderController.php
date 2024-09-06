@@ -85,7 +85,8 @@ class OrderController extends Controller
           'supervisors' => User::role(RoleEnum::SUPERVISOR->value)->get(),
           'methods_of_payment' => [
             MethodOfPayment::CASH->value,
-            MethodOfPayment::FINANCED->value
+            MethodOfPayment::FINANCED->value,
+            MethodOfPayment::FINANCEDCASH->value,
           ],
           'services' => [
             Service::INSTALLATION->value,
@@ -159,7 +160,8 @@ class OrderController extends Controller
           'supervisors' => User::role(RoleEnum::SUPERVISOR->value)->get(),
           'methods_of_payment' => [
             MethodOfPayment::CASH->value,
-            MethodOfPayment::FINANCED->value
+            MethodOfPayment::FINANCED->value,
+            MethodOfPayment::FINANCEDCASH->value,
           ],
           'frame_colors' => [
             FrameColorEnum::WHITE->value,

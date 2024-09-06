@@ -28,12 +28,12 @@ Route::get('/pdf', function () {
     'orderProducts.productCategory',
     'orderProducts.productConfig',
     'orderProducts.orderProductExtraWorks',
-  ])->find(21);
-  $pdf = Pdf::loadView('pdf.payment-list', ['order' => $order]);
+  ])->find(30);
+  /*$pdf = Pdf::loadView('pdf.payment-list', ['order' => $order]);
   $pdfName = 'payment-list-' . $order->order_number . '.pdf';
   $pdf->save('../storage/app/public/pdf/' . $pdfName);
-  echo 'pdf salvado';
-  //return view('pdf.payment-list');
+  echo 'pdf salvado';*/
+  return view('pdf.payment-list', ['order' => $order]);
 });
 
 /* Route::get('/mailable', function () {
@@ -56,15 +56,15 @@ Route::middleware('auth')->group(function () {
       ->only(['index', 'create', 'store'])
       ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$ACCOUNT_MANAGER . "|" . RoleEnum::$DEALER]); */
 
-    Route::get('myphpinfo', function() {
+    /*Route::get('myphpinfo', function() {
       phpinfo();
-    })->name('myphpinfo');
+    })->name('myphpinfo');*/
 
     Route::resource('user', UserController::class)
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value ]);
     
     Route::resource('order', OrderController::class)
-      ->middleware(["role:" . RoleEnum::ADMIN->value]);
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value ]);
 
     Route::get('order/get_delivery_and_installation_date/{payment_factory_date}/{type_of_housing}/{county_id}/{service}', [OrderController::class, 'getDeliveryAndInstallationDate'])
       ->middleware(["role:" . RoleEnum::ADMIN->value]);

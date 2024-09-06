@@ -24,6 +24,7 @@ class OrderProduct extends Model
         'total_price',
         'unit_price_with_extraworks',
         'total_price_with_extraworks',
+        'extra_work_price',
         'notes',
         'storefront_area',
         'installation_other_level',
@@ -57,7 +58,7 @@ class OrderProduct extends Model
           'order_products_extra_works', 
           'order_product_id', 'extra_work_id'
           )->using(OrderProductExtraWork::class)
-            ->withPivot('price', 'number_of_sides')
+            ->withPivot('price', 'amount')
             ->withTimestamps();
       }
 }

@@ -47,7 +47,8 @@ class UpdateOrderRequest extends FormRequest
           'travel_cost_id' => 'required|integer|exists:travel_costs,id',
           'duration_of_work_id' => 'required|integer|exists:duration_of_works,id',
           'additional_travel_costs' => 'nullable|numeric',
-          'method_of_payment' => 'required|string|in:CASH,FINANCED',
+          'cost_delivery' => 'nullable|numeric',
+          'method_of_payment' => 'required|string|in:CASH,FINANCED,FINANCEDCASH',
           'frame_color' => [
             'required',
             'string',
@@ -91,6 +92,7 @@ class UpdateOrderRequest extends FormRequest
           'orderProducts.*.total_price' => 'required|numeric',
           'orderProducts.*.unit_price_with_extraworks' => 'required|numeric',
           'orderProducts.*.total_price_with_extraworks' => 'required|numeric',
+          'orderProducts.*.extra_work_price' => 'required|numeric',
           'orderProducts.*.extra_works' => 'nullable|array',
         ];
     }

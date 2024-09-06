@@ -1,6 +1,7 @@
 import DeleteIcon from '@/Components/Icons/DeleteIcon'
 import EditIcon from '@/Components/Icons/EditIcon'
 import { type TypeOfProduct, type OrderProduct, type ProductConfig, type ProductCategory } from '@/types'
+import { OrderProductsExtraWorks } from '@/types/interfaces/order'
 import { formatPrice } from '@/Utils/price'
 import React from 'react'
 
@@ -39,6 +40,7 @@ const ProductTable = ({
                 <th className="px-6 pt-5 pb-4">Product Config</th>
                 <th className="px-6 pt-5 pb-4 text-right">Count</th>
                 <th className="px-6 pt-5 pb-4 text-right">Unit Price</th>
+                <th className="px-6 pt-5 pb-4 text-right">Extra Work</th>
                 <th className="px-6 pt-5 pb-4 text-right">Total Price</th>
                 <th className="px-6 pt-5 pb-4 w-14">Actions</th>
               </tr>
@@ -66,7 +68,10 @@ const ProductTable = ({
                       {formatPrice(product.unit_price)}
                     </td>
                     <td className="border-t px-6 py-4 align-top text-right">
-                      {formatPrice(product.total_price)}
+                      {formatPrice(product.extra_work_price)}
+                    </td>
+                    <td className="border-t px-6 py-4 align-top text-right">
+                      {formatPrice(product.total_price_with_extraworks)}
                     </td>
                     <td className="border-t px-6 py-4 align-top">
                       {/* <button

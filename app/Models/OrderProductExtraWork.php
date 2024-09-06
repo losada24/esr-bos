@@ -14,15 +14,14 @@ class OrderProductExtraWork extends Pivot
     use HasFactory, SoftDeletes;
     
     protected $table = 'order_products_extra_works';
-    /* protected $fillable = [
+     protected $fillable = [
         'order_product_id',
         'extra_work_id',
-        'number_of_sides',
-        'price',
-        'notes'
+        'amount',
+        'price'
     ];
 
-    public function orderProduct(): BelongsTo {
+    /*public function orderProduct(): BelongsTo {
         return $this->belongsTo(OrderProduct::class, 'order_product_id', 'id');
     }
 

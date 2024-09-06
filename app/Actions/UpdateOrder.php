@@ -58,6 +58,7 @@ class UpdateOrder {
         'delivery_date' => $request->delivery_date,
         'status' => $status,
         'frame_color' => $request->frame_color,
+        'cost_delivery' => $request->cost_delivery
       ];
 
       $order->update($orderData);
@@ -90,6 +91,7 @@ class UpdateOrder {
           'total_price' => $product['total_price'],
           'unit_price_with_extraworks' => $product['unit_price_with_extraworks'],
           'total_price_with_extraworks' => $product['total_price_with_extraworks'],
+          'extra_work_price' => $product['extra_work_price'],
           'notes' => $product['notes'],
           'storefront_area' => $product['storefront_area'],
           'installation_other_level' => $product['installation_other_level'],
@@ -103,14 +105,14 @@ class UpdateOrder {
         for ($i = 0; $i < count($product_extra_works); $i++) {
           $extraWorks[$product_extra_works[$i]['extra_work_id']] = [
             'price' => $product_extra_works[$i]['price'],
-            'number_of_sides' => $product_extra_works[$i]['number_of_sides'],
+            'amount' => $product_extra_works[$i]['amount'],
           ];
         }
 
         $orderProduct->orderProductExtraWorks()->attach($extraWorks);
       }
       
-      //$this->sendEmail($order);
+      $this->sendEmail($order);
       
       if( !$order )
       {

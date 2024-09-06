@@ -66,11 +66,12 @@
             <tr>
               <td class="table-section" colspan="5">Extra Works</td>
             </tr>
+           
             @foreach ($extraWorksCollection->groupBy('name') as $key => $extraWork)
               @php 
-                $count = $extraWork->count();
-                $price = $extraWork->sum('pivot.price');
-                $total = $count * $price;
+                $count = $extraWork->sum('pivot.amount');
+                $price = $extraWork->first()->price;
+                $total = $price  * $count;
                 $grandTotal += $total;
               @endphp
               <tr>
