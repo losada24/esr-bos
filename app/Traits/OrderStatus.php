@@ -18,11 +18,15 @@ trait OrderStatus {
     return $status;
   }
 
-  public function getColorByStatus($status) {
+  public function getColorByStatus($status, $isDeliveryAndInstallation = false) {
     $color = '';
     switch ($status) {
       case OrderStatusEnum::PLANNED->value:
-        $color = '#5FE3FB';
+        if ($isDeliveryAndInstallation) {
+          $color = '#0a7bd1';  
+        } else {
+          $color = '#5FE3FB';
+        }
         break;
       case OrderStatusEnum::CONFIRMED->value:
         $color = '#F4F443';

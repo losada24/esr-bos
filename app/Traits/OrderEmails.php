@@ -23,8 +23,8 @@ trait OrderEmails {
       }
 
       $users[] = $order->client->email;
-      $accountManager = User::role([RoleEnum::ACCOUNT_MANAGER->value])->get();
-      $users = array_merge($users, $accountManager->pluck('email')->toArray());
+      //$accountManager = User::role([RoleEnum::ACCOUNT_MANAGER->value])->get();
+      //$users = array_merge($users, $accountManager->pluck('email')->toArray());
 
       if ($order->service === Service::INSTALLATION->value) {
         foreach ($users as $user) {

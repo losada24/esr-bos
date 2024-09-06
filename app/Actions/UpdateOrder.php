@@ -30,6 +30,7 @@ class UpdateOrder {
       }
 
       $status = $this->getStatus($request);
+      $sendEmail = $status != $order->status;
       $orderData = [
         'client_id' => $client->id,
         'user_id' => auth()->user()->id,
@@ -112,7 +113,9 @@ class UpdateOrder {
         $orderProduct->orderProductExtraWorks()->attach($extraWorks);
       }
       
-      $this->sendEmail($order);
+      if ($sendEmail) {
+        $this->sendEmail($order);
+      }
       
       if( !$order )
       {

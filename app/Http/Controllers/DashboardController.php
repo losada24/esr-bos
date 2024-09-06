@@ -73,7 +73,7 @@ class DashboardController extends Controller
           "ESTIMATED INSTALLATION DATE",
           $startInstallationDate,
           $endInstallationDate,
-          $this->getColorByStatus($order->status),
+          $this->getColorByStatus($order->status, true),
           $order->service
         );
         $events[] = $event;
