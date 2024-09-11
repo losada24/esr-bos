@@ -3,10 +3,11 @@ import Modal from '@/Components/Modal'
 import CloseIcon from '@/Components/Icons/CloseIcon'
 import { type OrderProduct, type ProductCategory, type ProductConfig, type TypeOfProduct, type ProductCost } from '@/types'
 import { Field, Form, Formik, type FormikHelpers } from 'formik'
-import { type OrderProductExtraWorksFormValues, orderProductSchema } from './OrderCommon'
+import { type OrderProductExtraWorksFormValues, orderProductSchema, getValueIdNotNull } from './OrderCommon'
 import InputError from '@/Components/InputError'
 import PrimaryButton from '@/Components/PrimaryButton'
 import { getProductPriceWithExtraWorks, getProductPrice, getProductExtraWorkPrice } from '@/Utils/price'
+import { PAYMENT_METHODS, SERVICES } from '@/Utils/constants'
 
 const ProductModal = ({
   showModal,
@@ -17,7 +18,8 @@ const ProductModal = ({
   productConfigs,
   typeOfWork,
   productCosts,
-  addOrderProduct
+  addOrderProduct,
+  service
 }: {
   showModal: boolean
   onClose: CallableFunction
@@ -27,6 +29,7 @@ const ProductModal = ({
   productConfigs: ProductConfig[]
   typeOfWork: number
   productCosts: ProductCost[]
+  service: string
   addOrderProduct: CallableFunction
 }) => {
   const [productCategoryOptions, setProductCategoryOptions] = useState<ProductCategory[]>([])
@@ -53,21 +56,21 @@ const ProductModal = ({
     type_of_product_id: 0,
     extra_works: []
   }
-
+  
   const handleSubmit = async (values: any, helpers: FormikHelpers<OrderProduct>) => {
     const plannedExtraWorks = plannedExtraWorksFormValues.filter((extraWork) => extraWork.checked)
     const product: OrderProduct = {
       ...values,
+      type_of_work_id: values.type_of_work_id !== 0 ? values.type_of_work_id : getValueIdNotNull(values.type_of_work_id),
       extra_works: plannedExtraWorks
     }
-
     const unit_price = getProductPrice(product, productCosts)
     const unit_price_with_extrawork = getProductPriceWithExtraWorks(product, productCosts)
     product.extra_work_price = getProductExtraWorkPrice(product) ?? 0
     product.unit_price = unit_price
     product.total_price = unit_price * product.qty
     product.unit_price_with_extraworks = unit_price_with_extrawork
-    product.total_price_with_extraworks = unit_price_with_extrawork * product.qty
+    product.total_price_with_extraworks = unit_price_with_extrawork + product.total_price
     addOrderProduct(product)
     onClose(false)
   }
@@ -111,6 +114,7 @@ const ProductModal = ({
                                 setFieldValue('storefront_area', 0)
                               }
                               setProductCategoryOptions(productCategories.filter((productCategory) => productCategory.type_of_products_id === id))
+
                               const extraWorks = typeOfProducts.find((typeOfProduct) => typeOfProduct.id === id)?.extra_works.map((extraWork) => ({
                                 extra_work_id: extraWork.id,
                                 extra_work_name: extraWork.name,
@@ -221,7 +225,7 @@ const ProductModal = ({
                               />
                                {(submitCount && errors.notes) ? <InputError message={errors.notes} className="mt-2" /> : ''}
                         </div>
-                        {values.type_of_product_id === 3 && (
+                        {(values.type_of_product_id === 3 && service === SERVICES.DELIVERY_AND_INSTALLATION) && (
                           <div className={submitCount ? (errors.storefront_area) ? 'has-error' : 'has-success' : ''}>
                             <label htmlFor="storefront_area">Storefront Area</label>
                             <Field
@@ -235,7 +239,7 @@ const ProductModal = ({
                             {(submitCount && errors.storefront_area) ? <InputError message={errors.storefront_area} className="mt-2" /> : ''}
                           </div>
                         )}
-                        {values.type_of_product_id === 2 && (
+                        {(values.type_of_product_id === 2 && service === SERVICES.DELIVERY_AND_INSTALLATION) &&  (
                           <div className='inline-flex items-end'>
                             <div className='flex'>
                               <Field
@@ -249,7 +253,8 @@ const ProductModal = ({
                           </div>
                         )}
                   </div>
-                  {plannedExtraWorksFormValues.length > 0 && (
+                  
+                  {(plannedExtraWorksFormValues.length > 0 && service === SERVICES.DELIVERY_AND_INSTALLATION) && (
                     <fieldset className='p-3 border rounded-xl mt-3'>
                       <legend className='text-lg font-semibold px-3'>Extra Works</legend>
                       <div className='grid gap-4 grid-cols-2'>

@@ -37,25 +37,52 @@ class StoreOrderRequest extends FormRequest
             'job_address' => 'required|string|max:255',
             'owners' => 'required|array',
             'owners.*' => 'required|integer|exists:users,id',
-            'type_of_work_id' => 'required|integer|exists:type_of_works,id',
-            'type_of_housing_id' => 'required|integer|exists:types_of_housing,id',
+            'type_of_work_id' => [
+               'nullable',
+                Rule::when(
+                  fn($input) => $input->service == Service::INSTALLATION->value
+                  , ['required','integer','exists:type_of_works,id',]
+                ),
+            ],
+            'type_of_housing_id' => [
+              'nullable',
+              Rule::when(
+                fn($input) => $input->service == Service::INSTALLATION->value
+                , ['required','integer','exists:types_of_housing,id',]
+              ),
+            ],
             'installation_teams' => 'nullable|array',
             'installation_teams.*' => 'required|integer|exists:installation_teams,id',
             'supervisor_id' => 'nullable|integer|exists:users,id',
-            'travel_cost_id' => 'required|integer|exists:travel_costs,id',
-            'duration_of_work_id' => 'required|integer|exists:duration_of_works,id',
+            'travel_cost_id' => [
+              'nullable',
+              Rule::when(
+                fn($input) => $input->service == Service::INSTALLATION->value
+                , ['required','integer','exists:travel_costs,id',]
+              ),
+            ],
+            'duration_of_work_id' => [
+              'nullable',
+              Rule::when(
+                fn($input) => $input->service == Service::INSTALLATION->value
+                , ['required', 'integer', 'exists:duration_of_works,id',]
+              ),
+            ],
             'additional_travel_costs' => 'nullable|numeric',
             'cost_delivery' => 'nullable|numeric',
+            'cost_city_fee' => 'nullable|numeric',
             'method_of_payment' => 'required|string|in:CASH,FINANCED,FINANCEDCASH',
             'frame_color' => [
-              'required',
-              'string',
-              Rule::in([
-                FrameColorEnum::WHITE->value,
-                FrameColorEnum::BLACK->value,
-                FrameColorEnum::BRONZE->value,
-                FrameColorEnum::CLEAR_ANODIZED->value
-              ])
+              'nullable',
+              Rule::when(
+                fn($input) => $input->service == Service::INSTALLATION->value
+                , ['required', 'string', Rule::in([
+                  FrameColorEnum::WHITE->value,
+                  FrameColorEnum::BLACK->value,
+                  FrameColorEnum::BRONZE->value,
+                  FrameColorEnum::CLEAR_ANODIZED->value
+                ])]
+              ),
             ],
             'service' => [
                 'required',

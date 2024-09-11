@@ -20,6 +20,17 @@ trait OrderDates {
     return $estimate_eta_date;
   }
 
+  public function getEstimateDeliveryByEtaDate($estimate_eta_date) {
+    $temp_eta_date = Carbon::parse($estimate_eta_date);
+    
+    $eta_date = $temp_eta_date->addDays(10);
+    if ($eta_date->isWeekend()) {
+      $eta_date->next(Carbon::MONDAY);
+    }
+    
+    return $eta_date->format('Y-m-d');
+  }
+
   public function getEstimateDeliveryDate($payment_factory_date, $service, $county_id, $type_of_housing) {
     $payment_factory_date_object = Carbon::parse($payment_factory_date);
     $estimate_delivery_date = null;

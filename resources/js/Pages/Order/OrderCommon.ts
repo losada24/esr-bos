@@ -8,6 +8,15 @@ export const orderSchema = Yup.object({
   // notes: Yup.string().required().max(1000, 'Notes must be less than 255 characters')
 })
 
+export const getValueIdNotNull = (formField: any) => {
+  let value = ''
+  if ((formField !== undefined && formField !== null) && Object.prototype.hasOwnProperty.call(formField, 'value')) {
+    value = formField.value
+  }
+
+  return value
+}
+
 export const orderProductSchema = Yup.object({
   id: Yup.number(),
   type_of_product_id: Yup.number().moreThan(0, 'Type of product is required'),
@@ -73,6 +82,7 @@ export const orderFormObj: OrderFormValues = {
   duration_of_work_id: 0,
   method_of_payment: '',
   cost_delivery: 0,
+  cost_city_fee: 0,
   service: '',
   contract_signing_date: null,
   payment_factory_date: null,
@@ -104,7 +114,7 @@ export const loadOrderFormObj = (order: Order): OrderFormValues => {
     name: order.name,
     order_number: order.order_number,
     job_address: order.job_address,
-    city_permits: order.city_permits,
+    city_permits: !!order.city_permits,
     association_permits: order.association_permits,
     equipment_rental: order.equipment_rental,
     notes: order.notes ?? '',
@@ -118,7 +128,7 @@ export const loadOrderFormObj = (order: Order): OrderFormValues => {
     supervisor_id: order.supervisor_id,
     travel_cost_id: order.travel_cost_id,
     cost_delivery: order.cost_delivery,
-
+    cost_city_fee: order.cost_city_fee,
     duration_of_work_id: order.duration_of_work_id,
     method_of_payment: order.method_of_payment,
     service: order.service,

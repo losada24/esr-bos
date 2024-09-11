@@ -1,7 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
 import { Head, router } from '@inertiajs/react'
 import { Formik, type FormikHelpers } from 'formik'
-import { getOrderProducts, loadOrderFormObj, type OrderFormValues, orderSchema } from './OrderCommon'
+import { getOrderProducts, loadOrderFormObj, type OrderFormValues, orderSchema, getValueIdNotNull } from './OrderCommon'
 import OrderForm from './OrderForm'
 import {
   type PageProps,
@@ -56,6 +56,7 @@ export default function Edit ({
   frame_colors: string[]
 }) {
   const initialValues: OrderFormValues = loadOrderFormObj(order)
+  //console.log(initialValues)
     const getSupervisorId = (supervisor: any) => {
     let value = null
     if (supervisor !== null && Object.prototype.hasOwnProperty.call(supervisor, 'value')) {
@@ -66,7 +67,6 @@ export default function Edit ({
 
     return value
   }
- 
   let messageconfirm = 'Are you sure you want to change the status to confirmed?'
   const isRentalEquipment: boolean = !!order.equipment_rental
   const isAssociationPermit: boolean = !!order.association_permits
@@ -88,7 +88,7 @@ export default function Edit ({
 
     const order = {
       ...values,
-      duration_of_work_id: typeof values.duration_of_work_id === 'number' ? values.duration_of_work_id : values.duration_of_work_id.value,
+      duration_of_work_id: typeof values.duration_of_work_id === 'number' ? values.duration_of_work_id : getValueIdNotNull(values.duration_of_work_id),
       installation_teams: values.installation_teams.map((installation_team: any) => {
         let value = 0
         if (Object.prototype.hasOwnProperty.call(installation_team, 'value')) {
@@ -110,7 +110,7 @@ export default function Edit ({
         return value
       }),
       supervisor_id: getSupervisorId(values.supervisor_id),
-      travel_cost_id: typeof values.travel_cost_id === 'number' ? values.travel_cost_id : values.travel_cost_id.value
+      travel_cost_id: typeof values.travel_cost_id === 'number' ? values.travel_cost_id : getValueIdNotNull(values.travel_cost_id)
     }
 
     if (!Object.prototype.hasOwnProperty.call(order, 'orderProducts')) {

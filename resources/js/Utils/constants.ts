@@ -137,6 +137,13 @@ export const STATUS: Status[] = [
   }
 ]
 
+export const SERVICES = {
+  DELIVERY_AND_INSTALLATION: 'DELIVERY AND INSTALLATION',
+  DELIVERY_ONLY: 'DELIVERY ONLY',
+  PICKUP: 'PICKUP'
+
+}
+
 export interface ThemeConfig {
   locale: Locale
   theme: Theme
@@ -256,9 +263,8 @@ export const CONFIG_OX: string = 'OX'
 export const NO_CERTIFICATION_STANDARD_MESSAGE: string = 'The windows does not comply with certification standards'
 export const PAYMENT_METHODS = {
   CASH: 'CASH',
-  CHECK: 'CHECK',
-  CREDIT: 'CREDIT',
-  BANK_TRANSFER: 'BANK TRANSFER'
+  CASH_AND_FINANCE: 'CASH AND FINANCED',
+  FINANCED: 'FINANCED'
 }
 export const ADDRESS_REQUIRED_AFTER_AMOUNT: number = import.meta.env.VITE_ADDRESS_REQUIRED_AFTER_AMOUNT
 export const GLASS_TYPE = {

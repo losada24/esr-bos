@@ -1,7 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
 import { Head, router } from '@inertiajs/react'
 import { Formik, type FormikHelpers } from 'formik'
-import { orderFormObj, type OrderFormValues, orderSchema } from './OrderCommon'
+import { orderFormObj, type OrderFormValues, orderSchema, getValueIdNotNull } from './OrderCommon'
 import OrderForm from './OrderForm'
 import {
   type PageProps,
@@ -56,16 +56,15 @@ export default function Create ({
   const initialValues: OrderFormValues = orderFormObj
 
   const handleSubmit = async (values: any, helpers: FormikHelpers<OrderFormValues>) => {
-
-    //console.log(values)
-    
     const order = {
       ...values,
-      duration_of_work_id: values.duration_of_work_id.value,
+      duration_of_work_id: values.duration_of_work_id.value !== 0 ? values.duration_of_work_id.value : '',
+      type_of_work_id: values.type_of_work_id !== 0 ? values.type_of_work_id : getValueIdNotNull(values.type_of_work_id),
+      type_of_housing_id: values.type_of_housing_id !== 0 ? values.type_of_housing_id : getValueIdNotNull(values.type_of_housing_id),
       installation_teams: values.installation_teams.map((installation_team: any) => installation_team.value) ?? [],
       owners: values.owners.map((owner: any) => owner.value),
       supervisor_id: values.supervisor_id.value,
-      travel_cost_id: values.travel_cost_id.value
+      travel_cost_id: values.travel_cost_id.value !== 0 ? values.travel_cost_id.value :''
     }
 
     router.post(route('order.store'), order, {

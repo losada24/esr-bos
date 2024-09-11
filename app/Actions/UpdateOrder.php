@@ -59,7 +59,8 @@ class UpdateOrder {
         'delivery_date' => $request->delivery_date,
         'status' => $status,
         'frame_color' => $request->frame_color,
-        'cost_delivery' => $request->cost_delivery
+        'cost_delivery' => $request->cost_delivery,
+        'cost_city_fee'=> $request->cost_city_fee
       ];
 
       $order->update($orderData);

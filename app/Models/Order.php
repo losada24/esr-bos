@@ -44,7 +44,8 @@ class Order extends Model
         'eta_date',
         'installation_end_date',
         'frame_color',
-        'cost_delivery'
+        'cost_delivery',
+        'cost_city_fee'
     ];
 
     protected $dates = [
@@ -57,6 +58,13 @@ class Order extends Model
         'eta_date',
         'installation_end_date'
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'city_permits' => 'boolean',
+        ];
+    }
 
     public function scopeFilter($query, array $filters)
     {

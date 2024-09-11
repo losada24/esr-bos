@@ -121,6 +121,17 @@ class OrderController extends Controller
       ]);
     }
 
+    public function getDeliveryAndPickupDate($payment_factory_date) {
+      $estimate_eta_date = $this->estimateETADate($payment_factory_date);
+      $estimate_delivery_date = $this->getEstimateDeliveryByEtaDate($estimate_eta_date);
+      
+
+      return response()->json([
+        'estimate_eta_date' => $estimate_eta_date,
+        'estimate_delivery_date' => $estimate_delivery_date
+      ]);
+    }
+
     /**
      * Store a newly created resource in storage.
      *

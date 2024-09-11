@@ -44,7 +44,6 @@ class CreateOrder {
         'supervisor_id' => $request->supervisor_id,
         'travel_cost_id' => $request->travel_cost_id,
         'duration_of_work_id' => $request->duration_of_work_id,
-        'duration_of_work_id' => $request->duration_of_work_id,
         'method_of_payment' => $request->method_of_payment,
         'service' => $request->service,
         'contract_signing_date' => $request->contract_signing_date,
@@ -61,7 +60,8 @@ class CreateOrder {
         'installation_date' => $request->installation_date,
         'status' => $status,
         'frame_color' => $request->frame_color,
-        'cost_delivery' => $request->cost_delivery
+        'cost_delivery' => $request->cost_delivery,
+        'cost_city_fee'=> $request->cost_city_fee
       ]);
 
       if ($request->hasFile('attachments')) {
