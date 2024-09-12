@@ -36,12 +36,13 @@ Route::get('/pdf', function () {
   return view('pdf.payment-list', ['order' => $order]);
 });
 
-/* Route::get('/mailable', function () {
-  $order = App\Models\Order::find(47);
+/*Route::get('/mailable', function () {
+  $order = App\Models\Order::with(['orderProducts'])->find(60);
 
+  //dd($order->orderProducts->where('type_of_product_id', 1)->sum('qty'));
   // Mail::to('efrain@reylosglass.com', 'Efrain')->send(new App\Mail\EstimateCreated($order, [RoleEnum::$DEALER]));
-  return new App\Mail\ProductionScheduled($order, 'This is a test');
-}); */
+  return new App\Mail\EmailAccounting($order);
+});*/
 
 
     // ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$ACCOUNT_MANAGER . "|" . RoleEnum::$DEALER]);

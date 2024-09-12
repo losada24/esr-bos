@@ -719,6 +719,8 @@ const OrderForm = ({
             product_category={product_category}
             products_config={products_config}
             service={values.service}
+            values= {values}
+            travel_costs={travel_costs}
             removeOrderProduct={(index: number) => { removeOrderProduct(index) }}
             updateOrderProduct={(index: number) => { updateOrderProduct(index) }}
           />

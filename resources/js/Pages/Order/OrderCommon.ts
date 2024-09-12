@@ -9,9 +9,11 @@ export const orderSchema = Yup.object({
 })
 
 export const getValueIdNotNull = (formField: any) => {
-  let value = ''
+  let value: string | number = ''
   if ((formField !== undefined && formField !== null) && Object.prototype.hasOwnProperty.call(formField, 'value')) {
     value = formField.value
+  } else if (typeof formField === 'number' && formField !== 0) {
+    value = formField
   }
 
   return value

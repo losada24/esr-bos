@@ -124,4 +124,13 @@ class Order extends Model
     {
       return $this->belongsToMany(InstallationTeam::class, 'installation_teams_orders');
     }
+
+    public function getGrandTotalPrice() {
+      $pricesWithExtraWorks = $this->orderProducts->sum('total_price_with_extraworks');
+      $travelCost = 0;
+      if (isset($this->travel_cost_id)) {
+        $travelCost = $this->travelCost->price;
+      }
+      return $pricesWithExtraWorks + $this->additional_travel_costs + $travelCost;
+    }
 }

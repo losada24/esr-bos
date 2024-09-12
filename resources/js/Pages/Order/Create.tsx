@@ -54,6 +54,7 @@ export default function Create ({
   frame_colors: string[]
 }) {
   const initialValues: OrderFormValues = orderFormObj
+  //console.log(initialValues);
 
   const handleSubmit = async (values: any, helpers: FormikHelpers<OrderFormValues>) => {
     const order = {
@@ -66,6 +67,8 @@ export default function Create ({
       supervisor_id: values.supervisor_id.value,
       travel_cost_id: values.travel_cost_id.value !== 0 ? values.travel_cost_id.value :''
     }
+    console.log(values);
+
 
     router.post(route('order.store'), order, {
       forceFormData: true,

@@ -1,10 +1,11 @@
 import DeleteIcon from '@/Components/Icons/DeleteIcon'
 import EditIcon from '@/Components/Icons/EditIcon'
-import { type TypeOfProduct, type OrderProduct, type ProductConfig, type ProductCategory } from '@/types'
+import { type TypeOfProduct, type OrderProduct, type ProductConfig, type ProductCategory, type TravelCost } from '@/types'
 import { OrderProductsExtraWorks } from '@/types/interfaces/order'
 import { formatPrice } from '@/Utils/price'
 import React from 'react'
 import { PAYMENT_METHODS, SERVICES } from '@/Utils/constants'
+import {  type OrderFormValues, getValueIdNotNull} from './OrderCommon'
 
 const ProductTable = ({
   orderProducts,
@@ -12,6 +13,8 @@ const ProductTable = ({
   products_config,
   product_category,
   service,
+  values,
+  travel_costs,
   removeOrderProduct,
   updateOrderProduct
 }: {
@@ -20,6 +23,9 @@ const ProductTable = ({
   products_config: ProductConfig[]
   product_category: ProductCategory[]
   service: string
+  values: OrderFormValues
+  travel_costs: TravelCost[]
+  
   removeOrderProduct: (index: number) => void
   updateOrderProduct: (index: number) => void
 }) => {
@@ -40,7 +46,22 @@ const ProductTable = ({
     
     return result
   }
+  const getOtherCost= () => {
+      return values.additional_travel_costs ? Number(values.additional_travel_costs): 0
+  }
 
+  const getTravelCost = () => {
+    const id = getValueIdNotNull(values.travel_cost_id)
+    const result = travel_costs.find((type) => Number(type.id) === Number(id))?.price
+    return result ? Number(result): 0
+  }
+
+
+  const getGrandTotal = () => {
+   const result = getProductsTotal() + getOtherCost() + getTravelCost()
+   return result 
+  }
+ 
   return (
     <div className='table-responsive mt-3'>
           <table className="w-full whitespace-nowrap">
@@ -126,10 +147,24 @@ const ProductTable = ({
             </tbody>
             {service === SERVICES.DELIVERY_AND_INSTALLATION && (
               <tfoot>
-              
+                <tr>
+                    <td colSpan={6} className="px-6 py-4 align-top text-right">Total</td>
+                    <td className='px-6 py-4 align-top text-right'>{ formatPrice(getProductsTotal() )}</td>
+                    <td>&nbsp;</td>
+                </tr>
+              <tr>
+                    <td colSpan={6} className="px-6 py-4 align-top text-right">Other Cost</td>
+                    <td className='px-6 py-4 align-top text-right'>{ formatPrice(getOtherCost() )}</td>
+                    <td>&nbsp;</td>
+                </tr>
+                <tr>
+                    <td colSpan={6} className="px-6 py-4 align-top text-right">Travel Cost</td>
+                    <td className='px-6 py-4 align-top text-right'>{ formatPrice(getTravelCost())}</td>
+                    <td>&nbsp;</td>
+                </tr>
                 <tr>
                     <td colSpan={6} className="px-6 py-4 align-top text-right">Gran Total</td>
-                    <td className='px-6 py-4 align-top text-right'>{ formatPrice(getProductsTotal())}</td>
+                    <td className='px-6 py-4 align-top text-right'>{ formatPrice(getGrandTotal())}</td>
                     <td>&nbsp;</td>
                 </tr>
               </tfoot>
