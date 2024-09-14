@@ -41,7 +41,7 @@ const ProductTable = ({
 
   const getProductsTotal = () => {
     const result =  orderProducts.reduce((acc, value) => {
-      return acc + Number(value.total_price_with_extraworks)
+      return acc + (Number(value.total_price) + Number(value.extra_work_price))
     }, 0)
     
     return result
@@ -107,10 +107,10 @@ const ProductTable = ({
                       {formatPrice(product.unit_price)}
                     </td>
                     <td className="border-t px-6 py-4 align-top text-right">
-                      {formatPrice(product.extra_work_price)}
+                      {formatPrice(product.extra_work_price) }
                     </td>
                     <td className="border-t px-6 py-4 align-top text-right">
-                      {formatPrice(product.total_price_with_extraworks)}
+                      {formatPrice(Number(product.total_price) + Number(product.extra_work_price))}
                     </td>
                     </>
                      )}
