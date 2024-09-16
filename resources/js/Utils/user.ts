@@ -20,6 +20,10 @@ export const isSupervisor = (roles: string[]): boolean => {
   return roles.find((role) => role === ROLES.SUPERVISOR) !== undefined
 }
 
+export const isFrontdesk = (roles: string[]): boolean => {
+  return roles.find((role) => role === ROLES.FRONTDESK) !== undefined
+}
+
 export const can = (permissions: string[], permission: string): boolean => {
   return permissions.find((p) => p === permission) !== undefined
 }

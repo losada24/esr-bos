@@ -23,7 +23,7 @@ class ClientController extends Controller
     public function index(Request $request)
     {
         return Inertia::render('Client/Index', [
-          'clients' => Client::with(['company'])->filter($request->only(['text']))
+          'clients' => Client::filter($request->only(['text']))
             ->orderBy('name')
             ->paginate()
             ->withQueryString()
@@ -37,10 +37,7 @@ class ClientController extends Controller
      */
     public function create()
     {
-        return Inertia::render('Client/Create', [
-          'states' => array_values(States::$USA_STATES),
-          'companies' => Company::orderBy('name')->orderBy('name')->get()
-        ]);
+        return Inertia::render('Client/Create', []);
     }
 
     /**
@@ -97,5 +94,37 @@ class ClientController extends Controller
         return redirect()
           ->back()
           ->with('success', 'Client deleted successfully.');
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function isUnique($email, $phone)
+    {
+        $address = [];
+        $clientsByEmail = Client::with(['clientAddress'])->where('email', $email)->get();
+        $clientsByPhone = Client::with(['clientAddress'])->where('phone', $phone)->get();
+
+        
+        dd($clientsByEmail);
+
+        foreach ($clientsByEmail->clientAddress as $clientAddress) {
+          if (!in_array($clientAddress->address, $address)) {
+            $address[] = $clientAddress->address;
+          }
+        }
+
+        /*foreach ($clientsByPhone->clientAddress as $clientAddress) {
+          if (!in_array($clientAddress->address, $address)) {
+            $address[] = $clientAddress->address;
+          }
+        }
+
+        return response()->json([
+          'address' => $address
+        ]);*/
     }
 }

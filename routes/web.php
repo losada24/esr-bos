@@ -1,6 +1,7 @@
 <?php
 
 use App\Enum\RoleEnum;
+use App\Http\Controllers\ClientController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\OrderController;
@@ -85,8 +86,6 @@ Route::middleware('auth')->group(function () {
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value])
       ->name('dashboard.update_event');
 
-    
-    
     Route::delete('order/drop_attachment/{id}', [OrderController::class, 'dropAttachment'])
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value])
       ->name('order.drop_attachment');
@@ -94,11 +93,13 @@ Route::middleware('auth')->group(function () {
     Route::resource('installation_team', InstallationTeamController::class)
       ->only(['index', 'create', 'store', 'update', 'edit', 'destroy'])
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value]);
-    
-    // CLIENTS
-     /*Route::resource('client', ClientController::class)
-      ->middleware(["role:" . RoleEnum::$ADMIN]);
 
+    // CLIENTS
+    Route::resource('client', ClientController::class)
+      ->middleware(["role:" . RoleEnum::ADMIN->value . "|" . RoleEnum::FRONTDESK->value]);
+    Route::get('client/is_unique/{email}/{phone}', [ClientController::class, 'isUnique'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::FRONTDESK->value]);
+  /*
     // ORDERS
    Route::get('/order', [OrderController::class, 'index'])
       ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$ACCOUNT_MANAGER . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$PRODUCTION . "|" . RoleEnum::$ACCOUNTING ."|" . RoleEnum::$SUB_DEALER . "|" . RoleEnum::$SHIPPING . "|" . RoleEnum::$PLANT_MANAGER])

@@ -30,15 +30,6 @@ class StoreClientRequest extends FormRequest
             'email' => 'required|email',
             'phone' => 'required|max:20',
             'address' => 'required|string|max:500',
-            'city' => 'required|string|max:100',
-            'state' => [
-              'required',
-              'string',
-              'max:100',
-              Rule::in(array_values(States::$USA_STATES))
-            ],
-            'zip' => 'required|numeric|max_digits:5|min_digits:5',
-            'company_id' => 'nullable|numeric'
         ];
     }
 }

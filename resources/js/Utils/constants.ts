@@ -168,7 +168,8 @@ export const ROLES = {
   ACCOUNT_MANAGER: 'account_manager',
   INSTALLER: 'installer',
   SUPERVISOR: 'supervisor',
-  OWNER: 'owner'
+  OWNER: 'owner',
+  FRONTDESK: 'frontdesk'
 }
 
 export const PERSMISSION_USERS_LIST = 'users list'
