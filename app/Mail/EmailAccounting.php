@@ -28,7 +28,7 @@ class EmailAccounting extends Mailable
     {
       $appName = config('app.name');
         return new Envelope(
-          subject: "Confirmed Delivery or Pickup Date for Materials. [$appName]",
+          subject: "Billing Information. [$appName]",
         );
     }
 

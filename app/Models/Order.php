@@ -126,7 +126,7 @@ class Order extends Model
     }
 
     public function getGrandTotalPrice() {
-      $pricesWithExtraWorks = $this->orderProducts->sum('total_price_with_extraworks');
+      $pricesWithExtraWorks = $this->orderProducts->sum('total_price') + $this->orderProducts->sum('extra_work_price');
       $travelCost = 0;
       if (isset($this->travel_cost_id)) {
         $travelCost = $this->travelCost->price;

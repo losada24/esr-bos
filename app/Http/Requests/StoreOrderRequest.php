@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Enum\FrameColorEnum;
+use App\Enum\MethodOfPayment;
 use Illuminate\Foundation\Http\FormRequest;
 use App\Enum\Service;
 use Illuminate\Validation\Rule;
@@ -72,7 +73,15 @@ class StoreOrderRequest extends FormRequest
             'additional_travel_costs' => 'nullable|numeric',
             'cost_delivery' => 'nullable|numeric',
             'cost_city_fee' => 'nullable|numeric',
-            'method_of_payment' => 'required|string|in:CASH,FINANCED,FINANCEDCASH',
+            'method_of_payment' => [
+              'required',
+              'string',
+              Rule::in(
+                MethodOfPayment::CASH->value,
+                MethodOfPayment::FINANCED->value,
+                MethodOfPayment::FINANCEDCASH->value
+              )
+            ],
             'frame_color' => [
               'nullable',
               Rule::when(
