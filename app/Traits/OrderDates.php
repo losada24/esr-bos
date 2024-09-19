@@ -55,7 +55,6 @@ trait OrderDates {
     
     return $estimate_delivery_date;
   }
-
   public function getEstimateInstallationDate($delivery_date, $service) {
     $estimate_installation_date = null;
     if ($service === Service::INSTALLATION->value) {

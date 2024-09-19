@@ -81,7 +81,8 @@ class UpdateOrderRequest extends FormRequest
             Rule::in(
               MethodOfPayment::CASH->value,
               MethodOfPayment::FINANCED->value,
-              MethodOfPayment::FINANCEDCASH->value
+              MethodOfPayment::FINANCEDCASH->value,
+              MethodOfPayment::AIA->value
             )
           ],
           'frame_color' => [
@@ -117,7 +118,7 @@ class UpdateOrderRequest extends FormRequest
           'equipment_rental' => 'boolean',
           'notes' => 'nullable|string|max:1000',
           'attachments' => 'nullable|array',
-          'attachments.*' => 'file|mimes:jpeg,png,jpg,pdf,docx,doc,xlsx|max:5120',
+          'attachments.*' => 'file|mimes:jpeg,png,jpg,pdf,docx,doc,xlsx|max:max:10240',
           'orderProducts' => 'required|array',
           'orderProducts.*.type_of_product_id' => 'required|integer|exists:type_of_products,id',
           'orderProducts.*.product_category_id' => 'required|integer|exists:product_categories,id',

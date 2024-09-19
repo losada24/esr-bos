@@ -87,6 +87,7 @@ class OrderController extends Controller
             MethodOfPayment::CASH->value,
             MethodOfPayment::FINANCED->value,
             MethodOfPayment::FINANCEDCASH->value,
+            MethodOfPayment::AIA->value,
           ],
           'services' => [
             Service::INSTALLATION->value,
@@ -173,6 +174,7 @@ class OrderController extends Controller
             MethodOfPayment::CASH->value,
             MethodOfPayment::FINANCED->value,
             MethodOfPayment::FINANCEDCASH->value,
+            MethodOfPayment::AIA->value,
           ],
           'frame_colors' => [
             FrameColorEnum::WHITE->value,

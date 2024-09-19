@@ -259,25 +259,6 @@ const OrderForm = ({
               />
               {(submitCount && errors.owners) ? <InputError message={errors.owners.toString()} className="mt-2" /> : ''}
             </div>
-            {(values.service === SERVICES.DELIVERY_AND_INSTALLATION) && (
-            <div className={submitCount ? (errors.frame_color) ? 'has-error' : 'has-success' : ''}>
-              <label htmlFor="frame_color">Frame Color</label>
-              <Field
-                id="frame_color"
-                name="frame_color"
-                className="form-select"
-                autoComplete="frame_color"
-                placeholder='Frame Color'
-                as="select"
-              >
-                <option value="">Select Frame color</option>
-                {frame_colors.map((frame_color, index) => (
-                  <option key={index} value={frame_color}>{frame_color}</option>
-                ))}
-              </Field>
-              {(submitCount && errors.frame_color) ? <InputError message={errors.frame_color} className="mt-2" /> : ''}
-            </div>
-            )}
             <div className={submitCount ? (errors.service) ? 'has-error' : 'has-success' : ''}>
               <label htmlFor="service">Service</label>
               <Field
@@ -308,6 +289,25 @@ const OrderForm = ({
               </Field>
               {(submitCount && errors.service) ? <InputError message={errors.service} className="mt-2" /> : ''}
             </div>
+            {(values.service === SERVICES.DELIVERY_AND_INSTALLATION) && (
+            <div className={submitCount ? (errors.frame_color) ? 'has-error' : 'has-success' : ''}>
+              <label htmlFor="frame_color">Frame Color</label>
+              <Field
+                id="frame_color"
+                name="frame_color"
+                className="form-select"
+                autoComplete="frame_color"
+                placeholder='Frame Color'
+                as="select"
+              >
+                <option value="">Select Frame color</option>
+                {frame_colors.map((frame_color, index) => (
+                  <option key={index} value={frame_color}>{frame_color}</option>
+                ))}
+              </Field>
+              {(submitCount && errors.frame_color) ? <InputError message={errors.frame_color} className="mt-2" /> : ''}
+            </div>
+            )}
 
             {(values.service === SERVICES.DELIVERY_AND_INSTALLATION) && (
             <>
@@ -665,7 +665,6 @@ const OrderForm = ({
                 placeholder='Notes'
               />
             </div>
-     
             <div className='col-span-4'>
               <label htmlFor="attachments">Attachments</label>
               <input

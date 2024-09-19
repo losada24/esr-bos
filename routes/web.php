@@ -37,9 +37,10 @@ Route::get('/pdf', function () {
 });
 
 /*Route::get('/mailable', function () {
-  $order = App\Models\Order::with(['orderProducts'])->find(60);
+  $order = App\Models\Order::with(['orderProducts'])->find(69);
 
-  //dd($order->orderProducts->where('type_of_product_id', 1)->sum('qty'));
+  dd($order->orderProducts->where('product_category_id', 2)->sum('qty'));
+  //dd($order);
   // Mail::to('efrain@reylosglass.com', 'Efrain')->send(new App\Mail\EstimateCreated($order, [RoleEnum::$DEALER]));
   return new App\Mail\EmailAccounting($order);
 });*/
