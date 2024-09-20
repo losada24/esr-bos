@@ -4,7 +4,7 @@ namespace App\Traits;
 
 use App\Enum\OrderStatusEnum;
 use App\Enum\RoleEnum;
-use App\Enum\Service;
+use App\Enum\ServiceEnum;
 use App\Mail\DeliveryConfirmed;
 use App\Mail\EmailAccounting;
 use App\Mail\EstimateDeliveryInstallationDate;
@@ -29,7 +29,7 @@ trait OrderEmails {
       //$accountManager = User::role([RoleEnum::ACCOUNT_MANAGER->value])->get();
       //$users = array_merge($users, $accountManager->pluck('email')->toArray());
 
-      if ($order->service === Service::INSTALLATION->value) {
+      if ($order->service === ServiceEnum::INSTALLATION->value) {
         foreach ($users as $user) {
           Mail::to($user)->send(new EstimateDeliveryInstallationDate($order));
         }
@@ -37,7 +37,7 @@ trait OrderEmails {
         foreach ($accountings as $user) {
           Mail::to($user)->send(new EmailAccounting($order));
         }
-      } else if ($order->service === Service::DELIVERY->value || $order->service === Service::PICKUP->value) {
+      } else if ($order->service === ServiceEnum::DELIVERY->value || $order->service === ServiceEnum::PICKUP->value) {
         foreach ($users as $user) {
           Mail::to($user)->send(new EstimateMaterialArrivalDate($order));
         }

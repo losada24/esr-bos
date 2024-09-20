@@ -114,7 +114,7 @@ class UpdateOrder {
         $orderProduct->orderProductExtraWorks()->attach($extraWorks);
       }
       
-      if ($sendEmail) {
+     if ($sendEmail) {
         $this->sendEmail($order);
       }
       

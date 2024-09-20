@@ -5,7 +5,7 @@ namespace App\Http\Requests;
 use App\Enum\FrameColorEnum;
 use App\Enum\MethodOfPayment;
 use Illuminate\Foundation\Http\FormRequest;
-use App\Enum\Service;
+use App\Enum\ServiceEnum;
 use Illuminate\Validation\Rule;
 
 class StoreOrderRequest extends FormRequest
@@ -42,14 +42,14 @@ class StoreOrderRequest extends FormRequest
             'type_of_work_id' => [
                'nullable',
                 Rule::when(
-                  fn($input) => $input->service == Service::INSTALLATION->value
+                  fn($input) => $input->service == ServiceEnum::INSTALLATION->value
                   , ['required','integer','exists:type_of_works,id',]
                 ),
             ],
             'type_of_housing_id' => [
               'nullable',
               Rule::when(
-                fn($input) => $input->service == Service::INSTALLATION->value
+                fn($input) => $input->service == ServiceEnum::INSTALLATION->value
                 , ['required','integer','exists:types_of_housing,id',]
               ),
             ],
@@ -59,14 +59,14 @@ class StoreOrderRequest extends FormRequest
             'travel_cost_id' => [
               'nullable',
               Rule::when(
-                fn($input) => $input->service == Service::INSTALLATION->value
+                fn($input) => $input->service == ServiceEnum::INSTALLATION->value
                 , ['required','integer','exists:travel_costs,id',]
               ),
             ],
             'duration_of_work_id' => [
               'nullable',
               Rule::when(
-                fn($input) => $input->service == Service::INSTALLATION->value
+                fn($input) => $input->service == ServiceEnum::INSTALLATION->value
                 , ['required', 'integer', 'exists:duration_of_works,id',]
               ),
             ],
@@ -86,7 +86,7 @@ class StoreOrderRequest extends FormRequest
             'frame_color' => [
               'nullable',
               Rule::when(
-                fn($input) => $input->service == Service::INSTALLATION->value
+                fn($input) => $input->service == ServiceEnum::INSTALLATION->value
                 , ['required', 'string', Rule::in([
                   FrameColorEnum::WHITE->value,
                   FrameColorEnum::BLACK->value,
@@ -99,9 +99,9 @@ class StoreOrderRequest extends FormRequest
                 'required',
                 'string',
                 Rule::in([
-                  Service::DELIVERY->value, 
-                  Service::INSTALLATION->value,
-                  Service::PICKUP->value
+                  ServiceEnum::DELIVERY->value, 
+                  ServiceEnum::INSTALLATION->value,
+                  ServiceEnum::PICKUP->value
                 ]),
             ],
             'eta_date' => 'required|date_format:Y-m-d',
@@ -116,7 +116,7 @@ class StoreOrderRequest extends FormRequest
             'equipment_rental' => 'boolean',
             'notes' => 'nullable|string|max:1000',
             'attachments' => 'nullable|array',
-            'attachments.*' => 'file|mimes:jpeg,png,jpg,pdf,docx,doc,xlsx|max:max:10240',
+            'attachments.*' => 'file|mimes:jpeg,png,jpg,pdf,docx,doc,xlsx|max:10240',
             'orderProducts' => 'required|array',
             'orderProducts.*.type_of_product_id' => 'required|integer|exists:type_of_products,id',
             'orderProducts.*.product_category_id' => 'required|integer|exists:product_categories,id',

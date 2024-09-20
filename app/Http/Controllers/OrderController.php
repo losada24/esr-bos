@@ -16,7 +16,7 @@ use App\Enum\OrderStatusEnum;
 use App\Http\Requests\UpdateOrderStatusRequest;
 use App\Enum\ProductSystemEnum;
 use App\Enum\RoleEnum;
-use App\Enum\Service;
+use App\Enum\ServiceEnum;
 use App\Http\Requests\StoreOrderRequest;
 use App\Http\Requests\UpdateOrderRequest;
 use App\Http\Requests\UpdateOrderStatusNoteRequest;
@@ -90,9 +90,9 @@ class OrderController extends Controller
             MethodOfPayment::AIA->value,
           ],
           'services' => [
-            Service::INSTALLATION->value,
-            Service::DELIVERY->value,
-            Service::PICKUP->value
+            ServiceEnum::INSTALLATION->value,
+            ServiceEnum::DELIVERY->value,
+            ServiceEnum::PICKUP->value
           ],
           'frame_colors' => [
             FrameColorEnum::WHITE->value,
@@ -183,9 +183,9 @@ class OrderController extends Controller
             FrameColorEnum::CLEAR_ANODIZED->value
           ],
           'services' => [
-            Service::INSTALLATION->value,
-            Service::DELIVERY->value,
-            Service::PICKUP->value
+            ServiceEnum::INSTALLATION->value,
+            ServiceEnum::DELIVERY->value,
+            ServiceEnum::PICKUP->value
           ],
           'travel_costs' => TravelCost::all(),
           'duration_of_works' => DurationOfWork::all(),
