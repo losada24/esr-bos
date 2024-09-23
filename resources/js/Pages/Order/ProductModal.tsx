@@ -7,7 +7,7 @@ import { type OrderProductExtraWorksFormValues, orderProductSchema, getValueIdNo
 import InputError from '@/Components/InputError'
 import PrimaryButton from '@/Components/PrimaryButton'
 import { getProductPriceWithExtraWorks, getProductPrice, getProductExtraWorkPrice } from '@/Utils/price'
-import { PAYMENT_METHODS, SERVICES } from '@/Utils/constants'
+import { PAYMENT_METHODS, SERVICES, STOREFRONT_CATEGORY } from '@/Utils/constants'
 
 const ProductModal = ({
   showModal,
@@ -68,7 +68,12 @@ const ProductModal = ({
     const unit_price_with_extrawork = getProductPriceWithExtraWorks(product, productCosts)
     product.extra_work_price = getProductExtraWorkPrice(product) ?? 0
     product.unit_price = unit_price
-    product.total_price = unit_price * product.qty
+    if(product.type_of_product_id !== STOREFRONT_CATEGORY) {
+      product.total_price = unit_price * product.qty
+    }
+    else{
+      product.total_price = unit_price
+    }
     product.unit_price_with_extraworks = unit_price_with_extrawork
     product.total_price_with_extraworks = unit_price_with_extrawork + product.total_price
     addOrderProduct(product)
