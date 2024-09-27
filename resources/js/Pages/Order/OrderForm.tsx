@@ -28,6 +28,7 @@ import SearchIcon from '@/Components/Icons/SearchIcon'
 import ProductModal from './ProductModal'
 import ProductTable from './ProductTable'
 import DeleteIcon from '@/Components/Icons/DeleteIcon'
+import { PAYMENT_METHODS, SERVICES } from '@/Utils/constants'
 
 const OrderForm = ({
   submitCount,
@@ -83,7 +84,6 @@ const OrderForm = ({
   const [isCreated] = useState<boolean>(true)
   const [showProductModal, setShowProductModal] = useState<boolean>(false)
   const [attachmentsArray, setAttachmentsList] = useState<Attachment[]>(attachments ?? [])
-
   const removeAttachmentProduct = (index: number) => {
     if (confirm('Are you sure you want to delete this attachment?')) {
       router.delete(route('order.drop_attachment', { id: attachmentsArray[index].id }), {
@@ -116,6 +116,15 @@ const OrderForm = ({
     setFieldValue('delivery_date', data.estimate_delivery_date)
     setFieldValue('installation_date', data.estimate_installation_date)
     setFieldValue('installation_end_date', data.estimate_installation_date)
+  }
+
+  const selectDeliveryAndPickupDate = async (payment_factory_date: string) => {
+    const response = await fetch(
+      `/order/get_delivery_and_pickup_date/${payment_factory_date}`)
+    const data = await response.json()
+
+    setFieldValue('eta_date', data.estimate_eta_date)
+    setFieldValue('delivery_date', data.estimate_delivery_date)
   }
 
   const removeOrderProduct = (index: number) => {
@@ -250,6 +259,37 @@ const OrderForm = ({
               />
               {(submitCount && errors.owners) ? <InputError message={errors.owners.toString()} className="mt-2" /> : ''}
             </div>
+            <div className={submitCount ? (errors.service) ? 'has-error' : 'has-success' : ''}>
+              <label htmlFor="service">Service</label>
+              <Field
+                id="service"
+                name="service"
+                className="form-select"
+                autoComplete="service"
+                placeholder='Service'
+                as="select"
+                onChange={(e: { target: { value: string } }) => {
+                  setFieldValue('service', e.target.value)
+                  setFieldValue('city_permits', false)
+                  setFieldValue('association_permits', false)
+                  setFieldValue('equipment_rental', false)
+                  setFieldValue('type_of_work_id', 0)
+                  setFieldValue('type_of_housing_id', 0)
+                  setFieldValue('travel_cost_id', 0) 
+                  setFieldValue('duration_of_work_id', 0) 
+                  setFieldValue('installation_date', null) 
+                  setFieldValue('installation_end_date', null) 
+                  
+                }}
+              >
+                <option value="">Service</option>
+                {services.map((service, index) => (
+                  <option key={index} value={service}>{service}</option>
+                ))}
+              </Field>
+              {(submitCount && errors.service) ? <InputError message={errors.service} className="mt-2" /> : ''}
+            </div>
+            {(values.service === SERVICES.DELIVERY_AND_INSTALLATION) && (
             <div className={submitCount ? (errors.frame_color) ? 'has-error' : 'has-success' : ''}>
               <label htmlFor="frame_color">Frame Color</label>
               <Field
@@ -267,30 +307,10 @@ const OrderForm = ({
               </Field>
               {(submitCount && errors.frame_color) ? <InputError message={errors.frame_color} className="mt-2" /> : ''}
             </div>
-            <div className={submitCount ? (errors.service) ? 'has-error' : 'has-success' : ''}>
-              <label htmlFor="service">Service</label>
-              <Field
-                id="service"
-                name="service"
-                className="form-select"
-                autoComplete="service"
-                placeholder='Service'
-                as="select"
-                onChange={(e: { target: { value: string } }) => {
-                  setFieldValue('service', e.target.value)
-                  setFieldValue('city_permits', false)
-                  setFieldValue('association_permits', false)
-                  setFieldValue('equipment_rental', false)
+            )}
 
-                }}
-              >
-                <option value="">Service</option>
-                {services.map((service, index) => (
-                  <option key={index} value={service}>{service}</option>
-                ))}
-              </Field>
-              {(submitCount && errors.service) ? <InputError message={errors.service} className="mt-2" /> : ''}
-            </div>
+            {(values.service === SERVICES.DELIVERY_AND_INSTALLATION) && (
+            <>
             <div className={submitCount ? (errors.type_of_work_id) ? 'has-error' : 'has-success' : ''}>
               <label htmlFor="type_of_work">Type of Work</label>
               <Field
@@ -357,6 +377,8 @@ const OrderForm = ({
               />
               {(submitCount && errors.duration_of_work_id) ? <InputError message={errors.duration_of_work_id.toString()} className="mt-2" /> : ''}
             </div>
+            </>
+            )}
             <div className={submitCount ? (errors.additional_travel_costs) ? 'has-error' : 'has-success' : ''}>
               <label htmlFor="additional_travel_costs">Other Cost</label>
               <Field
@@ -411,13 +433,17 @@ const OrderForm = ({
                   dateFormat: 'Y-m-d',
                   position: 'auto right'
                 }}
-                disabled={values.type_of_work_id === 0 || values.type_of_housing_id === 0 || values.service === '' || ((values.travel_cost_id) as any).value === 0}
+                disabled={(values.service === SERVICES.DELIVERY_AND_INSTALLATION) && (values.type_of_work_id === 0 || values.type_of_housing_id === 0 || values.travel_cost_id === 0 || ((values.duration_of_work_id) as any).value === 0)}
                 name="payment_factory_date"
                 value={values.payment_factory_date ?? ''}
                 className="form-input"
                 onChange={([date]) => {
                   const payment_factory_date = date.toISOString().slice(0, 10)
-                  selectDeliveryAndInstallationDate(payment_factory_date)
+                  if (values.service === SERVICES.DELIVERY_AND_INSTALLATION){
+                    selectDeliveryAndInstallationDate(payment_factory_date)
+                  } else {
+                    selectDeliveryAndPickupDate(payment_factory_date)
+                  }
                   setFieldValue('payment_factory_date', date.toISOString().slice(0, 10))
                 }}
               />
@@ -458,6 +484,8 @@ const OrderForm = ({
               />
               {(submitCount && errors.delivery_date) ? <InputError message={errors.delivery_date?.toString()} className="mt-2" /> : ''}
             </div>
+            {(values.service === SERVICES.DELIVERY_AND_INSTALLATION) && (
+              <>
             <div className={submitCount ? (errors.installation_date) ? 'has-error' : 'has-success' : ''}>
               <label htmlFor="installation_date">Installation Date</label>
               <Flatpickr
@@ -492,6 +520,8 @@ const OrderForm = ({
               />
               {(submitCount && errors.installation_end_date) ? <InputError message={errors.installation_end_date?.toString()} className="mt-2" /> : ''}
             </div>
+            </>
+            )}
             <div className={submitCount ? (errors.method_of_payment) ? 'has-error' : 'has-success' : ''}>
               <label htmlFor="method_of_payment">Project Payment Method</label>
               <Field
@@ -511,10 +541,10 @@ const OrderForm = ({
                   <option key={index} value={method_of_payment}>{method_of_payment}</option>
                 ))}
               </Field>
-              {(submitCount && errors.type_of_housing_id) ? <InputError message={errors.type_of_housing_id} className="mt-2" /> : ''}
+              {(submitCount && errors.method_of_payment) ? <InputError message={errors.method_of_payment} className="mt-2" /> : ''}
             </div>
 
-            {(values.method_of_payment=== "CASH" || values.method_of_payment=== "CASH AND FINANCED"  ) && (
+            {(values.method_of_payment === PAYMENT_METHODS.CASH || values.method_of_payment === PAYMENT_METHODS.CASH_AND_FINANCE  ) && (
             <div className={submitCount ? (errors.cost_delivery) ? 'has-error' : 'has-success' : ''}>
               <label htmlFor="cost_delivery">Delivery Cost</label>
               <Field
@@ -528,7 +558,7 @@ const OrderForm = ({
               {(submitCount && errors.cost_delivery) ? <InputError message={errors.cost_delivery} className="mt-2" /> : ''}
             </div>
             )}
-            {(values.service=== "DELIVERY AND INSTALLATION") && (
+            {(values.service === SERVICES.DELIVERY_AND_INSTALLATION) && (
             <>
             <div className={submitCount ? (errors.installation_teams) ? 'has-error' : 'has-success' : ''}>
               <label htmlFor="installationTeams">Installation Team</label>
@@ -560,7 +590,7 @@ const OrderForm = ({
             </>
            )} 
            
-           {(values.service=== "DELIVERY AND INSTALLATION") && (
+           {(values.service === SERVICES.DELIVERY_AND_INSTALLATION) && (
             <>
             <div className={submitCount ? (errors.city_permits) ? 'has-error inline-flex flex-col' : 'has-success inline-flex' : 'inline-flex items-end'}>
                 <div className='flex'>
@@ -571,12 +601,27 @@ const OrderForm = ({
                     type='checkbox'
                     onChange={(e: any) => {
                       setFieldValue('city_permits', e.target.checked)
+                      setFieldValue('cost_city_fee', 0)
                     }}
                   />
                   <label htmlFor="city_permits">City Permits</label>
                 </div>
                 {(submitCount && errors.city_permits) ? <div className='block'><InputError message={errors.city_permits} className="mt-2" /></div> : ''}
             </div>
+            {(values.city_permits === true) && (
+            <div className={submitCount ? (errors.cost_city_fee) ? 'has-error' : 'has-success' : ''}>
+              <label htmlFor="cost_city_fee">City Fee Cost</label>
+              <Field
+                id="cost_city_fee"
+                name="cost_city_fee"
+                className="form-input text-right"
+                autoComplete="cost_city_fee"
+                placeholder='City Fee Cost'
+                type='number'
+              />
+              {(submitCount && errors.cost_city_fee) ? <InputError message={errors.cost_city_fee} className="mt-2" /> : ''}
+            </div>
+            )}
             <div className={submitCount ? (errors.association_permits) ? 'has-error inline-flex flex-col' : 'has-success inline-flex' : 'inline-flex items-end'}>
                 <div className='flex'>
                   <Field
@@ -608,8 +653,7 @@ const OrderForm = ({
                 {(submitCount && errors.equipment_rental) ? <div className='block'><InputError message={errors.equipment_rental} className="mt-2" /></div> : ''}
             </div>
             </>
-           )} 
-      
+           )}
             <div className='col-span-4'>
               <label htmlFor="notes">Notes</label>
               <Field
@@ -621,7 +665,6 @@ const OrderForm = ({
                 placeholder='Notes'
               />
             </div>
-     
             <div className='col-span-4'>
               <label htmlFor="attachments">Attachments</label>
               <input
@@ -661,7 +704,7 @@ const OrderForm = ({
         </fieldset>
         <fieldset className='p-3 border rounded-xl'>
           <legend className='text-lg font-semibold px-3'>Product Information</legend>
-          {values.type_of_work_id !== 0 && (
+          {((values.service===SERVICES.DELIVERY_AND_INSTALLATION && values.type_of_work_id !== 0) || (values.service===SERVICES.DELIVERY_ONLY || values.service===SERVICES.PICKUP)) && (
             <div className='flex items-center justify-end'>
               <button onClick={(e) => {
                 e.preventDefault()
@@ -674,6 +717,9 @@ const OrderForm = ({
             type_of_products={type_of_products}
             product_category={product_category}
             products_config={products_config}
+            service={values.service}
+            values= {values}
+            travel_costs={travel_costs}
             removeOrderProduct={(index: number) => { removeOrderProduct(index) }}
             updateOrderProduct={(index: number) => { updateOrderProduct(index) }}
           />
@@ -692,6 +738,7 @@ const OrderForm = ({
         productConfigs={products_config}
         typeOfWork={values.type_of_work_id}
         productCosts={product_costs}
+        service={values.service}
         onClose={() => {
           setShowProductModal(false)
         }}

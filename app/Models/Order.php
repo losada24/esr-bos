@@ -44,7 +44,8 @@ class Order extends Model
         'eta_date',
         'installation_end_date',
         'frame_color',
-        'cost_delivery'
+        'cost_delivery',
+        'cost_city_fee'
     ];
 
     protected $dates = [
@@ -57,6 +58,13 @@ class Order extends Model
         'eta_date',
         'installation_end_date'
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'city_permits' => 'boolean',
+        ];
+    }
 
     public function scopeFilter($query, array $filters)
     {
@@ -115,5 +123,14 @@ class Order extends Model
     public function installationTeams(): BelongsToMany
     {
       return $this->belongsToMany(InstallationTeam::class, 'installation_teams_orders');
+    }
+
+    public function getGrandTotalPrice() {
+      $pricesWithExtraWorks = $this->orderProducts->sum('total_price') + $this->orderProducts->sum('extra_work_price');
+      $travelCost = 0;
+      if (isset($this->travel_cost_id)) {
+        $travelCost = $this->travelCost->price;
+      }
+      return $pricesWithExtraWorks + $this->additional_travel_costs + $travelCost;
     }
 }

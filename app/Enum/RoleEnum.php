@@ -12,4 +12,5 @@ enum RoleEnum: string
     case WAREHOUSE_MANAGER = 'warehouse_manager';
     case SERVICE_MANAGER = 'service_manager';
     case FRONTDESK = 'frontdesk';
+    case ACCOUNTING = 'accounting';
 }

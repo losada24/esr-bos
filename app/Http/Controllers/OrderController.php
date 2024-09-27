@@ -16,7 +16,7 @@ use App\Enum\OrderStatusEnum;
 use App\Http\Requests\UpdateOrderStatusRequest;
 use App\Enum\ProductSystemEnum;
 use App\Enum\RoleEnum;
-use App\Enum\Service;
+use App\Enum\ServiceEnum;
 use App\Http\Requests\StoreOrderRequest;
 use App\Http\Requests\UpdateOrderRequest;
 use App\Http\Requests\UpdateOrderStatusNoteRequest;
@@ -87,11 +87,12 @@ class OrderController extends Controller
             MethodOfPayment::CASH->value,
             MethodOfPayment::FINANCED->value,
             MethodOfPayment::FINANCEDCASH->value,
+            MethodOfPayment::AIA->value,
           ],
           'services' => [
-            Service::INSTALLATION->value,
-            Service::DELIVERY->value,
-            Service::PICKUP->value
+            ServiceEnum::INSTALLATION->value,
+            ServiceEnum::DELIVERY->value,
+            ServiceEnum::PICKUP->value
           ],
           'frame_colors' => [
             FrameColorEnum::WHITE->value,
@@ -118,6 +119,17 @@ class OrderController extends Controller
         'estimate_eta_date' => $estimate_eta_date,
         'estimate_delivery_date' => $estimate_delivery_date,
         'estimate_installation_date' => $estimate_installation_date
+      ]);
+    }
+
+    public function getDeliveryAndPickupDate($payment_factory_date) {
+      $estimate_eta_date = $this->estimateETADate($payment_factory_date);
+      $estimate_delivery_date = $this->getEstimateDeliveryByEtaDate($estimate_eta_date);
+      
+
+      return response()->json([
+        'estimate_eta_date' => $estimate_eta_date,
+        'estimate_delivery_date' => $estimate_delivery_date
       ]);
     }
 
@@ -162,6 +174,7 @@ class OrderController extends Controller
             MethodOfPayment::CASH->value,
             MethodOfPayment::FINANCED->value,
             MethodOfPayment::FINANCEDCASH->value,
+            MethodOfPayment::AIA->value,
           ],
           'frame_colors' => [
             FrameColorEnum::WHITE->value,
@@ -170,9 +183,9 @@ class OrderController extends Controller
             FrameColorEnum::CLEAR_ANODIZED->value
           ],
           'services' => [
-            Service::INSTALLATION->value,
-            Service::DELIVERY->value,
-            Service::PICKUP->value
+            ServiceEnum::INSTALLATION->value,
+            ServiceEnum::DELIVERY->value,
+            ServiceEnum::PICKUP->value
           ],
           'travel_costs' => TravelCost::all(),
           'duration_of_works' => DurationOfWork::all(),

@@ -3,8 +3,9 @@
 namespace App\Http\Requests;
 
 use App\Enum\FrameColorEnum;
+use App\Enum\MethodOfPayment;
 use Illuminate\Foundation\Http\FormRequest;
-use App\Enum\Service;
+use App\Enum\ServiceEnum;
 use Illuminate\Validation\Rule;
 
 class StoreOrderRequest extends FormRequest
@@ -33,37 +34,74 @@ class StoreOrderRequest extends FormRequest
             'phone' => 'required|string|max:255',
             'email' => 'nullable|email|max:255',
             'name' => 'required|string|max:255',
-            'order_number' => 'required|integer',
+            //'order_number' => 'required|integer',
+            'order_number' => 'required|string|max:255',
             'job_address' => 'required|string|max:255',
             'owners' => 'required|array',
             'owners.*' => 'required|integer|exists:users,id',
-            'type_of_work_id' => 'required|integer|exists:type_of_works,id',
-            'type_of_housing_id' => 'required|integer|exists:types_of_housing,id',
+            'type_of_work_id' => [
+               'nullable',
+                Rule::when(
+                  fn($input) => $input->service == ServiceEnum::INSTALLATION->value
+                  , ['required','integer','exists:type_of_works,id',]
+                ),
+            ],
+            'type_of_housing_id' => [
+              'nullable',
+              Rule::when(
+                fn($input) => $input->service == ServiceEnum::INSTALLATION->value
+                , ['required','integer','exists:types_of_housing,id',]
+              ),
+            ],
             'installation_teams' => 'nullable|array',
             'installation_teams.*' => 'required|integer|exists:installation_teams,id',
             'supervisor_id' => 'nullable|integer|exists:users,id',
-            'travel_cost_id' => 'required|integer|exists:travel_costs,id',
-            'duration_of_work_id' => 'required|integer|exists:duration_of_works,id',
+            'travel_cost_id' => [
+              'nullable',
+              Rule::when(
+                fn($input) => $input->service == ServiceEnum::INSTALLATION->value
+                , ['required','integer','exists:travel_costs,id',]
+              ),
+            ],
+            'duration_of_work_id' => [
+              'nullable',
+              Rule::when(
+                fn($input) => $input->service == ServiceEnum::INSTALLATION->value
+                , ['required', 'integer', 'exists:duration_of_works,id',]
+              ),
+            ],
             'additional_travel_costs' => 'nullable|numeric',
             'cost_delivery' => 'nullable|numeric',
-            'method_of_payment' => 'required|string|in:CASH,FINANCED,FINANCEDCASH',
-            'frame_color' => [
+            'cost_city_fee' => 'nullable|numeric',
+            'method_of_payment' => [
               'required',
               'string',
-              Rule::in([
-                FrameColorEnum::WHITE->value,
-                FrameColorEnum::BLACK->value,
-                FrameColorEnum::BRONZE->value,
-                FrameColorEnum::CLEAR_ANODIZED->value
-              ])
+              Rule::in(
+                MethodOfPayment::CASH->value,
+                MethodOfPayment::FINANCED->value,
+                MethodOfPayment::FINANCEDCASH->value,
+                MethodOfPayment::AIA->value
+              )
+            ],
+            'frame_color' => [
+              'nullable',
+              Rule::when(
+                fn($input) => $input->service == ServiceEnum::INSTALLATION->value
+                , ['required', 'string', Rule::in([
+                  FrameColorEnum::WHITE->value,
+                  FrameColorEnum::BLACK->value,
+                  FrameColorEnum::BRONZE->value,
+                  FrameColorEnum::CLEAR_ANODIZED->value
+                ])]
+              ),
             ],
             'service' => [
                 'required',
                 'string',
                 Rule::in([
-                  Service::DELIVERY->value, 
-                  Service::INSTALLATION->value,
-                  Service::PICKUP->value
+                  ServiceEnum::DELIVERY->value, 
+                  ServiceEnum::INSTALLATION->value,
+                  ServiceEnum::PICKUP->value
                 ]),
             ],
             'eta_date' => 'required|date_format:Y-m-d',
@@ -78,7 +116,7 @@ class StoreOrderRequest extends FormRequest
             'equipment_rental' => 'boolean',
             'notes' => 'nullable|string|max:1000',
             'attachments' => 'nullable|array',
-            'attachments.*' => 'file|mimes:jpeg,png,jpg,pdf,docx,doc,xlsx|max:5120',
+            'attachments.*' => 'file|mimes:jpeg,png,jpg,pdf,docx,doc,xlsx|max:10240',
             'orderProducts' => 'required|array',
             'orderProducts.*.type_of_product_id' => 'required|integer|exists:type_of_products,id',
             'orderProducts.*.product_category_id' => 'required|integer|exists:product_categories,id',
