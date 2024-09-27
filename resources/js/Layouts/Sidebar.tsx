@@ -7,8 +7,9 @@ import ReferralIcon from '@/Components/Icons/ReferralIcon'
 import SidebarLinkLabel from '@/Components/SidebarLinkLabel'
 import DashboardIcon from '@/Components/Icons/DashboardIcon'
 import CompanyIcon from '@/Components/Icons/CompanyIcon'
-import { isAdmin, isAccountManager } from '@/Utils/user'
+import { isAdmin, isAccountManager, isFrontdesk } from '@/Utils/user'
 import { type Role, type Auth } from '@/types'
+import WindowsIcon from '@/Components/Icons/WindowsIcon'
 
 const Sidebar = ({ auth }: { auth: Auth }) => {
   const [themeState, toggleSidebar] = useStore((state: ThemeState) => [
@@ -18,13 +19,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
 
   const IS_ADMIN = isAdmin(auth.user.roles.map((role: Role) => role.name))
   const IS_ACCOUNT_MANAGER = isAccountManager(auth.user.roles.map((role: Role) => role.name))
-  /*
-  const IS_DEALER = isDealer(auth.user.roles.map((role: Role) => role.name))
-  const IS_SUB_DEALER = isSubDealer(auth.user.roles.map((role: Role) => role.name))
-  const IS_ACCOUNTING = isAccounting(auth.user.roles.map((role: Role) => role.name))
-  const IS_PRODUCTION = isProduction(auth.user.roles.map((role: Role) => role.name))
-  const IS_SHIPPING = isShipping(auth.user.roles.map((role: Role) => role.name))
-  const IS_PLANT_MANAGER = isPlantManager(auth.user.roles.map((role: Role) => role.name)) */
+  const IS_FRONTDESK = isFrontdesk(auth.user.roles.map((role: Role) => role.name))
 
   return (
         <div className={`${themeState.semidark ? 'dark' : ''}`}>
@@ -70,6 +65,14 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                 <li className="nav-item">
                                     <ul>
                                         <li className="nav-item">
+                                          <NavLink href={route('bigin.index')} active={route().current('bigin.index')} className="group">
+                                                <div className="flex items-center">
+                                                  <WindowsIcon />
+                                                  <SidebarLinkLabel>Bigin Integration</SidebarLinkLabel>
+                                                </div>
+                                            </NavLink>
+                                        </li>
+                                        <li className="nav-item">
                                             <NavLink href={route('user.index')} active={route().current('user.index') || route().current('user.create') || route().current('user.edit')} className="group">
                                                 <div className="flex items-center">
                                                   <UserIcon />
@@ -109,6 +112,19 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                 </li>
                               </>
                             )}
+                            {(IS_ADMIN || IS_FRONTDESK || IS_ACCOUNT_MANAGER) && (
+                              <>
+                                <li className="menu nav-item">
+                                    <NavLink href={route('client.index')} active={route().current('client.index')} className="group">
+                                        <div className="flex items-center">
+                                            <ReferralIcon />
+                                            <SidebarLinkLabel>Client</SidebarLinkLabel>
+                                        </div>
+                                    </NavLink>
+                                </li>
+                              </>
+                            )}
+
                         </ul>
                     </PerfectScrollbar>
                 </div>
