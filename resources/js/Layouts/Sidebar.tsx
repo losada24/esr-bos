@@ -9,6 +9,7 @@ import DashboardIcon from '@/Components/Icons/DashboardIcon'
 import CompanyIcon from '@/Components/Icons/CompanyIcon'
 import { isAdmin, isAccountManager, isFrontdesk } from '@/Utils/user'
 import { type Role, type Auth } from '@/types'
+import WindowsIcon from '@/Components/Icons/WindowsIcon'
 
 const Sidebar = ({ auth }: { auth: Auth }) => {
   const [themeState, toggleSidebar] = useStore((state: ThemeState) => [
@@ -63,6 +64,14 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
 
                                 <li className="nav-item">
                                     <ul>
+                                        <li className="nav-item">
+                                          <NavLink href={route('bigin.index')} active={route().current('bigin.index')} className="group">
+                                                <div className="flex items-center">
+                                                  <WindowsIcon />
+                                                  <SidebarLinkLabel>Bigin Integration</SidebarLinkLabel>
+                                                </div>
+                                            </NavLink>
+                                        </li>
                                         <li className="nav-item">
                                             <NavLink href={route('user.index')} active={route().current('user.index') || route().current('user.create') || route().current('user.edit')} className="group">
                                                 <div className="flex items-center">

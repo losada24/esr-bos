@@ -12,4 +12,13 @@ export interface Client {
   address?: string
   user_id?: number
   user?: User
+  client_address: ClientAddress[]
+}
+
+export interface ClientAddress {
+  id: number
+  client_id: number
+  address: string
+  notes: string
+  appointment_date: Date
 }

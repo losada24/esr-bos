@@ -1,6 +1,7 @@
 <?php
 
 use App\Enum\RoleEnum;
+use App\Http\Controllers\BiginController;
 use App\Http\Controllers\ClientController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
@@ -97,8 +98,20 @@ Route::middleware('auth')->group(function () {
     // CLIENTS
     Route::resource('client', ClientController::class)
       ->middleware(["role:" . RoleEnum::ADMIN->value . "|" . RoleEnum::FRONTDESK->value]);
-    Route::get('client/is_unique/{email}/{phone}', [ClientController::class, 'isUnique'])
+    Route::get('client/is_unique/{email}/{address}/{phone?}', [ClientController::class, 'isUnique'])
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::FRONTDESK->value]);
+    Route::get('client/document/{id}', [ClientController::class, 'document'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::FRONTDESK->value])
+      ->name('client.document');
+
+    //BIGIN
+    Route::get('/bigin/callback', [BiginController::class, 'callback'])
+      ->middleware(['role:admin'])
+      ->name('bigin.callback');
+
+    Route::get('/bigin/index', [BiginController::class, 'index'])
+      ->middleware(['role:admin'])
+      ->name('bigin.index');
   /*
     // ORDERS
    Route::get('/order', [OrderController::class, 'index'])

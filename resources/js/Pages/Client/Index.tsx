@@ -2,10 +2,10 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
 import { Head, Link, router } from '@inertiajs/react'
 import EditIcon from '@/Components/Icons/EditIcon'
 import DeleteIcon from '@/Components/Icons/DeleteIcon'
-import { type PageProps, type Client, type PaginatorLink, type Role } from '@/types'
+import { type PageProps, type Client, type PaginatorLink } from '@/types'
 import Pagination from '@/Components/Pagination'
 import ClientFilter from './ClientFilter'
-import { isAdmin } from '@/Utils/user'
+import ExportIcon from '@/Components/Icons/ExportIcon'
 
 type IndexClientProps = PageProps & {
   clients: {
@@ -15,7 +15,6 @@ type IndexClientProps = PageProps & {
 }
 
 export default function Index ({ auth, clients }: IndexClientProps) {
-  const IS_ADMIN = isAdmin(auth.user.roles.map((role: Role) => role.name))
   const destroy = (id: number) => {
     if (confirm('Are you sure you want to delete this Client?')) {
       router.delete(route('client.destroy', id))
@@ -50,7 +49,7 @@ export default function Index ({ auth, clients }: IndexClientProps) {
               </tr>
             </thead>
             <tbody>
-              {clients.data.map(({ id, name, email, phone, address }) => {
+              {clients.data.map(({ id, name, email, phone, client_address }) => {
                 return (
                   <tr
                     key={id}
@@ -66,14 +65,17 @@ export default function Index ({ auth, clients }: IndexClientProps) {
                       {phone}
                     </td>
                     <td className="border-t px-6 py-4 align-top">
-                      {address}
+                      {client_address.map(({ id, address }) => {
+                        return (
+                          <div key={id} className="flex flex-col">
+                            <div className="flex items-center justify-start gap-3">
+                              <span>{address}</span> <a href={route('client.document', id)}><ExportIcon /></a>
+                            </div>
+                          </div>
+                        )
+                      })}
                     </td>
                     <td className="border-t flex items-center px-6 py-4">
-                        <Link
-                          href={route('client.edit', id)}
-                        >
-                          <EditIcon />
-                        </Link>
                         <button
                           onClick={() => { destroy(id) }}
                         >

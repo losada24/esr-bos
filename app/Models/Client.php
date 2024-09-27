@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\DB;
@@ -14,22 +15,22 @@ class Client extends Model
 
     protected $fillable = [
       'name',
-      'last_name',
       'phone',
       'email',
-      'address',
-      'city',
-      'state',
-      'zip',
+      'user_id',
     ];
 
     public function scopeFilter($query, array $filters)
     {
         $query->when($filters['text'] ?? null, function ($query, $search) {
-          $query->where(DB::raw("CONCAT(name, ' ', email, ' ', phone, ' ', address)"), 'like', '%'.$search.'%');
+          $query->where(DB::raw("CONCAT(name, ' ', email, ' ', phone)"), 'like', '%'.$search.'%');
         });
     }
 
+    public function user(): BelongsTo {
+      return $this->belongsTo(User::class);
+    }
+    
     public function orders(): HasMany {
       return $this->hasMany(Order::class);
     }

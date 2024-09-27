@@ -30,6 +30,8 @@ class StoreClientRequest extends FormRequest
             'email' => 'required|email',
             'phone' => 'required|max:20',
             'address' => 'required|string|max:500',
+            'appointment_date' => 'nullable|date',
+            'notes' => 'nullable|string',
         ];
     }
 }
