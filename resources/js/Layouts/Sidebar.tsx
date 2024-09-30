@@ -7,7 +7,7 @@ import ReferralIcon from '@/Components/Icons/ReferralIcon'
 import SidebarLinkLabel from '@/Components/SidebarLinkLabel'
 import DashboardIcon from '@/Components/Icons/DashboardIcon'
 import CompanyIcon from '@/Components/Icons/CompanyIcon'
-import { isAdmin, isAccountManager, isFrontdesk } from '@/Utils/user'
+import { isAdmin, isAccountManager, isFrontdesk, isOwner } from '@/Utils/user'
 import { type Role, type Auth } from '@/types'
 import WindowsIcon from '@/Components/Icons/WindowsIcon'
 
@@ -20,6 +20,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
   const IS_ADMIN = isAdmin(auth.user.roles.map((role: Role) => role.name))
   const IS_ACCOUNT_MANAGER = isAccountManager(auth.user.roles.map((role: Role) => role.name))
   const IS_FRONTDESK = isFrontdesk(auth.user.roles.map((role: Role) => role.name))
+  const IS_OWNER = isOwner(auth.user.roles.map((role: Role) => role.name))
 
   return (
         <div className={`${themeState.semidark ? 'dark' : ''}`}>
@@ -112,7 +113,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                 </li>
                               </>
                             )}
-                            {(IS_ADMIN || IS_FRONTDESK || IS_ACCOUNT_MANAGER) && (
+                            {(IS_ADMIN || IS_FRONTDESK || IS_ACCOUNT_MANAGER || IS_OWNER) && (
                               <>
                                 <li className="menu nav-item">
                                     <NavLink href={route('client.index')} active={route().current('client.index')} className="group">
@@ -124,7 +125,6 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                 </li>
                               </>
                             )}
-
                         </ul>
                     </PerfectScrollbar>
                 </div>

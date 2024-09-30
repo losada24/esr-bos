@@ -97,11 +97,11 @@ Route::middleware('auth')->group(function () {
 
     // CLIENTS
     Route::resource('client', ClientController::class)
-      ->middleware(["role:" . RoleEnum::ADMIN->value . "|" . RoleEnum::FRONTDESK->value]);
+      ->middleware(["role:" . RoleEnum::ADMIN->value . "|" . RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::FRONTDESK->value . '|' . RoleEnum::OWNER->value]);
     Route::get('client/is_unique/{email}/{address}/{phone?}', [ClientController::class, 'isUnique'])
-      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::FRONTDESK->value]);
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|' . RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::FRONTDESK->value . '|' . RoleEnum::OWNER->value]);
     Route::get('client/document/{id}', [ClientController::class, 'document'])
-      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::FRONTDESK->value])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::FRONTDESK->value . '|' . RoleEnum::OWNER->value])
       ->name('client.document');
 
     //BIGIN
