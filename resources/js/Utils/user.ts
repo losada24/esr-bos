@@ -39,6 +39,8 @@ export const getRoleName = (roles: string[]): string => {
     return 'Supervisor'
   } else if (isOwner(roles)) {
     return 'Owner'
+  } else if (isFrontdesk(roles)) {
+    return 'Frontdesk'
   } else {
     return 'User'
   }
