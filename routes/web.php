@@ -38,12 +38,14 @@ Route::get('/pdf', function () {
   return view('pdf.payment-list', ['order' => $order]);
 });
 
-/* Route::get('/mailable', function () {
-  $order = App\Models\Order::find(47);
+/*Route::get('/mailable', function () {
+  $order = App\Models\Order::with(['orderProducts'])->find(69);
 
+  dd($order->orderProducts->where('product_category_id', 2)->sum('qty'));
+  //dd($order);
   // Mail::to('efrain@reylosglass.com', 'Efrain')->send(new App\Mail\EstimateCreated($order, [RoleEnum::$DEALER]));
-  return new App\Mail\ProductionScheduled($order, 'This is a test');
-}); */
+  return new App\Mail\EmailAccounting($order);
+});*/
 
 
     // ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$ACCOUNT_MANAGER . "|" . RoleEnum::$DEALER]);
@@ -69,6 +71,9 @@ Route::middleware('auth')->group(function () {
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value ]);
 
     Route::get('order/get_delivery_and_installation_date/{payment_factory_date}/{type_of_housing}/{county_id}/{service}', [OrderController::class, 'getDeliveryAndInstallationDate'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value]);
+    
+    Route::get('order/get_delivery_and_pickup_date/{payment_factory_date}', [OrderController::class, 'getDeliveryAndPickupDate'])
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value]);
     
     Route::get('dashboard/get_events/{year}/{month}', [DashboardController::class, 'getEvents'])

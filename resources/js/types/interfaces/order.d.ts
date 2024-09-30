@@ -44,6 +44,7 @@ export interface Order {
   frame_color: string
   status?: string
   cost_delivery?: number
+  cost_city_fee?: number
 }
 
 export interface TypeOfWork {

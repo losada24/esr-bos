@@ -2,7 +2,7 @@
 
 namespace App\Enum;
 
-enum Service: string
+enum ServiceEnum: string
 {
     case DELIVERY = 'DELIVERY ONLY';
     case INSTALLATION = 'DELIVERY AND INSTALLATION';

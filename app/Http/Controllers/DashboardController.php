@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Enum\Service;
+use App\Enum\ServiceEnum;
 use App\Models\Order;
 use App\Traits\OrderStatus;
 use Illuminate\Http\Request;
@@ -36,32 +36,32 @@ class DashboardController extends Controller
       ->get();
     $events = [];
     foreach ($orders as $order) {
-      if ($order->service === Service::DELIVERY->value || $order->service === Service::PICKUP->value) {
+      if ($order->service === ServiceEnum::DELIVERY->value || $order->service === ServiceEnum::PICKUP->value) {
         $startDate = $order->delivery_date;
         $endDate = $order->delivery_date;
         $event = $this->createEvent(
           $order->id,
           '#' . $order->order_number . ' - ' . $order->name . ' (' . $order->service . ')',
-          "ESTIMATED DELIVERY DATE",
+          $this->getEventPopover($order->status, $order->service),
           $startDate,
           $endDate,
-          $this->getColorByStatus($order->status),
+          $this->getColorByStatus($order->status, $order->service),
           $order->service
         );
 
         $events[] = $event;
         
-      } else if ($order->service === Service::INSTALLATION->value) {
+      } else if ($order->service === ServiceEnum::INSTALLATION->value) {
         $startDeliveryDate = $order->delivery_date;
         $endDeliveryDate = $order->delivery_date;
         $event = $this->createEvent(
           $order->id,
           '#' . $order->order_number . ' - ' . $order->name . ' (' . $order->service . ')',
-          "ESTIMATED DELIVERY DATE",
+          $this->getEventPopover($order->status, $order->service),
           $startDeliveryDate,
           $endDeliveryDate,
-          $this->getColorByStatus($order->status),
-          Service::DELIVERY->value
+          $this->getColorByStatus($order->status, $order->service),
+          ServiceEnum::DELIVERY->value
         );
 
         $events[] = $event;
@@ -70,10 +70,10 @@ class DashboardController extends Controller
         $event = $this->createEvent(
           $order->id,
           '#' . $order->order_number . ' - ' . $order->name . ' (' . $order->service . ')',
-          "ESTIMATED INSTALLATION DATE",
+          $this->getEventPopover($order->status, $order->service, true),
           $startInstallationDate,
           $endInstallationDate,
-          $this->getColorByStatus($order->status, true),
+          $this->getColorByStatus($order->status, $order->service, true),
           $order->service
         );
         $events[] = $event;
@@ -87,7 +87,7 @@ class DashboardController extends Controller
 
   public function updateEvent(Request $request, $id) {
     $order = Order::find($id);
-    if ($request->type_of_event === Service::INSTALLATION->value) {
+    if ($request->type_of_event === ServiceEnum::INSTALLATION->value) {
       $order->installation_date = $request->start;
       $order->installation_end_date = $request->end;
     } else {

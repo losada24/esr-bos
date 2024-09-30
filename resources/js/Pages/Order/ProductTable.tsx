@@ -1,15 +1,20 @@
 import DeleteIcon from '@/Components/Icons/DeleteIcon'
 import EditIcon from '@/Components/Icons/EditIcon'
-import { type TypeOfProduct, type OrderProduct, type ProductConfig, type ProductCategory } from '@/types'
+import { type TypeOfProduct, type OrderProduct, type ProductConfig, type ProductCategory, type TravelCost } from '@/types'
 import { OrderProductsExtraWorks } from '@/types/interfaces/order'
 import { formatPrice } from '@/Utils/price'
 import React from 'react'
+import { PAYMENT_METHODS, SERVICES } from '@/Utils/constants'
+import {  type OrderFormValues, getValueIdNotNull} from './OrderCommon'
 
 const ProductTable = ({
   orderProducts,
   type_of_products,
   products_config,
   product_category,
+  service,
+  values,
+  travel_costs,
   removeOrderProduct,
   updateOrderProduct
 }: {
@@ -17,6 +22,10 @@ const ProductTable = ({
   type_of_products: TypeOfProduct[]
   products_config: ProductConfig[]
   product_category: ProductCategory[]
+  service: string
+  values: OrderFormValues
+  travel_costs: TravelCost[]
+  
   removeOrderProduct: (index: number) => void
   updateOrderProduct: (index: number) => void
 }) => {
@@ -30,19 +39,47 @@ const ProductTable = ({
     return products_config.find((type) => type.id === id)?.name
   }
 
+  const getProductsTotal = () => {
+    const result =  orderProducts.reduce((acc, value) => {
+      return acc + (Number(value.total_price) + Number(value.extra_work_price))
+    }, 0)
+    
+    return result
+  }
+  const getOtherCost= () => {
+      return values.additional_travel_costs ? Number(values.additional_travel_costs): 0
+  }
+
+  const getTravelCost = () => {
+    const id = getValueIdNotNull(values.travel_cost_id)
+    const result = travel_costs.find((type) => Number(type.id) === Number(id))?.price
+    return result ? Number(result): 0
+  }
+
+
+  const getGrandTotal = () => {
+   const result = getProductsTotal() + getOtherCost() + getTravelCost()
+   return result 
+  }
+ 
   return (
     <div className='table-responsive mt-3'>
           <table className="w-full whitespace-nowrap">
             <thead>
               <tr className="font-bold text-left">
-                <th className="px-6 pt-5 pb-4">Type of Product</th>
-                <th className="px-6 pt-5 pb-4">Product Category</th>
-                <th className="px-6 pt-5 pb-4">Product Config</th>
-                <th className="px-6 pt-5 pb-4 text-right">Count</th>
-                <th className="px-6 pt-5 pb-4 text-right">Unit Price</th>
-                <th className="px-6 pt-5 pb-4 text-right">Extra Work</th>
-                <th className="px-6 pt-5 pb-4 text-right">Total Price</th>
-                <th className="px-6 pt-5 pb-4 w-14">Actions</th>
+              
+                  <th className="px-6 pt-5 pb-4">Type of Product</th>
+                  <th className="px-6 pt-5 pb-4">Product Category</th>
+                  <th className="px-6 pt-5 pb-4">Product Config</th>
+                  <th className="px-6 pt-5 pb-4 text-right">Count</th>
+                {service === SERVICES.DELIVERY_AND_INSTALLATION && (
+                  <>
+                  <th className="px-6 pt-5 pb-4 text-right">Unit Price</th>
+                  <th className="px-6 pt-5 pb-4 text-right">Extra Work</th>
+                  <th className="px-6 pt-5 pb-4 text-right">Total Price</th>
+                  </>
+                )}
+                  <th className="px-6 pt-5 pb-4 w-14">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -64,15 +101,19 @@ const ProductTable = ({
                     <td className="border-t px-6 py-4 align-top text-right">
                       {product.qty}
                     </td>
+                    {service === SERVICES.DELIVERY_AND_INSTALLATION && (
+                    <>
                     <td className="border-t px-6 py-4 align-top text-right">
                       {formatPrice(product.unit_price)}
                     </td>
                     <td className="border-t px-6 py-4 align-top text-right">
-                      {formatPrice(product.extra_work_price)}
+                      {formatPrice(product.extra_work_price) }
                     </td>
                     <td className="border-t px-6 py-4 align-top text-right">
-                      {formatPrice(product.total_price_with_extraworks)}
+                      {formatPrice(Number(product.total_price) + Number(product.extra_work_price))}
                     </td>
+                    </>
+                     )}
                     <td className="border-t px-6 py-4 align-top">
                       {/* <button
                           onClick={(e) => {
@@ -104,6 +145,30 @@ const ProductTable = ({
                 </tr>
               )}
             </tbody>
+            {service === SERVICES.DELIVERY_AND_INSTALLATION && (
+              <tfoot>
+                <tr>
+                    <td colSpan={6} className="px-6 py-4 align-top text-right">Total</td>
+                    <td className='px-6 py-4 align-top text-right'>{ formatPrice(getProductsTotal() )}</td>
+                    <td>&nbsp;</td>
+                </tr>
+              <tr>
+                    <td colSpan={6} className="px-6 py-4 align-top text-right">Other Cost</td>
+                    <td className='px-6 py-4 align-top text-right'>{ formatPrice(getOtherCost() )}</td>
+                    <td>&nbsp;</td>
+                </tr>
+                <tr>
+                    <td colSpan={6} className="px-6 py-4 align-top text-right">Travel Cost</td>
+                    <td className='px-6 py-4 align-top text-right'>{ formatPrice(getTravelCost())}</td>
+                    <td>&nbsp;</td>
+                </tr>
+                <tr>
+                    <td colSpan={6} className="px-6 py-4 align-top text-right">Gran Total</td>
+                    <td className='px-6 py-4 align-top text-right'>{ formatPrice(getGrandTotal())}</td>
+                    <td>&nbsp;</td>
+                </tr>
+              </tfoot>
+            )}
           </table>
         </div>
   )
