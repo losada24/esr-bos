@@ -1,6 +1,6 @@
 import { type User } from '@/types/interfaces/user'
 import { type Auth } from '@/types/interfaces/auth'
-import { type Client } from '@/types/interfaces/client'
+import { type Client, type ClientAddress } from '@/types/interfaces/client'
 import { type Flash } from '@/types/interfaces/flash'
 import { type PageProps } from '@/types/types/pageProps'
 import { type PaginatorLink } from '@/types/interfaces/paginatorLink'
@@ -33,5 +33,6 @@ export type {
   TravelCost,
   TypeOfProduct,
   ExtraWorks,
-  OptionType
+  OptionType,
+  ClientAddress
 }

@@ -20,6 +20,10 @@ export const isSupervisor = (roles: string[]): boolean => {
   return roles.find((role) => role === ROLES.SUPERVISOR) !== undefined
 }
 
+export const isFrontdesk = (roles: string[]): boolean => {
+  return roles.find((role) => role === ROLES.FRONTDESK) !== undefined
+}
+
 export const can = (permissions: string[], permission: string): boolean => {
   return permissions.find((p) => p === permission) !== undefined
 }
@@ -35,6 +39,8 @@ export const getRoleName = (roles: string[]): string => {
     return 'Supervisor'
   } else if (isOwner(roles)) {
     return 'Owner'
+  } else if (isFrontdesk(roles)) {
+    return 'Frontdesk'
   } else {
     return 'User'
   }

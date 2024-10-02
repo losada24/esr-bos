@@ -4,14 +4,12 @@ namespace App\Http\Controllers;
 use App\Models\Client;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
-use Spatie\Permission\Models\Role;
 use App\Actions\CreateClient;
 use App\Actions\UpdateClient;
 use App\Http\Requests\StoreClientRequest;
 use App\Http\Requests\UpdateClientRequest;
-use App\Http\Resources\UserResource;
-use App\Enum\States;
-use App\Models\Company;
+use App\Models\ClientAddress;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class ClientController extends Controller
 {
@@ -23,7 +21,7 @@ class ClientController extends Controller
     public function index(Request $request)
     {
         return Inertia::render('Client/Index', [
-          'clients' => Client::with(['company'])->filter($request->only(['text']))
+          'clients' => Client::with(['clientAddress'])->filter($request->only(['text']))
             ->orderBy('name')
             ->paginate()
             ->withQueryString()
@@ -37,10 +35,7 @@ class ClientController extends Controller
      */
     public function create()
     {
-        return Inertia::render('Client/Create', [
-          'states' => array_values(States::$USA_STATES),
-          'companies' => Company::orderBy('name')->orderBy('name')->get()
-        ]);
+        return Inertia::render('Client/Create', []);
     }
 
     /**
@@ -66,8 +61,6 @@ class ClientController extends Controller
     {
         return Inertia::render('Client/Edit', [
           'client' => $client,
-          'states' => array_values(States::$USA_STATES),
-          'companies' => Company::orderBy('name')->orderBy('name')->get()
         ]);
     }
 
@@ -97,5 +90,47 @@ class ClientController extends Controller
         return redirect()
           ->back()
           ->with('success', 'Client deleted successfully.');
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function isUnique($email, $address, $phone = null)
+    {
+        $addressList = [];
+        $clientsByEmail = Client::with(['clientAddress'])->where('email', $email)->get();
+        $clientsByPhone = Client::with(['clientAddress'])->where('phone', $phone)->get();    
+        //dd($clientsByEmail);
+
+        foreach ($clientsByEmail as $clientAddress) {
+          foreach ($clientAddress->clientAddress as $client) {
+            if (!in_array($client->address, $addressList) && $client->address != $address) {
+              $addressList[] = $client->address;
+            }
+          }
+        }
+
+        foreach ($clientsByPhone as $clientAddress) {
+          foreach ($clientAddress->clientAddress as $client) {
+            if (!in_array($client->address, $addressList) && $client->address != $address) {
+              $addressList[] = $client->address;
+            }
+          }
+        }
+
+        return response()->json(
+          $addressList
+        );
+    }
+
+    public function document($id)
+    {
+        $clientAddress = ClientAddress::with(['client'])->find($id);
+        $pdf = Pdf::loadView('pdf.sale-form', ['clientAddress' => $clientAddress]);
+        $pdf->setPaper('a4', 'portrait');
+        return $pdf->download('sale-form.pdf');
     }
 }

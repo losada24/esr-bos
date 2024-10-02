@@ -1,0 +1,120 @@
+.clearfix:after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+a {
+  color: #5D6975;
+  text-decoration: underline;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  color: #001028;
+  background: #FFFFFF; 
+  font-family: helvetica; 
+  font-size: 14px; 
+  font-family: Arial;
+}
+
+header {
+  padding: 10px 0;
+  margin-bottom: 30px;
+}
+
+footer {
+  width: 100%;
+  border: 1px solid #000;
+  height:  500px;
+}
+
+.content {
+  width: 100%;
+}
+
+#logo {
+  text-align: left;
+  margin-bottom: 10px;
+}
+
+#logo img {
+  width: 280px;
+  height: auto;
+}
+
+.strong-labels {
+  font-family: helvetica;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.regular-labels {
+  font-family: helvetica;
+  font-weight: normal;
+  font-size: 14px;
+}
+
+.bottom-line {
+  border-bottom: 1px solid #000;
+}
+
+.table-container {
+  width: 100%;
+}
+
+.column-6 {
+  width: 6%;
+}
+
+.column-18 {
+  width: 18%;
+}
+
+.column-35 {
+  width: 35%;
+}
+
+.column-48 {
+  width: 48%;
+}
+
+.column-50 {
+  width: 50%;
+}
+
+.column-65 {
+  width: 60%;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.pr-10 {
+  padding-right: 10px;
+}
+
+.pt-10 {
+  padding-top: 10px;
+}
+
+.checkbox {
+  width: 15px;
+  height: 15px;
+  border: 3px solid #000;
+  display: inline-block;
+}
+
+.mt-10 {
+  margin-top: 10px;
+}
+
+.wp-14 {
+  width: 14%;
+}
+
+.wp-10 {
+  width: 10%;
+}
