@@ -75,8 +75,15 @@ class Order extends Model
         });
     }
 
-    public function scopeCalendarFilter($query) {
-      
+    public function scopeCalendarFilter($query, array $filters)
+    {
+      if (isset($filters['status']) && $filters['status'] != 'all') {
+        $query->where('status', $filters['status']);
+      }
+
+      if (isset($filters['service']) && $filters['service'] != 'all') {
+        $query->where('service', $filters['service']);
+      }
     }
 
     public function client(): BelongsTo {

@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Enum\OrderStatusEnum;
 use App\Enum\ServiceEnum;
+use App\Enum\StatusColorEnum;
 use App\Models\Order;
 use App\Traits\OrderStatus;
 use Illuminate\Http\Request;
@@ -17,11 +19,48 @@ class DashboardController extends Controller
 
   public function index(Request $request): Response
   {
-      return Inertia::render('Dashboard/Index', []);
+      return Inertia::render('Dashboard/Index', [
+        'services' => [
+          ServiceEnum::INSTALLATION->value,
+          ServiceEnum::DELIVERY->value,
+          ServiceEnum::PICKUP->value
+        ],
+        'status' => [
+          OrderStatusEnum::PLANNED->value,
+          OrderStatusEnum::CONFIRMED->value,
+          OrderStatusEnum::DELIVERY_CONFIRMED->value,
+        ],
+        'legend' => [
+          [
+            'color' => StatusColorEnum::PLANNED->value,
+            'label' => 'PICKUP PLANNED'
+          ],
+          [
+            'color' => StatusColorEnum::CONFIRMED->value,
+            'label' => 'CONFIRMED DELIVERY'
+          ],
+          [
+            'color' => StatusColorEnum::PLANNED_INSTALLATION->value,
+            'label' => 'PLANNED DELIVERY DATE'
+          ],
+          [
+            'color' => StatusColorEnum::PLANNED_INSTALLATION_EVENT->value,
+            'label' => 'PLANNED INSTALLATION DATE'
+          ],
+          [
+            'color' => StatusColorEnum::CONFIRMED_INSTALLATION->value,
+            'label' => 'INSTALLATION CONFIRMED'
+          ],
+          [
+            'color' => StatusColorEnum::CONFIRMED_DELIVERY->value,
+            'label' => 'CONFIRMED DELIVERY'
+          ],
+        ]
+      ]);
   }
 
-  public function getEvents($year, $month) {
-    $orders = Order::calendarFilter()
+  public function getEvents($year, $month, $service, $status) {
+    $orders = Order::calendarFilter(['service' => $service, 'status' => $status])
       ->where(function ($query) use ($year, $month) {
         $query->where(function($query) use ($year, $month) {
           $query->whereYear('delivery_date', $year)
@@ -32,10 +71,20 @@ class DashboardController extends Controller
               ->orWhereYear('installation_end_date', $year)
               ->whereMonth('installation_end_date', $month);
         });
-      })
-      ->get();
+      });
+
+    /*$sql = $orders->toSql();
+    $bindings = $orders->getBindings();
+    // Reemplazar los placeholders "?" con los valores de bindings
+    foreach ($bindings as $binding) {
+      // Escapa las comillas para valores de texto
+      $binding = is_string($binding) ? "'{$binding}'" : $binding;
+      $sql = preg_replace('/\?/', $binding, $sql, 1); // Reemplaza solo el primer "?"
+    }
+    dd($sql);*/
+
     $events = [];
-    foreach ($orders as $order) {
+    foreach ($orders->get() as $order) {
       if ($order->service === ServiceEnum::DELIVERY->value || $order->service === ServiceEnum::PICKUP->value) {
         $startDate = $order->delivery_date;
         $endDate = $order->delivery_date;

@@ -76,7 +76,7 @@ Route::middleware('auth')->group(function () {
     Route::get('order/get_delivery_and_pickup_date/{payment_factory_date}', [OrderController::class, 'getDeliveryAndPickupDate'])
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value]);
     
-    Route::get('dashboard/get_events/{year}/{month}', [DashboardController::class, 'getEvents'])
+    Route::get('dashboard/get_events/{year}/{month}/{service}/{status}', [DashboardController::class, 'getEvents'])
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::INSTALLER->value])
       ->name('dashboard.get_events');
     
