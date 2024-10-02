@@ -12,19 +12,26 @@ setOptions({
   themeVariant: 'light'
 })
 
-export default function Dashboard ({ auth }: PageProps) {
+interface Legend {
+  color: string
+  label: string
+}
+interface CalendarFilter {
+  service: string
+  status: string
+}
+
+export default function Dashboard ({ auth, services, status, legend }: PageProps & { services: string[], status: string[], legend: Legend[] }) {
   const IS_ADMIN = isAdmin(auth.user.roles.map((role: Role) => role.name))
   const IS_ACCOUNT_MANAGER = isAccountManager(auth.user.roles.map((role: Role) => role.name))
   const [myEvents, setEvents] = useState([])
   const [currentDate, setCurrentDate] = useState(new Date())
-  // const [toastText, setToastText] = useState()
+  const [calendarFilter, setCalendarFilter] = useState<CalendarFilter>({ service: 'all', status: 'all' })
   const [eventId, setEventId] = useState(0)
 
   const [isModalOpen, setModalOpen] = useState(false)
 
   const handleEventClick = useCallback((args: any) => {
-    // setToastText(args.event.title)
-    // setToastOpen(true)
     setEventId(args.event.order_id)
     setModalOpen(true)
   }, [])
@@ -32,7 +39,7 @@ export default function Dashboard ({ auth }: PageProps) {
   const loadEvents = (date: Date) => {
     const year = date.getFullYear()
     const month = date.getMonth() + 1
-    const getEventsRoute = route('dashboard.get_events', { year, month })
+    const getEventsRoute = route('dashboard.get_events', { year, month, service: calendarFilter.service, status: calendarFilter.status })
     getJson(getEventsRoute, (events) => {
       setEvents(events)
     }, 'json')
@@ -75,7 +82,7 @@ export default function Dashboard ({ auth }: PageProps) {
 
   useEffect(() => {
     loadEvents(currentDate)
-  }, [currentDate])
+  }, [currentDate, calendarFilter])
 
   return (
     <AuthenticatedCalendarLayout
@@ -85,6 +92,47 @@ export default function Dashboard ({ auth }: PageProps) {
       <Head title="Calendar" />
       <div
         className='w-full h-[85vh] flex flex-col'>
+        <div className='flex justify-between items-center mb-3'>
+          <div className='flex gap-3'>
+            <div className='flex items-center gap-2'>
+              <label htmlFor="">Service:</label>
+              <select
+                className='form-input'
+                onChange={(e) => {
+                  setCalendarFilter({ ...calendarFilter, service: e.target.value })
+                }}
+              >
+                <option value="all">All</option>
+                {services.map((service) => (
+                  <option key={service}>{service}</option>
+                ))}
+              </select>
+            </div>
+            <div className='flex items-center gap-2'>
+              <label htmlFor="">Status:</label>
+              <select
+                className='form-input'
+                onChange={(e) => {
+                  setCalendarFilter({ ...calendarFilter, status: e.target.value })
+                }}
+              >
+                <option value="all">All</option>
+                {status.map((status) => (
+                  <option key={status}>{status}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className='flex gap-3'>
+            {legend.map((item, index) => {
+              return (
+                <div key={`legend${index}`} className='flex items-center gap-1'>
+                  <div className='w-5 h-5 rounded-sm cursor-pointer' title={item.label} style={{ backgroundColor: item.color }}></div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
         <Eventcalendar
           clickToCreate={false}
           dragToCreate={false}

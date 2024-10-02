@@ -3,9 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Actions\CreateOrder;
-use App\Actions\ProduceOrder;
 use App\Actions\UpdateOrder;
-use App\Actions\UpdateOrderStatusNote;
 use App\Enum\FrameColorEnum;
 use App\Enum\MethodOfPayment;
 use App\Http\Resources\OrderCollection;
@@ -13,13 +11,10 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Models\Order;
 use App\Enum\OrderStatusEnum;
-use App\Http\Requests\UpdateOrderStatusRequest;
-use App\Enum\ProductSystemEnum;
 use App\Enum\RoleEnum;
 use App\Enum\ServiceEnum;
 use App\Http\Requests\StoreOrderRequest;
 use App\Http\Requests\UpdateOrderRequest;
-use App\Http\Requests\UpdateOrderStatusNoteRequest;
 use App\Models\Attachment;
 use App\Models\Client;
 use App\Models\DurationOfWork;
@@ -34,8 +29,6 @@ use App\Models\TypeOfProduct;
 use App\Models\TypeOfWork;
 use App\Models\User;
 use App\Traits\OrderDates;
-use Doctrine\DBAL\Types\Type;
-use Illuminate\Contracts\Database\Eloquent\Builder;
 
 class OrderController extends Controller
 {

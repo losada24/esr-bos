@@ -4,6 +4,7 @@ namespace App\Traits;
 
 use App\Enum\OrderStatusEnum;
 use App\Enum\ServiceEnum;
+use App\Enum\StatusColorEnum;
 use PhpParser\Node\Stmt\Break_;
 
 trait OrderStatus {
@@ -25,32 +26,32 @@ trait OrderStatus {
       case OrderStatusEnum::PLANNED->value:
         if ($service == ServiceEnum::INSTALLATION->value) {
           if ($isInstallationEvent) {
-            $color = '#0a7bd1';
+            $color = StatusColorEnum::PLANNED_INSTALLATION_EVENT->value;
           } else {
-            $color = '#5FE3FB';
+            $color = StatusColorEnum::PLANNED_INSTALLATION->value;
           }
         } else if ($service == ServiceEnum::DELIVERY->value) {
-          $color = '#5FE3FB';
+          $color = StatusColorEnum::PLANNED_INSTALLATION->value;
         } else {
-          $color = '#9333ff';
+          $color = StatusColorEnum::PLANNED->value;
         }
         break;
       case OrderStatusEnum::CONFIRMED->value:
         //$color = ;
         if ($service == ServiceEnum::INSTALLATION->value) {
           if ($isInstallationEvent) {
-            $color = '#ffb533';
+            $color = StatusColorEnum::CONFIRMED_INSTALLATION->value;
           } else {
-            $color = '#F4F443';
+            $color = StatusColorEnum::CONFIRMED->value;
           }
         } else if ($service == ServiceEnum::DELIVERY->value) {
-          $color = '#F4F443';
+          $color = StatusColorEnum::CONFIRMED->value;
         } else {
-          $color = '#FF8D33';
+          $color = StatusColorEnum::CONFIRMED_DELIVERY->value;
         }
         break;
       case OrderStatusEnum::DELIVERY_CONFIRMED->value:
-        $color = '#F4F443';
+        $color = StatusColorEnum::CONFIRMED->value;
         break;
     }
 
