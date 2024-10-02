@@ -1,8 +1,13 @@
 <div>
-    <p>Good day,</p>
-    <p>This email is a confirmation that your installation will be on {{$order->installation_date}}.</p>
+<p>Good day,</p>
+<p>I hope this email finds you well. I am writing to provide you with the details of a recent order for your records.</p>
+    
     @if ($displaySummary)
-      <p style="font-weight: bold;">Order summary</p>
+    <p style="font-weight: bold;">Order summary</p>
+      <p><span style="font-weight: bold;">Delivery Date:</span> {{$order->delivery_date}}</p>
+      <p><span style="font-weight: bold;">Installation Date:</span> {{$order->installation_date}}</p>
+      <p><span style="font-weight: bold;">Delivery Cost:</span> {{'$' . number_format($order->cost_delivery  , 2, '.', ',') }}</p>
+      <p><span style="font-weight: bold;">City Fee Cost:</span> {{'$' . number_format($order->cost_city_fee , 2, '.', ',')}}</p>
       <p><span style="font-weight: bold;">Order Number:</span> {{ $order->order_number }}</p>
       <p><span style="font-weight: bold;">Order Name:</span> {{ $order->name }}</p>
       <p><span style="font-weight: bold;">Client Name:</span> {{ $order->client->name }}</p>

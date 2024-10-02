@@ -10,6 +10,7 @@ use App\Mail\EmailAccounting;
 use App\Mail\EstimateDeliveryInstallationDate;
 use App\Mail\EstimateMaterialArrivalDate;
 use App\Mail\InstallationDateConfirmation;
+use App\Mail\InstallationDateConfirmationClient;
 use App\Models\Order;
 use App\Models\User;
 use Illuminate\Support\Facades\Mail;
@@ -46,6 +47,7 @@ trait OrderEmails {
       $users = [];
       $users[] = $order->client->email;
       $users[] = $order->supervisor->email;
+      $users[]='alina@reylosglass.com';
       $accountManager = User::role([RoleEnum::ACCOUNT_MANAGER->value])->get();
       $users = array_merge($users, $accountManager->pluck('email')->toArray());
       $usersByRoleManager = User::role([RoleEnum::WAREHOUSE_MANAGER->value, RoleEnum::SERVICE_MANAGER->value])->get();
@@ -54,18 +56,23 @@ trait OrderEmails {
         Mail::to($user)->send(new DeliveryConfirmed($order));
       }
     } else if ($order->status === OrderStatusEnum::CONFIRMED->value) {
-      $users = $order->owners->pluck('email')->toArray();
+      
+      $owners= $order->owners->pluck('email')->toArray();
+      foreach   ($owners as $owner){
+        Mail::to($owner)->send(new InstallationDateConfirmationClient($order));
+      }
       $users[] = $order->client->email;
       foreach ($users as $user) {
-        Mail::to($user)->send(new InstallationDateConfirmation($order));
+        Mail::to($user)->send(new InstallationDateConfirmationClient($order, true));
       }
 
       $users = [];
       $users[] = $order->supervisor->email;
+      $users[]='alina@reylosglass.com';
       $serviceManager = User::role([RoleEnum::SERVICE_MANAGER->value])->get();
       $users = array_merge($users, $serviceManager->pluck('email')->toArray());
       foreach ($users as $user) {
-        Mail::to($user)->send(new InstallationDateConfirmation($order, true, true));
+        Mail::to($user)->send(new InstallationDateConfirmation($order, true, true, false,true));
       }
 
       $users = [];

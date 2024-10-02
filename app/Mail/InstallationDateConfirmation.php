@@ -24,7 +24,9 @@ class InstallationDateConfirmation extends Mailable
       protected Order $order,
       protected bool $displaySummary = false,
       protected bool $orderAttachments = false,
-      protected bool $installationAttachments = false
+      protected bool $installationAttachments = false,
+      protected bool $supervisorAttachments = false
+
     ){}
 
     /**
@@ -74,6 +76,18 @@ class InstallationDateConfirmation extends Mailable
           }
           
           $pdf = Pdf::loadView('pdf.payment-list', ['order' => $this->order]);
+          $pdf->save($pdfPath);
+          $attachments[] = Attachment::fromPath($pdfPath);
+        }
+
+        if ($this->supervisorAttachments) {
+          $pdfName = 'supervisor-list-' . $this->order->order_number . '.pdf';
+          $pdfPath = storage_path('app/public/pdf/' . $pdfName);
+          if (Storage::disk('local')->exists($pdfPath)) {
+            Storage::disk('local')->delete($pdfPath);
+          }
+          
+          $pdf = Pdf::loadView('pdf.supervisor-list', ['order' => $this->order]);
           $pdf->save($pdfPath);
           $attachments[] = Attachment::fromPath($pdfPath);
         }
