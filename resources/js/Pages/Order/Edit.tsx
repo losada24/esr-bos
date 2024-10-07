@@ -36,7 +36,8 @@ export default function Edit ({
   product_category,
   product_costs,
   order,
-  frame_colors
+  frame_colors,
+  status
 }: PageProps & {
   clients: Client[]
   owners: User[]
@@ -54,10 +55,11 @@ export default function Edit ({
   product_costs: ProductCost[]
   order: Order
   frame_colors: string[]
+  status: string[]
 }) {
   const initialValues: OrderFormValues = loadOrderFormObj(order)
-  //console.log(initialValues)
-    const getSupervisorId = (supervisor: any) => {
+  // console.log(initialValues)
+  const getSupervisorId = (supervisor: any) => {
     let value = null
     if (supervisor !== null && Object.prototype.hasOwnProperty.call(supervisor, 'value')) {
       value = supervisor.value
@@ -70,19 +72,20 @@ export default function Edit ({
   let messageconfirm = 'Are you sure you want to change the status to confirmed?'
   const isRentalEquipment: boolean = !!order.equipment_rental
   const isAssociationPermit: boolean = !!order.association_permits
- 
-  if (isRentalEquipment === true){
-       messageconfirm += 'This order required EQUIPMENT RENTAL.'
+
+  if (isRentalEquipment) {
+    messageconfirm += 'This order required EQUIPMENT RENTAL.'
   }
 
-  if (isAssociationPermit === true) {
-       messageconfirm += 'This order required ASSOCIATION PERMIT.'
+  if (isAssociationPermit) {
+    messageconfirm += 'This order required ASSOCIATION PERMIT.'
   }
-//  console.log(messageconfirm)
-  //return
-  
+  //  console.log(messageconfirm)
+  // return
+
   const handleSubmit = async (values: any, helpers: FormikHelpers<OrderFormValues>) => {
-    if (values.status !== 'CONFIRMED' && (values.installation_teams.length > 0 && values.supervisor_id !== null) && !confirm(messageconfirm )) {
+    const selectedStatus = typeof values.status === 'string' ? values.status : getValueIdNotNull(values.status)
+    if (selectedStatus === 'CONFIRMED' && !confirm(messageconfirm)) {
       return
     }
 
@@ -110,7 +113,8 @@ export default function Edit ({
         return value
       }),
       supervisor_id: getSupervisorId(values.supervisor_id),
-      travel_cost_id: typeof values.travel_cost_id === 'number' ? values.travel_cost_id : getValueIdNotNull(values.travel_cost_id)
+      travel_cost_id: typeof values.travel_cost_id === 'number' ? values.travel_cost_id : getValueIdNotNull(values.travel_cost_id),
+      status: selectedStatus
     }
 
     if (!Object.prototype.hasOwnProperty.call(order, 'orderProducts')) {
@@ -118,9 +122,6 @@ export default function Edit ({
         return getOrderProducts(orderProduct)
       })
     }
-
-    //console.log(order)
-    //return
 
     delete order.order_products
     router.post(route('order.update', values.id), {
@@ -168,6 +169,7 @@ export default function Edit ({
                 product_costs={product_costs}
                 frame_colors={frame_colors}
                 attachments={order.attachments}
+                status={status}
               />
             )}
           </Formik>

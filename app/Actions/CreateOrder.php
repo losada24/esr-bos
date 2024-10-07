@@ -22,17 +22,21 @@ class CreateOrder {
     DB::transaction(function() use ($request) {
 
       if ($request->client_id == 0) {
-        $client = Client::create([
-          'name' => $request->client_name,
-          'last_name' => $request->last_name,
-          'phone' => $request->phone,
-          'email' => $request->email,
-        ]);
+        $searchClient = Client::where('email', $request->email)->orWhere('phone', $request->phone)->first();
+        if ($searchClient) {
+          $client = $searchClient;
+        } else {
+          $client = Client::create([
+            'name' => $request->client_name,
+            'phone' => $request->phone,
+            'email' => $request->email,
+          ]);
+        }
       } else {
         $client = Client::find($request->client_id);
       }
 
-      $status = $this->getStatus($request);
+      $status = $request->status;
       $order = Order::create([
         'client_id' => $client->id,
         'user_id' => auth()->user()->id,
@@ -76,6 +80,12 @@ class CreateOrder {
           ]);
         }
       }
+
+      $order->orderStatus()->create([
+        'status' => $status,
+        'user_id' => auth()->user()->id,
+        'notes' => "$status created by " . auth()->user()->name
+      ]);
 
       $order->installationTeams()->attach($request->installation_teams);
       $order->owners()->attach($request->owners);

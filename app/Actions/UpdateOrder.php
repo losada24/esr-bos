@@ -19,17 +19,21 @@ class UpdateOrder {
     DB::transaction(function() use ($request, $order) {
 
       if ($request->client_id == 0) {
-        $client = Client::create([
-          'name' => $request->client_name,
-          'last_name' => $request->last_name,
-          'phone' => $request->phone,
-          'email' => $request->email,
-        ]);
+        $searchClient = Client::where('email', $request->email)->orWhere('phone', $request->phone)->first();
+        if ($searchClient) {
+          $client = $searchClient;
+        } else {
+          $client = Client::create([
+            'name' => $request->client_name,
+            'phone' => $request->phone,
+            'email' => $request->email,
+          ]);
+        }
       } else {
         $client = Client::find($request->client_id);
       }
 
-      $status = $this->getStatus($request);
+      $status = $request->status;
       $sendEmail = $status != $order->status;
       $orderData = [
         'client_id' => $client->id,
@@ -115,6 +119,11 @@ class UpdateOrder {
       }
       
      if ($sendEmail) {
+        $order->orderStatus()->create([
+          'status' => $status,
+          'user_id' => auth()->user()->id,
+          'notes' => "$status created by " . auth()->user()->name
+        ]);
         $this->sendEmail($order);
       }
       

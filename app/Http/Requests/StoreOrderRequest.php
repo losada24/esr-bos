@@ -4,8 +4,10 @@ namespace App\Http\Requests;
 
 use App\Enum\FrameColorEnum;
 use App\Enum\MethodOfPayment;
+use App\Enum\OrderStatusEnum;
 use Illuminate\Foundation\Http\FormRequest;
 use App\Enum\ServiceEnum;
+use App\Rules\ValidateOrderStatus;
 use Illuminate\Validation\Rule;
 
 class StoreOrderRequest extends FormRequest
@@ -30,7 +32,7 @@ class StoreOrderRequest extends FormRequest
         return [
            // 'client_id' => 'nullable|integer|exists:clients,id',
             'client_name' => 'required|string|max:255',
-            'last_name' => 'required|string|max:255',
+            // 'last_name' => 'required|string|max:255',
             'phone' => 'required|string|max:255',
             'email' => 'nullable|email|max:255',
             'name' => 'required|string|max:255',
@@ -103,6 +105,15 @@ class StoreOrderRequest extends FormRequest
                   ServiceEnum::INSTALLATION->value,
                   ServiceEnum::PICKUP->value
                 ]),
+            ],
+            'status' =>  [
+            'required',
+            'string',
+              Rule::in(
+                OrderStatusEnum::PLANNED->value,
+                OrderStatusEnum::CONFIRMED->value,
+              ),
+              new ValidateOrderStatus
             ],
             'eta_date' => 'required|date_format:Y-m-d',
             'installation_end_date' => 'nullable|date_format:Y-m-d',

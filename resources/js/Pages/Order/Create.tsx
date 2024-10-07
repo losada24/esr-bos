@@ -5,7 +5,6 @@ import { orderFormObj, type OrderFormValues, orderSchema, getValueIdNotNull } fr
 import OrderForm from './OrderForm'
 import {
   type PageProps,
-  type Order,
   type Client,
   type TypeOfWork,
   type User,
@@ -35,7 +34,8 @@ export default function Create ({
   type_of_products,
   product_category,
   product_costs,
-  frame_colors
+  frame_colors,
+  status
 }: PageProps & {
   clients: Client[]
   owners: User[]
@@ -52,9 +52,9 @@ export default function Create ({
   product_category: ProductCategory[]
   product_costs: ProductCost[]
   frame_colors: string[]
+  status: string[]
 }) {
   const initialValues: OrderFormValues = orderFormObj
-  //console.log(initialValues);
 
   const handleSubmit = async (values: any, helpers: FormikHelpers<OrderFormValues>) => {
     const order = {
@@ -65,10 +65,9 @@ export default function Create ({
       installation_teams: values.installation_teams.map((installation_team: any) => installation_team.value) ?? [],
       owners: values.owners.map((owner: any) => owner.value),
       supervisor_id: values.supervisor_id.value,
-      travel_cost_id: values.travel_cost_id.value !== 0 ? values.travel_cost_id.value :''
+      travel_cost_id: values.travel_cost_id.value !== 0 ? values.travel_cost_id.value : '',
+      status: typeof values.status === 'string' ? values.status : getValueIdNotNull(values.status)
     }
-    console.log(values);
-
 
     router.post(route('order.store'), order, {
       forceFormData: true,
@@ -111,6 +110,7 @@ export default function Create ({
                 product_category={product_category}
                 product_costs={product_costs}
                 frame_colors={frame_colors}
+                status={status}
               />
             )}
           </Formik>

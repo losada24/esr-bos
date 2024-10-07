@@ -132,6 +132,11 @@ class Order extends Model
       return $this->belongsToMany(InstallationTeam::class, 'installation_teams_orders');
     }
 
+    public function orderStatus()
+    {
+        return $this->hasMany(OrderStatus::class);
+    }
+
     public function getGrandTotalPrice() {
       $pricesWithExtraWorks = $this->orderProducts->sum('total_price') + $this->orderProducts->sum('extra_work_price');
       $travelCost = 0;

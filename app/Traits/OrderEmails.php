@@ -57,30 +57,45 @@ trait OrderEmails {
       }
     } else if ($order->status === OrderStatusEnum::CONFIRMED->value) {
       
-      $owners= $order->owners->pluck('email')->toArray();
-      foreach   ($owners as $owner){
-        Mail::to($owner)->send(new InstallationDateConfirmationClient($order));
-      }
-      $users[] = $order->client->email;
-      foreach ($users as $user) {
-        Mail::to($user)->send(new InstallationDateConfirmationClient($order, true));
-      }
 
       $users = [];
-      $users[] = $order->supervisor->email;
-      $users[]='alina@reylosglass.com';
-      $serviceManager = User::role([RoleEnum::SERVICE_MANAGER->value])->get();
-      $users = array_merge($users, $serviceManager->pluck('email')->toArray());
-      foreach ($users as $user) {
-        Mail::to($user)->send(new InstallationDateConfirmation($order, true, true, false,true));
-      }
+      if ($order->service === ServiceEnum::INSTALLATION->value) {
+        $owners = $order->owners->pluck('email')->toArray();
+        foreach ($owners as $owner){
+          Mail::to($owner)->send(new InstallationDateConfirmationClient($order));
+        }
+        $users[] = $order->client->email;
+        foreach ($users as $user) {
+          Mail::to($user)->send(new InstallationDateConfirmationClient($order, true));
+        }
+        $users[] = $order->supervisor->email;
+        $users[] = 'alina@reylosglass.com';
+        $serviceManager = User::role([RoleEnum::SERVICE_MANAGER->value])->get();
+        $users = array_merge($users, $serviceManager->pluck('email')->toArray());
+        foreach ($users as $user) {
+          Mail::to($user)->send(new InstallationDateConfirmation($order, true, true, false,true));
+        }
 
-      $users = [];
-      $users = $order->installationTeams->pluck('user.email')->toArray();
-      $accountManager = User::role([RoleEnum::ACCOUNT_MANAGER->value])->get();
-      $users = array_merge($users, $accountManager->pluck('email')->toArray());
-      foreach ($users as $user) {
-        Mail::to($user)->send(new InstallationDateConfirmation($order, true, true, true));
+        $users = [];
+        $users = $order->installationTeams->pluck('user.email')->toArray();
+        $accountManager = User::role([RoleEnum::ACCOUNT_MANAGER->value])->get();
+        $users = array_merge($users, $accountManager->pluck('email')->toArray());
+        foreach ($users as $user) {
+          Mail::to($user)->send(new InstallationDateConfirmation($order, true, true, true));
+        }
+      } else if ($order->service === ServiceEnum::DELIVERY->value || $order->service === ServiceEnum::PICKUP->value) {
+        $users = [];
+        $users[] = $order->client->email;
+        $users = array_merge($users,$order->owners->pluck('email')->toArray()); 
+        $users[] = 'alina@reylosglass.com';
+        $accountManager = User::role([RoleEnum::ACCOUNT_MANAGER->value])->get();
+        $users = array_merge($users, $accountManager->pluck('email')->toArray());
+        $usersByRoleManager = User::role([RoleEnum::WAREHOUSE_MANAGER->value, RoleEnum::SERVICE_MANAGER->value])->get();
+        $users = array_merge($users, $usersByRoleManager->pluck('email')->toArray());
+        foreach ($users as $user) {
+          Mail::to($user)->send(new DeliveryConfirmed($order));
+        }
+        
       }
     }
   }
