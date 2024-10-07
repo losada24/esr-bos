@@ -22,7 +22,7 @@ class ClientController extends Controller
     {
         return Inertia::render('Client/Index', [
           'clients' => Client::with(['clientAddress'])->filter($request->only(['text']))
-            ->orderBy('name')
+            ->orderBy('updated_at', 'desc')
             ->paginate()
             ->withQueryString()
         ]);

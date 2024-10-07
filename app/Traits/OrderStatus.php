@@ -9,7 +9,7 @@ use PhpParser\Node\Stmt\Break_;
 
 trait OrderStatus {
 
-  public function getStatus($request) {
+  /* public function getStatus($request) {
     $status = OrderStatusEnum::PLANNED->value;
     if ($request->supervisor_id != '' && count($request->installation_teams) > 0) {
       $status = OrderStatusEnum::CONFIRMED->value;
@@ -18,7 +18,7 @@ trait OrderStatus {
     }
 
     return $status;
-  }
+  } */
 
   public function getColorByStatus($status, $service, $isInstallationEvent = false) {
     $color = '';

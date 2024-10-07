@@ -51,7 +51,8 @@ const OrderForm = ({
   product_category,
   product_costs,
   frame_colors,
-  attachments
+  attachments,
+  status
 }: {
   submitCount: number
   errors: FormikErrors<OrderFormValues>
@@ -75,6 +76,7 @@ const OrderForm = ({
   product_costs: ProductCost[]
   frame_colors: string[]
   attachments?: Attachment[]
+  status: string[]
 }) => {
   const [orderProducts, setOrderProducts] = useState<OrderProduct[]>(
     values.order_products?.map((orderProduct) => {
@@ -138,6 +140,11 @@ const OrderForm = ({
     label: supervisors.find((supervisor) => supervisor.id === values.supervisor_id)?.name ?? ''
   }
 
+  const selectedStatus: SingleValue<OptionType> = {
+    value: values.status ?? '',
+    label: status.find((status) => status === values.status) ?? ''
+  }
+
   const selectedTravelCost: SingleValue<OptionType> = {
     value: values.travel_cost_id ?? 0,
     label: travel_costs.find((travel_cost) => travel_cost.id === values.travel_cost_id)?.name ?? ''
@@ -153,16 +160,16 @@ const OrderForm = ({
       <Form className='space-y-5'>
         <fieldset className='p-3 border rounded-xl'>
           <legend className='text-lg font-semibold px-3'>Client Information</legend>
-          <div className='grid gap-4 grid-cols-4'>
+          <div className='grid gap-4 grid-cols-3'>
             <div className={submitCount ? (errors.last_name) ? 'has-error' : 'has-success' : ''}>
-              <label htmlFor="last_name">Last Name</label>
+              <label htmlFor="last_name">Name</label>
               <div className='flex'>
                 <Field
-                  id="last_name"
-                  name="last_name"
-                  className="form-input ltr:rounded-r-none rtl:rounded-l-none"
-                  autoComplete="last_name"
-                  placeholder='Last Name'
+                  id="client_name"
+                  name="client_name"
+                  className="form-input rounded-r-none"
+                  autoComplete="client_name"
+                  placeholder='Name'
                 />
                 <button onClick={(e) => {
                   e.preventDefault()
@@ -171,17 +178,6 @@ const OrderForm = ({
                   <SearchIcon className="text-[#eee]" />
                 </button>
               </div>
-              {(submitCount && errors.last_name) ? <InputError message={errors.last_name} className="mt-2" /> : ''}
-            </div>
-            <div className={submitCount ? (errors.client_name) ? 'has-error' : 'has-success' : ''}>
-              <label htmlFor="client_name">First Name</label>
-              <Field
-                id="client_name"
-                name="client_name"
-                className="form-input"
-                autoComplete="client_name"
-                placeholder='First Name'
-              />
               {(submitCount && errors.client_name) ? <InputError message={errors.client_name} className="mt-2" /> : ''}
             </div>
             <div className={submitCount ? (errors.phone) ? 'has-error' : 'has-success' : ''}>
@@ -275,11 +271,10 @@ const OrderForm = ({
                   setFieldValue('equipment_rental', false)
                   setFieldValue('type_of_work_id', 0)
                   setFieldValue('type_of_housing_id', 0)
-                  setFieldValue('travel_cost_id', 0) 
-                  setFieldValue('duration_of_work_id', 0) 
-                  setFieldValue('installation_date', null) 
-                  setFieldValue('installation_end_date', null) 
-                  
+                  setFieldValue('travel_cost_id', 0)
+                  setFieldValue('duration_of_work_id', 0)
+                  setFieldValue('installation_date', null)
+                  setFieldValue('installation_end_date', null)
                 }}
               >
                 <option value="">Service</option>
@@ -439,7 +434,7 @@ const OrderForm = ({
                 className="form-input"
                 onChange={([date]) => {
                   const payment_factory_date = date.toISOString().slice(0, 10)
-                  if (values.service === SERVICES.DELIVERY_AND_INSTALLATION){
+                  if (values.service === SERVICES.DELIVERY_AND_INSTALLATION) {
                     selectDeliveryAndInstallationDate(payment_factory_date)
                   } else {
                     selectDeliveryAndPickupDate(payment_factory_date)
@@ -486,41 +481,41 @@ const OrderForm = ({
             </div>
             {(values.service === SERVICES.DELIVERY_AND_INSTALLATION) && (
               <>
-            <div className={submitCount ? (errors.installation_date) ? 'has-error' : 'has-success' : ''}>
-              <label htmlFor="installation_date">Installation Date</label>
-              <Flatpickr
-                options={{
-                  mode: 'single',
-                  dateFormat: 'Y-m-d',
-                  position: 'auto right'
-                }}
-                name="installation_date"
-                value={values.installation_date?.toString()}
-                className="form-input"
-                onChange={([date]) => {
-                  setFieldValue('installation_date', date.toISOString().slice(0, 10))
-                }}
-              />
-              {(submitCount && errors.installation_date) ? <InputError message={errors.installation_date?.toString()} className="mt-2" /> : ''}
-            </div>
-            <div className={submitCount ? (errors.installation_end_date) ? 'has-error' : 'has-success' : ''}>
-              <label htmlFor="installation_end_date">Installation End Date</label>
-              <Flatpickr
-                options={{
-                  mode: 'single',
-                  dateFormat: 'Y-m-d',
-                  position: 'auto right'
-                }}
-                name="installation_end_date"
-                value={values.installation_end_date?.toString()}
-                className="form-input"
-                onChange={([date]) => {
-                  setFieldValue('installation_end_date', date.toISOString().slice(0, 10))
-                }}
-              />
-              {(submitCount && errors.installation_end_date) ? <InputError message={errors.installation_end_date?.toString()} className="mt-2" /> : ''}
-            </div>
-            </>
+                <div className={submitCount ? (errors.installation_date) ? 'has-error' : 'has-success' : ''}>
+                  <label htmlFor="installation_date">Installation Date</label>
+                  <Flatpickr
+                    options={{
+                      mode: 'single',
+                      dateFormat: 'Y-m-d',
+                      position: 'auto right'
+                    }}
+                    name="installation_date"
+                    value={values.installation_date?.toString()}
+                    className="form-input"
+                    onChange={([date]) => {
+                      setFieldValue('installation_date', date.toISOString().slice(0, 10))
+                    }}
+                  />
+                  {(submitCount && errors.installation_date) ? <InputError message={errors.installation_date?.toString()} className="mt-2" /> : ''}
+                </div>
+                <div className={submitCount ? (errors.installation_end_date) ? 'has-error' : 'has-success' : ''}>
+                  <label htmlFor="installation_end_date">Installation End Date</label>
+                  <Flatpickr
+                    options={{
+                      mode: 'single',
+                      dateFormat: 'Y-m-d',
+                      position: 'auto right'
+                    }}
+                    name="installation_end_date"
+                    value={values.installation_end_date?.toString()}
+                    className="form-input"
+                    onChange={([date]) => {
+                      setFieldValue('installation_end_date', date.toISOString().slice(0, 10))
+                    }}
+                  />
+                  {(submitCount && errors.installation_end_date) ? <InputError message={errors.installation_end_date?.toString()} className="mt-2" /> : ''}
+                </div>
+              </>
             )}
             <div className={submitCount ? (errors.method_of_payment) ? 'has-error' : 'has-success' : ''}>
               <label htmlFor="method_of_payment">Project Payment Method</label>
@@ -544,52 +539,51 @@ const OrderForm = ({
               {(submitCount && errors.method_of_payment) ? <InputError message={errors.method_of_payment} className="mt-2" /> : ''}
             </div>
 
-            {(values.method_of_payment === PAYMENT_METHODS.CASH || values.method_of_payment === PAYMENT_METHODS.CASH_AND_FINANCE  ) && (
-            <div className={submitCount ? (errors.cost_delivery) ? 'has-error' : 'has-success' : ''}>
-              <label htmlFor="cost_delivery">Delivery Cost</label>
-              <Field
-                id="cost_delivery"
-                name="cost_delivery"
-                className="form-input text-right"
-                autoComplete="cost_delivery"
-                placeholder='Delivery Cost'
-                type='number'
-              />
-              {(submitCount && errors.cost_delivery) ? <InputError message={errors.cost_delivery} className="mt-2" /> : ''}
-            </div>
+            {(values.method_of_payment === PAYMENT_METHODS.CASH || values.method_of_payment === PAYMENT_METHODS.CASH_AND_FINANCE) && (
+              <div className={submitCount ? (errors.cost_delivery) ? 'has-error' : 'has-success' : ''}>
+                <label htmlFor="cost_delivery">Delivery Cost</label>
+                <Field
+                  id="cost_delivery"
+                  name="cost_delivery"
+                  className="form-input text-right"
+                  autoComplete="cost_delivery"
+                  placeholder='Delivery Cost'
+                  type='number'
+                />
+                {(submitCount && errors.cost_delivery) ? <InputError message={errors.cost_delivery} className="mt-2" /> : ''}
+              </div>
             )}
             {(values.service === SERVICES.DELIVERY_AND_INSTALLATION) && (
-            <>
-            <div className={submitCount ? (errors.installation_teams) ? 'has-error' : 'has-success' : ''}>
-              <label htmlFor="installationTeams">Installation Team</label>
-              <Select
-                id='installation_teams'
-                placeholder="Installation Team"
-                name='installation_teams'
-                defaultValue={ values.installation_teams.map((installation_team) => { return { label: installation_team.user?.name, value: installation_team.id } }) }
-                isMulti={true}
-                onChange={(value) => { setFieldValue('installation_teams', value) }}
-                options={installation_teams.filter((team_member) =>
-                  team_member.type_housing?.find((type_of_housing) => type_of_housing.id === values.type_of_housing_id)
-                ).map((installation_team) => { return { label: installation_team.user?.name, value: installation_team.id } })}
-              />
-              {(submitCount && errors.installation_teams) ? <InputError message={errors.installation_teams.toString()} className="mt-2" /> : ''}
-            </div>
-            <div className={submitCount ? (errors.supervisor_id) ? 'has-error' : 'has-success' : ''}>
-              <label htmlFor="supervisor_id">Supervisor</label>
-              <Select
-                id='supervisor_id'
-                placeholder="Supervisor"
-                name='supervisor_id'
-                defaultValue={ selectedSupervisor }
-                onChange={(value) => { setFieldValue('supervisor_id', value) }}
-                options={supervisors.map((supervisor) => { return { label: supervisor.name, value: supervisor.id } })}
-              />
-              {(submitCount && errors.supervisor_id) ? <InputError message={errors.supervisor_id} className="mt-2" /> : ''}
-            </div>
-            </>
-           )} 
-           
+              <>
+                <div className={submitCount ? (errors.installation_teams) ? 'has-error' : 'has-success' : ''}>
+                  <label htmlFor="installationTeams">Installation Team</label>
+                  <Select
+                    id='installation_teams'
+                    placeholder="Installation Team"
+                    name='installation_teams'
+                    defaultValue={ values.installation_teams.map((installation_team) => { return { label: installation_team.user?.name, value: installation_team.id } }) }
+                    isMulti={true}
+                    onChange={(value) => { setFieldValue('installation_teams', value) }}
+                    options={installation_teams.filter((team_member) =>
+                      team_member.type_housing?.find((type_of_housing) => type_of_housing.id === values.type_of_housing_id)
+                    ).map((installation_team) => { return { label: installation_team.user?.name, value: installation_team.id } })}
+                  />
+                  {(submitCount && errors.installation_teams) ? <InputError message={errors.installation_teams.toString()} className="mt-2" /> : ''}
+                </div>
+                <div className={submitCount ? (errors.supervisor_id) ? 'has-error' : 'has-success' : ''}>
+                  <label htmlFor="supervisor_id">Supervisor</label>
+                  <Select
+                    id='supervisor_id'
+                    placeholder="Supervisor"
+                    name='supervisor_id'
+                    defaultValue={ selectedSupervisor }
+                    onChange={(value) => { setFieldValue('supervisor_id', value) }}
+                    options={supervisors.map((supervisor) => { return { label: supervisor.name, value: supervisor.id } })}
+                  />
+                  {(submitCount && errors.supervisor_id) ? <InputError message={errors.supervisor_id} className="mt-2" /> : ''}
+                </div>
+              </>
+            )}
            {(values.service === SERVICES.DELIVERY_AND_INSTALLATION) && (
             <>
             <div className={submitCount ? (errors.city_permits) ? 'has-error inline-flex flex-col' : 'has-success inline-flex' : 'inline-flex items-end'}>
@@ -608,7 +602,7 @@ const OrderForm = ({
                 </div>
                 {(submitCount && errors.city_permits) ? <div className='block'><InputError message={errors.city_permits} className="mt-2" /></div> : ''}
             </div>
-            {(values.city_permits === true) && (
+            {(values.city_permits) && (
             <div className={submitCount ? (errors.cost_city_fee) ? 'has-error' : 'has-success' : ''}>
               <label htmlFor="cost_city_fee">City Fee Cost</label>
               <Field
@@ -654,6 +648,19 @@ const OrderForm = ({
             </div>
             </>
            )}
+            <div className={submitCount ? (errors.installation_teams) ? 'has-error' : 'has-success' : ''}>
+              <label htmlFor="status">Status</label>
+              <Select
+                id='status'
+                placeholder="status"
+                name='status'
+                defaultValue={selectedStatus}
+                isMulti={false}
+                onChange={(value) => { setFieldValue('status', value) }}
+                options={status.map((status) => { return { label: status, value: status } })}
+              />
+              {(submitCount && errors.status) ? <InputError message={errors.status} className="mt-2" /> : ''}
+            </div>
             <div className='col-span-4'>
               <label htmlFor="notes">Notes</label>
               <Field
@@ -704,7 +711,7 @@ const OrderForm = ({
         </fieldset>
         <fieldset className='p-3 border rounded-xl'>
           <legend className='text-lg font-semibold px-3'>Product Information</legend>
-          {((values.service===SERVICES.DELIVERY_AND_INSTALLATION && values.type_of_work_id !== 0) || (values.service===SERVICES.DELIVERY_ONLY || values.service===SERVICES.PICKUP)) && (
+          {((values.service === SERVICES.DELIVERY_AND_INSTALLATION && values.type_of_work_id !== 0) || (values.service === SERVICES.DELIVERY_ONLY || values.service === SERVICES.PICKUP)) && (
             <div className='flex items-center justify-end'>
               <button onClick={(e) => {
                 e.preventDefault()

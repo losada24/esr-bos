@@ -6,6 +6,8 @@ use Illuminate\Foundation\Http\FormRequest;
 use App\Enum\FrameColorEnum;
 use App\Enum\ServiceEnum;
 use App\Enum\MethodOfPayment;
+use App\Enum\OrderStatusEnum;
+use App\Rules\ValidateOrderStatus;
 use Illuminate\Validation\Rule;
 
 class UpdateOrderRequest extends FormRequest
@@ -30,7 +32,7 @@ class UpdateOrderRequest extends FormRequest
         return [
           'id' => 'required|exists:orders,id',
           'client_name' => 'required|string|max:255',
-          'last_name' => 'required|string|max:255',
+          // 'last_name' => 'required|string|max:255',
           'phone' => 'required|string|max:255',
           'email' => 'nullable|email|max:255',
           'name' => 'required|string|max:255',
@@ -82,6 +84,23 @@ class UpdateOrderRequest extends FormRequest
               MethodOfPayment::FINANCEDCASH->value,
               MethodOfPayment::AIA->value
             )
+          ],
+          'status' =>  [
+            'required',
+            'string',
+            Rule::in(
+              OrderStatusEnum::PLANNED->value,
+              OrderStatusEnum::CONFIRMED->value,
+              OrderStatusEnum::EXECUTION->value,
+              OrderStatusEnum::SUPERVISION->value,
+              OrderStatusEnum::INSPECTION->value,
+              OrderStatusEnum::FINISH->value,
+              OrderStatusEnum::FINAL_INSPECTION->value,
+              OrderStatusEnum::FINAL_COLLECT->value,
+              OrderStatusEnum::ON_HOLD->value,
+              OrderStatusEnum::DELIVERY_CONFIRMED->value
+            ),
+            new ValidateOrderStatus
           ],
           'frame_color' => [
             'nullable',

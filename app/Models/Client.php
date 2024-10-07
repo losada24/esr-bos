@@ -20,6 +20,16 @@ class Client extends Model
       'user_id',
     ];
 
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array<string, string>
+     */
+    public function getUpdatedAtAttribute($value)
+    {
+        return date('m/d/Y', strtotime($value));
+    }
+
     public function scopeFilter($query, array $filters)
     {
         $query->when($filters['text'] ?? null, function ($query, $search) {
