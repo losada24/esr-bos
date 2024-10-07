@@ -77,7 +77,7 @@ export default function Index ({ auth, clients }: IndexClientProps) {
                       })}
                     </td>
                     <td className="border-t px-6 py-4 align-top">
-                      {updated_at}
+                      {updated_at.toString()}
                     </td>
                     <td className="border-t flex items-center px-6 py-4">
                         <button
