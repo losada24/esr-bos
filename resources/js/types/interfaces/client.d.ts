@@ -13,6 +13,7 @@ export interface Client {
   user_id?: number
   user?: User
   client_address: ClientAddress[]
+  updated_at: Date
 }
 
 export interface ClientAddress {
