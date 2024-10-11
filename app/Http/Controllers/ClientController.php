@@ -104,6 +104,7 @@ class ClientController extends Controller
         $clientsByEmail = Client::with(['clientAddress'])->where('email', $email)->get();
         $clientsByPhone = Client::with(['clientAddress'])->where('phone', $phone)->get();    
         //dd($clientsByEmail);
+        //TODO: Add phone number to the search
 
         foreach ($clientsByEmail as $clientAddress) {
           foreach ($clientAddress->clientAddress as $client) {
