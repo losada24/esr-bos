@@ -7,6 +7,7 @@ use App\Enum\ServiceEnum;
 use App\Enum\StatusColorEnum;
 use App\Models\Order;
 use App\Traits\OrderStatus;
+use App\Traits\Twilio;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -15,7 +16,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 class DashboardController extends Controller
 {
   
-  use OrderStatus;
+  use OrderStatus, Twilio;
 
   public function index(Request $request): Response
   {
@@ -23,7 +24,8 @@ class DashboardController extends Controller
         'services' => [
           ServiceEnum::INSTALLATION->value,
           ServiceEnum::DELIVERY->value,
-          ServiceEnum::PICKUP->value
+          ServiceEnum::PICKUP->value,
+          ServiceEnum::INSTALLATION_ONLY->value,
         ],
         'status' => [
           OrderStatusEnum::PLANNED->value,
@@ -60,7 +62,9 @@ class DashboardController extends Controller
   }
 
   public function getEvents($year, $month, $service, $status) {
-    $orders = Order::calendarFilter(['service' => $service, 'status' => $status])
+    $showOnlyInstallation = $service === ServiceEnum::INSTALLATION_ONLY->value;
+    $service_filter = $service === ServiceEnum::INSTALLATION_ONLY->value ? ServiceEnum::INSTALLATION->value : $service;
+    $orders = Order::calendarFilter(['service' => $service_filter, 'status' => $status])
       ->where(function ($query) use ($year, $month) {
         $query->where(function($query) use ($year, $month) {
           $query->whereYear('delivery_date', $year)
@@ -101,24 +105,27 @@ class DashboardController extends Controller
         $events[] = $event;
         
       } else if ($order->service === ServiceEnum::INSTALLATION->value) {
-        $startDeliveryDate = $order->delivery_date;
-        $endDeliveryDate = $order->delivery_date;
-        $event = $this->createEvent(
-          $order->id,
-          '#' . $order->order_number . ' - ' . $order->name . ' (' . $order->service . ')',
-          $this->getEventPopover($order->status, $order->service),
-          $startDeliveryDate,
-          $endDeliveryDate,
-          $this->getColorByStatus($order->status, $order->service),
-          ServiceEnum::DELIVERY->value
-        );
 
-        $events[] = $event;
+        if (!$showOnlyInstallation) {
+          $startDeliveryDate = $order->delivery_date;
+          $endDeliveryDate = $order->delivery_date;
+          $event = $this->createEvent(
+            $order->id,
+            '#' . $order->order_number . ' - ' . $order->name . ' (DELIVERY)',
+            $this->getEventPopover($order->status, $order->service),
+            $startDeliveryDate,
+            $endDeliveryDate,
+            $this->getColorByStatus($order->status, $order->service),
+            ServiceEnum::DELIVERY->value
+          );
+          $events[] = $event;
+        }
+
         $startInstallationDate = $order->installation_date;
         $endInstallationDate = $order->installation_end_date;
         $event = $this->createEvent(
           $order->id,
-          '#' . $order->order_number . ' - ' . $order->name . ' (' . $order->service . ')',
+          '#' . $order->order_number . ' - ' . $order->name . ' (INSTALLATION)',
           $this->getEventPopover($order->status, $order->service, true),
           $startInstallationDate,
           $endInstallationDate,
@@ -185,5 +192,10 @@ class DashboardController extends Controller
     $pdf = Pdf::loadView('pdf.payment-list', ['order' => $order]);
     $pdfName = 'payment-list-' . $order->order_number . '.pdf';
     return $pdf->download($pdfName);
+  }
+
+  public function whatsapp() {
+    $this->sendWhatsAppMessage('+12397632059', 'Primer mensaje para Katy');
+    echo 'whatsapp message';
   }
 }

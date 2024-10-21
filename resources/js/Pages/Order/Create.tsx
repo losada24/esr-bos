@@ -35,7 +35,8 @@ export default function Create ({
   product_category,
   product_costs,
   frame_colors,
-  status
+  status,
+  type_of_financing
 }: PageProps & {
   clients: Client[]
   owners: User[]
@@ -53,6 +54,7 @@ export default function Create ({
   product_costs: ProductCost[]
   frame_colors: string[]
   status: string[]
+  type_of_financing: string[]
 }) {
   const initialValues: OrderFormValues = orderFormObj
 
@@ -111,6 +113,7 @@ export default function Create ({
                 product_costs={product_costs}
                 frame_colors={frame_colors}
                 status={status}
+                type_of_financing={type_of_financing}
               />
             )}
           </Formik>

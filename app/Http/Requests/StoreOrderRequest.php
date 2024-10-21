@@ -7,6 +7,7 @@ use App\Enum\MethodOfPayment;
 use App\Enum\OrderStatusEnum;
 use Illuminate\Foundation\Http\FormRequest;
 use App\Enum\ServiceEnum;
+use App\Enum\TypeOfFinancing;
 use App\Rules\ValidateOrderStatus;
 use Illuminate\Validation\Rule;
 
@@ -75,6 +76,7 @@ class StoreOrderRequest extends FormRequest
             'additional_travel_costs' => 'nullable|numeric',
             'cost_delivery' => 'nullable|numeric',
             'cost_city_fee' => 'nullable|numeric',
+            'project_amount' => 'nullable|numeric',
             'method_of_payment' => [
               'required',
               'string',
@@ -83,6 +85,17 @@ class StoreOrderRequest extends FormRequest
                 MethodOfPayment::FINANCED->value,
                 MethodOfPayment::FINANCEDCASH->value,
                 MethodOfPayment::AIA->value
+              )
+            ],
+            'type_of_financing' => [
+              'nullable',
+              'string',
+              Rule::in(
+                TypeOfFinancing::WELLS_FARGO->value,
+                TypeOfFinancing::HOME_RUN->value,
+                TypeOfFinancing::SUN_LIGHT->value,
+                TypeOfFinancing::SLIN->value,
+                TypeOfFinancing::YGREEN->value,
               )
             ],
             'frame_color' => [
@@ -123,6 +136,7 @@ class StoreOrderRequest extends FormRequest
             'entry_date' => 'nullable|date_format:Y-m-d',
             'installation_date' => 'nullable|date_format:Y-m-d',
             'city_permits' => 'boolean',
+            'city' => 'nullable|string|max:100',
             'association_permits' => 'boolean',
             'equipment_rental' => 'boolean',
             'notes' => 'nullable|string|max:1000',

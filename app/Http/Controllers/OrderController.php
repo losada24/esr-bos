@@ -13,6 +13,7 @@ use App\Models\Order;
 use App\Enum\OrderStatusEnum;
 use App\Enum\RoleEnum;
 use App\Enum\ServiceEnum;
+use App\Enum\TypeOfFinancing;
 use App\Http\Requests\StoreOrderRequest;
 use App\Http\Requests\UpdateOrderRequest;
 use App\Models\Attachment;
@@ -81,6 +82,13 @@ class OrderController extends Controller
             MethodOfPayment::FINANCED->value,
             MethodOfPayment::FINANCEDCASH->value,
             MethodOfPayment::AIA->value,
+          ],
+          'type_of_financing' => [
+            TypeOfFinancing::WELLS_FARGO->value,
+            TypeOfFinancing::SUN_LIGHT->value,
+            TypeOfFinancing::HOME_RUN->value,
+            TypeOfFinancing::YGREEN->value,
+            TypeOfFinancing::SLIN->value,
           ],
           'services' => [
             ServiceEnum::INSTALLATION->value,
@@ -192,6 +200,13 @@ class OrderController extends Controller
             MethodOfPayment::FINANCED->value,
             MethodOfPayment::FINANCEDCASH->value,
             MethodOfPayment::AIA->value,
+          ],
+          'type_of_financing' => [
+            TypeOfFinancing::WELLS_FARGO->value,
+            TypeOfFinancing::SUN_LIGHT->value,
+            TypeOfFinancing::HOME_RUN->value,
+            TypeOfFinancing::YGREEN->value,
+            TypeOfFinancing::SLIN->value,
           ],
           'frame_colors' => [
             FrameColorEnum::WHITE->value,

@@ -45,7 +45,10 @@ class Order extends Model
         'installation_end_date',
         'frame_color',
         'cost_delivery',
-        'cost_city_fee'
+        'cost_city_fee',
+        'project_amount',
+        'city',
+        'type_of_financing',
     ];
 
     protected $dates = [

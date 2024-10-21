@@ -52,7 +52,8 @@ const OrderForm = ({
   product_costs,
   frame_colors,
   attachments,
-  status
+  status,
+  type_of_financing
 }: {
   submitCount: number
   errors: FormikErrors<OrderFormValues>
@@ -77,6 +78,7 @@ const OrderForm = ({
   frame_colors: string[]
   attachments?: Attachment[]
   status: string[]
+  type_of_financing: string[]
 }) => {
   const [orderProducts, setOrderProducts] = useState<OrderProduct[]>(
     values.order_products?.map((orderProduct) => {
@@ -267,6 +269,8 @@ const OrderForm = ({
                 onChange={(e: { target: { value: string } }) => {
                   setFieldValue('service', e.target.value)
                   setFieldValue('city_permits', false)
+                  setFieldValue('city', '')
+                  setFieldValue('cost_city_fee', 0)
                   setFieldValue('association_permits', false)
                   setFieldValue('equipment_rental', false)
                   setFieldValue('type_of_work_id', 0)
@@ -529,6 +533,7 @@ const OrderForm = ({
                 onChange={(e: { target: { value: string } }) => {
                   setFieldValue('method_of_payment', e.target.value)
                   setFieldValue('cost_delivery', 0)
+                  setFieldValue('type_of_financing', '')
                 }}
               >
                 <option value="">Method of Payment</option>
@@ -538,6 +543,28 @@ const OrderForm = ({
               </Field>
               {(submitCount && errors.method_of_payment) ? <InputError message={errors.method_of_payment} className="mt-2" /> : ''}
             </div>
+            {(values.method_of_payment === PAYMENT_METHODS.FINANCED || values.method_of_payment === PAYMENT_METHODS.CASH_AND_FINANCE) && (
+              <div className={submitCount ? (errors.type_of_financing) ? 'has-error' : 'has-success' : ''}>
+                <label htmlFor="method_of_payment">Type Of Financing</label>
+                <Field
+                  id="type_of_financing"
+                  name="type_of_financing"
+                  className="form-select"
+                  autoComplete="type_of_financing"
+                  placeholder='Type Of Financing'
+                  as="select"
+                  onChange={(e: { target: { value: string } }) => {
+                    setFieldValue('type_of_financing', e.target.value)
+                  }}
+                >
+                  <option value="">Type Of Financing</option>
+                  {type_of_financing.map((financing, index) => (
+                    <option key={index} value={financing}>{financing}</option>
+                  ))}
+                </Field>
+                {(submitCount && errors.type_of_financing) ? <InputError message={errors.type_of_financing} className="mt-2" /> : ''}
+              </div>
+            )}
 
             {(values.method_of_payment === PAYMENT_METHODS.CASH || values.method_of_payment === PAYMENT_METHODS.CASH_AND_FINANCE) && (
               <div className={submitCount ? (errors.cost_delivery) ? 'has-error' : 'has-success' : ''}>
@@ -596,6 +623,7 @@ const OrderForm = ({
                     onChange={(e: any) => {
                       setFieldValue('city_permits', e.target.checked)
                       setFieldValue('cost_city_fee', 0)
+                      setFieldValue('city', '')
                     }}
                   />
                   <label htmlFor="city_permits">City Permits</label>
@@ -603,18 +631,31 @@ const OrderForm = ({
                 {(submitCount && errors.city_permits) ? <div className='block'><InputError message={errors.city_permits} className="mt-2" /></div> : ''}
             </div>
             {(values.city_permits) && (
-            <div className={submitCount ? (errors.cost_city_fee) ? 'has-error' : 'has-success' : ''}>
-              <label htmlFor="cost_city_fee">City Fee Cost</label>
-              <Field
-                id="cost_city_fee"
-                name="cost_city_fee"
-                className="form-input text-right"
-                autoComplete="cost_city_fee"
-                placeholder='City Fee Cost'
-                type='number'
-              />
-              {(submitCount && errors.cost_city_fee) ? <InputError message={errors.cost_city_fee} className="mt-2" /> : ''}
-            </div>
+              <>
+                <div className={submitCount ? (errors.cost_city_fee) ? 'has-error' : 'has-success' : ''}>
+                  <label htmlFor="cost_city_fee">City Fee Cost</label>
+                  <Field
+                    id="cost_city_fee"
+                    name="cost_city_fee"
+                    className="form-input text-right"
+                    autoComplete="cost_city_fee"
+                    placeholder='City Fee Cost'
+                    type='number'
+                  />
+                  {(submitCount && errors.cost_city_fee) ? <InputError message={errors.cost_city_fee} className="mt-2" /> : ''}
+                </div>
+                <div className={submitCount ? (errors.city) ? 'has-error' : 'has-success' : ''}>
+                  <label htmlFor="city">City</label>
+                  <Field
+                    id="city"
+                    name="city"
+                    className="form-input"
+                    autoComplete="city"
+                    placeholder='City'
+                  />
+                  {(submitCount && errors.city) ? <InputError message={errors.city} className="mt-2" /> : ''}
+                </div>
+              </>
             )}
             <div className={submitCount ? (errors.association_permits) ? 'has-error inline-flex flex-col' : 'has-success inline-flex' : 'inline-flex items-end'}>
                 <div className='flex'>
@@ -660,6 +701,18 @@ const OrderForm = ({
                 options={status.map((status) => { return { label: status, value: status } })}
               />
               {(submitCount && errors.status) ? <InputError message={errors.status} className="mt-2" /> : ''}
+            </div>
+            <div className={submitCount ? (errors.project_amount) ? 'has-error' : 'has-success' : ''}>
+              <label htmlFor="project_amount">Project Amount</label>
+              <Field
+                id="project_amount"
+                name="project_amount"
+                className="form-input text-right"
+                autoComplete="project_amount"
+                placeholder='Project Amount'
+                type='number'
+              />
+              {(submitCount && errors.project_amount) ? <InputError message={errors.project_amount} className="mt-2" /> : ''}
             </div>
             <div className='col-span-4'>
               <label htmlFor="notes">Notes</label>

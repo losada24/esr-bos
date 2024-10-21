@@ -37,7 +37,8 @@ export default function Edit ({
   product_costs,
   order,
   frame_colors,
-  status
+  status,
+  type_of_financing
 }: PageProps & {
   clients: Client[]
   owners: User[]
@@ -56,6 +57,7 @@ export default function Edit ({
   order: Order
   frame_colors: string[]
   status: string[]
+  type_of_financing: string[]
 }) {
   const initialValues: OrderFormValues = loadOrderFormObj(order)
   // console.log(initialValues)
@@ -170,6 +172,7 @@ export default function Edit ({
                 frame_colors={frame_colors}
                 attachments={order.attachments}
                 status={status}
+                type_of_financing={type_of_financing}
               />
             )}
           </Formik>

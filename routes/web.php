@@ -11,6 +11,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\InstallationTeamController;
 use Barryvdh\DomPDF\Facade\Pdf;
 use SebastianBergmann\CodeCoverage\Report\Html\Dashboard;
+use App\Traits\TwilioWhatsAppMessage;
 
 /*
 |--------------------------------------------------------------------------
@@ -117,6 +118,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/bigin/index', [BiginController::class, 'index'])
       ->middleware(['role:admin'])
       ->name('bigin.index');
+
+    Route::get('/dashboard/whatsapp', [DashboardController::class, 'whatsapp'])
+      ->middleware(['role:admin'])
+      ->name('dashboard.whatsapp');
   /*
     // ORDERS
    Route::get('/order', [OrderController::class, 'index'])

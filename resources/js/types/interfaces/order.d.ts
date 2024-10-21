@@ -45,6 +45,9 @@ export interface Order {
   status?: string
   cost_delivery?: number
   cost_city_fee?: number
+  project_amount?: number
+  city?: string
+  type_of_financing?: string
 }
 
 export interface TypeOfWork {

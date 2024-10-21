@@ -48,6 +48,7 @@ class UpdateOrder {
         'duration_of_work_id' => $request->duration_of_work_id,
         'duration_of_work_id' => $request->duration_of_work_id,
         'method_of_payment' => $request->method_of_payment,
+        'type_of_financing' => $request->type_of_financing,
         'service' => $request->service,
         'contract_signing_date' => $request->contract_signing_date,
         'payment_factory_date' => $request->payment_factory_date,
@@ -64,7 +65,9 @@ class UpdateOrder {
         'status' => $status,
         'frame_color' => $request->frame_color,
         'cost_delivery' => $request->cost_delivery,
-        'cost_city_fee'=> $request->cost_city_fee
+        'cost_city_fee'=> $request->cost_city_fee,
+        'project_amount'=> $request->project_amount,
+        'city'=> $request->city
       ];
 
       $order->update($orderData);
