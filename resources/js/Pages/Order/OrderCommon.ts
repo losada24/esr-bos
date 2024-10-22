@@ -97,7 +97,9 @@ export const orderFormObj: OrderFormValues = {
   owners: [],
   order_products: [],
   attachments: [],
-  frame_color: ''
+  frame_color: '',
+  initial_payment_percentage: 0,
+  payment_definition: false
 }
 
 export interface OrderProductExtraWorksFormValues {
@@ -149,7 +151,9 @@ export const loadOrderFormObj = (order: Order): OrderFormValues => {
     attachments: [],
     installation_end_date: order.installation_end_date ?? null,
     frame_color: order.frame_color,
-    status: order.status
+    status: order.status,
+    payment_definition: order.payment_definition,
+    initial_payment_percentage: order.initial_payment_percentage
   }
 }
 

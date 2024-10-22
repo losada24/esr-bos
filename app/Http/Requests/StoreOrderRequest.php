@@ -77,6 +77,8 @@ class StoreOrderRequest extends FormRequest
             'cost_delivery' => 'nullable|numeric',
             'cost_city_fee' => 'nullable|numeric',
             'project_amount' => 'nullable|numeric',
+            'initial_payment_percentage' => 'nullable|numeric',
+            'payment_definition' => 'boolean',
             'method_of_payment' => [
               'required',
               'string',

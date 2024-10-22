@@ -69,6 +69,8 @@ class CreateOrder {
         'cost_delivery' => $request->cost_delivery,
         'cost_city_fee'=> $request->cost_city_fee,
         'project_amount'=> $request->project_amount,
+        'initial_payment_percentage' => $request->initial_payment_percentage,
+        'payment_definition' => $request->payment_definition,
       ]);
 
       if ($request->hasFile('attachments')) {

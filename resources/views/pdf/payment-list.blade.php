@@ -23,7 +23,8 @@
         <div><span>DATE</span> {{ Carbon\Carbon::parse($order->installation_date)->format('m/d/Y') }}</div>
       </div>
       <div id="project">
-        <div><span>CONTACT</span> {{ $order->client->name }}</div>
+        <div><span>ORDER NAME</span> {{ $order->name }}</div>
+        <div><span>CLIENT PHONE</span> {{ $order->client->phone }}</div>
         <div><span>ADDRESS</span> {{ $order->job_address}}</div>
         <div><span>COLOR</span> {{ $order->frame_color}}</div>
       </div>
@@ -105,19 +106,30 @@
                     <td class="total">{{ '$' . number_format($grandTotal + $order->travelCost->price + $order->additional_travel_costs, 2, '.', ',') /* $fmt->formatCurrency($grandTotal + $order->travelCost->price + $order->additional_travel_costs, 'USD' ) */ }}</td>
                   </tr>
                   <tr>
-                    <td class="other-services border-right">Initial Deposit</td>
-                    <td class="grand total border-right">&nbsp;</td>
-                    <td class="grand total">&nbsp;</td>
-                  </tr>
-                  <tr>
                     <td class="other-services border-right">After Installation</td>
-                    <td class="grand total border-right">&nbsp;</td>
-                    <td class="grand total">&nbsp;</td>
+                    <td class="grand total border-right">
+                      @if ($order->payment_definition) 
+                        {{ $order->initial_payment_percentage }}%
+                      @endif
+                    </td>
+                    <td class="grand total">
+                      @if ($order->payment_definition) 
+                        {{ '$' . number_format(($grandTotal + $order->travelCost->price + $order->additional_travel_costs) * $order->initial_payment_percentage / 100, 2, '.', ',') }}%
+                      @endif
+                    </td>
                   </tr>
                   <tr>
                     <td class="other-services border-right">After Inspection</td>
-                    <td class="grand total border-right">&nbsp;</td>
-                    <td class="grand total">&nbsp;</td>
+                    <td class="grand total border-right">
+                      @if ($order->payment_definition) 
+                        {{ 100 - $order->initial_payment_percentage }}%
+                      @endif
+                    </td>
+                    <td class="grand total">
+                      @if ($order->payment_definition) 
+                        {{ '$' . number_format(($grandTotal + $order->travelCost->price + $order->additional_travel_costs) * (100 - $order->initial_payment_percentage) / 100, 2, '.', ',') }}%
+                      @endif
+                    </td>
                   </tr>
                   <tr>
                     <td colspan='2' class="grand total border-right">Total</td>

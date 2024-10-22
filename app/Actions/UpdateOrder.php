@@ -67,7 +67,9 @@ class UpdateOrder {
         'cost_delivery' => $request->cost_delivery,
         'cost_city_fee'=> $request->cost_city_fee,
         'project_amount'=> $request->project_amount,
-        'city'=> $request->city
+        'city'=> $request->city,
+        'initial_payment_percentage' => $request->initial_payment_percentage,
+        'payment_definition' => $request->payment_definition,
       ];
 
       $order->update($orderData);

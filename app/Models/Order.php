@@ -49,6 +49,8 @@ class Order extends Model
         'project_amount',
         'city',
         'type_of_financing',
+        'payment_definition',
+        'initial_payment_percentage',
     ];
 
     protected $dates = [
@@ -66,6 +68,8 @@ class Order extends Model
     {
         return [
             'city_permits' => 'boolean',
+            'payment_definition' => 'boolean',
+            
         ];
     }
 
