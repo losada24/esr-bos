@@ -48,6 +48,8 @@ export interface Order {
   project_amount?: number
   city?: string
   type_of_financing?: string
+  payment_definition?: boolean
+  initial_payment_percentage?: number
 }
 
 export interface TypeOfWork {

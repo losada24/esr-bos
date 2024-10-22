@@ -31,7 +31,9 @@ Route::get('/pdf', function () {
     'orderProducts.productCategory',
     'orderProducts.productConfig',
     'orderProducts.orderProductExtraWorks',
-  ])->find(30);
+  ])->find(33);
+
+  //dd($order);
   /*$pdf = Pdf::loadView('pdf.payment-list', ['order' => $order]);
   $pdfName = 'payment-list-' . $order->order_number . '.pdf';
   $pdf->save('../storage/app/public/pdf/' . $pdfName);

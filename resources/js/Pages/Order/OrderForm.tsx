@@ -714,6 +714,38 @@ const OrderForm = ({
               />
               {(submitCount && errors.project_amount) ? <InputError message={errors.project_amount} className="mt-2" /> : ''}
             </div>
+            {(values.service === SERVICES.DELIVERY_AND_INSTALLATION) && (
+              <>
+                <div className={submitCount ? (errors.payment_definition) ? 'has-error inline-flex flex-col' : 'has-success inline-flex' : 'inline-flex items-end'}>
+                    <div className='flex'>
+                      <Field
+                        id="payment_definition"
+                        name="payment_definition"
+                        className="form-checkbox"
+                        type='checkbox'
+                        onChange={(e: any) => {
+                          setFieldValue('payment_definition', e.target.checked)
+                          setFieldValue('initial_payment_percentage', 0)
+                        }}
+                      />
+                      <label htmlFor="payment_definition">Payment Definition</label>
+                    </div>
+                    {(submitCount && errors.payment_definition) ? <div className='block'><InputError message={errors.payment_definition} className="mt-2" /></div> : ''}
+                </div>
+                <div className={submitCount ? (errors.initial_payment_percentage) ? 'has-error' : 'has-success' : ''}>
+                  <label htmlFor="initial_payment_percentage">Initial Payment Percentage</label>
+                  <Field
+                    id="initial_payment_percentage"
+                    name="initial_payment_percentage"
+                    className="form-input text-right"
+                    autoComplete="initial_payment_percentage"
+                    placeholder='Initial Payment Percentage'
+                    type='number'
+                  />
+                  {(submitCount && errors.initial_payment_percentage) ? <InputError message={errors.initial_payment_percentage} className="mt-2" /> : ''}
+                </div>
+              </>
+            )}
             <div className='col-span-4'>
               <label htmlFor="notes">Notes</label>
               <Field
