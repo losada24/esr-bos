@@ -23,7 +23,8 @@
         <div><span>DATE</span> {{ Carbon\Carbon::parse($order->installation_date)->format('m/d/Y') }}</div>
       </div>
       <div id="project">
-        <div><span>CONTACT</span> {{ $order->client->name }}</div>
+        <div><span>ORDER NAME</span> {{ $order->name }}</div>
+        <div><span>CLIENT PHONE</span> {{ $order->client->phone}}</div>
         <div><span>ADDRESS</span> {{ $order->job_address}}</div>
         <div><span>COLOR</span> {{ $order->frame_color}}</div>
       </div>
