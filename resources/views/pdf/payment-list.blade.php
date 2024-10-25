@@ -114,7 +114,7 @@
                     </td>
                     <td class="grand total">
                       @if ($order->payment_definition) 
-                        {{ '$' . number_format(($grandTotal + $order->travelCost->price + $order->additional_travel_costs) * $order->initial_payment_percentage / 100, 2, '.', ',') }}%
+                        {{ '$' . number_format(($grandTotal + $order->travelCost->price + $order->additional_travel_costs) * $order->initial_payment_percentage / 100, 2, '.', ',') }}
                       @endif
                     </td>
                   </tr>
@@ -127,7 +127,7 @@
                     </td>
                     <td class="grand total">
                       @if ($order->payment_definition) 
-                        {{ '$' . number_format(($grandTotal + $order->travelCost->price + $order->additional_travel_costs) * (100 - $order->initial_payment_percentage) / 100, 2, '.', ',') }}%
+                        {{ '$' . number_format(($grandTotal + $order->travelCost->price + $order->additional_travel_costs) * (100 - $order->initial_payment_percentage) / 100, 2, '.', ',') }}
                       @endif
                     </td>
                   </tr>

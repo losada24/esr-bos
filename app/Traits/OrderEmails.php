@@ -68,6 +68,7 @@ trait OrderEmails {
         foreach ($users as $user) {
           Mail::to($user)->send(new InstallationDateConfirmationClient($order, true));
         }
+        $users = [];
         $users[] = $order->supervisor->email;
         $users[] = 'alina@reylosglass.com';
         $serviceManager = User::role([RoleEnum::SERVICE_MANAGER->value])->get();

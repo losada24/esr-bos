@@ -8,5 +8,6 @@ enum FrameColorEnum: string
     case WHITE = 'WHITE';
     case BLACK = 'BLACK';
     case CLEAR_ANODIZED = 'CLEAR ANODIZED';
+    case OTHERS = 'OTHERS';
 
 }

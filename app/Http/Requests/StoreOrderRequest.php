@@ -108,7 +108,8 @@ class StoreOrderRequest extends FormRequest
                   FrameColorEnum::WHITE->value,
                   FrameColorEnum::BLACK->value,
                   FrameColorEnum::BRONZE->value,
-                  FrameColorEnum::CLEAR_ANODIZED->value
+                  FrameColorEnum::CLEAR_ANODIZED->value,
+                  FrameColorEnum::OTHERS->value
                 ])]
               ),
             ],
