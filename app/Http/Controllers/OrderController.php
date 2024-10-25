@@ -99,7 +99,8 @@ class OrderController extends Controller
             FrameColorEnum::WHITE->value,
             FrameColorEnum::BLACK->value,
             FrameColorEnum::BRONZE->value,
-            FrameColorEnum::CLEAR_ANODIZED->value
+            FrameColorEnum::CLEAR_ANODIZED->value,
+            FrameColorEnum::OTHERS->value
           ],
           'travel_costs' => TravelCost::all(),
           'duration_of_works' => DurationOfWork::all(),
@@ -212,7 +213,8 @@ class OrderController extends Controller
             FrameColorEnum::WHITE->value,
             FrameColorEnum::BLACK->value,
             FrameColorEnum::BRONZE->value,
-            FrameColorEnum::CLEAR_ANODIZED->value
+            FrameColorEnum::CLEAR_ANODIZED->value,
+            FrameColorEnum::OTHERS->value
           ],
           'services' => [
             ServiceEnum::INSTALLATION->value,
