@@ -166,6 +166,7 @@ class UpdateOrderRequest extends FormRequest
           'orderProducts.*.total_price_with_extraworks' => 'required|numeric',
           'orderProducts.*.extra_work_price' => 'required|numeric',
           'orderProducts.*.extra_works' => 'nullable|array',
+          'orderProducts.*.pivot_cost' => 'nullable|numeric',
         ];
     }
 }

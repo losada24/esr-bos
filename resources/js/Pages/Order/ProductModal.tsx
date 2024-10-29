@@ -7,7 +7,7 @@ import { type OrderProductExtraWorksFormValues, orderProductSchema, getValueIdNo
 import InputError from '@/Components/InputError'
 import PrimaryButton from '@/Components/PrimaryButton'
 import { getProductPriceWithExtraWorks, getProductPrice, getProductExtraWorkPrice } from '@/Utils/price'
-import { PAYMENT_METHODS, SERVICES, STOREFRONT_CATEGORY } from '@/Utils/constants'
+import { PAYMENT_METHODS, SERVICES, STOREFRONT_CATEGORY, PIVOT_CONFIG} from '@/Utils/constants'
 
 const ProductModal = ({
   showModal,
@@ -54,9 +54,10 @@ const ProductModal = ({
     installation_other_level: false,
     product_category_id: 0,
     type_of_product_id: 0,
-    extra_works: []
+    extra_works: [],
+    pivot_cost: 0
   }
-  
+
   const handleSubmit = async (values: any, helpers: FormikHelpers<OrderProduct>) => {
     const plannedExtraWorks = plannedExtraWorksFormValues.filter((extraWork) => extraWork.checked)
     const product: OrderProduct = {
@@ -68,12 +69,13 @@ const ProductModal = ({
     const unit_price_with_extrawork = getProductPriceWithExtraWorks(product, productCosts)
     product.extra_work_price = getProductExtraWorkPrice(product) ?? 0
     product.unit_price = unit_price
-    if(product.type_of_product_id !== STOREFRONT_CATEGORY) {
+
+    if (product.type_of_product_id !== STOREFRONT_CATEGORY) {
       product.total_price = unit_price * product.qty
-    }
-    else{
+    } else {
       product.total_price = unit_price
     }
+
     product.unit_price_with_extraworks = unit_price_with_extrawork
     product.total_price_with_extraworks = unit_price_with_extrawork + product.total_price
     addOrderProduct(product)
@@ -244,6 +246,19 @@ const ProductModal = ({
                             {(submitCount && errors.storefront_area) ? <InputError message={errors.storefront_area} className="mt-2" /> : ''}
                           </div>
                         )}
+                          {(values.product_config_id === 30 && service === SERVICES.DELIVERY_AND_INSTALLATION) && (
+                          <div className={submitCount ? (errors.pivot_cost) ? 'has-error' : 'has-success' : ''}>
+                            <label htmlFor="pivot_cost">Pivot Cost</label>
+                            <Field
+                              id="pivot_cost"
+                              name="pivot_cost"
+                              className="form-input text-right"
+                              autoComplete="storefront_area"
+                              placeholder='Pivot Cost'
+                              type='number'
+                            />
+                            {(submitCount && errors.pivot_cost) ? <InputError message={errors.pivot_cost} className="mt-2" /> : ''}
+                          </div>)}
                         {(values.type_of_product_id === 2 && service === SERVICES.DELIVERY_AND_INSTALLATION) &&  (
                           <div className='inline-flex items-end'>
                             <div className='flex'>
@@ -258,7 +273,6 @@ const ProductModal = ({
                           </div>
                         )}
                   </div>
-                  
                   {(plannedExtraWorksFormValues.length > 0 && service === SERVICES.DELIVERY_AND_INSTALLATION) && (
                     <fieldset className='p-3 border rounded-xl mt-3'>
                       <legend className='text-lg font-semibold px-3'>Extra Works</legend>

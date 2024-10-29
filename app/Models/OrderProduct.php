@@ -30,6 +30,7 @@ class OrderProduct extends Model
         'installation_other_level',
         'product_category_id',
         'type_of_product_id',
+        'pivot_cost',
     ];
 
     public function order(): BelongsTo {
