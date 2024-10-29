@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
@@ -64,16 +65,24 @@ class DashboardController extends Controller
   public function getEvents($year, $month, $service, $status) {
     $showOnlyInstallation = $service === ServiceEnum::INSTALLATION_ONLY->value;
     $service_filter = $service === ServiceEnum::INSTALLATION_ONLY->value ? ServiceEnum::INSTALLATION->value : $service;
+
+    $currentPassingDate = Carbon::parse($year . '-' . $month . '-01');
+    $previewMonth = $currentPassingDate->copy()->subMonth()->startOfMonth();
+    $nextMonth = $currentPassingDate->copy()->addMonth()->endOfMonth();
+
     $orders = Order::calendarFilter(['service' => $service_filter, 'status' => $status])
-      ->where(function ($query) use ($year, $month) {
-        $query->where(function($query) use ($year, $month) {
-          $query->whereYear('delivery_date', $year)
-            ->whereMonth('delivery_date', $month);
-        })->orWhere(function($query) use ($year, $month) {
-            $query->whereYear('installation_date', $year)
+      ->where(function ($query) use ($previewMonth, $nextMonth) {
+        $query->where(function($query) use ($previewMonth, $nextMonth) {
+          /* $query->whereYear('delivery_date', $year)
+            ->whereMonth('delivery_date', $month); */
+            $query->whereBetween('delivery_date', [$previewMonth, $nextMonth]);
+        })->orWhere(function($query) use ($previewMonth, $nextMonth) {
+            /*$query->whereYear('installation_date', $year)
               ->whereMonth('installation_date', $month)
               ->orWhereYear('installation_end_date', $year)
-              ->whereMonth('installation_end_date', $month);
+              ->whereMonth('installation_end_date', $month); */
+            $query->whereBetween('installation_date', [$previewMonth, $nextMonth])
+              ->orWhereBetween('installation_end_date', [$previewMonth, $nextMonth]);
         });
       });
 

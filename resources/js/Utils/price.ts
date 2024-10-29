@@ -1,4 +1,5 @@
 import { type ProductCost, type OrderProduct } from '@/types'
+import { PIVOT_CONFIG } from './constants'
 
 export const formatPrice = (price: number) => {
   const USDollar = new Intl.NumberFormat('en-US', {
@@ -23,7 +24,6 @@ export const getProductPriceWithExtraWorks = (
   product: OrderProduct,
   productCost: ProductCost[]
 ) => {
-  
   const extraWorkPrice = getProductExtraWorkPrice(product)
   const price = getProductPrice(product, productCost)
   return price + (extraWorkPrice ?? 0)
@@ -40,6 +40,8 @@ export const getProductPrice = (
   let price: number = parseFloat(productCostPrice?.price.toString() ?? '0')
   if (product.type_of_product_id === 3) {
     price = price * product.storefront_area
+  } else if (product.product_config_id === PIVOT_CONFIG) {
+    price = product.pivot_cost ?? 0
   }
 
   if (product.installation_other_level) {

@@ -151,6 +151,7 @@ export default function Dashboard ({ auth, services, status, legend }: PageProps
       <EventModal
         showModal={isModalOpen}
         onClose={setModalOpen}
+        isAdminOrAccountManager={IS_ADMIN || IS_ACCOUNT_MANAGER}
         id={eventId}
       />
     </AuthenticatedCalendarLayout>

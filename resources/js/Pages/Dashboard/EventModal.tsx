@@ -7,11 +7,13 @@ import { formatPrice } from '@/Utils/price'
 const EventModal = ({
   showModal,
   onClose,
-  id
+  id,
+  isAdminOrAccountManager
 }: {
   showModal: boolean
   onClose: CallableFunction
   id: number
+  isAdminOrAccountManager: boolean
 }) => {
   const [event, setEvent] = useState<Order | null>(null)
 
@@ -214,11 +216,11 @@ const EventModal = ({
                 </div>
               </div>
             )}
-            {event?.installation_teams && event.installation_teams.length > 0 && (
+            {isAdminOrAccountManager && (
               <div className='flex flex-row gap-2'>
                 <strong>Payment List:</strong>
                 <div className='flex flex-col justify-start'>
-                  <a href={route('order.get_payment_list', { id: event?.id })} target='_blank' className='badge badge-outline-dark' rel="noreferrer">Download Payment List</a>
+                  <a href={route('order.get_payment_list', { id: event?.id ?? 0 })} target='_blank' className='badge badge-outline-dark' rel="noreferrer">Download Payment List</a>
                 </div>
               </div>
             )}

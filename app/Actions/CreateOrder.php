@@ -113,6 +113,7 @@ class CreateOrder {
           'installation_other_level' => $product['installation_other_level'],
           'product_category_id' => $product['product_category_id'],
           'type_of_product_id' => $product['type_of_product_id'],
+          'pivot_cost' => $product['pivot_cost'],
         ]);
         
         $extraWorks = [];
@@ -126,7 +127,7 @@ class CreateOrder {
         }
 
         $orderProduct->orderProductExtraWorks()->attach($extraWorks);
-      }
+      } 
 
       $this->sendEmail($order);
 
