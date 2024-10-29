@@ -123,7 +123,7 @@ export interface OrderProduct {
   productCategory?: ProductCategory
   type_of_product_id: number
   typeOfProduct?: TypeOfProduct
-  pivot_cost: number
+  pivot_cost?: number
 }
 
 export interface OrderProductsExtraWorks {
