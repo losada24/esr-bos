@@ -51,6 +51,7 @@ class Order extends Model
         'type_of_financing',
         'payment_definition',
         'initial_payment_percentage',
+        'work_team_notes',
     ];
 
     protected $dates = [

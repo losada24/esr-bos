@@ -206,6 +206,14 @@ const EventModal = ({
                   </div>
               </div>
             )}
+            {event?.work_team_notes && (
+              <div className='flex flex-col gap-2'>
+                  <strong>Work Team Notes:</strong>
+                  <div className='flex flex-row justify-start'>
+                    {event?.work_team_notes ?? ''}
+                  </div>
+              </div>
+            )}
             {event?.attachments && (
               <div className='flex flex-row gap-2'>
                 <strong>Attachments:</strong>

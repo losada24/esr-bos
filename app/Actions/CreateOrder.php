@@ -62,6 +62,7 @@ class CreateOrder {
         'association_permits' => $request->association_permits,
         'equipment_rental' => $request->equipment_rental,
         'notes' => $request->notes,
+        'work_team_notes' => $request->work_team_notes,
         'delivery_date' => $request->delivery_date,
         'installation_date' => $request->installation_date,
         'status' => $status,

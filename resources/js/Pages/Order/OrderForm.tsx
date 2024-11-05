@@ -23,7 +23,7 @@ import {
   type Attachment
 } from '@/types'
 import Select, { type SingleValue } from 'react-select'
-import { getOrderProducts, type OrderFormValues } from './OrderCommon'
+import { getOrderProducts, getValueIdNotNull, type OrderFormValues } from './OrderCommon'
 import SearchIcon from '@/Components/Icons/SearchIcon'
 import ProductModal from './ProductModal'
 import ProductTable from './ProductTable'
@@ -119,7 +119,21 @@ const OrderForm = ({
     setFieldValue('eta_date', data.estimate_eta_date)
     setFieldValue('delivery_date', data.estimate_delivery_date)
     setFieldValue('installation_date', data.estimate_installation_date)
-    setFieldValue('installation_end_date', data.estimate_installation_date)
+    const duration_of_work_value = getValueIdNotNull(values.duration_of_work_id)
+    if (duration_of_work_value !== '') {
+      const duration_of_work = duration_of_works.find((duration_of_work) => duration_of_work.id === duration_of_work_value)
+      if (duration_of_work) {
+        const installation_end_date1 = new Date(data.estimate_installation_date)
+        console.log(installation_end_date1.getDate())
+        installation_end_date1.setDate(installation_end_date1.getDate() + duration_of_work.number_of_day)
+        const year = installation_end_date1.getFullYear()
+        const month = String(installation_end_date1.getMonth() + 1).padStart(2, '0') // Agregar cero inicial si es necesario
+        const day = String(installation_end_date1.getDate()).padStart(2, '0')// Agregar cero inicial si es necesario
+        // Formato yyyy-mm-dd
+        const fechaFormateada = `${year}-${month}-${day}`
+        setFieldValue('installation_end_date', fechaFormateada)
+      }
+    }
   }
 
   const selectDeliveryAndPickupDate = async (payment_factory_date: string) => {
@@ -371,7 +385,24 @@ const OrderForm = ({
                 placeholder="Duration of Work"
                 name='duration_of_work_id'
                 defaultValue={ selectedDurationOfWork }
-                onChange={(value) => { setFieldValue('duration_of_work_id', value) }}
+                onChange={(value) => {
+                  setFieldValue('duration_of_work_id', value)
+                  if (values.installation_date) {
+                    const duration_of_work_value = getValueIdNotNull(value)
+                    // console.log(duration_of_work_value)
+                    const duration_of_work = duration_of_works.find((duration_of_work) => duration_of_work.id === duration_of_work_value)
+                    const installation_end_date = new Date(values.installation_date)
+                    if (duration_of_work) {
+                      installation_end_date.setDate(installation_end_date.getDate() + duration_of_work?.number_of_day ?? 0)
+                      const year = installation_end_date.getFullYear()
+                      const month = String(installation_end_date.getMonth() + 1).padStart(2, '0') // Agregar cero inicial si es necesario
+                      const day = String(installation_end_date.getDate()).padStart(2, '0')// Agregar cero inicial si es necesario
+                      // Formato yyyy-mm-dd
+                      const fechaFormateada = `${year}-${month}-${day}`
+                      setFieldValue('installation_end_date', fechaFormateada)
+                    }
+                  }
+                }}
                 options={duration_of_works.map((duration_of_work) => { return { label: duration_of_work.name, value: duration_of_work.id } })}
               />
               {(submitCount && errors.duration_of_work_id) ? <InputError message={errors.duration_of_work_id.toString()} className="mt-2" /> : ''}
@@ -498,6 +529,20 @@ const OrderForm = ({
                     className="form-input"
                     onChange={([date]) => {
                       setFieldValue('installation_date', date.toISOString().slice(0, 10))
+                      const duration_of_work_value = getValueIdNotNull(values.duration_of_work_id)
+                      if (duration_of_work_value !== '') {
+                        const duration_of_work = duration_of_works.find((duration_of_work) => duration_of_work.id === duration_of_work_value)
+                        if (duration_of_work) {
+                          const installation_end_date = new Date(date)
+                          installation_end_date.setDate(installation_end_date.getDate() + duration_of_work.number_of_day - 1)
+                          const year = installation_end_date.getFullYear()
+                          const month = String(installation_end_date.getMonth() + 1).padStart(2, '0') // Agregar cero inicial si es necesario
+                          const day = String(installation_end_date.getDate()).padStart(2, '0')// Agregar cero inicial si es necesario
+                          // Formato yyyy-mm-dd
+                          const fechaFormateada = `${year}-${month}-${day}`
+                          setFieldValue('installation_end_date', fechaFormateada)
+                        }
+                      }
                     }}
                   />
                   {(submitCount && errors.installation_date) ? <InputError message={errors.installation_date?.toString()} className="mt-2" /> : ''}
@@ -755,6 +800,17 @@ const OrderForm = ({
                 rows="4"
                 className="form-textarea resize-none placeholder:text-white-dark"
                 placeholder='Notes'
+              />
+            </div>
+            <div className='col-span-4'>
+              <label htmlFor="work_team_notes">Work Team Notes</label>
+              <Field
+                id="work_team_notes"
+                name="work_team_notes"
+                component="textarea"
+                rows="4"
+                className="form-textarea resize-none placeholder:text-white-dark"
+                placeholder='Work Team Notes'
               />
             </div>
             <div className='col-span-4'>

@@ -151,6 +151,7 @@ class UpdateOrderRequest extends FormRequest
           'association_permits' => 'boolean',
           'equipment_rental' => 'boolean',
           'notes' => 'nullable|string|max:1000',
+          'work_team_notes' => 'nullable|string|max:1000',
           'attachments' => 'nullable|array',
           'attachments.*' => 'file|mimes:jpeg,png,jpg,pdf,docx,doc,xlsx|max:10240',
           'orderProducts' => 'required|array',
