@@ -61,6 +61,7 @@ class UpdateOrder {
         'association_permits' => $request->association_permits,
         'equipment_rental' => $request->equipment_rental,
         'notes' => $request->notes,
+        'work_team_notes' => $request->work_team_notes,
         'delivery_date' => $request->delivery_date,
         'status' => $status,
         'frame_color' => $request->frame_color,

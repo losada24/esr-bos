@@ -14,6 +14,7 @@ class DurationOfWork extends Model
     protected $fillable = [
       'name',
       'price',
+      'number_of_day',
       'notes', 
     ];
 

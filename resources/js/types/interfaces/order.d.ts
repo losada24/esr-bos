@@ -10,6 +10,7 @@ export interface Order {
   association_permits: boolean
   equipment_rental: boolean
   notes?: string
+  work_team_notes?: string
   client_id: number
   user_id?: number
   created_at?: Date
@@ -165,7 +166,6 @@ export interface InstallationTeam {
   company_name?: string
   phone?: string 
   travel_costs?: TravelCost[]
-  
 }
 
 export interface Attachment {
@@ -187,6 +187,7 @@ export interface DurationOfWork {
   id: number
   name: string
   price: number
+  number_of_day: number
   notes: string
   orders?: Order[]
 }
