@@ -15,7 +15,7 @@ class CreateClient {
     
     DB::transaction(function() use ($request) {
 
-      $existingClient = Client::where('email', $request->email)->first();
+      $existingClient = Client::where('phone', $request->phone)->first();
 
       if( !$existingClient )
       {
@@ -42,15 +42,18 @@ class CreateClient {
           ]);
       }
 
-      $existingAddress = ClientAddress::where('address', $request->address)->where('client_id', $existingClient->id)->first();
 
-      if( !$existingAddress )
-      {
-        $existingClient->clientAddress()->save(new ClientAddress([
-          'address' => $request->address,
-          'appointment_date' => $request->appointment_date,
-          'notes' => $request->notes,
-        ]));
+      if ($request->address != null) {
+        $existingAddress = ClientAddress::where('address', $request->address)->where('client_id', $existingClient->id)->first();
+  
+        if( !$existingAddress )
+        {
+          $existingClient->clientAddress()->save(new ClientAddress([
+            'address' => $request->address,
+            'appointment_date' => $request->appointment_date,
+            'notes' => $request->notes,
+          ]));
+        }
       }
 
       if( !$existingClient )

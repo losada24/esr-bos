@@ -45,12 +45,13 @@ export default function Index ({ auth, clients }: IndexClientProps) {
                 <th className="px-6 pt-5 pb-4">Email</th>
                 <th className="px-6 pt-5 pb-4">Phone</th>
                 <th className="px-6 pt-5 pb-4">Address</th>
+                <th className="px-6 pt-5 pb-4">Created By</th>
                 <th className="px-6 pt-5 pb-4">Updated At</th>
                 <th className="px-6 pt-5 pb-4 w-14">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {clients.data.map(({ id, name, email, phone, client_address, updated_at }) => {
+              {clients.data.map(({ id, name, email, phone, client_address, updated_at, user }) => {
                 return (
                   <tr
                     key={id}
@@ -75,6 +76,9 @@ export default function Index ({ auth, clients }: IndexClientProps) {
                           </div>
                         )
                       })}
+                    </td>
+                    <td className="border-t px-6 py-4 align-top">
+                      {user?.name}
                     </td>
                     <td className="border-t px-6 py-4 align-top">
                       {updated_at.toString()}

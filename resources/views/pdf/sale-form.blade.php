@@ -191,6 +191,16 @@
         </tr>    
       </table>
     @endif
+    @if (isset($clientAddress->client->user))
+      <table class="table-container">
+        <tr>
+          <td>
+            <span class="strong-labels">Created By</span>
+            <p>{{ $clientAddress->client->user->name }}</p>
+          </td>  
+        </tr>    
+      </table>
+    @endif
   </div>
   </body>
 </html>

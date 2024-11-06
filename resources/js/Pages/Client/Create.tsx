@@ -32,9 +32,9 @@ export default function Create ({ auth }: PageProps) {
   }
 
   const handleSubmit = async (values: any, helpers: FormikHelpers<ClientFormType>) => {
-    console.log(values)
+    // console.log(values)
     const response = await fetch(
-      `/client/is_unique/${values.email}/${values.address}/${values.phone}`)
+      `/client/is_unique/${values.phone}/${values.address}`)
     const data = await response.json()
 
     if (data.length === 0 || values.confirmed) {
