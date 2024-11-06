@@ -48,7 +48,7 @@ const ClientFilter = () => {
               setData('text', e.target.value)
             }}
             type='text'
-            placeholder='Search by Name or Email'
+            placeholder='Search by Name, Email or Phone'
           />
         </div>
         <div className="flex items-end justify-between w-44 pb-3">

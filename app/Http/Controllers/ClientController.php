@@ -21,7 +21,7 @@ class ClientController extends Controller
     public function index(Request $request)
     {
         return Inertia::render('Client/Index', [
-          'clients' => Client::with(['clientAddress'])->filter($request->only(['text']))
+          'clients' => Client::with(['clientAddress', 'user'])->filter($request->only(['text']))
             ->orderBy('updated_at', 'desc')
             ->paginate()
             ->withQueryString()
@@ -98,26 +98,17 @@ class ClientController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function isUnique($email, $address, $phone = null)
+    public function isUnique($phone, $address = null)
     {
         $addressList = [];
-        $clientsByEmail = Client::with(['clientAddress'])->where('email', $email)->get();
         $clientsByPhone = Client::with(['clientAddress'])->where('phone', $phone)->get();    
-        //dd($clientsByEmail);
-        //TODO: Add phone number to the search
-
-        foreach ($clientsByEmail as $clientAddress) {
-          foreach ($clientAddress->clientAddress as $client) {
-            if (!in_array($client->address, $addressList) && $client->address != $address) {
-              $addressList[] = $client->address;
-            }
-          }
-        }
-
-        foreach ($clientsByPhone as $clientAddress) {
-          foreach ($clientAddress->clientAddress as $client) {
-            if (!in_array($client->address, $addressList) && $client->address != $address) {
-              $addressList[] = $client->address;
+        
+        if ($address != null) {
+          foreach ($clientsByPhone as $clientAddress) {
+            foreach ($clientAddress->clientAddress as $client) {
+              if (!in_array($client->address, $addressList) && $client->address != $address) {
+                $addressList[] = $client->address;
+              }
             }
           }
         }
@@ -129,7 +120,7 @@ class ClientController extends Controller
 
     public function document($id)
     {
-        $clientAddress = ClientAddress::with(['client'])->find($id);
+        $clientAddress = ClientAddress::with(['client', 'client.user'])->find($id);
         $pdf = Pdf::loadView('pdf.sale-form', ['clientAddress' => $clientAddress]);
         $pdf->setPaper('a4', 'portrait');
         return $pdf->download('sale-form.pdf');

@@ -28,9 +28,9 @@ class UpdateClientRequest extends FormRequest
         return [
             'id' => 'required|exists:clients,id',
             'name' => 'required|string|max:255',
-            'email' => 'required|email',
+            'email' => 'nullable|email',
             'phone' => 'required|max:20',
-            'address' => 'required|string|max:500',
+            'address' => 'nullable|string|max:500',
         ];
     }
 }

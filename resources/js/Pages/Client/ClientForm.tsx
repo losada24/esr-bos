@@ -47,7 +47,7 @@ const ClientForm = ({ submitCount, errors, isCreate, setFieldValue, values }: {
             id="name"
             name="name"
             className="form-input"
-            autoComplete="name"
+            autoComplete={false}
             placeholder='Name'
           />
           {(submitCount && errors.name) ? <InputError message={errors.name} className="mt-2" /> : ''}
@@ -59,6 +59,7 @@ const ClientForm = ({ submitCount, errors, isCreate, setFieldValue, values }: {
             name="email"
             type="email"
             className="form-input"
+            autoComplete={false}
             placeholder='Email'
           />
           {(submitCount && errors.email) ? <InputError message={errors.email} className="mt-2" /> : ''}
@@ -69,7 +70,7 @@ const ClientForm = ({ submitCount, errors, isCreate, setFieldValue, values }: {
             id="phone"
             name="phone"
             className="form-input"
-            autoComplete="phone"
+            autoComplete={false}
             placeholder='Phone'
           />
           {(submitCount && errors.phone) ? <InputError message={errors.phone} className="mt-2" /> : ''}
@@ -87,6 +88,7 @@ const ClientForm = ({ submitCount, errors, isCreate, setFieldValue, values }: {
                 id="address"
                 name="address"
                 className="form-textarea resize-none placeholder:text-white-dark"
+                autoComplete={false}
                 placeholder='Address'
               />
             </StandaloneSearchBox>
