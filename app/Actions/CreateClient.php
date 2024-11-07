@@ -30,8 +30,8 @@ class CreateClient {
           $tag->name = 'New Client';
           
           $this->createContact([
-            // 'Owner' => $owner,
-            // 'Notify_Owner' => true,
+            'Owner' => config('bigin.bigin_owner_id'),
+            'Notify_Owner' => true,
             'Last_Name' => $request->name,
             'Email' => $request->email,
             'Mobile' => $request->phone,
