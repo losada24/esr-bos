@@ -58,6 +58,10 @@ class DashboardController extends Controller
             'color' => StatusColorEnum::CONFIRMED_DELIVERY->value,
             'label' => 'CONFIRMED DELIVERY'
           ],
+          [
+            'color' => StatusColorEnum::DELAY_PERMITS->value,
+            'label' => 'DELAYED PERMIT'
+          ],
         ]
       ]);
   }
@@ -70,17 +74,11 @@ class DashboardController extends Controller
     $previewMonth = $currentPassingDate->copy()->subMonth()->startOfMonth();
     $nextMonth = $currentPassingDate->copy()->addMonth()->endOfMonth();
 
-    $orders = Order::calendarFilter(['service' => $service_filter, 'status' => $status])
+    $orders = Order::with(['permit'])->calendarFilter(['service' => $service_filter, 'status' => $status])
       ->where(function ($query) use ($previewMonth, $nextMonth) {
         $query->where(function($query) use ($previewMonth, $nextMonth) {
-          /* $query->whereYear('delivery_date', $year)
-            ->whereMonth('delivery_date', $month); */
             $query->whereBetween('delivery_date', [$previewMonth, $nextMonth]);
         })->orWhere(function($query) use ($previewMonth, $nextMonth) {
-            /*$query->whereYear('installation_date', $year)
-              ->whereMonth('installation_date', $month)
-              ->orWhereYear('installation_end_date', $year)
-              ->whereMonth('installation_end_date', $month); */
             $query->whereBetween('installation_date', [$previewMonth, $nextMonth])
               ->orWhereBetween('installation_end_date', [$previewMonth, $nextMonth]);
         });
@@ -132,13 +130,20 @@ class DashboardController extends Controller
 
         $startInstallationDate = $order->installation_date;
         $endInstallationDate = $order->installation_end_date;
+        $startInstallationDateCarbon = Carbon::parse($startInstallationDate);
+        $actualDate = Carbon::now();
+        $color = $this->getColorByStatus($order->status, $order->service, true);
+        if ($actualDate->diffInDays($startInstallationDateCarbon) <= 7 && $order->permit != null && $order->permit->pick_up_permit == '') {
+          $color = StatusColorEnum::DELAY_PERMITS->value;
+        }
+
         $event = $this->createEvent(
           $order->id,
           '#' . $order->order_number . ' - ' . $order->name . ' (INSTALLATION)',
           $this->getEventPopover($order->status, $order->service, true),
           $startInstallationDate,
           $endInstallationDate,
-          $this->getColorByStatus($order->status, $order->service, true),
+          $color,
           $order->service
         );
         $events[] = $event;
