@@ -10,5 +10,5 @@ enum StatusColorEnum: string
     case CONFIRMED = '#F4F443';
     case CONFIRMED_INSTALLATION = '#ffb533';
     case CONFIRMED_DELIVERY = '#FF8D33';
-
+    case DELAY_PERMITS = '#AC0505';
 }
