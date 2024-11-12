@@ -131,7 +131,7 @@ class UpdateOrder {
           'user_id' => auth()->user()->id,
           'notes' => "$status created by " . auth()->user()->name
         ]);
-        //$this->sendEmail($order);
+        $this->sendEmail($order);
       }
       
       if( !$order )
