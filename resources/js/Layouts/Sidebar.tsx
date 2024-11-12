@@ -50,7 +50,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                 <NavLink href={route('dashboard')} active={route().current('dashboard')} className="group">
                                     <div className="flex items-center">
                                         <DashboardIcon />
-                                        <SidebarLinkLabel>Dashboard</SidebarLinkLabel>
+                                        <SidebarLinkLabel>Project Schedule Reylos</SidebarLinkLabel>
                                     </div>
                                 </NavLink>
                             </li>

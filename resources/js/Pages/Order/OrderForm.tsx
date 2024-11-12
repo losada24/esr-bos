@@ -29,6 +29,7 @@ import ProductModal from './ProductModal'
 import ProductTable from './ProductTable'
 import DeleteIcon from '@/Components/Icons/DeleteIcon'
 import { PAYMENT_METHODS, SERVICES } from '@/Utils/constants'
+import { capitalizeWords } from '@/Utils/string'
 
 const OrderForm = ({
   submitCount,
@@ -124,7 +125,7 @@ const OrderForm = ({
       const duration_of_work = duration_of_works.find((duration_of_work) => duration_of_work.id === duration_of_work_value)
       if (duration_of_work) {
         const installation_end_date1 = new Date(data.estimate_installation_date)
-        console.log(installation_end_date1.getDate())
+        // console.log(installation_end_date1.getDate())
         installation_end_date1.setDate(installation_end_date1.getDate() + duration_of_work.number_of_day)
         const year = installation_end_date1.getFullYear()
         const month = String(installation_end_date1.getMonth() + 1).padStart(2, '0') // Agregar cero inicial si es necesario
@@ -170,7 +171,6 @@ const OrderForm = ({
     value: values.duration_of_work_id ?? 0,
     label: duration_of_works.find((duration_of_work) => duration_of_work.id === values.duration_of_work_id)?.name ?? ''
   }
-
   return (
     <>
       <Form className='space-y-5'>
@@ -186,6 +186,10 @@ const OrderForm = ({
                   className="form-input rounded-r-none"
                   autoComplete="client_name"
                   placeholder='Name'
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                    const formattedValue = capitalizeWords(e.target.value)
+                    setFieldValue('client_name', formattedValue)
+                  }}
                 />
                 <button onClick={(e) => {
                   e.preventDefault()
@@ -231,6 +235,10 @@ const OrderForm = ({
                 className="form-input"
                 autoComplete="name"
                 placeholder='Name'
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                  const formattedValue = capitalizeWords(e.target.value)
+                  setFieldValue('name', formattedValue)
+                }}
               />
               {(submitCount && errors.name) ? <InputError message={errors.name} className="mt-2" /> : ''}
             </div>
@@ -253,6 +261,10 @@ const OrderForm = ({
                 className="form-input"
                 autoComplete="job_address"
                 placeholder='Job Address'
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                  const formattedValue = capitalizeWords(e.target.value)
+                  setFieldValue('job_address', formattedValue)
+                }}
               />
               {(submitCount && errors.job_address) ? <InputError message={errors.job_address} className="mt-2" /> : ''}
             </div>
@@ -697,6 +709,10 @@ const OrderForm = ({
                     className="form-input"
                     autoComplete="city"
                     placeholder='City'
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                      const formattedValue = capitalizeWords(e.target.value)
+                      setFieldValue('city', formattedValue)
+                    }}
                   />
                   {(submitCount && errors.city) ? <InputError message={errors.city} className="mt-2" /> : ''}
                 </div>

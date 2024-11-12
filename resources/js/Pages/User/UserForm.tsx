@@ -7,6 +7,7 @@ import { type FormikErrors } from 'formik'
 import { type User } from './UserCommon'
 import FeaturedImageModal from '@/Components/FeaturedImageModal'
 import { useState } from 'react'
+import { capitalizeWords } from '@/Utils/string'
 
 const UserForm = ({ submitCount, errors, roles, isCreate, /* companies, isAdmin, */ featured_image, setFieldValue, modalProps }: {
   submitCount: number
@@ -28,6 +29,10 @@ const UserForm = ({ submitCount, errors, roles, isCreate, /* companies, isAdmin,
           className="form-input"
           autoComplete="name"
           placeholder='Name'
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+            const formattedValue = capitalizeWords(e.target.value)
+            setFieldValue('name', formattedValue)
+          }}
         />
         {(submitCount && errors.name) ? <InputError message={errors.name} className="mt-2" /> : ''}
       </div>
