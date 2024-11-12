@@ -68,7 +68,8 @@ class InstallationDateConfirmation extends Mailable
         }
 
         if ($this->installationAttachments) {
-          $pdfName = 'payment-list-' . $this->order->order_number . '.pdf';
+          $numberorder = preg_replace('/[^A-Za-z0-9]/', '', $this->order->order_number);
+          $pdfName = 'payment-list-' . $numberorder. '.pdf';
           $pdfPath = storage_path('app/public/pdf/' . $pdfName);
           if (Storage::disk('local')->exists($pdfPath)) {
             Storage::disk('local')->delete($pdfPath);
@@ -80,7 +81,8 @@ class InstallationDateConfirmation extends Mailable
         }
 
         if ($this->supervisorAttachments) {
-          $pdfName = 'supervisor-list-' . $this->order->order_number . '.pdf';
+          $numberorder = preg_replace('/[^A-Za-z0-9]/', '', $this->order->order_number);
+          $pdfName = 'supervisor-list-' . $numberorder . '.pdf';
           $pdfPath = storage_path('app/public/pdf/' . $pdfName);
           if (Storage::disk('local')->exists($pdfPath)) {
             Storage::disk('local')->delete($pdfPath);

@@ -16,3 +16,8 @@ export const getInitials = (name: string): string => {
 
   return initials
 }
+export const capitalizeWords = (value: string) => {
+  return value
+    .toLowerCase()
+    .replace(/\b\w/g, (char) => char.toUpperCase())
+}

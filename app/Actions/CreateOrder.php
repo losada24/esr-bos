@@ -130,7 +130,7 @@ class CreateOrder {
         $orderProduct->orderProductExtraWorks()->attach($extraWorks);
       } 
 
-      $this->sendEmail($order);
+      //$this->sendEmail($order);
 
       if( !$order )
       {

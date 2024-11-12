@@ -30,6 +30,7 @@ export default function Dashboard ({ auth, services, status, legend }: PageProps
   const [eventId, setEventId] = useState(0)
 
   const [isModalOpen, setModalOpen] = useState(false)
+  const [eventsPerDay, setEventsPerDay] = useState<string >('10')
 
   const handleEventClick = useCallback((args: any) => {
     setEventId(args.event.order_id)
@@ -76,9 +77,9 @@ export default function Dashboard ({ auth, services, status, legend }: PageProps
 
   const myView = useMemo(() => ({
     calendar: {
-      labels: 10
+      labels: eventsPerDay
     }
-  }), [])
+  }), [eventsPerDay])
 
   useEffect(() => {
     loadEvents(currentDate)
@@ -91,13 +92,13 @@ export default function Dashboard ({ auth, services, status, legend }: PageProps
     >
       <Head title="Calendar" />
       <div
-        className='w-full h-[85vh] flex flex-col'>
+        className='w-full h-[90vh] flex flex-col'>
         <div className='flex justify-between items-center mb-3'>
           <div className='flex gap-3'>
             <div className='flex items-center gap-2'>
               <label htmlFor="">Service:</label>
               <select
-                className='form-input'
+                className='form-select'
                 onChange={(e) => {
                   setCalendarFilter({ ...calendarFilter, service: e.target.value })
                 }}
@@ -111,7 +112,7 @@ export default function Dashboard ({ auth, services, status, legend }: PageProps
             <div className='flex items-center gap-2'>
               <label htmlFor="">Status:</label>
               <select
-                className='form-input'
+                className='form-select'
                 onChange={(e) => {
                   setCalendarFilter({ ...calendarFilter, status: e.target.value })
                 }}
@@ -120,6 +121,21 @@ export default function Dashboard ({ auth, services, status, legend }: PageProps
                 {status.map((status) => (
                   <option key={status}>{status}</option>
                 ))}
+              </select>
+            </div>
+            <div className='flex items-center gap-2'>
+              <label className='w-48' htmlFor="">Event per day:</label>
+              <select
+                className='form-select'
+                onChange={(e) => {
+                  setEventsPerDay(e.target.value)
+                }}
+                value={eventsPerDay}
+              >
+                <option value="5">5</option>
+                <option value="10">10</option>
+                <option value="15">15</option>
+                <option value="all">All</option>
               </select>
             </div>
           </div>
@@ -139,7 +155,7 @@ export default function Dashboard ({ auth, services, status, legend }: PageProps
           dragToMove={IS_ADMIN || IS_ACCOUNT_MANAGER}
           dragToResize={IS_ADMIN || IS_ACCOUNT_MANAGER}
           swipeEnabled={true}
-          scrollEnabled={true}
+          scrollEnabled={false}
           eventDelete={false}
           data={myEvents}
           view={myView}

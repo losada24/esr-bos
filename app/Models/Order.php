@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enum\RoleEnum;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -12,10 +13,11 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Support\Facades\DB;
+use Spatie\Permission\Traits\HasRoles;
 
 class Order extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, HasRoles;
 
     protected $fillable = [
         'order_number',
@@ -93,10 +95,18 @@ class Order extends Model
       if (isset($filters['service']) && $filters['service'] != 'all') {
         $query->where('service', $filters['service']);
       }
+      
+      if (auth()->user()->hasRole(RoleEnum::INSTALLER->value)) {
+        $installationTeams = InstallationTeam::where ('user_id', auth()->user()->id)->first();
+        $query->whereHas('installationTeams', function ($q) use ($installationTeams)  {
+          $q->where('installation_teams.id', $installationTeams->id);
+        });
+      }
     }
 
     public function client(): BelongsTo {
       return $this->belongsTo(Client::class);
+    
     }
 
     public function typeOfWork(): BelongsTo {
