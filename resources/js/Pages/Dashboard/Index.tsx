@@ -30,7 +30,7 @@ export default function Dashboard ({ auth, services, status, legend }: PageProps
   const [eventId, setEventId] = useState(0)
 
   const [isModalOpen, setModalOpen] = useState(false)
-  const [eventsPerDay, setEventsPerDay] = useState<string >('10')
+  const [eventsPerDay, setEventsPerDay] = useState<number | 'all' >(10)
 
   const handleEventClick = useCallback((args: any) => {
     setEventId(args.event.order_id)
@@ -128,7 +128,8 @@ export default function Dashboard ({ auth, services, status, legend }: PageProps
               <select
                 className='form-select'
                 onChange={(e) => {
-                  setEventsPerDay(e.target.value)
+                  const value = e.target.value === 'all' ? e.target.value : parseInt(e.target.value)
+                  setEventsPerDay(value)
                 }}
                 value={eventsPerDay}
               >
