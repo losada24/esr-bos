@@ -16,7 +16,7 @@ const EventModal = ({
   isAdminOrAccountManager: boolean
 }) => {
   const [event, setEvent] = useState<Order | null>(null)
-
+  const [isVipClient, setIsVipClient] = useState<boolean>(false)
   useEffect(() => {
     if (id !== 0) {
       const url = route('dashboard.get_event', { id })
@@ -25,6 +25,7 @@ const EventModal = ({
         .then((data) => {
           console.log(data)
           setEvent(data)
+          setIsVipClient(parseInt(data.client.vip_clients.toString()) !== 0)
         })
     }
   }, [id])
@@ -43,6 +44,30 @@ const EventModal = ({
         </div>
         <div className='p-5'>
           <div className="h-[550px] overflow-y-scroll">
+              {isVipClient && (
+                <div className='flex flex-row gap-2'>
+                  <div className='w-1/3'>
+                    <strong>Client:</strong>
+                    <div className='flex flex-row justify-start'>
+                      {event?.client?.name}
+                    </div>
+                  </div>
+                  <div className='w-1/3'>
+                    <strong>Is VIP:</strong>
+                    <div className='flex flex-row justify-start'>
+                      VIP
+                    </div>
+                  </div>
+                  <div className="w-1/3">
+                    <strong>VIP Notes:</strong>
+                    <div className="flex flex-row justify-start">
+                        {event?.client?.vip_notes
+                          ? event?.client?.vip_notes
+                          : 'No VIP notes available'}
+                    </div>
+                  </div>
+                </div>
+              )}
             <div className='flex flex-row gap-2'>
               <div className='w-1/3'>
                 <strong>Order number:</strong> {`#${event?.order_number}`}

@@ -222,6 +222,37 @@ const OrderForm = ({
               />
               {(submitCount && errors.email) ? <InputError message={errors.email} className="mt-2" /> : ''}
             </div>
+            <div className={submitCount ? (errors.vip_clients) ? 'has-error inline-flex flex-col' : 'has-success inline-flex' : 'inline-flex items-end'}>
+                <div className='flex'>
+                  <Field
+                    id="vip_clients"
+                    name="vip_clients"
+                    className="form-checkbox"
+                    type='checkbox'
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                      setFieldValue('vip_clients', e.target.checked)
+                      if (!e.target.checked) {
+                        setFieldValue('vip_notes', ' ')
+                      }
+                    }}
+                  />
+                  <label htmlFor="vip_clients">VIP</label>
+                </div>
+                {(submitCount && errors.vip_clients) ? <div className='block'><InputError message={errors.vip_clients} className="mt-2" /></div> : ''}
+            </div>
+            {(values.vip_clients) && (
+            <div className='col-span-3'>
+              <label htmlFor="vip_notes">Vip Notes</label>
+              <Field
+                id="vip_notes"
+                name="vip_notes"
+                component="textarea"
+                rows="3"
+                className="form-textarea resize-none placeholder:text-white-dark"
+                placeholder='Notes'
+              />
+            </div>
+            )}
           </div>
         </fieldset>
         <fieldset className='p-3 border rounded-xl'>

@@ -18,7 +18,16 @@ class Client extends Model
       'phone',
       'email',
       'user_id',
+      'vip_clients',
+      'vip_notes',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'vip_clients' => 'boolean'
+        ];
+    }
 
     /**
      * The attributes that should be cast.

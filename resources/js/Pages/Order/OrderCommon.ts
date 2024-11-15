@@ -48,6 +48,8 @@ export type OrderFormValues = Omit<Order, 'installation_date' | 'delivery_date' 
   last_name: string
   phone: string
   email: string
+  vip_clients: boolean
+  vip_notes: string
   attachments: any[]
   installation_date: Date | null
   delivery_date: Date | null
@@ -65,6 +67,8 @@ export const orderFormObj: OrderFormValues = {
   client_name: '',
   phone: '',
   email: '',
+  vip_clients: false,
+  vip_notes: '',
   name: '',
   order_number: 0,
   job_address: '',
@@ -119,6 +123,8 @@ export const loadOrderFormObj = (order: Order): OrderFormValues => {
     client_name: order.client?.name ?? '',
     phone: order.client?.phone ?? '',
     email: order.client?.email ?? '',
+    vip_clients: order.client?.vip_clients ?? false,
+    vip_notes: order.client?.vip_notes ?? '',
     name: order.name,
     order_number: order.order_number,
     job_address: order.job_address,

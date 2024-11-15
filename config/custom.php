@@ -16,4 +16,5 @@ return [
   'corner_silicone' => env('CORNER_SILICONE'),
   'muntin_price_by_sqft' => env('MUNTIN_PRICE_BY_SQFT'),
   'anchors_price' => env('ANCHORS_PRICE'),
+  'installation_team_expiration_documents_email' => env('INSTALLATION_TEAM__EXPIRATION_EMAILS')
 ];

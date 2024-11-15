@@ -14,6 +14,8 @@ export interface Client {
   user?: User
   client_address: ClientAddress[]
   updated_at: Date
+  vip_clients: boolean
+  vip_notes: string
 }
 
 export interface ClientAddress {
