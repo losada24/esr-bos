@@ -99,3 +99,7 @@ trait OrderStatus {
     return $popover;
   }
 }
+
+/*public function getOrderProductsPopover($order) {
+
+}*/

@@ -32,6 +32,8 @@ class StoreClientRequest extends FormRequest
             'address' => 'nullable|string|max:500',
             'appointment_date' => 'nullable|date',
             'notes' => 'nullable|string',
+            'vip_clients' => 'boolean',
+            'vip_notes' => 'nullable|string|max:1000',
         ];
     }
 }

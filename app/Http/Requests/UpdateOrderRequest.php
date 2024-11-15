@@ -36,6 +36,8 @@ class UpdateOrderRequest extends FormRequest
           // 'last_name' => 'required|string|max:255',
           'phone' => 'required|string|max:255',
           'email' => 'nullable|email|max:255',
+          'vip_clients' => 'boolean',
+            'vip_notes' => 'nullable|string|max:1000',
           'name' => 'required|string|max:255',
            //'order_number' => 'required|integer',
            'order_number' => 'required|string|max:255',

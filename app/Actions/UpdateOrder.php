@@ -27,6 +27,8 @@ class UpdateOrder {
             'name' => $request->client_name,
             'phone' => $request->phone,
             'email' => $request->email,
+            'vip_clients' =>$request->vip_clients,
+            'vip_notes' => $request->vip_notes,
           ]);
         }
       } else {
