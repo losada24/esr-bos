@@ -27,7 +27,9 @@ class StoreUserRequest extends FormRequest
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:8|confirmed',
-            'role' => 'required|numeric|exists:roles,id',
+            //'role' => 'required|numeric|exists:roles,id',
+            'role' => 'required|array', // Debe ser un array
+            'role.*' => 'exists:roles,id', // Cada rol debe existir en la tabla roles
             'featured_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:512',
         ];
     }

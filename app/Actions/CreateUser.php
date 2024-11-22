@@ -31,8 +31,11 @@ class CreateUser {
       {
           throw new \Exception('User not created');
       }
+          if ($request->role && is_array($request->role)) {
+            $user->syncRoles($request->role);
+        }
       
-       $user->assignRole($request->role);
+       //$user->assignRole($request->role);
 
        Mail::to($request->email, $request->name)->send(new \App\Mail\NewUserRegistration($request->name, $request->email, $request->password));
     });

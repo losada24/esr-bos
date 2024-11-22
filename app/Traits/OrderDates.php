@@ -3,6 +3,7 @@
 namespace App\Traits;
 
 use App\Enum\ServiceEnum;
+use App\Models\Order;
 use Carbon\Carbon;
 
 trait OrderDates {
@@ -30,7 +31,7 @@ trait OrderDates {
     return $eta_date->format('Y-m-d');
   }
 
-  public function getEstimateDeliveryDate($payment_factory_date, $service, $county_id, $type_of_housing) {
+  public function getEstimateDeliveryDate($payment_factory_date, $service, $county_id, $type_of_housing, $hasPermit = false) {
     $payment_factory_date_object = Carbon::parse($payment_factory_date);
     $estimate_delivery_date = null;
 
@@ -39,9 +40,15 @@ trait OrderDates {
       ($service === ServiceEnum::DELIVERY->value && $county_id === 1) ||
       ($service === ServiceEnum::INSTALLATION->value && $type_of_housing === "1" && $county_id === "1")
     ) {
-      $delivery_week = $payment_factory_date_object->addWeeks(8);
-      $end_of_delivery_week = $delivery_week->endOfWeek();
-      $estimate_delivery_date = $end_of_delivery_week->previous(Carbon::MONDAY)->format('Y-m-d');
+      if ($hasPermit) {
+        $delivery_week = $payment_factory_date_object->addWeeks(8);
+        $end_of_delivery_week = $delivery_week->endOfWeek();
+        $estimate_delivery_date = $end_of_delivery_week->previous(Carbon::MONDAY)->format('Y-m-d');
+      } else {
+        $delivery_week = $payment_factory_date_object->addWeeks(8);
+        $end_of_delivery_week = $delivery_week->endOfWeek();
+        $estimate_delivery_date = $end_of_delivery_week->previous(Carbon::FRIDAY)->format('Y-m-d');
+      }
     } else if ($service === ServiceEnum::DELIVERY->value) {
       $delivery_week = $payment_factory_date_object->addWeeks(8);
       $end_of_delivery_week = $delivery_week->endOfWeek();
@@ -54,13 +61,43 @@ trait OrderDates {
     
     return $estimate_delivery_date;
   }
-  public function getEstimateInstallationDate($delivery_date, $service) {
+
+  public function getEstimateInstallationDate($delivery_date, $service, $hasPermit) {
     $estimate_installation_date = null;
     if ($service === ServiceEnum::INSTALLATION->value) {
       $installation_date_object = Carbon::parse($delivery_date)->addDay();
-      $estimate_installation_date = $installation_date_object->format('Y-m-d');
+      if ($hasPermit) {
+        $estimate_installation_date = $this->calculateInstallationDateFromDelivery($installation_date_object);
+      }
     }
 
     return  $estimate_installation_date;
   }
+
+  public function calculateInstallationDateFromDelivery($delivery_date) {
+  
+    $installation_date = Carbon::parse($delivery_date)->addDay();
+    $installationForDateCount = Order::where('installation_date', $installation_date)
+      ->orWhere('installation_end_date', $installation_date)
+      ->orWhere(function ($query) use ($installation_date) {
+        $query->where('installation_date', '<', $installation_date)
+          ->where('installation_end_date', '>', $installation_date);
+      })
+      ->count();
+
+      while ($installationForDateCount > 10) {
+        $installation_date->addDay();
+        $installationForDateCount = Order::where('installation_date', $installation_date)
+          ->orWhere('installation_end_date', $installation_date)
+          ->orWhere(function ($query) use ($installation_date) {
+            $query->where('installation_date', '<', $installation_date)
+              ->where('installation_end_date', '>', $installation_date);
+          })
+          ->count();
+      }
+
+      return $installation_date->format('Y-m-d');
+  }
+
 }
+

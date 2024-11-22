@@ -13,6 +13,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
@@ -64,9 +65,16 @@ class DashboardController extends Controller
           ],
         ]
       ]);
-  }
+    }
+  
+    
+ 
 
-  public function getEvents($year, $month, $service, $status) {
+  public function getEvents($year, $month, $service, $status, $clientName = null ) {
+
+    if (empty($clientName) || $clientName === 'all') {
+      $clientName = null; // Deja en null si no se quiere filtrar por cliente
+  }
     $showOnlyInstallation = $service === ServiceEnum::INSTALLATION_ONLY->value;
     $service_filter = $service === ServiceEnum::INSTALLATION_ONLY->value ? ServiceEnum::INSTALLATION->value : $service;
 
@@ -74,7 +82,7 @@ class DashboardController extends Controller
     $previewMonth = $currentPassingDate->copy()->subMonth()->startOfMonth();
     $nextMonth = $currentPassingDate->copy()->addMonth()->endOfMonth();
 
-    $orders = Order::with(['permit'])->calendarFilter(['service' => $service_filter, 'status' => $status])
+    $orders = Order::with(['permit'])->calendarFilter(['service' => $service_filter, 'status' => $status, 'clientName' => $clientName])
       ->where(function ($query) use ($previewMonth, $nextMonth) {
         $query->where(function($query) use ($previewMonth, $nextMonth) {
             $query->whereBetween('delivery_date', [$previewMonth, $nextMonth]);
@@ -96,13 +104,27 @@ class DashboardController extends Controller
 
     $events = [];
     foreach ($orders->get() as $order) {
+
+      $productCounts = $order->orderProducts()
+      ->select('type_of_product_id', DB::raw('COUNT(*) as total'))
+      ->groupBy('type_of_product_id')
+      ->with('typeOfProduct') // Carga el tipo de producto para obtener el nombre
+      ->get();
+
+  // Formatear los datos de productos en el formato deseado
+  $productDetails = $productCounts->map(function ($item) {
+      $shortName = strtolower(substr($item->typeOfProduct->name, 0, 1)); // Primera letra del tipo de producto
+      return $item->total . $shortName;
+  })->join(', ');
+
       if ($order->service === ServiceEnum::DELIVERY->value || $order->service === ServiceEnum::PICKUP->value) {
         $startDate = $order->delivery_date;
         $endDate = $order->delivery_date;
         $event = $this->createEvent(
           $order->id,
           '#' . $order->order_number . ' - ' . $order->name . ' (' . $order->service . ')',
-          $this->getEventPopover($order->status, $order->service),
+          // $this->getEventPopover($order->status, $order->service),
+          'Products: ' . $productDetails,
           $startDate,
           $endDate,
           $this->getColorByStatus($order->status, $order->service),
@@ -118,8 +140,9 @@ class DashboardController extends Controller
           $endDeliveryDate = $order->delivery_date;
           $event = $this->createEvent(
             $order->id,
-            '#' . $order->order_number . ' - ' . $order->name . ' (DELIVERY)',
-            $this->getEventPopover($order->status, $order->service),
+            '#' . $order->order_number . ' - ' . $order->name . ' (DELIVERY) ',
+            // $this->getEventPopover($order->status, $order->service),
+            'Products: ' . $productDetails,
             $startDeliveryDate,
             $endDeliveryDate,
             $this->getColorByStatus($order->status, $order->service),
@@ -131,26 +154,71 @@ class DashboardController extends Controller
         $startInstallationDate = $order->installation_date;
         $endInstallationDate = $order->installation_end_date;
         $startInstallationDateCarbon = Carbon::parse($startInstallationDate);
+        //$startInstallationDate = Carbon::parse($startInstallationDate);
+        //$endInstallationDate = Carbon::parse($endInstallationDate); 
         $actualDate = Carbon::now();
         $color = $this->getColorByStatus($order->status, $order->service, true);
         if ($actualDate->diffInDays($startInstallationDateCarbon) <= 7 && $order->permit != null && $order->permit->pick_up_permit == '') {
           $color = StatusColorEnum::DELAY_PERMITS->value;
         }
 
-        $event = $this->createEvent(
+       $event = $this->createEvent(
           $order->id,
-          '#' . $order->order_number . ' - ' . $order->name . ' (INSTALLATION)',
-          $this->getEventPopover($order->status, $order->service, true),
+          '#' . $order->order_number . ' - ' . $order->name . ' (INSTALLATION) ',
+          // $this->getEventPopover($order->status, $order->service, true),
+          'Products: ' . $productDetails,
           $startInstallationDate,
           $endInstallationDate,
           $color,
           $order->service
         );
+          $events[] = $event;
+
+      /*$partitionEvents = [
+          [
+            'start' => $startInstallationDate,
+            'end' => $endInstallationDate,
+            'color' => $color,
+            'service' => $order->service,
+            'order' => $order,
+          ]
+        ];
+         $whileIndex = 0;
+        while($startInstallationDate !== $endInstallationDate) {
+
+          if ($startInstallationDate->isWeekend()) {
+            $partitionEvents[$whileIndex]['end'] = $startInstallationDate;
+            $partitionEvents[] = [
+              'start' => $startInstallationDate,
+              'end' => $endInstallationDate,
+              'color' => $color,
+              'service' => $order->service,
+              'order' => $order,
+            ];
+
+          $startInstallationDate->addDay();
+          
+        }*/
+        
+       /* else {
+          $partitionEvents[] = [
+            'start' => $startInstallationDate,
+            'end' => $endInstallationDate,
+            'color' => $color,
+            'service' => $order->service,
+            'order' => $order,
+          ];
+        }
         $events[] = $event;
-      }
+
+        
+      } 
       
+      //$whileIndex ++;
       
-    }
+    }*/
+    }}
+    
     return response()
       ->json($events);
   }
@@ -182,6 +250,7 @@ class DashboardController extends Controller
       'supervisor',
       'travelCost',
       'durationOfWork',
+      'orderProducts.orderProductExtraWorks',
     ]);
   
     return response()
@@ -205,7 +274,7 @@ class DashboardController extends Controller
   
     $pdf = Pdf::loadView('pdf.payment-list', ['order' => $order]);
     $pdfName = 'payment-list-' . $order->order_number . '.pdf';
-    return $pdf->download($pdfName);
+    return $pdf->stream($pdfName);
   }
 
   public function whatsapp() {

@@ -60,7 +60,7 @@ export default function Edit ({
   type_of_financing: string[]
 }) {
   const initialValues: OrderFormValues = loadOrderFormObj(order)
-  // console.log(initialValues)
+    // console.log(initialValues)
   const getSupervisorId = (supervisor: any) => {
     let value = null
     if (supervisor !== null && Object.prototype.hasOwnProperty.call(supervisor, 'value')) {

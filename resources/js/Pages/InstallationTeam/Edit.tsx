@@ -2,7 +2,7 @@ import React from 'react'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
 import { Head, router } from '@inertiajs/react'
 import { Formik, type FormikHelpers } from 'formik'
-import { type PageProps, type User, type TypeOfHousing, type InstallationTeam, TravelCost } from '@/types'
+import { type PageProps, type User, type TypeOfHousing, type InstallationTeam, type TravelCost } from '@/types'
 import { installationTeamSchema, type InstallationTeamFormValues } from './InstallationTeamCommon'
 import InstallationTeamForm from './InstallationTeamForm'
 
@@ -23,12 +23,8 @@ export default function Edit ({ auth, type_of_housings, users, installation_team
     worker_compensation_attach: '',
     liability_expiration_attach: '',
     company_name: installation_team.company_name,
-    phone: installation_team.phone,
-    
+    phone: installation_team.phone
   }
-  
-    /*console.log(installation_team)
-    return*/
 
   const handleSubmit = async (values: any, helpers: FormikHelpers<InstallationTeamFormValues>) => {
     const installation_team = {

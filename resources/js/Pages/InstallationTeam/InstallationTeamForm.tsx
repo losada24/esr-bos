@@ -26,9 +26,9 @@ const InstallationTeamForm = ({
   type_of_housings: TypeOfHousing[]
   users: User[]
   values: InstallationTeamFormValues
-  setFieldValue: (field: string, value: any, shouldValidate?: boolean | undefined) => void 
+  setFieldValue: (field: string, value: any, shouldValidate?: boolean | undefined) => void
   travel_costs: TravelCost[]
-  }) => {
+}) => {
   const selectedUser: SingleValue<OptionType> = {
     value: values.user_id.value,
     label: values.user_id.label
@@ -89,7 +89,6 @@ const InstallationTeamForm = ({
         />
         {(submitCount && errors.travel_costs) ? <InputError message={errors.travel_costs.toString()} className="mt-2" /> : ''}
       </div>
-      
       <div className={submitCount ? (errors.type_housing) ? 'has-error' : 'has-success' : ''}>
         <label htmlFor="type_of_housings">Type of Housing</label>
         <Select

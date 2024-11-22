@@ -18,7 +18,9 @@ class InstallationTeamExpireDocuments extends Mailable
      * Create a new message instance.
      */
     public function __construct(
-      public InstallationTeam $installationTeam
+      public InstallationTeam $installationTeam,
+      protected bool $liability_date = false,
+      protected bool $compensation_date = false,
     )
     {
         //
@@ -41,7 +43,11 @@ class InstallationTeamExpireDocuments extends Mailable
     {
         return new Content(
             view: 'emails.installation-team-expire-documents',
-        );
+            with: [
+              'installationTeam' => $this->installationTeam,
+              'liability_date' => $this->liability_date,
+              'compensation_date' => $this->compensation_date,
+            ]);
     }
 
     /**

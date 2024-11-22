@@ -39,7 +39,11 @@ class UserController extends Controller
     public function create()
     {
         return Inertia::render('User/Create', [
-          'roles' => Role::orderBy('name')->get(),
+          //'roles' => Role::orderBy('name')->get(),
+          'roles' => Role::all()->map(fn($role) => [
+            'id' => $role->id,
+            'name' => $role->name
+          ]),
         ]);
     }
 

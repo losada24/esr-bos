@@ -10,21 +10,21 @@ use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Mail;
 
-class SendExpiredInstallationTeamDocumentsDaily extends Command
+class SendExpiredInstallationTeamDocumentsLiabilityDaily extends Command
 {
     /**
      * The name and signature of the console command.
      *
      * @var string
      */
-    protected $signature = 'app:send-expired-installation-team-documents-daily';
+    protected $signature = 'app:send-expired-installation-team-documents-liability-daily';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Send expired installation team documents daily.';
+    protected $description = 'Send expired installation team documents liability daily.';
 
     /**
      * Execute the console command.
@@ -32,7 +32,7 @@ class SendExpiredInstallationTeamDocumentsDaily extends Command
     public function handle()
     {
         $installationTeams = InstallationTeam::with('user')
-          ->where('worker_compensation_expiration_date', '<=', Carbon::now()->addMonth(1))
+          ->Where('liability_expiration_date', '<=', Carbon::now()->addMonth(1))
           ->get();
 
           $users = [];
@@ -43,7 +43,7 @@ class SendExpiredInstallationTeamDocumentsDaily extends Command
 
         foreach ($installationTeams as $installationTeam) {
           $email_user = array_merge($users, [$installationTeam->user->email]);
-          Mail::to($email_user)->send(new InstallationTeamExpireDocuments($installationTeam,false,true));
+          Mail::to($email_user)->send(new InstallationTeamExpireDocuments($installationTeam,true,false));
         }
     }
 }

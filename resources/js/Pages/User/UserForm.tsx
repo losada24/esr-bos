@@ -4,21 +4,24 @@ import PrimaryButton from '@/Components/PrimaryButton'
 import { Link } from '@inertiajs/react'
 import { type Role, type ModalProps } from '@/types'
 import { type FormikErrors } from 'formik'
-import { type User } from './UserCommon'
+import { type UserFormValues, type User } from './UserCommon'
 import FeaturedImageModal from '@/Components/FeaturedImageModal'
 import { useState } from 'react'
 import { capitalizeWords } from '@/Utils/string'
+import Select from 'react-select'
 
-const UserForm = ({ submitCount, errors, roles, isCreate, /* companies, isAdmin, */ featured_image, setFieldValue, modalProps }: {
+const UserForm = ({ submitCount, errors, roles, isCreate, /* companies, isAdmin, */ featured_image, setFieldValue, modalProps, values }: {
   submitCount: number
-  errors: FormikErrors<User>
+  errors: FormikErrors<UserFormValues>
   roles: Role[]
   isCreate: boolean
+  values: UserFormValues
   featured_image?: string
   modalProps: ModalProps | null
   setFieldValue: (field: string, value: any, shouldValidate?: boolean | undefined) => void
 }) => {
   const [showModal, setShowModal] = useState(false)
+
   return (
     <Form className='space-y-5'>
       <div className={submitCount ? (errors.name) ? 'has-error' : 'has-success' : ''}>
@@ -45,19 +48,23 @@ const UserForm = ({ submitCount, errors, roles, isCreate, /* companies, isAdmin,
           className="form-input"
           placeholder='Email'
         />
-        {(submitCount && errors.email) ? <InputError message={errors.email} className="mt-2" /> : ''}
+       {(submitCount && errors.email) ? <InputError message={errors.email} className="mt-2" /> : ''}
       </div>
       <div className={submitCount ? (errors.role ? 'has-error' : 'has-success') : ''}>
-        <label htmlFor="role">Role</label>
-        <Field as="select" name="role" className="form-select">
-            <option value="">Select Role</option>
-            {roles.map((role: Role) => {
-              return (
-                <option key={role.id} value={role.id}>{role.name}</option>
-              )
-            })}
-        </Field>
-        {(submitCount && errors.role) ? <InputError message={errors.role} className="mt-2" /> : ''}
+          <label htmlFor="roles">Roles</label>
+          <Select
+            id="role"
+            placeholder="Select Roles"
+            name="role"
+            defaultValue={ values.role || [] }
+            isMulti={true}
+            onChange={(value) => {
+              setFieldValue('role', value)
+            }}
+            // options={roles.map((role) => ({ label: role.name, value: role.id }))} // Opciones de roles
+            options={roles.map((roles: Role) => { return { label: roles.name, value: roles.id } })}
+          />
+          {(submitCount && errors.role) ? <InputError message={errors.role.toString()} className="mt-2" /> : ''}
       </div>
       <div className={`mb-3 ${submitCount ? (errors.password) ? 'has-error' : 'has-success' : ''}`}>
         <label htmlFor="password">Password</label>
