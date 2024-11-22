@@ -250,12 +250,25 @@ const EventModal = ({
               </div>
             )}
             {isAdminOrAccountManager && (
+              <>
               <div className='flex flex-row gap-2'>
                 <strong>Payment List:</strong>
                 <div className='flex flex-col justify-start'>
                   <a href={route('order.get_payment_list', { id: event?.id ?? 0 })} target='_blank' className='badge badge-outline-dark' rel="noreferrer">Download Payment List</a>
                 </div>
               </div>
+             {/* <ProductTable
+                  orderProducts={orderProducts}
+                  type_of_products={type_of_products}
+                  product_category={product_category}
+                  products_config={products_config}
+                  service={values.service}
+                  values= {values}
+                  travel_costs={travel_costs}
+                  removeOrderProduct={(index: number) => { removeOrderProduct(index) }}
+                  updateOrderProduct={(index: number) => { updateOrderProduct(index) }}
+                /> */}
+              </>
             )}
           </div>
         </div>

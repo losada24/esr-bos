@@ -33,7 +33,9 @@ class UpdateUserRequest extends FormRequest
             Rule::unique('App\Models\User')->ignore($this->id),
           ],
           'password' => 'nullable|string|min:8|confirmed',
-          'role' => 'required|exists:roles,id',
+          //'role' => 'required|exists:roles,id',
+          'role' => 'required|array', // Debe ser un array
+          'role.*' => 'exists:roles,id', // Cada rol debe existir en la tabla roles
           'featured_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:512',
         ];
     }

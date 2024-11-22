@@ -114,7 +114,7 @@ const OrderForm = ({
   const selectDeliveryAndInstallationDate = async (payment_factory_date: string) => {
     const travel_cost_id = 'value' in ((values.travel_cost_id) as any) ? (values.travel_cost_id as any).value : 0
     const response = await fetch(
-      `/order/get_delivery_and_installation_date/${payment_factory_date}/${values.type_of_housing_id}/${travel_cost_id}/${values.service}`)
+      `/order/get_delivery_and_installation_date/${payment_factory_date}/${values.type_of_housing_id}/${travel_cost_id}/${values.service}/${values.city_permits}`)
     const data = await response.json()
 
     setFieldValue('eta_date', data.estimate_eta_date)
@@ -238,9 +238,8 @@ const OrderForm = ({
                   />
                   <label htmlFor="vip_clients">VIP</label>
                 </div>
-                {(submitCount && errors.vip_clients) ? <div className='block'><InputError message={errors.vip_clients} className="mt-2" /></div> : ''}
             </div>
-            {(values.vip_clients) && (
+            {Number(values.vip_clients) === 1 && (
             <div className='col-span-3'>
               <label htmlFor="vip_notes">Vip Notes</label>
               <Field
@@ -712,6 +711,8 @@ const OrderForm = ({
                       setFieldValue('city_permits', e.target.checked)
                       setFieldValue('cost_city_fee', 0)
                       setFieldValue('city', '')
+                      const payment_factory_date = values.payment_factory_date?.toISOString().slice(0, 10) ?? ''
+                      selectDeliveryAndInstallationDate(payment_factory_date)
                     }}
                   />
                   <label htmlFor="city_permits">City Permits</label>

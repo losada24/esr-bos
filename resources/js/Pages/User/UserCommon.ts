@@ -1,13 +1,16 @@
 import * as Yup from 'yup'
-import { type PageProps, type Role } from '@/types'
+import { type PageProps, type Role, type OptionType } from '@/types'
 import { isValidFileSize, isValidFileType } from '@/Utils/fileValidation'
+import { type MultiValue } from 'react-select'
+
 
 export const userSchema = Yup.object({
   name: Yup.string().required('Name is required'),
   email: Yup.string().email('Invalid email address').required('Email is required'),
   password: Yup.string().required('Password is required'),
   password_confirmation: Yup.string().oneOf([Yup.ref('password'), null], 'Passwords must match').required('Password confirmation is required'),
-  role: Yup.number().required('Role is required'),
+  // role: Yup.number().required('Role is required'),
+  // role: Yup.array().of(Yup.number()).min(1, 'At least one role is required').required('Role is required'), // Cambié a array
   featured_image: Yup.mixed()
     /* .when('id', {
       is: (id: number) => id === 0,
@@ -25,7 +28,8 @@ export const userUpdateSchema = Yup.object({
   email: Yup.string().email('Invalid email address').required('Email is required'),
   password: Yup.string().nullable(),
   password_confirmation: Yup.string().oneOf([Yup.ref('password'), null], 'Passwords must match').nullable(),
-  role: Yup.number().required('Role is required'),
+  // role: Yup.number().required('Role is required'),
+  // role: Yup.array().of(Yup.number()).min(1, 'At least one role is required').required('Role is required'), // Cambié a array
   markup: Yup.number().nullable().integer().min(0).max(100),
   featured_image: Yup.mixed()
     .when('id', {
@@ -43,7 +47,7 @@ export interface User {
   email: string
   password: string
   password_confirmation: string
-  role: number
+  role: Role[]
   featured_image?: string
 }
 
@@ -55,4 +59,8 @@ export type UserPageProps = PageProps & {
   roles: Role[]
   // companies: Company[]
   user?: UserResource
+}
+
+export type UserFormValues = Omit<User, 'role' > & {
+  role: MultiValue <OptionType>
 }

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Head } from '@inertiajs/react'
 import { type Role, type PageProps } from '@/types'
 import '@mobiscroll/react/dist/css/mobiscroll.min.css'
@@ -19,6 +19,7 @@ interface Legend {
 interface CalendarFilter {
   service: string
   status: string
+  clientName: string
 }
 
 export default function Dashboard ({ auth, services, status, legend }: PageProps & { services: string[], status: string[], legend: Legend[] }) {
@@ -26,8 +27,9 @@ export default function Dashboard ({ auth, services, status, legend }: PageProps
   const IS_ACCOUNT_MANAGER = isAccountManager(auth.user.roles.map((role: Role) => role.name))
   const [myEvents, setEvents] = useState([])
   const [currentDate, setCurrentDate] = useState(new Date())
-  const [calendarFilter, setCalendarFilter] = useState<CalendarFilter>({ service: 'all', status: 'all' })
+  const [calendarFilter, setCalendarFilter] = useState<CalendarFilter>({ service: 'all', status: 'all', clientName: '' })
   const [eventId, setEventId] = useState(0)
+  const calendarRef = useRef<HTMLDivElement>(null)
 
   const [isModalOpen, setModalOpen] = useState(false)
   const [eventsPerDay, setEventsPerDay] = useState<number | 'all' >(10)
@@ -37,10 +39,16 @@ export default function Dashboard ({ auth, services, status, legend }: PageProps
     setModalOpen(true)
   }, [])
 
+  const handleScroll = (event: Event) => {
+    const target = event.target as HTMLDivElement
+
+    // console.log(target.scrollTop)
+  }
+
   const loadEvents = (date: Date) => {
     const year = date.getFullYear()
     const month = date.getMonth() + 1
-    const getEventsRoute = route('dashboard.get_events', { year, month, service: calendarFilter.service, status: calendarFilter.status })
+    const getEventsRoute = route('dashboard.get_events', { year, month, service: calendarFilter.service, status: calendarFilter.status, ...(calendarFilter.clientName !== 'all' && { clientName: calendarFilter.clientName }) })
     getJson(getEventsRoute, (events) => {
       setEvents(events)
     }, 'json')
@@ -85,6 +93,7 @@ export default function Dashboard ({ auth, services, status, legend }: PageProps
     loadEvents(currentDate)
   }, [currentDate, calendarFilter])
 
+
   return (
     <AuthenticatedCalendarLayout
       auth={auth}
@@ -92,7 +101,7 @@ export default function Dashboard ({ auth, services, status, legend }: PageProps
     >
       <Head title="Calendar" />
       <div
-        className='w-full h-[90vh] flex flex-col'>
+        className='w-full h-[90vh] flex flex-col overflow-y-scroll'>
         <div className='flex justify-between items-center mb-3'>
           <div className='flex gap-3'>
             <div className='flex items-center gap-2'>
@@ -139,6 +148,19 @@ export default function Dashboard ({ auth, services, status, legend }: PageProps
                 <option value="all">All</option>
               </select>
             </div>
+            <div className='flex items-center gap-2'>
+            <label className='w-57' htmlFor="">Client Name</label>
+            <input
+              id="clientName"
+              type="text"
+              className="form-input"
+              placeholder="Enter Client Name"
+              value={calendarFilter.clientName}
+              onChange={(e) => {
+                setCalendarFilter({ ...calendarFilter, clientName: e.target.value })
+              }}
+            />
+          </div>
           </div>
           <div className='flex gap-3'>
             {legend.map((item, index) => {
@@ -150,20 +172,20 @@ export default function Dashboard ({ auth, services, status, legend }: PageProps
             })}
           </div>
         </div>
-        <Eventcalendar
-          clickToCreate={false}
-          dragToCreate={false}
-          dragToMove={IS_ADMIN || IS_ACCOUNT_MANAGER}
-          dragToResize={IS_ADMIN || IS_ACCOUNT_MANAGER}
-          swipeEnabled={true}
-          scrollEnabled={false}
-          eventDelete={false}
-          data={myEvents}
-          view={myView}
-          onEventClick={handleEventClick}
-          onPageChange={handlePageChange}
-          onEventUpdate={handleEventUpdate}
-        />
+          <Eventcalendar
+            clickToCreate={false}
+            dragToCreate={false}
+            dragToMove={IS_ADMIN || IS_ACCOUNT_MANAGER}
+            dragToResize={IS_ADMIN || IS_ACCOUNT_MANAGER}
+            swipeEnabled={true}
+            scrollEnabled={false}
+            eventDelete={false}
+            data={myEvents}
+            view={myView}
+            onEventClick={handleEventClick}
+            onPageChange={handlePageChange}
+            onEventUpdate={handleEventUpdate}
+          />
       </div>
       <EventModal
         showModal={isModalOpen}

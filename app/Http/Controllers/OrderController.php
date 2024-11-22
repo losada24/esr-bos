@@ -116,10 +116,10 @@ class OrderController extends Controller
         ]);
     }
 
-    public function getDeliveryAndInstallationDate($payment_factory_date, $type_of_housing, $county_id, $service) {
+    public function getDeliveryAndInstallationDate($payment_factory_date, $type_of_housing, $county_id, $service, $hasPermit = false) {
       $estimate_eta_date = $this->estimateETADate($payment_factory_date);
-      $estimate_delivery_date = $this->getEstimateDeliveryDate($payment_factory_date, $service, $county_id, $type_of_housing);
-      $estimate_installation_date = $this->getEstimateInstallationDate($estimate_delivery_date, $service);
+      $estimate_delivery_date = $this->getEstimateDeliveryDate($payment_factory_date, $service, $county_id, $type_of_housing, $hasPermit);
+      $estimate_installation_date = $this->getEstimateInstallationDate($estimate_delivery_date, $service,$hasPermit);
 
       return response()->json([
         'estimate_eta_date' => $estimate_eta_date,
