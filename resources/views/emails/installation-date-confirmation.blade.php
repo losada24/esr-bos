@@ -11,7 +11,12 @@
       <p><span style="font-weight: bold;">Order Number:</span> {{ $order->order_number }}</p>
       <p><span style="font-weight: bold;">Order Name:</span> {{ $order->name }}</p>
       <p><span style="font-weight: bold;">Client Phone:</span> {{ $order->client->phone }}</p>
-      <p><span style="font-weight: bold;">Job Address:</span> {{ $order->job_address}}</p>
+      <p><span style="font-weight: bold;">Job Address:</span> {{ 
+                        ($order->job_address ?? '') .
+                        (!empty($order->city) ? ', ' . $order->city : '') .
+                        (!empty($order->job_state) ? ', ' . $order->job_state : '') .
+                        (!empty($order->job_zip) ? ', ' . $order->job_zip : '') 
+                    }}</p>
       <p><span style="font-weight: bold;">Supervisor:</span> {{ $order->supervisor->name }}</p>
       <p><span style="font-weight: bold;">Seller Name:</span></p>
       <ul>

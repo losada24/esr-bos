@@ -61,6 +61,8 @@ class CreateOrder {
         'additional_travel_costs' => $request->additional_travel_costs,
         'city_permits' => $request->city_permits,
         'city' => $request->city,
+        'job_state' => $request->job_state,
+        'job_zip' => $request->job_zip,
         'association_permits' => $request->association_permits,
         'equipment_rental' => $request->equipment_rental,
         'notes' => $request->notes,

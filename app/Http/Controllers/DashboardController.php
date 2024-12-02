@@ -103,26 +103,38 @@ class DashboardController extends Controller
     dd($sql);*/
 
     $events = [];
+    $customAbbreviations = [
+      'Door' => 'D', // ID 1 -> 'abc'
+      'Window' => 'W', // ID 2 -> 'xyz'
+      'Storefront' => 'St', // ID 3 -> 'lmn'
+      'Sidelite' => 'Sd', // ID 3 -> 'lmn'
+      'Mullion' => 'M', // ID 3 -> 'lmn'
+      // Agrega más según sea necesario
+  ];
     foreach ($orders->get() as $order) {
 
       $productCounts = $order->orderProducts()
-      ->select('type_of_product_id', DB::raw('COUNT(*) as total'))
+      ->select('type_of_product_id', DB::raw('SUM(qty) as total'))
       ->groupBy('type_of_product_id')
       ->with('typeOfProduct') // Carga el tipo de producto para obtener el nombre
       ->get();
 
   // Formatear los datos de productos en el formato deseado
-  $productDetails = $productCounts->map(function ($item) {
-      $shortName = strtolower(substr($item->typeOfProduct->name, 0, 1)); // Primera letra del tipo de producto
+  $productDetails = $productCounts->map(function ($item) use ($customAbbreviations) {
+      $productName = $item->typeOfProduct->name;
+      $shortName = $customAbbreviations[$productName] ?? strtolower(substr($productName, 0, 1 )); // Primera letra del tipo de producto
       return $item->total . $shortName;
   })->join(', ');
+          
+  $isVip = $order->client->vip_clients ?? false;
+  $serviceLabel = $isVip ? 'VIP' : '';
 
       if ($order->service === ServiceEnum::DELIVERY->value || $order->service === ServiceEnum::PICKUP->value) {
         $startDate = $order->delivery_date;
         $endDate = $order->delivery_date;
         $event = $this->createEvent(
           $order->id,
-          '#' . $order->order_number . ' - ' . $order->name . ' (' . $order->service . ')',
+          '#' . $order->order_number . ' - ' . $order->name .  ($serviceLabel ? ' (' . $serviceLabel . ')' : ''). (!empty($order->city) ? ' - ' . $order->city : ''),
           // $this->getEventPopover($order->status, $order->service),
           'Products: ' . $productDetails,
           $startDate,
@@ -132,6 +144,8 @@ class DashboardController extends Controller
         );
 
         $events[] = $event;
+
+       
         
       } else if ($order->service === ServiceEnum::INSTALLATION->value) {
 
@@ -140,7 +154,7 @@ class DashboardController extends Controller
           $endDeliveryDate = $order->delivery_date;
           $event = $this->createEvent(
             $order->id,
-            '#' . $order->order_number . ' - ' . $order->name . ' (DELIVERY) ',
+            '#' . $order->order_number . ' - ' . $order->name . ($serviceLabel ? ' (' . $serviceLabel . ')' : '') . (!empty($order->city) ? ' - ' . $order->city : ''),
             // $this->getEventPopover($order->status, $order->service),
             'Products: ' . $productDetails,
             $startDeliveryDate,
@@ -164,7 +178,7 @@ class DashboardController extends Controller
 
        $event = $this->createEvent(
           $order->id,
-          '#' . $order->order_number . ' - ' . $order->name . ' (INSTALLATION) ',
+          '#' . $order->order_number . ' - ' . $order->name . ($serviceLabel ? ' (' . $serviceLabel . ')' : '') . (!empty($order->city) ? ' - ' . $order->city : ''),
           // $this->getEventPopover($order->status, $order->service, true),
           'Products: ' . $productDetails,
           $startInstallationDate,

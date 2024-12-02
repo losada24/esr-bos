@@ -55,6 +55,9 @@ class Order extends Model
         'payment_definition',
         'initial_payment_percentage',
         'work_team_notes',
+        'job_state',
+        'job_zip'
+
     ];
 
     protected $dates = [

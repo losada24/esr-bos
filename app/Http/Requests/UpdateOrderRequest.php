@@ -80,6 +80,8 @@ class UpdateOrderRequest extends FormRequest
           'cost_city_fee' => 'nullable|numeric',
           'project_amount' => 'nullable|numeric',
           'city' => 'nullable|string|max:100',
+          'job_state' => 'nullable|string|max:100',
+          'job_zip' => 'nullable|string|max:100',
           'initial_payment_percentage' => 'nullable|numeric',
           'payment_definition' => 'boolean',
           'method_of_payment' =>  [

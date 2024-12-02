@@ -104,7 +104,22 @@ class OrderController extends Controller
           ],
           'travel_costs' => TravelCost::all(),
           'duration_of_works' => DurationOfWork::all(),
-          'products_config' => ProductConfig::all(),
+         // 'products_config' => ProductConfig::all(),
+
+          'products_config' => ProductConfig::where(function ($query) {
+                    $query->where('name', 'Mullion')
+                          ->whereHas('productCategory', function ($categoryQuery) {
+                              $categoryQuery->where('name', 'Mullion')
+                                            ->whereHas('typeOfProduct', function ($typeQuery) {
+                                                $typeQuery->where('name', 'Mullion');
+                                            });
+                          })
+                          ->orWhereDoesntHave('productCategory'); // Incluir configuraciones sin categoría "Mullion"
+                })->orWhere(function ($query) {
+                    $query->whereHas('productCategory', function ($categoryQuery) {
+                        $categoryQuery->where('name', '!=', 'Mullion'); // Categorías distintas de "Mullion"
+                    });
+                })->get(),
           'type_of_products' => TypeOfProduct::with(['extraWorks'])->get(),
           'product_category' => ProductCategory::all(),
           'extra_works' => ExtraWork::all(),

@@ -25,7 +25,12 @@
       <div id="project">
         <div><span>ORDER NAME</span> {{ $order->name }}</div>
         <div><span>CLIENT PHONE</span> {{ $order->client->phone}}</div>
-        <div><span>ADDRESS</span> {{ $order->job_address}}</div>
+        <div><span>ADDRESS</span> {{ 
+                    ($order->job_address ?? '') .
+                    (!empty($order->city) ? ', ' . $order->city : '') .
+                    (!empty($order->job_state) ? ', ' . $order->job_state : '') .
+                    (!empty($order->job_zip) ? ', ' . $order->job_zip : '') 
+                }}</div>
         <div><span>COLOR</span> {{ $order->frame_color}}</div>
       </div>
     </header>
