@@ -6,6 +6,9 @@ export interface Order {
   name: string
   order_number: number
   job_address?: string
+  job_city?: string
+  job_state?: string
+  job_zip?: string
   city_permits: boolean
   association_permits: boolean
   equipment_rental: boolean

@@ -142,6 +142,8 @@ class StoreOrderRequest extends FormRequest
             'installation_date' => 'nullable|date_format:Y-m-d',
             'city_permits' => 'boolean',
             'city' => 'nullable|string|max:100',
+            'job_state' => 'nullable|string|max:100',
+            'job_zip' => 'nullable|string|max:100',
             'association_permits' => 'boolean',
             'equipment_rental' => 'boolean',
             'notes' => 'nullable|string|max:1000',

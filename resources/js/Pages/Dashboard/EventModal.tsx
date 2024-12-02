@@ -76,7 +76,7 @@ const EventModal = ({
                 <strong>Name:</strong> {event?.name}
               </div>
               <div className='w-1/3'>
-                <strong>Address:</strong> {event?.job_address}
+                <strong>Address:</strong> {`${event?.job_address ?? ''}${event?.city ? `, ${event.city}` : ''}${event?.job_state ? `, ${event.job_state}` : ''}${event?.job_zip ? `, ${event.job_zip}` : ''}`}
               </div>
             </div>
             <div className='flex flex-row  gap-2'>

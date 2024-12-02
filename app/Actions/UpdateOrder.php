@@ -71,6 +71,8 @@ class UpdateOrder {
         'cost_city_fee'=> $request->cost_city_fee,
         'project_amount'=> $request->project_amount,
         'city'=> $request->city,
+        'job_state' => $request->job_state,
+        'job_zip' => $request->job_zip,
         'initial_payment_percentage' => $request->initial_payment_percentage,
         'payment_definition' => $request->payment_definition,
       ];

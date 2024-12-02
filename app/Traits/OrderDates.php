@@ -64,17 +64,30 @@ trait OrderDates {
 
   public function getEstimateInstallationDate($delivery_date, $service, $hasPermit) {
     $estimate_installation_date = null;
+    
     if ($service === ServiceEnum::INSTALLATION->value) {
       $installation_date_object = Carbon::parse($delivery_date)->addDay();
-      if ($hasPermit) {
+      $booleanValue = filter_var($hasPermit, FILTER_VALIDATE_BOOLEAN);
+      if ($booleanValue) {
         $estimate_installation_date = $this->calculateInstallationDateFromDelivery($installation_date_object);
+      }
+      else {
+        // Buscar el próximo sábado con menos de 10 órdenes
+        do {
+            $installation_date_object = $installation_date_object->next(Carbon::SATURDAY);
+            $saturdayOrdersCount = Order::where(function ($query) use ($installation_date_object) {
+                $query->where('installation_date', '<=', $installation_date_object)
+                    ->where('installation_end_date', '>=', $installation_date_object);
+            })->count();
+        } while ($saturdayOrdersCount >= 10);
+        $estimate_installation_date = $installation_date_object->format('Y-m-d');
       }
     }
 
     return  $estimate_installation_date;
   }
 
-  public function calculateInstallationDateFromDelivery($delivery_date) {
+  /*public function calculateInstallationDateFromDelivery($delivery_date) {
   
     $installation_date = Carbon::parse($delivery_date)->addDay();
     $installationForDateCount = Order::where('installation_date', $installation_date)
@@ -85,7 +98,7 @@ trait OrderDates {
       })
       ->count();
 
-      while ($installationForDateCount > 10) {
+      while ($installationForDateCount < 10) {
         $installation_date->addDay();
         $installationForDateCount = Order::where('installation_date', $installation_date)
           ->orWhere('installation_end_date', $installation_date)
@@ -97,7 +110,31 @@ trait OrderDates {
       }
 
       return $installation_date->format('Y-m-d');
-  }
+  }*/
 
+  public function calculateInstallationDateFromDelivery($delivery_date)
+  {
+      $max_orders_per_day = 10;
+      do {
+          // Contar cuántas órdenes afectan esta fecha
+          $installationForDateCount = Order::where(function ($query) use ($delivery_date) {
+              $query->where('installation_date', '<=', $delivery_date) // Comienza antes o el mismo día
+                  ->where('installation_end_date', '>=', $delivery_date); // Termina después o el mismo día
+          })->count();
+
+          // Si hay más de las permitidas, pasar al siguiente día
+          if ($installationForDateCount >= $max_orders_per_day) {
+              $delivery_date->addDay();
+              if ($delivery_date->dayOfWeek === Carbon::SATURDAY) {
+                  $delivery_date->addDays(2); // Agregar un día para obtener la semana correcta
+              } else if ($delivery_date->dayOfWeek === Carbon::SUNDAY) {
+                  $delivery_date->addDay(); // Agregar un día para obtener la semana correcta
+              }
+          }
+
+      } while ($installationForDateCount >= $max_orders_per_day);
+
+      return $delivery_date->format('Y-m-d');
+  }
 }
 

@@ -63,6 +63,7 @@ export default function Index ({ auth, orders, statuses }: IndexOrderProps) {
             <tbody>
               {orders.data.map((order) => {
                 return (
+                  // console.log(order),
                   <tr
                     key={order.id}
                     className="hover:bg-gray-100 focus-within:bg-gray-100"
@@ -75,7 +76,7 @@ export default function Index ({ auth, orders, statuses }: IndexOrderProps) {
                       <div>{order.service}</div>
                     </td>
                     <td className="border-t px-6 py-4 align-top">
-                      {order.job_address}
+                    {`${order.job_address ?? ''}${order.city ? `, ${order.city}` : ''}${order.job_state ? `, ${order.job_state}` : ''}${order.job_zip ? `, ${order.job_zip}` : ''}`}
                     </td>
                     <td className="border-t px-6 py-4 align-top">
                       {order?.client?.name}

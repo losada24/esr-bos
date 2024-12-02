@@ -7,7 +7,12 @@
     <p><span style="font-weight: bold;">Client Name:</span> {{ $order->client->name }}</p>
     <p><span style="font-weight: bold;">Order Number:</span> {{ $order->order_number }}</p>
     <p><span style="font-weight: bold;">Order Name:</span> {{ $order->name }}</p>
-    <p><span style="font-weight: bold;">Job Address:</span> {{ $order->job_address}}</p>
+    <p><span style="font-weight: bold;">Job Address:</span> {{ 
+                        ($order->job_address ?? '') .
+                        (!empty($order->city) ? ', ' . $order->city : '') .
+                        (!empty($order->job_state) ? ', ' . $order->job_state : '') .
+                        (!empty($order->job_zip) ? ', ' . $order->job_zip : '') 
+                    }}</p>
     <p><span style="font-weight: bold;">Windows:</span> {{ $order->orderProducts->where('type_of_product_id', 2)->sum('qty')}}</p>
     <p><span style="font-weight: bold;">Door:</span> {{ $order->orderProducts->where('type_of_product_id', 1)->sum('qty')}}</p>
     <p><span style="font-weight: bold;">Sliding Door:</span> {{ $order->orderProducts->where('product_category_id', 2)->sum('qty')}}</p>

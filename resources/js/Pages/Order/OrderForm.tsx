@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useRef, useMemo } from 'react'
+import { useJsApiLoader, StandaloneSearchBox } from '@react-google-maps/api'
 import { Field, Form } from 'formik'
 import InputError from '@/Components/InputError'
 import PrimaryButton from '@/Components/PrimaryButton'
@@ -30,6 +31,8 @@ import ProductTable from './ProductTable'
 import DeleteIcon from '@/Components/Icons/DeleteIcon'
 import { PAYMENT_METHODS, SERVICES } from '@/Utils/constants'
 import { capitalizeWords } from '@/Utils/string'
+
+const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
 
 const OrderForm = ({
   submitCount,
@@ -81,6 +84,45 @@ const OrderForm = ({
   status: string[]
   type_of_financing: string[]
 }) => {
+  const inputRef = useRef<google.maps.places.SearchBox | null>(null)
+  const libraries: any[] = ['places']
+  const menoLibraries = useMemo(() => libraries, [])
+  const { isLoaded } = useJsApiLoader({
+    id: 'google-map-script',
+    googleMapsApiKey: GOOGLE_MAPS_API_KEY,
+    libraries: menoLibraries
+  })
+
+  const handleOnPlaceChanged = () => {
+    const searchBox = inputRef.current
+    if (searchBox) {
+      const places = searchBox.getPlaces()
+      if (places && places.length > 0) {
+        // Usamos setFieldValue para actualizar el valor del campo 'address'
+        // setFieldValue('job_address', places[0].formatted_address ?? '')
+        const place = places[0]
+        if (place.address_components) {
+          const addressComponents = place.address_components
+
+          // Función para obtener un componente por tipo
+          const getComponent = (type: string) =>
+            addressComponents.find((component) => component.types.includes(type))?.long_name ?? ''
+
+          // Extraemos cada parte de la dirección
+          const address = `${getComponent('street_number')} ${getComponent('route')}`.trim()
+          const city = getComponent('locality') // Ciudad
+          const state = getComponent('administrative_area_level_1') // Estado
+          const zip = getComponent('postal_code') // Código postal
+
+          // Actualizamos los campos en Formik
+          setFieldValue('job_address', address)
+          setFieldValue('city', city)
+          setFieldValue('job_state', state)
+          setFieldValue('job_zip', zip)
+        }
+      }
+    }
+  }
   const [orderProducts, setOrderProducts] = useState<OrderProduct[]>(
     values.order_products?.map((orderProduct) => {
       return getOrderProducts(orderProduct)
@@ -283,7 +325,7 @@ const OrderForm = ({
               />
               {(submitCount && errors.order_number) ? <InputError message={errors.order_number} className="mt-2" /> : ''}
             </div>
-            <div className={submitCount ? (errors.job_address) ? 'has-error' : 'has-success' : ''}>
+          { /* <div className={submitCount ? (errors.job_address) ? 'has-error' : 'has-success' : ''}>
               <label htmlFor="job_address">Job Address</label>
               <Field
                 id="job_address"
@@ -297,7 +339,63 @@ const OrderForm = ({
                 }}
               />
               {(submitCount && errors.job_address) ? <InputError message={errors.job_address} className="mt-2" /> : ''}
+            </div> */}
+              <div className={submitCount ? (errors.job_address ? 'has-error' : 'has-success') : ''}>
+              <label htmlFor="address"> Job Address</label>
+              {/* Aquí se configura el componente StandaloneSearchBox para autocompletar direcciones */}
+              {isLoaded && (
+                <StandaloneSearchBox
+                  onLoad={(ref) => {
+                    inputRef.current = ref // Asignamos la referencia al componente SearchBox
+                  }}
+                  onPlacesChanged={handleOnPlaceChanged} // Cuando cambie el lugar, ejecutamos la función para actualizar los campos
+                >
+                  <Field
+                    id="job_address"
+                    name="job_address"
+                    className="form-textarea resize-none placeholder:text-white-dark"
+                    autoComplete="off"
+                    placeholder="Address"
+                  />
+                </StandaloneSearchBox>
+              )}
+              {(submitCount && errors.job_address) ? <InputError message={errors.job_address} className="mt-2" /> : ''}
             </div>
+
+            <div className={submitCount ? (errors.city ? 'has-error' : 'has-success') : ''}>
+              <label htmlFor="city">City</label>
+              <Field
+                id="city"
+                name="city"
+                className="form-input placeholder:text-white-dark"
+                autoComplete="off"
+                placeholder="City"
+              />
+               {(submitCount && errors.city) ? <InputError message={errors.city} className="mt-2" /> : ''}
+            </div>
+              <div className={submitCount ? (errors.job_state ? 'has-error' : 'has-success') : ''}>
+              <label htmlFor="state">State</label>
+              <Field
+                id="job_state"
+                name="job_state"
+                className="form-input placeholder:text-white-dark"
+                autoComplete="off"
+                placeholder="State"
+              />
+             {(submitCount && errors.job_state) ? <InputError message={errors.job_state} className="mt-2" /> : ''}
+            </div>
+            <div className={submitCount ? (errors.job_zip ? 'has-error' : 'has-success') : ''}>
+              <label htmlFor="zip">ZIP Code</label>
+              <Field
+                id="job_zip"
+                name="job_zip"
+                className="form-input placeholder:text-white-dark"
+                autoComplete="off"
+                placeholder="ZIP Code"
+              />
+              {submitCount && errors.job_zip && <InputError message={errors.job_zip} className="mt-2" />}
+            </div>
+
             <div className={submitCount ? (errors.owners) ? 'has-error' : 'has-success' : ''}>
               <label htmlFor="owners">Owner</label>
               <Select
@@ -325,7 +423,6 @@ const OrderForm = ({
                 onChange={(e: { target: { value: string } }) => {
                   setFieldValue('service', e.target.value)
                   setFieldValue('city_permits', false)
-                  setFieldValue('city', '')
                   setFieldValue('cost_city_fee', 0)
                   setFieldValue('association_permits', false)
                   setFieldValue('equipment_rental', false)
@@ -710,8 +807,7 @@ const OrderForm = ({
                     onChange={(e: any) => {
                       setFieldValue('city_permits', e.target.checked)
                       setFieldValue('cost_city_fee', 0)
-                      setFieldValue('city', '')
-                      const payment_factory_date = values.payment_factory_date?.toISOString().slice(0, 10) ?? ''
+                      const payment_factory_date = typeof values.payment_factory_date === 'string' ? values.payment_factory_date : values.payment_factory_date?.toISOString().slice(0, 10) ?? ''
                       selectDeliveryAndInstallationDate(payment_factory_date)
                     }}
                   />
@@ -732,21 +828,6 @@ const OrderForm = ({
                     type='number'
                   />
                   {(submitCount && errors.cost_city_fee) ? <InputError message={errors.cost_city_fee} className="mt-2" /> : ''}
-                </div>
-                <div className={submitCount ? (errors.city) ? 'has-error' : 'has-success' : ''}>
-                  <label htmlFor="city">City</label>
-                  <Field
-                    id="city"
-                    name="city"
-                    className="form-input"
-                    autoComplete="city"
-                    placeholder='City'
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                      const formattedValue = capitalizeWords(e.target.value)
-                      setFieldValue('city', formattedValue)
-                    }}
-                  />
-                  {(submitCount && errors.city) ? <InputError message={errors.city} className="mt-2" /> : ''}
                 </div>
               </>
             )}
