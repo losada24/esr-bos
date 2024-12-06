@@ -69,6 +69,7 @@ trait OrderEmails {
           Mail::to($user)->send(new InstallationDateConfirmationClient($order, true));
         }
         $users = [];
+        //dd($order->supervisor->email);
         $users[] = $order->supervisor->email;
         $users[] = 'alina@reylosglass.com';
         $serviceManager = User::role([RoleEnum::SERVICE_MANAGER->value])->get();
@@ -96,7 +97,6 @@ trait OrderEmails {
         foreach ($users as $user) {
           Mail::to($user)->send(new DeliveryConfirmed($order));
         }
-        
       }
     }
   }

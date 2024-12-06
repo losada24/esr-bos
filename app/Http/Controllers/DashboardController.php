@@ -3,9 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Enum\OrderStatusEnum;
+use App\Enum\RoleEnum;
 use App\Enum\ServiceEnum;
 use App\Enum\StatusColorEnum;
+use App\Models\InstallationTeam;
 use App\Models\Order;
+use App\Models\User;
 use App\Traits\OrderStatus;
 use App\Traits\Twilio;
 use Illuminate\Http\Request;
@@ -63,7 +66,9 @@ class DashboardController extends Controller
             'color' => StatusColorEnum::DELAY_PERMITS->value,
             'label' => 'DELAYED PERMIT'
           ],
-        ]
+        ],
+        'installation_teams' => InstallationTeam::with(['user', 'typeHousing'])->get(),
+        'supervisors' => User::role(RoleEnum::SUPERVISOR->value)->get(),
       ]);
     }
   
@@ -232,7 +237,7 @@ class DashboardController extends Controller
       
     }*/
     }}
-    
+   
     return response()
       ->json($events);
   }

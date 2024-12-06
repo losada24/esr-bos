@@ -260,6 +260,15 @@ class OrderController extends Controller
           ->with('success', 'Order updated successfully.');
     }
 
+    public function updateFromModal(Request $request, UpdateOrder $updateOrder, Order $order)
+    {
+        
+        $updateOrder->partialUpdate($request, $order);
+  
+        return redirect()->route('dashboard')
+          ->with('success', 'Order updated successfully.');
+    }
+
     /**
      * Remove the specified resource from storage.
      *
