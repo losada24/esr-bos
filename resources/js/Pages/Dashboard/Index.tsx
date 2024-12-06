@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Head } from '@inertiajs/react'
-import { type Role, type PageProps } from '@/types'
+import { type Role, type PageProps, type InstallationTeam, type User } from '@/types'
 import '@mobiscroll/react/dist/css/mobiscroll.min.css'
 import { Eventcalendar, getJson, setOptions } from '@mobiscroll/react'
 import AuthenticatedCalendarLayout from '@/Layouts/AuthenticatedCalendarLayout'
@@ -22,7 +22,7 @@ interface CalendarFilter {
   clientName: string
 }
 
-export default function Dashboard ({ auth, services, status, legend }: PageProps & { services: string[], status: string[], legend: Legend[] }) {
+export default function Dashboard ({ auth, services, status, legend, installation_teams, supervisors }: PageProps & { services: string[], status: string[], legend: Legend[], installation_teams: InstallationTeam[], supervisors: User[] }) {
   const IS_ADMIN = isAdmin(auth.user.roles.map((role: Role) => role.name))
   const IS_ACCOUNT_MANAGER = isAccountManager(auth.user.roles.map((role: Role) => role.name))
   const [myEvents, setEvents] = useState([])
@@ -92,7 +92,6 @@ export default function Dashboard ({ auth, services, status, legend }: PageProps
   useEffect(() => {
     loadEvents(currentDate)
   }, [currentDate, calendarFilter])
-
 
   return (
     <AuthenticatedCalendarLayout
@@ -189,9 +188,15 @@ export default function Dashboard ({ auth, services, status, legend }: PageProps
       </div>
       <EventModal
         showModal={isModalOpen}
-        onClose={setModalOpen}
+        onClose={() => {
+          setModalOpen(false)
+          loadEvents(currentDate)
+        }}
         isAdminOrAccountManager={IS_ADMIN || IS_ACCOUNT_MANAGER}
         id={eventId}
+        installation_teams ={installation_teams}
+        supervisors={supervisors}
+        status = {status}
       />
     </AuthenticatedCalendarLayout>
   )

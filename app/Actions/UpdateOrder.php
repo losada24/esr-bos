@@ -145,4 +145,28 @@ class UpdateOrder {
 
     });
   }
+
+  public function partialUpdate(Request $request, Order $order) {
+    $statusOrder = $order->status;
+    
+    $order->update($request->except('installation_teams'));
+    $order->installationTeams()->sync($request->installation_teams);
+    //dd($statusOrder);
+    
+    $sendEmail = $request->status != $statusOrder;
+      //dd($request->status);
+      //dd($order->status);
+      //dd( $request->status .' '. $order->status);
+
+    if ($sendEmail) {
+      
+      $order->orderStatus()->create([
+        'status' => $request->status,
+        'user_id' => auth()->user()->id,
+        'notes' => $request->status." created by " . auth()->user()->name
+      ]);
+     
+      $this->sendEmail($order);
+    }
+  }
 }
