@@ -9,6 +9,7 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\InstallationTeamController;
+use App\Http\Controllers\ReportController;
 use Barryvdh\DomPDF\Facade\Pdf;
 use SebastianBergmann\CodeCoverage\Report\Html\Dashboard;
 use App\Traits\TwilioWhatsAppMessage;
@@ -128,6 +129,18 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard/whatsapp', [DashboardController::class, 'whatsapp'])
       ->middleware(['role:admin'])
       ->name('dashboard.whatsapp');
+
+      Route::get('/report/supervisor', [ReportController::class, 'supervisor'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::SUPERVISOR->value] )
+      ->name('report.supervisor');
+
+      Route::get('/report/show_supervisor/{id}', [ReportController::class, 'showSupervisor'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::SUPERVISOR->value] )
+      ->name('report.show_supervisor');
+
+      Route::get('/report/excel-supervisor/{user}', [ReportController::class, 'export'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::SUPERVISOR->value] )
+      ->name('report.excel-supervisor');
   /*
     // ORDERS
    Route::get('/order', [OrderController::class, 'index'])

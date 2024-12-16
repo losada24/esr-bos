@@ -2,10 +2,13 @@
 namespace App\Actions;
 
 use App\Enum\OrderStatusEnum;
+use App\Enum\PlaningDateSupervisorEnum;
 use App\Models\Client;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Enum\RoleEnum;
+use App\Enum\ServiceEnum;
+use App\Enum\SupervisorPaymentStatusEnum;
 use App\Models\Order;
 use App\Models\OrderProduct;
 use App\Traits\OrderEmails;
@@ -18,6 +21,8 @@ class CreateOrder {
   use OrderEmails, OrderStatus;
 
   public function handle(Request $request) {
+    
+    define('SUPERVISOR_PAYMENT_PERCENTAGE', 0.3);
     
     DB::transaction(function() use ($request) {
 
@@ -37,6 +42,28 @@ class CreateOrder {
       } else {
         $client = Client::find($request->client_id);
       }
+    if ($request->service == ServiceEnum::INSTALLATION->value || $request->service == ServiceEnum::INSTALLATION_ONLY->value) {
+  
+            if($request->type_of_housing_id == 3){
+              $execution_planing_date = PlaningDateSupervisorEnum::COMMERCIAL_PROJECTS->value;
+            }
+            else if($request->city_permits == 1){
+              $execution_planing_date = PlaningDateSupervisorEnum::PROJECTS_WITH_PERMISSIONS->value;
+            }
+            else{
+              $execution_planing_date = PlaningDateSupervisorEnum::PROJECTS_WITHOUT_PERMISSIONS->value;
+            }
+            
+            $supervisor_payment_percentage = SUPERVISOR_PAYMENT_PERCENTAGE;
+        
+            $supervisor_commissions = $request->project_amount * $supervisor_payment_percentage / 100;
+            $supervisor_payment_status = SupervisorPaymentStatusEnum::OPEN->value;
+    } else {
+      $execution_planing_date = 0;
+      $supervisor_payment_percentage = 0.00;
+      $supervisor_commissions = 0.00;
+      $supervisor_payment_status = null;
+     }
 
       $status = $request->status;
       $order = Order::create([
@@ -76,7 +103,13 @@ class CreateOrder {
         'project_amount'=> $request->project_amount,
         'initial_payment_percentage' => $request->initial_payment_percentage,
         'payment_definition' => $request->payment_definition,
+        'execution_planing_date'=> $execution_planing_date,
+        'supervisor_payment_percentage'=> $supervisor_payment_percentage,
+        'supervisor_commissions'=> $supervisor_commissions,
+        'supervisor_payment_status' => $supervisor_payment_status,
       ]);
+
+      // dd($order);
 
       if ($request->hasFile('attachments')) {
         $files = $request->file('attachments');

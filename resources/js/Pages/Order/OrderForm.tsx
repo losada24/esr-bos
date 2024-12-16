@@ -109,7 +109,7 @@ const OrderForm = ({
             addressComponents.find((component) => component.types.includes(type))?.long_name ?? ''
 
           // Extraemos cada parte de la dirección
-          const address = `${getComponent('street_number')} ${getComponent('route')}`.trim()
+          const address = `${getComponent('street_number')} ${getComponent('route')}, ${getComponent('subpremise')}`.trim()
           const city = getComponent('locality') // Ciudad
           const state = getComponent('administrative_area_level_1') // Estado
           const zip = getComponent('postal_code') // Código postal
@@ -153,11 +153,12 @@ const OrderForm = ({
     setFieldValue('orderProducts', orderProductsList)
   }
 
-  const selectDeliveryAndInstallationDate = async (payment_factory_date: string) => {
+  const selectDeliveryAndInstallationDate = async (payment_factory_date: string, cityPermits: boolean) => {
     const travel_cost_id = 'value' in ((values.travel_cost_id) as any) ? (values.travel_cost_id as any).value : 0
     const response = await fetch(
-      `/order/get_delivery_and_installation_date/${payment_factory_date}/${values.type_of_housing_id}/${travel_cost_id}/${values.service}/${values.city_permits}`)
+      `/order/get_delivery_and_installation_date/${payment_factory_date}/${values.type_of_housing_id}/${travel_cost_id}/${values.service}/${cityPermits}`)
     const data = await response.json()
+    console.log(response)
 
     setFieldValue('eta_date', data.estimate_eta_date)
     setFieldValue('delivery_date', data.estimate_delivery_date)
@@ -609,7 +610,7 @@ const OrderForm = ({
                 onChange={([date]) => {
                   const payment_factory_date = date.toISOString().slice(0, 10)
                   if (values.service === SERVICES.DELIVERY_AND_INSTALLATION) {
-                    selectDeliveryAndInstallationDate(payment_factory_date)
+                    selectDeliveryAndInstallationDate(payment_factory_date, values.city_permits)
                   } else {
                     selectDeliveryAndPickupDate(payment_factory_date)
                   }
@@ -705,6 +706,94 @@ const OrderForm = ({
                 </div>
               </>
             )}
+             {(values.service === SERVICES.DELIVERY_AND_INSTALLATION) && (
+            <>
+            <div className={submitCount ? (errors.city_permits) ? 'has-error inline-flex flex-col' : 'has-success inline-flex' : 'inline-flex items-end'}>
+                <div className='flex'>
+                <Field
+                      id="city_permits"
+                      name="city_permits"
+                      className="form-checkbox"
+                      type="checkbox"
+                      onChange={async (e: React.ChangeEvent<HTMLInputElement>) => {
+                        const isChecked = e.target.checked
+                        console.log('Checkbox changed to:', isChecked)
+                        setFieldValue('city_permits', isChecked)
+                        setFieldValue('cost_city_fee', 0)
+
+                        // Obtener el valor de `payment_factory_date`
+                        const paymentFactoryDate =
+                          typeof values.payment_factory_date === 'string'
+                            ? values.payment_factory_date
+                            : values.payment_factory_date?.toISOString().slice(0, 10) ?? ''
+
+                        // Pasar el valor actualizado directamente a la función
+                        await selectDeliveryAndInstallationDate(paymentFactoryDate, isChecked)
+                      }}
+                    />
+                 { /* <Field
+                    id="city_permits"
+                    name="city_permits"
+                    className="form-checkbox"
+                    type='checkbox'
+                    onChange={(e: any) => {
+                      setFieldValue('city_permits', e.target.checked)
+                      setFieldValue('cost_city_fee', 0)
+                      const payment_factory_date = typeof values.payment_factory_date === 'string' ? values.payment_factory_date : values.payment_factory_date?.toISOString().slice(0, 10) ?? ''
+                      selectDeliveryAndInstallationDate(payment_factory_date)
+                    }}
+                  /> */ }
+                  <label htmlFor="city_permits">City Permits</label>
+                </div>
+                {(submitCount && errors.city_permits) ? <div className='block'><InputError message={errors.city_permits} className="mt-2" /></div> : ''}
+            </div>
+            {(values.city_permits) && (
+              <>
+                <div className={submitCount ? (errors.cost_city_fee) ? 'has-error' : 'has-success' : ''}>
+                  <label htmlFor="cost_city_fee">City Fee Cost</label>
+                  <Field
+                    id="cost_city_fee"
+                    name="cost_city_fee"
+                    className="form-input text-right"
+                    autoComplete="cost_city_fee"
+                    placeholder='City Fee Cost'
+                    type='number'
+                  />
+                  {(submitCount && errors.cost_city_fee) ? <InputError message={errors.cost_city_fee} className="mt-2" /> : ''}
+                </div>
+              </>
+            )}
+            <div className={submitCount ? (errors.association_permits) ? 'has-error inline-flex flex-col' : 'has-success inline-flex' : 'inline-flex items-end'}>
+                <div className='flex'>
+                  <Field
+                    id="association_permits"
+                    name="association_permits"
+                    className="form-checkbox"
+                    type='checkbox'
+                    onChange={(e: any) => {
+                      setFieldValue('association_permits', e.target.checked)
+                    }}
+                  />
+                  <label htmlFor="association_permits">Association Permits</label>
+                </div>
+                {(submitCount && errors.association_permits) ? <div className='block'><InputError message={errors.association_permits} className="mt-2" /></div> : ''}
+            </div>
+            <div className={submitCount ? (errors.equipment_rental) ? 'has-error inline-flex flex-col' : 'has-success inline-flex' : 'inline-flex items-end'}>
+                <div className='flex'>
+                  <Field
+                    id="equipment_rental"
+                    name="equipment_rental"
+                    className="form-checkbox"
+                    type='checkbox'
+                    onChange={(e: any) => {
+                      setFieldValue('equipment_rental', e.target.checked)
+                    }}
+                  />
+                  <label htmlFor="equipment_rental">Equipment Rental</label>
+                </div>
+                {(submitCount && errors.equipment_rental) ? <div className='block'><InputError message={errors.equipment_rental} className="mt-2" /></div> : ''}
+            </div>
+            </>)}
             <div className={submitCount ? (errors.method_of_payment) ? 'has-error' : 'has-success' : ''}>
               <label htmlFor="method_of_payment">Project Payment Method</label>
               <Field
@@ -795,74 +884,7 @@ const OrderForm = ({
                 </div>
               </>
             )}
-           {(values.service === SERVICES.DELIVERY_AND_INSTALLATION) && (
-            <>
-            <div className={submitCount ? (errors.city_permits) ? 'has-error inline-flex flex-col' : 'has-success inline-flex' : 'inline-flex items-end'}>
-                <div className='flex'>
-                  <Field
-                    id="city_permits"
-                    name="city_permits"
-                    className="form-checkbox"
-                    type='checkbox'
-                    onChange={(e: any) => {
-                      setFieldValue('city_permits', e.target.checked)
-                      setFieldValue('cost_city_fee', 0)
-                      const payment_factory_date = typeof values.payment_factory_date === 'string' ? values.payment_factory_date : values.payment_factory_date?.toISOString().slice(0, 10) ?? ''
-                      selectDeliveryAndInstallationDate(payment_factory_date)
-                    }}
-                  />
-                  <label htmlFor="city_permits">City Permits</label>
-                </div>
-                {(submitCount && errors.city_permits) ? <div className='block'><InputError message={errors.city_permits} className="mt-2" /></div> : ''}
-            </div>
-            {(values.city_permits) && (
-              <>
-                <div className={submitCount ? (errors.cost_city_fee) ? 'has-error' : 'has-success' : ''}>
-                  <label htmlFor="cost_city_fee">City Fee Cost</label>
-                  <Field
-                    id="cost_city_fee"
-                    name="cost_city_fee"
-                    className="form-input text-right"
-                    autoComplete="cost_city_fee"
-                    placeholder='City Fee Cost'
-                    type='number'
-                  />
-                  {(submitCount && errors.cost_city_fee) ? <InputError message={errors.cost_city_fee} className="mt-2" /> : ''}
-                </div>
-              </>
-            )}
-            <div className={submitCount ? (errors.association_permits) ? 'has-error inline-flex flex-col' : 'has-success inline-flex' : 'inline-flex items-end'}>
-                <div className='flex'>
-                  <Field
-                    id="association_permits"
-                    name="association_permits"
-                    className="form-checkbox"
-                    type='checkbox'
-                    onChange={(e: any) => {
-                      setFieldValue('association_permits', e.target.checked)
-                    }}
-                  />
-                  <label htmlFor="association_permits">Association Permits</label>
-                </div>
-                {(submitCount && errors.association_permits) ? <div className='block'><InputError message={errors.association_permits} className="mt-2" /></div> : ''}
-            </div>
-            <div className={submitCount ? (errors.equipment_rental) ? 'has-error inline-flex flex-col' : 'has-success inline-flex' : 'inline-flex items-end'}>
-                <div className='flex'>
-                  <Field
-                    id="equipment_rental"
-                    name="equipment_rental"
-                    className="form-checkbox"
-                    type='checkbox'
-                    onChange={(e: any) => {
-                      setFieldValue('equipment_rental', e.target.checked)
-                    }}
-                  />
-                  <label htmlFor="equipment_rental">Equipment Rental</label>
-                </div>
-                {(submitCount && errors.equipment_rental) ? <div className='block'><InputError message={errors.equipment_rental} className="mt-2" /></div> : ''}
-            </div>
-            </>
-           )}
+          
             <div className={submitCount ? (errors.installation_teams) ? 'has-error' : 'has-success' : ''}>
               <label htmlFor="status">Status</label>
               <Select

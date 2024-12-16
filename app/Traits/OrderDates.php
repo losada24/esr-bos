@@ -68,7 +68,9 @@ trait OrderDates {
     if ($service === ServiceEnum::INSTALLATION->value) {
       $installation_date_object = Carbon::parse($delivery_date)->addDay();
       $booleanValue = filter_var($hasPermit, FILTER_VALIDATE_BOOLEAN);
+
       if ($booleanValue) {
+
         $estimate_installation_date = $this->calculateInstallationDateFromDelivery($installation_date_object);
       }
       else {

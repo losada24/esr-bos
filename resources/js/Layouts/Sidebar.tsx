@@ -10,6 +10,7 @@ import CompanyIcon from '@/Components/Icons/CompanyIcon'
 import { isAdmin, isAccountManager, isFrontdesk, isOwner } from '@/Utils/user'
 import { type Role, type Auth } from '@/types'
 import WindowsIcon from '@/Components/Icons/WindowsIcon'
+import ProfileIcon from '@/Components/Icons/ProfileIcon'
 
 const Sidebar = ({ auth }: { auth: Auth }) => {
   const [themeState, toggleSidebar] = useStore((state: ThemeState) => [
@@ -125,6 +126,37 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                 </li>
                               </>
                             )}
+
+<h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">
+                                <svg className="w-4 h-5 flex-none hidden" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                </svg>
+                                <span>Reports</span>
+                            </h2>
+                            {(IS_ADMIN || IS_ACCOUNT_MANAGER) && (
+                              <>
+                                <li className="menu nav-item">
+                                    <NavLink href={route('report.supervisor')} active={route().current('report.supervisor')} className="group">
+                                        <div className="flex items-center">
+                                            <ReferralIcon/>
+                                            <SidebarLinkLabel>Supervisors</SidebarLinkLabel>
+                                        </div>
+                                    </NavLink>
+                                </li>
+                              </>
+                            )}
+                             {/* (IS_ADMIN || IS_FRONTDESK || IS_ACCOUNT_MANAGER || IS_OWNER) && (
+                              <>
+                                <li className="menu nav-item">
+                                    <NavLink href={route('client.index')} active={route().current('client.index')} className="group">
+                                        <div className="flex items-center">
+                                            <WindowsIcon />
+                                            <SidebarLinkLabel>Installers</SidebarLinkLabel>
+                                        </div>
+                                    </NavLink>
+                                </li>
+                              </>
+                            ) */}
                         </ul>
                     </PerfectScrollbar>
                 </div>

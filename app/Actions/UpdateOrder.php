@@ -1,6 +1,9 @@
 <?php
 namespace App\Actions;
 
+use App\Enum\OrderStatusEnum;
+use App\Enum\ServiceEnum;
+use App\Enum\SupervisorPaymentStatusEnum;
 use App\Models\Client;
 use App\Models\Order;
 use App\Models\OrderProduct;
@@ -34,6 +37,23 @@ class UpdateOrder {
       } else {
         $client = Client::find($request->client_id);
       }
+      if ($order->service == ServiceEnum::INSTALLATION->value || $order->service == ServiceEnum::INSTALLATION_ONLY->value) {
+      $execution_planing_date = $order->execution_planing_date;
+      $supervisor_payment_percentage = $order->supervisor_payment_percentage;
+      $percentageDecimal = floatval($supervisor_payment_percentage)/100;
+      $supervisor_commissions = $request->project_amount * $percentageDecimal;
+      if($request->status == OrderStatusEnum::COMPLETE->value){
+        $supervisor_payment_status = SupervisorPaymentStatusEnum::PENDING->value;
+      } else {
+        $supervisor_payment_status = $order->supervisor_payment_status;
+      }
+    }
+    else {
+      $execution_planing_date = 0;
+      $supervisor_payment_percentage = 0.00;
+      $supervisor_commissions = 0.00;
+      $supervisor_payment_status = null;
+     }
 
       $status = $request->status;
       $sendEmail = $status != $order->status;
@@ -75,8 +95,12 @@ class UpdateOrder {
         'job_zip' => $request->job_zip,
         'initial_payment_percentage' => $request->initial_payment_percentage,
         'payment_definition' => $request->payment_definition,
+        'execution_planing_date'=> $execution_planing_date,
+        'supervisor_payment_percentage'=> $supervisor_payment_percentage,
+        'supervisor_commissions'=> $supervisor_commissions,
+        'supervisor_payment_status' => $supervisor_payment_status,
       ];
-
+    //dd($orderData);
       $order->update($orderData);
       if ($request->hasFile('attachments')) {
         $files = $request->file('attachments');

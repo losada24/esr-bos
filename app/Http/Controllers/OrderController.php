@@ -58,7 +58,8 @@ class OrderController extends Controller
             OrderStatusEnum::INSPECTION->value,
             OrderStatusEnum::FINISH->value,
             OrderStatusEnum::FINAL_INSPECTION->value,
-            OrderStatusEnum::FINAL_COLLECT->value
+            OrderStatusEnum::COMPLETE->value,
+            OrderStatusEnum::ON_HOLD->value
           ]
         ]);
     }
@@ -126,7 +127,8 @@ class OrderController extends Controller
           'product_costs' => ProductCost::all(),
           'status' => [
             OrderStatusEnum::PLANNED->value,
-            OrderStatusEnum::CONFIRMED->value
+            OrderStatusEnum::CONFIRMED->value,
+            OrderStatusEnum::DELIVERY_CONFIRMED->value,
           ]
         ]);
     }
@@ -177,19 +179,20 @@ class OrderController extends Controller
         $status = [
           OrderStatusEnum::PLANNED->value,
           OrderStatusEnum::CONFIRMED->value,
-          OrderStatusEnum::FINAL_COLLECT->value
+          OrderStatusEnum::ON_HOLD->value,
+          OrderStatusEnum::COMPLETE->value,
         ];
 
         if ($order->service === ServiceEnum::INSTALLATION->value) {
           $status = [
             OrderStatusEnum::PLANNED->value,
             OrderStatusEnum::CONFIRMED->value,
-            OrderStatusEnum::EXECUTION->value,
+            //OrderStatusEnum::EXECUTION->value,
             OrderStatusEnum::SUPERVISION->value,
             OrderStatusEnum::INSPECTION->value,
             OrderStatusEnum::FINISH->value,
             OrderStatusEnum::FINAL_INSPECTION->value,
-            OrderStatusEnum::FINAL_COLLECT->value,
+            OrderStatusEnum::COMPLETE->value,
             OrderStatusEnum::ON_HOLD->value
           ];
         }

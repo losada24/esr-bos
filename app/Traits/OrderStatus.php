@@ -53,6 +53,12 @@ trait OrderStatus {
       case OrderStatusEnum::DELIVERY_CONFIRMED->value:
         $color = StatusColorEnum::CONFIRMED->value;
         break;
+        case OrderStatusEnum::COMPLETE->value:
+          $color = StatusColorEnum::COMPLETE->value;
+          break;
+          case OrderStatusEnum::ON_HOLD->value:
+            $color = StatusColorEnum::ON_HOLD->value;
+            break;
     }
 
     return $color;

@@ -36,6 +36,7 @@ class DashboardController extends Controller
           OrderStatusEnum::PLANNED->value,
           OrderStatusEnum::CONFIRMED->value,
           OrderStatusEnum::DELIVERY_CONFIRMED->value,
+          OrderStatusEnum::COMPLETE->value,
         ],
         'legend' => [
           [
@@ -65,6 +66,14 @@ class DashboardController extends Controller
           [
             'color' => StatusColorEnum::DELAY_PERMITS->value,
             'label' => 'DELAYED PERMIT'
+          ],
+          [
+            'color' => StatusColorEnum::COMPLETE->value,
+            'label' => 'COMPLETE'
+          ],
+          [
+            'color' => StatusColorEnum::ON_HOLD->value,
+            'label' => 'ON HOLD'
           ],
         ],
         'installation_teams' => InstallationTeam::with(['user', 'typeHousing'])->get(),
