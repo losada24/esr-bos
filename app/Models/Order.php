@@ -56,7 +56,13 @@ class Order extends Model
         'initial_payment_percentage',
         'work_team_notes',
         'job_state',
-        'job_zip'
+        'job_zip',
+        'supervisor_payment_status',
+        'execution_planing_date',
+        'supervisor_commissions',
+        'supervisor_payment_percentage',
+
+
 
     ];
 
@@ -68,7 +74,8 @@ class Order extends Model
         'delivery_date',
         'installation_date',
         'eta_date',
-        'installation_end_date'
+        'installation_end_date',
+        'supervisor_payment_date',
     ];
 
     protected function casts(): array

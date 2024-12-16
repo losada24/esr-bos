@@ -5,8 +5,10 @@ namespace App\Http\Requests;
 use App\Enum\FrameColorEnum;
 use App\Enum\MethodOfPayment;
 use App\Enum\OrderStatusEnum;
+use App\Enum\PlaningDateSupervisorEnum;
 use Illuminate\Foundation\Http\FormRequest;
 use App\Enum\ServiceEnum;
+use App\Enum\SupervisorPaymentStatusEnum;
 use App\Enum\TypeOfFinancing;
 use App\Rules\ValidateOrderStatus;
 use Illuminate\Validation\Rule;
@@ -133,6 +135,25 @@ class StoreOrderRequest extends FormRequest
               ),
               new ValidateOrderStatus
             ],
+            'supervisor_payment_status' => [
+              'nullable',
+              'string',
+              Rule::in(
+                SupervisorPaymentStatusEnum::OPEN->value,
+                SupervisorPaymentStatusEnum::PENDING->value,
+                SupervisorPaymentStatusEnum::NO_PAID->value,
+                SupervisorPaymentStatusEnum::CLOSED->value,
+              )
+            ],
+            'execution_planing_date' => [
+              'nullable',
+              'numeric',
+              Rule::in(
+                PlaningDateSupervisorEnum::PROJECTS_WITHOUT_PERMISSIONS->value,
+                PlaningDateSupervisorEnum::PROJECTS_WITH_PERMISSIONS->value,
+                PlaningDateSupervisorEnum::COMMERCIAL_PROJECTS->value,
+              )
+            ],
             'eta_date' => 'required|date_format:Y-m-d',
             'installation_end_date' => 'nullable|date_format:Y-m-d',
             'contract_signing_date' => 'required|date_format:Y-m-d',
@@ -148,6 +169,9 @@ class StoreOrderRequest extends FormRequest
             'equipment_rental' => 'boolean',
             'notes' => 'nullable|string|max:1000',
             'work_team_notes' => 'nullable|string|max:1000',
+            'supervisor_commissions' => 'nullable|numeric',
+            'supervisor_payment_percentage' => 'nullable|numeric',
+            'supervisor_payment_date' => 'nullable|date_format:Y-m-d',
             'attachments' => 'nullable|array',
             'attachments.*' => 'file|mimes:jpeg,png,jpg,pdf,docx,doc,xlsx|max:10240',
             'orderProducts' => 'required|array',

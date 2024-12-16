@@ -167,7 +167,7 @@ export interface InstallationTeam {
   attachments: Attachment[]
   orders?: Order[]
   company_name?: string
-  phone?: string 
+  phone?: string
   travel_costs?: TravelCost[]
 }
 

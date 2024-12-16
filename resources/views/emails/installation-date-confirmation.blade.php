@@ -4,8 +4,8 @@
     
     @if ($displaySummary)
     <p style="font-weight: bold;">Order summary</p>
-      <p><span style="font-weight: bold;">Delivery Date:</span> {{$order->delivery_date}}</p>
-      <p><span style="font-weight: bold;">Installation Date:</span> {{$order->installation_date}}</p>
+      <p><span style="font-weight: bold;">Delivery Date:</span> {{ \Carbon\Carbon::parse($order->delivery_date)->format('m-d-Y')}}</p>
+      <p><span style="font-weight: bold;">Installation Date:</span> {{ \Carbon\Carbon::parse($order->installation_date)->format('m-d-Y')}}</p>
       <p><span style="font-weight: bold;">Delivery Cost:</span> {{'$' . number_format($order->cost_delivery  , 2, '.', ',') }}</p>
       <p><span style="font-weight: bold;">City Fee Cost:</span> {{'$' . number_format($order->cost_city_fee , 2, '.', ',')}}</p>
       <p><span style="font-weight: bold;">Order Number:</span> {{ $order->order_number }}</p>
