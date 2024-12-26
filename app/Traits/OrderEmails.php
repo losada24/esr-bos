@@ -55,7 +55,7 @@ trait OrderEmails {
       foreach ($users as $user) {
         Mail::to($user)->send(new DeliveryConfirmed($order));
       }
-    } else if ($order->status === OrderStatusEnum::CONFIRMED->value) {
+    } else if ($order->status === OrderStatusEnum::CONFIRMED->value || $order->status === OrderStatusEnum::RESCHEDULE->value) {
       
 
       $users = [];

@@ -102,6 +102,7 @@ class UpdateOrder {
       ];
     //dd($orderData);
       $order->update($orderData);
+      //dd($order);
       if ($request->hasFile('attachments')) {
         $files = $request->file('attachments');
         foreach ($files as $file) {
@@ -114,9 +115,10 @@ class UpdateOrder {
           ]);
         }
       }
-
+     
       $order->installationTeams()->sync($request->installation_teams);
       $order->owners()->sync($request->owners);
+    
 
       $order->orderProducts()->delete();
       foreach ($request->orderProducts as $product) {
@@ -157,7 +159,9 @@ class UpdateOrder {
         $order->orderStatus()->create([
           'status' => $status,
           'user_id' => auth()->user()->id,
-          'notes' => "$status created by " . auth()->user()->name
+          'notes' => "$status created by " . auth()->user()->name,
+          'start_date' => $request->installation_date,
+          'end_date' => $request->installation_end_date,
         ]);
         $this->sendEmail($order);
       }
@@ -173,9 +177,15 @@ class UpdateOrder {
   public function partialUpdate(Request $request, Order $order) {
     $statusOrder = $order->status;
     
-    $order->update($request->except('installation_teams'));
+    $order->update($request->except('installation_teams', 'supervisor_payment_status'));
+    if($request->status == OrderStatusEnum::COMPLETE->value){
+      $supervisor_payment_status = SupervisorPaymentStatusEnum::PENDING->value;
+    } else {
+      $supervisor_payment_status = $order->supervisor_payment_status;
+    }
     $order->installationTeams()->sync($request->installation_teams);
-    //dd($statusOrder);
+    $order->update(['supervisor_payment_status' => $supervisor_payment_status]);
+   // dd($statusOrder);
     
     $sendEmail = $request->status != $statusOrder;
       //dd($request->status);
@@ -187,7 +197,9 @@ class UpdateOrder {
       $order->orderStatus()->create([
         'status' => $request->status,
         'user_id' => auth()->user()->id,
-        'notes' => $request->status." created by " . auth()->user()->name
+        'notes' => $request->status." created by " . auth()->user()->name,
+        'start_date' => $request->installation_date,
+        'end_date' => $request->installation_end_date,
       ]);
      
       $this->sendEmail($order);

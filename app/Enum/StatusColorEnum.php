@@ -13,5 +13,6 @@ enum StatusColorEnum: string
     case DELAY_PERMITS = '#AC0505';
     case COMPLETE = '#72cb10';
     case ON_HOLD = '#D3D3D3';
+    case RESCHEDULE = '#cb4c08';
     
 }

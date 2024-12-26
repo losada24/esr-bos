@@ -7,7 +7,7 @@ import ReferralIcon from '@/Components/Icons/ReferralIcon'
 import SidebarLinkLabel from '@/Components/SidebarLinkLabel'
 import DashboardIcon from '@/Components/Icons/DashboardIcon'
 import CompanyIcon from '@/Components/Icons/CompanyIcon'
-import { isAdmin, isAccountManager, isFrontdesk, isOwner } from '@/Utils/user'
+import { isAdmin, isAccountManager, isFrontdesk, isOwner, isSupervisor } from '@/Utils/user'
 import { type Role, type Auth } from '@/types'
 import WindowsIcon from '@/Components/Icons/WindowsIcon'
 import ProfileIcon from '@/Components/Icons/ProfileIcon'
@@ -22,6 +22,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
   const IS_ACCOUNT_MANAGER = isAccountManager(auth.user.roles.map((role: Role) => role.name))
   const IS_FRONTDESK = isFrontdesk(auth.user.roles.map((role: Role) => role.name))
   const IS_OWNER = isOwner(auth.user.roles.map((role: Role) => role.name))
+  const IS_SUPERVISOR = isSupervisor(auth.user.roles.map((role: Role) => role.name))
 
   return (
         <div className={`${themeState.semidark ? 'dark' : ''}`}>
@@ -127,7 +128,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                               </>
                             )}
 
-<h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">
+                          <h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">
                                 <svg className="w-4 h-5 flex-none hidden" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
                                     <line x1="5" y1="12" x2="19" y2="12"></line>
                                 </svg>
@@ -140,6 +141,19 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                         <div className="flex items-center">
                                             <ReferralIcon/>
                                             <SidebarLinkLabel>Supervisors</SidebarLinkLabel>
+                                        </div>
+                                    </NavLink>
+                                </li>
+                              </>
+                            )}
+
+                            {(IS_SUPERVISOR) && (
+                              <>
+                                <li className="menu nav-item">
+                                    <NavLink href={route('report.show_supervisor', { id: auth.user.id })} active={route().current('report.show_supervisor')} className="group">
+                                        <div className="flex items-center">
+                                            <ReferralIcon/>
+                                            <SidebarLinkLabel>My Orders</SidebarLinkLabel>
                                         </div>
                                     </NavLink>
                                 </li>

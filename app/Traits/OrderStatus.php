@@ -35,7 +35,7 @@ trait OrderStatus {
         } else {
           $color = StatusColorEnum::PLANNED->value;
         }
-        break;
+      break;
       case OrderStatusEnum::CONFIRMED->value:
         //$color = ;
         if ($service == ServiceEnum::INSTALLATION->value) {
@@ -49,16 +49,19 @@ trait OrderStatus {
         } else {
           $color = StatusColorEnum::CONFIRMED_DELIVERY->value;
         }
-        break;
+      break;
       case OrderStatusEnum::DELIVERY_CONFIRMED->value:
         $color = StatusColorEnum::CONFIRMED->value;
-        break;
-        case OrderStatusEnum::COMPLETE->value:
-          $color = StatusColorEnum::COMPLETE->value;
-          break;
-          case OrderStatusEnum::ON_HOLD->value:
-            $color = StatusColorEnum::ON_HOLD->value;
-            break;
+      break;
+      case OrderStatusEnum::COMPLETE->value:
+        $color = StatusColorEnum::COMPLETE->value;
+      break;
+      case OrderStatusEnum::ON_HOLD->value:
+          $color = StatusColorEnum::ON_HOLD->value;
+      break;
+      case OrderStatusEnum::RESCHEDULE->value:
+        $color = StatusColorEnum::RESCHEDULE->value;
+    break;
     }
 
     return $color;

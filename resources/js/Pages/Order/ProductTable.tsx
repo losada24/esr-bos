@@ -25,7 +25,7 @@ const ProductTable = ({
   service: string
   values: OrderFormValues
   travel_costs: TravelCost[]
-  
+
   removeOrderProduct: (index: number) => void
   updateOrderProduct: (index: number) => void
 }) => {
@@ -40,35 +40,31 @@ const ProductTable = ({
   }
 
   const getProductsTotal = () => {
-    const result =  orderProducts.reduce((acc, value) => {
+    const result = orderProducts.reduce((acc, value) => {
       return acc + (Number(value.total_price) + Number(value.extra_work_price))
     }, 0)
-    
+
     return result
   }
-  const getOtherCost= () => {
-      return values.additional_travel_costs ? Number(values.additional_travel_costs): 0
+  const getOtherCost = () => {
+    return values.additional_travel_costs ? Number(values.additional_travel_costs) : 0
   }
 
   const getTravelCost = () => {
     const id = getValueIdNotNull(values.travel_cost_id)
     const result = travel_costs.find((type) => Number(type.id) === Number(id))?.price
-    return result ? Number(result): 0
+    return result ? Number(result) : 0
   }
-
 
   const getGrandTotal = () => {
-   const result = getProductsTotal() + getOtherCost() + getTravelCost()
-   return result 
+    const result = getProductsTotal() + getOtherCost() + getTravelCost()
+    return result
   }
- 
   return (
     <div className='table-responsive mt-3'>
           <table className="w-full whitespace-nowrap">
             <thead>
-              <tr className="font-bold text-left">
-              
-                  <th className="px-6 pt-5 pb-4">Type of Product</th>
+              <tr className="font-bold text-left">  <th className="px-6 pt-5 pb-4">Type of Product</th>
                   <th className="px-6 pt-5 pb-4">Product Category</th>
                   <th className="px-6 pt-5 pb-4">Product Config</th>
                   <th className="px-6 pt-5 pb-4 text-right">Count</th>
@@ -113,7 +109,7 @@ const ProductTable = ({
                       {formatPrice(Number(product.total_price) + Number(product.extra_work_price))}
                     </td>
                     </>
-                     )}
+                    )}
                     <td className="border-t px-6 py-4 align-top">
                       {/* <button
                           onClick={(e) => {
@@ -154,7 +150,7 @@ const ProductTable = ({
                 </tr>
               <tr>
                     <td colSpan={6} className="px-6 py-4 align-top text-right">Other Cost</td>
-                    <td className='px-6 py-4 align-top text-right'>{ formatPrice(getOtherCost() )}</td>
+                    <td className='px-6 py-4 align-top text-right'>{ formatPrice(getOtherCost())}</td>
                     <td>&nbsp;</td>
                 </tr>
                 <tr>

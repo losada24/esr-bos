@@ -1,9 +1,11 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
 import { Head } from '@inertiajs/react'
-import { type InstallationTeam, type PageProps, type User } from '@/types'
+import { type Role, type InstallationTeam, type PageProps, type User } from '@/types'
 import { formatPrice } from '@/Utils/price'
 import Flatpickr from 'react-flatpickr'
 import 'flatpickr/dist/flatpickr.css'
+import { isAccountManager, isAdmin, isSupervisor } from '@/Utils/user'
+import { useState } from 'react'
 
 interface OrderSupervisor {
   id: number
@@ -22,7 +24,7 @@ interface OrderSupervisor {
   supervisor_payment_status: string
   supervisor_payment_date: string
   city_permits: boolean
-
+  total_amount: number
 }
 
 type IndexUserProps = PageProps & {
@@ -31,6 +33,9 @@ type IndexUserProps = PageProps & {
 }
 
 export default function ShowSupervisor ({ auth, orders, supervisor }: IndexUserProps) {
+  const totalProjectAmount = orders.reduce((sum, order) => sum + Number(order.project_amount), 0)
+  const totalCommissions = orders.reduce((sum, order) => sum + Number(order.supervisor_commissions), 0)
+  const [tableOrders, setTableOrders] = useState<OrderSupervisor[]>(orders)
   return (
       <AuthenticatedLayout
           auth={auth}
@@ -38,7 +43,7 @@ export default function ShowSupervisor ({ auth, orders, supervisor }: IndexUserP
       >
         <Head title={`Projects supervisions ${supervisor.name}`} />
         <div className='table-responsive'>
-          <table className="w-full whitespace-nowrap">
+          <table className="table-auto w-full">
             <thead>
               <tr className="font-bold text-left">
                 <th className="px-6 pt-5 pb-4">Name</th>
@@ -55,11 +60,11 @@ export default function ShowSupervisor ({ auth, orders, supervisor }: IndexUserP
                 <th className="px-6 pt-5 pb-4">% Commissions</th>
                 <th className="px-6 pt-5 pb-4">Commissions</th>
                 <th className="px-6 pt-5 pb-4">Status</th>
-                <th className="px-6 pt-5 pb-4">Date Paid</th>
+                <th className="px-6 pt-5 pb-4 wide-column">Date Paid</th>
               </tr>
             </thead>
             <tbody>
-              {orders.map((order: OrderSupervisor) => {
+              {tableOrders.map((order: OrderSupervisor, index) => {
                 return (
                   <tr key={order.id}>
                     <td className="px-6 py-4 border-t">
@@ -77,9 +82,11 @@ export default function ShowSupervisor ({ auth, orders, supervisor }: IndexUserP
                       }).join(', ')}
                     </td>
                     <td className="px-6 py-4 border-t">
-                      {order.installation_team.map((team) => {
-                        return team.company_name
-                      }).join(', ')}
+                      <ul>
+                        {order.installation_team.map((team) => {
+                          return <li key={team.id}>{team.company_name}</li>
+                        })}
+                      </ul>
                     </td>
                     <td className="px-6 py-4 border-t">
                       {order.month}
@@ -87,13 +94,15 @@ export default function ShowSupervisor ({ auth, orders, supervisor }: IndexUserP
                     <td className="px-6 py-4 border-t">
                       {order.installation_date}
                     </td>
-                    <td className="px-6 py-4 border-t">
+                    <td className="px-6 py-4 border-t ">
                       {order.final_installation_date}
                     </td>
                     <td className="px-6 py-4 border-t">
                       {order.execution_planing_date}
                     </td>
-                    <td className="px-6 py-4 border-t">
+                    <td className={`px-6 py-4 border-t ${
+                      order.qty_days > order.execution_planing_date ? 'text-red-500' : ''
+                    }`}>
                       {order.qty_days}
                     </td>
                     <td className="px-6 py-4 border-t">
@@ -108,20 +117,36 @@ export default function ShowSupervisor ({ auth, orders, supervisor }: IndexUserP
                     <td className="px-6 py-4 border-t">
                       {order.supervisor_payment_status}
                     </td>
-                    <td className="px-6 py-4 border-t">
-                      {order.supervisor_payment_date}
-                          <Flatpickr
+                    <td className="px-6 pt-5 pb-4 wide-column">
+                        <Flatpickr
                           options={{
                             mode: 'single',
                             dateFormat: 'Y-m-d',
                             position: 'auto right'
                           }}
-                          // disabled={values.supervisor_id === ''}
+                          disabled={isSupervisor(auth.user.roles.map((role: Role) => role.name))}
                           name="supervisor_payment_date"
                           value={order.supervisor_payment_date}
                           className="form-input"
                           onChange={([date]) => {
                             if (date) {
+                              fetch(route('order.update_date_paid'), {
+                                method: 'POST',
+                                headers: {
+                                  'Content-Type': 'application/json',
+                                  'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? ''
+                                },
+                                body: JSON.stringify({
+                                  order_id: order.id,
+                                  date_paid: date.toISOString().slice(0, 10)
+                                })
+                              }).then((response) => {
+                                if (response.ok) {
+                                  const newOrders = [...orders]
+                                  newOrders[index].supervisor_payment_status = 'CLOSED'
+                                  setTableOrders([...newOrders])
+                                }
+                              })
                               // Manejar la fecha seleccionada
                               // handleInputChange('supervisor_payment_date', date.toISOString().slice(0, 10)) // Guardar en formato 'YYYY-MM-DD'
                             }
@@ -139,6 +164,22 @@ export default function ShowSupervisor ({ auth, orders, supervisor }: IndexUserP
                 </tr>
               )}
             </tbody>
+            <tfoot>
+            <tr>
+            {/* Espacios vacíos hasta la columna "Value Project" */}
+            <td colSpan={10} className="px-6 py-4 border-t"></td>
+            <td className="px-6 py-4 border-t font-bold text-left">
+              {formatPrice(totalProjectAmount)}
+            </td>
+            {/* Espacios vacíos hasta la columna "Commissions" */}
+            <td className="px-6 py-4 border-t"></td>
+            <td className="px-6 py-4 border-t font-bold text-left">
+              {formatPrice(totalCommissions)}
+            </td>
+            {/* Espacios vacíos después de las columnas */}
+            <td colSpan={2} className="px-6 py-4 border-t"></td>
+          </tr>
+            </tfoot>
           </table>
         </div>
       </AuthenticatedLayout>

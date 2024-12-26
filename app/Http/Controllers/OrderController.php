@@ -13,6 +13,7 @@ use App\Models\Order;
 use App\Enum\OrderStatusEnum;
 use App\Enum\RoleEnum;
 use App\Enum\ServiceEnum;
+use App\Enum\SupervisorPaymentStatusEnum;
 use App\Enum\TypeOfFinancing;
 use App\Http\Requests\StoreOrderRequest;
 use App\Http\Requests\UpdateOrderRequest;
@@ -59,7 +60,8 @@ class OrderController extends Controller
             OrderStatusEnum::FINISH->value,
             OrderStatusEnum::FINAL_INSPECTION->value,
             OrderStatusEnum::COMPLETE->value,
-            OrderStatusEnum::ON_HOLD->value
+            OrderStatusEnum::ON_HOLD->value,
+            OrderStatusEnum::RESCHEDULE->value
           ]
         ]);
     }
@@ -193,8 +195,12 @@ class OrderController extends Controller
             OrderStatusEnum::FINISH->value,
             OrderStatusEnum::FINAL_INSPECTION->value,
             OrderStatusEnum::COMPLETE->value,
-            OrderStatusEnum::ON_HOLD->value
+            OrderStatusEnum::ON_HOLD->value,
+
           ];
+          if ($order->status === OrderStatusEnum::CONFIRMED->value) {
+            $status[] = OrderStatusEnum::RESCHEDULE->value;
+        }
         }
 
         return Inertia::render('Order/Edit', [
@@ -289,6 +295,13 @@ class OrderController extends Controller
     public function dropAttachment($id) {
       $attachment = Attachment::find($id);
       $attachment->delete();
+    }
+
+    public function updateDatePaid(Request $request) {
+      $order = Order::find($request->order_id);
+      $order->supervisor_payment_date = $request->date_paid; 
+      $order->supervisor_payment_status = SupervisorPaymentStatusEnum::CLOSED->value;
+      $order->save();
     }
 
 }

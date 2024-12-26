@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import Modal from '@/Components/Modal'
 import CloseIcon from '@/Components/Icons/CloseIcon'
-import { type Order, type InstallationTeam, type User } from '@/types'
+import { type Order, type InstallationTeam, type User, type Role } from '@/types'
 import { formatPrice } from '@/Utils/price'
 import { type OrdenEvent } from './DashboardCommon'
 import InputError from '@/Components/InputError'
@@ -12,24 +12,29 @@ import PrimaryButton from '@/Components/PrimaryButton'
 import { router } from '@inertiajs/react'
 import { Dialog } from '@headlessui/react'
 import InputLabel from '@/Components/InputLabel'
+import { get } from 'http'
 
 const EventModal = ({
   showModal,
   onClose,
   id,
   isAdminOrAccountManager,
+  isSupervisor,
   installation_teams,
   supervisors,
   status
+  // auth
 
 }: {
   showModal: boolean
+  isSupervisor: boolean
   onClose: CallableFunction
   id: number
   isAdminOrAccountManager: boolean
   installation_teams: InstallationTeam[]
   supervisors: User[]
   status: string[]
+  // auth: User
 }) => {
   const defaultState = {
     client_id: 0,
@@ -88,7 +93,7 @@ const EventModal = ({
             delivery_date: data.delivery_date ?? null,
             installation_date: data.installation_date ?? null,
             installation_end_date: data.installation_end_date ?? null,
-            installation_teams: data.installation_teams.map((item) => { return { label: item.user?.name, value: item.id }}) ?? [],
+            installation_teams: data.installation_teams.map((item) => { return { label: item.user?.name, value: item.id } }) ?? [],
             supervisor_id: data.supervisor?.id ?? 0, // Asumimos que `data.supervisor` es un objeto con los datos del superviso
             status: { label: data.status, value: data.status }
           })
@@ -109,9 +114,16 @@ const EventModal = ({
     setEditableData((prev: any) => ({ ...prev, [field]: value }))
   }
 
+  const [showValidationErrors, setShowValidationErrors] = useState(false)
+
   const handle = () => {
-    console.log(editableData)
+    // console.log(editableData)
     // Actualizamos editableData con los nuevos valores
+    if (editableData.installation_teams.length === 0 || editableData.supervisor_id === 0) {
+      setShowValidationErrors(true)
+      return
+    }
+
     const data = {
       ...editableData,
       installation_teams: editableData.installation_teams.map((team: any) => team.value),
@@ -290,6 +302,7 @@ const EventModal = ({
                 name="entry_date"
                 value={editableData.entry_date ?? ''}
                 className="form-input"
+                disabled={!isAdminOrAccountManager && isSupervisor}
                 onChange={([date]) => {
                   if (date) {
                     // Manejar la fecha seleccionada
@@ -306,7 +319,7 @@ const EventModal = ({
                   dateFormat: 'Y-m-d',
                   position: 'auto right'
                 }}
-                // disabled={values.supervisor_id === ''}
+                disabled={!isAdminOrAccountManager && isSupervisor}
                 name="contract_signing_date"
                 value={editableData.contract_signing_date ?? ''}
                 className="form-input"
@@ -328,6 +341,7 @@ const EventModal = ({
                 }}
                 // disabled={values.supervisor_id === ''}
                 name="payment_factory_date"
+                disabled={!isAdminOrAccountManager && isSupervisor}
                 value={editableData.payment_factory_date ?? ''}
                 className="form-input"
                 onChange={([date]) => {
@@ -351,6 +365,7 @@ const EventModal = ({
                 // disabled={values.supervisor_id === ''}
                 name="eta_date"
                 value={editableData.eta_date ?? ''}
+                disabled={!isAdminOrAccountManager && isSupervisor}
                 className="form-input"
                 onChange={([date]) => {
                   if (date) {
@@ -370,6 +385,7 @@ const EventModal = ({
                 }}
                 // disabled={values.supervisor_id === ''}
                 name="delivery_date"
+                disabled={!isAdminOrAccountManager && isSupervisor}
                 value={editableData.delivery_date ?? ''}
                 className="form-input"
                 onChange={([date]) => {
@@ -392,6 +408,7 @@ const EventModal = ({
                 // disabled={values.supervisor_id === ''}
                 name="installation_date"
                 value={editableData.installation_date ?? ''}
+                disabled={!isAdminOrAccountManager && isSupervisor}
                 className="form-input"
                 onChange={([date]) => {
                   if (date) {
@@ -417,6 +434,7 @@ const EventModal = ({
                 // disabled={values.supervisor_id === ''}
                 name="installation_end_date"
                 value={editableData.installation_end_date ?? ''}
+                disabled={!isAdminOrAccountManager && isSupervisor}
                 className="form-input"
                 onChange={([date]) => {
                   if (date) {
@@ -432,6 +450,7 @@ const EventModal = ({
                     id='installation_teams'
                     placeholder="Installation Team"
                     name='installation_teams'
+                    isDisabled={!isAdminOrAccountManager && isSupervisor}
                     value={editableData.installation_teams}
                     isMulti={true}
                     onChange={(value) => {
@@ -446,6 +465,7 @@ const EventModal = ({
                       id='supervisor'
                       placeholder="supervisor"
                       name='supervisor'
+                      isDisabled={!isAdminOrAccountManager && isSupervisor}
                       value ={{ label: supervisors.find((s) => s.id === editableData.supervisor_id)?.name, value: editableData.supervisor_id }}
                       isMulti={false}
                       onChange={(value) => { setEditableData({ ...editableData, supervisor_id: value?.value }) }}
@@ -465,7 +485,19 @@ const EventModal = ({
                     value={editableData.status}
                     isMulti={false}
                     onChange={(value) => { setEditableData({ ...editableData, status: value }) }}
-                    options={status.map((status) => { return { label: status, value: status } })}
+                    options={(() => {
+                      let options = status.map((status) => { return { label: status, value: status } })
+                      if (event?.service === 'PICKUP' || event?.service === 'DELIVERY ONLY') {
+                        options = status.filter((status) =>
+                          status === 'PLANNED' ||
+                          status === 'COMPLETE' ||
+                          status === 'CONFIRMED' ||
+                          status === 'DELIVERY CONFIRMED'
+                        ).map((status) => { return { label: status, value: status } })
+                      }
+
+                      return options
+                    })()}
                   />
               </div>
             </div>
@@ -517,10 +549,15 @@ const EventModal = ({
               </>
             )}
           </div>
-          {isAdminOrAccountManager && (
+          {showValidationErrors && (
+            <div className='flex flex-row gap-2'>
+              <InputError message='Please select an installation team and a supervisor' />
+            </div>
+          )}
+          {((isAdminOrAccountManager) || (isSupervisor)) && (
             <div className="flex items-center justify-between mt-4">
               <button className='btn btn-danger uppercase' onClick={() => onClose()}>Cancel</button>
-              <PrimaryButton className="btn btn-primary" type='button' onClick={() => handle()}>
+              <PrimaryButton className="btn btn-primary" type='button' onClick={() => { handle() }}>
                 Save
               </PrimaryButton>
             </div>

@@ -29,6 +29,10 @@
       </tr>
     </thead>
     <tbody>
+       @php
+            $totalProjectAmount = 0; // Inicializar suma de Value Project
+            $totalCommissions = 0; // Inicializar suma de Commissions
+        @endphp
       @foreach($orders as $order)
         <tr>
             <td width='50' height='25' text-align='left' valign='middle'>{{ $order['name'] }}</td>
@@ -56,6 +60,25 @@
               <td width='20' height='25' text-align='center' valign='middle'>{{$order['supervisor_payment_date'] }}</td>
            
         </tr>
+        @php
+                // Acumular valores para las sumas totales
+                $totalProjectAmount += $order['project_amount'];
+                $totalCommissions += $order['supervisor_commissions'];
+            @endphp
       @endforeach
     </tbody>
+    <tfoot>
+        <tr>
+            <!-- Celdas vacías para alinear las columnas -->
+            <td colspan="10" style="font-weight: bold; text-align: right;">Total:</td>
+            <td width='20' height='25' text-align='center' valign='middle' style="font-weight: bold;">
+                {{ '$' . number_format($totalProjectAmount, 2, '.', ',') }}
+            </td>
+            <td></td>
+            <td width='20' height='25' text-align='center' valign='middle' style="font-weight: bold;">
+                {{ '$' . number_format($totalCommissions, 2, '.', ',') }}
+            </td>
+            <td colspan="2"></td>
+        </tr>
+    </tfoot>
 </table>

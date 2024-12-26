@@ -8,6 +8,7 @@ use App\Enum\ServiceEnum;
 use App\Enum\StatusColorEnum;
 use App\Models\InstallationTeam;
 use App\Models\Order;
+use App\Models\OrderStatus as ModelsOrderStatus;
 use App\Models\User;
 use App\Traits\OrderStatus;
 use App\Traits\Twilio;
@@ -24,7 +25,32 @@ class DashboardController extends Controller
   use OrderStatus, Twilio;
 
   public function index(Request $request): Response
-  {
+  {  
+      
+        $user = auth()->user();
+        $status = [];
+
+        if ($user->hasRole(RoleEnum::ACCOUNT_MANAGER->value) || $user->hasRole(RoleEnum::ADMIN->value)) {
+            $status = [
+                OrderStatusEnum::PLANNED->value,
+                OrderStatusEnum::CONFIRMED->value,
+                OrderStatusEnum::DELIVERY_CONFIRMED->value,
+                OrderStatusEnum::COMPLETE->value,
+                OrderStatusEnum::INSPECTION->value,
+                OrderStatusEnum::SUPERVISION->value,
+                OrderStatusEnum::ON_HOLD->value,
+                OrderStatusEnum::RESCHEDULE->value,
+            ];
+        } else if ($user->hasRole(RoleEnum::SUPERVISOR->value)) {
+            $status = [
+              OrderStatusEnum::COMPLETE->value,
+              OrderStatusEnum::INSPECTION->value,
+              OrderStatusEnum::SUPERVISION->value,
+              OrderStatusEnum::FINAL_INSPECTION->value,
+              OrderStatusEnum::FINISH->value,
+          ];
+        }
+
       return Inertia::render('Dashboard/Index', [
         'services' => [
           ServiceEnum::INSTALLATION->value,
@@ -32,12 +58,7 @@ class DashboardController extends Controller
           ServiceEnum::PICKUP->value,
           ServiceEnum::INSTALLATION_ONLY->value,
         ],
-        'status' => [
-          OrderStatusEnum::PLANNED->value,
-          OrderStatusEnum::CONFIRMED->value,
-          OrderStatusEnum::DELIVERY_CONFIRMED->value,
-          OrderStatusEnum::COMPLETE->value,
-        ],
+        'status' => $status, 
         'legend' => [
           [
             'color' => StatusColorEnum::PLANNED->value,
@@ -74,6 +95,10 @@ class DashboardController extends Controller
           [
             'color' => StatusColorEnum::ON_HOLD->value,
             'label' => 'ON HOLD'
+          ],
+          [
+            'color' => StatusColorEnum::RESCHEDULE->value,
+            'label' => 'RESCHEDULE'
           ],
         ],
         'installation_teams' => InstallationTeam::with(['user', 'typeHousing'])->get(),

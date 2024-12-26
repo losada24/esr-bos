@@ -15,5 +15,5 @@ enum OrderStatusEnum: string
     case FINAL_COLLECT = 'FINAL COLLECT';
     case ON_HOLD = 'ON HOLD';
     case COMPLETE = 'COMPLETE';
-    case RESCHEDULE = 'RESCHEDULE';
+    case RESCHEDULE = 'RESCHEDULED';
 }
