@@ -80,16 +80,20 @@ Route::middleware('auth')->group(function () {
     Route::get('order/get_delivery_and_pickup_date/{payment_factory_date}', [OrderController::class, 'getDeliveryAndPickupDate'])
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value]);
     
+    Route::post('order/update-date-paid', [OrderController::class, 'updateDatePaid'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value])
+      ->name('order.update_date_paid');
+    
     Route::get('dashboard/get_events/{year}/{month}/{service}/{status}/{clientName?}', [DashboardController::class, 'getEvents'])
-      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::INSTALLER->value])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::INSTALLER->value .'|' . RoleEnum::SUPERVISOR->value])
       ->name('dashboard.get_events');
     
     Route::get('dashboard/get_event/{order}', [DashboardController::class, 'getEvent'])
-      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::INSTALLER->value])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::INSTALLER->value .'|' . RoleEnum::SUPERVISOR->value])
       ->name('dashboard.get_event');
     
     Route::post('order/update-from-modal/{order}', [OrderController::class, 'updateFromModal'])
-      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::INSTALLER->value])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::INSTALLER->value .'|' . RoleEnum::SUPERVISOR->value])
       ->name('update.order.from.modal');
     
     Route::get('order/get_payment_list/{order}', [DashboardController::class, 'getPaymentList'])
@@ -97,7 +101,7 @@ Route::middleware('auth')->group(function () {
       ->name('order.get_payment_list');
     
     Route::put('dashboard/update_events/{id}', [DashboardController::class, 'updateEvent'])
-      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::SUPERVISOR->value])
       ->name('dashboard.update_event');
 
     Route::delete('order/drop_attachment/{id}', [OrderController::class, 'dropAttachment'])
@@ -137,6 +141,8 @@ Route::middleware('auth')->group(function () {
       Route::get('/report/show_supervisor/{id}', [ReportController::class, 'showSupervisor'])
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::SUPERVISOR->value] )
       ->name('report.show_supervisor');
+
+
 
       Route::get('/report/excel-supervisor/{user}', [ReportController::class, 'export'])
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::SUPERVISOR->value] )

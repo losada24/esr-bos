@@ -4,7 +4,7 @@ import { type Role, type PageProps, type InstallationTeam, type User } from '@/t
 import '@mobiscroll/react/dist/css/mobiscroll.min.css'
 import { Eventcalendar, getJson, setOptions } from '@mobiscroll/react'
 import AuthenticatedCalendarLayout from '@/Layouts/AuthenticatedCalendarLayout'
-import { isAccountManager, isAdmin } from '@/Utils/user'
+import { isAccountManager, isAdmin, isSupervisor } from '@/Utils/user'
 import EventModal from './EventModal'
 
 setOptions({
@@ -25,6 +25,7 @@ interface CalendarFilter {
 export default function Dashboard ({ auth, services, status, legend, installation_teams, supervisors }: PageProps & { services: string[], status: string[], legend: Legend[], installation_teams: InstallationTeam[], supervisors: User[] }) {
   const IS_ADMIN = isAdmin(auth.user.roles.map((role: Role) => role.name))
   const IS_ACCOUNT_MANAGER = isAccountManager(auth.user.roles.map((role: Role) => role.name))
+  const IS_SUPERVISOR = isSupervisor(auth.user.roles.map((role: Role) => role.name))
   const [myEvents, setEvents] = useState([])
   const [currentDate, setCurrentDate] = useState(new Date())
   const [calendarFilter, setCalendarFilter] = useState<CalendarFilter>({ service: 'all', status: 'all', clientName: '' })
@@ -193,10 +194,12 @@ export default function Dashboard ({ auth, services, status, legend, installatio
           loadEvents(currentDate)
         }}
         isAdminOrAccountManager={IS_ADMIN || IS_ACCOUNT_MANAGER}
+        isSupervisor={IS_SUPERVISOR}
         id={eventId}
         installation_teams ={installation_teams}
         supervisors={supervisors}
         status = {status}
+
       />
     </AuthenticatedCalendarLayout>
   )

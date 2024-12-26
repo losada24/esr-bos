@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enum\OrderStatusEnum;
 use App\Enum\RoleEnum;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -97,7 +98,7 @@ class Order extends Model
     }
 
     public function scopeCalendarFilter($query, array $filters)
-    {
+    {  
       if (isset($filters['status']) && $filters['status'] != 'all') {
         $query->where('status', $filters['status']);
       }
@@ -105,22 +106,35 @@ class Order extends Model
       if (isset($filters['service']) && $filters['service'] != 'all') {
         $query->where('service', $filters['service']);
       }
-
+    
       if (isset($filters['clientName']) && $filters['clientName'] !== 'all' && !empty($filters['clientName'])) {
         $query->whereHas('client', function ($query) use ($filters) {
             $query->where('name', 'like', '%' . $filters['clientName'] . '%');
         });
+      }  
+      if( !(auth()->user()->hasRole(RoleEnum::ACCOUNT_MANAGER->value)) && !(auth()->user()->hasRole(RoleEnum::ADMIN->value)) ) {
+          if (auth()->user()->hasRole(RoleEnum::INSTALLER->value)) {
+              $installationTeams = InstallationTeam::where ('user_id', auth()->user()->id)->first();
+              $query->whereHas('installationTeams', function ($q) use ($installationTeams)  {
+                $q->where('installation_teams.id', $installationTeams->id);
+            });
+            }
+      /*if (auth()->user()->hasRole(RoleEnum::SUPERVISOR->value)) {
+        $supervisor = User::where ('user_id', auth()->user()->id)->first();
+        $query->whereHas('supervisor', function ($q) use ($supervisor)  {
+          $q->where('supervisor_id', $supervisor->user->id);
+        });*/
+  
+            if (auth()->user()->hasRole(RoleEnum::SUPERVISOR->value)) {
+              $query->where('supervisor_id', auth()->user()->id)
+              ->whereIn('status', [
+                OrderStatusEnum::CONFIRMED,   // Solo órdenes en "EXECUTION"
+                OrderStatusEnum::COMPLETE     // O también en "COMPLETE"
+            ]);
+            }
     }
-
+  }
       
-      
-      if (auth()->user()->hasRole(RoleEnum::INSTALLER->value)) {
-        $installationTeams = InstallationTeam::where ('user_id', auth()->user()->id)->first();
-        $query->whereHas('installationTeams', function ($q) use ($installationTeams)  {
-          $q->where('installation_teams.id', $installationTeams->id);
-        });
-      }
-    }
 
     public function client(): BelongsTo {
       return $this->belongsTo(Client::class);

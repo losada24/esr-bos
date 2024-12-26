@@ -127,7 +127,9 @@ class CreateOrder {
       $order->orderStatus()->create([
         'status' => $status,
         'user_id' => auth()->user()->id,
-        'notes' => "$status created by " . auth()->user()->name
+        'notes' => "$status created by " . auth()->user()->name,
+        'start_date' => $request->installation_date,
+        'end_date' => $request->installation_end_date,
       ]);
 
       $order->installationTeams()->attach($request->installation_teams);

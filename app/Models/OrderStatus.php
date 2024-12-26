@@ -16,8 +16,15 @@ class OrderStatus extends Model
         'status',
         'order_id',
         'notes',
-        'user_id'
+        'user_id',
+        'start_date',
+        'end_date',
+
     ];
+    protected $dates = [
+      'start_date',
+      'end_date',
+  ];
 
     public function order()
     {

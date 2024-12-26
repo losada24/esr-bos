@@ -122,6 +122,7 @@ class UpdateOrderRequest extends FormRequest
               OrderStatusEnum::ON_HOLD->value,
               OrderStatusEnum::DELIVERY_CONFIRMED->value,
               OrderStatusEnum::COMPLETE->value,
+              OrderStatusEnum::RESCHEDULE->value,
             ),
             new ValidateOrderStatus
           ],
@@ -171,7 +172,7 @@ class UpdateOrderRequest extends FormRequest
           'eta_date' => 'required|date_format:Y-m-d',
           'installation_end_date' => 'nullable|date_format:Y-m-d',
           'delivery_date' => 'nullable|date_format:Y-m-d',
-          'entry_date' => 'nullable|date_format:Y-m-d',
+          'entry_date' => 'required|date_format:Y-m-d',
           'installation_date' => 'nullable|date_format:Y-m-d',
           'city_permits' => 'boolean',
           'association_permits' => 'boolean',

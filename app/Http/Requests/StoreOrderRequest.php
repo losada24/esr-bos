@@ -159,7 +159,7 @@ class StoreOrderRequest extends FormRequest
             'contract_signing_date' => 'required|date_format:Y-m-d',
             'payment_factory_date' => 'required|date_format:Y-m-d',
             'delivery_date' => 'nullable|date_format:Y-m-d',
-            'entry_date' => 'nullable|date_format:Y-m-d',
+            'entry_date' => 'required|date_format:Y-m-d',
             'installation_date' => 'nullable|date_format:Y-m-d',
             'city_permits' => 'boolean',
             'city' => 'nullable|string|max:100',
