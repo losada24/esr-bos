@@ -22,6 +22,7 @@ use App\Models\Client;
 use App\Models\DurationOfWork;
 use App\Models\ExtraWork;
 use App\Models\InstallationTeam;
+use App\Models\OrderStatus;
 use App\Models\ProductCategory;
 use App\Models\ProductConfig;
 use App\Models\ProductCost;
@@ -303,5 +304,103 @@ class OrderController extends Controller
       $order->supervisor_payment_status = SupervisorPaymentStatusEnum::CLOSED->value;
       $order->save();
     }
+
+    public function statusOrder($id) 
+    { // Obtener las órdenes por supervisor
+          $order = Order::find($id);
+          $orderStatuses = OrderStatus::where('order_id', $id)
+          ->with(['order', 'user'])
+          ->get();
+        //dd($orderStatuses);
+
+        // Obtener los parámetros de filtro de la solicitud (request)
+        return Inertia::render('Order/ShowStatusOrder', [
+            'orderStatuses' => $orderStatuses->values()->toArray(),
+            'order' => $order,
+       
+    ]);
+    }
+
+   /* public function duplicate($id)
+    {
+        $message = 'Estimate duplicated successfully.';
+        $estimate = Order::findOrFail($id);
+
+        dd($estimate->orderProducts);
+       
+        $newEstimate = $estimate->replicate();
+        if ($newEstimate->status != OrderStatusEnum::$ESTIMATE && $newEstimate->status != OrderStatusEnum::$SUB_DEALER_ESTIMATE) {
+          $newEstimate->status = OrderStatusEnum::$ESTIMATE;
+          $message = 'The order was duplicated successfully as estimate.';
+        }
+        $newEstimate->name = $newEstimate->name . ' (copy)';
+        $newEstimate->user_id = auth()->user()->id;
+      
+        $newEstimate->push();
+
+        foreach ($estimate->products as $product) {
+          $newProduct = $product->replicate();
+       
+          $newEstimate->products()->save($newProduct);
+        }
+
+        return redirect()
+          ->route('estimate.index')
+          ->with('success', $message);
+    }*/
+
+    public function duplicate($id)
+{
+    $message = 'Estimate duplicated successfully.';
+    $estimate = Order::findOrFail($id);
+
+    // Duplicar la orden principal
+    $newEstimate = $estimate->replicate();
+
+   /* if ($newEstimate->status != OrderStatusEnum::$ESTIMATE && $newEstimate->status != OrderStatusEnum::$SUB_DEALER_ESTIMATE) {
+        $newEstimate->status = OrderStatusEnum::$ESTIMATE;
+        $message = 'The order was duplicated successfully as estimate.';
+    }*/
+    $newEstimate->name = $newEstimate->name . ' (copy)';
+    $newEstimate->user_id = auth()->user()->id;
+
+    $newEstimate->push(); // Guardar la nueva orden duplicada
+
+    // Duplicar los OrderProducts asociados
+    foreach ($estimate->orderProducts as $orderProduct) {
+        $newOrderProduct = $orderProduct->replicate();
+        $newOrderProduct->order_id = $newEstimate->id;
+        $newOrderProduct->save();
+
+        // Duplicar las relaciones con OrderProductExtraWorks
+        foreach ($orderProduct->orderProductExtraWorks as $extraWork) {
+            $newOrderProduct->orderProductExtraWorks()->attach($extraWork->id, [
+                'price' => $extraWork->pivot->price,
+                'amount' => $extraWork->pivot->amount,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+    }
+
+    $owners = $estimate->owners->pluck('id')->toArray(); // Obtener los IDs de los owners
+    $newEstimate->owners()->attach($owners);
+
+     // Duplicar los InstallationTeams (relación BelongsToMany)
+     $installationTeams = $estimate->installationTeams->pluck('id')->toArray(); // Obtener los IDs de los equipos de instalación
+     $newEstimate->installationTeams()->attach($installationTeams); // Asociar los mismos equipos al nuevo estimate
+
+         // Duplicar los Attachments (relación MorphMany)
+    foreach ($estimate->attachments as $attachment) {
+      $newAttachment = $attachment->replicate();
+      $newAttachment->attachable_id = $newEstimate->id;
+      $newAttachment->attachable_type = get_class($newEstimate);
+      $newAttachment->save();
+  }
+
+    return redirect()
+        ->route('order.index')
+        ->with('success', $message);
+}
 
 }

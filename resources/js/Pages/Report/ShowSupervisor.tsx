@@ -6,6 +6,7 @@ import Flatpickr from 'react-flatpickr'
 import 'flatpickr/dist/flatpickr.css'
 import { isAccountManager, isAdmin, isSupervisor } from '@/Utils/user'
 import { useState } from 'react'
+import ShowSupervisorFilter from './ShowSupervisorFilter'
 
 interface OrderSupervisor {
   id: number
@@ -30,9 +31,11 @@ interface OrderSupervisor {
 type IndexUserProps = PageProps & {
   orders: OrderSupervisor[]
   supervisor: User
+  statuses: string[]
 }
 
-export default function ShowSupervisor ({ auth, orders, supervisor }: IndexUserProps) {
+export default function ShowSupervisor ({ auth, orders, supervisor, statuses }: IndexUserProps) {
+  // console.log(supervisor.id)
   const totalProjectAmount = orders.reduce((sum, order) => sum + Number(order.project_amount), 0)
   const totalCommissions = orders.reduce((sum, order) => sum + Number(order.supervisor_commissions), 0)
   const [tableOrders, setTableOrders] = useState<OrderSupervisor[]>(orders)
@@ -42,6 +45,7 @@ export default function ShowSupervisor ({ auth, orders, supervisor }: IndexUserP
           pageTitle={`Projects supervisions ${supervisor.name}`}
       >
         <Head title={`Projects supervisions ${supervisor.name}`} />
+        <ShowSupervisorFilter id={String(supervisor.id)} statuses={statuses}/>
         <div className='table-responsive'>
           <table className="table-auto w-full">
             <thead>

@@ -19,11 +19,13 @@ class OrderStatus extends Model
         'user_id',
         'start_date',
         'end_date',
+        'pickup_date',
 
     ];
     protected $dates = [
       'start_date',
       'end_date',
+      'pickup_date',
   ];
 
     public function order()

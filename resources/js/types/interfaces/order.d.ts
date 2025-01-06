@@ -194,3 +194,15 @@ export interface DurationOfWork {
   notes: string
   orders?: Order[]
 }
+export interface OrderStatus {
+  id: number
+  status: string
+  order_id: number
+  user_id: number
+  start_date: Date
+  end_date: Date
+  user?: User
+  updated_at: Date
+  pickup_date: Date
+
+}
