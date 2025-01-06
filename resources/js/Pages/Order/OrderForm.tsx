@@ -884,7 +884,6 @@ const OrderForm = ({
                 </div>
               </>
             )}
-          
             <div className={submitCount ? (errors.installation_teams) ? 'has-error' : 'has-success' : ''}>
               <label htmlFor="status">Status</label>
               <Select
@@ -928,7 +927,7 @@ const OrderForm = ({
                     </div>
                     {(submitCount && errors.payment_definition) ? <div className='block'><InputError message={errors.payment_definition} className="mt-2" /></div> : ''}
                 </div>
-                <div className={submitCount ? (errors.initial_payment_percentage) ? 'has-error' : 'has-success' : ''}>
+               {/* <div className={submitCount ? (errors.initial_payment_percentage) ? 'has-error' : 'has-success' : ''}>
                   <label htmlFor="initial_payment_percentage">Initial Payment Percentage</label>
                   <Field
                     id="initial_payment_percentage"
@@ -939,7 +938,7 @@ const OrderForm = ({
                     type='number'
                   />
                   {(submitCount && errors.initial_payment_percentage) ? <InputError message={errors.initial_payment_percentage} className="mt-2" /> : ''}
-                </div>
+                </div> */}
               </>
             )}
             <div className='col-span-4'>

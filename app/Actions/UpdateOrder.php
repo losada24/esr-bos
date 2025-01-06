@@ -18,8 +18,9 @@ class UpdateOrder {
   use OrderEmails, OrderStatus;
 
   public function handle(Request $request, Order $order) {
-
+    //dd($request);
     DB::transaction(function() use ($request, $order) {
+      
 
       if ($request->client_id == 0) {
         $searchClient = Client::where('email', $request->email)->orWhere('phone', $request->phone)->first();
@@ -54,6 +55,13 @@ class UpdateOrder {
       $supervisor_commissions = 0.00;
       $supervisor_payment_status = null;
      }
+
+     if($request->payment_definition){
+      $initial_payment_percentage = 80.00;
+     } 
+     else{
+      $initial_payment_percentage = 100.00;
+    }
 
       $status = $request->status;
       $sendEmail = $status != $order->status;
@@ -93,7 +101,7 @@ class UpdateOrder {
         'city'=> $request->city,
         'job_state' => $request->job_state,
         'job_zip' => $request->job_zip,
-        'initial_payment_percentage' => $request->initial_payment_percentage,
+        'initial_payment_percentage' => $initial_payment_percentage,
         'payment_definition' => $request->payment_definition,
         'execution_planing_date'=> $execution_planing_date,
         'supervisor_payment_percentage'=> $supervisor_payment_percentage,
@@ -102,7 +110,7 @@ class UpdateOrder {
       ];
     //dd($orderData);
       $order->update($orderData);
-      //dd($order);
+      //dd($request->file('attachments'));
       if ($request->hasFile('attachments')) {
         $files = $request->file('attachments');
         foreach ($files as $file) {
@@ -162,6 +170,7 @@ class UpdateOrder {
           'notes' => "$status created by " . auth()->user()->name,
           'start_date' => $request->installation_date,
           'end_date' => $request->installation_end_date,
+          'pickup_date' => $request->delivery_date,
         ]);
         $this->sendEmail($order);
       }
@@ -185,7 +194,20 @@ class UpdateOrder {
     }
     $order->installationTeams()->sync($request->installation_teams);
     $order->update(['supervisor_payment_status' => $supervisor_payment_status]);
-   // dd($statusOrder);
+      //dd($request->file('attachments'));
+    if ($request->hasFile('attachments')) {
+      $files = $request->file('attachments');
+      foreach ($files as $file) {
+        $fileName = time() . '_' . Str::replace(' ', '_', $file->getClientOriginalName());
+        $filePath = $file->storeAs('order_files', $fileName, 'public');
+        $order->attachments()->create([
+          'filename' => $file->getClientOriginalName(),
+          'file_path' => $filePath,
+          'file_type' => 'order_files'
+        ]);
+      }
+    }
+   
     
     $sendEmail = $request->status != $statusOrder;
       //dd($request->status);
@@ -200,9 +222,10 @@ class UpdateOrder {
         'notes' => $request->status." created by " . auth()->user()->name,
         'start_date' => $request->installation_date,
         'end_date' => $request->installation_end_date,
+        'pickup_date' => $request->delivery_date,
       ]);
      
-      $this->sendEmail($order);
+      //$this->sendEmail($order);
     }
   }
 }

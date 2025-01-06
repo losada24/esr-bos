@@ -64,6 +64,12 @@ class CreateOrder {
       $supervisor_commissions = 0.00;
       $supervisor_payment_status = null;
      }
+     if($request->payment_definition){
+      $initial_payment_percentage = 80.00;
+     } 
+     else{
+      $initial_payment_percentage = 100.00;
+    }
 
       $status = $request->status;
       $order = Order::create([
@@ -101,7 +107,7 @@ class CreateOrder {
         'cost_delivery' => $request->cost_delivery,
         'cost_city_fee'=> $request->cost_city_fee,
         'project_amount'=> $request->project_amount,
-        'initial_payment_percentage' => $request->initial_payment_percentage,
+        'initial_payment_percentage' =>$initial_payment_percentage,
         'payment_definition' => $request->payment_definition,
         'execution_planing_date'=> $execution_planing_date,
         'supervisor_payment_percentage'=> $supervisor_payment_percentage,
@@ -130,6 +136,7 @@ class CreateOrder {
         'notes' => "$status created by " . auth()->user()->name,
         'start_date' => $request->installation_date,
         'end_date' => $request->installation_end_date,
+        'pickup_date' => $request->delivery_date,
       ]);
 
       $order->installationTeams()->attach($request->installation_teams);

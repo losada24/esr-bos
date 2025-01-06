@@ -6,6 +6,8 @@ import OrderFilter from './OrderFilter'
 import EditIcon from '@/Components/Icons/EditIcon'
 import DeleteIcon from '@/Components/Icons/DeleteIcon'
 import { useEffect } from 'react'
+import EyeIcon from '@/Components/Icons/EyeIcon'
+import CopyIcon from '@/Components/Icons/CopyIcon'
 
 type IndexOrderProps = PageProps & {
   orders: {
@@ -21,6 +23,11 @@ export default function Index ({ auth, orders, statuses }: IndexOrderProps) {
   const destroy = (id: number) => {
     if (confirm('Are you sure you want to delete this Order?')) {
       router.delete(route('order.destroy', id))
+    }
+  }
+  const duplicate = (id: number) => {
+    if (confirm('Are you sure you want to duplicate this Order?')) {
+      router.get(route('order.duplicate', id))
     }
   }
 
@@ -106,9 +113,23 @@ export default function Index ({ auth, orders, statuses }: IndexOrderProps) {
                       <Link
                         href={route('order.edit', order.id)}
                         title='Edit Order'
+                         className='mr-2'
                       >
                         <EditIcon />
                       </Link>
+                      <Link
+                        href={route('order.status_order', order.id)}
+                        title='Order History'
+                         className='mr-2'
+                      >
+                        <EyeIcon />
+                      </Link>
+                      <button
+                            onClick={() => { duplicate(order.id) }}
+                            title='Duplicate Order'
+                          >
+                            <CopyIcon className='mr-2'/>
+                        </button>
                       <button
                         onClick={() => { destroy(order.id) }}
                         title='Delete Order'

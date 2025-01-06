@@ -64,7 +64,8 @@ const ProductTable = ({
     <div className='table-responsive mt-3'>
           <table className="w-full whitespace-nowrap">
             <thead>
-              <tr className="font-bold text-left">  <th className="px-6 pt-5 pb-4">Type of Product</th>
+              <tr className="font-bold text-left">  
+                  <th className="px-6 pt-5 pb-4">Type of Product</th>
                   <th className="px-6 pt-5 pb-4">Product Category</th>
                   <th className="px-6 pt-5 pb-4">Product Config</th>
                   <th className="px-6 pt-5 pb-4 text-right">Count</th>

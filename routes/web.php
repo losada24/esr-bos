@@ -107,10 +107,18 @@ Route::middleware('auth')->group(function () {
     Route::delete('order/drop_attachment/{id}', [OrderController::class, 'dropAttachment'])
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value])
       ->name('order.drop_attachment');
+    
+      Route::get('/order/status_order/{id}', [OrderController::class, 'statusOrder'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::SUPERVISOR->value] )
+      ->name('order.status_order');
 
     Route::resource('installation_team', InstallationTeamController::class)
       ->only(['index', 'create', 'store', 'update', 'edit', 'destroy'])
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value]);
+
+      Route::get('/order/duplicate/{id}', [OrderController::class, 'duplicate'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value ] )
+      ->name('order.duplicate');
 
     // CLIENTS
     Route::resource('client', ClientController::class)
