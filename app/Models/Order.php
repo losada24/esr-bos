@@ -107,11 +107,16 @@ class Order extends Model
         $query->where('service', $filters['service']);
       }
     
-      if (isset($filters['clientName']) && $filters['clientName'] !== 'all' && !empty($filters['clientName'])) {
+    /*  if (isset($filters['clientName']) && $filters['clientName'] !== 'all' && !empty($filters['clientName'])) {
         $query->whereHas('client', function ($query) use ($filters) {
             $query->where('name', 'like', '%' . $filters['clientName'] . '%');
         });
-      }  
+      }  */
+      if (isset($filters['name']) && $filters['name'] !== 'all' && !empty($filters['name'])) {
+        $query->where('name', 'like', '%' . $filters['name'] . '%');
+    }
+       // dd($filters['name']);
+
       if( !(auth()->user()->hasRole(RoleEnum::ACCOUNT_MANAGER->value)) && !(auth()->user()->hasRole(RoleEnum::ADMIN->value)) ) {
           if (auth()->user()->hasRole(RoleEnum::INSTALLER->value)) {
               $installationTeams = InstallationTeam::where ('user_id', auth()->user()->id)->first();

@@ -225,7 +225,7 @@ class UpdateOrder {
         'pickup_date' => $request->delivery_date,
       ]);
      
-      //$this->sendEmail($order);
+      $this->sendEmail($order);
     }
   }
 }

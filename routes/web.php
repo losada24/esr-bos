@@ -84,7 +84,7 @@ Route::middleware('auth')->group(function () {
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value])
       ->name('order.update_date_paid');
     
-    Route::get('dashboard/get_events/{year}/{month}/{service}/{status}/{clientName?}', [DashboardController::class, 'getEvents'])
+    Route::get('dashboard/get_events/{year}/{month}/{service}/{status}/{name?}', [DashboardController::class, 'getEvents'])
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::INSTALLER->value .'|' . RoleEnum::SUPERVISOR->value])
       ->name('dashboard.get_events');
     
@@ -145,6 +145,10 @@ Route::middleware('auth')->group(function () {
       Route::get('/report/supervisor', [ReportController::class, 'supervisor'])
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::SUPERVISOR->value] )
       ->name('report.supervisor');
+
+      Route::get('/report/installer', [ReportController::class, 'installer'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::INSTALLER->value] )
+      ->name('report.installer');
 
       Route::get('/report/show_supervisor/{id}', [ReportController::class, 'showSupervisor'])
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::SUPERVISOR->value] )

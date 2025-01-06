@@ -19,7 +19,7 @@ interface Legend {
 interface CalendarFilter {
   service: string
   status: string
-  clientName: string
+  name: string
 }
 
 export default function Dashboard ({ auth, services, status, legend, installation_teams, supervisors }: PageProps & { services: string[], status: string[], legend: Legend[], installation_teams: InstallationTeam[], supervisors: User[] }) {
@@ -28,7 +28,7 @@ export default function Dashboard ({ auth, services, status, legend, installatio
   const IS_SUPERVISOR = isSupervisor(auth.user.roles.map((role: Role) => role.name))
   const [myEvents, setEvents] = useState([])
   const [currentDate, setCurrentDate] = useState(new Date())
-  const [calendarFilter, setCalendarFilter] = useState<CalendarFilter>({ service: 'all', status: 'all', clientName: '' })
+  const [calendarFilter, setCalendarFilter] = useState<CalendarFilter>({ service: 'all', status: 'all', name: '' })
   const [eventId, setEventId] = useState(0)
   const calendarRef = useRef<HTMLDivElement>(null)
 
@@ -49,7 +49,7 @@ export default function Dashboard ({ auth, services, status, legend, installatio
   const loadEvents = (date: Date) => {
     const year = date.getFullYear()
     const month = date.getMonth() + 1
-    const getEventsRoute = route('dashboard.get_events', { year, month, service: calendarFilter.service, status: calendarFilter.status, ...(calendarFilter.clientName !== 'all' && { clientName: calendarFilter.clientName }) })
+    const getEventsRoute = route('dashboard.get_events', { year, month, service: calendarFilter.service, status: calendarFilter.status, ...(calendarFilter.name !== 'all' && { name: calendarFilter.name }) })
     getJson(getEventsRoute, (events) => {
       setEvents(events)
     }, 'json')
@@ -149,15 +149,15 @@ export default function Dashboard ({ auth, services, status, legend, installatio
               </select>
             </div>
             <div className='flex items-center gap-2'>
-            <label className='w-57' htmlFor="">Client Name</label>
+            <label className='w-57' htmlFor="">Order Name</label>
             <input
-              id="clientName"
+              id="name"
               type="text"
               className="form-input"
               placeholder="Enter Client Name"
-              value={calendarFilter.clientName}
+              value={calendarFilter.name}
               onChange={(e) => {
-                setCalendarFilter({ ...calendarFilter, clientName: e.target.value })
+                setCalendarFilter({ ...calendarFilter, name: e.target.value })
               }}
             />
           </div>

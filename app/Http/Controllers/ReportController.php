@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Enum\SupervisorPaymentStatusEnum;
 use App\Exports\SupervisorExport;
+use App\Http\Resources\InstallationTeamCollection;
+use App\Models\InstallationTeam;
 use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -96,6 +98,19 @@ class ReportController extends Controller
           'Supervisor '. $user->name . '.xlsx', 
           \Maatwebsite\Excel\Excel::XLSX
         );
+    }
+
+    public function installer(Request $request)
+    {
+      return Inertia::render('Report/Installer', [
+        'installation_teams' => new InstallationTeamCollection(
+          InstallationTeam::filter($request->only(['text']))
+          ->orderBy('updated_at', 'desc')
+          ->paginate()
+          ->withQueryString()
+        )
+      ]);
+      
     }
 
     /*public function storeContact(Request $request)
