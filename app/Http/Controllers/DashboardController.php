@@ -109,10 +109,10 @@ class DashboardController extends Controller
     
  
 
-  public function getEvents($year, $month, $service, $status, $clientName = null ) {
+  public function getEvents($year, $month, $service, $status, $name = null ) {
 
-    if (empty($clientName) || $clientName === 'all') {
-      $clientName = null; // Deja en null si no se quiere filtrar por cliente
+    if (empty($name) || $name === 'all') {
+      $name = null; // Deja en null si no se quiere filtrar por cliente
   }
     $showOnlyInstallation = $service === ServiceEnum::INSTALLATION_ONLY->value;
     $service_filter = $service === ServiceEnum::INSTALLATION_ONLY->value ? ServiceEnum::INSTALLATION->value : $service;
@@ -120,8 +120,9 @@ class DashboardController extends Controller
     $currentPassingDate = Carbon::parse($year . '-' . $month . '-01');
     $previewMonth = $currentPassingDate->copy()->subMonth()->startOfMonth();
     $nextMonth = $currentPassingDate->copy()->addMonth()->endOfMonth();
+    //dd($orderName);
 
-    $orders = Order::with(['permit'])->calendarFilter(['service' => $service_filter, 'status' => $status, 'clientName' => $clientName])
+    $orders = Order::with(['permit'])->calendarFilter(['service' => $service_filter, 'status' => $status, 'name' => $name])
       ->where(function ($query) use ($previewMonth, $nextMonth) {
         $query->where(function($query) use ($previewMonth, $nextMonth) {
             $query->whereBetween('delivery_date', [$previewMonth, $nextMonth]);
@@ -130,6 +131,8 @@ class DashboardController extends Controller
               ->orWhereBetween('installation_end_date', [$previewMonth, $nextMonth]);
         });
       });
+
+     
 
     /*$sql = $orders->toSql();
     $bindings = $orders->getBindings();
