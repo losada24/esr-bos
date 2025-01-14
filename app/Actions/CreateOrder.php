@@ -64,7 +64,7 @@ class CreateOrder {
       $supervisor_commissions = 0.00;
       $supervisor_payment_status = null;
      }
-     if($request->payment_definition){
+     if($request->city_permits){
       $initial_payment_percentage = 80.00;
      } 
      else{
@@ -125,7 +125,8 @@ class CreateOrder {
           $order->attachments()->create([
             'filename' => $file->getClientOriginalName(),
             'file_path' => $filePath,
-            'file_type' => 'order_files'
+            'file_type' => 'order_files',
+            'user_id' => auth()->id(),
           ]);
         }
       }

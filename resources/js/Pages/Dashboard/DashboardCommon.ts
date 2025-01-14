@@ -10,5 +10,6 @@ export type OrdenEvent = Omit<Order, 'name' | 'installation_team_id' | 'entry_da
   delivery_date: null | Date
   installation_end_date: null | Date
   status: null | string
+  hide_on_weekends: boolean
   // installation_team_id: MultiValue<OptionType>
 }

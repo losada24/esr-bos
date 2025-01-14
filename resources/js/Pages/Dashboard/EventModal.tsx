@@ -15,6 +15,7 @@ import InputLabel from '@/Components/InputLabel'
 import { get } from 'http'
 import DeleteIcon from '@/Components/Icons/DeleteIcon'
 import ExportIcon from '@/Components/Icons/ExportIcon'
+import { Field } from 'formik'
 
 const EventModal = ({
   showModal,
@@ -49,6 +50,9 @@ const EventModal = ({
     contract_signing_date: null,
     eta_date: null,
     installation_end_date: null,
+    inspection_date: null,
+    finish_date: null,
+    final_inspection_date: null,
     installation_team_id: [],
     additional_travel_costs: 0,
     type_of_work_id: 0,
@@ -72,7 +76,8 @@ const EventModal = ({
     owners: [],
     order_products: [],
     attachments: [],
-    status: ''
+    status: '',
+    hide_on_weekends: false
   }
   const [event, setEvent] = useState<Order | null>(null)
   const [isVipClient, setIsVipClient] = useState<boolean>(false)
@@ -88,22 +93,30 @@ const EventModal = ({
           const aux = attachmentsList.filter((_, i) => i !== index)
           setAttachmentsList(aux)
           // setFieldValue('attachments', attachmentsList)
+        },
+        onError: () => {
+          alert('You do not have permission to delete this attachment.')
         }
       })
     }
   }
 
-  // console.log(id)
   useEffect(() => {
-    if (id !== 0 && showModal) {
+    if (id === 0) {
+      setEditableData(defaultState)
+      setEvent(null)
+    } else if (id !== 0 && showModal) {
       // setIsLoading(true)
       const url = route('dashboard.get_event', { id })
       fetch(url)
         .then(async (response) => await response.json())
         .then((data: Order) => {
           setEvent(data)
-          // console.log(data.status)
+          // console.log(data.attachments)
           setAttachmentsList(data.attachments ?? [])
+          const installationDate = new Date(data.installation_date ?? new Date())
+          const duration = data?.duration_of_work?.number_of_day ?? 0
+          const endDate = new Date(installationDate.setDate(installationDate.getDate() + duration - 1))
           setEditableData({
             entry_date: data.entry_date ?? null,
             contract_signing_date: data.contract_signing_date ?? null,
@@ -111,18 +124,24 @@ const EventModal = ({
             eta_date: data.eta_date ?? null,
             delivery_date: data.delivery_date ?? null,
             installation_date: data.installation_date ?? null,
-            installation_end_date: data.installation_end_date ?? null,
+            inspection_date: data.inspection_date ?? null,
+            finish_date: data.finish_date ?? null,
+            final_inspection_date: data.final_inspection_date ?? null,
+            installation_end_date: endDate.toISOString().slice(0, 10),
             installation_teams: data.installation_teams.map((item) => { return { label: item.user?.name, value: item.id } }) ?? [],
             supervisor_id: data.supervisor?.id ?? 0, // Asumimos que `data.supervisor` es un objeto con los datos del superviso
-            status: { label: data.status, value: data.status }
+            status: { label: data.status, value: data.status },
+            hide_on_weekends: data.hide_on_weekends ?? null
           })
           const isVipClient = parseInt(data.client?.vip_clients?.toString() ?? '0') !== 0
           setIsVipClient(isVipClient)
         })
+    } else {
+      setEditableData(defaultState)
     }
   }, [showModal])
 
-  useEffect(() => {
+  /* useEffect(() => {
     if (editableData.installation_date && event?.duration_of_work?.number_of_day) {
       const installationDate = new Date(editableData.installation_date)
       const duration = event?.duration_of_work?.number_of_day ?? 0
@@ -133,14 +152,7 @@ const EventModal = ({
         installation_end_date: endDate.toISOString().slice(0, 10) // Formateamos la fecha como YYYY-MM-DD
       }))
     }
-  }, [editableData.installation_date, event?.duration_of_work?.number_of_day]) // Este efecto se ejecutará cuando cambie installation_date
-
-  useEffect(() => {
-    if (id === 0) {
-      setEditableData(defaultState)
-      setEvent(null)
-    }
-  }, [showModal])
+  }, [editableData.installation_date, event?.duration_of_work?.number_of_day]) */// Este efecto se ejecutará cuando cambie installation_date
 
   const handleInputChange = (field: keyof Order, value: string) => {
     setEditableData((prev: any) => ({ ...prev, [field]: value }))
@@ -150,7 +162,7 @@ const EventModal = ({
 
   const handle = () => {
     // Actualizamos editableData con los nuevos valores
-    if (event?.service === 'DELIVERY AND INSTALLATION' && (editableData.installation_teams.length === 0 || editableData.supervisor_id === 0) && (editableData.status.value !== 'PLANNED')) {
+    if (event?.service === 'DELIVERY AND INSTALLATION' && (editableData.installation_teams.length === 0 || editableData.supervisor_id === 0) && (editableData.status.value !== 'PLANNED' && editableData.status.value !== 'DELIVERY CONFIRMED')) {
       setShowValidationErrors(true)
       return
     }
@@ -173,6 +185,8 @@ const EventModal = ({
         console.log(errors)
       }
     })
+    setShowValidationErrors(false)
+    setAttachmentsArray([])
   }
   return (
     <Modal
@@ -187,7 +201,7 @@ const EventModal = ({
     >
         <div className="flex items-center justify-between bg-[#fbfbfb] px-5 py-3 dark:bg-[#121c2c]">
           <div className="text-lg font-bold">Order Number: {`#${event?.order_number}`}</div>
-          <button type="button" className="text-white-dark hover:text-dark" onClick={() => { onClose(false) }}>
+          <button type="button" className="text-white-dark hover:text-dark" onClick={() => { onClose(false); setShowValidationErrors(false) }}>
             <CloseIcon />
           </button>
         </div>
@@ -324,7 +338,7 @@ const EventModal = ({
             )}
             <div className='flex flex-row gap-2 mt-3'>
               <div className='w-1/3'>
-              <label htmlFor="contract_signing_date"><strong>Entry Date:</strong></label>
+              <label htmlFor="entry_date"><strong>Entry Date:</strong></label>
                 <Flatpickr
                 options={{
                   mode: 'single',
@@ -508,7 +522,7 @@ const EventModal = ({
               </>
             )}
             </div>
-            <div className='flex flex-row'>
+            <div className='flex flex-row gap-2 mt-3'>
               <div className='w-1/3'>
                 <label htmlFor="status" className='font-bold'>Status:</label>
                   <Select
@@ -533,7 +547,91 @@ const EventModal = ({
                     })()}
                   />
               </div>
+              {(isAdminOrAccountManager) && (
+              <div className='w-1/3  mt-8'>
+                   <input
+                      id="hide_on_weekends"
+                      name="hide_on_weekends"
+                      className="form-checkbox"
+                      type="checkbox"
+                      checked={editableData.hide_on_weekends} // Controlado por el estado
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                        setEditableData({ ...editableData, hide_on_weekends: e.target.checked }) // Actualiza el estado
+                      }}
+                    />
+                    <label htmlFor="hide_on_weekends" className='font-bold inline-flex'>Hide On Weekends</label>
+                  </div>
+              )}
             </div>
+            {(editableData.status.value === 'INSPECTION') && (
+                    <div className='w-1/3  mt-8'>
+                    <label htmlFor="inspection_date"><strong>Inspection Date:</strong></label>
+                    <Flatpickr
+                    options={{
+                      mode: 'single',
+                      dateFormat: 'Y-m-d',
+                      position: 'auto right'
+                    }}
+
+                    name="inspection_date"
+                    value={editableData.inspection_date ?? ''}
+                    // disabled={!isAdminOrAccountManager && isSupervisor}
+                    className="form-input"
+                    onChange={([date]) => {
+                      if (date) {
+                        // Manejar la fecha seleccionada
+                        handleInputChange('inspection_date', date.toISOString().slice(0, 10)) // Guardar en formato 'YYYY-MM-DD'
+                      }
+                    }}
+                  />
+                  </div>
+            )}
+                    {(editableData.status.value === 'FINISH') && (
+                    <div className='w-1/3  mt-8'>
+                    <label htmlFor="finish_date"><strong>Finish Date:</strong></label>
+                    <Flatpickr
+                    options={{
+                      mode: 'single',
+                      dateFormat: 'Y-m-d',
+                      position: 'auto right'
+                    }}
+
+                    name="finish_date"
+                    value={editableData.finish_date ?? ''}
+                    // disabled={!isAdminOrAccountManager && isSupervisor}
+                    className="form-input"
+                    onChange={([date]) => {
+                      if (date) {
+                        // Manejar la fecha seleccionada
+                        handleInputChange('finish_date', date.toISOString().slice(0, 10)) // Guardar en formato 'YYYY-MM-DD'
+                      }
+                    }}
+                  />
+                  </div>
+                    )}
+                 {(editableData.status.value === 'FINAL INSPECTION') && (
+                    <div className='w-1/3  mt-8'>
+                    <label htmlFor="final_inspection_date"><strong>Final Inspection Date:</strong></label>
+                    <Flatpickr
+                    options={{
+                      mode: 'single',
+                      dateFormat: 'Y-m-d',
+                      position: 'auto right'
+                    }}
+
+                    name="final_inspection_date"
+                    value={editableData.final_inspection_date ?? ''}
+                    // disabled={!isAdminOrAccountManager && isSupervisor}
+                    className="form-input"
+                    onChange={([date]) => {
+                      if (date) {
+                        // Manejar la fecha seleccionada
+                        handleInputChange('final_inspection_date', date.toISOString().slice(0, 10)) // Guardar en formato 'YYYY-MM-DD'
+                      }
+                    }}
+                  />
+                  </div>
+                 )}
             {event?.notes && (
               <div className='flex flex-col gap-2  mt-3'>
                   <strong>Notes:</strong>
@@ -551,7 +649,7 @@ const EventModal = ({
               </div>
             )}
             {attachmentsList && (event?.service === 'DELIVERY AND INSTALLATION') && (
-              <>
+                <>
                <div className='flex flex-col gap-2  mt-3'>
                <label htmlFor="attachments" className='font-bold'>Attachments:</label>
                <input
@@ -625,7 +723,7 @@ const EventModal = ({
           )}
           {((isAdminOrAccountManager) || (isSupervisor)) && (
             <div className="flex items-center justify-between mt-4">
-              <button className='btn btn-danger uppercase' onClick={() => onClose()}>Cancel</button>
+              <button className='btn btn-danger uppercase' onClick={() => { onClose(); setShowValidationErrors(false) }}>Cancel</button>
               <PrimaryButton className="btn btn-primary" type='button' onClick={() => { handle() }}>
                 Save
               </PrimaryButton>
