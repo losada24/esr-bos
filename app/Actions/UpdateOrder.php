@@ -56,7 +56,7 @@ class UpdateOrder {
       $supervisor_payment_status = null;
      }
 
-     if($request->payment_definition){
+     if($request->city_permits){
       $initial_payment_percentage = 80.00;
      } 
      else{
@@ -107,6 +107,7 @@ class UpdateOrder {
         'supervisor_payment_percentage'=> $supervisor_payment_percentage,
         'supervisor_commissions'=> $supervisor_commissions,
         'supervisor_payment_status' => $supervisor_payment_status,
+        'hide_on_weekends' => $request->hide_on_weekends,
       ];
     //dd($orderData);
       $order->update($orderData);
@@ -119,7 +120,8 @@ class UpdateOrder {
           $order->attachments()->create([
             'filename' => $file->getClientOriginalName(),
             'file_path' => $filePath,
-            'file_type' => 'order_files'
+            'file_type' => 'order_files',
+            'user_id' => auth()->id(),
           ]);
         }
       }
@@ -172,6 +174,7 @@ class UpdateOrder {
           'end_date' => $request->installation_end_date,
           'pickup_date' => $request->delivery_date,
         ]);
+
         $this->sendEmail($order);
       }
       
@@ -203,7 +206,8 @@ class UpdateOrder {
         $order->attachments()->create([
           'filename' => $file->getClientOriginalName(),
           'file_path' => $filePath,
-          'file_type' => 'order_files'
+          'file_type' => 'order_files',
+          'user_id' => auth()->id(),
         ]);
       }
     }

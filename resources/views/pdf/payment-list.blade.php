@@ -113,12 +113,12 @@
                   <tr>
                     <td class="other-services border-right">After Installation</td>
                     <td class="grand total border-right">
-                      @if ($order->payment_definition) 
+                      @if ($order->city_permits) 
                         {{ $order->initial_payment_percentage }}%
                       @endif
                     </td>
                     <td class="grand total">
-                      @if ($order->payment_definition) 
+                      @if ($order->city_permits) 
                         {{ '$' . number_format(($grandTotal + $order->travelCost->price + $order->additional_travel_costs) * $order->initial_payment_percentage / 100, 2, '.', ',') }}
                       @endif
                     </td>
@@ -126,12 +126,12 @@
                   <tr>
                     <td class="other-services border-right">After Inspection</td>
                     <td class="grand total border-right">
-                      @if ($order->payment_definition) 
+                      @if ($order->city_permits) 
                         {{ 100 - $order->initial_payment_percentage }}%
                       @endif
                     </td>
                     <td class="grand total">
-                      @if ($order->payment_definition) 
+                      @if ($order->city_permits) 
                         {{ '$' . number_format(($grandTotal + $order->travelCost->price + $order->additional_travel_costs) * (100 - $order->initial_payment_percentage) / 100, 2, '.', ',') }}
                       @endif
                     </td>

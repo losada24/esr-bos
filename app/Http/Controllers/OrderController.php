@@ -294,8 +294,31 @@ class OrderController extends Controller
     }
 
     public function dropAttachment($id) {
-      $attachment = Attachment::find($id);
-      $attachment->delete();
+      
+      // Buscar el attachment por ID
+    $attachment = Attachment::find($id);
+
+    // Verificar si el attachment existe
+    if (!$attachment) {
+        return response()->json(['message' => 'Attachment not found'], 404);
+    }
+
+    // Obtener el usuario autenticado
+    $user = auth()->user();
+
+    // Verificar si el usuario tiene permisos para eliminar el attachment
+    if ($user->hasRole([RoleEnum::ADMIN->value, RoleEnum::ACCOUNT_MANAGER->value])) {
+        // Admins y Account Managers pueden eliminar cualquier attachment
+        $attachment->delete();
+    }
+
+    // Para otros usuarios: verificar si ellos crearon el attachment
+    if ($attachment->user_id=== auth()->user()->id) {
+        $attachment->delete();
+    } 
+
+      // $attachment = Attachment::find($id);
+      // $attachment->delete();
     }
 
     public function updateDatePaid(Request $request) {

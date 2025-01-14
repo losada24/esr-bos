@@ -46,7 +46,7 @@ trait OrderEmails {
     } else if ($order->status === OrderStatusEnum::DELIVERY_CONFIRMED->value) {
       $users = [];
       $users[] = $order->client->email;
-      $users[] = $order->supervisor->email;
+      // $users[] = $order->supervisor->email;
       $users[]='alina@reylosglass.com';
       $accountManager = User::role([RoleEnum::ACCOUNT_MANAGER->value])->get();
       $users = array_merge($users, $accountManager->pluck('email')->toArray());

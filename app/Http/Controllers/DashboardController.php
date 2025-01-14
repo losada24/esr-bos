@@ -21,100 +21,102 @@ use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
-  
+
   use OrderStatus, Twilio;
 
   public function index(Request $request): Response
-  {  
-      
-        $user = auth()->user();
-        $status = [];
+  {
 
-        if ($user->hasRole(RoleEnum::ACCOUNT_MANAGER->value) || $user->hasRole(RoleEnum::ADMIN->value)) {
-            $status = [
-                OrderStatusEnum::PLANNED->value,
-                OrderStatusEnum::CONFIRMED->value,
-                OrderStatusEnum::DELIVERY_CONFIRMED->value,
-                OrderStatusEnum::COMPLETE->value,
-                OrderStatusEnum::INSPECTION->value,
-                OrderStatusEnum::SUPERVISION->value,
-                OrderStatusEnum::ON_HOLD->value,
-                OrderStatusEnum::RESCHEDULE->value,
-            ];
-        } else if ($user->hasRole(RoleEnum::SUPERVISOR->value)) {
-            $status = [
-              OrderStatusEnum::COMPLETE->value,
-              OrderStatusEnum::INSPECTION->value,
-              OrderStatusEnum::SUPERVISION->value,
-              OrderStatusEnum::FINAL_INSPECTION->value,
-              OrderStatusEnum::FINISH->value,
-          ];
-        }
+    $user = auth()->user();
+    $status = [];
 
-      return Inertia::render('Dashboard/Index', [
-        'services' => [
-          ServiceEnum::INSTALLATION->value,
-          ServiceEnum::DELIVERY->value,
-          ServiceEnum::PICKUP->value,
-          ServiceEnum::INSTALLATION_ONLY->value,
-        ],
-        'status' => $status, 
-        'legend' => [
-          [
-            'color' => StatusColorEnum::PLANNED->value,
-            'label' => 'PICKUP PLANNED'
-          ],
-          [
-            'color' => StatusColorEnum::CONFIRMED->value,
-            'label' => 'CONFIRMED DELIVERY'
-          ],
-          [
-            'color' => StatusColorEnum::PLANNED_INSTALLATION->value,
-            'label' => 'PLANNED DELIVERY DATE'
-          ],
-          [
-            'color' => StatusColorEnum::PLANNED_INSTALLATION_EVENT->value,
-            'label' => 'PLANNED INSTALLATION DATE'
-          ],
-          [
-            'color' => StatusColorEnum::CONFIRMED_INSTALLATION->value,
-            'label' => 'INSTALLATION CONFIRMED'
-          ],
-          [
-            'color' => StatusColorEnum::CONFIRMED_DELIVERY->value,
-            'label' => 'CONFIRMED DELIVERY'
-          ],
-          [
-            'color' => StatusColorEnum::DELAY_PERMITS->value,
-            'label' => 'DELAYED PERMIT'
-          ],
-          [
-            'color' => StatusColorEnum::COMPLETE->value,
-            'label' => 'COMPLETE'
-          ],
-          [
-            'color' => StatusColorEnum::ON_HOLD->value,
-            'label' => 'ON HOLD'
-          ],
-          [
-            'color' => StatusColorEnum::RESCHEDULE->value,
-            'label' => 'RESCHEDULE'
-          ],
-        ],
-        'installation_teams' => InstallationTeam::with(['user', 'typeHousing'])->get(),
-        'supervisors' => User::role(RoleEnum::SUPERVISOR->value)->get(),
-      ]);
+    if ($user->hasRole(RoleEnum::ACCOUNT_MANAGER->value) || $user->hasRole(RoleEnum::ADMIN->value)) {
+      $status = [
+        OrderStatusEnum::PLANNED->value,
+        OrderStatusEnum::CONFIRMED->value,
+        OrderStatusEnum::DELIVERY_CONFIRMED->value,
+        OrderStatusEnum::COMPLETE->value,
+        OrderStatusEnum::INSPECTION->value,
+        OrderStatusEnum::SUPERVISION->value,
+        OrderStatusEnum::ON_HOLD->value,
+        OrderStatusEnum::RESCHEDULE->value,
+      ];
+    } else if ($user->hasRole(RoleEnum::SUPERVISOR->value)) {
+      $status = [
+        OrderStatusEnum::SUPERVISION->value,
+        OrderStatusEnum::INSPECTION->value,
+        OrderStatusEnum::FINISH->value,
+        OrderStatusEnum::FINAL_INSPECTION->value,  
+        OrderStatusEnum::COMPLETE->value,
+      ];
     }
-  
-    
- 
 
-  public function getEvents($year, $month, $service, $status, $name = null ) {
+    return Inertia::render('Dashboard/Index', [
+      'services' => [
+        ServiceEnum::INSTALLATION->value,
+        ServiceEnum::DELIVERY->value,
+        ServiceEnum::PICKUP->value,
+        ServiceEnum::INSTALLATION_ONLY->value,
+      ],
+      'status' => $status,
+      'legend' => [
+        [
+          'color' => StatusColorEnum::PLANNED->value,
+          'label' => 'PICKUP PLANNED'
+        ],
+        [
+          'color' => StatusColorEnum::CONFIRMED->value,
+          'label' => 'CONFIRMED DELIVERY'
+        ],
+        [
+          'color' => StatusColorEnum::PLANNED_INSTALLATION->value,
+          'label' => 'PLANNED DELIVERY DATE'
+        ],
+        [
+          'color' => StatusColorEnum::PLANNED_INSTALLATION_EVENT->value,
+          'label' => 'PLANNED INSTALLATION DATE'
+        ],
+        [
+          'color' => StatusColorEnum::CONFIRMED_INSTALLATION->value,
+          'label' => 'INSTALLATION CONFIRMED'
+        ],
+        [
+          'color' => StatusColorEnum::CONFIRMED_DELIVERY->value,
+          'label' => 'CONFIRMED DELIVERY'
+        ],
+        [
+          'color' => StatusColorEnum::DELAY_PERMITS->value,
+          'label' => 'DELAYED PERMIT'
+        ],
+        [
+          'color' => StatusColorEnum::COMPLETE->value,
+          'label' => 'COMPLETE'
+        ],
+        [
+          'color' => StatusColorEnum::ON_HOLD->value,
+          'label' => 'ON HOLD'
+        ],
+        [
+          'color' => StatusColorEnum::RESCHEDULE->value,
+          'label' => 'RESCHEDULE'
+        ],
+      ],
+      'installation_teams' => InstallationTeam::with(['user', 'typeHousing'])->get(),
+      'supervisors' => User::role(RoleEnum::SUPERVISOR->value)->get(),
+    ]);
+  }
+
+
+
+
+  public function getEvents($year, $month, $service, $status, $name = null)
+  {
 
     if (empty($name) || $name === 'all') {
       $name = null; // Deja en null si no se quiere filtrar por cliente
-  }
+    }
     $showOnlyInstallation = $service === ServiceEnum::INSTALLATION_ONLY->value;
+    $showOnlyDeliveries = $service === ServiceEnum::DELIVERY->value;
     $service_filter = $service === ServiceEnum::INSTALLATION_ONLY->value ? ServiceEnum::INSTALLATION->value : $service;
 
     $currentPassingDate = Carbon::parse($year . '-' . $month . '-01');
@@ -124,15 +126,15 @@ class DashboardController extends Controller
 
     $orders = Order::with(['permit'])->calendarFilter(['service' => $service_filter, 'status' => $status, 'name' => $name])
       ->where(function ($query) use ($previewMonth, $nextMonth) {
-        $query->where(function($query) use ($previewMonth, $nextMonth) {
-            $query->whereBetween('delivery_date', [$previewMonth, $nextMonth]);
-        })->orWhere(function($query) use ($previewMonth, $nextMonth) {
-            $query->whereBetween('installation_date', [$previewMonth, $nextMonth])
-              ->orWhereBetween('installation_end_date', [$previewMonth, $nextMonth]);
+        $query->where(function ($query) use ($previewMonth, $nextMonth) {
+          $query->whereBetween('delivery_date', [$previewMonth, $nextMonth]);
+        })->orWhere(function ($query) use ($previewMonth, $nextMonth) {
+          $query->whereBetween('installation_date', [$previewMonth, $nextMonth])
+            ->orWhereBetween('installation_end_date', [$previewMonth, $nextMonth]);
         });
       });
 
-     
+
 
     /*$sql = $orders->toSql();
     $bindings = $orders->getBindings();
@@ -152,31 +154,31 @@ class DashboardController extends Controller
       'Sidelite' => 'Sd', // ID 3 -> 'lmn'
       'Mullion' => 'M', // ID 3 -> 'lmn'
       // Agrega más según sea necesario
-  ];
+    ];
     foreach ($orders->get() as $order) {
 
       $productCounts = $order->orderProducts()
-      ->select('type_of_product_id', DB::raw('SUM(qty) as total'))
-      ->groupBy('type_of_product_id')
-      ->with('typeOfProduct') // Carga el tipo de producto para obtener el nombre
-      ->get();
+        ->select('type_of_product_id', DB::raw('SUM(qty) as total'))
+        ->groupBy('type_of_product_id')
+        ->with('typeOfProduct') // Carga el tipo de producto para obtener el nombre
+        ->get();
 
-  // Formatear los datos de productos en el formato deseado
-  $productDetails = $productCounts->map(function ($item) use ($customAbbreviations) {
-      $productName = $item->typeOfProduct->name;
-      $shortName = $customAbbreviations[$productName] ?? strtolower(substr($productName, 0, 1 )); // Primera letra del tipo de producto
-      return $item->total . $shortName;
-  })->join(', ');
-          
-  $isVip = $order->client->vip_clients ?? false;
-  $serviceLabel = $isVip ? 'VIP' : '';
+      // Formatear los datos de productos en el formato deseado
+      $productDetails = $productCounts->map(function ($item) use ($customAbbreviations) {
+        $productName = $item->typeOfProduct->name;
+        $shortName = $customAbbreviations[$productName] ?? strtolower(substr($productName, 0, 1)); // Primera letra del tipo de producto
+        return $item->total . $shortName;
+      })->join(', ');
+
+      $isVip = $order->client->vip_clients ?? false;
+      $serviceLabel = $isVip ? 'VIP' : '';
 
       if ($order->service === ServiceEnum::DELIVERY->value || $order->service === ServiceEnum::PICKUP->value) {
         $startDate = $order->delivery_date;
         $endDate = $order->delivery_date;
         $event = $this->createEvent(
           $order->id,
-          '#' . $order->order_number . ' - ' . $order->name .  ($serviceLabel ? ' (' . $serviceLabel . ')' : ''). (!empty($order->city) ? ' - ' . $order->city : ''),
+          '#' . $order->order_number . ' - ' . $order->name .  ($serviceLabel ? ' (' . $serviceLabel . ')' : '') . (!empty($order->city) ? ' - ' . $order->city : ''),
           // $this->getEventPopover($order->status, $order->service),
           'Products: ' . $productDetails,
           $startDate,
@@ -186,14 +188,22 @@ class DashboardController extends Controller
         );
 
         $events[] = $event;
+      }
 
-       
-        
-      } else if ($order->service === ServiceEnum::INSTALLATION->value) {
+      if ($order->service === ServiceEnum::INSTALLATION->value) {
+    
 
         if (!$showOnlyInstallation) {
-          $startDeliveryDate = $order->delivery_date;
-          $endDeliveryDate = $order->delivery_date;
+           /* if($order->status === OrderStatusEnum::INSPECTION->value) {
+              $startDeliveryDate = $order->inspection_date;
+              $endDeliveryDate = $order->inspection_date;
+              $color = StatusColorEnum::PLANNED->value;
+            }else{*/
+            $startDeliveryDate = $order->delivery_date;
+            $endDeliveryDate = $order->delivery_date;
+            $color= $this->getColorByStatus($order->status, $order->service);
+            //}
+
           $event = $this->createEvent(
             $order->id,
             '#' . $order->order_number . ' - ' . $order->name . ($serviceLabel ? ' (' . $serviceLabel . ')' : '') . (!empty($order->city) ? ' - ' . $order->city : ''),
@@ -201,85 +211,113 @@ class DashboardController extends Controller
             'Products: ' . $productDetails,
             $startDeliveryDate,
             $endDeliveryDate,
-            $this->getColorByStatus($order->status, $order->service),
+            $color,
             ServiceEnum::DELIVERY->value
           );
           $events[] = $event;
         }
 
-        $startInstallationDate = $order->installation_date;
-        $endInstallationDate = $order->installation_end_date;
-        $startInstallationDateCarbon = Carbon::parse($startInstallationDate);
-        //$startInstallationDate = Carbon::parse($startInstallationDate);
-        //$endInstallationDate = Carbon::parse($endInstallationDate); 
-        $actualDate = Carbon::now();
-        $color = $this->getColorByStatus($order->status, $order->service, true);
-        if ($actualDate->diffInDays($startInstallationDateCarbon) <= 7 && $order->permit != null && $order->permit->pick_up_permit == '') {
-          $color = StatusColorEnum::DELAY_PERMITS->value;
-        }
+        if (!$showOnlyDeliveries) {
 
-       $event = $this->createEvent(
-          $order->id,
-          '#' . $order->order_number . ' - ' . $order->name . ($serviceLabel ? ' (' . $serviceLabel . ')' : '') . (!empty($order->city) ? ' - ' . $order->city : ''),
-          // $this->getEventPopover($order->status, $order->service, true),
-          'Products: ' . $productDetails,
-          $startInstallationDate,
-          $endInstallationDate,
-          $color,
-          $order->service
-        );
-          $events[] = $event;
-
-      /*$partitionEvents = [
-          [
-            'start' => $startInstallationDate,
-            'end' => $endInstallationDate,
-            'color' => $color,
-            'service' => $order->service,
-            'order' => $order,
-          ]
-        ];
-         $whileIndex = 0;
-        while($startInstallationDate !== $endInstallationDate) {
-
-          if ($startInstallationDate->isWeekend()) {
-            $partitionEvents[$whileIndex]['end'] = $startInstallationDate;
-            $partitionEvents[] = [
-              'start' => $startInstallationDate,
-              'end' => $endInstallationDate,
-              'color' => $color,
-              'service' => $order->service,
-              'order' => $order,
-            ];
-
-          $startInstallationDate->addDay();
+          if($order->status === OrderStatusEnum::INSPECTION->value) {
+            $startInstallationDate = $order->inspection_date;
+            $endInstallationDate = $order->inspection_date;
+            $color = StatusColorEnum::PLANNED->value;
+          } else if ($order->status === OrderStatusEnum::FINISH->value){
+            $startInstallationDate = $order->finish_date;
+            $endInstallationDate = $order->finish_date;
+            $color = StatusColorEnum::PLANNED_INSTALLATION->value;
+          } else if ($order->status === OrderStatusEnum::FINAL_INSPECTION->value){
+            $startInstallationDate = $order->final_inspection_date;
+            $endInstallationDate = $order->final_inspection_date;
+            $color = StatusColorEnum::CONFIRMED_DELIVERY->value;
+          }
+          /*else if ($order->status === OrderStatusEnum::COMPLETE->value){
+              $startInstallationDate = Carbon::now();
+              $endInstallationDate = Carbon::now();
+              $color = $this->getColorByStatus($order->status, $order->service, true);
+            }*/
+          else{
+          $startInstallationDate = $order->installation_date;
+          $endInstallationDate = $order->installation_end_date;
+          $color = $this->getColorByStatus($order->status, $order->service, true);
+          }
+          $startInstallationDateCarbon = Carbon::parse($startInstallationDate);
+          $endInstallationDateCarbon = Carbon::parse($endInstallationDate);
+          $actualDate = Carbon::now();
           
-        }*/
-        
-       /* else {
-          $partitionEvents[] = [
-            'start' => $startInstallationDate,
-            'end' => $endInstallationDate,
-            'color' => $color,
-            'service' => $order->service,
-            'order' => $order,
-          ];
-        }
-        $events[] = $event;
+          
+          if ($actualDate->diffInDays($startInstallationDateCarbon) <= 7 && $order->permit != null && $order->permit->pick_up_permit == '') {
+            $color = StatusColorEnum::DELAY_PERMITS->value;
+          }
 
-        
-      } 
+          if ($order->hide_on_weekends) {
+            $blockStart = null;
+            while ($startInstallationDateCarbon <= $endInstallationDateCarbon) {
+              $dayOfWeek = $startInstallationDateCarbon->format('N'); // 1 = Monday, 7 = Sunday
       
-      //$whileIndex ++;
+              if ($dayOfWeek < 6) { // If it's a workday
+                  if ($blockStart === null) {
+                      $blockStart = clone $startInstallationDateCarbon; // Start a new block
+                  }
+              } else { // If it's Saturday or Sunday, close the current block
+                  if ($blockStart !== null) {
+                      $event = $this->createEvent(
+                          $order->id,
+                          '#' . $order->order_number . ' - ' . $order->name . ($serviceLabel ? ' (' . $serviceLabel . ')' : '') . (!empty($order->city) ? ' - ' . $order->city : ''),
+                          'Products: ' . $productDetails,
+                          $blockStart->format('Y-m-d'),
+                         $startInstallationDateCarbon->modify('-1 day')->format('Y-m-d'),
+                          $this->getColorByStatus($order->status, ServiceEnum::INSTALLATION->value, true),
+                          ServiceEnum::INSTALLATION->value
+                          
+                      );
+                      $events[] = $event;
+                      $blockStart = null;
+                  }
+              }
+           
+              // If it's the last day and a workday, close the block
+              if ($startInstallationDateCarbon == $endInstallationDateCarbon && $dayOfWeek < 6 && $blockStart !== null) {
+                  $event = $this->createEvent(
+                      $order->id,
+                      '#' . $order->order_number . ' - ' . $order->name . ($serviceLabel ? ' (' . $serviceLabel . ')' : '') . (!empty($order->city) ? ' - ' . $order->city : ''),
+                      'Products: ' . $productDetails,
+                      $blockStart->format('Y-m-d'),
+                       $startInstallationDateCarbon->format('Y-m-d'),
+                      $this->getColorByStatus($order->status, ServiceEnum::INSTALLATION->value, true),
+                      ServiceEnum::INSTALLATION->value
+                  );
+                
+                  $events[] = $event;
+              }
       
-    }*/
-    }}
-   
+              // Move to the next day
+              $startInstallationDateCarbon->modify('+1 day');
+            }
+          } else {
+            $event = $this->createEvent(
+              $order->id,
+              '#' . $order->order_number . ' - ' . $order->name . ($serviceLabel ? ' (' . $serviceLabel . ')' : '') . (!empty($order->city) ? ' - ' . $order->city : ''),
+              'Products: ' . $productDetails,
+              $startInstallationDate,
+              $endInstallationDate,
+              $color,
+              $order->service,
+              
+            ); 
+            $events[] = $event;
+          }
+        }
+      }
+    }
+
     return response()
       ->json($events);
   }
 
-  public function updateEvent(Request $request, $id) {
+  public function updateEvent(Request $request, $id)
+  {
     $order = Order::find($id);
     if ($request->type_of_event === ServiceEnum::INSTALLATION->value) {
       $order->installation_date = $request->start;
@@ -293,7 +331,8 @@ class DashboardController extends Controller
       ->json($order);
   }
 
-  public function getEvent(Order $order) {
+  public function getEvent(Order $order)
+  {
     $order->load([
       'client',
       'typeOfWork',
@@ -308,12 +347,13 @@ class DashboardController extends Controller
       'durationOfWork',
       'orderProducts.orderProductExtraWorks',
     ]);
-  
+
     return response()
       ->json($order);
   }
 
-  public function getPaymentList(Order $order) {
+  public function getPaymentList(Order $order)
+  {
     $order->load([
       'client',
       'typeOfWork',
@@ -327,13 +367,14 @@ class DashboardController extends Controller
       'travelCost',
       'durationOfWork',
     ]);
-  
+
     $pdf = Pdf::loadView('pdf.payment-list', ['order' => $order]);
     $pdfName = 'payment-list-' . $order->order_number . '.pdf';
     return $pdf->stream($pdfName);
   }
 
-  public function whatsapp() {
+  public function whatsapp()
+  {
     $this->sendWhatsAppMessage('+12397632059', 'Primer mensaje para Katy');
     echo 'whatsapp message';
   }

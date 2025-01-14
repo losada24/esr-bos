@@ -14,5 +14,8 @@ enum StatusColorEnum: string
     case COMPLETE = '#72cb10';
     case ON_HOLD = '#D3D3D3';
     case RESCHEDULE = '#cb4c08';
+    //case INSPECTION = '#9333ff';
+    //case FINISH = '#5FE3FB';
+    //case FINAL_INSPECTION = '#FF8D33';
     
 }

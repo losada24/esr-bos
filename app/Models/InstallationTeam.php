@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Support\Facades\DB;
 
 class InstallationTeam extends Model
 {
@@ -31,7 +32,18 @@ class InstallationTeam extends Model
     ];
 
     public function scopeFilter($query, array $filters)
-    {
+{ 
+      $query->when($filters['text'] ?? null, function ($query, $search) {
+        $query->where(function ($query) use ($search) {
+            $query->where(DB::raw("CONCAT(company_name, ' ', phone)"), 'like', '%' . $search . '%')
+                  ->orWhereHas('user', function ($query) use ($search) {
+                      $query->where(DB::raw("CONCAT(name, ' ', email)"), 'like', '%' . $search . '%');
+                  });
+            });
+          });
+        
+  
+  
         /* $query->when($filters['status'] ?? null, function ($query, $search) {
           $query->where('status', $search);
         })->when($filters['client_id'] ?? null, function ($query, $search) {

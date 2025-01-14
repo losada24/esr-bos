@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enum\OrderStatusEnum;
 use App\Enum\RoleEnum;
+use App\Enum\ServiceEnum;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -62,9 +63,10 @@ class Order extends Model
         'execution_planing_date',
         'supervisor_commissions',
         'supervisor_payment_percentage',
-
-
-
+        'hide_on_weekends',
+        'inspection_date',
+        'finish_date',
+        'final_inspection_date',
     ];
 
     protected $dates = [
@@ -77,6 +79,9 @@ class Order extends Model
         'eta_date',
         'installation_end_date',
         'supervisor_payment_date',
+        'inspection_date',
+        'finish_date',
+        'final_inspection_date',
     ];
 
     protected function casts(): array
@@ -84,7 +89,7 @@ class Order extends Model
         return [
             'city_permits' => 'boolean',
             'payment_definition' => 'boolean',
-            
+            'hide_on_weekends' => 'boolean',
         ];
     }
 
@@ -103,9 +108,22 @@ class Order extends Model
         $query->where('status', $filters['status']);
       }
 
-      if (isset($filters['service']) && $filters['service'] != 'all') {
+      /*if (isset($filters['service']) && $filters['service'] != 'all') {
         $query->where('service', $filters['service']);
-      }
+        if ($filters['service'] === ServiceEnum::DELIVERY->value) {
+          $query->orWhere('service', ServiceEnum::INSTALLATION->value);
+        }
+      }*/
+      if (isset($filters['service']) && $filters['service'] != 'all') {
+        $query->where(function ($query) use ($filters) {
+            if ($filters['service'] === ServiceEnum::DELIVERY->value) {
+                $query->where('service', ServiceEnum::DELIVERY->value)
+                      ->orWhere('service', ServiceEnum::INSTALLATION->value);
+            } else {
+                $query->where('service', $filters['service']);
+            }
+        });
+    }
     
     /*  if (isset($filters['clientName']) && $filters['clientName'] !== 'all' && !empty($filters['clientName'])) {
         $query->whereHas('client', function ($query) use ($filters) {
@@ -123,7 +141,7 @@ class Order extends Model
               $query->whereHas('installationTeams', function ($q) use ($installationTeams)  {
                 $q->where('installation_teams.id', $installationTeams->id);
             });
-            }
+          }
       /*if (auth()->user()->hasRole(RoleEnum::SUPERVISOR->value)) {
         $supervisor = User::where ('user_id', auth()->user()->id)->first();
         $query->whereHas('supervisor', function ($q) use ($supervisor)  {
@@ -134,8 +152,12 @@ class Order extends Model
               $query->where('supervisor_id', auth()->user()->id)
               ->whereIn('status', [
                 OrderStatusEnum::CONFIRMED,   // Solo órdenes en "EXECUTION"
-                OrderStatusEnum::COMPLETE     // O también en "COMPLETE"
-            ]);
+                OrderStatusEnum::EXECUTION,
+                OrderStatusEnum::INSPECTION,
+                OrderStatusEnum::FINISH,
+                OrderStatusEnum::FINAL_INSPECTION,
+                OrderStatusEnum::COMPLETE,  
+              ]);
             }
     }
   }

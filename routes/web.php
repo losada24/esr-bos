@@ -105,7 +105,8 @@ Route::middleware('auth')->group(function () {
       ->name('dashboard.update_event');
 
     Route::delete('order/drop_attachment/{id}', [OrderController::class, 'dropAttachment'])
-      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value])
+      // ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|other_roles'])
+      ->middleware('auth') 
       ->name('order.drop_attachment');
     
       Route::get('/order/status_order/{id}', [OrderController::class, 'statusOrder'])

@@ -909,23 +909,23 @@ const OrderForm = ({
               />
               {(submitCount && errors.project_amount) ? <InputError message={errors.project_amount} className="mt-2" /> : ''}
             </div>
-            {(values.service === SERVICES.DELIVERY_AND_INSTALLATION) && (
+           {(values.service === SERVICES.DELIVERY_AND_INSTALLATION) && (
               <>
-                <div className={submitCount ? (errors.payment_definition) ? 'has-error inline-flex flex-col' : 'has-success inline-flex' : 'inline-flex items-end'}>
+               <div className={submitCount ? (errors.hide_on_weekends) ? 'has-error inline-flex flex-col' : 'has-success inline-flex' : 'inline-flex items-end'}>
                     <div className='flex'>
                       <Field
-                        id="payment_definition"
-                        name="payment_definition"
+                        id="hide_on_weekends"
+                        name="hide_on_weekends"
                         className="form-checkbox"
                         type='checkbox'
                         onChange={(e: any) => {
-                          setFieldValue('payment_definition', e.target.checked)
-                          setFieldValue('initial_payment_percentage', 0)
+                          setFieldValue('hide_on_weekends', e.target.checked)
+                          // setFieldValue('initial_payment_percentage', 0)
                         }}
                       />
-                      <label htmlFor="payment_definition">Payment Definition</label>
+                      <label htmlFor="hide_on_weekends">Hide On Weekends</label>
                     </div>
-                    {(submitCount && errors.payment_definition) ? <div className='block'><InputError message={errors.payment_definition} className="mt-2" /></div> : ''}
+                    {(submitCount && errors.hide_on_weekends) ? <div className='block'><InputError message={errors.hide_on_weekends} className="mt-2" /></div> : ''}
                 </div>
                {/* <div className={submitCount ? (errors.initial_payment_percentage) ? 'has-error' : 'has-success' : ''}>
                   <label htmlFor="initial_payment_percentage">Initial Payment Percentage</label>

@@ -67,7 +67,7 @@ trait OrderStatus {
     return $color;
   }
 
-  public function createEvent($order_id, $title, $tooltip, $start, $end, $color, $type_of_event) {
+  public function createEvent($order_id, $title, $tooltip, $start, $end, $color, $type_of_event, $hide_on_weekends = false) {
     return [
       'order_id' => $order_id,
       'title' => $title,

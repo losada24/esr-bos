@@ -17,6 +17,8 @@ class Attachment extends Model
         'filename',
         'file_path',
         'file_type',
+        'user_id',
+
     ];
 
     public function orderDocuments(): MorphTo
@@ -27,5 +29,9 @@ class Attachment extends Model
     public function installationTeamDocuments(): MorphTo
     {
         return $this->morphTo(InstallationTeam::class, 'attachable');
+    }
+
+    public function user(): BelongsTo {
+      return $this->belongsTo(User::class);
     }
 }

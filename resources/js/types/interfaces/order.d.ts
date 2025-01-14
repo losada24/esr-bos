@@ -20,6 +20,9 @@ export interface Order {
   updated_at?: Date
   entry_date?: Date
   installation_date?: Date
+  inspection_date?: Date
+  finish_date?: Date
+  final_inspection_date?: Date
   user?: User
   client?: Client
   additional_travel_costs?: number
@@ -54,6 +57,7 @@ export interface Order {
   type_of_financing?: string
   payment_definition?: boolean
   initial_payment_percentage?: number
+  hide_on_weekends?: boolean
 }
 
 export interface TypeOfWork {

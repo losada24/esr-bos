@@ -107,7 +107,8 @@ export const orderFormObj: OrderFormValues = {
   attachments: [],
   frame_color: '',
   initial_payment_percentage: 0,
-  payment_definition: false
+  payment_definition: false,
+  hide_on_weekends: false
 }
 
 export interface OrderProductExtraWorksFormValues {
@@ -166,7 +167,8 @@ export const loadOrderFormObj = (order: Order): OrderFormValues => {
     frame_color: order.frame_color,
     status: order.status,
     payment_definition: order.payment_definition,
-    initial_payment_percentage: order.initial_payment_percentage
+    initial_payment_percentage: order.initial_payment_percentage,
+    hide_on_weekends: order.hide_on_weekends ?? false
   }
 }
 

@@ -48,7 +48,7 @@ const InstallationTeamFilter = () => {
               setData('text', e.target.value)
             }}
             type='text'
-            placeholder='Search by Email'
+            placeholder='Search by Name, Company or Email'
           />
         </div>
         <div className="flex items-end justify-between w-44 pb-3">
