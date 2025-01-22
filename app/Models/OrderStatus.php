@@ -20,12 +20,20 @@ class OrderStatus extends Model
         'start_date',
         'end_date',
         'pickup_date',
+        'inspection_date',
+        'finish_date',
+        'final_inspection_date',
+        'complete_date',
 
     ];
     protected $dates = [
       'start_date',
       'end_date',
       'pickup_date',
+      'inspection_date',
+      'finish_date',
+      'final_inspection_date',
+      'complete_date',
   ];
 
     public function order()

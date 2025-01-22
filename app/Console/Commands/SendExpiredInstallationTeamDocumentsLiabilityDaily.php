@@ -32,7 +32,7 @@ class SendExpiredInstallationTeamDocumentsLiabilityDaily extends Command
     public function handle()
     {
         $installationTeams = InstallationTeam::with('user')
-          ->Where('liability_expiration_date', '<=', Carbon::now()->addMonth(1))
+          ->where('liability_expiration_date', '<=', Carbon::now()->addMonth(1))
           ->get();
 
           $users = [];
@@ -43,7 +43,7 @@ class SendExpiredInstallationTeamDocumentsLiabilityDaily extends Command
 
         foreach ($installationTeams as $installationTeam) {
           $email_user = array_merge($users, [$installationTeam->user->email]);
-          Mail::to($email_user)->send(new InstallationTeamExpireDocuments($installationTeam,true,false));
+          Mail::to($email_user)->send(new InstallationTeamExpireDocuments($installationTeam, true, false));
         }
     }
 }

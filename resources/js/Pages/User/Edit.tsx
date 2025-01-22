@@ -14,6 +14,7 @@ export default function Edit ({ auth, roles, user }: UserPageProps) {
     id: user?.data.id ?? 0,
     name: user?.data.name ?? '',
     email: user?.data.email ?? '',
+    phone: user?.data.phone ?? '',
     password: '',
     password_confirmation: '',
     role: user?.data.role?.map((role: Role) => {

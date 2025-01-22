@@ -31,6 +31,7 @@ class StoreUserRequest extends FormRequest
             'role' => 'required|array', // Debe ser un array
             'role.*' => 'exists:roles,id', // Cada rol debe existir en la tabla roles
             'featured_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:512',
+            'phone' => 'nullable|max:20',
         ];
     }
 }

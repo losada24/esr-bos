@@ -10,6 +10,7 @@ import Flatpickr from 'react-flatpickr'
 import 'flatpickr/dist/flatpickr.css'
 import PrimaryButton from '@/Components/PrimaryButton'
 import { router } from '@inertiajs/react'
+
 import { Dialog } from '@headlessui/react'
 import InputLabel from '@/Components/InputLabel'
 import { get } from 'http'
@@ -53,6 +54,7 @@ const EventModal = ({
     inspection_date: null,
     finish_date: null,
     final_inspection_date: null,
+    complete_date: null,
     installation_team_id: [],
     additional_travel_costs: 0,
     type_of_work_id: 0,
@@ -79,23 +81,34 @@ const EventModal = ({
     status: '',
     hide_on_weekends: false
   }
+
+  /* interface PageProps {
+    success?: boolean
+    message?: string | null // Define el tipo del mensaje
+  } */
   const [event, setEvent] = useState<Order | null>(null)
   const [isVipClient, setIsVipClient] = useState<boolean>(false)
   const [editableData, setEditableData] = useState<any>(defaultState)
   const [isLoading, setIsLoading] = useState(false)
   const [attachmentsArray, setAttachmentsArray] = useState<File[]>(attachments ?? [])
   const [attachmentsList, setAttachmentsList] = useState<any[]>([])
+  const [message, setMessage] = useState<string | null>(null)
 
   const removeAttachmentProduct = (index: number) => {
     if (confirm('Are you sure you want to delete this attachment?')) {
       router.delete(route('order.drop_attachment', { id: attachmentsList[index].id }), {
-        onSuccess: () => {
-          const aux = attachmentsList.filter((_, i) => i !== index)
-          setAttachmentsList(aux)
-          // setFieldValue('attachments', attachmentsList)
+        onSuccess: (page: any) => {
+          if (page.props.flash.success != null) {
+            const aux = attachmentsList.filter((_, i) => i !== index)
+            setAttachmentsList(aux)
+          } else {
+            setMessage(page.props.flash.error)
+          }
         },
-        onError: () => {
-          alert('You do not have permission to delete this attachment.')
+        onError: (error: any) => {
+          const errorMessage = error.response?.data?.message || 'An unexpected error occurred.'
+          // showErrorModal(errorMessage) // Llama a una función para mostrar el modal con el mensaje
+          alert(errorMessage)
         }
       })
     }
@@ -114,9 +127,9 @@ const EventModal = ({
           setEvent(data)
           // console.log(data.attachments)
           setAttachmentsList(data.attachments ?? [])
-          const installationDate = new Date(data.installation_date ?? new Date())
-          const duration = data?.duration_of_work?.number_of_day ?? 0
-          const endDate = new Date(installationDate.setDate(installationDate.getDate() + duration - 1))
+          // const installationDate = new Date(data.installation_date ?? new Date())
+          // const duration = data?.duration_of_work?.number_of_day ?? 0
+          // const endDate = new Date(installationDate.setDate(installationDate.getDate() + duration - 1))
           setEditableData({
             entry_date: data.entry_date ?? null,
             contract_signing_date: data.contract_signing_date ?? null,
@@ -126,8 +139,9 @@ const EventModal = ({
             installation_date: data.installation_date ?? null,
             inspection_date: data.inspection_date ?? null,
             finish_date: data.finish_date ?? null,
+            complete_date: data.complete_date ?? null,
             final_inspection_date: data.final_inspection_date ?? null,
-            installation_end_date: endDate.toISOString().slice(0, 10),
+            installation_end_date: data.installation_end_date ?? null,
             installation_teams: data.installation_teams.map((item) => { return { label: item.user?.name, value: item.id } }) ?? [],
             supervisor_id: data.supervisor?.id ?? 0, // Asumimos que `data.supervisor` es un objeto con los datos del superviso
             status: { label: data.status, value: data.status },
@@ -166,13 +180,13 @@ const EventModal = ({
       setShowValidationErrors(true)
       return
     }
-
     const data = {
       ...editableData,
       installation_teams: editableData.installation_teams.map((team: any) => team.value),
       supervisor_id: editableData.supervisor_id || null,
       status: editableData.status.value,
-      attachments: attachmentsArray
+      attachments: attachmentsArray,
+      complete_date: editableData.status.value === 'COMPLETE' ? new Date().toISOString().slice(0, 10) : null
     }
 
     router.post(route('update.order.from.modal', id), data, {
@@ -187,6 +201,7 @@ const EventModal = ({
     })
     setShowValidationErrors(false)
     setAttachmentsArray([])
+    setMessage(null)
   }
   return (
     <Modal
@@ -201,7 +216,7 @@ const EventModal = ({
     >
         <div className="flex items-center justify-between bg-[#fbfbfb] px-5 py-3 dark:bg-[#121c2c]">
           <div className="text-lg font-bold">Order Number: {`#${event?.order_number}`}</div>
-          <button type="button" className="text-white-dark hover:text-dark" onClick={() => { onClose(false); setShowValidationErrors(false) }}>
+          <button type="button" className="text-white-dark hover:text-dark" onClick={() => { onClose(false); setShowValidationErrors(false); setMessage(null) }}>
             <CloseIcon />
           </button>
         </div>
@@ -455,7 +470,7 @@ const EventModal = ({
                 // disabled={values.supervisor_id === ''}
                 name="installation_date"
                 value={editableData.installation_date ?? ''}
-                disabled={!isAdminOrAccountManager && isSupervisor}
+                disabled={!isAdminOrAccountManager && !isSupervisor}
                 className="form-input"
                 onChange={([date]) => {
                   if (date) {
@@ -481,7 +496,7 @@ const EventModal = ({
                 // disabled={values.supervisor_id === ''}
                 name="installation_end_date"
                 value={editableData.installation_end_date ?? ''}
-                disabled={!isAdminOrAccountManager && isSupervisor}
+                disabled={!isAdminOrAccountManager && !isSupervisor}
                 className="form-input"
                 onChange={([date]) => {
                   if (date) {
@@ -563,7 +578,7 @@ const EventModal = ({
                   </div>
               )}
             </div>
-            {(editableData.status.value === 'INSPECTION') && (
+            {(editableData.status.value === 'INSPECTION' || editableData.inspection_date != null) && (
                     <div className='w-1/3  mt-8'>
                     <label htmlFor="inspection_date"><strong>Inspection Date:</strong></label>
                     <Flatpickr
@@ -586,7 +601,7 @@ const EventModal = ({
                   />
                   </div>
             )}
-                    {(editableData.status.value === 'FINISH') && (
+                    {(editableData.status.value === 'FINISH' || editableData.finish_date != null) && (
                     <div className='w-1/3  mt-8'>
                     <label htmlFor="finish_date"><strong>Finish Date:</strong></label>
                     <Flatpickr
@@ -609,7 +624,7 @@ const EventModal = ({
                   />
                   </div>
                     )}
-                 {(editableData.status.value === 'FINAL INSPECTION') && (
+                 {(editableData.status.value === 'FINAL INSPECTION' || editableData.final_inspection_date != null) && (
                     <div className='w-1/3  mt-8'>
                     <label htmlFor="final_inspection_date"><strong>Final Inspection Date:</strong></label>
                     <Flatpickr
@@ -665,25 +680,31 @@ const EventModal = ({
                  }}
                />
                  <div className="flex flex-col rounded-md border border-[#e0e6ed] dark:border-[#1b2e4b] mt-3">
+                  {message !== '' && (
+                    <div className='flex items-center p-3.5 rounded text-danger dark:bg-danger-dark-light'>{message}</div>
+                  )}
                   <table className='w-full whitespace-nowrap'>
                   <tbody>
                    {attachmentsList.map((attachment, index) => {
                      return (
                        <tr key={index} className='hover:bg-gray-100 focus-within:bg-gray-100'>
                          <td className='border-t px-6 py-4 align-top'>{attachment.filename}</td>
-                         <td className='border-t px-6 py-4 align-top w-20 flex'>
-                         <a key={attachment.id} href={`storage/${attachment.file_path}`} target='_blank' rel="noreferrer">
-                          <ExportIcon />
-                         </a>
-                          <button
-                            onClick={(e) => {
-                              e.preventDefault()
-                              removeAttachmentProduct(index)
-                            }}
-                            title='Delete Attachment'
-                          >
-                            <DeleteIcon />
-                          </button>
+                         <td className='border-t px-6 py-4 align-top'>
+                          <div className='flex flex-row gap-2 justify-end'>
+                            <a key={attachment.id} href={`storage/${attachment.file_path}`} target='_blank' rel="noreferrer">
+                              <ExportIcon />
+                            </a>
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault()
+                                removeAttachmentProduct(index)
+                              }}
+
+                              title='Delete Attachment'
+                            >
+                              <DeleteIcon />
+                            </button>
+                          </div>
                          </td>
                        </tr>
                      )
@@ -723,7 +744,7 @@ const EventModal = ({
           )}
           {((isAdminOrAccountManager) || (isSupervisor)) && (
             <div className="flex items-center justify-between mt-4">
-              <button className='btn btn-danger uppercase' onClick={() => { onClose(); setShowValidationErrors(false) }}>Cancel</button>
+              <button className='btn btn-danger uppercase' onClick={() => { onClose(); setShowValidationErrors(false); setMessage(null) }}>Cancel</button>
               <PrimaryButton className="btn btn-primary" type='button' onClick={() => { handle() }}>
                 Save
               </PrimaryButton>

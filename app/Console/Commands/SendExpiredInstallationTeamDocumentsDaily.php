@@ -43,7 +43,7 @@ class SendExpiredInstallationTeamDocumentsDaily extends Command
 
         foreach ($installationTeams as $installationTeam) {
           $email_user = array_merge($users, [$installationTeam->user->email]);
-          Mail::to($email_user)->send(new InstallationTeamExpireDocuments($installationTeam,false,true));
+          Mail::to($email_user)->send(new InstallationTeamExpireDocuments($installationTeam, false, true));
         }
     }
 }

@@ -63,18 +63,22 @@ trait OrderEmails {
         $owners = $order->owners->pluck('email')->toArray();
         foreach ($owners as $owner){
           Mail::to($owner)->send(new InstallationDateConfirmationClient($order));
+         
         }
         $users[] = $order->client->email;
+        
         foreach ($users as $user) {
           Mail::to($user)->send(new InstallationDateConfirmationClient($order, true));
         }
         $users = [];
+      
         //dd($order->supervisor->email);
         $users[] = $order->supervisor->email;
         $users[] = 'alina@reylosglass.com';
         $serviceManager = User::role([RoleEnum::SERVICE_MANAGER->value])->get();
         $users = array_merge($users, $serviceManager->pluck('email')->toArray());
         foreach ($users as $user) {
+          
           Mail::to($user)->send(new InstallationDateConfirmation($order, true, true, false,true));
         }
 

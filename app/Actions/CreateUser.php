@@ -25,6 +25,7 @@ class CreateUser {
         'email' => $request->email,
         'password' => Hash::make($request->password),
         'featured_image' => $reaturedImagePath,
+        'phone' => $request->phone,
       ]);
 
       if( !$user )

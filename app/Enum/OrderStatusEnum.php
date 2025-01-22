@@ -12,7 +12,7 @@ enum OrderStatusEnum: string
     case INSPECTION = 'INSPECTION';
     case FINISH = 'FINISH';
     case FINAL_INSPECTION = 'FINAL INSPECTION';
-    case FINAL_COLLECT = 'FINAL COLLECT';
+    case FINAL_COLLECT = 'PENDING COLLECT';
     case ON_HOLD = 'ON HOLD';
     case COMPLETE = 'COMPLETE';
     case RESCHEDULE = 'RESCHEDULED';

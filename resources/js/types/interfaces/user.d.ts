@@ -7,4 +7,5 @@ export interface User {
   email_verified_at: string
   roles: Role[]
   featured_image?: string
+  phone: string
 }

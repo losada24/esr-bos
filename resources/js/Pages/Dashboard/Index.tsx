@@ -22,13 +22,13 @@ interface CalendarFilter {
   name: string
 }
 
-export default function Dashboard ({ auth, services, status, legend, installation_teams, supervisors }: PageProps & { services: string[], status: string[], legend: Legend[], installation_teams: InstallationTeam[], supervisors: User[] }) {
+export default function Dashboard ({ auth, services, status, statusmodal, legend, installation_teams, supervisors }: PageProps & { services: string[], status: string[], statusmodal: [], legend: Legend[], installation_teams: InstallationTeam[], supervisors: User[] }) {
   const IS_ADMIN = isAdmin(auth.user.roles.map((role: Role) => role.name))
   const IS_ACCOUNT_MANAGER = isAccountManager(auth.user.roles.map((role: Role) => role.name))
   const IS_SUPERVISOR = isSupervisor(auth.user.roles.map((role: Role) => role.name))
   const [myEvents, setEvents] = useState([])
   const [currentDate, setCurrentDate] = useState(new Date())
-  const [calendarFilter, setCalendarFilter] = useState<CalendarFilter>({ service: 'all', status: 'all', name: '' })
+  const [calendarFilter, setCalendarFilter] = useState<CalendarFilter>({ service: IS_ADMIN || IS_ACCOUNT_MANAGER ? 'all' : 'INSTALLATION', status: 'all', name: '' })
   const [eventId, setEventId] = useState(0)
   const calendarRef = useRef<HTMLDivElement>(null)
 
@@ -112,7 +112,7 @@ export default function Dashboard ({ auth, services, status, legend, installatio
                   setCalendarFilter({ ...calendarFilter, service: e.target.value })
                 }}
               >
-                <option value="all">All</option>
+                {IS_ADMIN || IS_ACCOUNT_MANAGER ? <option value="all">All</option> : null}
                 {services.map((service) => (
                   <option key={service}>{service}</option>
                 ))}
@@ -166,7 +166,7 @@ export default function Dashboard ({ auth, services, status, legend, installatio
             {legend.map((item, index) => {
               return (
                 <div key={`legend${index}`} className='flex items-center gap-1'>
-                  <div className='w-5 h-5 rounded-sm cursor-pointer' title={item.label} style={{ backgroundColor: item.color }}></div>
+                  <div className='border w-5 h-5 rounded-sm cursor-pointer' title={item.label} style={{ backgroundColor: item.color }}></div>
                 </div>
               )
             })}
@@ -198,8 +198,7 @@ export default function Dashboard ({ auth, services, status, legend, installatio
         id={eventId}
         installation_teams ={installation_teams}
         supervisors={supervisors}
-        status = {status}
-
+        status = {statusmodal}
       />
     </AuthenticatedCalendarLayout>
   )

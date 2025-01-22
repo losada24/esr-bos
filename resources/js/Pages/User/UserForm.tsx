@@ -50,6 +50,17 @@ const UserForm = ({ submitCount, errors, roles, isCreate, /* companies, isAdmin,
         />
        {(submitCount && errors.email) ? <InputError message={errors.email} className="mt-2" /> : ''}
       </div>
+      <div className={submitCount ? (errors.phone) ? 'has-error' : 'has-success' : ''}>
+              <label htmlFor="phone">Phone</label>
+              <Field
+                id="phone"
+                name="phone"
+                className="form-input"
+                autoComplete="phone"
+                placeholder='Phone'
+              />
+              {(submitCount && errors.phone) ? <InputError message={errors.phone} className="mt-2" /> : ''}
+            </div>
       <div className={submitCount ? (errors.role ? 'has-error' : 'has-success') : ''}>
           <label htmlFor="roles">Roles</label>
           <Select

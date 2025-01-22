@@ -12,7 +12,8 @@ export default function Create ({ auth, roles }: UserPageProps) {
     password: '',
     password_confirmation: '',
     role: [],
-    featured_image: ''
+    featured_image: '',
+    phone: ''
   }
 
   const handleSubmit = async (values: any, helpers: FormikHelpers<UserFormValues>) => {

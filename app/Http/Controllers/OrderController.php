@@ -191,7 +191,7 @@ class OrderController extends Controller
             OrderStatusEnum::PLANNED->value,
             OrderStatusEnum::CONFIRMED->value,
             //OrderStatusEnum::EXECUTION->value,
-            OrderStatusEnum::SUPERVISION->value,
+            //OrderStatusEnum::SUPERVISION->value,
             OrderStatusEnum::INSPECTION->value,
             OrderStatusEnum::FINISH->value,
             OrderStatusEnum::FINAL_INSPECTION->value,
@@ -296,29 +296,28 @@ class OrderController extends Controller
     public function dropAttachment($id) {
       
       // Buscar el attachment por ID
-    $attachment = Attachment::find($id);
+      $attachment = Attachment::find($id);
 
-    // Verificar si el attachment existe
-    if (!$attachment) {
-        return response()->json(['message' => 'Attachment not found'], 404);
-    }
+      // Verificar si el attachment existe
+      if (!$attachment) {
+        return redirect()
+          ->back()
+          ->with('error', 'Attachment not found');
+      }
 
-    // Obtener el usuario autenticado
-    $user = auth()->user();
+      // Obtener el usuario autenticado
+      $user = auth()->user();
 
-    // Verificar si el usuario tiene permisos para eliminar el attachment
-    if ($user->hasRole([RoleEnum::ADMIN->value, RoleEnum::ACCOUNT_MANAGER->value])) {
-        // Admins y Account Managers pueden eliminar cualquier attachment
+      if ($attachment->user_id=== auth()->user()->id || $user->hasRole([RoleEnum::ADMIN->value, RoleEnum::ACCOUNT_MANAGER->value])) {
         $attachment->delete();
-    }
-
-    // Para otros usuarios: verificar si ellos crearon el attachment
-    if ($attachment->user_id=== auth()->user()->id) {
-        $attachment->delete();
-    } 
-
-      // $attachment = Attachment::find($id);
-      // $attachment->delete();
+        return redirect()
+            ->back()
+            ->with('success', 'Order deleted successfully.');
+      } else { 
+          return redirect()
+            ->back()
+            ->with('error', 'You do not have permission to delete the file.');
+      }
     }
 
     public function updateDatePaid(Request $request) {
