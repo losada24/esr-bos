@@ -179,7 +179,7 @@ class UpdateOrder {
 
         //dd($order);
 
-        //$this->sendEmail($order);
+        $this->sendEmail($order);
       }
       
       if( !$order )
