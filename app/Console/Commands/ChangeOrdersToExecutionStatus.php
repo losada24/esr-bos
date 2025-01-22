@@ -42,8 +42,8 @@ class ChangeOrdersToExecutionStatus extends Command
 
           $order->orderStatus()->create([
             'status' => $order->status,
-            'user_id' => auth()->user()->id,
-            'notes' => $order->status." created by " . auth()->user()->name,
+            'user_id' => 1,
+            'notes' => $order->status . " created by command",
             'start_date' => $order->installation_date,
             'end_date' => $order->installation_end_date,
             'pickup_date' => $order->delivery_date,
