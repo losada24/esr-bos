@@ -67,6 +67,7 @@ class Order extends Model
         'inspection_date',
         'finish_date',
         'final_inspection_date',
+        'complete_date',
     ];
 
     protected $dates = [
@@ -82,6 +83,7 @@ class Order extends Model
         'inspection_date',
         'finish_date',
         'final_inspection_date',
+        'complete_date',
     ];
 
     protected function casts(): array
@@ -151,11 +153,14 @@ class Order extends Model
             if (auth()->user()->hasRole(RoleEnum::SUPERVISOR->value)) {
               $query->where('supervisor_id', auth()->user()->id)
               ->whereIn('status', [
+                OrderStatusEnum::RESCHEDULE,   // Solo órdenes en "EXECUTION"
                 OrderStatusEnum::CONFIRMED,   // Solo órdenes en "EXECUTION"
                 OrderStatusEnum::EXECUTION,
+                OrderStatusEnum::SUPERVISION,
                 OrderStatusEnum::INSPECTION,
                 OrderStatusEnum::FINISH,
                 OrderStatusEnum::FINAL_INSPECTION,
+                OrderStatusEnum::FINAL_COLLECT,
                 OrderStatusEnum::COMPLETE,  
               ]);
             }

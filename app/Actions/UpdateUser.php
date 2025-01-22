@@ -34,6 +34,7 @@ class UpdateUser {
         'name' => $request->name,
         'email' => $request->email,
         'featured_image' => $reaturedImagePath,
+        'phone' => $request->phone,
       ];
 
       if ($request->password) {

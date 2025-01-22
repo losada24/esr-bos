@@ -64,7 +64,9 @@ class UpdateOrder {
     }
 
       $status = $request->status;
-      $sendEmail = $status != $order->status;
+      //dd($status);
+      $sendEmail = $status!= $order->status;
+      //dd($sendEmail,$status,$order->status);
       $orderData = [
         'client_id' => $client->id,
         'user_id' => auth()->user()->id,
@@ -175,7 +177,9 @@ class UpdateOrder {
           'pickup_date' => $request->delivery_date,
         ]);
 
-        $this->sendEmail($order);
+        //dd($order);
+
+        //$this->sendEmail($order);
       }
       
       if( !$order )
@@ -227,9 +231,33 @@ class UpdateOrder {
         'start_date' => $request->installation_date,
         'end_date' => $request->installation_end_date,
         'pickup_date' => $request->delivery_date,
+        'inspection_date' => $request->inspection_date,
+        'finish_date' => $request->finish_date,
+        'final_inspection_date' => $request->final_inspection_date,
+        'complete_date' => $request->complete_date,
       ]);
      
       $this->sendEmail($order);
     }
+    else{
+        $orderStatus = $order->orderStatus()->where('status', $request->status)->first();// Busca el registro relacionado
+
+          if ($orderStatus) {
+              // Actualiza el registro existente
+              $orderStatus->update([
+                  //'status' => $request->status,
+                  'user_id' => auth()->user()->id,
+                  //'notes' => $request->status . " updated by " . auth()->user()->name,
+                  'start_date' => $request->installation_date,
+                  'end_date' => $request->installation_end_date,
+                  'pickup_date' => $request->delivery_date,
+                  'inspection_date' => $request->inspection_date,
+                  'finish_date' => $request->finish_date,
+                  'final_inspection_date' => $request->final_inspection_date,
+                  'complete_date' => $request->complete_date,
+              ]);
+          }
+        }
+
   }
 }

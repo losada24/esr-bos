@@ -41,20 +41,20 @@ trait OrderDates {
       ($service === ServiceEnum::INSTALLATION->value && $type_of_housing === "1" && $county_id === "1")
     ) {
       if ($hasPermit) {
-        $delivery_week = $payment_factory_date_object->addWeeks(8);
+        $delivery_week = $payment_factory_date_object->addWeeks(9);
         $end_of_delivery_week = $delivery_week->endOfWeek();
         $estimate_delivery_date = $end_of_delivery_week->previous(Carbon::MONDAY)->format('Y-m-d');
       } else {
-        $delivery_week = $payment_factory_date_object->addWeeks(8);
+        $delivery_week = $payment_factory_date_object->addWeeks(9);
         $end_of_delivery_week = $delivery_week->endOfWeek();
         $estimate_delivery_date = $end_of_delivery_week->previous(Carbon::FRIDAY)->format('Y-m-d');
       }
     } else if ($service === ServiceEnum::DELIVERY->value) {
-      $delivery_week = $payment_factory_date_object->addWeeks(8);
+      $delivery_week = $payment_factory_date_object->addWeeks(9);
       $end_of_delivery_week = $delivery_week->endOfWeek();
       $estimate_delivery_date = $end_of_delivery_week->previous(Carbon::THURSDAY)->format('Y-m-d');
     } else {
-        $delivery_week = $payment_factory_date_object->addWeeks(8);
+        $delivery_week = $payment_factory_date_object->addWeeks(9);
         $end_of_delivery_week = $delivery_week->endOfWeek();
         $estimate_delivery_date = $end_of_delivery_week->previous(Carbon::WEDNESDAY)->format('Y-m-d');
     }

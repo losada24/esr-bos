@@ -49,6 +49,7 @@ export interface User {
   password_confirmation: string
   role: Role[]
   featured_image?: string
+  phone: string
 }
 
 interface UserResource {

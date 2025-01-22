@@ -61,6 +61,24 @@ trait OrderStatus {
       break;
       case OrderStatusEnum::RESCHEDULE->value:
         $color = StatusColorEnum::RESCHEDULE->value;
+      break;
+      case OrderStatusEnum::FINISH->value:
+        $color = StatusColorEnum::FINISH->value;
+      break;
+      case OrderStatusEnum::INSPECTION->value:
+        $color = StatusColorEnum::INSPECTION->value;
+    break;
+    case OrderStatusEnum::EXECUTION->value:
+      $color = StatusColorEnum::EXECUTION->value;
+    break;
+    case OrderStatusEnum::SUPERVISION->value:
+      $color = StatusColorEnum::SUPERVISION->value;
+    break;
+    case OrderStatusEnum::FINAL_INSPECTION->value:
+      $color = StatusColorEnum::FINAL_INSPECTION->value;
+    break;
+    case OrderStatusEnum::FINAL_COLLECT->value:
+      $color = StatusColorEnum::FINAL_COLLECT->value;
     break;
     }
 

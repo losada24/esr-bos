@@ -6,6 +6,7 @@ use App\Enum\OrderStatusEnum;
 use App\Enum\RoleEnum;
 use App\Enum\ServiceEnum;
 use App\Enum\StatusColorEnum;
+use App\Mail\DeliveryConfirmed;
 use App\Models\InstallationTeam;
 use App\Models\Order;
 use App\Models\OrderStatus as ModelsOrderStatus;
@@ -18,6 +19,7 @@ use Inertia\Response;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 
 class DashboardController extends Controller
 {
@@ -29,6 +31,16 @@ class DashboardController extends Controller
 
     $user = auth()->user();
     $status = [];
+    $legend = [];
+    $statusmodal = [];
+    
+
+    $services = [ 
+      ServiceEnum::INSTALLATION->value,
+      ServiceEnum::DELIVERY->value,
+      ServiceEnum::PICKUP->value,
+      ServiceEnum::INSTALLATION_ONLY->value
+    ];
 
     if ($user->hasRole(RoleEnum::ACCOUNT_MANAGER->value) || $user->hasRole(RoleEnum::ADMIN->value)) {
       $status = [
@@ -36,30 +48,28 @@ class DashboardController extends Controller
         OrderStatusEnum::CONFIRMED->value,
         OrderStatusEnum::DELIVERY_CONFIRMED->value,
         OrderStatusEnum::COMPLETE->value,
+        OrderStatusEnum::FINAL_COLLECT->value,
         OrderStatusEnum::INSPECTION->value,
         OrderStatusEnum::SUPERVISION->value,
         OrderStatusEnum::ON_HOLD->value,
         OrderStatusEnum::RESCHEDULE->value,
-      ];
-    } else if ($user->hasRole(RoleEnum::SUPERVISOR->value)) {
-      $status = [
-        OrderStatusEnum::SUPERVISION->value,
-        OrderStatusEnum::INSPECTION->value,
         OrderStatusEnum::FINISH->value,
         OrderStatusEnum::FINAL_INSPECTION->value,  
-        OrderStatusEnum::COMPLETE->value,
       ];
-    }
+      $statusmodal = [  
+        OrderStatusEnum::CONFIRMED->value,
+        OrderStatusEnum::DELIVERY_CONFIRMED->value,
+        OrderStatusEnum::COMPLETE->value,
+        OrderStatusEnum::FINAL_COLLECT->value,
+        OrderStatusEnum::INSPECTION->value,
+        OrderStatusEnum::SUPERVISION->value,
+        OrderStatusEnum::ON_HOLD->value,
+        OrderStatusEnum::RESCHEDULE->value,
+        OrderStatusEnum::FINISH->value,
+        OrderStatusEnum::FINAL_INSPECTION->value,  
+      ];
 
-    return Inertia::render('Dashboard/Index', [
-      'services' => [
-        ServiceEnum::INSTALLATION->value,
-        ServiceEnum::DELIVERY->value,
-        ServiceEnum::PICKUP->value,
-        ServiceEnum::INSTALLATION_ONLY->value,
-      ],
-      'status' => $status,
-      'legend' => [
+      $legend = [
         [
           'color' => StatusColorEnum::PLANNED->value,
           'label' => 'PICKUP PLANNED'
@@ -100,7 +110,84 @@ class DashboardController extends Controller
           'color' => StatusColorEnum::RESCHEDULE->value,
           'label' => 'RESCHEDULE'
         ],
-      ],
+        [
+          'color' => StatusColorEnum::FINISH->value,
+          'label' => 'FINISH'
+        ],
+      ];
+    } else if ($user->hasRole(RoleEnum::SUPERVISOR->value)) {
+      $status = [
+        //OrderStatusEnum::RESCHEDULE->value,
+        OrderStatusEnum::CONFIRMED->value,
+        OrderStatusEnum::EXECUTION->value,
+        OrderStatusEnum::SUPERVISION->value,
+        OrderStatusEnum::INSPECTION->value,
+        OrderStatusEnum::FINISH->value,
+        OrderStatusEnum::FINAL_INSPECTION->value,
+        OrderStatusEnum::FINAL_COLLECT->value,
+        OrderStatusEnum::COMPLETE->value,
+      ];
+    $statusmodal = [  
+        OrderStatusEnum::SUPERVISION->value,
+        OrderStatusEnum::INSPECTION->value,
+        OrderStatusEnum::FINISH->value,
+        OrderStatusEnum::FINAL_INSPECTION->value,
+        OrderStatusEnum::FINAL_COLLECT->value,
+        OrderStatusEnum::COMPLETE->value,
+      ];
+
+      $legend = [
+        [
+          'color' => StatusColorEnum::RESCHEDULE->value,
+          'label' => 'RESCHEDULE'
+        ],
+        [
+          'color' => StatusColorEnum::CONFIRMED_INSTALLATION->value,
+          'label' => 'CONFIRMED'
+        ],
+        [
+          'color' => StatusColorEnum::EXECUTION->value,
+          'label' => 'EXECUTION'
+        ],
+        [
+          'color' => StatusColorEnum::SUPERVISION->value,
+          'label' => 'SUPERVISION'
+        ],
+        [
+          'color' => StatusColorEnum::INSPECTION->value,
+          'label' => 'INSPECTION'
+        ],
+        [
+          'color' => StatusColorEnum::FINISH->value,
+          'label' => 'FINISH'
+        ],
+        [
+          'color' => StatusColorEnum::FINAL_INSPECTION->value,
+          'label' => 'FINAL INSPECTION'
+        ],
+        [
+          'color' => StatusColorEnum::FINAL_COLLECT->value,
+          'label' => 'PENDING COLLECT'
+        ],
+        [
+          'color' => StatusColorEnum::COMPLETE->value,
+          'label' => 'COMPLETE'
+        ],
+      ];
+
+      $services = [
+        ServiceEnum::INSTALLATION_ONLY->value
+      ];
+    }
+
+    
+
+
+    return Inertia::render('Dashboard/Index', [
+      'services' => $services,
+      'status' => $status,
+      'legend' => $legend,
+      'statusmodal' => $statusmodal,
       'installation_teams' => InstallationTeam::with(['user', 'typeHousing'])->get(),
       'supervisors' => User::role(RoleEnum::SUPERVISOR->value)->get(),
     ]);
@@ -111,6 +198,7 @@ class DashboardController extends Controller
 
   public function getEvents($year, $month, $service, $status, $name = null)
   {
+    $user = auth()->user();
 
     if (empty($name) || $name === 'all') {
       $name = null; // Deja en null si no se quiere filtrar por cliente
@@ -122,7 +210,7 @@ class DashboardController extends Controller
     $currentPassingDate = Carbon::parse($year . '-' . $month . '-01');
     $previewMonth = $currentPassingDate->copy()->subMonth()->startOfMonth();
     $nextMonth = $currentPassingDate->copy()->addMonth()->endOfMonth();
-    //dd($orderName);
+    //dd($previewMonth , $nextMonth);
 
     $orders = Order::with(['permit'])->calendarFilter(['service' => $service_filter, 'status' => $status, 'name' => $name])
       ->where(function ($query) use ($previewMonth, $nextMonth) {
@@ -130,11 +218,13 @@ class DashboardController extends Controller
           $query->whereBetween('delivery_date', [$previewMonth, $nextMonth]);
         })->orWhere(function ($query) use ($previewMonth, $nextMonth) {
           $query->whereBetween('installation_date', [$previewMonth, $nextMonth])
-            ->orWhereBetween('installation_end_date', [$previewMonth, $nextMonth]);
+            ->orWhereBetween('installation_end_date', [$previewMonth, $nextMonth])
+            ->orWhereBetween('inspection_date', [$previewMonth, $nextMonth])
+            ->orWhereBetween('finish_date', [$previewMonth, $nextMonth])
+            ->orWhereBetween('final_inspection_date', [$previewMonth, $nextMonth])
+            ->orWhereBetween('complete_date', [$previewMonth, $nextMonth]);
         });
       });
-
-
 
     /*$sql = $orders->toSql();
     $bindings = $orders->getBindings();
@@ -147,6 +237,7 @@ class DashboardController extends Controller
     dd($sql);*/
 
     $events = [];
+    $events1 = [];
     $customAbbreviations = [
       'Door' => 'D', // ID 1 -> 'abc'
       'Window' => 'W', // ID 2 -> 'xyz'
@@ -191,7 +282,22 @@ class DashboardController extends Controller
       }
 
       if ($order->service === ServiceEnum::INSTALLATION->value) {
-    
+        /*if($order->status === OrderStatusEnum::INSPECTION->value) {
+          $color = StatusColorEnum::PLANNED->value;
+          $startDate = $order->inspection_date;
+          $endDate = $order->inspection_date;
+          $event = $this->createEvent(
+            $order->id,
+            '#' . $order->order_number . ' - ' . $order->name .  ($serviceLabel ? ' (' . $serviceLabel . ')' : '') . (!empty($order->city) ? ' - ' . $order->city : ''),
+            // $this->getEventPopover($order->status, $order->service),
+            'Products: ' . $productDetails,
+            $startDate,
+            $endDate,
+            $color,
+            $order->service
+          );
+          $events[] = $event;
+        }*/
 
         if (!$showOnlyInstallation) {
            /* if($order->status === OrderStatusEnum::INSPECTION->value) {
@@ -218,30 +324,42 @@ class DashboardController extends Controller
         }
 
         if (!$showOnlyDeliveries) {
+           
+          if(!( $user->hasRole(RoleEnum::ACCOUNT_MANAGER->value) || $user->hasRole(RoleEnum::ADMIN->value))){
+            //dd ($user->hasRole(RoleEnum::ACCOUNT_MANAGER->value));
+
 
           if($order->status === OrderStatusEnum::INSPECTION->value) {
             $startInstallationDate = $order->inspection_date;
             $endInstallationDate = $order->inspection_date;
-            $color = StatusColorEnum::PLANNED->value;
+            $color = StatusColorEnum::INSPECTION->value;
           } else if ($order->status === OrderStatusEnum::FINISH->value){
             $startInstallationDate = $order->finish_date;
             $endInstallationDate = $order->finish_date;
-            $color = StatusColorEnum::PLANNED_INSTALLATION->value;
+            $color = StatusColorEnum::FINISH->value;
           } else if ($order->status === OrderStatusEnum::FINAL_INSPECTION->value){
             $startInstallationDate = $order->final_inspection_date;
             $endInstallationDate = $order->final_inspection_date;
-            $color = StatusColorEnum::CONFIRMED_DELIVERY->value;
+            $color = StatusColorEnum::FINAL_INSPECTION->value;
           }
-          /*else if ($order->status === OrderStatusEnum::COMPLETE->value){
-              $startInstallationDate = Carbon::now();
-              $endInstallationDate = Carbon::now();
+          else if($order->status === OrderStatusEnum::COMPLETE->value){
+              $startInstallationDate = $order->complete_date;
+              $endInstallationDate =$order->complete_date;
               $color = $this->getColorByStatus($order->status, $order->service, true);
-            }*/
+            }
+            else{
+              $startInstallationDate = $order->installation_date;
+              $endInstallationDate = $order->installation_end_date;
+              $color = $this->getColorByStatus($order->status, $order->service, true);
+              }
+          }
+
           else{
           $startInstallationDate = $order->installation_date;
           $endInstallationDate = $order->installation_end_date;
           $color = $this->getColorByStatus($order->status, $order->service, true);
-          }
+          
+        }
           $startInstallationDateCarbon = Carbon::parse($startInstallationDate);
           $endInstallationDateCarbon = Carbon::parse($endInstallationDate);
           $actualDate = Carbon::now();
@@ -307,6 +425,21 @@ class DashboardController extends Controller
               
             ); 
             $events[] = $event;
+
+            if($order->status === OrderStatusEnum::FINISH->value && ( $user->hasRole(RoleEnum::ACCOUNT_MANAGER->value) || $user->hasRole(RoleEnum::ADMIN->value))) {
+              $startInstallationDate = $order->finish_date;
+              $endInstallationDate = $order->finish_date;
+              $event = $this->createEvent(
+                $order->id,
+                '#' . $order->order_number . ' - ' . $order->name . ($serviceLabel ? ' (' . $serviceLabel . ')' : '') . (!empty($order->city) ? ' - ' . $order->city : ''),
+                'Products: ' . $productDetails,
+                $startInstallationDate,
+                $endInstallationDate,
+                $this->getColorByStatus($order->status, $order->service, true),
+                $order->service,
+              );
+              $events[] = $event;
+            }
           }
         }
       }
@@ -375,7 +508,9 @@ class DashboardController extends Controller
 
   public function whatsapp()
   {
-    $this->sendWhatsAppMessage('+12397632059', 'Primer mensaje para Katy');
+    // $this->sendWhatsAppMessage('+12397632059', 'Primer mensaje para Katy');
+    $order = Order::find(48);
+    Mail::to('carlos@reylosglass.com')->send(new DeliveryConfirmed($order));
     echo 'whatsapp message';
   }
 }

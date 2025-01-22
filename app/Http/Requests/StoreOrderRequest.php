@@ -175,6 +175,7 @@ class StoreOrderRequest extends FormRequest
             'inspection_date' => 'nullable|date_format:Y-m-d',
             'finish_date' => 'nullable|date_format:Y-m-d',
             'final_inspection_date' => 'nullable|date_format:Y-m-d',
+            'complete_date' => 'nullable|date_format:Y-m-d',
             'attachments' => 'nullable|array',
             'attachments.*' => 'file|mimes:jpeg,png,jpg,pdf,docx,doc,xlsx|max:10240',
             'orderProducts' => 'required|array',

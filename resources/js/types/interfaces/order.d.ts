@@ -23,6 +23,7 @@ export interface Order {
   inspection_date?: Date
   finish_date?: Date
   final_inspection_date?: Date
+  complete_date?: Date
   user?: User
   client?: Client
   additional_travel_costs?: number
@@ -208,5 +209,8 @@ export interface OrderStatus {
   user?: User
   updated_at: Date
   pickup_date: Date
-
+  inspection_date: Date
+  finish_date: Date
+  final_inspection_date: Date
+  complete_date: Date
 }

@@ -39,8 +39,12 @@ export default function ShowStatusOrder ({ auth, orderStatuses, order }: IndexOr
                 <th className="px-6 pt-5 pb-4">Status</th>
                 <th className="px-6 pt-5 pb-4">Usuario</th>
                 <th className="px-6 pt-5 pb-4">Delivery/Pickup Date</th>
-                <th className="px-6 pt-5 pb-4">Start Date</th>
-                <th className="px-6 pt-5 pb-4">End Date</th>
+                <th className="px-6 pt-5 pb-4">Installation Date</th>
+                <th className="px-6 pt-5 pb-4"> Installation End Date</th>
+                <th className="px-6 pt-5 pb-4">Inspection Date</th>
+                <th className="px-6 pt-5 pb-4">Finish Date</th>
+                <th className="px-6 pt-5 pb-4">Final Inspection Date</th>
+                <th className="px-6 pt-5 pb-4">Complete Date</th>
               </tr>
             </thead>
             <tbody>
@@ -60,13 +64,25 @@ export default function ShowStatusOrder ({ auth, orderStatuses, order }: IndexOr
                       {order?.user?.name}
                     </td>
                     <td className="border-t px-6 py-4 align-top">
-                    {order.pickup_date?.toString()}
+                    {['PLANNED', 'CONFIRMED', 'DELIVERY CONFIRMED'].includes(order.status) ? order.pickup_date?.toString() : ''}
                     </td>
                     <td className="border-t px-6 py-4 align-top">
-                    {order.start_date?.toString()}
+                    {['PLANNED', 'CONFIRMED', 'RESCHEDULED', 'SUPERVISION'].includes(order.status) ? order.start_date?.toString() : ''}
                     </td>
                     <td className="border-t px-6 py-4 align-top">
-                    {order.end_date?.toString()}
+                    {['PLANNED', 'CONFIRMED', 'RESCHEDULED', 'SUPERVISION'].includes(order.status) ? order.end_date?.toString() : ''}
+                    </td>
+                    <td className="border-t px-6 py-4 align-top">
+                    {order.status === 'INSPECTION' ? order.inspection_date?.toString() : ''}
+                    </td>
+                    <td className="border-t px-6 py-4 align-top">
+                    {order.status === 'FINISH' ? order.finish_date?.toString() : ''}
+                    </td>
+                    <td className="border-t px-6 py-4 align-top">
+                    {order.status === 'FINAL INSPECTION' ? order.final_inspection_date?.toString() : ''}
+                    </td>
+                    <td className="border-t px-6 py-4 align-top">
+                    { order.status === 'COMPLETE' ? order.complete_date?.toString() : ''}
                     </td>
                   </tr>
                 )
