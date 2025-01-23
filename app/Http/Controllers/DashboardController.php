@@ -47,14 +47,17 @@ class DashboardController extends Controller
         OrderStatusEnum::PLANNED->value,
         OrderStatusEnum::CONFIRMED->value,
         OrderStatusEnum::DELIVERY_CONFIRMED->value,
-        OrderStatusEnum::COMPLETE->value,
-        OrderStatusEnum::FINAL_COLLECT->value,
-        OrderStatusEnum::INSPECTION->value,
+        OrderStatusEnum::EXECUTION->value,
         OrderStatusEnum::SUPERVISION->value,
+        OrderStatusEnum::INSPECTION->value,
+        OrderStatusEnum::FINISH->value,
+        OrderStatusEnum::FINAL_INSPECTION->value,
+        OrderStatusEnum::FINAL_COLLECT->value,
+        OrderStatusEnum::COMPLETE->value,
         OrderStatusEnum::ON_HOLD->value,
         OrderStatusEnum::RESCHEDULE->value,
-        OrderStatusEnum::FINISH->value,
-        OrderStatusEnum::FINAL_INSPECTION->value,  
+        
+        
       ];
       $statusmodal = [  
         OrderStatusEnum::CONFIRMED->value,
@@ -115,7 +118,7 @@ class DashboardController extends Controller
           'label' => 'FINISH'
         ],
       ];
-    } else if ($user->hasRole(RoleEnum::SUPERVISOR->value)) {
+    } else if ($user->hasRole(RoleEnum::SUPERVISOR->value) || $user->hasRole(RoleEnum::SERVICE_MANAGER->value)) {
       $status = [
         //OrderStatusEnum::RESCHEDULE->value,
         OrderStatusEnum::CONFIRMED->value,
