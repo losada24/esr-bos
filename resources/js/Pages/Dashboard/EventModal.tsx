@@ -18,12 +18,14 @@ import DeleteIcon from '@/Components/Icons/DeleteIcon'
 import ExportIcon from '@/Components/Icons/ExportIcon'
 import { Field } from 'formik'
 
+
 const EventModal = ({
   showModal,
   onClose,
   id,
   isAdminOrAccountManager,
   isSupervisor,
+  isServiceManager,
   installation_teams,
   supervisors,
   status,
@@ -36,6 +38,7 @@ const EventModal = ({
   onClose: CallableFunction
   id: number
   isAdminOrAccountManager: boolean
+  isServiceManager: boolean
   installation_teams: InstallationTeam[]
   supervisors: User[]
   status: string[]
@@ -145,7 +148,8 @@ const EventModal = ({
             installation_teams: data.installation_teams.map((item) => { return { label: item.user?.name, value: item.id } }) ?? [],
             supervisor_id: data.supervisor?.id ?? 0, // Asumimos que `data.supervisor` es un objeto con los datos del superviso
             status: { label: data.status, value: data.status },
-            hide_on_weekends: data.hide_on_weekends ?? null
+            hide_on_weekends: data.hide_on_weekends ?? null,
+            notes: data.notes ?? ''
           })
           const isVipClient = parseInt(data.client?.vip_clients?.toString() ?? '0') !== 0
           setIsVipClient(isVipClient)
@@ -647,14 +651,6 @@ const EventModal = ({
                   />
                   </div>
                  )}
-            {event?.notes && (
-              <div className='flex flex-col gap-2  mt-3'>
-                  <strong>Notes:</strong>
-                  <div className='flex flex-row justify-start'>
-                    {event?.notes ?? ''}
-                  </div>
-              </div>
-            )}
             {event?.work_team_notes && (
               <div className='flex flex-col gap-2'>
                   <strong>Work Team Notes:</strong>
@@ -663,6 +659,18 @@ const EventModal = ({
                   </div>
               </div>
             )}
+            <div className='col-span-4'>
+              <label htmlFor="notes">Notes</label>
+              <textarea
+                id="notes"
+                name="notes"
+                rows = {6}
+                value={editableData.notes ?? ''}
+                className="form-textarea resize-none placeholder:text-white-dark"
+                placeholder='Notes'
+                onChange={(e) => { setEditableData({ ...editableData, notes: e.target.value }) }}
+              />
+            </div>
             {attachmentsList && (event?.service === 'DELIVERY AND INSTALLATION') && (
                 <>
                <div className='flex flex-col gap-2  mt-3'>
@@ -742,7 +750,7 @@ const EventModal = ({
               <InputError message='Please select an installation team and a supervisor' />
             </div>
           )}
-          {((isAdminOrAccountManager) || (isSupervisor)) && (
+          {((isAdminOrAccountManager) || (isSupervisor) || (isServiceManager)) && (
             <div className="flex items-center justify-between mt-4">
               <button className='btn btn-danger uppercase' onClick={() => { onClose(); setShowValidationErrors(false); setMessage(null) }}>Cancel</button>
               <PrimaryButton className="btn btn-primary" type='button' onClick={() => { handle() }}>

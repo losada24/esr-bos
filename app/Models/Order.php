@@ -164,6 +164,20 @@ class Order extends Model
                 OrderStatusEnum::COMPLETE,  
               ]);
             }
+
+            if (auth()->user()->hasRole(RoleEnum::SERVICE_MANAGER->value)) {
+              $query->whereIn('status', [
+                  OrderStatusEnum::RESCHEDULE,   // Solo órdenes en "EXECUTION"
+                  OrderStatusEnum::CONFIRMED,   // Solo órdenes en "EXECUTION"
+                  OrderStatusEnum::EXECUTION,
+                  OrderStatusEnum::SUPERVISION,
+                  OrderStatusEnum::INSPECTION,
+                  OrderStatusEnum::FINISH,
+                  OrderStatusEnum::FINAL_INSPECTION,
+                  OrderStatusEnum::FINAL_COLLECT,
+                  OrderStatusEnum::COMPLETE,
+              ]);
+          }
     }
   }
       
