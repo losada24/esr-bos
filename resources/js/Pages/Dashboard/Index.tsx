@@ -149,19 +149,6 @@ export default function Dashboard ({ auth, services, status, statusmodal, legend
                 <option value="all">All</option>
               </select>
             </div>
-            <div className='flex items-center gap-2'>
-            <label className='w-57' htmlFor="">Order Name</label>
-            <input
-              id="name"
-              type="text"
-              className="form-input"
-              placeholder="Enter Client Name"
-              value={calendarFilter.name}
-              onChange={(e) => {
-                setCalendarFilter({ ...calendarFilter, name: e.target.value })
-              }}
-            />
-          </div>
           </div>
           <div className='flex gap-3'>
             {legend.map((item, index) => {
@@ -173,6 +160,23 @@ export default function Dashboard ({ auth, services, status, statusmodal, legend
             })}
           </div>
         </div>
+        <div className='flex justify-between items-center mb-4'>
+        <div className='flex gap-3'>
+        <div className='flex items-center gap-2'>
+            <label className='w-57' htmlFor="">Order: </label>
+            <input
+              id="name"
+              type="text"
+              className="form-input w-96"
+              placeholder="Enter Order Name, Intallator Name or Supervisor Name"
+              value={calendarFilter.name}
+              onChange={(e) => {
+                setCalendarFilter({ ...calendarFilter, name: e.target.value })
+              }}
+            />
+          </div>
+          </div>
+          </div>
           <Eventcalendar
             clickToCreate={false}
             dragToCreate={false}

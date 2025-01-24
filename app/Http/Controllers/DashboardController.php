@@ -56,6 +56,7 @@ class DashboardController extends Controller
         OrderStatusEnum::COMPLETE->value,
         OrderStatusEnum::ON_HOLD->value,
         OrderStatusEnum::RESCHEDULE->value,
+        OrderStatusEnum::CONFIRMED_FINISH->value,
         
         
       ];
