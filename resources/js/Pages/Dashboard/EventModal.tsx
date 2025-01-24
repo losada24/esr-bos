@@ -260,6 +260,9 @@ const EventModal = ({
               <div className='w-1/3'>
                 <strong>Address:</strong> {`${event?.job_address ?? ''}${event?.city ? `, ${event.city}` : ''}${event?.job_state ? `, ${event.job_state}` : ''}${event?.job_zip ? `, ${event.job_zip}` : ''}`}
               </div>
+              <div className='w-1/3'>
+                <strong>Client Phone:</strong> {event?.client?.phone}
+              </div>
             </div>
             <div className='flex flex-row gap-2 mt-3'>
               <div className='w-1/3'>

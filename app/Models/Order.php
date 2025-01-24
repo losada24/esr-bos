@@ -106,9 +106,22 @@ class Order extends Model
 
     public function scopeCalendarFilter($query, array $filters)
     {  
-      if (isset($filters['status']) && $filters['status'] != 'all') {
+      /*i f (isset($filters['status']) && $filters['status'] != 'all') {
         $query->where('status', $filters['status']);
-      }
+      } */
+
+      if (isset($filters['status']) && $filters['status'] != 'all') {
+        if ($filters['status'] === OrderStatusEnum::CONFIRMED_FINISH->value) {
+            // Mostrar órdenes con estatus CONFIRMED y FINISH
+            $query->whereIn('status', [
+                OrderStatusEnum::CONFIRMED,
+                OrderStatusEnum::FINISH,
+            ]);
+        } else {
+            // Aplicar filtro de estatus específico
+            $query->where('status', $filters['status']);
+        }
+    }
 
       /*if (isset($filters['service']) && $filters['service'] != 'all') {
         $query->where('service', $filters['service']);
@@ -127,15 +140,23 @@ class Order extends Model
         });
     }
     
-    /*  if (isset($filters['clientName']) && $filters['clientName'] !== 'all' && !empty($filters['clientName'])) {
-        $query->whereHas('client', function ($query) use ($filters) {
-            $query->where('name', 'like', '%' . $filters['clientName'] . '%');
-        });
-      }  */
-      if (isset($filters['name']) && $filters['name'] !== 'all' && !empty($filters['name'])) {
+   
+     /* if (isset($filters['name']) && $filters['name'] !== 'all' && !empty($filters['name'])) {
         $query->where('name', 'like', '%' . $filters['name'] . '%');
-    }
-       // dd($filters['name']);
+    }*/
+
+          if (isset($filters['name']) && $filters['name'] !== 'all' && !empty($filters['name'])) {
+            $query->where(function ($query) use ($filters) {
+                $query->where('name', 'like', '%' . $filters['name'] . '%') // Filtro por nombre principal
+                      ->orWhereHas('installationTeams.user', function ($query) use ($filters) {
+                          $query->where('name', 'like', '%' . $filters['name'] . '%'); // Filtro por nombre del instalador
+                      })
+                      ->orWhereHas('supervisor', function ($query) use ($filters) {
+                          $query->where('name', 'like', '%' . $filters['name'] . '%'); // Filtro por nombre del supervisor
+                      });
+            });
+        }
+      
 
       if( !(auth()->user()->hasRole(RoleEnum::ACCOUNT_MANAGER->value)) && !(auth()->user()->hasRole(RoleEnum::ADMIN->value)) ) {
           if (auth()->user()->hasRole(RoleEnum::INSTALLER->value)) {

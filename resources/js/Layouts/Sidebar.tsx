@@ -7,7 +7,7 @@ import ReferralIcon from '@/Components/Icons/ReferralIcon'
 import SidebarLinkLabel from '@/Components/SidebarLinkLabel'
 import DashboardIcon from '@/Components/Icons/DashboardIcon'
 import CompanyIcon from '@/Components/Icons/CompanyIcon'
-import { isAdmin, isAccountManager, isFrontdesk, isOwner, isSupervisor } from '@/Utils/user'
+import { isAdmin, isAccountManager, isFrontdesk, isOwner, isSupervisor, isServiceManager } from '@/Utils/user'
 import { type Role, type Auth } from '@/types'
 import WindowsIcon from '@/Components/Icons/WindowsIcon'
 import ProfileIcon from '@/Components/Icons/ProfileIcon'
@@ -23,6 +23,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
   const IS_FRONTDESK = isFrontdesk(auth.user.roles.map((role: Role) => role.name))
   const IS_OWNER = isOwner(auth.user.roles.map((role: Role) => role.name))
   const IS_SUPERVISOR = isSupervisor(auth.user.roles.map((role: Role) => role.name))
+  const IS_SERVICE_MANAGER = isServiceManager(auth.user.roles.map((role: Role) => role.name))
 
   return (
         <div className={`${themeState.semidark ? 'dark' : ''}`}>
@@ -147,7 +148,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                               </>
                             )}
 
-                          {(IS_ADMIN || IS_ACCOUNT_MANAGER) && (
+                          {(IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER) && (
                               <>
                                 <li className="menu nav-item">
                                     <NavLink href={route('report.installer')} active={route().current('report.installer')} className="group">
