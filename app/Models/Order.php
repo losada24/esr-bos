@@ -68,6 +68,7 @@ class Order extends Model
         'finish_date',
         'final_inspection_date',
         'complete_date',
+        'do_not_send_email',
     ];
 
     protected $dates = [
@@ -92,6 +93,7 @@ class Order extends Model
             'city_permits' => 'boolean',
             'payment_definition' => 'boolean',
             'hide_on_weekends' => 'boolean',
+            'do_not_send_email' => 'boolean',
         ];
     }
 

@@ -18,13 +18,15 @@ use Illuminate\Support\Facades\Mail;
 trait OrderEmails {
 
   public function sendEmail(Order $order) {
+     //dd($order);
     if ($order->status === OrderStatusEnum::PLANNED->value) {
       $users = [];
       foreach ($order->owners as $owner) {
         $users[] = $owner->email;
       }
-
+      if($order->do_not_send_email != 1){
       $users[] = $order->client->email;
+      }
       $accountings = User::role([RoleEnum::ACCOUNTING->value])->get();
      
       //$accountManager = User::role([RoleEnum::ACCOUNT_MANAGER->value])->get();
@@ -45,9 +47,12 @@ trait OrderEmails {
       }
     } else if ($order->status === OrderStatusEnum::DELIVERY_CONFIRMED->value) {
       $users = [];
-      $users[] = $order->client->email;
+      if($order->do_not_send_email != 1){
+        $users[] = $order->client->email;
+      }
+      //$users[] = $order->client->email;
       // $users[] = $order->supervisor->email;
-      $users[]='alina@reylosglass.com';
+      //$users[]='alina@reylosglass.com';
       $accountManager = User::role([RoleEnum::ACCOUNT_MANAGER->value])->get();
       $users = array_merge($users, $accountManager->pluck('email')->toArray());
       $usersByRoleManager = User::role([RoleEnum::WAREHOUSE_MANAGER->value, RoleEnum::SERVICE_MANAGER->value])->get();
@@ -65,7 +70,10 @@ trait OrderEmails {
           Mail::to($owner)->send(new InstallationDateConfirmationClient($order));
          
         }
-        $users[] = $order->client->email;
+        if($order->do_not_send_email != 1){
+          $users[] = $order->client->email;
+        }
+        //$users[] = $order->client->email;
         
         foreach ($users as $user) {
           Mail::to($user)->send(new InstallationDateConfirmationClient($order, true));
@@ -74,7 +82,7 @@ trait OrderEmails {
       
         //dd($order->supervisor->email);
         $users[] = $order->supervisor->email;
-        $users[] = 'alina@reylosglass.com';
+        //$users[] = 'alina@reylosglass.com';
         $serviceManager = User::role([RoleEnum::SERVICE_MANAGER->value])->get();
         $users = array_merge($users, $serviceManager->pluck('email')->toArray());
         foreach ($users as $user) {
@@ -91,9 +99,12 @@ trait OrderEmails {
         }
       } else if ($order->service === ServiceEnum::DELIVERY->value || $order->service === ServiceEnum::PICKUP->value) {
         $users = [];
-        $users[] = $order->client->email;
+        if($order->do_not_send_email != 1){
+          $users[] = $order->client->email;
+        }
+        // $users[] = $order->client->email;
         $users = array_merge($users,$order->owners->pluck('email')->toArray()); 
-        $users[] = 'alina@reylosglass.com';
+        //$users[] = 'alina@reylosglass.com';
         $accountManager = User::role([RoleEnum::ACCOUNT_MANAGER->value])->get();
         $users = array_merge($users, $accountManager->pluck('email')->toArray());
         $usersByRoleManager = User::role([RoleEnum::WAREHOUSE_MANAGER->value, RoleEnum::SERVICE_MANAGER->value])->get();

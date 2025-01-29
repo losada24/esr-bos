@@ -113,6 +113,7 @@ class CreateOrder {
         'supervisor_payment_percentage'=> $supervisor_payment_percentage,
         'supervisor_commissions'=> $supervisor_commissions,
         'supervisor_payment_status' => $supervisor_payment_status,
+        'do_not_send_email' => $request->do_not_send_email,
       ]);
 
       // dd($order);

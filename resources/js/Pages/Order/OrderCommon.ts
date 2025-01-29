@@ -168,7 +168,8 @@ export const loadOrderFormObj = (order: Order): OrderFormValues => {
     status: order.status,
     payment_definition: order.payment_definition,
     initial_payment_percentage: order.initial_payment_percentage,
-    hide_on_weekends: order.hide_on_weekends ?? false
+    hide_on_weekends: order.hide_on_weekends ?? false,
+    do_not_send_email: order.do_not_send_email ?? false
   }
 }
 
