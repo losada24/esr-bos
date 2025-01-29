@@ -59,6 +59,7 @@ export interface Order {
   payment_definition?: boolean
   initial_payment_percentage?: number
   hide_on_weekends?: boolean
+  do_not_send_email?: boolean
 }
 
 export interface TypeOfWork {

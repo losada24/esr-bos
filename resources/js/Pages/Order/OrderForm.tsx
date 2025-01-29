@@ -265,8 +265,7 @@ const OrderForm = ({
               />
               {(submitCount && errors.email) ? <InputError message={errors.email} className="mt-2" /> : ''}
             </div>
-            <div className={submitCount ? (errors.vip_clients) ? 'has-error inline-flex flex-col' : 'has-success inline-flex' : 'inline-flex items-end'}>
-                <div className='flex'>
+                <div className='flex mt-8'>
                   <Field
                     id="vip_clients"
                     name="vip_clients"
@@ -279,9 +278,21 @@ const OrderForm = ({
                       }
                     }}
                   />
-                  <label htmlFor="vip_clients">VIP</label>
+                  <label htmlFor="vip_clients" className='font-bold inline-flex'>VIP</label>
                 </div>
-            </div>
+                <div className=' flex mt-8'>
+                  <Field
+                    id="do_not_send_email"
+                    name="do_not_send_email"
+                    className="form-checkbox"
+                    type='checkbox'
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                      setFieldValue('do_not_send_email', e.target.checked)
+                    } }
+                  />
+                  <label htmlFor="do_not_send_email" className='font-bold inline-flex' >Do Not Send Email</label>
+                </div>
+            
             {Number(values.vip_clients) === 1 && (
             <div className='col-span-3'>
               <label htmlFor="vip_notes">Vip Notes</label>

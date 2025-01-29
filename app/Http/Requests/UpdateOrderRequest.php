@@ -31,8 +31,8 @@ class UpdateOrderRequest extends FormRequest
      * @return array<string, mixed>
      */
     public function rules()
-    {
-        return [
+    {   
+      return [
           'id' => 'required|exists:orders,id',
           'client_name' => 'required|string|max:255',
           // 'last_name' => 'required|string|max:255',
@@ -182,9 +182,9 @@ class UpdateOrderRequest extends FormRequest
           'supervisor_commissions' => 'nullable|numeric',
           'supervisor_payment_percentage' => 'nullable|numeric',
           'supervisor_payment_date' => 'nullable|date_format:Y-m-d',
-          'inspection_date' => 'nullable|date_format:Y-m-d',
           'finish_date' => 'nullable|date_format:Y-m-d',
           'final_inspection_date' => 'nullable|date_format:Y-m-d',
+          'inspection_date' => 'nullable|date_format:Y-m-d',
           'complete_date' => 'nullable|date_format:Y-m-d',
           'attachments' => 'nullable|array',
           'attachments.*' => 'file|mimes:jpeg,png,jpg,pdf,docx,doc,xlsx|max:10240',

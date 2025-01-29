@@ -110,6 +110,7 @@ class UpdateOrder {
         'supervisor_commissions'=> $supervisor_commissions,
         'supervisor_payment_status' => $supervisor_payment_status,
         'hide_on_weekends' => $request->hide_on_weekends,
+        'do_not_send_email' => $request->do_not_send_email,
       ];
     //dd($orderData);
       $order->update($orderData);

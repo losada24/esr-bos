@@ -15,6 +15,7 @@ use App\Enum\RoleEnum;
 use App\Enum\ServiceEnum;
 use App\Enum\SupervisorPaymentStatusEnum;
 use App\Enum\TypeOfFinancing;
+use App\Http\Requests\PartialOrderRequest;
 use App\Http\Requests\StoreOrderRequest;
 use App\Http\Requests\UpdateOrderRequest;
 use App\Models\Attachment;
@@ -270,7 +271,7 @@ class OrderController extends Controller
           ->with('success', 'Order updated successfully.');
     }
 
-    public function updateFromModal(Request $request, UpdateOrder $updateOrder, Order $order)
+    public function updateFromModal(PartialOrderRequest $request, UpdateOrder $updateOrder, Order $order)
     {
         
         $updateOrder->partialUpdate($request, $order);
