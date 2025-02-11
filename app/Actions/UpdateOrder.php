@@ -12,10 +12,11 @@ use App\Traits\OrderStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use App\Traits\Twilio;
 
 class UpdateOrder {
 
-  use OrderEmails, OrderStatus;
+  use OrderEmails, OrderStatus, Twilio;
 
   public function handle(Request $request, Order $order) {
     //dd($request);
@@ -181,6 +182,9 @@ class UpdateOrder {
         //dd($order);
 
         $this->sendEmail($order);
+       
+       
+       //$this->whatsapp($order);
       }
       
       if( !$order )
@@ -235,10 +239,12 @@ class UpdateOrder {
         'inspection_date' => $request->inspection_date,
         'finish_date' => $request->finish_date,
         'final_inspection_date' => $request->final_inspection_date,
+        'service_date' => $request->service_date,
         'complete_date' => $request->complete_date,
       ]);
      
       $this->sendEmail($order);
+      //$this->whatsapp($order);
     }
     else{
         $orderStatus = $order->orderStatus()->where('status', $request->status)->first();// Busca el registro relacionado
@@ -254,6 +260,7 @@ class UpdateOrder {
                   'pickup_date' => $request->delivery_date,
                   'inspection_date' => $request->inspection_date,
                   'finish_date' => $request->finish_date,
+                  'service_date' => $request->service_date,
                   'final_inspection_date' => $request->final_inspection_date,
                   'complete_date' => $request->complete_date,
               ]);

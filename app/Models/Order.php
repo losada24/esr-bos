@@ -69,6 +69,8 @@ class Order extends Model
         'final_inspection_date',
         'complete_date',
         'do_not_send_email',
+        'service_date',
+        'pending_collect'
     ];
 
     protected $dates = [
@@ -85,6 +87,8 @@ class Order extends Model
         'finish_date',
         'final_inspection_date',
         'complete_date',
+        'service_date',
+        'pending_collect',
     ];
 
     protected function casts(): array
@@ -182,13 +186,14 @@ class Order extends Model
                 OrderStatusEnum::SUPERVISION,
                 OrderStatusEnum::INSPECTION,
                 OrderStatusEnum::FINISH,
+                OrderStatusEnum::SERVICE,
                 OrderStatusEnum::FINAL_INSPECTION,
                 OrderStatusEnum::FINAL_COLLECT,
                 OrderStatusEnum::COMPLETE,  
               ]);
             }
 
-            if (auth()->user()->hasRole(RoleEnum::SERVICE_MANAGER->value)) {
+            if (auth()->user()->hasRole(RoleEnum::SERVICE_MANAGER->value) || auth()->user()->hasRole(RoleEnum::PAYMENT_COORDINATOR->value)) {
               $query->whereIn('status', [
                   OrderStatusEnum::RESCHEDULE,   // Solo órdenes en "EXECUTION"
                   OrderStatusEnum::CONFIRMED,   // Solo órdenes en "EXECUTION"
@@ -196,6 +201,7 @@ class Order extends Model
                   OrderStatusEnum::SUPERVISION,
                   OrderStatusEnum::INSPECTION,
                   OrderStatusEnum::FINISH,
+                  OrderStatusEnum::SERVICE,
                   OrderStatusEnum::FINAL_INSPECTION,
                   OrderStatusEnum::FINAL_COLLECT,
                   OrderStatusEnum::COMPLETE,
@@ -256,6 +262,16 @@ class Order extends Model
     {
         return $this->hasMany(OrderStatus::class);
     }
+
+    /*public function paymentExtraFields()
+    {
+        return $this->hasMany(PaymentExtraField::class);
+    }*/
+
+    public function paymentExtraFields()
+{
+    return $this->hasOne(PaymentExtraField::class, 'order_id', 'id');
+}
 
     public function permit(): HasOne
     {

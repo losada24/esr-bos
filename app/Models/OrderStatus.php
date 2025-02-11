@@ -24,6 +24,8 @@ class OrderStatus extends Model
         'finish_date',
         'final_inspection_date',
         'complete_date',
+        'service_date',
+        'pending_collect',
 
     ];
     protected $dates = [
@@ -34,6 +36,8 @@ class OrderStatus extends Model
       'finish_date',
       'final_inspection_date',
       'complete_date',
+      'service_date',
+      'pending_collect',
   ];
 
     public function order()

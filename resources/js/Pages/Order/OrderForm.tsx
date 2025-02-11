@@ -292,7 +292,6 @@ const OrderForm = ({
                   />
                   <label htmlFor="do_not_send_email" className='font-bold inline-flex' >Do Not Send Email</label>
                 </div>
-            
             {Number(values.vip_clients) === 1 && (
             <div className='col-span-3'>
               <label htmlFor="vip_notes">Vip Notes</label>

@@ -65,6 +65,9 @@ trait OrderStatus {
       case OrderStatusEnum::FINISH->value:
         $color = StatusColorEnum::FINISH->value;
       break;
+      case OrderStatusEnum::SERVICE->value:
+        $color = StatusColorEnum::SERVICE->value;
+      break;
       case OrderStatusEnum::INSPECTION->value:
         $color = StatusColorEnum::INSPECTION->value;
     break;

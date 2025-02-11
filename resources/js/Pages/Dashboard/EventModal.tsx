@@ -25,7 +25,9 @@ const EventModal = ({
   id,
   isAdminOrAccountManager,
   isSupervisor,
+  isInstaller,
   isServiceManager,
+  isPaymentCoordinator,
   installation_teams,
   supervisors,
   status,
@@ -35,8 +37,10 @@ const EventModal = ({
 }: {
   showModal: boolean
   isSupervisor: boolean
+  isInstaller: boolean
   onClose: CallableFunction
   id: number
+  isPaymentCoordinator: boolean
   isAdminOrAccountManager: boolean
   isServiceManager: boolean
   installation_teams: InstallationTeam[]
@@ -56,7 +60,9 @@ const EventModal = ({
     installation_end_date: null,
     inspection_date: null,
     finish_date: null,
+    service_date: null,
     final_inspection_date: null,
+    pending_collect: null,
     complete_date: null,
     installation_team_id: [],
     additional_travel_costs: 0,
@@ -96,6 +102,7 @@ const EventModal = ({
   const [attachmentsArray, setAttachmentsArray] = useState<File[]>(attachments ?? [])
   const [attachmentsList, setAttachmentsList] = useState<any[]>([])
   const [message, setMessage] = useState<string | null>(null)
+
 
   const removeAttachmentProduct = (index: number) => {
     if (confirm('Are you sure you want to delete this attachment?')) {
@@ -142,6 +149,8 @@ const EventModal = ({
             installation_date: data.installation_date ?? null,
             inspection_date: data.inspection_date ?? null,
             finish_date: data.finish_date ?? null,
+            service_date: data.service_date ?? null,
+            pending_collect: data.pending_collect ?? null,
             complete_date: data.complete_date ?? null,
             final_inspection_date: data.final_inspection_date ?? null,
             installation_end_date: data.installation_end_date ?? null,
@@ -190,7 +199,8 @@ const EventModal = ({
       supervisor_id: editableData.supervisor_id || null,
       status: editableData.status.value,
       attachments: attachmentsArray,
-      complete_date: editableData.status.value === 'COMPLETE' ? new Date().toISOString().slice(0, 10) : null
+      complete_date: editableData.status.value === 'COMPLETE' ? new Date().toISOString().slice(0, 10) : null,
+      pending_collect: editableData.status.value === 'PENDING COLLECT' ? new Date().toISOString().slice(0, 10) : null
     }
 
     router.post(route('update.order.from.modal', id), data, {
@@ -258,10 +268,21 @@ const EventModal = ({
                 <strong>Name:</strong> {event?.name}
               </div>
               <div className='w-1/3'>
-                <strong>Address:</strong> {`${event?.job_address ?? ''}${event?.city ? `, ${event.city}` : ''}${event?.job_state ? `, ${event.job_state}` : ''}${event?.job_zip ? `, ${event.job_zip}` : ''}`}
+              <strong>Address:</strong>{' '}
+                      <a
+                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${event?.job_address ?? ''}, ${event?.city ?? ''}, ${event?.job_state ?? ''}, ${event?.job_zip ?? ''}`)}`} 
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-500 underline"
+                      >
+                        {`${event?.job_address ?? ''}${event?.city ? `, ${event.city}` : ''}${event?.job_state ? `, ${event.job_state}` : ''}${event?.job_zip ? `, ${event.job_zip}` : ''}`}
+                      </a>
               </div>
               <div className='w-1/3'>
-                <strong>Client Phone:</strong> {event?.client?.phone}
+                <strong>Client Phone:</strong>
+                <a href={`tel:${event?.client?.phone}`} className="text-blue-500 underline">
+                {event?.client?.phone}
+                </a>
               </div>
             </div>
             <div className='flex flex-row gap-2 mt-3'>
@@ -311,7 +332,7 @@ const EventModal = ({
             )}
             </div>
             <div className='flex flex-row gap-2 mt-3'>
-            {(event?.service === 'DELIVERY AND INSTALLATION') && (
+            {(event?.service === 'DELIVERY AND INSTALLATION' && !isInstaller) && (
               <>
               <div className='w-1/3'>
                 <strong>Duration of Work:</strong>
@@ -321,6 +342,8 @@ const EventModal = ({
               </div>
               </>
             )}
+             {!isInstaller && (
+              <>
               <div className='w-1/3'>
                 <strong>Payment Method:</strong>
                 <div className='flex flex-row justify-start'>
@@ -333,6 +356,7 @@ const EventModal = ({
                   {formatPrice(event?.additional_travel_costs ?? 0)}
                 </div>
               </div>
+              </>)}
             </div>
             {(event?.service === 'DELIVERY AND INSTALLATION') && (
               <>
@@ -358,6 +382,9 @@ const EventModal = ({
             </div>
             </>
             )}
+
+            {!isInstaller && (
+            <>
             <div className='flex flex-row gap-2 mt-3'>
               <div className='w-1/3'>
               <label htmlFor="entry_date"><strong>Entry Date:</strong></label>
@@ -422,7 +449,10 @@ const EventModal = ({
               />
               </div>
             </div>
+            </>
+            )}
             <div className='flex flex-row gap-2 mt-3'>
+            {!isInstaller && (
               <div className='w-1/3'>
               <label htmlFor="eta_date"><strong>Eta Date: </strong></label>
               <Flatpickr
@@ -443,7 +473,7 @@ const EventModal = ({
                   }
                 }}
               />
-              </div>
+              </div>)}
               <div className='w-1/3'>
                 <label htmlFor="delivery_date"><strong>Delivery/Pickup Date:</strong></label>
                 <Flatpickr
@@ -454,7 +484,7 @@ const EventModal = ({
                 }}
                 // disabled={values.supervisor_id === ''}
                 name="delivery_date"
-                disabled={!isAdminOrAccountManager && isSupervisor}
+                disabled={!isAdminOrAccountManager}
                 value={editableData.delivery_date ?? ''}
                 className="form-input"
                 onChange={([date]) => {
@@ -503,7 +533,7 @@ const EventModal = ({
                 // disabled={values.supervisor_id === ''}
                 name="installation_end_date"
                 value={editableData.installation_end_date ?? ''}
-                disabled={!isAdminOrAccountManager && !isSupervisor}
+                disabled={!isAdminOrAccountManager}
                 className="form-input"
                 onChange={([date]) => {
                   if (date) {
@@ -519,7 +549,7 @@ const EventModal = ({
                     id='installation_teams'
                     placeholder="Installation Team"
                     name='installation_teams'
-                    isDisabled={!isAdminOrAccountManager && isSupervisor}
+                    isDisabled={!isAdminOrAccountManager}
                     value={editableData.installation_teams}
                     isMulti={true}
                     onChange={(value) => {
@@ -534,7 +564,7 @@ const EventModal = ({
                       id='supervisor'
                       placeholder="supervisor"
                       name='supervisor'
-                      isDisabled={!isAdminOrAccountManager && isSupervisor}
+                      isDisabled={!isAdminOrAccountManager}
                       value ={{ label: supervisors.find((s) => s.id === editableData.supervisor_id)?.name, value: editableData.supervisor_id }}
                       isMulti={false}
                       onChange={(value) => { setEditableData({ ...editableData, supervisor_id: value?.value }) }}
@@ -552,6 +582,7 @@ const EventModal = ({
                     placeholder="status"
                     name='status'
                     value={editableData.status}
+                    isDisabled={isInstaller}
                     isMulti={false}
                     onChange={(value) => { setEditableData({ ...editableData, status: value }) }}
                     options={(() => {
@@ -599,6 +630,7 @@ const EventModal = ({
                     value={editableData.inspection_date ?? ''}
                     // disabled={!isAdminOrAccountManager && isSupervisor}
                     className="form-input"
+                    disabled={isInstaller}
                     onChange={([date]) => {
                       if (date) {
                         // Manejar la fecha seleccionada
@@ -620,7 +652,7 @@ const EventModal = ({
 
                     name="finish_date"
                     value={editableData.finish_date ?? ''}
-                    // disabled={!isAdminOrAccountManager && isSupervisor}
+                    disabled={isInstaller}
                     className="form-input"
                     onChange={([date]) => {
                       if (date) {
@@ -631,6 +663,30 @@ const EventModal = ({
                   />
                   </div>
                     )}
+
+                  {(editableData.status.value === 'SERVICE' || editableData.service_date != null) && (
+                    <div className='w-1/3  mt-8'>
+                    <label htmlFor="service_date"><strong>Service Date:</strong></label>
+                    <Flatpickr
+                    options={{
+                      mode: 'single',
+                      dateFormat: 'Y-m-d',
+                      position: 'auto right'
+                    }}
+
+                    name="service_date"
+                    value={editableData.service_date ?? ''}
+                    disabled={isInstaller}
+                    className="form-input"
+                    onChange={([date]) => {
+                      if (date) {
+                        // Manejar la fecha seleccionada
+                        handleInputChange('service_date', date.toISOString().slice(0, 10)) // Guardar en formato 'YYYY-MM-DD'
+                      }
+                    }}
+                  />
+                  </div>
+                  )}
                  {(editableData.status.value === 'FINAL INSPECTION' || editableData.final_inspection_date != null) && (
                     <div className='w-1/3  mt-8'>
                     <label htmlFor="final_inspection_date"><strong>Final Inspection Date:</strong></label>
@@ -643,7 +699,7 @@ const EventModal = ({
 
                     name="final_inspection_date"
                     value={editableData.final_inspection_date ?? ''}
-                    // disabled={!isAdminOrAccountManager && isSupervisor}
+                    disabled={isInstaller}
                     className="form-input"
                     onChange={([date]) => {
                       if (date) {
@@ -669,6 +725,7 @@ const EventModal = ({
                 name="notes"
                 rows = {6}
                 value={editableData.notes ?? ''}
+                disabled={isInstaller}
                 className="form-textarea resize-none placeholder:text-white-dark"
                 placeholder='Notes'
                 onChange={(e) => { setEditableData({ ...editableData, notes: e.target.value }) }}
@@ -677,6 +734,8 @@ const EventModal = ({
             {attachmentsList && (event?.service === 'DELIVERY AND INSTALLATION') && (
                 <>
                <div className='flex flex-col gap-2  mt-3'>
+               {!isInstaller && (
+                <>
                <label htmlFor="attachments" className='font-bold'>Attachments:</label>
                <input
                  id="attachments"
@@ -690,6 +749,7 @@ const EventModal = ({
                    setAttachmentsArray(event.currentTarget.files)
                  }}
                />
+               </>)}
                  <div className="flex flex-col rounded-md border border-[#e0e6ed] dark:border-[#1b2e4b] mt-3">
                   {message !== '' && (
                     <div className='flex items-center p-3.5 rounded text-danger dark:bg-danger-dark-light'>{message}</div>
@@ -726,7 +786,7 @@ const EventModal = ({
              </div>
              </>
             )}
-            {isAdminOrAccountManager && (event?.service === 'DELIVERY AND INSTALLATION') && (
+            {(isAdminOrAccountManager || isInstaller || isPaymentCoordinator) && (event?.service === 'DELIVERY AND INSTALLATION') && (
               <>
               <div className='flex flex-col gap-2  mt-3'>
                 <strong>Payment List:</strong>

@@ -6,7 +6,11 @@ import { type PageProps } from '@/types/types/pageProps'
 import { type PaginatorLink } from '@/types/interfaces/paginatorLink'
 import { type Role } from '@/types/interfaces/role'
 import { type ModalProps } from '@/types/interfaces/modalProps'
-import { type Order, type TypeOfWork, type Attachment, type DurationOfWork, type InstallationTeam, type OrderProduct, type ProductCategory, type ProductConfig, type ProductCost, type TravelCost, type TypeOfHousing, type TypeOfProduct, type ExtraWorks } from '@/types/interfaces/order'
+import {
+  type Order, type TypeOfWork, type Attachment, type DurationOfWork, type InstallationTeam, type OrderProduct,
+  type ProductCategory, type ProductConfig, type ProductCost, type TravelCost, type TypeOfHousing, type TypeOfProduct,
+  type ExtraWorks, type PaymentExtraFields
+} from '@/types/interfaces/order'
 import { type Status } from './interfaces/status'
 import { type OptionType } from './interfaces/optionType'
 
@@ -34,5 +38,6 @@ export type {
   TypeOfProduct,
   ExtraWorks,
   OptionType,
-  ClientAddress
+  ClientAddress,
+  PaymentExtraFields
 }

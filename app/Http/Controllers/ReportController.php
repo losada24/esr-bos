@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Enum\RoleEnum;
 use App\Enum\SupervisorPaymentStatusEnum;
 use App\Exports\SupervisorExport;
 use App\Http\Resources\InstallationTeamCollection;
 use App\Models\InstallationTeam;
+use App\Models\Order;
+use App\Models\PaymentExtraField;
 use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -100,6 +103,68 @@ class ReportController extends Controller
         );
     }
 
+
+    public function showInstaller ($id) 
+    {
+          // Obtener las órdenes por supervisor
+        $orders = $this->getOrdersByInstaller($id);
+        //dd($orders);
+        
+        $name = request()->get('name');
+
+        $companyName = InstallationTeam::where('user_id', $id)->value('company_name');
+       
+       //dd($companyName);
+        $startDate = request()->get('start_date');
+        $endDate = request()->get('end_date');
+
+        // Filtrar las órdenes por estado
+       /* if ($orders instanceof EloquentBuilder || $orders instanceof QueryBuilder) {
+          // Es una consulta, puedes aplicar where y usar toSql
+          $query = $orders->where('supervisor_payment_status', 'like', '%' . $status . '%');
+          dd($query->toSql(), $query->getBindings()); // Depuración
+          $orders = $query->get();
+      } elseif ($orders instanceof Collection) {
+          // Es una colección, debes filtrar en memoria
+          $orders = $orders->filter(function ($order) use ($status) {
+              return stripos($order['supervisor_payment_status'], $status) !== false;
+          });
+      } else {
+          dd('Tipo desconocido:', get_class($orders));
+        }*/
+
+        if ($name) {
+          $orders = $orders->filter(function ($order) use ($name) {
+              return stripos($order['name'], $name) !== false; // Filtro por nombre
+          });
+      }
+        //dd($orders);
+
+        /*if ($startDate) {
+              $orders = $orders->where('supervisor_payment_date', '>=', $startDate);
+        }
+
+        if ($endDate) {
+              $orders = $orders->where('supervisor_payment_date', '<=', $endDate);
+        }*/
+
+        //dd(User::find($id));
+      
+
+    // Retornar la vista con las órdenes filtradas
+    return Inertia::render('Report/ShowInstaller', [
+        'orders' => $orders->values()->toArray(),
+        'installer' => User::find($id),
+        'companyName' => $companyName,
+        'statuses' => [
+          SupervisorPaymentStatusEnum::OPEN->value,
+          SupervisorPaymentStatusEnum::PENDING->value,
+          SupervisorPaymentStatusEnum::CLOSED->value,
+          SupervisorPaymentStatusEnum::NO_PAID->value,
+          ]
+    ]);
+    }
+
     public function installer(Request $request)
     {
       return Inertia::render('Report/Installer', [
@@ -112,6 +177,57 @@ class ReportController extends Controller
       ]);
       
     }
+
+    public function editReportInstaller($id, $installation_team)
+    {   // Cargar la orden junto con los campos relacionados
+       
+            $order = Order::with([
+                'paymentExtraFields' => function($query) use ($installation_team) {
+                    $query->where('installation_team_id', $installation_team);
+
+                }, // Cargar los paymentExtraFields
+                'user', // Cargar el usuario relacionado
+                'installationTeams.user', // Cargar los equipos de instalación y sus usuarios
+                'owners',
+                'supervisor' // Cargar los propietarios
+            ])->findOrFail($id);
+            //dd($order);
+            // Retornar la vista con los datos
+            return Inertia::render('Report/EditReportInstaller', [
+                'order' => $order, // Pasamos los datos de la orden
+                'installation_team_id' => $installation_team
+            ]);
+    }
+   
+    public function  updateInstallerReport(Request $request)
+    {   // Cargar la orden junto con los campos relacionados
+
+      $data = [
+        'order_id' => $request->input('order_id'),
+        'installation_team_id' => $request->input('installation_team_id'),
+        'responsible_extra_work' => $request->input('responsible_extra_work'),
+        'notes' => $request->input('notes'),
+        'documents_submitted' => $request->input('documents_submitted'),
+        'collected_payment' => $request->input('collected_payment'),
+        'extra_work' => $request->input('extra_work'),
+        'extra_discount' => $request->input('extra_discount'),
+    ];
+    
+        // Si el id es 0, se crea una nueva fila
+        if ($request->input('id') == 0) {
+            PaymentExtraField::create($data);
+        } else {
+            // Si el id existe, se actualiza el registro
+            PaymentExtraField::updateOrCreate(
+                ['id' => $request->input('id')], // Condición para buscar el registro por ID
+                $data // Si existe, actualiza con estos datos
+            );
+          } 
+          return redirect()->route('report.show_installer', $request->input('installation_team_id'))
+          ->with('success', 'Order updated successfully.');
+  
+  }
+   
 
     /*public function storeContact(Request $request)
     {
