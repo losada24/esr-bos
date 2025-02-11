@@ -51,6 +51,7 @@ class DashboardController extends Controller
         OrderStatusEnum::SUPERVISION->value,
         OrderStatusEnum::INSPECTION->value,
         OrderStatusEnum::FINISH->value,
+        OrderStatusEnum::SERVICE->value,
         OrderStatusEnum::FINAL_INSPECTION->value,
         OrderStatusEnum::FINAL_COLLECT->value,
         OrderStatusEnum::COMPLETE->value,
@@ -70,6 +71,7 @@ class DashboardController extends Controller
         OrderStatusEnum::ON_HOLD->value,
         OrderStatusEnum::RESCHEDULE->value,
         OrderStatusEnum::FINISH->value,
+        OrderStatusEnum::SERVICE->value,
         OrderStatusEnum::FINAL_INSPECTION->value,  
       ];
 
@@ -119,7 +121,7 @@ class DashboardController extends Controller
           'label' => 'FINISH'
         ],
       ];
-    } else if ($user->hasRole(RoleEnum::SUPERVISOR->value) || $user->hasRole(RoleEnum::SERVICE_MANAGER->value)) {
+    } else if ($user->hasRole(RoleEnum::SUPERVISOR->value) || $user->hasRole(RoleEnum::SERVICE_MANAGER->value) || $user->hasRole(RoleEnum::INSTALLER->value) || $user->hasRole(RoleEnum::PAYMENT_COORDINATOR->value)) {
       $status = [
         //OrderStatusEnum::RESCHEDULE->value,
         OrderStatusEnum::CONFIRMED->value,
@@ -127,6 +129,7 @@ class DashboardController extends Controller
         OrderStatusEnum::SUPERVISION->value,
         OrderStatusEnum::INSPECTION->value,
         OrderStatusEnum::FINISH->value,
+        OrderStatusEnum::SERVICE->value,
         OrderStatusEnum::FINAL_INSPECTION->value,
         OrderStatusEnum::FINAL_COLLECT->value,
         OrderStatusEnum::COMPLETE->value,
@@ -135,6 +138,7 @@ class DashboardController extends Controller
         OrderStatusEnum::SUPERVISION->value,
         OrderStatusEnum::INSPECTION->value,
         OrderStatusEnum::FINISH->value,
+        OrderStatusEnum::SERVICE->value,
         OrderStatusEnum::FINAL_INSPECTION->value,
         OrderStatusEnum::FINAL_COLLECT->value,
         OrderStatusEnum::COMPLETE->value,
@@ -225,6 +229,7 @@ class DashboardController extends Controller
             ->orWhereBetween('installation_end_date', [$previewMonth, $nextMonth])
             ->orWhereBetween('inspection_date', [$previewMonth, $nextMonth])
             ->orWhereBetween('finish_date', [$previewMonth, $nextMonth])
+            ->orWhereBetween('service_date', [$previewMonth, $nextMonth])
             ->orWhereBetween('final_inspection_date', [$previewMonth, $nextMonth])
             ->orWhereBetween('complete_date', [$previewMonth, $nextMonth]);
         });
@@ -330,7 +335,7 @@ class DashboardController extends Controller
         if (!$showOnlyDeliveries) {
            
           if(!( $user->hasRole(RoleEnum::ACCOUNT_MANAGER->value) || $user->hasRole(RoleEnum::ADMIN->value))){
-            //dd ($user->hasRole(RoleEnum::ACCOUNT_MANAGER->value));
+            //dd ($order->status);
 
 
           if($order->status === OrderStatusEnum::INSPECTION->value) {
@@ -341,7 +346,12 @@ class DashboardController extends Controller
             $startInstallationDate = $order->finish_date;
             $endInstallationDate = $order->finish_date;
             $color = StatusColorEnum::FINISH->value;
-          } else if ($order->status === OrderStatusEnum::FINAL_INSPECTION->value){
+          } else if ($order->status === OrderStatusEnum::SERVICE->value){
+            $startInstallationDate = $order->service_date;
+            $endInstallationDate = $order->service_date;
+            $color = StatusColorEnum::SERVICE->value;
+          }
+          else if ($order->status === OrderStatusEnum::FINAL_INSPECTION->value){
             $startInstallationDate = $order->final_inspection_date;
             $endInstallationDate = $order->final_inspection_date;
             $color = StatusColorEnum::FINAL_INSPECTION->value;
@@ -512,9 +522,12 @@ class DashboardController extends Controller
 
   public function whatsapp()
   {
-    // $this->sendWhatsAppMessage('+12397632059', 'Primer mensaje para Katy');
-    $order = Order::find(48);
-    Mail::to('carlos@reylosglass.com')->send(new DeliveryConfirmed($order));
+    $parameters = [
+      '1' => '123456',
+    ];
+    $this->sendWhatsAppMessage('+12397632059', $parameters);
+    //$order = Order::find(48);
+    //Mail::to('carlos@reylosglass.com')->send(new DeliveryConfirmed($order));
     echo 'whatsapp message';
   }
 }

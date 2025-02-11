@@ -22,6 +22,7 @@ export interface Order {
   installation_date?: Date
   inspection_date?: Date
   finish_date?: Date
+  service_date?: Date
   final_inspection_date?: Date
   complete_date?: Date
   user?: User
@@ -60,6 +61,9 @@ export interface Order {
   initial_payment_percentage?: number
   hide_on_weekends?: boolean
   do_not_send_email?: boolean
+  pending_collect?: Date
+  payment_extra_fields?: PaymentExtraFields
+  installation_payment?: InstallationPayment[]
 }
 
 export interface TypeOfWork {
@@ -212,6 +216,32 @@ export interface OrderStatus {
   pickup_date: Date
   inspection_date: Date
   finish_date: Date
+  service_date: Date
   final_inspection_date: Date
   complete_date: Date
+}
+
+export interface PaymentExtraFields {
+  id: number
+  order_id: number
+  responsible_extra_work: string
+  notes: string
+  documents_submitted: string
+  collected_payment: boolean
+  installer_payment_status?: string
+  order?: Order
+  installation_team_id: number
+  extra_work: number
+  extra_discount: number
+
+}
+
+export interface InstallationPayment {
+  id: number
+  order_id: number
+  installer_paymemt: number
+  percentage_payment: number
+  payment_date: Date
+  order?: Order
+  installation_team_id: number
 }

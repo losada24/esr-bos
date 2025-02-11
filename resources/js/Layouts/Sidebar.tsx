@@ -7,7 +7,7 @@ import ReferralIcon from '@/Components/Icons/ReferralIcon'
 import SidebarLinkLabel from '@/Components/SidebarLinkLabel'
 import DashboardIcon from '@/Components/Icons/DashboardIcon'
 import CompanyIcon from '@/Components/Icons/CompanyIcon'
-import { isAdmin, isAccountManager, isFrontdesk, isOwner, isSupervisor, isServiceManager } from '@/Utils/user'
+import { isAdmin, isAccountManager, isFrontdesk, isOwner, isSupervisor, isServiceManager, isInstaller, isPaymentCoordinator } from '@/Utils/user'
 import { type Role, type Auth } from '@/types'
 import WindowsIcon from '@/Components/Icons/WindowsIcon'
 import ProfileIcon from '@/Components/Icons/ProfileIcon'
@@ -24,6 +24,8 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
   const IS_OWNER = isOwner(auth.user.roles.map((role: Role) => role.name))
   const IS_SUPERVISOR = isSupervisor(auth.user.roles.map((role: Role) => role.name))
   const IS_SERVICE_MANAGER = isServiceManager(auth.user.roles.map((role: Role) => role.name))
+  const IS_INSTALLER = isInstaller(auth.user.roles.map((role: Role) => role.name))
+  const IS_PAYMENT_COORDINATOR= isPaymentCoordinator(auth.user.roles.map((role: Role) => role.name))
 
   return (
         <div className={`${themeState.semidark ? 'dark' : ''}`}>
@@ -148,7 +150,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                               </>
                             )}
 
-                          {(IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER) && (
+                          {(IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER || IS_PAYMENT_COORDINATOR) && (
                               <>
                                 <li className="menu nav-item">
                                     <NavLink href={route('report.installer')} active={route().current('report.installer')} className="group">
@@ -165,6 +167,18 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                               <>
                                 <li className="menu nav-item">
                                     <NavLink href={route('report.show_supervisor', { id: auth.user.id })} active={route().current('report.show_supervisor')} className="group">
+                                        <div className="flex items-center">
+                                            <ReferralIcon/>
+                                            <SidebarLinkLabel>My Orders</SidebarLinkLabel>
+                                        </div>
+                                    </NavLink>
+                                </li>
+                              </>
+                            )}
+                              {(IS_INSTALLER) && (
+                              <>
+                                <li className="menu nav-item">
+                                    <NavLink href={route('report.show_installer', { id: auth.user.id })} active={route().current('report.show_installer')} className="group">
                                         <div className="flex items-center">
                                             <ReferralIcon/>
                                             <SidebarLinkLabel>My Orders</SidebarLinkLabel>

@@ -177,7 +177,8 @@ export const ROLES = {
   SUPERVISOR: 'supervisor',
   OWNER: 'owner',
   FRONTDESK: 'frontdesk',
-  SERVICE_MANAGER: 'service_manager'
+  SERVICE_MANAGER: 'service_manager',
+  PAYMENT_COORDINATOR: 'payment_coordinator'
 }
 
 export const PERSMISSION_USERS_LIST = 'users list'

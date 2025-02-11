@@ -43,6 +43,7 @@ export default function ShowStatusOrder ({ auth, orderStatuses, order }: IndexOr
                 <th className="px-6 pt-5 pb-4"> Installation End Date</th>
                 <th className="px-6 pt-5 pb-4">Inspection Date</th>
                 <th className="px-6 pt-5 pb-4">Finish Date</th>
+                <th className="px-6 pt-5 pb-4">Service Date</th>
                 <th className="px-6 pt-5 pb-4">Final Inspection Date</th>
                 <th className="px-6 pt-5 pb-4">Complete Date</th>
               </tr>
@@ -77,6 +78,9 @@ export default function ShowStatusOrder ({ auth, orderStatuses, order }: IndexOr
                     </td>
                     <td className="border-t px-6 py-4 align-top">
                     {order.status === 'FINISH' ? order.finish_date?.toString() : ''}
+                    </td>
+                    <td className="border-t px-6 py-4 align-top">
+                    {order.status === 'SERVICE' ? order.service_date?.toString() : ''}
                     </td>
                     <td className="border-t px-6 py-4 align-top">
                     {order.status === 'FINAL INSPECTION' ? order.final_inspection_date?.toString() : ''}

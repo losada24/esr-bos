@@ -10,6 +10,7 @@ use App\Enum\OrderStatusEnum;
 use App\Enum\PlaningDateSupervisorEnum;
 use App\Enum\SupervisorPaymentStatusEnum;
 use App\Enum\TypeOfFinancing;
+use App\Models\OrderStatus;
 use App\Rules\ValidateOrderStatus;
 use Illuminate\Validation\Rule;
 
@@ -49,6 +50,7 @@ class PartialOrderRequest extends FormRequest
               OrderStatusEnum::SUPERVISION->value,
               OrderStatusEnum::INSPECTION->value,
               OrderStatusEnum::FINISH->value,
+              OrderStatusEnum::SERVICE->value,
               OrderStatusEnum::FINAL_INSPECTION->value,
               OrderStatusEnum::FINAL_COLLECT->value,
               OrderStatusEnum::ON_HOLD->value,
@@ -84,6 +86,27 @@ class PartialOrderRequest extends FormRequest
                 , ['required', 'date_format:Y-m-d',]
               ),
             ],
+            'finish_date' => [
+              'nullable',
+              Rule::when(
+                fn($input) => $input['status']== OrderStatusEnum::FINISH->value
+                , ['required', 'date_format:Y-m-d',]
+              ),
+            ],
+            'final_inspection_date' => [
+              'nullable',
+              Rule::when(
+                fn($input) => $input['status']== OrderStatusEnum::FINAL_INSPECTION->value
+                , ['required', 'date_format:Y-m-d',]
+              ),
+            ],
+            'service_date' => [
+              'nullable',
+              Rule::when(
+                fn($input) => $input['status']== OrderStatusEnum::SERVICE->value
+                , ['required', 'date_format:Y-m-d',]
+              ),
+            ],
           'contract_signing_date' => 'required|date_format:Y-m-d',
           'payment_factory_date' => 'required|date_format:Y-m-d',
           'eta_date' => 'required|date_format:Y-m-d',
@@ -96,8 +119,6 @@ class PartialOrderRequest extends FormRequest
           'supervisor_commissions' => 'nullable|numeric',
           'supervisor_payment_percentage' => 'nullable|numeric',
           'supervisor_payment_date' => 'nullable|date_format:Y-m-d',
-          'finish_date' => 'nullable|date_format:Y-m-d',
-          'final_inspection_date' => 'nullable|date_format:Y-m-d',
           'complete_date' => 'nullable|date_format:Y-m-d',
           'attachments' => 'nullable|array',
           'attachments.*' => 'file|mimes:jpeg,png,jpg,pdf,docx,doc,xlsx|max:10240',

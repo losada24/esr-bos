@@ -17,4 +17,5 @@ enum OrderStatusEnum: string
     case COMPLETE = 'COMPLETE';
     case RESCHEDULE = 'RESCHEDULED';
     case CONFIRMED_FINISH = 'CONFIRMED FINISH';
+    case SERVICE = 'SERVICE';
 }

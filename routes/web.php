@@ -85,19 +85,19 @@ Route::middleware('auth')->group(function () {
       ->name('order.update_date_paid');
     
     Route::get('dashboard/get_events/{year}/{month}/{service}/{status}/{name?}', [DashboardController::class, 'getEvents'])
-      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::INSTALLER->value .'|' . RoleEnum::SUPERVISOR->value .'|' . RoleEnum::SERVICE_MANAGER->value])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::INSTALLER->value .'|' . RoleEnum::SUPERVISOR->value .'|' . RoleEnum::SERVICE_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value])
       ->name('dashboard.get_events');
     
     Route::get('dashboard/get_event/{order}', [DashboardController::class, 'getEvent'])
-      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::INSTALLER->value .'|' . RoleEnum::SUPERVISOR->value .'|' . RoleEnum::SERVICE_MANAGER->value])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::INSTALLER->value .'|' . RoleEnum::SUPERVISOR->value .'|' . RoleEnum::SERVICE_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value])
       ->name('dashboard.get_event');
     
     Route::post('order/update-from-modal/{order}', [OrderController::class, 'updateFromModal'])
-      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::INSTALLER->value .'|' . RoleEnum::SUPERVISOR->value .'|' . RoleEnum::SERVICE_MANAGER->value])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::INSTALLER->value .'|' . RoleEnum::SUPERVISOR->value .'|' . RoleEnum::SERVICE_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value])
       ->name('update.order.from.modal');
     
     Route::get('order/get_payment_list/{order}', [DashboardController::class, 'getPaymentList'])
-      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value ])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::INSTALLER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value])
       ->name('order.get_payment_list');
     
     Route::put('dashboard/update_events/{id}', [DashboardController::class, 'updateEvent'])
@@ -148,12 +148,25 @@ Route::middleware('auth')->group(function () {
       ->name('report.supervisor');
 
       Route::get('/report/installer', [ReportController::class, 'installer'])
-      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::INSTALLER->value .'|'. RoleEnum::SERVICE_MANAGER->value] )
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::INSTALLER->value .'|'. RoleEnum::SERVICE_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value] )
       ->name('report.installer');
+
+      Route::get('/report/show_installer/{id}', [ReportController::class, 'showInstaller'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::INSTALLER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value] )
+      ->name('report.show_installer');
+
+      Route::get('/report/edit_report_installer/{id}/{installation_team}', [ReportController::class, 'editReportInstaller'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value] )
+      ->name('report.edit_report_installer');
+
+      Route::post('report/update_installer_report', [ReportController::class, 'updateInstallerReport'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value])
+      ->name('report.update_installer_report');
 
       Route::get('/report/show_supervisor/{id}', [ReportController::class, 'showSupervisor'])
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::SUPERVISOR->value] )
       ->name('report.show_supervisor');
+
 
       Route::get('/report/excel-supervisor/{user}', [ReportController::class, 'export'])
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::SUPERVISOR->value] )

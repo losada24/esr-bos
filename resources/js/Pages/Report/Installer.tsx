@@ -61,7 +61,7 @@ export default function Installer ({ auth, installation_teams }: IndexUserProps)
                     </td>
                     <td className="border-t flex items-center px-6 py-4">
                         <Link
-                          href={route('report.show_supervisor', installation_team.id)}
+                          href={route('report.show_installer', installation_team.user?.id)}
                         >
                           <EyeIcon/>
                         </Link>
