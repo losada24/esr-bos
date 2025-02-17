@@ -10,7 +10,7 @@ class InstallationPayment extends Model
 {
   use HasFactory, SoftDeletes;
           protected $fillable = [
-            'installer_paymemt',
+            'installer_payment',
             'order_id',
             'percentage_payment',
             'payment_date',

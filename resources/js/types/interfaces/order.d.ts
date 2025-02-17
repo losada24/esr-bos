@@ -233,15 +233,15 @@ export interface PaymentExtraFields {
   installation_team_id: number
   extra_work: number
   extra_discount: number
-
+  other_cost_installer: number
 }
 
 export interface InstallationPayment {
   id: number
   order_id: number
-  installer_paymemt: number
+  installer_payment: number
   percentage_payment: number
-  payment_date: Date
+  payment_date: Date | null
   order?: Order
   installation_team_id: number
 }

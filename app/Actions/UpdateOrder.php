@@ -184,7 +184,7 @@ class UpdateOrder {
         $this->sendEmail($order);
        
        
-       //$this->whatsapp($order);
+       $this->whatsapp($order);
       }
       
       if( !$order )

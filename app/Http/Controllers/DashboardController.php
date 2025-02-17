@@ -231,6 +231,7 @@ class DashboardController extends Controller
             ->orWhereBetween('finish_date', [$previewMonth, $nextMonth])
             ->orWhereBetween('service_date', [$previewMonth, $nextMonth])
             ->orWhereBetween('final_inspection_date', [$previewMonth, $nextMonth])
+            ->orWhereBetween('pending_collect', [$previewMonth, $nextMonth])
             ->orWhereBetween('complete_date', [$previewMonth, $nextMonth]);
         });
       });
@@ -350,6 +351,11 @@ class DashboardController extends Controller
             $startInstallationDate = $order->service_date;
             $endInstallationDate = $order->service_date;
             $color = StatusColorEnum::SERVICE->value;
+          }
+          else if($order->status === OrderStatusEnum::FINAL_COLLECT->value){
+            $startInstallationDate = $order->pending_collect;
+            $endInstallationDate =$order->pending_collect;
+            $color = $this->getColorByStatus($order->status, $order->service, true);
           }
           else if ($order->status === OrderStatusEnum::FINAL_INSPECTION->value){
             $startInstallationDate = $order->final_inspection_date;

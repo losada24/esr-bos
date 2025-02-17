@@ -2,10 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\UpdatePaymentInstaller;
+use App\Enum\InstallerPaymentStatusEnum;
 use App\Enum\RoleEnum;
 use App\Enum\SupervisorPaymentStatusEnum;
 use App\Exports\SupervisorExport;
+use App\Http\Requests\StoreInstallerPaymentRequest;
 use App\Http\Resources\InstallationTeamCollection;
+use App\Models\InstallationPayment;
 use App\Models\InstallationTeam;
 use App\Models\Order;
 use App\Models\PaymentExtraField;
@@ -13,16 +17,20 @@ use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Router;
+use App\Rules\ValidateInstallationPayment;  
 use Inertia\Inertia;
 use Carbon\Carbon;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Collection;
+use Twilio\Rest\Api\V2010\Account\Call\PaymentInstance;
+use Illuminate\Contracts\Validation\ValidationRule;
 
 class ReportController extends Controller
 {
     use \App\Traits\Reports; //Todo: remove this to a trait
+  
 
     public function supervisor(Request $request)
     {
@@ -191,11 +199,26 @@ class ReportController extends Controller
                 'owners',
                 'supervisor' // Cargar los propietarios
             ])->findOrFail($id);
-            //dd($order);
+
+            $amount = $order->getGrandTotalPrice();
+
+            $payment = InstallationPayment::where('order_id', $id)->get();
+
+
+            //dd($payment);
             // Retornar la vista con los datos
             return Inertia::render('Report/EditReportInstaller', [
                 'order' => $order, // Pasamos los datos de la orden
-                'installation_team_id' => $installation_team
+                'installation_team_id' => $installation_team,
+                'amount' => $amount,
+                'payment' => $payment->values()->toArray(),
+                 'installer_payment_status' => [
+                  InstallerPaymentStatusEnum::OPEN->value,
+                  InstallerPaymentStatusEnum::PENDING->value,
+                   InstallerPaymentStatusEnum::PARTIALLY_PAID->value,
+                   InstallerPaymentStatusEnum::FULLY_PAID->value,
+                   InstallerPaymentStatusEnum::CLOSED->value,
+                 ]
             ]);
     }
    
@@ -211,6 +234,8 @@ class ReportController extends Controller
         'collected_payment' => $request->input('collected_payment'),
         'extra_work' => $request->input('extra_work'),
         'extra_discount' => $request->input('extra_discount'),
+        'other_cost_installer' => $request->input('other_cost_installer'),
+        'installer_payment_status' => $request->input('installer_payment_status'),
     ];
     
         // Si el id es 0, se crea una nueva fila
@@ -227,6 +252,16 @@ class ReportController extends Controller
           ->with('success', 'Order updated successfully.');
   
   }
+
+  public function  updateInstallerPayment(StoreInstallerPaymentRequest $request, UpdatePaymentInstaller $updatePaymentInstaller)
+  {
+      $updatePaymentInstaller->handle($request);
+      return redirect()->back()->with('success', 'Order updated successfully.');
+  }
+  
+     
+
+
    
 
     /*public function storeContact(Request $request)

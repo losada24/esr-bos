@@ -18,7 +18,8 @@ class PaymentExtraField extends Model
             'collected_payment',
             'installation_team_id',
             'extra_work',
-            'extra_discount'
+            'extra_discount',
+            'other_cost_installer',
         ];
 
         protected function casts(): array

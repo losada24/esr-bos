@@ -163,6 +163,10 @@ Route::middleware('auth')->group(function () {
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value])
       ->name('report.update_installer_report');
 
+      Route::post('report/update_installer_payment', [ReportController::class, 'updateInstallerPayment'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value])
+      ->name('report.update_installer_payment');
+
       Route::get('/report/show_supervisor/{id}', [ReportController::class, 'showSupervisor'])
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::SUPERVISOR->value] )
       ->name('report.show_supervisor');

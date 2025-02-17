@@ -9,7 +9,7 @@ import { type ModalProps } from '@/types/interfaces/modalProps'
 import {
   type Order, type TypeOfWork, type Attachment, type DurationOfWork, type InstallationTeam, type OrderProduct,
   type ProductCategory, type ProductConfig, type ProductCost, type TravelCost, type TypeOfHousing, type TypeOfProduct,
-  type ExtraWorks, type PaymentExtraFields
+  type ExtraWorks, type PaymentExtraFields, type InstallationPayment
 } from '@/types/interfaces/order'
 import { type Status } from './interfaces/status'
 import { type OptionType } from './interfaces/optionType'
@@ -39,5 +39,7 @@ export type {
   ExtraWorks,
   OptionType,
   ClientAddress,
-  PaymentExtraFields
+  PaymentExtraFields,
+  InstallationPayment
+
 }
