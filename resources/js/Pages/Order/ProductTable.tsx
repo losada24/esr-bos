@@ -5,7 +5,7 @@ import { OrderProductsExtraWorks } from '@/types/interfaces/order'
 import { formatPrice } from '@/Utils/price'
 import React from 'react'
 import { PAYMENT_METHODS, SERVICES } from '@/Utils/constants'
-import {  type OrderFormValues, getValueIdNotNull} from './OrderCommon'
+import { type OrderFormValues, getValueIdNotNull } from './OrderCommon'
 
 const ProductTable = ({
   orderProducts,
@@ -64,7 +64,7 @@ const ProductTable = ({
     <div className='table-responsive mt-3'>
           <table className="w-full whitespace-nowrap">
             <thead>
-              <tr className="font-bold text-left">  
+              <tr className="font-bold text-left">
                   <th className="px-6 pt-5 pb-4">Type of Product</th>
                   <th className="px-6 pt-5 pb-4">Product Category</th>
                   <th className="px-6 pt-5 pb-4">Product Config</th>

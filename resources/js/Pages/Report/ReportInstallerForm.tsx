@@ -14,6 +14,7 @@ const ReportInstallerForm = ({
   errors,
   isCreate,
   installerId,
+  installer_payment_status,
   setFieldValue,
   values
 
@@ -22,6 +23,7 @@ const ReportInstallerForm = ({
   errors: FormikErrors<PaymentExtraFields>
   isCreate: boolean
   installerId: number
+  installer_payment_status: string []
   setFieldValue: (field: string, value: any) => void
   values: PaymentExtraFields
 }) => {
@@ -76,7 +78,7 @@ const ReportInstallerForm = ({
             {(submitCount && errors.extra_work) ? <InputError message={errors.extra_work} className="mt-2" /> : ''}
           </div>
           <div className={submitCount ? (errors.extra_discount) ? 'has-error' : 'has-success' : ''}>
-            <label htmlFor="extra_discount">Extra Work Cost</label>
+            <label htmlFor="extra_discount">Discount(-)</label>
             <Field
               id="extra_discount"
               name="extra_discount"
@@ -87,6 +89,38 @@ const ReportInstallerForm = ({
             />
             {(submitCount && errors.extra_discount) ? <InputError message={errors.extra_discount} className="mt-2" /> : ''}
           </div>
+          <div className={submitCount ? (errors.other_cost_installer) ? 'has-error' : 'has-success' : ''}>
+            <label htmlFor="other_cost_installer">Other Cost Installtion(+)</label>
+            <Field
+              id="other_cost_installer"
+              name="other_cost_installer"
+              className="form-input text-right"
+              autoComplete="other_cost_installer"
+              placeholder='Extra Discount'
+              type='number'
+            />
+            {(submitCount && errors.other_cost_installer) ? <InputError message={errors.other_cost_installer} className="mt-2" /> : ''}
+          </div>
+          <div className={submitCount ? (errors.installer_payment_status) ? 'has-error' : 'has-success' : ''}>
+                        <label htmlFor="method_of_payment">Installer Payment Status</label>
+                        <Field
+                          id="installer_payment_status"
+                          name="installer_payment_status"
+                          className="form-select"
+                          autoComplete="installer_payment_status"
+                          placeholder='Installer Payment Status'
+                          as="select"
+                          onChange={(e: { target: { value: string } }) => {
+                            setFieldValue('installer_payment_status', e.target.value)
+                          }}
+                        >
+                          <option value="">Installer Payment Status</option>
+                          {installer_payment_status.map((installer_payment_status, index) => (
+                            <option key={index} value={installer_payment_status}>{installer_payment_status}</option>
+                          ))}
+                        </Field>
+                        {(submitCount && errors.installer_payment_status) ? <InputError message={errors.installer_payment_status} className="mt-2" /> : ''}
+                      </div>
           <div className='col-span-3'>
           <div className={submitCount ? (errors.notes) ? 'has-error' : 'has-success' : ''}>
             <label htmlFor="notes">Notes</label>
@@ -103,7 +137,6 @@ const ReportInstallerForm = ({
           </div>
         </div>
         <div className="flex items-center justify-between mt-4">
-          <Link className='btn btn-danger uppercase' href={route('report.edit_report_installer', { id: values.order_id, installation_team: installerId })}>Cancel</Link>
           <PrimaryButton className="btn btn-primary" type='submit'>
             {isCreate ? 'Create' : 'Save'}
           </PrimaryButton>

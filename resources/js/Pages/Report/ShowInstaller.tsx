@@ -1,6 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
 import { Head, Link } from '@inertiajs/react'
-import { type Role, type InstallationTeam, type PageProps, type User, PaymentExtraFields } from '@/types'
+import { type Role, type InstallationTeam, type PageProps, type User, PaymentExtraFields, InstallationPayment } from '@/types'
 import { formatPrice } from '@/Utils/price'
 import Flatpickr from 'react-flatpickr'
 import 'flatpickr/dist/flatpickr.css'
@@ -25,7 +25,7 @@ interface OrderInstaller {
   final_installation_date: string
   inspection_installation_date: string
   execution_planing_date: number
-  qty_days: number
+  payment: InstallationPayment []
   project_amount: string
   supervisor_payment_percentage: string
   supervisor_commissions: string
@@ -48,7 +48,6 @@ export default function ShowInstaller ({ auth, orders, installer, companyName }:
   console.log(installer.id)
   const totalProjectAmount = orders.reduce((sum, order) => sum + Number(order.project_amount), 0)
   const totalCommissions = orders.reduce((sum, order) => sum + Number(order.supervisor_commissions), 0)
-  const [tableOrders, setTableOrders] = useState<OrderInstaller[]>(orders)
   return (
       <AuthenticatedLayout
           auth={auth}
@@ -79,12 +78,13 @@ export default function ShowInstaller ({ auth, orders, installer, companyName }:
                 <th className="px-6 pt-5 pb-4">Collected Payment</th>
                 <th className="px-6 pt-5 pb-4">Remarks</th>
                 <th className="px-6 pt-5 pb-4">Delivered Documents</th>
-                <th className="px-6 pt-5 pb-4 wide-column">Date Paid</th>
+                <th className="px-6 pt-5 pb-4">Status Payment </th>
+
                 <th className="px-6 pt-5 pb-4 w-14">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {tableOrders.map((order: OrderInstaller, index) => {
+              {orders.map((order: OrderInstaller, index) => {
                 return (
                   <tr key={order.id}>
                      <td className="px-6 py-4 border-t">
@@ -132,48 +132,15 @@ export default function ShowInstaller ({ auth, orders, installer, companyName }:
                     {formatPrice(Number(order.payment_extra_fields.extra_discount) || 0)}
                     </td>
                     <td className="px-6 py-4 border-t">
+                    <td className="px-6 py-4 border-t">
+                    </td>
                     </td>
                     <td className="px-6 py-4 border-t">
                     {order.payment_extra_fields.collected_payment ? 'YES' : 'NO'}
                     </td>
                     <td> {order.payment_extra_fields.notes}</td>
                     <td>{order.payment_extra_fields.documents_submitted}</td>
-                    <td className="px-6 pt-5 pb-4 wide-column">
-                        <Flatpickr
-                          options={{
-                            mode: 'single',
-                            dateFormat: 'Y-m-d',
-                            position: 'auto right'
-                          }}
-                          disabled={isSupervisor(auth.user.roles.map((role: Role) => role.name))}
-                          name="supervisor_payment_date"
-                          value={order.supervisor_payment_date}
-                          className="form-input"
-                          onChange={([date]) => {
-                            if (date) {
-                              fetch(route('order.update_date_paid'), {
-                                method: 'POST',
-                                headers: {
-                                  'Content-Type': 'application/json',
-                                  'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? ''
-                                },
-                                body: JSON.stringify({
-                                  order_id: order.id,
-                                  date_paid: date.toISOString().slice(0, 10)
-                                })
-                              }).then((response) => {
-                                if (response.ok) {
-                                  const newOrders = [...orders]
-                                  newOrders[index].supervisor_payment_status = 'CLOSED'
-                                  setTableOrders([...newOrders])
-                                }
-                              })
-                              // Manejar la fecha seleccionada
-                              // handleInputChange('supervisor_payment_date', date.toISOString().slice(0, 10)) // Guardar en formato 'YYYY-MM-DD'
-                            }
-                          }}
-                        />
-                    </td>
+                    <td>{order.payment_extra_fields.installer_payment_status}</td>
                     <td className="border-t flex items-center px-6 py-4">
                       <Link
                         href={route('report.edit_report_installer', { id: order.id, installation_team: installer.id })}

@@ -78,7 +78,7 @@ trait Reports {
             $subQuery->where('id', $id);  // Filtra por el instalador específico
         });
     })
-    ->with(['supervisor','orderProducts','travelCost','paymentExtraFields'])  // Cargar la relación con el supervisor directamente desde la orden
+    ->with(['supervisor','orderProducts','travelCost','paymentExtraFields','installationPayments'])  // Cargar la relación con el supervisor directamente desde la orden
     ->get();
 
     //dd($orders->toArray());
@@ -109,8 +109,9 @@ trait Reports {
         $amount = $amount + $order->additional_travel_costs;
       } */
       $amount = $order->getGrandTotalPrice();
+      $payment= $order->installationPayments->all();
 
-    
+    //dd($payment);
 
       $paymentExtraFields = $order->paymentExtraFields;
 

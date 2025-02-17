@@ -848,10 +848,8 @@ const OrderForm = ({
                 {(submitCount && errors.type_of_financing) ? <InputError message={errors.type_of_financing} className="mt-2" /> : ''}
               </div>
             )}
-
-            {(values.method_of_payment === PAYMENT_METHODS.CASH || values.method_of_payment === PAYMENT_METHODS.CASH_AND_FINANCE) && (
               <div className={submitCount ? (errors.cost_delivery) ? 'has-error' : 'has-success' : ''}>
-                <label htmlFor="cost_delivery">Delivery Cost</label>
+                <label htmlFor="cost_delivery"> Client Pending Payment</label>
                 <Field
                   id="cost_delivery"
                   name="cost_delivery"
@@ -862,7 +860,6 @@ const OrderForm = ({
                 />
                 {(submitCount && errors.cost_delivery) ? <InputError message={errors.cost_delivery} className="mt-2" /> : ''}
               </div>
-            )}
             {(values.service === SERVICES.DELIVERY_AND_INSTALLATION) && (
               <>
                 <div className={submitCount ? (errors.installation_teams) ? 'has-error' : 'has-success' : ''}>

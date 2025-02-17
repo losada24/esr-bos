@@ -263,6 +263,11 @@ class Order extends Model
         return $this->hasMany(OrderStatus::class);
     }
 
+    public function installationPayments()
+    {
+        return $this->hasMany(InstallationPayment::class);
+    }
+
     /*public function paymentExtraFields()
     {
         return $this->hasMany(PaymentExtraField::class);
