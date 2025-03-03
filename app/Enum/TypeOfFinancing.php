@@ -9,4 +9,5 @@ enum TypeOfFinancing: string
     case HOME_RUN = 'HOME RUN';
     case YGREEN = 'YGREEN';
     case SLIN = 'SLICE';
+    case GOOD_LEAP  = 'GOOD LEAP';
 }

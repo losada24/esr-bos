@@ -3,11 +3,10 @@
 namespace App\Providers;
 
 use App\Events\OrderCreated;
-use App\Events\ProductCreated;
+use App\Events\PaymentCreated;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
-use Illuminate\Support\Facades\Event;
 use Illuminate\Mail\Events\MessageSent;
 
 class EventServiceProvider extends ServiceProvider
@@ -21,10 +20,13 @@ class EventServiceProvider extends ServiceProvider
         Registered::class => [
             SendEmailVerificationNotification::class,
         ],
-        /*OrderCreated::class => [
-            \App\Listeners\CreateOrderSnapshot::class
+        OrderCreated::class => [
+            \App\Listeners\CreateOrderExtraFields::class
         ],
-        ProductCreated::class => [
+        PaymentCreated::class => [
+            \App\Listeners\InstallationPaymentExecuted::class
+        ],
+        /*ProductCreated::class => [
             \App\Listeners\CreateProductSnapshot::class
         ],*/
         MessageSent::class => [

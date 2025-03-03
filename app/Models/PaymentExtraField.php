@@ -8,35 +8,24 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class PaymentExtraField extends Model
 {
-  use HasFactory, SoftDeletes;
-          protected $fillable = [
-            'responsible_extra_work',
-            'order_id',
-            'notes',
-            'documents_submitted',
-            'installer_payment_status',
-            'collected_payment',
-            'installation_team_id',
-            'extra_work',
-            'extra_discount',
-            'other_cost_installer',
-        ];
+    use HasFactory, SoftDeletes;
 
-        protected function casts(): array
-        {
-            return [
-                'collected_payment'=> 'boolean',
-            ];
-        }
+    protected $fillable = [
+      'responsible_extra_work',
+      'order_id',
+      'notes',
+      'installer_payment_status',
+      'installation_team_id',
+    ];
 
-        public function order()
-        {
-            return $this->belongsTo(Order::class);
-        }
+    public function order()
+    {
+      return $this->belongsTo(Order::class);
+    }
 
-        public function installationTeam()
-        {
-            return $this->belongsTo(InstallationTeam::class);
-        }
+    public function installationTeam()
+    {
+      return $this->belongsTo(InstallationTeam::class);
+    }
 
 }

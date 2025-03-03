@@ -7,6 +7,7 @@ import { isAdmin, getRoleName } from '@/Utils/user'
 import EyeIcon from '@/Components/Icons/EyeIcon'
 import ExportIcon from '@/Components/Icons/ExportIcon'
 import InstallationTeamFilter from '../InstallationTeam/InstallationTeamFilter'
+import PlusIcon from '@/Components/Icons/PlusIcon'
 
 type IndexUserProps = PageProps & {
   installation_teams: {
@@ -62,12 +63,17 @@ export default function Installer ({ auth, installation_teams }: IndexUserProps)
                     <td className="border-t flex items-center px-6 py-4">
                         <Link
                           href={route('report.show_installer', installation_team.user?.id)}
+                          title='View Orders'
                         >
                           <EyeIcon/>
                         </Link>
-                        <a href={route('report.excel-supervisor', installation_team.id)} target='_blank' rel="noreferrer">
-                          <ExportIcon/>
-                        </a>
+
+                        <Link
+                          href={route('report.show_biweekly', installation_team.user?.id)}
+                          title='Add Biweeklies'
+                        >
+                          <PlusIcon/>
+                        </Link>
                     </td>
                   </tr>
               )

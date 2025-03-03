@@ -17,7 +17,7 @@ export default function ShowStatusOrder ({ auth, orderStatuses, order }: IndexOr
       setStatuses(data)
     }) */
   }, [])
-  // console.log(orderStatuses)
+  console.log(orderStatuses)
   return (
        <AuthenticatedLayout
           auth={auth}
@@ -56,7 +56,7 @@ export default function ShowStatusOrder ({ auth, orderStatuses, order }: IndexOr
                     className="hover:bg-gray-100 focus-within:bg-gray-100"
                   >
                     <td className="border-t px-6 py-4 align-top">
-                    {new Date(order.updated_at).toISOString().split('T')[0]}
+                    { order.created_at_formatted}
                     </td>
                     <td className="border-t px-6 py-4 align-top">
                       {order.status}

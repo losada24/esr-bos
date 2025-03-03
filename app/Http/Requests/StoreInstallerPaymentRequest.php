@@ -28,6 +28,7 @@ class StoreInstallerPaymentRequest extends FormRequest
           'installer_payment' => ['required', 'numeric', new ValidateInstallationPayment],
           'percentage_payment' => ['required', 'numeric'],
           'payment_date' => ['required', 'date'],
+          'biweekly_id' => ['required', 'numeric', 'exists:biweeklys,id'],
         ];
     }
 }

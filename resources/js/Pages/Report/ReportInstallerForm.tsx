@@ -43,17 +43,7 @@ const ReportInstallerForm = ({
               />
               {(submitCount && errors.responsible_extra_work) ? <InputError message={errors.responsible_extra_work} className="mt-2" /> : ''}
           </div>
-          <div className={submitCount ? (errors.documents_submitted) ? 'has-error' : 'has-success' : ''}>
-            <label htmlFor="documents_submitted">Documents Submited</label>
-              <Field
-                id="documents_submitted"
-                name="documents_submitted"
-                className="form-input rounded-r-none"
-                autoComplete="documents_submited"
-              />
-              {(submitCount && errors.documents_submitted) ? <InputError message={errors.documents_submitted} className="mt-2" /> : ''}
-          </div>
-          <div className ='flex mt-8'>
+        {/* <div className ='flex mt-8'>
             <Field
               id="collected_payment"
               name="collected_payment"
@@ -64,45 +54,9 @@ const ReportInstallerForm = ({
               } }
             />
             <label htmlFor="collected_payment" className='font-bold inline-flex'>Collect Payment</label>
-          </div>
-          <div className={submitCount ? (errors.extra_work) ? 'has-error' : 'has-success' : ''}>
-            <label htmlFor="extra_work">Extra Work Cost</label>
-            <Field
-              id="extra_work"
-              name="extra_work"
-              className="form-input text-right"
-              autoComplete="extra_work"
-              placeholder='Extra Work Cost'
-              type='number'
-            />
-            {(submitCount && errors.extra_work) ? <InputError message={errors.extra_work} className="mt-2" /> : ''}
-          </div>
-          <div className={submitCount ? (errors.extra_discount) ? 'has-error' : 'has-success' : ''}>
-            <label htmlFor="extra_discount">Discount(-)</label>
-            <Field
-              id="extra_discount"
-              name="extra_discount"
-              className="form-input text-right"
-              autoComplete="extra_discount"
-              placeholder='Extra Discount'
-              type='number'
-            />
-            {(submitCount && errors.extra_discount) ? <InputError message={errors.extra_discount} className="mt-2" /> : ''}
-          </div>
-          <div className={submitCount ? (errors.other_cost_installer) ? 'has-error' : 'has-success' : ''}>
-            <label htmlFor="other_cost_installer">Other Cost Installtion(+)</label>
-            <Field
-              id="other_cost_installer"
-              name="other_cost_installer"
-              className="form-input text-right"
-              autoComplete="other_cost_installer"
-              placeholder='Extra Discount'
-              type='number'
-            />
-            {(submitCount && errors.other_cost_installer) ? <InputError message={errors.other_cost_installer} className="mt-2" /> : ''}
-          </div>
+          </div> */}
           <div className={submitCount ? (errors.installer_payment_status) ? 'has-error' : 'has-success' : ''}>
-                        <label htmlFor="method_of_payment">Installer Payment Status</label>
+                        <label htmlFor="installer_payment_status">Installer Payment Status</label>
                         <Field
                           id="installer_payment_status"
                           name="installer_payment_status"
