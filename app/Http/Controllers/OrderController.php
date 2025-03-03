@@ -33,6 +33,8 @@ use App\Models\TypeOfProduct;
 use App\Models\TypeOfWork;
 use App\Models\User;
 use App\Traits\OrderDates;
+use Carbon\Carbon;
+use Doctrine\DBAL\Types\Type;
 
 class OrderController extends Controller
 {
@@ -95,6 +97,7 @@ class OrderController extends Controller
             TypeOfFinancing::HOME_RUN->value,
             TypeOfFinancing::YGREEN->value,
             TypeOfFinancing::SLIN->value,
+            TypeOfFinancing::GOOD_LEAP->value,
           ],
           'services' => [
             ServiceEnum::INSTALLATION->value,
@@ -236,6 +239,7 @@ class OrderController extends Controller
             TypeOfFinancing::HOME_RUN->value,
             TypeOfFinancing::YGREEN->value,
             TypeOfFinancing::SLIN->value,
+            TypeOfFinancing::GOOD_LEAP->value,
           ],
           'frame_colors' => [
             FrameColorEnum::WHITE->value,
@@ -336,12 +340,20 @@ class OrderController extends Controller
           $orderStatuses = OrderStatus::where('order_id', $id)
           ->with(['order', 'user'])
           ->get();
-        //dd($orderStatuses);
 
         // Obtener los parámetros de filtro de la solicitud (request)
         return Inertia::render('Order/ShowStatusOrder', [
-            'orderStatuses' => $orderStatuses->values()->toArray(),
+            //'orderStatuses' => $orderStatuses,
             'order' => $order,
+            'orderStatuses' => $orderStatuses->map(function ($status) {
+              return [
+                  ...$status->toArray(),
+                  'created_at_formatted' => Carbon::parse($status->updated_at)
+                      ->setTimezone('America/New_York')
+                      ->format('Y-m-d'),
+              ];
+          }),
+
        
     ]);
     }

@@ -1,5 +1,6 @@
 import { type User } from '@/types/interfaces/user'
 import { type Client } from '@/types/interfaces/client'
+import exp from 'constants'
 
 export interface Order {
   id: number
@@ -64,6 +65,11 @@ export interface Order {
   pending_collect?: Date
   payment_extra_fields?: PaymentExtraFields
   installation_payment?: InstallationPayment[]
+  pre_inspection?: boolean
+  inspection?: boolean
+  walk_trough?: boolean
+  partial_payment_installation?: boolean
+  final_payment_installation?: boolean
 }
 
 export interface TypeOfWork {
@@ -212,6 +218,7 @@ export interface OrderStatus {
   start_date: Date
   end_date: Date
   user?: User
+  created_at_formatted: string
   updated_at: Date
   pickup_date: Date
   inspection_date: Date
@@ -226,14 +233,9 @@ export interface PaymentExtraFields {
   order_id: number
   responsible_extra_work: string
   notes: string
-  documents_submitted: string
-  collected_payment: boolean
   installer_payment_status?: string
   order?: Order
   installation_team_id: number
-  extra_work: number
-  extra_discount: number
-  other_cost_installer: number
 }
 
 export interface InstallationPayment {
@@ -244,4 +246,19 @@ export interface InstallationPayment {
   payment_date: Date | null
   order?: Order
   installation_team_id: number
+  extra_work: number
+  extra_discount: number
+  other_cost_installer: number
+  payment_status: string
+  biweekly_id: number
+
+}
+
+export interface BiweeklyInstaller {
+  id: number
+  start_biweekly_period: Date | null
+  end_biweekly_period: Date | null
+  payment_method: string
+  installation_team_id: number
+  period: string[]
 }

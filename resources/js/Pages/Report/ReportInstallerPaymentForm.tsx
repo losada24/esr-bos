@@ -7,8 +7,9 @@ import { Link, router } from '@inertiajs/react'
 import { type FormikErrors } from 'formik'
 import Flatpickr from 'react-flatpickr'
 import 'flatpickr/dist/flatpickr.css'
-import { type Order, type InstallationPayment } from '@/types'
+import { type Order, type InstallationPayment, type BiweeklyInstaller } from '@/types'
 import PaymentInstallerTable from './PaymentInstallerTable'
+import Select, { type SingleValue } from 'react-select'
 
 const ReportInstallerPaymentForm = ({
   submitCount,
@@ -19,7 +20,9 @@ const ReportInstallerPaymentForm = ({
   values,
   amount,
   order,
-  payment
+  payment,
+  biweeklys,
+  payment_status
 
 }: {
   submitCount: number
@@ -31,27 +34,55 @@ const ReportInstallerPaymentForm = ({
   amount: number
   order: Order
   payment: InstallationPayment []
+  biweeklys: BiweeklyInstaller []
+  payment_status: string []
 }) => {
-  const extraWork = Number(order.payment_extra_fields?.extra_work) || 0
-  const otherCost = Number(order.payment_extra_fields?.other_cost_installer) || 0
-  const extraDiscount = Number(order.payment_extra_fields?.extra_discount) || 0
-  const totalAmount = (amount + extraWork + otherCost) - extraDiscount
+  const extraWork = Number(values.extra_work) || 0
+  const otherCost = Number(values.other_cost_installer) || 0
+  const extraDiscount = Number(values.extra_discount) || 0
+  
 
-  console.log(errors.payment_date, typeof errors.payment_date)
+  const loadPaymentData = (installationPayment: InstallationPayment) => {
+    setFieldValue('id', installationPayment.id)
+    setFieldValue('installer_payment', installationPayment.installer_payment)
+    setFieldValue('percentage_payment', installationPayment.percentage_payment)
+    setFieldValue('payment_date', installationPayment.payment_date)
+    setFieldValue('extra_work', installationPayment.extra_work)
+    setFieldValue('extra_discount', installationPayment.extra_discount)
+    setFieldValue('other_cost_installer', installationPayment.other_cost_installer)
+    setFieldValue('payment_status', installationPayment.payment_status)
+    setFieldValue('biweekly_id', installationPayment.biweekly_id)
+  }
 
   useEffect(() => {
     if (values.percentage_payment) {
       const percentage = Number(values.percentage_payment) || 0
-      const calculatedPayment = (totalAmount * percentage) / 100
+      const calculatedPayment = (amount * percentage) / 100
       setFieldValue('installer_payment', calculatedPayment.toFixed(2)) // Redondeamos a 2 decimales
     }
-  }, [values.percentage_payment, totalAmount, setFieldValue])
+  }, [values.percentage_payment, amount, setFieldValue])
   return (
     <>
       <Form className='space-y-5'>
       <fieldset className='p-3 border rounded-xl mt-3'>
         <legend className='text-lg font-semibold'>Order data</legend>
         <div className='grid gap-4 grid-cols-3'>
+        <div className={submitCount ? (errors.biweekly_id) ? 'has-error' : 'has-success' : ''}>
+          <label htmlFor="biweekly_id">Biweekly</label>
+            <Select
+              id='biweekly_id'
+              placeholder="Biweekly"
+              name='biweekly_id'
+              onChange={(value) => { setFieldValue('biweekly_id', value?.value) }}
+              options={biweeklys.map((biweekly) => {
+                return {
+                  label: `${biweekly.start_biweekly_period ? new Date(biweekly.start_biweekly_period).toLocaleDateString('en-US', { timeZone: 'UTC', month: 'long', day: 'numeric' }) : 'Unknown'} to ${biweekly.end_biweekly_period ? new Date(biweekly.end_biweekly_period).toLocaleDateString('en-US', { timeZone: 'UTC', month: 'long', day: 'numeric' }) : 'Unknown'}`,
+                  value: biweekly.id
+                }
+              })}
+            />
+            {(submitCount && errors.biweekly_id) ? <InputError message={errors.biweekly_id} className="mt-2" /> : ''}
+          </div>
           <div className={submitCount ? (errors.installer_payment) ? 'has-error' : 'has-success' : ''}>
             <label htmlFor="extra_work">Installer Payment</label>
             <Field
@@ -65,7 +96,7 @@ const ReportInstallerPaymentForm = ({
             {(submitCount && errors.installer_payment) ? <InputError message={errors.installer_payment} className="mt-2" /> : ''}
           </div>
           <div className={submitCount ? (errors.percentage_payment) ? 'has-error' : 'has-success' : ''}>
-            <label htmlFor="extra_discount">Perecentage Payment % {amount} {order.payment_extra_fields?.extra_work}</label>
+            <label htmlFor="extra_discount">Perecentage Payment % </label>
             <Field
               id="percentage_payment"
               name="percentage_payment"
@@ -77,26 +108,82 @@ const ReportInstallerPaymentForm = ({
             {(submitCount && errors.percentage_payment) ? <InputError message={errors.percentage_payment} className="mt-2" /> : ''}
           </div>
          <div className={submitCount ? (errors.payment_date) ? 'has-error' : 'has-success' : ''}>
-                           <label htmlFor="payment_date">Payment Date</label>
-                           <Flatpickr
-                             options={{
-                               mode: 'single',
-                               dateFormat: 'Y-m-d',
-                               position: 'auto right'
-                             }}
-                             name="payment_date"
-                             // value={values.payment_date?.toString()}
-                             className="form-input"
-                             onChange={([date]) => {
-                               setFieldValue('payment_date', date.toISOString().slice(0, 10))
-                             }}
-                           />
-                          {submitCount && errors.payment_date ? (<InputError message= {errors.payment_date} className="mt-2"/>) : null}
-                         </div>
+           <label htmlFor="payment_date">Payment Date</label>
+          <Flatpickr
+            options={{
+              mode: 'single',
+              dateFormat: 'Y-m-d',
+              position: 'auto right'
+            }}
+            name="payment_date"
+            // value={values.payment_date?.toString()}
+            className="form-input"
+            onChange={([date]) => {
+              setFieldValue('payment_date', date.toISOString().slice(0, 10))
+            }}
+          />
+          {submitCount && errors.payment_date ? (<InputError message= {errors.payment_date} className="mt-2"/>) : null}
+        </div>
+        <div className={submitCount ? (errors.extra_work) ? 'has-error' : 'has-success' : ''}>
+          <label htmlFor="extra_work">Extra Work Cost</label>
+          <Field
+            id="extra_work"
+            name="extra_work"
+            className="form-input text-right"
+            autoComplete="extra_work"
+            placeholder='Extra Work Cost'
+            type='number'
+          />
+          {(submitCount && errors.extra_work) ? <InputError message={errors.extra_work} className="mt-2" /> : ''}
+        </div>
+         <div className={submitCount ? (errors.extra_discount) ? 'has-error' : 'has-success' : ''}>
+          <label htmlFor="extra_discount">Discount(-)</label>
+          <Field
+            id="extra_discount"
+            name="extra_discount"
+            className="form-input text-right"
+            autoComplete="extra_discount"
+            placeholder='Extra Discount'
+            type='number'
+          />
+          {(submitCount && errors.extra_discount) ? <InputError message={errors.extra_discount} className="mt-2" /> : ''}
+        </div>
+        <div className={submitCount ? (errors.other_cost_installer) ? 'has-error' : 'has-success' : ''}>
+            <label htmlFor="other_cost_installer">Other Cost Installtion(+)</label>
+            <Field
+              id="other_cost_installer"
+              name="other_cost_installer"
+              className="form-input text-right"
+              autoComplete="other_cost_installer"
+              placeholder='Extra Discount'
+              type='number'
+            />
+            {(submitCount && errors.other_cost_installer) ? <InputError message={errors.other_cost_installer} className="mt-2" /> : ''}
+          </div>
+            <div className={submitCount ? (errors.payment_status) ? 'has-error' : 'has-success' : ''}>
+             <label htmlFor="payment_status">Payment Status</label>
+                <Field
+                  id="payment_status"
+                  name="payment_status"
+                  className="form-select"
+                  autoComplete="payment_status"
+                  placeholder='Payment Status'
+                  as="select"
+                  onChange={(e: { target: { value: string } }) => {
+                    setFieldValue('payment_status', e.target.value)
+                  }}
+                >
+                <option value="">Payment Status</option>
+                {payment_status.map((payment_statu, index) => (
+                <option key={index} value={payment_statu}>{payment_statu}</option>
+                ))}
+              </Field>
+              {(submitCount && errors.payment_status) ? <InputError message={errors.payment_status} className="mt-2" /> : ''}
+            </div>
         </div>
         <div className="flex items-center justify-between mt-4">
           <PrimaryButton className="btn btn-primary" type='submit'>
-            {isCreate ? 'Create' : 'Save'}
+            {values.id === 0 ? 'Create' : 'Save'}
           </PrimaryButton>
         </div>
         <PaymentInstallerTable
@@ -104,6 +191,7 @@ const ReportInstallerPaymentForm = ({
             amount={amount}
              order={order}
              payment={payment}
+             loadPaymentData={loadPaymentData}
           />
       </fieldset>
       </Form>

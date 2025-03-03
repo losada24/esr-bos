@@ -37,26 +37,28 @@ class ValidateInstallationPayment implements DataAwareRule, ValidationRule
     {
         // Buscar la orden con sus pagos relacionados
         $order = Order::with('installationPayments', 'paymentExtraFields')->find($this->data['order_id']);
-        //dd($order->paymentExtraFields->);
+        //dd($order->installationPayments);
         if (!$order) {
             $fail('Order not found.');
             return;
         }
+        // Verificar si el monto actual ya existe en los pagos (indica que se está editando)
+       // Obtener el total disponible (GetGrandTotalPrice + extra_work)
+        $totalAvailable = $order->GetGrandTotalPrice();
 
-        $extra_work = $order->paymentExtraFields->extra_work ?? 0;
-        $other_cost_installer = $order->paymentExtraFields->other_cost_installer ?? 0;
-        $extra_discount = $order->paymentExtraFields->extra_discount ?? 0;
-         
-        // Obtener el total disponible (GetGrandTotalPrice + extra_work)
-        $totalAvailable = ($order->GetGrandTotalPrice() + $extra_work + $other_cost_installer) - $extra_discount;
+        // Sumar todos los pagos previos (todos los pagos existentes)
+        $paymentId = $this->data['id'] ?? 0;
+        if ($paymentId == 0) {
+            $totalPaid = $order->installationPayments->sum('installer_payment');
+        } else {
+            $totalPaid = $order->installationPayments->where('id', '!=', $paymentId)->sum('installer_payment');
+        }
 
-        // Sumar todos los pagos previos
-        $totalPaid = $order->installationPayments->sum('installer_payment');
-
-        // Verificar que el nuevo pago no supere el total permitido
+        // Validar que la suma de pagos no supere el total disponible
         if (($totalPaid + $value) > $totalAvailable) {
             $fail('The installer payment exceeds the allowed total for this order.');
         }
+          
     }
     
 }

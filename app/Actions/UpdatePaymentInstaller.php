@@ -19,6 +19,12 @@ class UpdatePaymentInstaller {
         'installer_payment' => $request->installer_payment,
         'percentage_payment' => $request->percentage_payment,
         'payment_date' => $request->payment_date,
+        'extra_work' => $request->extra_work,
+        'extra_discount' => $request->extra_discount,
+        'other_cost_installer' => $request->other_cost_installer,
+        'biweekly_id' => $request->biweekly_id,
+        'payment_status' => $request->payment_status,
+
       ];
 
       if ($request->id == 0) {

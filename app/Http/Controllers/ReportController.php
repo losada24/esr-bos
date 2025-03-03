@@ -2,13 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\CreateBiweekly;
+use App\Actions\UpdateBiweekly;
 use App\Actions\UpdatePaymentInstaller;
 use App\Enum\InstallerPaymentStatusEnum;
+use App\Enum\MethodOfPayment;
+use App\Enum\PaymentStatusEnum;
 use App\Enum\RoleEnum;
 use App\Enum\SupervisorPaymentStatusEnum;
+use App\Exports\InstallerExport;
 use App\Exports\SupervisorExport;
 use App\Http\Requests\StoreInstallerPaymentRequest;
 use App\Http\Resources\InstallationTeamCollection;
+use App\Models\Biweekly;
 use App\Models\InstallationPayment;
 use App\Models\InstallationTeam;
 use App\Models\Order;
@@ -17,7 +23,8 @@ use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Router;
-use App\Rules\ValidateInstallationPayment;  
+use App\Rules\ValidateInstallationPayment;
+use Barryvdh\LaravelIdeHelper\Method;
 use Inertia\Inertia;
 use Carbon\Carbon;
 use Maatwebsite\Excel\Facades\Excel;
@@ -113,18 +120,22 @@ class ReportController extends Controller
 
 
     public function showInstaller ($id) 
-    {
+    {   $status = request()->get('status');
+       $startDate = request()->get('start_date');
+       $endDate = request()->get('end_date');
+      //dd($startDate, $endDate );
           // Obtener las órdenes por supervisor
-        $orders = $this->getOrdersByInstaller($id);
+        $orders = $this->getOrdersByInstaller($id, $status , $startDate, $endDate);
         //dd($orders);
         
         $name = request()->get('name');
+        $paymentDate = request()->get('payment_date');
+        
 
         $companyName = InstallationTeam::where('user_id', $id)->value('company_name');
        
        //dd($companyName);
-        $startDate = request()->get('start_date');
-        $endDate = request()->get('end_date');
+      
 
         // Filtrar las órdenes por estado
        /* if ($orders instanceof EloquentBuilder || $orders instanceof QueryBuilder) {
@@ -165,24 +176,23 @@ class ReportController extends Controller
         'installer' => User::find($id),
         'companyName' => $companyName,
         'statuses' => [
-          SupervisorPaymentStatusEnum::OPEN->value,
-          SupervisorPaymentStatusEnum::PENDING->value,
-          SupervisorPaymentStatusEnum::CLOSED->value,
-          SupervisorPaymentStatusEnum::NO_PAID->value,
+         InstallerPaymentStatusEnum::OPEN->value,
+         InstallerPaymentStatusEnum::PARTIALLY_PAID->value,
+         InstallerPaymentStatusEnum::FULLY_PAID->value,
           ]
     ]);
     }
 
     public function installer(Request $request)
     {
-      return Inertia::render('Report/Installer', [
-        'installation_teams' => new InstallationTeamCollection(
-          InstallationTeam::filter($request->only(['text']))
-          ->orderBy('updated_at', 'desc')
-          ->paginate()
-          ->withQueryString()
-        )
-      ]);
+          return Inertia::render('Report/Installer', [
+            'installation_teams' => new InstallationTeamCollection(
+              InstallationTeam::filter($request->only(['text']))
+              ->orderBy('updated_at', 'desc')
+              ->paginate()
+              ->withQueryString()
+            )
+          ]);
       
     }
 
@@ -200,6 +210,8 @@ class ReportController extends Controller
                 'supervisor' // Cargar los propietarios
             ])->findOrFail($id);
 
+            $biweeklys = Biweekly::where('installation_team_id', $installation_team)->get();
+
             $amount = $order->getGrandTotalPrice();
 
             $payment = InstallationPayment::where('order_id', $id)->get();
@@ -211,14 +223,20 @@ class ReportController extends Controller
                 'order' => $order, // Pasamos los datos de la orden
                 'installation_team_id' => $installation_team,
                 'amount' => $amount,
+                'biweeklys' => $biweeklys->toArray(),
                 'payment' => $payment->values()->toArray(),
                  'installer_payment_status' => [
                   InstallerPaymentStatusEnum::OPEN->value,
-                  InstallerPaymentStatusEnum::PENDING->value,
+                  //InstallerPaymentStatusEnum::PENDING->value,
                    InstallerPaymentStatusEnum::PARTIALLY_PAID->value,
                    InstallerPaymentStatusEnum::FULLY_PAID->value,
-                   InstallerPaymentStatusEnum::CLOSED->value,
-                 ]
+                   //InstallerPaymentStatusEnum::CLOSED->value,
+                 ],
+                 'payment_status'=> [
+                        PaymentStatusEnum::REVIEW->value,
+                        PaymentStatusEnum::PAID->value, 
+                      ],
+                 
             ]);
     }
    
@@ -230,11 +248,6 @@ class ReportController extends Controller
         'installation_team_id' => $request->input('installation_team_id'),
         'responsible_extra_work' => $request->input('responsible_extra_work'),
         'notes' => $request->input('notes'),
-        'documents_submitted' => $request->input('documents_submitted'),
-        'collected_payment' => $request->input('collected_payment'),
-        'extra_work' => $request->input('extra_work'),
-        'extra_discount' => $request->input('extra_discount'),
-        'other_cost_installer' => $request->input('other_cost_installer'),
         'installer_payment_status' => $request->input('installer_payment_status'),
     ];
     
@@ -258,6 +271,94 @@ class ReportController extends Controller
       $updatePaymentInstaller->handle($request);
       return redirect()->back()->with('success', 'Order updated successfully.');
   }
+
+  public function  editInstallerPayment($id)
+  {
+      $paymentInstaller = InstallationPayment::findOrFail($id);
+      return response()->json($paymentInstaller);
+      
+  }
+
+  public function showBiweekly ($id) 
+  {  
+      $biweeklys = Biweekly::where('installation_team_id', $id)->get();
+      
+      
+
+      $companyName = InstallationTeam::where('user_id', $id)->value('company_name');
+     
+     //dd($biweeklys->toArray());
+  // Retornar la vista con las órdenes filtradas
+    return Inertia::render('Report/ShowBiweekly', [
+        'biweeklys' => $biweeklys->toArray(),
+        'installer' => User::find($id),
+        'companyName' => $companyName,
+        'statuses' => [
+        MethodOfPayment::ZELLE->value,
+        MethodOfPayment::CHECK->value,
+          ]
+    ]);
+  }
+
+  public function createBiweekly($installation_team)
+  { 
+          // Retornar la vista con los datos
+          return Inertia::render('Report/CreateBiweekly', [
+             
+               'method_payment' => [
+                MethodOfPayment::CHECK->value,
+                MethodOfPayment::ZELLE->value,
+               ],
+              'installation_team_id' => $installation_team,
+          ]);
+  }
+
+  public function  storeBiweekly(Request $request, CreateBiweekly $createBiweekly)
+  {
+    //dd($request);
+      $createBiweekly->handle($request);
+      return redirect()->route('report.show_biweekly', $request->input('installation_team_id'))
+      ->with('success', 'Order updated successfully.');
+  }
+
+  public function editBiweekly($id, $installation_team)
+  {   // Cargar la orden junto con los campos relacionados
+     
+          $biweekly = Biweekly::findOrFail($id);
+          $period [] = $biweekly->start_biweekly_period;
+          $period [] = $biweekly->end_biweekly_period;
+          //dd( $period );
+          // Retornar la vista con los datos
+          return Inertia::render('Report/EditBiweekly', [
+              'biweekly' => $biweekly,
+              'installation_team_id' => $installation_team,
+              'period' => $period,
+              'method_payment' => [
+                MethodOfPayment::CHECK->value,
+                MethodOfPayment::ZELLE->value,
+               ],
+          ]);
+  }
+
+   public function updateBiweekly(Request $request, UpdateBiweekly $updateBiweekly)
+  {
+    //dd($request);
+    $biweekly = Biweekly::findOrFail($request->input('id'));
+    $updateBiweekly->handle($request, $biweekly);
+      return redirect()->route('report.show_biweekly', $request->input('installation_team_id'))
+      ->with('success', 'Order updated successfully.');
+  }
+
+  public function exportPaymentInstaller(Request $request, $id) 
+    {  
+        return Excel::download( 
+          new InstallerExport($id), 
+          'instaler '. 1 . '.xlsx', 
+          \Maatwebsite\Excel\Excel::XLSX
+        );
+    }
+
+
   
      
 

@@ -8,32 +8,35 @@ import 'flatpickr/dist/flatpickr.css'
 
 interface ShowInstallerFilterProps {
   id: string// El id del supervisor, debe ser un string
-  // statuses: string[] // Lista de estados
+  statuses: string[] // Lista de estados
 }
 
-const ShowInstallerFilter: React.FC<ShowInstallerFilterProps> = ({ id }) => {
+const ShowInstallerFilter: React.FC<ShowInstallerFilterProps> = ({ id, statuses }) => {
   
   const { data, setData } = useForm({
-    // status: '',
+    status: '',
     name: '',
     start_date: '',
-    end_date: ''
+    end_date: '',
+    payment_date: ''
   })
 
   const reset = () => {
     setData({
-      // status: '',
+      status: '',
       name: '',
       start_date: '',
-      end_date: ''
+      end_date: '',
+      payment_date: ''
     })
 
     // Recargar la página sin filtros
     router.get(route('report.show_installer', { id }), {
-      // status: '',
+      status: '',
       name: '',
       start_date: '',
-      end_date: ''
+      end_date: '',
+      payment_date: ''
     }, {
       replace: true,
       preserveState: true
@@ -81,7 +84,7 @@ const ShowInstallerFilter: React.FC<ShowInstallerFilterProps> = ({ id }) => {
             placeholder="Search by Name"
           />
         </div>
-     {/* <div className='mb-3 w-64'>
+     <div className='mb-3 w-64'>
           <label htmlFor="role">Status</label>
           <select
             id="status"
@@ -98,7 +101,24 @@ const ShowInstallerFilter: React.FC<ShowInstallerFilterProps> = ({ id }) => {
               <option key={index} value={status}>{status}</option>
             ))}
           </select>
-        </div> */}
+        </div>
+        <div className='mb-3 w-64'>
+          <label htmlFor='payment_date'>Payment Date</label>
+          <Flatpickr
+            options={{
+              mode: 'single',
+              dateFormat: 'Y-m-d',
+              position: 'auto right'
+            }}
+            name="payment_date"
+            value={data.payment_date}
+            className="form-input"
+            onChange={([date]) => {
+              setData('payment_date', date.toISOString().slice(0, 10))
+            }}
+          />
+
+        </div>
         <div className='mb-3 w-64'>
           <label htmlFor='start_date'>Start Date</label>
           <Flatpickr

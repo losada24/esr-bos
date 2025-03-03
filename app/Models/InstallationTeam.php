@@ -78,4 +78,9 @@ class InstallationTeam extends Model
     {
       return $this->belongsToMany(Order::class, 'installation_teams_orders');
     }
+
+    public function installationPayments()
+    {
+        return $this->hasMany(InstallationPayment::class);
+    }
 }

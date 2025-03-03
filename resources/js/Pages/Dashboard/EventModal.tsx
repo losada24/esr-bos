@@ -88,7 +88,12 @@ const EventModal = ({
     order_products: [],
     attachments: [],
     status: '',
-    hide_on_weekends: false
+    hide_on_weekends: false,
+    pre_inspection: false,
+    inspection: false,
+    walk_trough: false,
+    partial_payment_installation: false,
+    final_payment_installation: false
   }
 
   /* interface PageProps {
@@ -102,7 +107,6 @@ const EventModal = ({
   const [attachmentsArray, setAttachmentsArray] = useState<File[]>(attachments ?? [])
   const [attachmentsList, setAttachmentsList] = useState<any[]>([])
   const [message, setMessage] = useState<string | null>(null)
-
 
   const removeAttachmentProduct = (index: number) => {
     if (confirm('Are you sure you want to delete this attachment?')) {
@@ -158,7 +162,12 @@ const EventModal = ({
             supervisor_id: data.supervisor?.id ?? 0, // Asumimos que `data.supervisor` es un objeto con los datos del superviso
             status: { label: data.status, value: data.status },
             hide_on_weekends: data.hide_on_weekends ?? null,
-            notes: data.notes ?? ''
+            notes: data.notes ?? '',
+            pre_inspection: data.pre_inspection ?? false,
+            inspection: data.inspection ?? false,
+            walk_trough: data.walk_trough ?? false,
+            partial_payment_installation: data.partial_payment_installation ?? false,
+            final_payment_installation: data.final_payment_installation ?? false
           })
           const isVipClient = parseInt(data.client?.vip_clients?.toString() ?? '0') !== 0
           setIsVipClient(isVipClient)
@@ -217,6 +226,10 @@ const EventModal = ({
     setAttachmentsArray([])
     setMessage(null)
   }
+  function setFieldValue(arg0: string, checked: boolean) {
+    throw new Error('Function not implemented.')
+  }
+
   return (
     <Modal
       show={showModal}
@@ -573,6 +586,83 @@ const EventModal = ({
               </div>
               </>
             )}
+            </div>
+            <div className='flex flex-row gap-5 mt-3'>
+            <fieldset className='p-3 border rounded-xl mt-3'>
+                    <legend className='text-lg font-semibold'>Delivered Documents</legend>
+                    <div className='grid gap-3 grid-cols-3'>
+                      <div className ='flex mt-8'>
+                      <input
+                      id="pre_inspection"
+                      name="pre_inspection"
+                      className="form-checkbox"
+                      type="checkbox"
+                      checked={editableData.pre_inspection} // Controlado por el estado
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                        setEditableData({ ...editableData, pre_inspection: e.target.checked }) // Actualiza el estado
+                      }}
+                    />
+                        <label htmlFor="pre_inspection" className='font-bold inline-flex'>PI</label>
+                      </div>
+
+                      <div className ='flex mt-8'>
+                      <input
+                      id="inspection"
+                      name="inspection"
+                      className="form-checkbox"
+                      type="checkbox"
+                      checked={editableData.inspection} // Controlado por el estado
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                        setEditableData({ ...editableData, inspection: e.target.checked }) // Actualiza el estado
+                      }}
+                    />
+                        <label htmlFor="inspection" className='font-bold inline-flex'>IN</label>
+                      </div>
+                      <div className ='flex mt-8'>
+                      <input
+                      id="walk_trough"
+                      name="walk_trough"
+                      className="form-checkbox"
+                      type="checkbox"
+                      checked={editableData.walk_trough} // Controlado por el estado
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                        setEditableData({ ...editableData, walk_trough: e.target.checked }) // Actualiza el estado
+                      }}
+                    />
+                        <label htmlFor="walk_trough" className='font-bold inline-flex'>WT</label>
+                      </div>
+                    </div>
+                  </fieldset>
+                  <fieldset className='p-3 border rounded-xl mt-3'>
+                    <legend className='text-lg font-semibold'>Collected Payments</legend>
+                     <div className ='flex mt-8'>
+                      <input
+                      id="partial_payment_installation"
+                      name="partial_payment_installation"
+                      className="form-checkbox"
+                      type="checkbox"
+                      checked={editableData.partial_payment_installation} // Controlado por el estado
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                        setEditableData({ ...editableData, partial_payment_installation: e.target.checked }) // Actualiza el estado
+                      }}
+                    />
+                        <label htmlFor="partial_payment_installation" className='font-bold inline-flex'>Partial Payment Installation</label>
+                      </div>
+
+                      <div className ='flex mt-8'>
+                      <input
+                      id="final_payment_installation"
+                      name="final_payment_installation"
+                      className="form-checkbox"
+                      type="checkbox"
+                      checked={editableData.final_payment_installation} // Controlado por el estado
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                        setEditableData({ ...editableData, final_payment_installation: e.target.checked }) // Actualiza el estado
+                      }}
+                    />
+                        <label htmlFor="inspection" className='font-bold inline-flex'>Final Payment Installation</label>
+                      </div>
+                  </fieldset>
             </div>
             <div className='flex flex-row gap-2 mt-3'>
               <div className='w-1/3'>

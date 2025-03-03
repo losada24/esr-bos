@@ -21,6 +21,11 @@ class Order extends Model
 {
     use HasFactory, SoftDeletes, HasRoles;
 
+    protected $dispatchesEvents = [
+      'created' => \App\Events\OrderCreated::class,
+      'updated' => \App\Events\OrderCreated::class,
+    ];
+
     protected $fillable = [
         'order_number',
         'name',
@@ -70,7 +75,12 @@ class Order extends Model
         'complete_date',
         'do_not_send_email',
         'service_date',
-        'pending_collect'
+        'pending_collect',
+        'pre_inspection',
+        'inspection',
+        'walk_trough',
+        'partial_payment_installation',
+        'final_payment_installation',
     ];
 
     protected $dates = [
@@ -98,6 +108,11 @@ class Order extends Model
             'payment_definition' => 'boolean',
             'hide_on_weekends' => 'boolean',
             'do_not_send_email' => 'boolean',
+            'pre_inspection'=> 'boolean',
+            'inspection'=> 'boolean',
+            'walk_trough'=> 'boolean',
+            'partial_payment_installation'=> 'boolean',
+            'final_payment_installation'=> 'boolean',
         ];
     }
 
@@ -274,9 +289,9 @@ class Order extends Model
     }*/
 
     public function paymentExtraFields()
-{
-    return $this->hasOne(PaymentExtraField::class, 'order_id', 'id');
-}
+    {
+        return $this->hasOne(PaymentExtraField::class, 'order_id', 'id');
+    }
 
     public function permit(): HasOne
     {

@@ -155,6 +155,26 @@ Route::middleware('auth')->group(function () {
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::INSTALLER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value] )
       ->name('report.show_installer');
 
+      Route::get('/report/show_biweekly/{id}', [ReportController::class, 'showBiweekly'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::INSTALLER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value] )
+      ->name('report.show_biweekly');
+
+      Route::get('/report/create_biweekly/{installation_team}', [ReportController::class, 'createBiweekly'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value])
+      ->name('report.create_biweekly');
+
+      Route::post('report/store_biweekly', [ReportController::class, 'storeBiweekly'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value])
+      ->name('report.store_biweekly');
+     
+      Route::post('report/update_biweekly', [ReportController::class, 'updateBiweekly'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value])
+      ->name('report.update_biweekly');
+
+      Route::get('/report/edit_biweekly/{id}/{installation_team}', [ReportController::class, 'editBiweekly'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value])
+      ->name('report.edit_biweekly');
+
       Route::get('/report/edit_report_installer/{id}/{installation_team}', [ReportController::class, 'editReportInstaller'])
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value] )
       ->name('report.edit_report_installer');
@@ -166,6 +186,10 @@ Route::middleware('auth')->group(function () {
       Route::post('report/update_installer_payment', [ReportController::class, 'updateInstallerPayment'])
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value])
       ->name('report.update_installer_payment');
+
+      Route::get('/report/excel-installer/{id}', [ReportController::class, 'exportPaymentInstaller'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::INSTALLER->value] )
+      ->name('report.excel-installer');
 
       Route::get('/report/show_supervisor/{id}', [ReportController::class, 'showSupervisor'])
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::SUPERVISOR->value] )

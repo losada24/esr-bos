@@ -3,8 +3,12 @@
 namespace App\Traits;
 
 use App\Enum\OrderStatusEnum;
+use App\Models\Biweekly;
+use App\Models\InstallationPayment;
+use App\Models\InstallationTeam;
 use App\Models\Order;
 use App\Models\Setting;
+use App\Models\User;
 use Illuminate\Support\Facades\Http;
 use Carbon\Carbon;
 
@@ -69,24 +73,51 @@ trait Reports {
       });
   }
 
-  public function getOrdersByInstaller($id) {
+  public function getOrdersByInstaller($id, $status=null, $startDate=null, $endDate=null) {
 
-  $orders = Order::where('status', '!=', OrderStatusEnum::PLANNED->value)  // Filtrar las órdenes cuyo estado no es 'planeada'
+    $orders = Order::where('status', '!=', OrderStatusEnum::PLANNED->value)
     ->whereHas('installationTeams', function ($query) use ($id) {
-        // Filtra las órdenes que tienen equipos de instalación asociados con el instalador específico
         $query->whereHas('user', function ($subQuery) use ($id) {
-            $subQuery->where('id', $id);  // Filtra por el instalador específico
+            $subQuery->where('id', $id);
         });
     })
-    ->with(['supervisor','orderProducts','travelCost','paymentExtraFields','installationPayments'])  // Cargar la relación con el supervisor directamente desde la orden
-    ->get();
+    ->where(function ($query) use ($status) {
+      if ($status) {
+          // ✅ Filtrar por el estado seleccionado
+          $query->whereHas('paymentExtraFields', function ($subQuery) use ($status) {
+              $subQuery->where('installer_payment_status', $status);
+          });
+      } else {
+          // ✅ Mostrar todas las órdenes excepto FULLY PAID (incluyendo las que no tienen estado)
+          $query->where(function ($subQuery) {
+              $subQuery->whereDoesntHave('paymentExtraFields')
+                       ->orWhereHas('paymentExtraFields', function ($innerQuery) {
+                           $innerQuery->where('installer_payment_status', '!=', 'FULLY PAID');
+                       });
+          });
+      }
+  })
 
-    //dd($orders->toArray());
+            ->when($startDate, function ($query) use ($startDate) {
+              $query->whereHas('installationPayments', function ($subQuery) use ($startDate) {
+                  $subQuery->whereDate('payment_date', '>=', $startDate);
+              });
+          })
+          ->when($endDate, function ($query) use ($endDate) {
+              $query->whereHas('installationPayments', function ($subQuery) use ($endDate) {
+                  $subQuery->whereDate('payment_date', '<=', $endDate);
+              });
+          })
+    ->with(['supervisor', 'orderProducts', 'travelCost', 'paymentExtraFields', 'installationPayments'])
+    ->get();
+    //dd($orders);
+
+
+    
         //$total_amount = $orders->sum('project_amount');
         //$total_commissions = $orders->sum('supervisor_commissions');
     return $orders->map(function($order, $key) {
-
-      //dd($order->getGrandTotalPrice());
+      //dd($order);
      
       $final_installation_date_status = $order->orderStatus->where('status', OrderStatusEnum::COMPLETE->value)->first();
       $inspection_date_status = $order->orderStatus->where('status', OrderStatusEnum::INSPECTION->value)->first();
@@ -109,9 +140,6 @@ trait Reports {
         $amount = $amount + $order->additional_travel_costs;
       } */
       $amount = $order->getGrandTotalPrice();
-      $payment= $order->installationPayments->all();
-
-    //dd($payment);
 
       $paymentExtraFields = $order->paymentExtraFields;
 
@@ -119,12 +147,12 @@ trait Reports {
               $transformedFields = [
                   'id' => $paymentExtraFields->id,
                   'responsible_extra_work' => $paymentExtraFields->responsible_extra_work,
-                  'documents_submitted' => $paymentExtraFields->documents_submitted,
-                  'collected_payment' => $paymentExtraFields->collected_payment,
+                  //'documents_submitted' => $paymentExtraFields->documents_submitted,
+                  //'collected_payment' => $paymentExtraFields->collected_payment,
                   'notes' => $paymentExtraFields->notes,
                   'installer_payment_status' => $paymentExtraFields->installer_payment_status,
-                  'extra_work' => $paymentExtraFields->extra_work,
-                  'extra_discount' => $paymentExtraFields->extra_discount,
+                  //'extra_work' => $paymentExtraFields->extra_work,
+                  //'extra_discount' => $paymentExtraFields->extra_discount,
                   
               ];
           } else {
@@ -149,14 +177,29 @@ trait Reports {
             'company_name' => $team->company_name,
           ];
         }),
+        'installation_payments' => $order->installationPayments->map(function($payment, $key) {
+          return [
+            'id' => $payment->id,
+            'percentage_payment' => $payment->percentage_payment,
+            'payment_date' => $payment->payment_date,
+            'installer_payment' => $payment->installer_payment,
+            'extra_work' => $payment->extra_work,
+            'extra_discount' => $payment->extra_discount,
+            'other_cost_installer' => $payment->other_cost_installer,
+            
+          ];
+        }),
         'amount' => $amount,
         //'month' => Carbon::parse($order->installation_date)->format('F'),
         'installation_date' => Carbon::parse($order->installation_date)->format('m/d/Y'),
         'final_installation_date' => $final_installation_date,
         'inspection_installation_date' => $inspection_installation_date,
-        //'execution_planing_date' => $order->execution_planing_date,
-        //'qty_days' => $qty_days,
-        //'project_amount' => $order->project_amount,
+        'pre_inspection' => $order->pre_inspection,
+        'inspection' => $order->inspection,
+        'walk_trough' => $order->walk_trough,
+        'partial_payment_installation' => $order->partial_payment_installation,
+        'final_payment_installation' => $order->final_payment_installation,
+        'status' => $order->status,
         //'supervisor_payment_percentage' => $order->supervisor_payment_percentage,
         //'supervisor_commissions' => $order->supervisor_commissions,
         //'supervisor_payment_status' => $order->supervisor_payment_status,
@@ -168,5 +211,90 @@ trait Reports {
       ];
      
     });
-}
+  }
+
+   public function getOrdersByInstallerBiweekly($id) {
+            
+    $payments = InstallationPayment::with(['order.supervisor', 'order.orderStatus', 'order.paymentExtraFields', 'biweekly'])
+    ->where('biweekly_id', $id)
+    ->get();
+                      
+      //dd($payments);
+
+     
+  return $payments->map(function($payment, $key) {
+                  //dd($order);
+      $biweekly = Biweekly::find($payment->biweekly_id);
+      $installer= User::find($payment->installation_team_id);   
+      $company = InstallationTeam::where('user_id', $payment->installation_team_id)->first();    
+      $final_installation_date_status = $payment->order->orderStatus->where('status', OrderStatusEnum::COMPLETE->value)->first();
+      $inspection_date_status = $payment->order->orderStatus->where('status', OrderStatusEnum::INSPECTION->value)->first();
+      if ($final_installation_date_status) {
+            $final_installation_date = Carbon::parse($final_installation_date_status->created_at)->format('m/d/Y');
+       } else {
+            $final_installation_date = null;
+       }
+       if ($inspection_date_status) {
+            $inspection_installation_date = Carbon::parse($inspection_date_status->created_at)->format('m/d/Y');
+        } else {
+            $inspection_installation_date = null;
+        }
+        $amount = $payment->order->getGrandTotalPrice();
+
+        $paymentExtraFields = $payment->order->paymentExtraFields;
+
+        if ($paymentExtraFields) {
+              $transformedFields = [
+                  'id' => $paymentExtraFields->id,
+                  'responsible_extra_work' => $paymentExtraFields->responsible_extra_work,
+                  'notes' => $paymentExtraFields->notes,
+                  'installer_payment_status' => $paymentExtraFields->installer_payment_status,
+                ];
+        } else {
+              $transformedFields = []; // Retorna un array vacío si no existe
+        }
+         return [
+                    'id' => $payment->id,
+                    'order_id' => $payment->order_id,
+                    'name' => $payment->order->name,
+                    'initial_payment_percentage' => $payment->order->initial_payment_percentage,
+                    'owners' => $payment->order->owners->map(function($owner, $key) {
+                      return [
+                        'id' => $owner->id,
+                        'name' => $owner->name,
+                      ];
+                    }), 
+                    'biweekly' => Carbon::parse($biweekly->start_biweekly_period)->toFormattedDateString().' to '. Carbon::parse($biweekly->end_biweekly_period)->toFormattedDateString(),
+                    'supervisor'=> $payment->order->supervisor->name,
+                    'installation_team' => $installer->name,
+                    'company_name' => $company->company_name,
+                    'installer_payment' => $payment->installer_payment,
+                    'percentage_payment' => $payment->percentage_payment,
+                    'payment_date' => $payment->payment_date,
+                    'extra_work' => $payment->extra_work,
+                    'extra_discount' => $payment->extra_discount,
+                    'other_cost_installer' => $payment->other_cost_installer,
+                    'amount' => $amount,
+                    //'month' => Carbon::parse($order->installation_date)->format('F'),
+                    'installation_date' => Carbon::parse($payment->order->installation_date)->format('m/d/Y'),
+                    'final_installation_date' => $final_installation_date,
+                    'inspection_installation_date' => $inspection_installation_date,
+                    'pre_inspection' => $payment->order->pre_inspection,
+                    'inspection' => $payment->order->inspection,
+                    'walk_trough' => $payment->order->walk_trough,
+                    'partial_payment_installation' => $payment->order->partial_payment_installation,
+                    'final_payment_installation' => $payment->order->final_payment_installation,
+                    //'project_amount' => $order->project_amount,
+                    //'supervisor_payment_percentage' => $order->supervisor_payment_percentage,
+                    //'supervisor_commissions' => $order->supervisor_commissions,
+                    //'supervisor_payment_status' => $order->supervisor_payment_status,
+                  // 'supervisor_payment_date' => $order->supervisor_payment_date,
+                    'city_permits' => $payment->order->city_permits,
+                    'payment_extra_fields' => $transformedFields,
+                    //'total_amount'=> $total_amount,
+                    //'total_commissions'=> $total_commissions,
+                  ];
+                
+                });
+            }
 }
