@@ -146,7 +146,7 @@ const ProductTable = ({
               <tfoot>
                 <tr>
                     <td colSpan={6} className="px-6 py-4 align-top text-right">Total</td>
-                    <td className='px-6 py-4 align-top text-right'>{ formatPrice(getProductsTotal() )}</td>
+                    <td className='px-6 py-4 align-top text-right'>{ formatPrice(getProductsTotal())}</td>
                     <td>&nbsp;</td>
                 </tr>
               <tr>

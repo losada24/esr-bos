@@ -37,35 +37,51 @@ const PaymentInstallerTable = ({
     const totalOtherCost = payment.reduce((acc, p) => acc + Number(p.other_cost_installer || 0), 0)
     return totalInstallerPayments + totalExtraWork - totalExtraDiscount + totalOtherCost
   }
+  const totalPayment = payment.reduce((acc, p) => {
+    const total = Number(p.installer_payment || 0) + Number(p.extra_work || 0) - Number(p.extra_discount || 0) + Number(p.other_cost_installer || 0)
+    return acc + total
+  }, 0)
   return (
     <div className='table-responsive mt-3'>
           <table className="w-full whitespace-nowrap">
             <thead>
               <tr className="font-bold text-left">
-                  <th className="px-6 pt-5 pb-4">Paid</th>
+                 <th className="px-6 pt-5 pb-4">Total Project Payment</th>
                   <th className="px-6 pt-5 pb-4">Percentage Paid</th>
+                  <th className="px-6 pt-5 pb-4">Payment Processed</th>
+                  <th className="px-6 pt-5 pb-4">Pending Pay</th>
                   <th className="px-6 pt-5 pb-4">Extra Work Cost</th>
                   <th className="px-6 pt-5 pb-4">Discount(-)</th>
                   <th className="px-6 pt-5 pb-4">Other Cost Installtion(+)</th>
-                  <th className="px-6 pt-5 pb-4">Payment Processed</th>
+                  <th className="px-6 pt-5 pb-4">Total Payment</th>
                   <th className="px-6 pt-5 pb-4">Payment Status</th>
-
                   <th className="px-6 pt-5 pb-4">Date Paid</th>
                   <th className="px-6 pt-5 pb-4">Actions</th>
               </tr>
             </thead>
             <tbody>
               {payment.map((p, index) => {
+                const totalProcessedPayments = payment
+                  .slice(0, index + 1)
+                  .reduce((acc, curr) => acc + Number(curr.installer_payment || 0), 0)
+                // Calcular el pago pendiente actual
+                const pendingPayment = amount - totalProcessedPayments
+                console.log(p)
                 return (
                   <tr
                     key={index}
                     className="hover:bg-gray-100 focus-within:bg-gray-100"
                   >
+                  <td className="border-t px-6 py-4 align-top">
+                  {index === 0 ? formatPrice(amount) : ''}
+                   </td>
                     <td className="border-t px-6 py-4 align-top">
+                      {p.percentage_payment} %
+                    </td> <td className="border-t px-6 py-4 align-top">
                       {formatPrice(p.installer_payment)}
                     </td>
                     <td className="border-t px-6 py-4 align-top">
-                      {p.percentage_payment} %
+                      {formatPrice(pendingPayment)}
                     </td>
                     <td className="border-t px-6 py-4 align-top">
                       {formatPrice(p.extra_work)}
@@ -106,21 +122,11 @@ const PaymentInstallerTable = ({
               )}
             </tbody>
                 <tfoot>
-                <tr>
-                    <td colSpan={5} className="px-6 py-4 align-top text-right">Total</td>
-                    <td className='px-6 py-4 align-top text-left'>{formatPrice(getGrandTotal())}</td>
-                    <td>&nbsp;</td>
-                </tr>
-              <tr>
-                    <td colSpan={5} className="px-6 py-4 align-top text-right">Payment Processed</td>
-                    <td className='px-6 py-4 align-top text-left'>{formatPrice(getPaymentProcessed())}</td>
-                    <td>&nbsp;</td>
-                </tr>
-                <tr>
-                    <td colSpan={5} className="px-6 py-4 align-top text-right">Pending Pay</td>
-                    <td className='px-6 py-4 align-top text-left'>{formatPrice(amount - payment.reduce((acc, p) => acc + Number(p.installer_payment || 0), 0))}</td>
-                    <td>&nbsp;</td>
-                </tr>
+                <tr className="font-bold text-left bg-gray-100">
+                <td className="px-6 pt-5 pb-4 text-right" colSpan={7}>Total:</td>
+                <td className="px-6 pt-5 pb-4">{formatPrice(totalPayment)}</td>
+                <td colSpan={3}></td>
+              </tr>
               </tfoot>
           </table>
         </div>

@@ -34,8 +34,6 @@ export default function EditReportInstaller ({
     id: order.payment_extra_fields?.id ?? 0,
     order_id: order.id,
     installation_team_id,
-    responsible_extra_work: order.payment_extra_fields?.responsible_extra_work ?? '',
-    notes: order.payment_extra_fields?.notes ?? '',
     installer_payment_status: order.payment_extra_fields?.installer_payment_status ?? 'OPEN'
     //  installer_payment_status: order.payment_extra_fields?.installer_payment_status ?? ''
   }
@@ -45,13 +43,15 @@ export default function EditReportInstaller ({
     order_id: order.id,
     installation_team_id,
     installer_payment: 0,
-    percentage_payment: order.initial_payment_percentage ?? 0,
+    percentage_payment: 0,
     payment_date: null,
     extra_work: 0,
     extra_discount: 0,
     other_cost_installer: 0,
     payment_status: '',
-    biweekly_id: 0
+    biweekly_id: 0,
+    responsible_extra_work: '',
+    notes: ''
     //  installer_payment_status: order.payment_extra_fields?.installer_payment_status ?? ''
   }
   // console.log(initialValues)

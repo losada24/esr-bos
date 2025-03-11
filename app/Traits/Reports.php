@@ -73,9 +73,9 @@ trait Reports {
       });
   }
 
-  public function getOrdersByInstaller($id, $status=null, $startDate=null, $endDate=null) {
+  public function getOrdersByInstaller($id, $status=null, $startDate=null, $endDate=null, $orderStatus=null) {
 
-    $orders = Order::where('status', '!=', OrderStatusEnum::PLANNED->value)
+    $orders = Order::whereNotIn('status', [OrderStatusEnum::PLANNED->value, OrderStatusEnum::CONFIRMED->value])
     ->whereHas('installationTeams', function ($query) use ($id) {
         $query->whereHas('user', function ($subQuery) use ($id) {
             $subQuery->where('id', $id);
@@ -97,6 +97,9 @@ trait Reports {
           });
       }
   })
+              ->when($orderStatus, function ($query) use ($orderStatus) {
+                $query->where('status', $orderStatus);
+            })
 
             ->when($startDate, function ($query) use ($startDate) {
               $query->whereHas('installationPayments', function ($subQuery) use ($startDate) {
@@ -186,7 +189,10 @@ trait Reports {
             'extra_work' => $payment->extra_work,
             'extra_discount' => $payment->extra_discount,
             'other_cost_installer' => $payment->other_cost_installer,
-            
+            'notes' => $payment->notes,
+            'responsible_extra_work' => $payment->responsible_extra_work,
+
+
           ];
         }),
         'amount' => $amount,
@@ -274,6 +280,8 @@ trait Reports {
                     'extra_work' => $payment->extra_work,
                     'extra_discount' => $payment->extra_discount,
                     'other_cost_installer' => $payment->other_cost_installer,
+                    'notes' => $payment->notes,
+                    'responsible_extra_work' => $payment->responsible_extra_work,
                     'amount' => $amount,
                     //'month' => Carbon::parse($order->installation_date)->format('F'),
                     'installation_date' => Carbon::parse($payment->order->installation_date)->format('m/d/Y'),

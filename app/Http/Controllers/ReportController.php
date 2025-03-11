@@ -7,6 +7,7 @@ use App\Actions\UpdateBiweekly;
 use App\Actions\UpdatePaymentInstaller;
 use App\Enum\InstallerPaymentStatusEnum;
 use App\Enum\MethodOfPayment;
+use App\Enum\OrderStatusEnum;
 use App\Enum\PaymentStatusEnum;
 use App\Enum\RoleEnum;
 use App\Enum\SupervisorPaymentStatusEnum;
@@ -121,11 +122,12 @@ class ReportController extends Controller
 
     public function showInstaller ($id) 
     {   $status = request()->get('status');
+       $orderStatus = request()->get('order_status');
        $startDate = request()->get('start_date');
        $endDate = request()->get('end_date');
       //dd($startDate, $endDate );
           // Obtener las órdenes por supervisor
-        $orders = $this->getOrdersByInstaller($id, $status , $startDate, $endDate);
+        $orders = $this->getOrdersByInstaller($id, $status , $startDate, $endDate, $orderStatus);
         //dd($orders);
         
         $name = request()->get('name');
@@ -135,22 +137,7 @@ class ReportController extends Controller
         $companyName = InstallationTeam::where('user_id', $id)->value('company_name');
        
        //dd($companyName);
-      
-
-        // Filtrar las órdenes por estado
-       /* if ($orders instanceof EloquentBuilder || $orders instanceof QueryBuilder) {
-          // Es una consulta, puedes aplicar where y usar toSql
-          $query = $orders->where('supervisor_payment_status', 'like', '%' . $status . '%');
-          dd($query->toSql(), $query->getBindings()); // Depuración
-          $orders = $query->get();
-      } elseif ($orders instanceof Collection) {
-          // Es una colección, debes filtrar en memoria
-          $orders = $orders->filter(function ($order) use ($status) {
-              return stripos($order['supervisor_payment_status'], $status) !== false;
-          });
-      } else {
-          dd('Tipo desconocido:', get_class($orders));
-        }*/
+       
 
         if ($name) {
           $orders = $orders->filter(function ($order) use ($name) {
@@ -158,18 +145,6 @@ class ReportController extends Controller
           });
       }
         //dd($orders);
-
-        /*if ($startDate) {
-              $orders = $orders->where('supervisor_payment_date', '>=', $startDate);
-        }
-
-        if ($endDate) {
-              $orders = $orders->where('supervisor_payment_date', '<=', $endDate);
-        }*/
-
-        //dd(User::find($id));
-      
-
     // Retornar la vista con las órdenes filtradas
     return Inertia::render('Report/ShowInstaller', [
         'orders' => $orders->values()->toArray(),
@@ -179,7 +154,20 @@ class ReportController extends Controller
          InstallerPaymentStatusEnum::OPEN->value,
          InstallerPaymentStatusEnum::PARTIALLY_PAID->value,
          InstallerPaymentStatusEnum::FULLY_PAID->value,
-          ]
+        ],
+      'orderStatuses' => [
+            OrderStatusEnum::CONFIRMED->value,
+            OrderStatusEnum::EXECUTION->value,
+            OrderStatusEnum::SUPERVISION->value,
+            OrderStatusEnum::INSPECTION->value,
+            OrderStatusEnum::FINISH->value,
+            OrderStatusEnum::FINAL_INSPECTION->value,
+            OrderStatusEnum::FINAL_COLLECT->value,
+            OrderStatusEnum::ON_HOLD->value,
+            OrderStatusEnum::RESCHEDULE->value,
+            OrderStatusEnum::COMPLETE->value,
+            OrderStatusEnum::SERVICE->value,
+          ],
     ]);
     }
 
@@ -246,8 +234,6 @@ class ReportController extends Controller
       $data = [
         'order_id' => $request->input('order_id'),
         'installation_team_id' => $request->input('installation_team_id'),
-        'responsible_extra_work' => $request->input('responsible_extra_work'),
-        'notes' => $request->input('notes'),
         'installer_payment_status' => $request->input('installer_payment_status'),
     ];
     
@@ -350,10 +336,12 @@ class ReportController extends Controller
   }
 
   public function exportPaymentInstaller(Request $request, $id) 
-    {  
+{      $biweeklystar = Carbon::parse( Biweekly::where('id', $id)->value('start_biweekly_period'))->format('d F Y');
+       $biweeklyend = Carbon::parse( Biweekly::where('id', $id)->value('end_biweekly_period'))->format('d F Y');
+      
         return Excel::download( 
           new InstallerExport($id), 
-          'instaler '. 1 . '.xlsx', 
+          'Biweekly '. $biweeklystar . ' to ' . $biweeklyend. '.xlsx', 
           \Maatwebsite\Excel\Excel::XLSX
         );
     }

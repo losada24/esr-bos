@@ -17,6 +17,7 @@ import { get } from 'http'
 import DeleteIcon from '@/Components/Icons/DeleteIcon'
 import ExportIcon from '@/Components/Icons/ExportIcon'
 import { Field } from 'formik'
+import { inspect } from 'util'
 
 
 const EventModal = ({
@@ -47,7 +48,6 @@ const EventModal = ({
   supervisors: User[]
   status: string[]
   attachments?: File[]
-  // auth: User
 }) => {
   const defaultState = {
     client_id: 0,
@@ -93,7 +93,10 @@ const EventModal = ({
     inspection: false,
     walk_trough: false,
     partial_payment_installation: false,
-    final_payment_installation: false
+    final_payment_installation: false,
+    pre_inspection_attach: [],
+    inspection_attach: [],
+    walk_trough_attach: []
   }
 
   /* interface PageProps {
@@ -105,6 +108,9 @@ const EventModal = ({
   const [editableData, setEditableData] = useState<any>(defaultState)
   const [isLoading, setIsLoading] = useState(false)
   const [attachmentsArray, setAttachmentsArray] = useState<File[]>(attachments ?? [])
+  const [attachmentPreInspection, SetAttachmentPreInspection] = useState<File []>([])
+  const [attachmentInspection, SetAttachmentInspection] = useState<File []>([])
+  const [attachmentIWalkTrough, SetAttachmentWalkTrough] = useState<File []>([])
   const [attachmentsList, setAttachmentsList] = useState<any[]>([])
   const [message, setMessage] = useState<string | null>(null)
 
@@ -176,6 +182,8 @@ const EventModal = ({
       setEditableData(defaultState)
     }
   }, [showModal])
+  // console.log(editableData)
+  console.log(event)
 
   /* useEffect(() => {
     if (editableData.installation_date && event?.duration_of_work?.number_of_day) {
@@ -208,8 +216,12 @@ const EventModal = ({
       supervisor_id: editableData.supervisor_id || null,
       status: editableData.status.value,
       attachments: attachmentsArray,
+      walk_trough_attach: attachmentIWalkTrough,
+      inspection_attach: attachmentInspection,
+      pre_inspection_attach: attachmentPreInspection,
       complete_date: editableData.status.value === 'COMPLETE' ? new Date().toISOString().slice(0, 10) : null,
-      pending_collect: editableData.status.value === 'PENDING COLLECT' ? new Date().toISOString().slice(0, 10) : null
+      pending_collect: editableData.status.value === 'PENDING COLLECT' ? new Date().toISOString().slice(0, 10) : null,
+      order_id: id
     }
 
     router.post(route('update.order.from.modal', id), data, {
@@ -223,6 +235,9 @@ const EventModal = ({
       }
     })
     setShowValidationErrors(false)
+    SetAttachmentWalkTrough([])
+    SetAttachmentInspection([])
+    SetAttachmentPreInspection([])
     setAttachmentsArray([])
     setMessage(null)
   }
@@ -588,52 +603,7 @@ const EventModal = ({
             )}
             </div>
             <div className='flex flex-row gap-5 mt-3'>
-            <fieldset className='p-3 border rounded-xl mt-3'>
-                    <legend className='text-lg font-semibold'>Delivered Documents</legend>
-                    <div className='grid gap-3 grid-cols-3'>
-                      <div className ='flex mt-8'>
-                      <input
-                      id="pre_inspection"
-                      name="pre_inspection"
-                      className="form-checkbox"
-                      type="checkbox"
-                      checked={editableData.pre_inspection} // Controlado por el estado
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                        setEditableData({ ...editableData, pre_inspection: e.target.checked }) // Actualiza el estado
-                      }}
-                    />
-                        <label htmlFor="pre_inspection" className='font-bold inline-flex'>PI</label>
-                      </div>
-
-                      <div className ='flex mt-8'>
-                      <input
-                      id="inspection"
-                      name="inspection"
-                      className="form-checkbox"
-                      type="checkbox"
-                      checked={editableData.inspection} // Controlado por el estado
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                        setEditableData({ ...editableData, inspection: e.target.checked }) // Actualiza el estado
-                      }}
-                    />
-                        <label htmlFor="inspection" className='font-bold inline-flex'>IN</label>
-                      </div>
-                      <div className ='flex mt-8'>
-                      <input
-                      id="walk_trough"
-                      name="walk_trough"
-                      className="form-checkbox"
-                      type="checkbox"
-                      checked={editableData.walk_trough} // Controlado por el estado
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                        setEditableData({ ...editableData, walk_trough: e.target.checked }) // Actualiza el estado
-                      }}
-                    />
-                        <label htmlFor="walk_trough" className='font-bold inline-flex'>WT</label>
-                      </div>
-                    </div>
-                  </fieldset>
-                  <fieldset className='p-3 border rounded-xl mt-3'>
+                    <fieldset className='p-3 border rounded-xl mt-3'>
                     <legend className='text-lg font-semibold'>Collected Payments</legend>
                      <div className ='flex mt-8'>
                       <input
@@ -821,6 +791,104 @@ const EventModal = ({
                 onChange={(e) => { setEditableData({ ...editableData, notes: e.target.value }) }}
               />
             </div>
+            <div className='col-span-4'>
+            <fieldset className='p-3 border rounded-xl mt-3'>
+                    <legend className='text-lg font-semibold'>Delivered Documents</legend>
+                    <div className='grid gap-3 grid-cols-3'>
+                    {(Number(event?.city_permits) === 1 && (
+                     <>
+                      <div className ='flex mt-8'>
+                      <input
+                      id="pre_inspection"
+                      name="pre_inspection"
+                      className="form-checkbox"
+                      type="checkbox"
+                      checked={editableData.pre_inspection} // Controlado por el estado
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                        setEditableData({ ...editableData, pre_inspection: e.target.checked }) // Actualiza el estado
+                      }}
+                    />
+                        <label htmlFor="pre_inspection" className='font-bold inline-flex'>PI</label>
+                      </div>
+
+                      <div className ='flex mt-8'>
+                      <input
+                      id="inspection"
+                      name="inspection"
+                      className="form-checkbox"
+                      type="checkbox"
+                      checked={editableData.inspection} // Controlado por el estado
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                        setEditableData({ ...editableData, inspection: e.target.checked }) // Actualiza el estado
+                      }}
+                    />
+                        <label htmlFor="inspection" className='font-bold inline-flex'>IN</label>
+                      </div>
+                      </>
+                    ))}
+                      <div className ='flex mt-8'>
+                      <input
+                      id="walk_trough"
+                      name="walk_trough"
+                      className="form-checkbox"
+                      type="checkbox"
+                      checked={editableData.walk_trough} // Controlado por el estado
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                        setEditableData({ ...editableData, walk_trough: e.target.checked }) // Actualiza el estado
+                      }}
+                    />
+                        <label htmlFor="walk_trough" className='font-bold inline-flex'>WT</label>
+                      </div>
+                    </div>
+                  </fieldset>
+
+                  </div>
+            {(editableData.pre_inspection === true || editableData.pre_inspection === 1) && (
+            <div className='flex flex-col gap-2  mt-3'>
+            <label htmlFor="pre_inspection_attach">Pre Inspection File</label>
+                    <input
+                      id="pre_inspection_attach"
+                      name="pre_inspection_attach"
+                      type="file"
+                      accept="*"
+                      className="form-input file:py-2 file:px-4 file:border-0 file:font-semibold p-0 file:bg-primary/90 ltr:file:mr-5 rtl:file:ml-5 file:text-white file:hover:bg-primary"
+                      onChange={(event: any) => {
+                        SetAttachmentPreInspection(event.currentTarget.files[0])
+                      }}
+              />
+            </div>)}
+            {(editableData.inspection === true || editableData.inspection === 1) && (
+            <div className='flex flex-col gap-2  mt-3'>
+            <label htmlFor="inspection_attach">Inspection File</label>
+                    <input
+                      id="inspection_attach"
+                      name="inspection_attach"
+                      type="file"
+                      accept="*"
+                      className="form-input file:py-2 file:px-4 file:border-0 file:font-semibold p-0 file:bg-primary/90 ltr:file:mr-5 rtl:file:ml-5 file:text-white file:hover:bg-primary"
+
+                      onChange={(event: any) => {
+                        SetAttachmentInspection(event.currentTarget.files[0])
+                      }}
+              />
+            </div>)}
+            {(editableData.walk_trough === true || editableData.walk_trough === 1) && (
+            <div className='flex flex-col gap-2  mt-3'>
+            <label htmlFor="walk_trough_attach">Walk Trough File</label>
+                    <input
+                      id="walk_trough_attach"
+                      name="walk_trough_attach"
+                      type="file"
+                      accept="*"
+                      className="form-input file:py-2 file:px-4 file:border-0 file:font-semibold p-0 file:bg-primary/90 ltr:file:mr-5 rtl:file:ml-5 file:text-white file:hover:bg-primary"
+                      /* onChange={(event: any) => {
+                        setFieldValue('walk_trough_attach', event.currentTarget.files[0])
+                      }} */
+                        onChange={(event: any) => {
+                          SetAttachmentWalkTrough(event.currentTarget.files[0])
+                        }}
+              />
+            </div>)}
             {attachmentsList && (event?.service === 'DELIVERY AND INSTALLATION') && (
                 <>
                <div className='flex flex-col gap-2  mt-3'>
@@ -849,7 +917,9 @@ const EventModal = ({
                    {attachmentsList.map((attachment, index) => {
                      return (
                        <tr key={index} className='hover:bg-gray-100 focus-within:bg-gray-100'>
+
                          <td className='border-t px-6 py-4 align-top'>{attachment.filename}</td>
+                         <td className='border-t px-6 py-4 align-top'>{attachment.file_type}</td>
                          <td className='border-t px-6 py-4 align-top'>
                           <div className='flex flex-row gap-2 justify-end'>
                             <a key={attachment.id} href={`storage/${attachment.file_path}`} target='_blank' rel="noreferrer">

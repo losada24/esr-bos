@@ -9,12 +9,13 @@ import 'flatpickr/dist/flatpickr.css'
 interface ShowInstallerFilterProps {
   id: string// El id del supervisor, debe ser un string
   statuses: string[] // Lista de estados
+  orderStatuses: string[]
 }
 
-const ShowInstallerFilter: React.FC<ShowInstallerFilterProps> = ({ id, statuses }) => {
-  
+const ShowInstallerFilter: React.FC<ShowInstallerFilterProps> = ({ id, statuses, orderStatuses }) => {
   const { data, setData } = useForm({
     status: '',
+    order_status: '',
     name: '',
     start_date: '',
     end_date: '',
@@ -24,6 +25,7 @@ const ShowInstallerFilter: React.FC<ShowInstallerFilterProps> = ({ id, statuses 
   const reset = () => {
     setData({
       status: '',
+      order_status: '',
       name: '',
       start_date: '',
       end_date: '',
@@ -33,6 +35,7 @@ const ShowInstallerFilter: React.FC<ShowInstallerFilterProps> = ({ id, statuses 
     // Recargar la página sin filtros
     router.get(route('report.show_installer', { id }), {
       status: '',
+      order_status: '',
       name: '',
       start_date: '',
       end_date: '',
@@ -85,7 +88,7 @@ const ShowInstallerFilter: React.FC<ShowInstallerFilterProps> = ({ id, statuses 
           />
         </div>
      <div className='mb-3 w-64'>
-          <label htmlFor="role">Status</label>
+          <label htmlFor="role">Payments Status</label>
           <select
             id="status"
             name="status"
@@ -98,6 +101,24 @@ const ShowInstallerFilter: React.FC<ShowInstallerFilterProps> = ({ id, statuses 
           >
             <option value="">Select Status</option>
             {statuses.map((status, index) => (
+              <option key={index} value={status}>{status}</option>
+            ))}
+          </select>
+        </div>
+        <div className='mb-3 w-64'>
+          <label htmlFor="role">Orders Status</label>
+          <select
+            id="order_status"
+            name="order_status"
+            className="form-select"
+            autoComplete="order_status"
+            placeholder='Status'
+            onChange={(e) => {
+              setData('order_status', e.target.value)
+            }}
+          >
+            <option value="">Select Status</option>
+            {orderStatuses.map((status, index) => (
               <option key={index} value={status}>{status}</option>
             ))}
           </select>
@@ -119,7 +140,7 @@ const ShowInstallerFilter: React.FC<ShowInstallerFilterProps> = ({ id, statuses 
           />
 
         </div>
-        <div className='mb-3 w-64'>
+       {/* <div className='mb-3 w-64'>
           <label htmlFor='start_date'>Start Date</label>
           <Flatpickr
             options={{
@@ -135,8 +156,8 @@ const ShowInstallerFilter: React.FC<ShowInstallerFilterProps> = ({ id, statuses 
             }}
           />
 
-        </div>
-        <div className='mb-3 w-64'>
+        </div> */}
+       {/* <div className='mb-3 w-64'>
           <label htmlFor='end_date' >End Date</label>
           <Flatpickr
             options={{
@@ -151,7 +172,7 @@ const ShowInstallerFilter: React.FC<ShowInstallerFilterProps> = ({ id, statuses 
               setData('end_date', date.toISOString().slice(0, 10))
             }}
           />
-        </div>
+        </div> */}
         <div className="flex items-end justify-between w-44 pb-3">
           <PrimaryButton className="btn btn-primary">Filter</PrimaryButton>
           <button type="button" onClick={reset} className="btn btn-outline-primary ml-2">

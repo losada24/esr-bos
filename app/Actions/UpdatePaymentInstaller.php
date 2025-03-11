@@ -22,8 +22,10 @@ class UpdatePaymentInstaller {
         'extra_work' => $request->extra_work,
         'extra_discount' => $request->extra_discount,
         'other_cost_installer' => $request->other_cost_installer,
-        'biweekly_id' => $request->biweekly_id,
+        //'biweekly_id' => $request->biweekly_id,
         'payment_status' => $request->payment_status,
+        'notes' => $request->notes,
+        'responsible_extra_work' => $request->responsible_extra_work,
 
       ];
 

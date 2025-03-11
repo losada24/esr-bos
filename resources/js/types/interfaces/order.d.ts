@@ -70,6 +70,9 @@ export interface Order {
   walk_trough?: boolean
   partial_payment_installation?: boolean
   final_payment_installation?: boolean
+  pre_inspection_attach?: Attachment
+  inspection_attach?: Attachment
+  walk_trough_attach?: Attachment
 }
 
 export interface TypeOfWork {
@@ -231,8 +234,6 @@ export interface OrderStatus {
 export interface PaymentExtraFields {
   id: number
   order_id: number
-  responsible_extra_work: string
-  notes: string
   installer_payment_status?: string
   order?: Order
   installation_team_id: number
@@ -251,6 +252,8 @@ export interface InstallationPayment {
   other_cost_installer: number
   payment_status: string
   biweekly_id: number
+  responsible_extra_work: string
+  notes: string
 
 }
 
