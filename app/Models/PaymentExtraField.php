@@ -11,9 +11,7 @@ class PaymentExtraField extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-      'responsible_extra_work',
       'order_id',
-      'notes',
       'installer_payment_status',
       'installation_team_id',
     ];

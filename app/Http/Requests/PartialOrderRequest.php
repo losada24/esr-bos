@@ -11,6 +11,7 @@ use App\Enum\PlaningDateSupervisorEnum;
 use App\Enum\SupervisorPaymentStatusEnum;
 use App\Enum\TypeOfFinancing;
 use App\Models\OrderStatus;
+use App\Rules\ValidateOrderAttachments;
 use App\Rules\ValidateOrderStatus;
 use Illuminate\Validation\Rule;
 
@@ -40,6 +41,18 @@ class PartialOrderRequest extends FormRequest
           'supervisor_id' => 'nullable|integer|exists:users,id',
           'initial_payment_percentage' => 'nullable|numeric',
           'payment_definition' => 'boolean',
+          'pre_inspection'=> [
+            'boolean',
+            // new ValidateOrderAttachments
+          ],
+          'inspection' => [ 
+            'boolean', 
+            // new ValidateOrderAttachments
+          ],
+          'walk_trough' => [
+            'boolean',
+            new ValidateOrderAttachments
+          ],
           'status' =>  [
             'required',
             'string',
@@ -122,6 +135,38 @@ class PartialOrderRequest extends FormRequest
           'complete_date' => 'nullable|date_format:Y-m-d',
           'attachments' => 'nullable|array',
           'attachments.*' => 'file|mimes:jpeg,png,jpg,pdf,docx,doc,xlsx|max:10240',
+          //'walk_trough_attach.*'=> 'file|mimes:jpeg,png,jpg,pdf,docx,doc,xlsx|max:10240',
+          'walk_trough_attach' => [
+              'nullable',
+              'file', 
+              'mimes:jpeg,png,jpg,pdf,docx,doc,xlsx',
+              'max:10240',
+              /* Rule::when(
+                fn($input) => $input['walk_trough']== 1
+                , ['required']
+              ), */
+            ],
+            'pre_inspection_attach' => [
+              'nullable',
+              'file', 
+              'mimes:jpeg,png,jpg,pdf,docx,doc,xlsx',
+              'max:10240',
+              /* Rule::when(
+                fn($input) => $input['walk_trough']== 1
+                , ['required']
+              ), */
+            ],
+            'inspection_attach' => [
+              'nullable',
+              'file', 
+              'mimes:jpeg,png,jpg,pdf,docx,doc,xlsx',
+              'max:10240',
+              /* Rule::when(
+                fn($input) => $input['walk_trough']== 1
+                , ['required']
+              ), */
+            ],
+
         ];
     }
 }

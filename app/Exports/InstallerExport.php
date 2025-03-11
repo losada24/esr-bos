@@ -26,9 +26,9 @@ class InstallerExport implements FromView, WithStyles
     public function view(): View 
     {
         $payments = $this->getOrdersByInstallerBiweekly($this->id);
-        $installerName = $payments->first()['installation_team'];
-        $companyName = $payments->first()['company_name'];
-        $biweekly = $payments->first()['biweekly'];
+        $installerName = $payments->first()['installation_team'] ?? '';
+        $companyName = $payments->first()['company_name'] ?? '';
+        $biweekly = $payments->first()['biweekly'] ?? '';
        
         
         //dd($payments);

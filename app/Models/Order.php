@@ -21,7 +21,7 @@ class Order extends Model
 {
     use HasFactory, SoftDeletes, HasRoles;
 
-    protected $dispatchesEvents = [
+   protected $dispatchesEvents = [
       'created' => \App\Events\OrderCreated::class,
       'updated' => \App\Events\OrderCreated::class,
     ];

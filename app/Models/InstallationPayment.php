@@ -22,6 +22,8 @@ class InstallationPayment extends Model
             'other_cost_installer',
             'biweekly_id',
             'payment_status',
+            'notes',
+            'responsible_extra_work',
         ];
 
         protected $dispatchesEvents = [

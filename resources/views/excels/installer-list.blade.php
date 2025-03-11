@@ -56,6 +56,7 @@
               // Acumular valores para las sumas totales
               // $totalProjectAmount += $order['project_amount'];
               // $totalCommissions += $order['supervisor_commissions'];
+              //dd($payment);
               $installerPayment = $payments->where('order_id', $payment['order_id'])->where('id', '<=', $payment['id'])->sum('installer_payment');
               $pendingPaymentAmount = $payment['amount'] - $installerPayment;
               $totalPendingPaymentAmount +=  $payment['installer_payment'];
@@ -82,7 +83,7 @@
              <td width='20' height='25' text-align='center' valign='middle'>{{ '$' . number_format($payment['installer_payment'], 2, '.', ',')}}</td>
              <td width='20' height='25' text-align='center' valign='middle'>{{ '$' . number_format($pendingPaymentAmount, 2, '.', ',')}}</td>
              <td width='20' height='25' text-align='center' valign='middle'>{{ '$' . number_format($payment['extra_work'], 2, '.', ',')}}</td>
-             <td width='20' height='25' text-align='center' valign='middle'>{{ $payment['payment_extra_fields']['responsible_extra_work'] ?? '' }}</td>
+             <td width='20' height='25' text-align='center' valign='middle'>{{ $payment['responsible_extra_work'] ?? '' }}</td>
              <td width='20' height='25' text-align='center' valign='middle'>{{ '$' . number_format($payment['extra_discount'], 2, '.', ',')}}</td>
              <td width='20' height='25' text-align='center' valign='middle'>{{ '$' . number_format($payment['other_cost_installer'], 2, '.', ',')}}</td>
             <td width='20' height='25' text-align='center' valign='middle'>{{ '$' . number_format($totalPaymentAmount, 2, '.', ','); }}</td>
@@ -90,7 +91,7 @@
                                                           $payment['partial_payment_installation'] ? 'PARTIAL' : '',
                                                           $payment['final_payment_installation'] ? 'FINAL' : '',
                                                       ])->filter()->join(' , ') }}</td>
-            <td width='20' height='25' text-align='center' valign='middle'>{{ $payment['payment_extra_fields']['notes'] ?? '' }}</td>
+            <td width='20' height='25' text-align='center' valign='middle'>{{ $payment['notes']?? '' }}</td>
             <td width='20' height='25' text-align='center' valign='middle'>{{ collect([
                                                           $payment['pre_inspection'] ? 'PI' : '',
                                                           $payment['walk_trough'] ? 'WT' : '',

@@ -33,16 +33,6 @@ const ReportInstallerForm = ({
       <fieldset className='p-3 border rounded-xl mt-3'>
         <legend className='text-lg font-semibold'>Order data</legend>
         <div className='grid gap-4 grid-cols-3'>
-          <div className={submitCount ? (errors.responsible_extra_work) ? 'has-error' : 'has-success' : ''}>
-            <label htmlFor="last_name">Responsible Extra Work</label>
-              <Field
-                id="responsible_extra_work"
-                name="responsible_extra_work"
-                className="form-input rounded-r-none"
-                autoComplete="responsible_extra_work"
-              />
-              {(submitCount && errors.responsible_extra_work) ? <InputError message={errors.responsible_extra_work} className="mt-2" /> : ''}
-          </div>
         {/* <div className ='flex mt-8'>
             <Field
               id="collected_payment"
@@ -75,20 +65,6 @@ const ReportInstallerForm = ({
                         </Field>
                         {(submitCount && errors.installer_payment_status) ? <InputError message={errors.installer_payment_status} className="mt-2" /> : ''}
                       </div>
-          <div className='col-span-3'>
-          <div className={submitCount ? (errors.notes) ? 'has-error' : 'has-success' : ''}>
-            <label htmlFor="notes">Notes</label>
-              <Field
-                id="notes"
-                name="notes"
-                component="textarea"
-                rows="6"
-                className="form-textarea resize-none placeholder:text-white-dark"
-                placeholder='Notes'
-              />
-              {(submitCount && errors.notes) ? <InputError message={errors.notes} className="mt-2" /> : ''}
-          </div>
-          </div>
         </div>
         <div className="flex items-center justify-between mt-4">
           <PrimaryButton className="btn btn-primary" type='submit'>

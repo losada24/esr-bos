@@ -47,9 +47,10 @@ type IndexUserProps = PageProps & {
   companyName: string
   // installation_teams: InstallationTeam[]
   statuses: string[]
+  orderStatuses: string[]
 }
 
-export default function ShowInstaller ({ auth, orders, installer, companyName, statuses }: IndexUserProps) {
+export default function ShowInstaller ({ auth, orders, installer, companyName, statuses, orderStatuses }: IndexUserProps) {
   // console.log(supervisor.id)
   console.log(orders)
   // const totalProjectAmount = orders.reduce((sum, order) => sum + Number(order.project_amount), 0)
@@ -61,7 +62,7 @@ export default function ShowInstaller ({ auth, orders, installer, companyName, s
           Installer Name: ${installer.name}`}
       >
         <Head title={`Project installed by ${companyName}`} />
-        <ShowInstallerFilter id={String(installer.id)} statuses={statuses} />
+        <ShowInstallerFilter id={String(installer.id)} statuses={statuses} orderStatuses={orderStatuses} />
             <div className='table-responsive'>
           <table className="table-auto w-full">
             <thead>
@@ -77,7 +78,7 @@ export default function ShowInstaller ({ auth, orders, installer, companyName, s
                 <th className="px-6 pt-5 pb-4">Total Project Payment</th>
                 <th className="px-6 pt-5 pb-4">% Project </th>
                {/* <th className="px-6 pt-5 pb-4">%  Payment Project </th> */}
-               {/* <th className="px-6 pt-5 pb-4">Payment Processed</th> */}
+              <th className="px-6 pt-5 pb-4">Payment Processed</th>
                 {/* <th className="px-6 pt-5 pb-4">Pending Pay</th */}
                 <th className="px-6 pt-5 pb-4">Extra Work</th>
                 <th className="px-6 pt-5 pb-4">Responsible Extra Work</th>
@@ -104,17 +105,6 @@ export default function ShowInstaller ({ auth, orders, installer, companyName, s
                 const extra_discount = order.installation_payments?.reduce((sum, payment) => {
                   return Number(sum) + Number(payment.extra_discount ?? 0)
                 }, 0) ?? 0
-                /* const getGrandTotal = () => {
-                  const extra_work = order.installation_payments?.extra_work ?? 0
-                  const other_cost_installer = order.payment_extra_fields?.other_cost_installer ?? 0
-                  const extra_discount = order.payment_extra_fields?.extra_discount ?? 0
-                  const result = Number(extra_work) + Number(other_cost_installer) - Number(extra_discount)
-                         return order.amount + Number(result)
-                    } */
-                /* const getPaymentProcessed = () => {     if (!order.installation_payments || order.installation_payments.length === 0) return 0
-                      return order.installation_payments.reduce((acc, p) => acc + Number(p.installer_payment || 0), 0)
-                     } */
-
                 return (
                   <tr key={order.id}>
                      <td className="px-6 py-4 border-t">
@@ -149,7 +139,14 @@ export default function ShowInstaller ({ auth, orders, installer, companyName, s
                     {formatPrice(Number(order.amount))}
                     </td>
                     <td className="px-6 py-4 border-t">
-                      {order.initial_payment_percentage} %
+                    {order.installation_payments && order.installation_payments.length > 0
+                      ? `${order.installation_payments[order.installation_payments.length - 1].percentage_payment} %`
+                      : 'N/A'}
+                    </td>
+                    <td className="px-6 py-4 border-t">
+                    {order.installation_payments && order.installation_payments.length > 0
+                      ? formatPrice(order.installation_payments[order.installation_payments.length - 1].installer_payment)
+                      : 'N/A'}
                     </td>
                    {/* <td className="px-6 py-4 border-t">
                     {order.installation_payments.map((payment) => {
@@ -163,16 +160,24 @@ export default function ShowInstaller ({ auth, orders, installer, companyName, s
                       {formatPrice(getGrandTotal() - getPaymentProcessed())}
                     </td> */}
                     <td className="px-6 py-4 border-t">
-                      {formatPrice(extra_work)}
+                    {order.installation_payments && order.installation_payments.length > 0
+                      ? formatPrice(order.installation_payments[order.installation_payments.length - 1].extra_work)
+                      : 'N/A'}
                     </td>
                     <td className="px-6 py-4 border-t">
-                    {order.payment_extra_fields.responsible_extra_work}
+                    {order.installation_payments && order.installation_payments.length > 0
+                      ? order.installation_payments[order.installation_payments.length - 1].responsible_extra_work
+                      : 'N/A'}
                     </td>
                     <td className="px-6 py-4 border-t">
-                    {formatPrice(Number(extra_discount))}
+                    { order.installation_payments && order.installation_payments.length > 0
+                      ? formatPrice(Number(order.installation_payments[order.installation_payments.length - 1].extra_discount))
+                      : 'N/A'}
                     </td>
                     <td className="px-6 py-4 border-t">
-                    {formatPrice(Number(other_cost_installer))}
+                    { order.installation_payments && order.installation_payments.length > 0
+                      ? formatPrice(Number(order.installation_payments[order.installation_payments.length - 1].other_cost_installer))
+                      : 'N/A'}
                     </td>
                     <td className="px-6 py-4 border-t">
                       <ul>
@@ -180,7 +185,10 @@ export default function ShowInstaller ({ auth, orders, installer, companyName, s
                         <li> {order.final_payment_installation ? 'FINAL' : ' '} </li>
                     </ul>
                     </td>
-                    <td> {order.payment_extra_fields.notes}</td>
+                    <td> { order.installation_payments && order.installation_payments.length > 0
+                      ? order.installation_payments[order.installation_payments.length - 1].notes
+                      : 'N/A'}
+                     </td>
                     <td>{[order.pre_inspection ? 'PI' : '',
                       order.walk_trough ? 'WT' : '',
                       order.inspection ? 'IN' : ''].filter(Boolean).join(' - ')}</td>

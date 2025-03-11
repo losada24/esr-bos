@@ -40,18 +40,25 @@ const ReportInstallerPaymentForm = ({
   const extraWork = Number(values.extra_work) || 0
   const otherCost = Number(values.other_cost_installer) || 0
   const extraDiscount = Number(values.extra_discount) || 0
-  
-
+  const getBiweeklyLabel = (id: number) => {
+    const biweekly = biweeklys.find((biweekly) => biweekly.id === id)
+    if (!biweekly) {
+      return ''
+    }
+    return `${biweekly.start_biweekly_period ? new Date(biweekly.start_biweekly_period).toLocaleDateString('en-US', { timeZone: 'UTC', month: 'long', day: 'numeric' }) : 'Unknown'} to ${biweekly.end_biweekly_period ? new Date(biweekly.end_biweekly_period).toLocaleDateString('en-US', { timeZone: 'UTC', month: 'long', day: 'numeric' }) : 'Unknown'}`
+  }
   const loadPaymentData = (installationPayment: InstallationPayment) => {
     setFieldValue('id', installationPayment.id)
     setFieldValue('installer_payment', installationPayment.installer_payment)
     setFieldValue('percentage_payment', installationPayment.percentage_payment)
     setFieldValue('payment_date', installationPayment.payment_date)
-    setFieldValue('extra_work', installationPayment.extra_work)
-    setFieldValue('extra_discount', installationPayment.extra_discount)
-    setFieldValue('other_cost_installer', installationPayment.other_cost_installer)
+    setFieldValue('extra_work', installationPayment.extra_work ?? 0.00)
+    setFieldValue('extra_discount', installationPayment.extra_discount ?? 0.00)
+    setFieldValue('other_cost_installer', installationPayment.other_cost_installer ?? 0.00)
     setFieldValue('payment_status', installationPayment.payment_status)
     setFieldValue('biweekly_id', installationPayment.biweekly_id)
+    setFieldValue('responsible_extra_work', installationPayment.responsible_extra_work ?? '')
+    setFieldValue('notes', installationPayment.notes ?? '')
   }
 
   useEffect(() => {
@@ -67,12 +74,13 @@ const ReportInstallerPaymentForm = ({
       <fieldset className='p-3 border rounded-xl mt-3'>
         <legend className='text-lg font-semibold'>Order data</legend>
         <div className='grid gap-4 grid-cols-3'>
-        <div className={submitCount ? (errors.biweekly_id) ? 'has-error' : 'has-success' : ''}>
+       {/* <div className={submitCount ? (errors.biweekly_id) ? 'has-error' : 'has-success' : ''}>
           <label htmlFor="biweekly_id">Biweekly</label>
             <Select
               id='biweekly_id'
               placeholder="Biweekly"
               name='biweekly_id'
+              value={values.biweekly_id ? { value: values.biweekly_id, label: getBiweeklyLabel(values.biweekly_id) } : null}
               onChange={(value) => { setFieldValue('biweekly_id', value?.value) }}
               options={biweeklys.map((biweekly) => {
                 return {
@@ -82,7 +90,7 @@ const ReportInstallerPaymentForm = ({
               })}
             />
             {(submitCount && errors.biweekly_id) ? <InputError message={errors.biweekly_id} className="mt-2" /> : ''}
-          </div>
+          </div> */}
           <div className={submitCount ? (errors.installer_payment) ? 'has-error' : 'has-success' : ''}>
             <label htmlFor="extra_work">Installer Payment</label>
             <Field
@@ -116,7 +124,10 @@ const ReportInstallerPaymentForm = ({
               position: 'auto right'
             }}
             name="payment_date"
-            // value={values.payment_date?.toString()}
+            value={values.payment_date
+              ? new Date(values.payment_date).toISOString().split('T')[0] // Convierte a UTC y formatea
+              : undefined
+            }
             className="form-input"
             onChange={([date]) => {
               setFieldValue('payment_date', date.toISOString().slice(0, 10))
@@ -133,9 +144,20 @@ const ReportInstallerPaymentForm = ({
             autoComplete="extra_work"
             placeholder='Extra Work Cost'
             type='number'
+            // value={values.extra_work}
           />
           {(submitCount && errors.extra_work) ? <InputError message={errors.extra_work} className="mt-2" /> : ''}
         </div>
+        <div className={submitCount ? (errors.responsible_extra_work) ? 'has-error' : 'has-success' : ''}>
+            <label htmlFor="last_name">Responsible Extra Work</label>
+              <Field
+                id="responsible_extra_work"
+                name="responsible_extra_work"
+                className="form-input rounded-r-none"
+                autoComplete="responsible_extra_work"
+              />
+              {(submitCount && errors.responsible_extra_work) ? <InputError message={errors.responsible_extra_work} className="mt-2" /> : ''}
+          </div>
          <div className={submitCount ? (errors.extra_discount) ? 'has-error' : 'has-success' : ''}>
           <label htmlFor="extra_discount">Discount(-)</label>
           <Field
@@ -180,6 +202,20 @@ const ReportInstallerPaymentForm = ({
               </Field>
               {(submitCount && errors.payment_status) ? <InputError message={errors.payment_status} className="mt-2" /> : ''}
             </div>
+            <div className='col-span-3'>
+                      <div className={submitCount ? (errors.notes) ? 'has-error' : 'has-success' : ''}>
+                        <label htmlFor="notes">Notes</label>
+                          <Field
+                            id="notes"
+                            name="notes"
+                            component="textarea"
+                            rows="6"
+                            className="form-textarea resize-none placeholder:text-white-dark"
+                            placeholder='Notes'
+                          />
+                          {(submitCount && errors.notes) ? <InputError message={errors.notes} className="mt-2" /> : ''}
+                      </div>
+         </div>
         </div>
         <div className="flex items-center justify-between mt-4">
           <PrimaryButton className="btn btn-primary" type='submit'>

@@ -7,6 +7,7 @@ use App\Enum\SupervisorPaymentStatusEnum;
 use App\Models\Client;
 use App\Models\Order;
 use App\Models\OrderProduct;
+use App\Models\PaymentExtraField;
 use App\Traits\OrderEmails;
 use App\Traits\OrderStatus;
 use Illuminate\Http\Request;
@@ -132,6 +133,20 @@ class UpdateOrder {
      
       $order->installationTeams()->sync($request->installation_teams);
       $order->owners()->sync($request->owners);
+
+      $installer = $order->installationTeams()->count();
+        $orderExtraFields = $order->paymentExtraFields()->count() ?? 0;
+
+      //dd($installer, $orderExtraFields);
+        if ($installer > 0 && $orderExtraFields == 0) {
+            foreach ($order->installationTeams as $team) {
+                PaymentExtraField::create([
+                    'installation_team_id' => $team->user_id,
+                    'installer_payment_status' => 'OPEN',
+                    'order_id' => $order->id,
+                ]);
+            }
+        }
     
 
       $order->orderProducts()->delete();
@@ -205,8 +220,33 @@ class UpdateOrder {
       $supervisor_payment_status = $order->supervisor_payment_status;
     }
     $order->installationTeams()->sync($request->installation_teams);
+    
+
+    $installer = $order->installationTeams()->count();
+    $orderExtraFields = $order->paymentExtraFields()->count() ?? 0;
+
+      //dd($installer, $orderExtraFields);
+        /*if ($installer > 0 && $orderExtraFields == 0) {
+            foreach ($order->installationTeams as $team) {
+                PaymentExtraField::create([
+                    'installation_team_id' => $team->user_id,
+                    'installer_payment_status' => 'OPEN',
+                    'order_id' => $order->id,
+                ]);
+            }
+     } else{ 
+                foreach ($request->installation_teams as $team) {
+                  //dd((int)$team, $order->paymentExtraFields()->first()->installation_team_id);
+                if((int)$team != $order->paymentExtraFields()->first()->installation_team_id){
+                  $order->paymentExtraFields()->update([
+                      'installation_team_id' => (int)$team
+                  ]);
+              }
+
+              }
+            }*/
     $order->update(['supervisor_payment_status' => $supervisor_payment_status]);
-      //dd($request->file('attachments'));
+      //dd($request->file('walk_trough_attach'));
     if ($request->hasFile('attachments')) {
       $files = $request->file('attachments');
       foreach ($files as $file) {
@@ -220,6 +260,47 @@ class UpdateOrder {
         ]);
       }
     }
+    if ($request->hasFile('walk_trough_attach')) {
+      $file = $request->file('walk_trough_attach');
+    
+        $fileName = time() . '_' . Str::replace(' ', '_', $file->getClientOriginalName());
+        $filePath = $file->storeAs('order_files', $fileName, 'public');
+        $order->attachments()->create([
+          'filename' => $file->getClientOriginalName(),
+          'file_path' => $filePath,
+          'file_type' => 'walk_trough_attach',
+          'user_id' => auth()->id(),
+        ]);
+      
+    }
+   if($request->hasFile('pre_inspection_attach')){
+      $file = $request->file('pre_inspection_attach');
+    
+        $fileName = time() . '_' . Str::replace(' ', '_', $file->getClientOriginalName());
+        $filePath = $file->storeAs('order_files', $fileName, 'public');
+        $order->attachments()->create([
+          'filename' => $file->getClientOriginalName(),
+          'file_path' => $filePath,
+          'file_type' => 'pre_inspection_attach',
+          'user_id' => auth()->id(),
+        ]);
+      
+    }
+
+    if($request->hasFile('inspection_attach')){
+      $file = $request->file('inspection_attach');
+    
+        $fileName = time() . '_' . Str::replace(' ', '_', $file->getClientOriginalName());
+        $filePath = $file->storeAs('order_files', $fileName, 'public');
+        $order->attachments()->create([
+          'filename' => $file->getClientOriginalName(),
+          'file_path' => $filePath,
+          'file_type' => 'inspection_attach',
+          'user_id' => auth()->id(),
+        ]);
+      
+    }
+
    
     
     $sendEmail = $request->status != $statusOrder;
