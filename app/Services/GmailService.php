@@ -75,6 +75,10 @@ class GmailService
         $subject = $envelope->subject;
       }
 
+      if (is_array($to)) {
+        $to = implode(', ', $to);
+      }
+
       $email = "From: " . config('app.name') . "\r\n";
       $email .= "To: $to\r\n";
       $email .= "Subject: $subject\r\n";
