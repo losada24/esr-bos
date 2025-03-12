@@ -19,7 +19,6 @@ use Illuminate\Support\Facades\Mail;
 trait OrderEmails {
 
   public function sendEmail(Order $order) {
-     //dd($order);
     if ($order->status === OrderStatusEnum::PLANNED->value) {
       $users = [];
       foreach ($order->owners as $owner) {
@@ -39,8 +38,8 @@ trait OrderEmails {
           $estimateDeliveryInstallationDate = new EstimateDeliveryInstallationDate($order);
           SendGmailEmail::dispatch($user, $estimateDeliveryInstallationDate)->onQueue('emails');
         }
-
-        foreach ($accountings as $user) {
+       
+        foreach ($accountings->pluck('email')->toArray() as $user) {
           // Mail::to($user)->send(new EmailAccounting($order));
           $emailAccounting = new EmailAccounting($order);
           SendGmailEmail::dispatch($user, $emailAccounting)->onQueue('emails');
