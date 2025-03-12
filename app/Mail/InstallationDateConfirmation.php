@@ -10,9 +10,10 @@ use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Mail\Mailables\Attachment;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Storage;
 
-class InstallationDateConfirmation extends Mailable
+class InstallationDateConfirmation extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 

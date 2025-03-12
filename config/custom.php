@@ -16,5 +16,8 @@ return [
   'corner_silicone' => env('CORNER_SILICONE'),
   'muntin_price_by_sqft' => env('MUNTIN_PRICE_BY_SQFT'),
   'anchors_price' => env('ANCHORS_PRICE'),
-  'installation_team_expiration_documents_email' => env('INSTALLATION_TEAM__EXPIRATION_EMAILS')
+  'installation_team_expiration_documents_email' => env('INSTALLATION_TEAM__EXPIRATION_EMAILS'),
+  'google_mail_api_client_id' => env('GOOGLE_MAIL_API_CLIENT_ID'),
+  'google_mail_api_client_secret' => env('GOOGLE_MAIL_API_CLIENT_SECRET'),
+  'google_mail_refresh_token' => env('GOOGLE_MAIL_REFRESH_TOKEN'),
 ];
