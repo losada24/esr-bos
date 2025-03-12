@@ -27,9 +27,9 @@ class DeliveryConfirmed extends Mailable implements ShouldQueue
     public function envelope(): Envelope
     {
       $appName = config('app.name');
-        return new Envelope(
-          subject: "Confirmed Delivery or Pickup Date for Materials. [$appName]",
-        );
+      return new Envelope(
+        subject: "Confirmed Delivery or Pickup Date for Materials. [$appName]",
+      );
     }
 
     /**

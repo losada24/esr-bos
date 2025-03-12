@@ -195,39 +195,17 @@ Route::middleware('auth')->group(function () {
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::SUPERVISOR->value] )
       ->name('report.show_supervisor');
 
-
       Route::get('/report/excel-supervisor/{user}', [ReportController::class, 'export'])
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::SUPERVISOR->value] )
       ->name('report.excel-supervisor');
-  /*
-    // ORDERS
-   Route::get('/order', [OrderController::class, 'index'])
-      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$ACCOUNT_MANAGER . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$PRODUCTION . "|" . RoleEnum::$ACCOUNTING ."|" . RoleEnum::$SUB_DEALER . "|" . RoleEnum::$SHIPPING . "|" . RoleEnum::$PLANT_MANAGER])
-      ->name('order.index');
-
-    Route::post('/order/notes-update', [OrderController::class, 'noteUpdate'])
-      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$ACCOUNT_MANAGER . "|" . RoleEnum::$ACCOUNTING . "|" . RoleEnum::$PRODUCTION . "|" . RoleEnum::$SHIPPING . "|" . RoleEnum::$PLANT_MANAGER ])
-      ->name('order.notes.update');
-    
-    Route::post('/order/status-update', [OrderController::class, 'statusUpdate'])
-      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$ACCOUNT_MANAGER . "|" . RoleEnum::$ACCOUNTING . "|" . RoleEnum::$SUB_DEALER . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$PRODUCTION . "|" . RoleEnum::$SHIPPING . "|" . RoleEnum::$PLANT_MANAGER ])
-      ->name('order.status.update');
-    
-    Route::get('/order/status/{order}', [OrderController::class, 'status'])
-      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$ACCOUNT_MANAGER . "|" . RoleEnum::$PRODUCTION . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$SUB_DEALER . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$ACCOUNTING . "|" . RoleEnum::$SHIPPING . "|" . RoleEnum::$PLANT_MANAGER])
-      ->name('order.status');
-
-    Route::get('/order/status-filter', [OrderController::class, 'statusFilter'])
-      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$ACCOUNT_MANAGER . "|" . RoleEnum::$PRODUCTION . "|" . RoleEnum::$DEALER . "|"  . RoleEnum::$ACCOUNTING . "|" . RoleEnum::$SHIPPING . "|" . RoleEnum::$PLANT_MANAGER . "|" . RoleEnum::$SUB_DEALER])
-      ->name('order.status.filter');
-
-    Route::get('/order/history/{order}', [OrderController::class, 'history'])
-      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$ACCOUNT_MANAGER . "|" . RoleEnum::$PRODUCTION . "|" . RoleEnum::$ACCOUNT_MANAGER . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$ACCOUNTING . "|" . RoleEnum::$SHIPPING . "|" . RoleEnum::$PLANT_MANAGER])
-      ->name('order.history');
-
-    Route::get('/order/show/{id}', [OrderController::class, 'show'])
-      ->middleware(["role:" . RoleEnum::$ADMIN . "|" . RoleEnum::$ACCOUNT_MANAGER . "|" . RoleEnum::$PRODUCTION . "|" . RoleEnum::$DEALER . "|" . RoleEnum::$ACCOUNTING . "|" . RoleEnum::$SUB_DEALER . "|" . RoleEnum::$SHIPPING . "|" . RoleEnum::$PLANT_MANAGER ])
-      ->name('order.show');*/
+  
+      /* Route::get('/email-test', function() {
+        echo 'Start Email test <br/>';
+          $order = App\Models\Order::with(['client', 'owners', 'supervisor', 'installationTeams.user'])->find(587);
+          $installationDateConfirmation = new App\Mail\InstallationDateConfirmation($order, true, true, false,true);
+          App\Jobs\SendGmailEmail::dispatch('katiuska28@gmail.com', $installationDateConfirmation)->onQueue('emails');
+        echo 'End Email test <br/>';
+      })->name('email-test'); */
 });
 
 require __DIR__.'/auth.php';
