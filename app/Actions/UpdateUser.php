@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use App\Enum\RoleEnum;
+use App\Jobs\SendGmailEmail;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 
@@ -39,7 +40,9 @@ class UpdateUser {
 
       if ($request->password) {
         $userData['password'] = Hash::make($request->password);
-        Mail::to($request->email, $request->name)->send(new \App\Mail\UpdateUserInformation($request->name, $request->email, $request->password));
+        // Mail::to($request->email, $request->name)->send(new \App\Mail\UpdateUserInformation($request->name, $request->email, $request->password));
+        $updateUserInformation = new \App\Mail\UpdateUserInformation($request->name, $request->email, $request->password);
+        SendGmailEmail::dispatch($request->email, $updateUserInformation)->onQueue('emails');
       }
 
       $user->update($userData);

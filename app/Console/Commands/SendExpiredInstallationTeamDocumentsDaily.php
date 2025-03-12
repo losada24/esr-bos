@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Enum\RoleEnum;
+use App\Jobs\SendGmailEmail;
 use App\Mail\InstallationTeamExpireDocuments;
 use App\Models\InstallationTeam;
 use App\Models\User;
@@ -43,7 +44,9 @@ class SendExpiredInstallationTeamDocumentsDaily extends Command
 
         foreach ($installationTeams as $installationTeam) {
           $email_user = array_merge($users, [$installationTeam->user->email]);
-          Mail::to($email_user)->send(new InstallationTeamExpireDocuments($installationTeam, false, true));
+          // Mail::to($email_user)->send(new InstallationTeamExpireDocuments($installationTeam, false, true));
+          $installationTeamExpireDocuments = new InstallationTeamExpireDocuments($installationTeam, false, true);
+          SendGmailEmail::dispatch($email_user, $installationTeamExpireDocuments)->onQueue('emails');
         }
     }
 }
