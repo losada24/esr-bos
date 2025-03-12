@@ -6,8 +6,9 @@ use App\Models\Setting;
 use Google\Client;
 use Google\Service\Gmail;
 use Google\Service\Gmail\Message;
-use Hamcrest\Core\Set;
 use Illuminate\Support\Facades\View;
+use ReflectionClass;
+use ReflectionFunction;
 
 class GmailService
 {
@@ -22,8 +23,6 @@ class GmailService
         $this->client->setAccessType('offline');
         $this->client->setApprovalPrompt('force');
         $this->client->setScopes(['https://www.googleapis.com/auth/gmail.send']);
-
-        // Verifica si el token ha expirado y lo actualiza
         $this->initializeAccessToken();
     }
 
@@ -35,7 +34,7 @@ class GmailService
             $accessToken = $this->refreshAccessToken();
         }
 
-        $this->client->setAccessToken($accessToken); // Ahora el cliente usará este token
+        $this->client->setAccessToken($accessToken);
     }
 
     private function refreshAccessToken()
@@ -51,7 +50,6 @@ class GmailService
                 'value' => $newAccessToken['access_token']
               ]);
 
-                // Asignar el nuevo token al cliente
               $this->client->setAccessToken($newAccessToken['access_token']);
 
               return $newAccessToken['access_token'];
@@ -66,24 +64,61 @@ class GmailService
       if ($this->client->isAccessTokenExpired()) {
         $this->refreshAccessToken();
       }
+        
+      $boundary = uniqid('boundary_');
+      $this->service = new Gmail($this->client);
+      $content = $mailable->content();
+      $envelope = $mailable->envelope();
+      $htmlContent = View::make($content->view, $content->with)->render();
+        
+      if ($subject === null) {
+        $subject = $envelope->subject;
+      }
 
-        $this->service = new Gmail($this->client);
-        $content = $mailable->content();
-        $htmlContent = View::make($content->view, $content->with)->render();
+      $email = "From: " . config('app.name') . "\r\n";
+      $email .= "To: $to\r\n";
+      $email .= "Subject: $subject\r\n";
+      $email .= "MIME-Version: 1.0\r\n";
+      $email .= "Content-Type: multipart/mixed; boundary=\"$boundary\"\r\n\r\n";
+      $email .= "--$boundary\r\n";
+      $email .= "Content-Type: text/html; charset=UTF-8\r\n";
+      $email .= "$htmlContent\r\n";
 
-        $email = "From: " . env('GOOGLE_EMAIL') . "\r\n";
-        $email .= "To: $to\r\n";
-        $email .= "Subject: $subject\r\n";
-        $email .= "MIME-Version: 1.0\r\n";
-        $email .= "Content-Type: text/html; charset=UTF-8\r\n\r\n";
-        $email .= $htmlContent;
+      foreach ($mailable->attachments() as $attachment) {
+        $attachmentPath = $this->getAttachmentPath($attachment);
+        if (file_exists($attachmentPath)) {
+          $attachmentData = base64_encode(file_get_contents($attachmentPath));
+          $attachmentData = chunk_split($attachmentData, 76, "\r\n");
+          $filename = basename($attachmentPath);
+          $mimeType = mime_content_type($attachmentPath);
 
-        $base64Email = base64_encode($email);
-        $base64Email = str_replace(['+', '/', '='], ['-', '_', ''], $base64Email);
+          $email .= "--$boundary\r\n";
+          $email .= "Content-Type: $mimeType; name=\"$filename\"\r\n";
+          $email .= "Content-Disposition: attachment; filename=\"$filename\"\r\n";
+          $email .= "Content-Transfer-Encoding: base64\r\n\r\n";
+          $email .= "$attachmentData\r\n";
+        }
+      }
 
-        $message = new Message();
-        $message->setRaw($base64Email);
+      $email .= "--$boundary--";
 
-        return $this->service->users_messages->send('me', $message);
+      $base64Email = base64_encode($email);
+      $base64Email = str_replace(['+', '/', '='], ['-', '_', ''], $base64Email);
+
+      $message = new Message();
+      $message->setRaw($base64Email);
+
+      return $this->service->users_messages->send('me', $message);
+    }
+
+    public function getAttachmentPath($attachment)
+    {
+      $reflection = new ReflectionClass($attachment);
+      $property = $reflection->getProperty('resolver');
+      $property->setAccessible(true);
+      $resolver = $property->getValue($attachment);
+      $useVariables = (new ReflectionFunction($resolver))->getStaticVariables();
+      
+      return $useVariables['path'];
     }
 }
