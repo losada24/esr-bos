@@ -70,7 +70,6 @@ class GmailService
         $this->service = new Gmail($this->client);
         $content = $mailable->content();
         $htmlContent = View::make($content->view, $content->with)->render();
-        dd($mailable->attachments());
 
         $email = "From: " . env('GOOGLE_EMAIL') . "\r\n";
         $email .= "To: $to\r\n";
