@@ -5,6 +5,7 @@ namespace App\Traits;
 use App\Enum\OrderStatusEnum;
 use App\Enum\RoleEnum;
 use App\Enum\ServiceEnum;
+use App\Jobs\SendGmailEmail;
 use App\Mail\DeliveryConfirmed;
 use App\Mail\EmailAccounting;
 use App\Mail\EstimateDeliveryInstallationDate;
@@ -34,15 +35,21 @@ trait OrderEmails {
 
       if ($order->service === ServiceEnum::INSTALLATION->value) {
         foreach ($users as $user) {
-          Mail::to($user)->send(new EstimateDeliveryInstallationDate($order));
+          // Mail::to($user)->send(new EstimateDeliveryInstallationDate($order));
+          $estimateDeliveryInstallationDate = new EstimateDeliveryInstallationDate($order);
+          SendGmailEmail::dispatch($user, $estimateDeliveryInstallationDate)->onQueue('emails');
         }
 
         foreach ($accountings as $user) {
-          Mail::to($user)->send(new EmailAccounting($order));
+          // Mail::to($user)->send(new EmailAccounting($order));
+          $emailAccounting = new EmailAccounting($order);
+          SendGmailEmail::dispatch($user, $emailAccounting)->onQueue('emails');
         }
       } else if ($order->service === ServiceEnum::DELIVERY->value || $order->service === ServiceEnum::PICKUP->value) {
         foreach ($users as $user) {
-          Mail::to($user)->send(new EstimateMaterialArrivalDate($order));
+          // Mail::to($user)->send(new EstimateMaterialArrivalDate($order));
+          $estimateMaterialArrivalDate = new EstimateMaterialArrivalDate($order);
+          SendGmailEmail::dispatch($user, $estimateMaterialArrivalDate)->onQueue('emails');
         }
       }
     } else if ($order->status === OrderStatusEnum::DELIVERY_CONFIRMED->value) {
@@ -50,44 +57,44 @@ trait OrderEmails {
       if($order->do_not_send_email != 1){
         $users[] = $order->client->email;
       }
-      //$users[] = $order->client->email;
-      // $users[] = $order->supervisor->email;
-      //$users[]='alina@reylosglass.com';
+     
       $accountManager = User::role([RoleEnum::ACCOUNT_MANAGER->value])->get();
       $users = array_merge($users, $accountManager->pluck('email')->toArray());
       $usersByRoleManager = User::role([RoleEnum::WAREHOUSE_MANAGER->value, RoleEnum::SERVICE_MANAGER->value])->get();
       $users = array_merge($users, $usersByRoleManager->pluck('email')->toArray());
       foreach ($users as $user) {
-        Mail::to($user)->send(new DeliveryConfirmed($order));
+        // Mail::to($user)->send(new DeliveryConfirmed($order));
+        $deliveryConfirmed = new DeliveryConfirmed($order);
+        SendGmailEmail::dispatch($user, $deliveryConfirmed)->onQueue('emails');
       }
     } else if ($order->status === OrderStatusEnum::CONFIRMED->value || $order->status === OrderStatusEnum::RESCHEDULE->value) {
-      
-
       $users = [];
       if ($order->service === ServiceEnum::INSTALLATION->value) {
         $owners = $order->owners->pluck('email')->toArray();
         foreach ($owners as $owner){
-          Mail::to($owner)->send(new InstallationDateConfirmationClient($order));
-         
+          // Mail::to($owner)->send(new InstallationDateConfirmationClient($order));
+          $installationDateConfirmation = new InstallationDateConfirmationClient($order);
+          SendGmailEmail::dispatch($owner, $installationDateConfirmation)->onQueue('emails');
         }
+
         if($order->do_not_send_email != 1){
           $users[] = $order->client->email;
         }
-        //$users[] = $order->client->email;
         
         foreach ($users as $user) {
-          Mail::to($user)->send(new InstallationDateConfirmationClient($order, true));
+          // Mail::to($user)->send(new InstallationDateConfirmationClient($order, true));
+          $installationDateConfirmation = new InstallationDateConfirmationClient($order, true);
+          SendGmailEmail::dispatch($user, $installationDateConfirmation)->onQueue('emails');
         }
+
         $users = [];
-      
-        //dd($order->supervisor->email);
         $users[] = $order->supervisor->email;
-        //$users[] = 'alina@reylosglass.com';
         $serviceManager = User::role([RoleEnum::SERVICE_MANAGER->value])->get();
         $users = array_merge($users, $serviceManager->pluck('email')->toArray());
         foreach ($users as $user) {
-          
-          Mail::to($user)->send(new InstallationDateConfirmation($order, true, true, false,true));
+          // Mail::to($user)->send(new InstallationDateConfirmation($order, true, true, false,true));
+          $installationDateConfirmation = new InstallationDateConfirmation($order, true, true, false,true);
+          SendGmailEmail::dispatch($user, $installationDateConfirmation)->onQueue('emails');
         }
 
         $users = [];
@@ -95,22 +102,26 @@ trait OrderEmails {
         $accountManager = User::role([RoleEnum::ACCOUNT_MANAGER->value])->get();
         $users = array_merge($users, $accountManager->pluck('email')->toArray());
         foreach ($users as $user) {
-          Mail::to($user)->send(new InstallationDateConfirmation($order, true, true, true));
+          // Mail::to($user)->send(new InstallationDateConfirmation($order, true, true, true));
+          $installationDateConfirmation = new InstallationDateConfirmation($order, true, true, true);
+          SendGmailEmail::dispatch($user, $installationDateConfirmation)->onQueue('emails');
         }
       } else if ($order->service === ServiceEnum::DELIVERY->value || $order->service === ServiceEnum::PICKUP->value) {
         $users = [];
         if($order->do_not_send_email != 1){
           $users[] = $order->client->email;
         }
-        // $users[] = $order->client->email;
-        $users = array_merge($users,$order->owners->pluck('email')->toArray()); 
-        //$users[] = 'alina@reylosglass.com';
+        
+        $users = array_merge($users,$order->owners->pluck('email')->toArray());
         $accountManager = User::role([RoleEnum::ACCOUNT_MANAGER->value])->get();
         $users = array_merge($users, $accountManager->pluck('email')->toArray());
         $usersByRoleManager = User::role([RoleEnum::WAREHOUSE_MANAGER->value, RoleEnum::SERVICE_MANAGER->value])->get();
         $users = array_merge($users, $usersByRoleManager->pluck('email')->toArray());
         foreach ($users as $user) {
-          Mail::to($user)->send(new DeliveryConfirmed($order));
+          // Mail::to($user)->send(new DeliveryConfirmed($order));
+          $deliveryConfirmed = new DeliveryConfirmed($order);
+          SendGmailEmail::dispatch($user, $deliveryConfirmed)->onQueue('emails');
+          //SendGmailEmail::dispatch('katiuska28@gmail.com', $deliveryConfirmed)->onQueue('emails');
         }
       }
     }
