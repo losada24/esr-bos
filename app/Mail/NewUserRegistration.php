@@ -37,6 +37,11 @@ class NewUserRegistration extends Mailable implements ShouldQueue
     {
         return new Content(
             view: 'emails.new-user-registration',
+            with: [
+              'name' => $this->name,
+              'email' => $this->email,
+              'password' => $this->password
+            ]
         );
     }
 

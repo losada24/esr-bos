@@ -18,7 +18,7 @@ class EmailAccounting extends Mailable implements ShouldQueue
      * Create a new message instance.
      */
     public function __construct(
-      public Order $order,
+      protected Order $order,
     ){}
 
     /**
@@ -38,7 +38,10 @@ class EmailAccounting extends Mailable implements ShouldQueue
     public function content(): Content
     {
         return new Content(
-            view: 'emails.email-accounting'
+          view: 'emails.email-accounting',
+          with: [
+            'order' => $this->order
+          ]
         );
     }
 

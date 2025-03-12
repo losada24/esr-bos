@@ -26,7 +26,7 @@ trait OrderEmails {
         $users[] = $owner->email;
       }
       if($order->do_not_send_email != 1){
-      $users[] = $order->client->email;
+        $users[] = $order->client->email;
       }
       $accountings = User::role([RoleEnum::ACCOUNTING->value])->get();
      

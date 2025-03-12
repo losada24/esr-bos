@@ -37,6 +37,11 @@ class UpdateUserInformation extends Mailable implements ShouldQueue
     {
         return new Content(
             view: 'emails.update-user-information',
+            with: [
+              'name' => $this->name,
+              'email' => $this->email,
+              'password' => $this->password
+            ]
         );
     }
 
