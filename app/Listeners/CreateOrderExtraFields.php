@@ -31,7 +31,6 @@ class CreateOrderExtraFields
                   'installer_payment_status' => 'OPEN',
                   'order_id' => $order->id,
               ]);
-              dd($paymentExtraField);  // Ver el resultado
               
               $installationPayment = InstallationPayment::create([
                   'order_id' => $order->id,
