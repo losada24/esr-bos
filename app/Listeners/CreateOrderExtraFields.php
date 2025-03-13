@@ -46,7 +46,7 @@ class CreateOrderExtraFields
                   'responsible_extra_work'=> '',
                   'notes' => '',
               ]);
-              dd($installationPayment);  // Ver el resultado
+              //dd($installationPayment);  // Ver el resultado
             }
        
         if ($status == OrderStatusEnum::INSPECTION->value) {
