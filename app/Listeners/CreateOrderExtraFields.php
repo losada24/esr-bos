@@ -26,27 +26,28 @@ class CreateOrderExtraFields
       
         foreach ($event->order->installationTeams as $team) {
               if ($installer > 0 && $orderExtraFields == 0 && $status == OrderStatusEnum::EXECUTION->value) {
-                  dd('entro');
-                PaymentExtraField::create([
-                    'installation_team_id' => $team->user_id,
-                    'installer_payment_status' => 'OPEN',
-                    'order_id' => $order->id,
-                ]);
-                InstallationPayment::create([
-                    'order_id' => $order->id,
-                    'installation_team_id' => $team->user_id,
-                    'installer_payment' => 0.00,
-                    'percentage_payment' => 0.00,
-                    'payment_date' => null,
-                    'extra_work' => 0.00,
-                    'extra_discount' => 0.00,
-                    'other_cost_installer' => 0.00,
-                    'biweekly_id' => null,
-                    'payment_status' => PaymentStatusEnum::REVIEW->value,
-                   'responsible_extra_work'=> '',
-                   'notes' => '',
-
-                ]);
+                $paymentExtraField = PaymentExtraField::create([
+                  'installation_team_id' => $team->user_id,
+                  'installer_payment_status' => 'OPEN',
+                  'order_id' => $order->id,
+              ]);
+              dd($paymentExtraField);  // Ver el resultado
+              
+              $installationPayment = InstallationPayment::create([
+                  'order_id' => $order->id,
+                  'installation_team_id' => $team->user_id,
+                  'installer_payment' => 0.00,
+                  'percentage_payment' => 0.00,
+                  'payment_date' => null,
+                  'extra_work' => 0.00,
+                  'extra_discount' => 0.00,
+                  'other_cost_installer' => 0.00,
+                  'biweekly_id' => null,
+                  'payment_status' => PaymentStatusEnum::REVIEW->value,
+                  'responsible_extra_work'=> '',
+                  'notes' => '',
+              ]);
+              dd($installationPayment);  // Ver el resultado
             }
        
         if ($status == OrderStatusEnum::INSPECTION->value) {
