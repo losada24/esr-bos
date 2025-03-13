@@ -26,6 +26,7 @@ class CreateOrderExtraFields
       
         foreach ($event->order->installationTeams as $team) {
               if ($installer > 0 && $orderExtraFields == 0 && $status == OrderStatusEnum::EXECUTION->value) {
+                  dd('entro');
                 PaymentExtraField::create([
                     'installation_team_id' => $team->user_id,
                     'installer_payment_status' => 'OPEN',
