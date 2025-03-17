@@ -335,24 +335,16 @@ class ReportController extends Controller
       ->with('success', 'Order updated successfully.');
   }
 
-  public function exportPaymentInstaller(Request $request, $id) 
-{      $biweeklystar = Carbon::parse( Biweekly::where('id', $id)->value('start_biweekly_period'))->format('d F Y');
-       $biweeklyend = Carbon::parse( Biweekly::where('id', $id)->value('end_biweekly_period'))->format('d F Y');
-      
+  public function exportPaymentInstaller($id) 
+{      //$biweeklystar = Carbon::parse( Biweekly::where('id', $id)->value('start_biweekly_period'))->format('d F Y');
+       //$biweeklyend = Carbon::parse( Biweekly::where('id', $id)->value('end_biweekly_period'))->format('d F Y');
+         
         return Excel::download( 
           new InstallerExport($id), 
-          'Biweekly '. $biweeklystar . ' to ' . $biweeklyend. '.xlsx', 
+          'Biweekly '. $id . ' to ' . $id. '.xlsx', 
           \Maatwebsite\Excel\Excel::XLSX
         );
     }
-
-
-  
-     
-
-
-   
-
     /*public function storeContact(Request $request)
     {
       $contact = [

@@ -7,9 +7,7 @@
         <td colspan="4" style="font-weight: bold; font-size: 16px; text-align: left; background-color: #f0f0f0;" >
             Company Name : {{$company}}
         </td>
-         <td colspan="4" style="font-weight: bold; font-size: 16px; text-align: left; background-color: #f0f0f0;" >
-            Biweekly : {{$biweekly}}
-        </td>
+      
     </tr>
     
 
@@ -47,66 +45,83 @@
             $totalPaymentProcessed = 0; // Inicializar suma de Commissions
             $otherCostInstaller = 0;
             $grandTotalPayment = 0;
-            if (count($payments) > 0) {
+           /* if (count($payments) > 0) {
               $totalPaymentProcessed = $payments[0]['amount'];
-            }
+            }*/
         @endphp
-      @foreach($payments as $payment)
+      @foreach($orders as $order)
         @php
               // Acumular valores para las sumas totales
               // $totalProjectAmount += $order['project_amount'];
               // $totalCommissions += $order['supervisor_commissions'];
-              //dd($payment);
-              $installerPayment = $payments->where('order_id', $payment['order_id'])->where('id', '<=', $payment['id'])->sum('installer_payment');
-              $pendingPaymentAmount = $payment['amount'] - $installerPayment;
-              $totalPendingPaymentAmount +=  $payment['installer_payment'];
-              $totalPaymentAmount = $payment['installer_payment'] + $payment['extra_work'] - $payment['extra_discount'] + $payment['other_cost_installer'];
-              $totalExtraWork += $payment['extra_work'];
-              $otherCostInstaller += $payment['other_cost_installer'];
-              $totalExtraDiscount += $payment['extra_discount'];
+             // dd($order);
+              $percentegePayment = (int)$order['installation_payments'][$order['installation_payments']->count() - 1]['percentage_payment'];
+              $installerPayment = 0;
+              foreach ($order['installation_payments'] as $installation_payments) {
+                // dd($installation_payments);
+                  $installerPayment += $installation_payments['installer_payment'];
+                /*foreach ($installation_payments as $payment) {
+                }*/
+              }
+              //$installerPayment = $payments->where('order_id', $payment['order_id'])->where('id', '<=', $payment['id'])->sum('installer_payment');
+              $pendingPaymentAmount = (float) $order['amount'] - (float) $installerPayment;
+              //$totalPendingPaymentAmount +=  $payment['installer_payment'];
+              $totalPaymentAmount = (int)$order['installation_payments'][$order['installation_payments']->count() - 1]['installer_payment'] + (int)$order['installation_payments'][$order['installation_payments']->count() - 1]['extra_work'] - (int)$order['installation_payments'][$order['installation_payments']->count() - 1]['extra_discount'] - (int)$order['installation_payments'][$order['installation_payments']->count() - 1]['other_cost_installer'];
+               
+              $totalExtraWork += (int)$order['installation_payments'][$order['installation_payments']->count() - 1]['extra_work'];
+              $otherCostInstaller += (int)$order['installation_payments'][$order['installation_payments']->count() - 1]['other_cost_installer'];
+              $totalExtraDiscount += (int)$order['installation_payments'][$order['installation_payments']->count() - 1]['extra_discount'];
               $grandTotalPayment += $totalPaymentAmount;
+              //dd($pendingPaymentAmount);
           @endphp
         <tr>
-            <td width='20' height='25' text-align='left' valign='middle'>{{ $payment['installation_date'] }}</td>
-            <td width='20' height='25' text-align='center' valign='middle'>{{$payment['inspection_installation_date'] }}</td>
-            <td width='20' height='25' text-align='center' valign='middle'>{{$payment['final_installation_date'] }}</td>
-            <td width='50' height='25' text-align='left' valign='middle'>{{ $payment['name'] }}</td>
+            <td width='20' height='25' text-align='left' valign='middle'>{{ $order['installation_date'] }}</td>
+            <td width='20' height='25' text-align='center' valign='middle'>{{$order['inspection_installation_date'] }}</td>
+            <td width='20' height='25' text-align='center' valign='middle'>{{$order['final_installation_date'] }}</td>
+            <td width='50' height='25' text-align='left' valign='middle'>{{ $order['name'] }}</td>
             <td width='20' height='25' text-align='left' valign='middle'>
-              @foreach ($payment['owners'] as $owner)
+              @foreach ($order['owners'] as $owner)
                 {{ $owner['name'] }} <br/>
+                
               @endforeach
+              
+              
              </td>
-             <td width='20' height='25' text-align='left' valign='middle'>{{$payment['supervisor'] }}</td>
-             <td width='20' height='25' text-align='center' valign='middle'>{{$payment['city_permits'] ? 'YES' : 'NO' }}</td>
-             <td width='20' height='25' text-align='center' valign='middle'>{{ '$' . number_format($payment['amount'], 2, '.', ',')}}</td>
-             <td width='20' height='25' text-align='center' valign='middle'> {{ '$' . number_format($payment['percentage_payment'], 2, '.', ',')}}</td>
-             <td width='20' height='25' text-align='center' valign='middle'>{{ '$' . number_format($payment['installer_payment'], 2, '.', ',')}}</td>
+             <td width='20' height='25' text-align='left' valign='middle'>{{$order['supervisor'] }}</td>
+             <td width='20' height='25' text-align='center' valign='middle'>{{$order['city_permits'] ? 'YES' : 'NO' }}</td>
+             <td width='20' height='25' text-align='center' valign='middle'>{{ '$' . number_format($order['amount'], 2, '.', ',')}}</td>
+             <td width='20' height='25' text-align='center' valign='middle'> {{  number_format($order['installation_payments'][$order['installation_payments']->count() - 1]['percentage_payment'], 2, '.', ',') . '%'}}</td>
+             <td width='20' height='25' text-align='center' valign='middle'>{{ '$' . number_format($order['installation_payments'][$order['installation_payments']->count() - 1]['installer_payment'], 2, '.', ',')}}</td>
              <td width='20' height='25' text-align='center' valign='middle'>{{ '$' . number_format($pendingPaymentAmount, 2, '.', ',')}}</td>
-             <td width='20' height='25' text-align='center' valign='middle'>{{ '$' . number_format($payment['extra_work'], 2, '.', ',')}}</td>
-             <td width='20' height='25' text-align='center' valign='middle'>{{ $payment['responsible_extra_work'] ?? '' }}</td>
-             <td width='20' height='25' text-align='center' valign='middle'>{{ '$' . number_format($payment['extra_discount'], 2, '.', ',')}}</td>
-             <td width='20' height='25' text-align='center' valign='middle'>{{ '$' . number_format($payment['other_cost_installer'], 2, '.', ',')}}</td>
+             <td width='20' height='25' text-align='center' valign='middle'>{{ '$' . number_format($order['installation_payments'][$order['installation_payments']->count() - 1]['extra_work'], 2, '.', ',')}}</td>
+             <td width='20' height='25' text-align='center' valign='middle'>{{$order['installation_payments'][$order['installation_payments']->count() - 1]['responsible_extra_work'] ?? '' }}</td>
+             <td width='20' height='25' text-align='center' valign='middle'>{{ '$' . number_format($order['installation_payments'][$order['installation_payments']->count() - 1]['extra_discount'], 2, '.', ',')}}</td>
+             <td width='20' height='25' text-align='center' valign='middle'>{{ '$' . number_format($order['installation_payments'][$order['installation_payments']->count() - 1]['other_cost_installer'], 2, '.', ',')}}</td>
             <td width='20' height='25' text-align='center' valign='middle'>{{ '$' . number_format($totalPaymentAmount, 2, '.', ','); }}</td>
             <td width='20' height='25' text-align='center' valign='middle'>{{collect([
-                                                          $payment['partial_payment_installation'] ? 'PARTIAL' : '',
-                                                          $payment['final_payment_installation'] ? 'FINAL' : '',
+                                                          $order['partial_payment_installation'] ? 'PARTIAL' : '',
+                                                          $order['final_payment_installation'] ? 'FINAL' : '',
                                                       ])->filter()->join(' , ') }}</td>
-            <td width='20' height='25' text-align='center' valign='middle'>{{ $payment['notes']?? '' }}</td>
+            <td width='20' height='25' text-align='center' valign='middle'>{{ $order['notes']?? '' }}</td>
             <td width='20' height='25' text-align='center' valign='middle'>{{ collect([
-                                                          $payment['pre_inspection'] ? 'PI' : '',
-                                                          $payment['walk_trough'] ? 'WT' : '',
-                                                          $payment['inspection'] ? 'IN' : '',
+                                                          $order['pre_inspection'] ? 'PI' : '',
+                                                          $order['walk_trough'] ? 'WT' : '',
+                                                          $order['inspection'] ? 'IN' : '',
                                                       ])->filter()->join(' , ') }} </td>
-            <td width='20' height='25' text-align='center' valign='middle'>{{ $payment['payment_extra_fields']['installer_payment_status'] ?? '' }}</td>
+            <td width='20' height='25' text-align='center' valign='middle'>{{ $order['payment_extra_fields']['installer_payment_status'] ?? '' }}</td>
            
         </tr>
       @endforeach
+    @php
+      //dd($pendingPaymentAmount);
+    @endphp
     </tbody>
     <tfoot>
         <tr>
             <!-- Celdas vacías para alinear las columnas -->
             <td colspan="10" style="font-weight: bold; text-align: right;">Total:</td>
             <td width='20' height='25' text-align='center' valign='middle' style="font-weight: bold;"></td>
+          
             <td width='20' height='25' text-align='center' valign='middle' style="font-weight: bold;">{{ '$' . number_format($totalExtraWork, 2, '.', ',') }}</td>
             <td width='20' height='25' text-align='center' valign='middle' style="font-weight: bold;"></td>
             <td width='20' height='25' text-align='center' valign='middle' style="font-weight: bold;">{{ '$' . number_format($totalExtraDiscount, 2, '.', ',') }}</td>
