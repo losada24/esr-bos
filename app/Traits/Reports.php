@@ -111,17 +111,10 @@ trait Reports {
                   $subQuery->whereDate('payment_date', '<=', $endDate);
               });
           })
-    ->with(['supervisor', 'orderProducts', 'travelCost', 'paymentExtraFields', 'installationPayments'])
+    ->with(['supervisor', 'orderProducts', 'travelCost', 'paymentExtraFields', 'installationPayments','installationTeams'])
+    ->orderBy('installation_date', 'desc')
     ->get();
-    //dd($orders);
-
-
-    
-        //$total_amount = $orders->sum('project_amount');
-        //$total_commissions = $orders->sum('supervisor_commissions');
     return $orders->map(function($order, $key) {
-      //dd($order);
-     
       $final_installation_date_status = $order->orderStatus->where('status', OrderStatusEnum::COMPLETE->value)->first();
       $inspection_date_status = $order->orderStatus->where('status', OrderStatusEnum::INSPECTION->value)->first();
       if ($final_installation_date_status) {
@@ -134,16 +127,13 @@ trait Reports {
       } else {
         $inspection_installation_date = null;
       }
-      /*$travel= $order->travelCost->price;
-      $amount = $order->orderProducts->sum(function($product) {
-        return $product->total_price + $product->extra_work_price;
-      });
-
-      if ($order->additional_travel_costs) {
-        $amount = $amount + $order->additional_travel_costs;
-      } */
       $amount = $order->getGrandTotalPrice();
 
+      $installer= User::find($order->installationTeams->first()->user_id);
+      $company = InstallationTeam::where('user_id', $order->installationTeams->first()->user_id)->first();
+      
+      //dd($company->company_name);
+   
       $paymentExtraFields = $order->paymentExtraFields;
 
           if ($paymentExtraFields) {
@@ -191,10 +181,13 @@ trait Reports {
             'other_cost_installer' => $payment->other_cost_installer,
             'notes' => $payment->notes,
             'responsible_extra_work' => $payment->responsible_extra_work,
+            'order_id' => $payment->order_id,
+            'installation_team_id' => $payment->installation_team_id,
 
 
           ];
         }),
+        'company_name' => $company->company_name,
         'amount' => $amount,
         //'month' => Carbon::parse($order->installation_date)->format('F'),
         'installation_date' => Carbon::parse($order->installation_date)->format('m/d/Y'),
@@ -206,6 +199,7 @@ trait Reports {
         'partial_payment_installation' => $order->partial_payment_installation,
         'final_payment_installation' => $order->final_payment_installation,
         'status' => $order->status,
+        'installer' => $installer->name,
         //'supervisor_payment_percentage' => $order->supervisor_payment_percentage,
         //'supervisor_commissions' => $order->supervisor_commissions,
         //'supervisor_payment_status' => $order->supervisor_payment_status,

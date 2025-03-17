@@ -123,7 +123,7 @@ const ShowInstallerFilter: React.FC<ShowInstallerFilterProps> = ({ id, statuses,
             ))}
           </select>
         </div>
-        <div className='mb-3 w-64'>
+      {/*  <div className='mb-3 w-64'>
           <label htmlFor='payment_date'>Payment Date</label>
           <Flatpickr
             options={{
@@ -139,7 +139,7 @@ const ShowInstallerFilter: React.FC<ShowInstallerFilterProps> = ({ id, statuses,
             }}
           />
 
-        </div>
+        </div> */}
        {/* <div className='mb-3 w-64'>
           <label htmlFor='start_date'>Start Date</label>
           <Flatpickr

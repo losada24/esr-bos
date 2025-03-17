@@ -10,6 +10,8 @@ import ShowInstallerFilter from './ShowInstallerFilter'
 import Supervisor from './Supervisor'
 import EditIcon from '@/Components/Icons/EditIcon'
 import DeleteIcon from '@/Components/Icons/DeleteIcon'
+import { Console } from 'console'
+import { Select } from '@mobiscroll/react'
 
 interface OrderInstaller {
   id: number
@@ -52,14 +54,56 @@ type IndexUserProps = PageProps & {
 
 export default function ShowInstaller ({ auth, orders, installer, companyName, statuses, orderStatuses }: IndexUserProps) {
   // console.log(supervisor.id)
-  console.log(orders)
+  // console.log(orders)
   // const totalProjectAmount = orders.reduce((sum, order) => sum + Number(order.project_amount), 0)
   // const totalCommissions = orders.reduce((sum, order) => sum + Number(order.supervisor_commissions), 0)
+  const grandTotal = orders.reduce((sum, order) => {
+    const hasPayments = order.installation_payments && order.installation_payments.length > 0
+    if (!hasPayments) return sum
+
+    const lastPayment = order.installation_payments[order.installation_payments.length - 1]
+    const extraWork = Number(lastPayment.extra_work) || 0
+    const extraDiscount = Number(lastPayment.extra_discount) || 0
+    const otherCost = Number(lastPayment.other_cost_installer) || 0
+    const installerPayment = Number(lastPayment.installer_payment) || 0
+
+    const totalPayment = installerPayment + extraWork - extraDiscount + otherCost
+
+    return sum + totalPayment
+  }, 0)
   return (
       <AuthenticatedLayout
           auth={auth}
           pageTitle={`Project installed by ${companyName} Company and
           Installer Name: ${installer.name}`}
+          actions={
+            <div>
+            <button
+              className="btn btn-primary"
+              onClick={() => {
+                window.open(route('report.excel-installer', { id: installer.id }))
+              }}
+            >
+              <span>Export</span>
+            </button>
+
+           {/* <label htmlFor="biweekly_id">Biweekly</label>
+            <Select
+              id='biweekly_id'
+              placeholder="Biweekly"
+              name='biweekly_id'
+              value={values.biweekly_id ? { value: values.biweekly_id, label: getBiweeklyLabel(values.biweekly_id) } : null}
+              onChange={(value) => { setFieldValue('biweekly_id', value?.value) }}
+              options={biweeklys.map((biweekly) => {
+                return {
+                  label: `${biweekly.start_biweekly_period ? new Date(biweekly.start_biweekly_period).toLocaleDateString('en-US', { timeZone: 'UTC', month: 'long', day: 'numeric' }) : 'Unknown'} to ${biweekly.end_biweekly_period ? new Date(biweekly.end_biweekly_period).toLocaleDateString('en-US', { timeZone: 'UTC', month: 'long', day: 'numeric' }) : 'Unknown'}`,
+                  value: biweekly.id
+                }
+              })}
+            /> */}
+
+          </div>
+          }
       >
         <Head title={`Project installed by ${companyName}`} />
         <ShowInstallerFilter id={String(installer.id)} statuses={statuses} orderStatuses={orderStatuses} />
@@ -77,13 +121,14 @@ export default function ShowInstaller ({ auth, orders, installer, companyName, s
                 <th className="px-6 pt-5 pb-4">City Permit</th>
                 <th className="px-6 pt-5 pb-4">Total Project Payment</th>
                 <th className="px-6 pt-5 pb-4">% Project </th>
-               {/* <th className="px-6 pt-5 pb-4">%  Payment Project </th> */}
+               <th className="px-6 pt-5 pb-4">Pending Pay </th>
               <th className="px-6 pt-5 pb-4">Payment Processed</th>
                 {/* <th className="px-6 pt-5 pb-4">Pending Pay</th */}
                 <th className="px-6 pt-5 pb-4">Extra Work</th>
                 <th className="px-6 pt-5 pb-4">Responsible Extra Work</th>
                 <th className="px-6 pt-5 pb-4">Extra Discount</th>
                  <th className="px-6 pt-5 pb-4">Other Cost</th>
+                 <th className="px-6 pt-5 pb-4">Total Payment</th>
                 <th className="px-6 pt-5 pb-4">Collected Payment</th>
                 <th className="px-6 pt-5 pb-4">Remarks</th>
                 <th className="px-6 pt-5 pb-4">Delivered Documents</th>
@@ -94,17 +139,27 @@ export default function ShowInstaller ({ auth, orders, installer, companyName, s
             </thead>
             <tbody>
               {orders.map((order: OrderInstaller, index) => {
-                const extra_work = order.installation_payments?.reduce((sum, payment) => {
-                  return Number(sum) + Number(payment.extra_work ?? 0)
-                }, 0) ?? 0
+                const hasPayments = order.installation_payments && order.installation_payments.length > 0
+                const lastPayment = hasPayments
+                  ? parseFloat(order.installation_payments[order.installation_payments.length - 1].percentage_payment as unknown as string)
+                  : null
+                const isZeroPayment = lastPayment === 0
+                const totalPayment = () => {
+                  // const hasPayments = order.installation_payments && order.installation_payments.length > 0
+                  const extraWork = order.installation_payments && order.installation_payments.length > 0 ? Number(order.installation_payments[order.installation_payments.length - 1].extra_work) : 0
+                  const extraDiscount = order.installation_payments && order.installation_payments.length > 0 ? Number(order.installation_payments[order.installation_payments.length - 1].extra_discount) : 0
+                  const otherCost = order.installation_payments && order.installation_payments.length > 0 ? Number(order.installation_payments[order.installation_payments.length - 1].other_cost_installer) : 0
+                  const installerPayment = order.installation_payments && order.installation_payments.length > 0 ? Number(order.installation_payments[order.installation_payments.length - 1].installer_payment) : 0
+                  const total = Number(installerPayment) + Number(extraWork) - Number(extraDiscount) + Number(otherCost)
+                  return total }
 
-                const other_cost_installer = order.installation_payments?.reduce((sum, payment) => {
-                  return Number(sum) + Number(payment.other_cost_installer ?? 0)
-                }, 0) ?? 0
-
-                const extra_discount = order.installation_payments?.reduce((sum, payment) => {
-                  return Number(sum) + Number(payment.extra_discount ?? 0)
-                }, 0) ?? 0
+                const getPendingAmount = () => {
+                  const totalInstallerPayment = order.installation_payments
+                    ? order.installation_payments.reduce((total, payment) => total + Number(payment.installer_payment), 0)
+                    : 0
+                  return Number(order.amount) - totalInstallerPayment
+                }
+                     console.log(getPendingAmount())
                 return (
                   <tr key={order.id}>
                      <td className="px-6 py-4 border-t">
@@ -119,7 +174,7 @@ export default function ShowInstaller ({ auth, orders, installer, companyName, s
                     <td className="px-6 py-4 border-t ">
                       {order.status}
                     </td>
-                    <td className="px-6 py-4 border-t">
+                    <td className={`px-6 py-4 border-t ${isZeroPayment ? 'bg-yellow-200' : ''}`}>
                       {order.name}
                     </td>
                     <td className="px-6 py-4 border-t">
@@ -138,21 +193,19 @@ export default function ShowInstaller ({ auth, orders, installer, companyName, s
                     <td className="px-6 py-4 border-t">
                     {formatPrice(Number(order.amount))}
                     </td>
-                    <td className="px-6 py-4 border-t">
-                    {order.installation_payments && order.installation_payments.length > 0
+                   <td className="px-6 py-4 border-t">
+                    { order.installation_payments && order.installation_payments.length > 0
                       ? `${order.installation_payments[order.installation_payments.length - 1].percentage_payment} %`
                       : 'N/A'}
+                    </td>
+                     <td className="px-6 py-4 border-t">
+                    {formatPrice(Number(getPendingAmount()))}
                     </td>
                     <td className="px-6 py-4 border-t">
                     {order.installation_payments && order.installation_payments.length > 0
                       ? formatPrice(order.installation_payments[order.installation_payments.length - 1].installer_payment)
                       : 'N/A'}
                     </td>
-                   {/* <td className="px-6 py-4 border-t">
-                    {order.installation_payments.map((payment) => {
-                      return payment.percentage_payment
-                    }).join(', ')} %
-                    </td> */}
                    {/* <td className="px-6 py-4 border-t">
                       {formatPrice(Number(getPaymentProcessed()))}
                     </td> */}
@@ -178,6 +231,9 @@ export default function ShowInstaller ({ auth, orders, installer, companyName, s
                     { order.installation_payments && order.installation_payments.length > 0
                       ? formatPrice(Number(order.installation_payments[order.installation_payments.length - 1].other_cost_installer))
                       : 'N/A'}
+                    </td>
+                   <td className = "px-6 py-4 border-t">
+                      {formatPrice(Number(totalPayment()))}
                     </td>
                     <td className="px-6 py-4 border-t">
                       <ul>
@@ -214,6 +270,14 @@ export default function ShowInstaller ({ auth, orders, installer, companyName, s
               )}
             </tbody>
             <tfoot>
+              <tr>
+                {/* Espacios vacíos hasta la columna "Value Project" */}
+                <td colSpan={16} className="px-2 py-4 border-t  font-bold text-right">Total Amount:</td>
+                <td className="px-2 py-4 border-t font-bold text-left">
+                  {formatPrice(grandTotal)}
+                </td>
+                <td colSpan={3} className="px-6 py-4 border-t"></td>
+              </tr>
             </tfoot>
           </table>
         </div>
