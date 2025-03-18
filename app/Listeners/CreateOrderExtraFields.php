@@ -136,6 +136,7 @@ class CreateOrderExtraFields
           ]);
         } else {
           // Si no hay pagos previos, registrar el 100% del pago
+          if ($pago_pendiente){
           $pago_pendiente->update([
             'order_id' => $order->id,
             'installation_team_id' => $team->user_id,
@@ -150,6 +151,7 @@ class CreateOrderExtraFields
             'responsible_extra_work' => '',
             'notes' => '',
           ]);
+        }
         }
       }
     }
