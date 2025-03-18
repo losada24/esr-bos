@@ -19,45 +19,36 @@ use Illuminate\Support\Str;
 class CreateOrder {
 
   use OrderEmails, OrderStatus;
+  const SUPERVISOR_PAYMENT_PERCENTAGE = 0.3;
 
   public function handle(Request $request) {
     
-    define('SUPERVISOR_PAYMENT_PERCENTAGE', 0.3);
+    // define('SUPERVISOR_PAYMENT_PERCENTAGE', 0.3);
     
     DB::transaction(function() use ($request) {
 
-      if ($request->client_id == 0) {
-        $searchClient = Client::where('email', $request->email)->orWhere('phone', $request->phone)->first();
-        if ($searchClient) {
-          $client = $searchClient;
-        } else {
-          $client = Client::create([
-            'name' => $request->client_name,
-            'phone' => $request->phone,
-            'email' => $request->email,
-            'vip_clients' =>$request->vip_clients,
-            'vip_notes' => $request->vip_notes,
-          ]);
-        }
-      } else {
-        $client = Client::find($request->client_id);
-      }
+    $client = Client::create([
+      'name' => $request->client_name,
+      'phone' => $request->phone,
+      'email' => $request->email,
+      'vip_clients' =>$request->vip_clients,
+      'vip_notes' => $request->vip_notes,
+    ]);
+
     if ($request->service == ServiceEnum::INSTALLATION->value || $request->service == ServiceEnum::INSTALLATION_ONLY->value) {
-  
-            if($request->type_of_housing_id == 3){
-              $execution_planing_date = PlaningDateSupervisorEnum::COMMERCIAL_PROJECTS->value;
-            }
-            else if($request->city_permits == 1){
-              $execution_planing_date = PlaningDateSupervisorEnum::PROJECTS_WITH_PERMISSIONS->value;
-            }
-            else{
-              $execution_planing_date = PlaningDateSupervisorEnum::PROJECTS_WITHOUT_PERMISSIONS->value;
-            }
-            
-            $supervisor_payment_percentage = SUPERVISOR_PAYMENT_PERCENTAGE;
-        
-            $supervisor_commissions = $request->project_amount * $supervisor_payment_percentage / 100;
-            $supervisor_payment_status = SupervisorPaymentStatusEnum::OPEN->value;
+      if($request->type_of_housing_id == 3){
+        $execution_planing_date = PlaningDateSupervisorEnum::COMMERCIAL_PROJECTS->value;
+      }
+      else if($request->city_permits == 1){
+        $execution_planing_date = PlaningDateSupervisorEnum::PROJECTS_WITH_PERMISSIONS->value;
+      }
+      else{
+        $execution_planing_date = PlaningDateSupervisorEnum::PROJECTS_WITHOUT_PERMISSIONS->value;
+      }
+      
+      $supervisor_payment_percentage = self::SUPERVISOR_PAYMENT_PERCENTAGE;
+      $supervisor_commissions = $request->project_amount * $supervisor_payment_percentage / 100;
+      $supervisor_payment_status = SupervisorPaymentStatusEnum::OPEN->value;
     } else {
       $execution_planing_date = 0;
       $supervisor_payment_percentage = 0.00;

@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Actions;
 
 use App\Enum\OrderStatusEnum;
@@ -15,59 +16,51 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use App\Traits\Twilio;
 
-class UpdateOrder {
+class UpdateOrder
+{
 
   use OrderEmails, OrderStatus, Twilio;
 
-  public function handle(Request $request, Order $order) {
-    //dd($request);
-    DB::transaction(function() use ($request, $order) {
-      
+  public function handle(Request $request, Order $order)
+  {
+    // dd($request);
+    DB::transaction(function () use ($request, $order) {
 
-      if ($request->client_id == 0) {
-        $searchClient = Client::where('email', $request->email)->orWhere('phone', $request->phone)->first();
-        if ($searchClient) {
-          $client = $searchClient;
+      $client = Client::find($request->client_id);
+      if ($client) {
+        $client->update([
+          'name' => $request->client_name,
+          'phone' => $request->phone,
+          'email' => $request->email
+        ]);
+      }
+
+      if ($order->service == ServiceEnum::INSTALLATION->value || $order->service == ServiceEnum::INSTALLATION_ONLY->value) {
+        $execution_planing_date = $order->execution_planing_date;
+        $supervisor_payment_percentage = $order->supervisor_payment_percentage;
+        $percentageDecimal = floatval($supervisor_payment_percentage) / 100;
+        $supervisor_commissions = $request->project_amount * $percentageDecimal;
+        if ($request->status == OrderStatusEnum::COMPLETE->value) {
+          $supervisor_payment_status = SupervisorPaymentStatusEnum::PENDING->value;
         } else {
-          $client = Client::create([
-            'name' => $request->client_name,
-            'phone' => $request->phone,
-            'email' => $request->email,
-            'vip_clients' =>$request->vip_clients,
-            'vip_notes' => $request->vip_notes,
-          ]);
+          $supervisor_payment_status = $order->supervisor_payment_status;
         }
       } else {
-        $client = Client::find($request->client_id);
+        $execution_planing_date = 0;
+        $supervisor_payment_percentage = 0.00;
+        $supervisor_commissions = 0.00;
+        $supervisor_payment_status = null;
       }
-      if ($order->service == ServiceEnum::INSTALLATION->value || $order->service == ServiceEnum::INSTALLATION_ONLY->value) {
-      $execution_planing_date = $order->execution_planing_date;
-      $supervisor_payment_percentage = $order->supervisor_payment_percentage;
-      $percentageDecimal = floatval($supervisor_payment_percentage)/100;
-      $supervisor_commissions = $request->project_amount * $percentageDecimal;
-      if($request->status == OrderStatusEnum::COMPLETE->value){
-        $supervisor_payment_status = SupervisorPaymentStatusEnum::PENDING->value;
-      } else {
-        $supervisor_payment_status = $order->supervisor_payment_status;
-      }
-    }
-    else {
-      $execution_planing_date = 0;
-      $supervisor_payment_percentage = 0.00;
-      $supervisor_commissions = 0.00;
-      $supervisor_payment_status = null;
-     }
 
-     if($request->city_permits){
-      $initial_payment_percentage = 80.00;
-     } 
-     else{
-      $initial_payment_percentage = 100.00;
-    }
+      if ($request->city_permits) {
+        $initial_payment_percentage = 80.00;
+      } else {
+        $initial_payment_percentage = 100.00;
+      }
 
       $status = $request->status;
       //dd($status);
-      $sendEmail = $status!= $order->status;
+      $sendEmail = $status != $order->status;
       //dd($sendEmail,$status,$order->status);
       $orderData = [
         'client_id' => $client->id,
@@ -75,7 +68,7 @@ class UpdateOrder {
         'name' => $request->name,
         'job_address' => $request->job_address,
         'order_number' => $request->order_number,
-        'type_of_work_id' => $request->type_of_work_id, 
+        'type_of_work_id' => $request->type_of_work_id,
         'type_of_housing_id' => $request->type_of_housing_id,
         'supervisor_id' => $request->supervisor_id,
         'travel_cost_id' => $request->travel_cost_id,
@@ -100,21 +93,21 @@ class UpdateOrder {
         'status' => $status,
         'frame_color' => $request->frame_color,
         'cost_delivery' => $request->cost_delivery,
-        'cost_city_fee'=> $request->cost_city_fee,
-        'project_amount'=> $request->project_amount,
-        'city'=> $request->city,
+        'cost_city_fee' => $request->cost_city_fee,
+        'project_amount' => $request->project_amount,
+        'city' => $request->city,
         'job_state' => $request->job_state,
         'job_zip' => $request->job_zip,
         'initial_payment_percentage' => $initial_payment_percentage,
         'payment_definition' => $request->payment_definition,
-        'execution_planing_date'=> $execution_planing_date,
-        'supervisor_payment_percentage'=> $supervisor_payment_percentage,
-        'supervisor_commissions'=> $supervisor_commissions,
+        'execution_planing_date' => $execution_planing_date,
+        'supervisor_payment_percentage' => $supervisor_payment_percentage,
+        'supervisor_commissions' => $supervisor_commissions,
         'supervisor_payment_status' => $supervisor_payment_status,
         'hide_on_weekends' => $request->hide_on_weekends,
         'do_not_send_email' => $request->do_not_send_email,
       ];
-    //dd($orderData);
+      //dd($orderData);
       $order->update($orderData);
       //dd($request->file('attachments'));
       if ($request->hasFile('attachments')) {
@@ -130,24 +123,24 @@ class UpdateOrder {
           ]);
         }
       }
-     
+
       $order->installationTeams()->sync($request->installation_teams);
       $order->owners()->sync($request->owners);
 
       $installer = $order->installationTeams()->count();
-        $orderExtraFields = $order->paymentExtraFields()->count() ?? 0;
+      $orderExtraFields = $order->paymentExtraFields()->count() ?? 0;
 
       //dd($installer, $orderExtraFields);
-        if ($installer > 0 && $orderExtraFields == 0) {
-            foreach ($order->installationTeams as $team) {
-                PaymentExtraField::create([
-                    'installation_team_id' => $team->user_id,
-                    'installer_payment_status' => 'OPEN',
-                    'order_id' => $order->id,
-                ]);
-            }
+      if ($installer > 0 && $orderExtraFields == 0) {
+        foreach ($order->installationTeams as $team) {
+          PaymentExtraField::create([
+            'installation_team_id' => $team->user_id,
+            'installer_payment_status' => 'OPEN',
+            'order_id' => $order->id,
+          ]);
         }
-    
+      }
+
 
       $order->orderProducts()->delete();
       foreach ($request->orderProducts as $product) {
@@ -170,10 +163,10 @@ class UpdateOrder {
           'type_of_product_id' => $product['type_of_product_id'],
           //'pivot_cost' => $product['pivot_cost'],
         ]);
-        
+
         $extraWorks = [];
         $product_extra_works = $product['extra_works'] ?? [];
-        
+
         for ($i = 0; $i < count($product_extra_works); $i++) {
           $extraWorks[$product_extra_works[$i]['extra_work_id']] = [
             'price' => $product_extra_works[$i]['price'],
@@ -183,8 +176,8 @@ class UpdateOrder {
 
         $orderProduct->orderProductExtraWorks()->attach($extraWorks);
       }
-      
-     if ($sendEmail) {
+
+      if ($sendEmail) {
         $order->orderStatus()->create([
           'status' => $status,
           'user_id' => auth()->user()->id,
@@ -197,36 +190,35 @@ class UpdateOrder {
         //dd($order);
 
         $this->sendEmail($order);
-       
-       
-       //$this->whatsapp($order);
-      }
-      
-      if( !$order )
-      {
-          throw new \Exception('Not not updated');
+
+
+        //$this->whatsapp($order);
       }
 
+      if (!$order) {
+        throw new \Exception('Not not updated');
+      }
     });
   }
 
-  public function partialUpdate(Request $request, Order $order) {
+  public function partialUpdate(Request $request, Order $order)
+  {
     $statusOrder = $order->status;
-    
+
     $order->update($request->except('installation_teams', 'supervisor_payment_status'));
-    if($request->status == OrderStatusEnum::COMPLETE->value){
+    if ($request->status == OrderStatusEnum::COMPLETE->value) {
       $supervisor_payment_status = SupervisorPaymentStatusEnum::PENDING->value;
     } else {
       $supervisor_payment_status = $order->supervisor_payment_status;
     }
     $order->installationTeams()->sync($request->installation_teams);
-    
+
 
     $installer = $order->installationTeams()->count();
     $orderExtraFields = $order->paymentExtraFields()->count() ?? 0;
 
-      //dd($installer, $orderExtraFields);
-        /*if ($installer > 0 && $orderExtraFields == 0) {
+    //dd($installer, $orderExtraFields);
+    /*if ($installer > 0 && $orderExtraFields == 0) {
             foreach ($order->installationTeams as $team) {
                 PaymentExtraField::create([
                     'installation_team_id' => $team->user_id,
@@ -246,7 +238,7 @@ class UpdateOrder {
               }
             }*/
     $order->update(['supervisor_payment_status' => $supervisor_payment_status]);
-      //dd($request->file('walk_trough_attach'));
+    //dd($request->file('walk_trough_attach'));
     if ($request->hasFile('attachments')) {
       $files = $request->file('attachments');
       foreach ($files as $file) {
@@ -262,58 +254,55 @@ class UpdateOrder {
     }
     if ($request->hasFile('walk_trough_attach')) {
       $file = $request->file('walk_trough_attach');
-    
-        $fileName = time() . '_' . Str::replace(' ', '_', $file->getClientOriginalName());
-        $filePath = $file->storeAs('order_files', $fileName, 'public');
-        $order->attachments()->create([
-          'filename' => $file->getClientOriginalName(),
-          'file_path' => $filePath,
-          'file_type' => 'walk_trough_attach',
-          'user_id' => auth()->id(),
-        ]);
-      
+
+      $fileName = time() . '_' . Str::replace(' ', '_', $file->getClientOriginalName());
+      $filePath = $file->storeAs('order_files', $fileName, 'public');
+      $order->attachments()->create([
+        'filename' => $file->getClientOriginalName(),
+        'file_path' => $filePath,
+        'file_type' => 'walk_trough_attach',
+        'user_id' => auth()->id(),
+      ]);
     }
-   if($request->hasFile('pre_inspection_attach')){
+    if ($request->hasFile('pre_inspection_attach')) {
       $file = $request->file('pre_inspection_attach');
-    
-        $fileName = time() . '_' . Str::replace(' ', '_', $file->getClientOriginalName());
-        $filePath = $file->storeAs('order_files', $fileName, 'public');
-        $order->attachments()->create([
-          'filename' => $file->getClientOriginalName(),
-          'file_path' => $filePath,
-          'file_type' => 'pre_inspection_attach',
-          'user_id' => auth()->id(),
-        ]);
-      
+
+      $fileName = time() . '_' . Str::replace(' ', '_', $file->getClientOriginalName());
+      $filePath = $file->storeAs('order_files', $fileName, 'public');
+      $order->attachments()->create([
+        'filename' => $file->getClientOriginalName(),
+        'file_path' => $filePath,
+        'file_type' => 'pre_inspection_attach',
+        'user_id' => auth()->id(),
+      ]);
     }
 
-    if($request->hasFile('inspection_attach')){
+    if ($request->hasFile('inspection_attach')) {
       $file = $request->file('inspection_attach');
-    
-        $fileName = time() . '_' . Str::replace(' ', '_', $file->getClientOriginalName());
-        $filePath = $file->storeAs('order_files', $fileName, 'public');
-        $order->attachments()->create([
-          'filename' => $file->getClientOriginalName(),
-          'file_path' => $filePath,
-          'file_type' => 'inspection_attach',
-          'user_id' => auth()->id(),
-        ]);
-      
+
+      $fileName = time() . '_' . Str::replace(' ', '_', $file->getClientOriginalName());
+      $filePath = $file->storeAs('order_files', $fileName, 'public');
+      $order->attachments()->create([
+        'filename' => $file->getClientOriginalName(),
+        'file_path' => $filePath,
+        'file_type' => 'inspection_attach',
+        'user_id' => auth()->id(),
+      ]);
     }
 
-   
-    
+
+
     $sendEmail = $request->status != $statusOrder;
-      //dd($request->status);
-      //dd($order->status);
-      //dd( $request->status .' '. $order->status);
+    //dd($request->status);
+    //dd($order->status);
+    //dd( $request->status .' '. $order->status);
 
     if ($sendEmail) {
-      
+
       $order->orderStatus()->create([
         'status' => $request->status,
         'user_id' => auth()->user()->id,
-        'notes' => $request->status." created by " . auth()->user()->name,
+        'notes' => $request->status . " created by " . auth()->user()->name,
         'start_date' => $request->installation_date,
         'end_date' => $request->installation_end_date,
         'pickup_date' => $request->delivery_date,
@@ -323,30 +312,28 @@ class UpdateOrder {
         'service_date' => $request->service_date,
         'complete_date' => $request->complete_date,
       ]);
-     
+
       $this->sendEmail($order);
       //$this->whatsapp($order);
+    } else {
+      $orderStatus = $order->orderStatus()->where('status', $request->status)->first(); // Busca el registro relacionado
+
+      if ($orderStatus) {
+        // Actualiza el registro existente
+        $orderStatus->update([
+          //'status' => $request->status,
+          'user_id' => auth()->user()->id,
+          //'notes' => $request->status . " updated by " . auth()->user()->name,
+          'start_date' => $request->installation_date,
+          'end_date' => $request->installation_end_date,
+          'pickup_date' => $request->delivery_date,
+          'inspection_date' => $request->inspection_date,
+          'finish_date' => $request->finish_date,
+          'service_date' => $request->service_date,
+          'final_inspection_date' => $request->final_inspection_date,
+          'complete_date' => $request->complete_date,
+        ]);
+      }
     }
-    else{
-        $orderStatus = $order->orderStatus()->where('status', $request->status)->first();// Busca el registro relacionado
-
-          if ($orderStatus) {
-              // Actualiza el registro existente
-              $orderStatus->update([
-                  //'status' => $request->status,
-                  'user_id' => auth()->user()->id,
-                  //'notes' => $request->status . " updated by " . auth()->user()->name,
-                  'start_date' => $request->installation_date,
-                  'end_date' => $request->installation_end_date,
-                  'pickup_date' => $request->delivery_date,
-                  'inspection_date' => $request->inspection_date,
-                  'finish_date' => $request->finish_date,
-                  'service_date' => $request->service_date,
-                  'final_inspection_date' => $request->final_inspection_date,
-                  'complete_date' => $request->complete_date,
-              ]);
-          }
-        }
-
   }
 }
