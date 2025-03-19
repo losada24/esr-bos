@@ -92,14 +92,19 @@ trait OrderEmails {
         $users = array_merge($users, $serviceManager->pluck('email')->toArray());
         foreach ($users as $user) {
           // Mail::to($user)->send(new InstallationDateConfirmation($order, true, true, false,true));
-          $installationDateConfirmation = new InstallationDateConfirmation($order, true, true, false,true);
+          $installationDateConfirmation = new InstallationDateConfirmation($order, true, true, false, true);
           SendGmailEmail::dispatch($user, $installationDateConfirmation)->onQueue('emails');
         }
 
         $users = [];
-        $users = $order->installationTeams->pluck('user.email')->toArray();
+        //$installers = $order->loadMissing('installationTeams.user');
+        foreach ($order->installationTeams as $installationTeam) {
+          $users[] = $installationTeam->user->email;
+        }
+        //$users = $order->installationTeams->pluck('email')->toArray();
         $accountManager = User::role([RoleEnum::ACCOUNT_MANAGER->value])->get();
         $users = array_merge($users, $accountManager->pluck('email')->toArray());
+        //dd($users);
         foreach ($users as $user) {
           // Mail::to($user)->send(new InstallationDateConfirmation($order, true, true, true));
           $installationDateConfirmation = new InstallationDateConfirmation($order, true, true, true);
