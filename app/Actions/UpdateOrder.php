@@ -123,15 +123,19 @@ class UpdateOrder
           ]);
         }
       }
+      
 
       $order->installationTeams()->sync($request->installation_teams);
+     
       $order->owners()->sync($request->owners);
+     
 
       $installer = $order->installationTeams()->count();
+     
       $orderExtraFields = $order->paymentExtraFields()->count() ?? 0;
 
       //dd($installer, $orderExtraFields);
-      if ($installer > 0 && $orderExtraFields == 0) {
+      /* if ($installer > 0 && $orderExtraFields == 0) {
         foreach ($order->installationTeams as $team) {
           PaymentExtraField::create([
             'installation_team_id' => $team->user_id,
@@ -139,7 +143,7 @@ class UpdateOrder
             'order_id' => $order->id,
           ]);
         }
-      }
+      } */
 
 
       $order->orderProducts()->delete();
@@ -186,9 +190,8 @@ class UpdateOrder
           'end_date' => $request->installation_end_date,
           'pickup_date' => $request->delivery_date,
         ]);
-
-        //dd($order);
-
+        //dd($request->owners, $request->installation_teams,$order );
+     
         $this->sendEmail($order);
 
 
