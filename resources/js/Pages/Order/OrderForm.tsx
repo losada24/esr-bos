@@ -29,8 +29,9 @@ import SearchIcon from '@/Components/Icons/SearchIcon'
 import ProductModal from './ProductModal'
 import ProductTable from './ProductTable'
 import DeleteIcon from '@/Components/Icons/DeleteIcon'
-import { PAYMENT_METHODS, SERVICES } from '@/Utils/constants'
+import { PAYMENT_METHODS, SERVICES, STOREFRONT_CATEGORY } from '@/Utils/constants'
 import { capitalizeWords } from '@/Utils/string'
+import { getProductExtraWorkPrice, getProductPrice, getProductPriceWithExtraWorks } from '@/Utils/price'
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
 
@@ -158,7 +159,6 @@ const OrderForm = ({
     const response = await fetch(
       `/order/get_delivery_and_installation_date/${payment_factory_date}/${values.type_of_housing_id}/${travel_cost_id}/${values.service}/${cityPermits}`)
     const data = await response.json()
-    console.log(response)
 
     setFieldValue('eta_date', data.estimate_eta_date)
     setFieldValue('delivery_date', data.estimate_delivery_date)
@@ -404,7 +404,7 @@ const OrderForm = ({
                 autoComplete="off"
                 placeholder="ZIP Code"
               />
-              {submitCount && errors.job_zip && <InputError message={errors.job_zip} className="mt-2" />}
+              {(submitCount && errors.job_zip) ? <InputError message={errors.job_zip} className="mt-2" /> : ''}
             </div>
 
             <div className={submitCount ? (errors.owners) ? 'has-error' : 'has-success' : ''}>
@@ -486,6 +486,37 @@ const OrderForm = ({
                 onChange={(e: { target: { value: string } }) => {
                   const type_of_work_id = parseInt(e.target.value)
                   setFieldValue('type_of_work_id', type_of_work_id)
+
+                  // TODO: RECALCULATE PRICES
+                  //console.log(orderProducts)
+                  if (type_of_work_id !== 0 && orderProducts.length > 0) {
+                    const recalculateOrderProducts = orderProducts.map((orderProduct) => {
+                      const product = {
+                        ...orderProduct,
+                        type_of_work_id
+                      }
+
+                      const unit_price = getProductPrice(product, product_costs)
+                      const unit_price_with_extrawork = getProductPriceWithExtraWorks(product, product_costs)
+                      product.extra_work_price = getProductExtraWorkPrice(product) ?? 0
+                      product.unit_price = unit_price
+
+                      if (product.type_of_product_id !== STOREFRONT_CATEGORY) {
+                        product.total_price = unit_price * product.qty
+                      } else {
+                        product.total_price = unit_price
+                      }
+
+                      product.unit_price_with_extraworks = unit_price_with_extrawork
+                      product.total_price_with_extraworks = unit_price_with_extrawork + product.total_price
+
+                      return product
+                    })
+
+                    setOrderProducts(recalculateOrderProducts)
+                    setFieldValue('orderProducts', recalculateOrderProducts)
+                    // console.log(recalculateOrderProducts)
+                  }
                 }}
               >
                 <option value="0">Type of Work</option>
@@ -947,7 +978,7 @@ const OrderForm = ({
                   {(submitCount && errors.initial_payment_percentage) ? <InputError message={errors.initial_payment_percentage} className="mt-2" /> : ''}
                 </div> */}
               </>
-            )}
+           )}
             <div className='col-span-4'>
               <label htmlFor="notes">Notes</label>
               <Field

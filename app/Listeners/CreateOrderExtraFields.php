@@ -22,9 +22,11 @@ class CreateOrderExtraFields
     $status = $order->status;
     $wt = $order->walk_trough;
     $pi = $order->pre_inspection;
+   // \Log::info('Order: ' . $order);
 
     foreach ($order->installationTeams as $team) {
       if ($orderExtraFields == 0 && $status == OrderStatusEnum::EXECUTION->value) {
+       // \Log::info('Order: ' . $order);
         PaymentExtraField::create([
           'installation_team_id' => $team->user_id,
           'installer_payment_status' => 'OPEN',

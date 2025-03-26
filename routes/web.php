@@ -2,6 +2,7 @@
 
 use App\Enum\RoleEnum;
 use App\Http\Controllers\BiginController;
+use App\Http\Controllers\BiweeklyController;
 use App\Http\Controllers\ClientController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
@@ -10,6 +11,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\InstallationTeamController;
 use App\Http\Controllers\ReportController;
+use App\Models\Biweekly;
 use Barryvdh\DomPDF\Facade\Pdf;
 use SebastianBergmann\CodeCoverage\Report\Html\Dashboard;
 use App\Traits\TwilioWhatsAppMessage;
@@ -155,7 +157,11 @@ Route::middleware('auth')->group(function () {
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::INSTALLER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value] )
       ->name('report.show_installer');
 
-      Route::get('/report/show_biweekly/{id}', [ReportController::class, 'showBiweekly'])
+      Route::get('report/get-payment-list-installer/{id}/{biweekly}', [ReportController::class, 'getPaymentListInstaller'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::INSTALLER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value])
+      ->name('report.get-payment-list-installer');
+
+      /* Route::get('/report/show_biweekly/{id}', [ReportController::class, 'showBiweekly'])
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::INSTALLER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value] )
       ->name('report.show_biweekly');
 
@@ -173,7 +179,9 @@ Route::middleware('auth')->group(function () {
 
       Route::get('/report/edit_biweekly/{id}/{installation_team}', [ReportController::class, 'editBiweekly'])
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value])
-      ->name('report.edit_biweekly');
+      ->name('report.edit_biweekly'); */
+      Route::resource('biweekly', BiweeklyController::class)
+        ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value ]);
 
       Route::get('/report/edit_report_installer/{id}/{installation_team}', [ReportController::class, 'editReportInstaller'])
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value] )
@@ -187,9 +195,17 @@ Route::middleware('auth')->group(function () {
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value])
       ->name('report.update_installer_payment');
 
-      Route::get('/report/excel-installer/{id}', [ReportController::class, 'exportPaymentInstaller'])
+      Route::get('/report/excel-installer/{id}/{biweekly}', [ReportController::class, 'exportPaymentInstaller'])
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::INSTALLER->value] )
       ->name('report.excel-installer');
+
+      Route::get('/report/biweekly-payment/{id}/{biweekly}', [ReportController::class, 'biweeklyPayment'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::INSTALLER->value] )
+      ->name('report.payment');
+
+      Route::get('/report/send-payment-installer/{id}/{biweekly}', [ReportController::class, 'sendPaymentInstaller'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::INSTALLER->value] )
+      ->name('report.send-payment-installer');
 
       Route::get('/report/show_supervisor/{id}', [ReportController::class, 'showSupervisor'])
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::SUPERVISOR->value] )
@@ -199,13 +215,16 @@ Route::middleware('auth')->group(function () {
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::SUPERVISOR->value] )
       ->name('report.excel-supervisor');
   
-      /* Route::get('/email-test', function() {
+     /* Route::get('/email-test', function() {
         echo 'Start Email test <br/>';
           $order = App\Models\Order::with(['client', 'owners', 'supervisor', 'installationTeams.user'])->find(587);
-          $installationDateConfirmation = new App\Mail\InstallationDateConfirmation($order, true, true, false,true);
-          App\Jobs\SendGmailEmail::dispatch('katiuska28@gmail.com', $installationDateConfirmation)->onQueue('emails');
+          //$installationDateConfirmation = new App\Mail\InstallationDateConfirmation($order, true, true, false,true);
+          //App\Jobs\SendGmailEmail::dispatch('katiuska28@gmail.com', $installationDateConfirmation)->onQueue('emails');
+
+          $emailAccounting = new App\Mail\EmailAccounting($order);
+          App\Jobs\SendGmailEmail::dispatch('katiuska28@gmail.com', $emailAccounting)->onQueue('emails');
         echo 'End Email test <br/>';
-      })->name('email-test'); */
+      })->name('email-test');*/
 });
 
 require __DIR__.'/auth.php';

@@ -12,25 +12,19 @@ class Biweekly extends Model
 
   protected $table = 'biweeklys';
 
-          protected $fillable = [
-            'start_biweekly_period',
-            'end_biweekly_period',
-            'payment_method',
-            'installation_team_id',
-        ];
+  protected $fillable = [
+    'start_biweekly_period',
+    'end_biweekly_period'
+  ];
 
-        protected $dates = [
-            'start_biweekly_period',
-            'end_biweekly_period',
-        
-      ];
+  protected $dates = [
+    'start_biweekly_period',
+    'end_biweekly_period',
+  ];
 
-        public function installationTeam()
-        {
-            return $this->belongsTo(InstallationTeam::class);
-        }
-        public function installationPayments()
-        {
-            return $this->hasMany(InstallationPayment::class);
-        }
+
+  public function installationPayments()
+  {
+    return $this->hasMany(InstallationPayment::class);
+  }
 }

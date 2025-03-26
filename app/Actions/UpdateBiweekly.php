@@ -22,9 +22,8 @@ class UpdateBiweekly {
       $biweeklyData = [
         'start_biweekly_period' => $request->period[0],
         'end_biweekly_period' => $request->period[1],
-        'payment_method' => $request->payment_method,
-        'installation_team_id' => $request->installation_team_id,
       ];
+   
       $biweekly->update($biweeklyData);
     });
   }

@@ -261,7 +261,5 @@ export interface BiweeklyInstaller {
   id: number
   start_biweekly_period: Date | null
   end_biweekly_period: Date | null
-  payment_method: string
-  installation_team_id: number
   period: string[]
 }
