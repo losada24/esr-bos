@@ -24,8 +24,8 @@ class UpdateOrder
   public function handle(Request $request, Order $order)
   {
     // dd($request);
-    DB::transaction(function () use ($request, $order) {
-
+    DB::beginTransaction();
+    try {
       $client = Client::find($request->client_id);
       if ($client) {
         $client->update([
@@ -59,6 +59,8 @@ class UpdateOrder
       }
 
       $status = $request->status;
+      $type_of_work_id = $request->type_of_work_id;
+      
       //dd($status);
       $sendEmail = $status != $order->status;
       //dd($sendEmail,$status,$order->status);
@@ -123,19 +125,19 @@ class UpdateOrder
           ]);
         }
       }
-      
-
       $order->installationTeams()->sync($request->installation_teams);
+      $order->load('installationTeams');
      
       $order->owners()->sync($request->owners);
+      //dd($order->installationTeams()->first(), $order->owners()->first());
      
 
-      $installer = $order->installationTeams()->count();
+      /*$installer = $order->installationTeams()->count();
      
       $orderExtraFields = $order->paymentExtraFields()->count() ?? 0;
 
       //dd($installer, $orderExtraFields);
-      /* if ($installer > 0 && $orderExtraFields == 0) {
+       if ($installer > 0 && $orderExtraFields == 0) {
         foreach ($order->installationTeams as $team) {
           PaymentExtraField::create([
             'installation_team_id' => $team->user_id,
@@ -181,6 +183,7 @@ class UpdateOrder
         $orderProduct->orderProductExtraWorks()->attach($extraWorks);
       }
 
+      DB::commit();
       if ($sendEmail) {
         $order->orderStatus()->create([
           'status' => $status,
@@ -193,15 +196,12 @@ class UpdateOrder
         //dd($request->owners, $request->installation_teams,$order );
      
         $this->sendEmail($order);
-
-
-        //$this->whatsapp($order);
       }
 
-      if (!$order) {
-        throw new \Exception('Not not updated');
-      }
-    });
+    } catch (\Throwable $th) {
+       DB::rollback();
+        throw  $th;
+    }
   }
 
   public function partialUpdate(Request $request, Order $order)
@@ -296,10 +296,6 @@ class UpdateOrder
 
 
     $sendEmail = $request->status != $statusOrder;
-    //dd($request->status);
-    //dd($order->status);
-    //dd( $request->status .' '. $order->status);
-
     if ($sendEmail) {
 
       $order->orderStatus()->create([

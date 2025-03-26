@@ -288,11 +288,13 @@ const ProductModal = ({
                                   type='checkbox'
                                   checked={extraWork.checked}
                                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                                    const isChecked = e.target.checked
                                     setPlannedExtraWorksFormValues(plannedExtraWorksFormValues.map((extra) => {
                                       if (extra.extra_work_id === extraWork.extra_work_id) {
                                         return {
                                           ...extra,
-                                          checked: e.target.checked
+                                          checked: isChecked,
+                                          amount: isChecked && extra.amount <= 0 ? 1 : extra.amount
                                         }
                                       }
                                       return extra
@@ -312,11 +314,16 @@ const ProductModal = ({
                                 type='number'
                                 value={extraWork.amount}
                                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                                  const newAmount = parseInt(e.target.value)
                                   setPlannedExtraWorksFormValues(plannedExtraWorksFormValues.map((extra) => {
                                     if (extra.extra_work_id === extraWork.extra_work_id) {
+                                      if (extra.checked && newAmount <= 0) {
+                                        alert('Amount must be greater than zero when checked!')
+                                        return extra
+                                      }
                                       return {
                                         ...extra,
-                                        amount: parseInt(e.target.value)
+                                        amount: newAmount
                                       }
                                     }
                                     return extra

@@ -10,7 +10,6 @@ import CompanyIcon from '@/Components/Icons/CompanyIcon'
 import { isAdmin, isAccountManager, isFrontdesk, isOwner, isSupervisor, isServiceManager, isInstaller, isPaymentCoordinator } from '@/Utils/user'
 import { type Role, type Auth } from '@/types'
 import WindowsIcon from '@/Components/Icons/WindowsIcon'
-import ProfileIcon from '@/Components/Icons/ProfileIcon'
 
 const Sidebar = ({ auth }: { auth: Auth }) => {
   const [themeState, toggleSidebar] = useStore((state: ThemeState) => [
@@ -25,7 +24,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
   const IS_SUPERVISOR = isSupervisor(auth.user.roles.map((role: Role) => role.name))
   const IS_SERVICE_MANAGER = isServiceManager(auth.user.roles.map((role: Role) => role.name))
   const IS_INSTALLER = isInstaller(auth.user.roles.map((role: Role) => role.name))
-  const IS_PAYMENT_COORDINATOR= isPaymentCoordinator(auth.user.roles.map((role: Role) => role.name))
+  const IS_PAYMENT_COORDINATOR = isPaymentCoordinator(auth.user.roles.map((role: Role) => role.name))
 
   return (
         <div className={`${themeState.semidark ? 'dark' : ''}`}>
@@ -106,7 +105,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                 </svg>
                                 <span>Actions</span>
                             </h2>
-                            {(IS_ADMIN || IS_ACCOUNT_MANAGER) && (
+                            {(IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER) && (
                               <>
                                 <li className="menu nav-item">
                                     <NavLink href={route('order.index')} active={route().current('order.index')} className="group">
@@ -157,6 +156,14 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                         <div className="flex items-center">
                                             <ReferralIcon/>
                                             <SidebarLinkLabel>Installers</SidebarLinkLabel>
+                                        </div>
+                                    </NavLink>
+                                </li>
+                                <li className="menu nav-item">
+                                    <NavLink href={route('biweekly.index')} active={route().current('biweekly.index')} className="group">
+                                        <div className="flex items-center">
+                                            <ReferralIcon/>
+                                            <SidebarLinkLabel>Biweekly</SidebarLinkLabel>
                                         </div>
                                     </NavLink>
                                 </li>

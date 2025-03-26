@@ -1,3 +1,64 @@
+<style>
+    /* Centrar la tabla en la página */
+    .table-container {
+        display: flex;
+        justify-content: center;
+        padding: 20px;
+    }
+
+    /* Agregar scroll horizontal y vertical */
+    .table-wrapper {
+        overflow-x: auto;
+        overflow-y: auto;
+        max-height: 400px;
+    }
+
+    /* Estilo general de la tabla */
+    table {
+        width: 100%;
+        max-width: 1200px; /* Puedes ajustar este valor si necesitas más ancho */
+        border-collapse: collapse;
+        font-family: Arial, sans-serif;
+        font-size: 12px;
+    }
+
+    /* Bordes y alineación de celdas */
+    th, td {
+        border: 1px solid #000;
+        padding: 8px;
+        text-align: center;
+        vertical-align: middle;
+    }
+
+    /* Encabezados */
+    th {
+        background-color: #f0f0f0;
+        font-weight: bold;
+    }
+
+    /* Alternar colores de filas */
+    tbody tr:nth-child(even) {
+        background-color: #f9f9f9;
+    }
+
+    /* Total en negrita */
+    tfoot td {
+        font-weight: bold;
+        background-color: #e0e0e0;
+    }
+
+    /* Títulos principales */
+    .header-info {
+        font-weight: bold;
+        font-size: 16px;
+        text-align: left;
+        background-color: #dcdcdc;
+        padding: 10px;
+    }
+
+</style>
+<div class="table-container">
+<div class="table-wrapper">
 <table>
     <thead>
       <tr>
@@ -8,8 +69,9 @@
             Company Name : {{$company}}
         </td>
          <td colspan="4" style="font-weight: bold; font-size: 16px; text-align: left; background-color: #f0f0f0;" >
-        Biweekly : {{$biweekly}}
+            Biweekly : {{$biweeklyTitle}}
         </td>
+        <td colspan="8" style="font-weight: bold; font-size: 16px; text-align: left; background-color: #f0f0f0;"></td>
       
     </tr>
     
@@ -54,28 +116,40 @@
         @endphp
       @foreach($orders as $order)
         @php
-              
-            if($order['installation_payments']->count()>=1){
-            $percentegePayment = (int)$order['installation_payments'][$order['installation_payments']->count() - 1]['percentage_payment'];
-            $installerPayment = 0;
-            
-            $pendingPaymentAmount = (float) $order['pending_payment_amount'];
-            $totalPaymentAmount = (float)$order['total_payment_amount'];
-              
-            $totalExtraWork += (int)$order['installation_payments'][$order['installation_payments']->count() - 1]['extra_work'];
-            $otherCostInstaller += (int)$order['installation_payments'][$order['installation_payments']->count() - 1]['other_cost_installer'];
-            $totalExtraDiscount += (int)$order['installation_payments'][$order['installation_payments']->count() - 1]['extra_discount'];
-            $grandTotalPayment += $totalPaymentAmount;
-            }
-        @endphp
-          
-            
-        @if ($order['installation_payments']->count()>=1)
+              // Acumular valores para las sumas totales
+              // $totalProjectAmount += $order['project_amount'];
+              // $totalCommissions += $order['supervisor_commissions'];
+             // dd($order);
+              $percentegePayment = (int)$order['installation_payments'][$order['installation_payments']->count() - 1]['percentage_payment'];
+              $installerPayment = 0;
+              foreach ($order['installation_payments'] as $installation_payments) {
+                // dd($installation_payments);
+                  $installerPayment += $installation_payments['installer_payment'];
+                /*foreach ($installation_payments as $payment) {
+                }*/
+              }
+              //$installerPayment = $payments->where('order_id', $payment['order_id'])->where('id', '<=', $payment['id'])->sum('installer_payment');
+              $pendingPaymentAmount = (float) $order['amount'] - (float) $installerPayment;
+              //$totalPendingPaymentAmount +=  $payment['installer_payment'];
+              $totalPaymentAmount = (int)$order['installation_payments'][$order['installation_payments']->count() - 1]['installer_payment'] + (int)$order['installation_payments'][$order['installation_payments']->count() - 1]['extra_work'] - (int)$order['installation_payments'][$order['installation_payments']->count() - 1]['extra_discount'] - (int)$order['installation_payments'][$order['installation_payments']->count() - 1]['other_cost_installer'];
+               
+              $totalExtraWork += (int)$order['installation_payments'][$order['installation_payments']->count() - 1]['extra_work'];
+              $otherCostInstaller += (int)$order['installation_payments'][$order['installation_payments']->count() - 1]['other_cost_installer'];
+              $totalExtraDiscount += (int)$order['installation_payments'][$order['installation_payments']->count() - 1]['extra_discount'];
+              $grandTotalPayment += $totalPaymentAmount;
+              //dd($pendingPaymentAmount);
+          @endphp
         <tr>
             <td width='20' height='25' text-align='left' valign='middle'>{{ $order['installation_date'] }}</td>
             <td width='20' height='25' text-align='center' valign='middle'>{{$order['inspection_installation_date'] }}</td>
             <td width='20' height='25' text-align='center' valign='middle'>{{$order['final_installation_date'] }}</td>
-            <td width='50' height='25' text-align='left' valign='middle'>{{ $order['name'] }}</td>
+            <td width='50' height='25' text-align='left' valign='middle' 
+              @if(number_format($order['installation_payments'][$order['installation_payments']->count() - 1]['percentage_payment'], 2, '.', ',') === '0.00')
+                  style="background-color: #FFFF00;"
+              @endif
+          >
+              {{ $order['name'] }}
+          </td>
             <td width='20' height='25' text-align='left' valign='middle'>
               @foreach ($order['owners'] as $owner)
                 {{ $owner['name'] }} <br/>
@@ -108,9 +182,7 @@
             <td width='20' height='25' text-align='center' valign='middle'>{{ $order['payment_extra_fields']['installer_payment_status'] ?? '' }}</td>
            
         </tr>
-        @endif
       @endforeach
-    
     @php
       //dd($pendingPaymentAmount);
     @endphp
@@ -127,7 +199,9 @@
             <td width='20' height='25' text-align='center' valign='middle' style="font-weight: bold;">{{ '$' . number_format($otherCostInstaller, 2, '.', ',') }}</td>
             <td width='20' height='25' text-align='center' valign='middle' style="font-weight: bold;">{{ '$' . number_format($grandTotalPayment, 2, '.', ',') }}</td>
             
-            <td colspan="2"></td>
+            <td colspan="4"></td>
         </tr>
     </tfoot>
 </table>
+</div>
+</div>

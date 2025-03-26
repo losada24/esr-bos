@@ -1,39 +1,25 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
 import { Head, router } from '@inertiajs/react'
 import { Formik, type FormikHelpers } from 'formik'
-import { orderSchema } from './ReportInstallerCommon'
 import {
   type PageProps,
   type BiweeklyInstaller
 } from '@/types'
 import ReportBiweeklyForm from './ReportBiweeklyForm'
 
-export default function EditBiweekly ({
-  auth,
-  biweekly,
-  installation_team_id,
-  method_payment,
-  period
-}: PageProps & {
-  biweekly: BiweeklyInstaller
-  installation_team_id: number
-  method_payment: string []
-  period: string []
-}) {
+export default function Create ({
+  auth
+}: PageProps) {
   const initialValues: BiweeklyInstaller = {
-    id: biweekly.id ?? 0,
-    installation_team_id,
-    start_biweekly_period: biweekly.start_biweekly_period ?? null,
-    end_biweekly_period: biweekly.end_biweekly_period ?? null,
-    payment_method: biweekly.payment_method ?? '',
-    period: period ?? ['', '']
+    id: 0,
+    start_biweekly_period: null,
+    end_biweekly_period: null,
+    period: ['', '']
   }
-
   // console.log(initialValues)
 
   const handleSubmit = async (values: any, helpers: FormikHelpers<BiweeklyInstaller>) => {
-    // console.log(values)
-    router.post(route('report.update_biweekly', values), {
+    router.post(route('biweekly.store', values), {
       _method: 'POST'
     }, {
       forceFormData: true,
@@ -46,12 +32,12 @@ export default function EditBiweekly ({
   return (
       <AuthenticatedLayout
           auth={auth}
-          pageTitle="Installer Report Update"
+          pageTitle="Create Biweekly"
       >
-          <Head title="Update Order" />
+          <Head title="Create Biweekly" />
           <Formik<BiweeklyInstaller>
             initialValues={initialValues}
-            validationSchema={orderSchema}
+            // validationSchema={orderSchema}
             onSubmit={handleSubmit}
           >
             {({ errors, submitCount, setFieldValue, values }) => (
@@ -59,8 +45,6 @@ export default function EditBiweekly ({
                 errors={errors}
                 submitCount={submitCount}
                 isCreate={false}
-                installerId={ installation_team_id ?? 0 }
-                method_payment={method_payment}
                 setFieldValue={setFieldValue}
                 values={values}
               />

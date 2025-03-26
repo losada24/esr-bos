@@ -17,7 +17,7 @@ class Kernel extends ConsoleKernel
         ChangeOrdersToExecutionStatus::class,
     ];
 
-    /**
+    /**  
      * Define the application's command schedule.
      */
     protected function schedule(Schedule $schedule): void

@@ -121,6 +121,7 @@ export default function Edit ({
 
     if (!Object.prototype.hasOwnProperty.call(order, 'orderProducts')) {
       order.orderProducts = values.order_products.map((orderProduct: any) => {
+        console.log(orderProduct)
         return getOrderProducts(orderProduct)
       })
     }

@@ -18,7 +18,7 @@ type IndexUserProps = PageProps & {
   }
 }
 
-export default function Installer ({ auth, installation_teams }: IndexUserProps) {
+export default function Installer ({ auth, installation_teams,  }: IndexUserProps) {
   // const IS_ADMIN = isAdmin(auth.user.roles.map((role: Role) => role.name))
   const destroy = (id: number) => {
     if (confirm('Are you sure you want to delete this User?')) {
@@ -45,7 +45,7 @@ export default function Installer ({ auth, installation_teams }: IndexUserProps)
               </tr>
             </thead>
             <tbody>
-            {installation_teams.data.map((installation_team) =>{
+            {installation_teams.data.map((installation_team) => {
               return (
                   <tr
                   key={installation_team.id}
@@ -66,13 +66,6 @@ export default function Installer ({ auth, installation_teams }: IndexUserProps)
                           title='View Orders'
                         >
                           <EyeIcon/>
-                        </Link>
-
-                        <Link
-                          href={route('report.show_biweekly', installation_team.user?.id)}
-                          title='Add Biweeklies'
-                        >
-                          <PlusIcon/>
                         </Link>
                     </td>
                   </tr>

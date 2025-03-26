@@ -39,6 +39,7 @@ class ChangeOrdersToExecutionStatus extends Command
       foreach ($orders as $order) {
           $order->status = OrderStatusEnum::EXECUTION->value;
           $order->save();
+          $order->touch();
 
           $order->orderStatus()->create([
             'status' => $order->status,

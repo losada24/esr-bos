@@ -14,6 +14,7 @@ use App\Mail\InstallationDateConfirmation;
 use App\Mail\InstallationDateConfirmationClient;
 use App\Models\Order;
 use App\Models\User;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
 trait OrderEmails {
@@ -97,6 +98,7 @@ trait OrderEmails {
         }
 
         $users = [];
+       
         //$installers = $order->loadMissing('installationTeams.user');
         foreach ($order->installationTeams as $installationTeam) {
           $users[] = $installationTeam->user->email;
@@ -104,7 +106,6 @@ trait OrderEmails {
         //$users = $order->installationTeams->pluck('email')->toArray();
         $accountManager = User::role([RoleEnum::ACCOUNT_MANAGER->value])->get();
         $users = array_merge($users, $accountManager->pluck('email')->toArray());
-        //dd($users);
         foreach ($users as $user) {
           // Mail::to($user)->send(new InstallationDateConfirmation($order, true, true, true));
           $installationDateConfirmation = new InstallationDateConfirmation($order, true, true, true);

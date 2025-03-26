@@ -1,60 +1,50 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
 import { Head, Link } from '@inertiajs/react'
-import { type Role, type InstallationTeam, type PageProps, type User, type PaymentExtraFields, type InstallationPayment } from '@/types'
-import { formatPrice } from '@/Utils/price'
-import Flatpickr from 'react-flatpickr'
+import { type PageProps, type PaginatorLink } from '@/types'
 import 'flatpickr/dist/flatpickr.css'
-import { isAccountManager, isAdmin, isSupervisor } from '@/Utils/user'
-import { useState } from 'react'
-import ShowInstallerFilter from './ShowInstallerFilter'
-import Supervisor from './Supervisor'
 import EditIcon from '@/Components/Icons/EditIcon'
-import DeleteIcon from '@/Components/Icons/DeleteIcon'
-import ExportIcon from '@/Components/Icons/ExportIcon'
+import Pagination from '@/Components/Pagination'
 
 interface BiweeklyInstaller {
   id: number
   start_biweekly_period: string
   end_biweekly_period: string
-  payment_method: string
-
 }
 
 type IndexUserProps = PageProps & {
-  biweeklys: BiweeklyInstaller[]
-  installer: User
-  statuses: string[]
+  biweeklies: {
+    data: BiweeklyInstaller[]
+    links: PaginatorLink[]
+  }
 }
 
-export default function ShowBiweekly ({ auth, installer, biweeklys, statuses }: IndexUserProps) {
-  // console.log(biweeklys)
+export default function Index ({ auth, biweeklies }: IndexUserProps) {
   // console.log(orders)
   return (
       <AuthenticatedLayout
           auth={auth}
-          pageTitle={`Biweekly periods of installer ${installer.name}`}
+          pageTitle={'Biweekly periods'}
           actions={
             <Link
               className="btn btn-primary"
-              href={route('report.create_biweekly', { installation_team: installer.id })}
+              href={route('biweekly.create')}
             >
               <span>Create Biweekly</span>
             </Link>
           }
       >
-        <Head title={`Biweekly periods of installer ${installer.name}`} />
+        <Head title={'Biweekly periods'} />
             <div className='table-responsive'>
           <table className="table-auto w-full">
             <thead>
               <tr className="font-bold text-left">
-              <th className="px-6 pt-5 pb-4">Start Biweekly Date</th>
+              <th className="px-6 pt-5 pb-4">Biweekly Periods</th>
               <th className="px-6 pt-5 pb-4">Year</th>
-              <th className="px-6 pt-5 pb-4">Payment Method</th>
               <th className="px-6 pt-5 pb-4 w-14">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {biweeklys.map((biweekly: BiweeklyInstaller, index) => {
+              {biweeklies.data.map((biweekly: BiweeklyInstaller, index) => {
                 const start_biweekly_period = new Date(biweekly.start_biweekly_period).toLocaleDateString('en-US', {
                   timeZone: 'UTC', // ✅ Corrige el desfase
                   day: '2-digit',
@@ -74,25 +64,19 @@ export default function ShowBiweekly ({ auth, installer, biweeklys, statuses }: 
                     <td className="px-6 py-4 border-t ">
                     {year}
                     </td>
-                    <td className="px-6 py-4 border-t ">
-                      {biweekly.payment_method}
-                    </td>
                     <td className="border-t flex items-center px-6 py-4">
                       <Link
-                        href={route('report.edit_biweekly', { id: biweekly.id, installation_team: installer.id })}
+                        href={route('biweekly.edit', { id: biweekly.id })}
                         title='Edit Biweekly'
                          className='mr-2'
                       >
                         <EditIcon />
                       </Link>
-                      <a href={route('report.excel-installer', biweekly.id)} target='_blank' rel="noreferrer" title='Download Payment Report'>
-                          <ExportIcon/>
-                        </a>
                     </td>
                   </tr>
                 )
               })}
-              {biweeklys.length === 0 && (
+              {biweeklies.data.length === 0 && (
                 <tr>
                   <td className="px-6 py-4 border-t" colSpan={3}>
                     No Biweeklies found.
@@ -103,6 +87,7 @@ export default function ShowBiweekly ({ auth, installer, biweeklys, statuses }: 
             <tfoot>
             </tfoot>
           </table>
+          <Pagination links={biweeklies.links} />
         </div>
       </AuthenticatedLayout>
   )

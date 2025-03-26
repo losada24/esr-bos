@@ -1,6 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
 import { Head, Link } from '@inertiajs/react'
-import { type Role, type InstallationTeam, type PageProps, type User, type PaymentExtraFields, type InstallationPayment } from '@/types'
+import { type Role, type InstallationTeam, type PageProps, type User, type PaymentExtraFields, type InstallationPayment, type BiweeklyInstaller } from '@/types'
 import { formatPrice } from '@/Utils/price'
 import Flatpickr from 'react-flatpickr'
 import 'flatpickr/dist/flatpickr.css'
@@ -11,7 +11,9 @@ import Supervisor from './Supervisor'
 import EditIcon from '@/Components/Icons/EditIcon'
 import DeleteIcon from '@/Components/Icons/DeleteIcon'
 import { Console } from 'console'
-import { Select } from '@mobiscroll/react'
+import Select from 'react-select'
+import Index from '../Biweekly/Index'
+import { setDefaultResultOrder } from 'dns'
 
 interface OrderInstaller {
   id: number
@@ -50,13 +52,11 @@ type IndexUserProps = PageProps & {
   // installation_teams: InstallationTeam[]
   statuses: string[]
   orderStatuses: string[]
+  biweeklys: BiweeklyInstaller[]
 }
 
-export default function ShowInstaller ({ auth, orders, installer, companyName, statuses, orderStatuses }: IndexUserProps) {
-  // console.log(supervisor.id)
-  // console.log(orders)
-  // const totalProjectAmount = orders.reduce((sum, order) => sum + Number(order.project_amount), 0)
-  // const totalCommissions = orders.reduce((sum, order) => sum + Number(order.supervisor_commissions), 0)
+export default function ShowInstaller ({ auth, orders, installer, companyName, statuses, orderStatuses, biweeklys }: IndexUserProps) {
+  const [selectedBiweekly, setSelectedBiweekly] = useState(0)
   const grandTotal = orders.reduce((sum, order) => {
     const hasPayments = order.installation_payments && order.installation_payments.length > 0
     if (!hasPayments) return sum
@@ -77,32 +77,51 @@ export default function ShowInstaller ({ auth, orders, installer, companyName, s
           pageTitle={`Project installed by ${companyName} Company and
           Installer Name: ${installer.name}`}
           actions={
-            <div>
-            <button
-              className="btn btn-primary"
-              onClick={() => {
-                window.open(route('report.excel-installer', { id: installer.id }))
-              }}
-            >
-              <span>Export</span>
-            </button>
+            <div className='flex flex-row gap-2 items-right justify-end'>
+              <Link
+                className="btn btn-primary"
+                href={route('report.payment', { id: installer.id, biweekly: selectedBiweekly })}
+              >
+                <span>Biweekly Payment</span>
+              </Link>
+              <button
+                className="btn btn-primary"
+                onClick={() => window.open(route('report.get-payment-list-installer', { id: installer.id, biweekly: selectedBiweekly }), '_blank')}
+              >
+                <span>View PDF</span>
+              </button>
+              <button
+                  className="btn btn-primary"
+                  onClick={() => {
+                    if (selectedBiweekly !== 0) {
+                      const UsedBieekly = biweeklys.find((biweekly) => biweekly.id === selectedBiweekly)
+                      window.open(route('report.excel-installer', { id: installer.id, biweekly: UsedBieekly }))
+                    } else {
+                      alert('Please select a biweekly period')
+                    }
+                  }}
+                >
+                <span>Export</span>
+              </button>
+              <Link
+                className="btn btn-primary"
+                href={route('report.send-payment-installer', { id: installer.id, biweekly: selectedBiweekly })}
+              >
+                <span>Send Email</span>
+              </Link>
+              <Select
+                id='id'
+                name='biweekly_id'
+                onChange={(value) => { setSelectedBiweekly(value ? value.value : 0) }}
+                options={biweeklys.map((biweekly) => {
+                  return {
+                    label: `${biweekly.start_biweekly_period ? new Date(biweekly.start_biweekly_period).toLocaleDateString('en-US', { timeZone: 'UTC', month: 'long', day: 'numeric' }) : 'Unknown'} to ${biweekly.end_biweekly_period ? new Date(biweekly.end_biweekly_period).toLocaleDateString('en-US', { timeZone: 'UTC', month: 'long', day: 'numeric' }) : 'Unknown'}`,
+                    value: biweekly.id
+                  }
+                })}
+              />
 
-           {/* <label htmlFor="biweekly_id">Biweekly</label>
-            <Select
-              id='biweekly_id'
-              placeholder="Biweekly"
-              name='biweekly_id'
-              value={values.biweekly_id ? { value: values.biweekly_id, label: getBiweeklyLabel(values.biweekly_id) } : null}
-              onChange={(value) => { setFieldValue('biweekly_id', value?.value) }}
-              options={biweeklys.map((biweekly) => {
-                return {
-                  label: `${biweekly.start_biweekly_period ? new Date(biweekly.start_biweekly_period).toLocaleDateString('en-US', { timeZone: 'UTC', month: 'long', day: 'numeric' }) : 'Unknown'} to ${biweekly.end_biweekly_period ? new Date(biweekly.end_biweekly_period).toLocaleDateString('en-US', { timeZone: 'UTC', month: 'long', day: 'numeric' }) : 'Unknown'}`,
-                  value: biweekly.id
-                }
-              })}
-            /> */}
-
-          </div>
+            </div>
           }
       >
         <Head title={`Project installed by ${companyName}`} />
@@ -159,7 +178,7 @@ export default function ShowInstaller ({ auth, orders, installer, companyName, s
                     : 0
                   return Number(order.amount) - totalInstallerPayment
                 }
-                     console.log(getPendingAmount())
+
                 return (
                   <tr key={order.id}>
                      <td className="px-6 py-4 border-t">
