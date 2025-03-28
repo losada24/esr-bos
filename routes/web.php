@@ -74,7 +74,7 @@ Route::middleware('auth')->group(function () {
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value ]);
     
     Route::resource('order', OrderController::class)
-      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value ]);
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value .'|'. RoleEnum::SERVICE_MANAGER->value]);
 
     Route::get('order/get_delivery_and_installation_date/{payment_factory_date}/{type_of_housing}/{county_id}/{service}/{hasPermit}', [OrderController::class, 'getDeliveryAndInstallationDate'])
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value]);
@@ -146,7 +146,7 @@ Route::middleware('auth')->group(function () {
       ->name('dashboard.whatsapp');
 
       Route::get('/report/supervisor', [ReportController::class, 'supervisor'])
-      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::SUPERVISOR->value] )
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::SUPERVISOR->value .'|'. RoleEnum::SERVICE_MANAGER->value] )
       ->name('report.supervisor');
 
       Route::get('/report/installer', [ReportController::class, 'installer'])
@@ -154,7 +154,7 @@ Route::middleware('auth')->group(function () {
       ->name('report.installer');
 
       Route::get('/report/show_installer/{id}', [ReportController::class, 'showInstaller'])
-      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::INSTALLER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value] )
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::INSTALLER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value .'|'. RoleEnum::SERVICE_MANAGER->value] )
       ->name('report.show_installer');
 
       Route::get('report/get-payment-list-installer/{id}/{biweekly}', [ReportController::class, 'getPaymentListInstaller'])
@@ -208,7 +208,7 @@ Route::middleware('auth')->group(function () {
       ->name('report.send-payment-installer');
 
       Route::get('/report/show_supervisor/{id}', [ReportController::class, 'showSupervisor'])
-      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::SUPERVISOR->value] )
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::SUPERVISOR->value .'|'. RoleEnum::SERVICE_MANAGER->value] )
       ->name('report.show_supervisor');
 
       Route::get('/report/excel-supervisor/{user}', [ReportController::class, 'export'])
