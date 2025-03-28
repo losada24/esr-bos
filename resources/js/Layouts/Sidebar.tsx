@@ -136,7 +136,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                 </svg>
                                 <span>Reports</span>
                             </h2>
-                            {(IS_ADMIN || IS_ACCOUNT_MANAGER) && (
+                            {(IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER) && (
                               <>
                                 <li className="menu nav-item">
                                     <NavLink href={route('report.supervisor')} active={route().current('report.supervisor')} className="group">

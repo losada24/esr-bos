@@ -81,6 +81,11 @@ export default function ShowInstaller ({ auth, orders, installer, companyName, s
               <Link
                 className="btn btn-primary"
                 href={route('report.payment', { id: installer.id, biweekly: selectedBiweekly })}
+                onClick={(e) => {
+                  if (!window.confirm('¿Estás seguro de que deseas continuar?')) {
+                    e.preventDefault() // Evita la navegación si el usuario cancela
+                  }
+                }}
               >
                 <span>Biweekly Payment</span>
               </Link>
