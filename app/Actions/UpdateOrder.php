@@ -215,6 +215,7 @@ class UpdateOrder
       $supervisor_payment_status = $order->supervisor_payment_status;
     }
     $order->installationTeams()->sync($request->installation_teams);
+    $order->load('installationTeams');
 
 
     $installer = $order->installationTeams()->count();
