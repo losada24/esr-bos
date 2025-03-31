@@ -16,6 +16,7 @@ use App\Exports\SupervisorExport;
 use App\Http\Requests\StoreInstallerPaymentRequest;
 use App\Http\Resources\InstallationTeamCollection;
 use App\Jobs\SendGmailEmail;
+use App\Mail\InstallationPaidEmail;
 use App\Mail\InstallationPayment as MailInstallationPayment;
 use App\Mail\InstallationPaymentEmail;
 use App\Models\Biweekly;
@@ -47,9 +48,11 @@ class ReportController extends Controller
 {
   use \App\Traits\Reports; //Todo: remove this to a trait
 
+  
+
 
   public function supervisor(Request $request)
-  {
+  { 
     return Inertia::render('Report/Supervisor', [
       'users' => User::whereHas('roles', function ($query) {
         $query->where('name', 'supervisor'); // Cambia 'name' si usas otro campo para el nombre del rol
@@ -140,7 +143,10 @@ class ReportController extends Controller
 
     $name = request()->get('name');
     $paymentDate = request()->get('payment_date');
-    $biweeklys = Biweekly::get();
+    //$biweeklys = Biweekly::get();
+    $biweeklys = Biweekly::whereDoesntHave('installationPayments', function ($query) use ($id) {
+      $query->where('installation_team_id', $id);
+  })->get();
 
 
     $companyName = InstallationTeam::where('user_id', $id)->value('company_name');
@@ -385,19 +391,46 @@ class ReportController extends Controller
     
   }
   public function sendPaymentInstaller($id,$biweekly)
-    {  $orders = $this->getOrdersByInstaller($id, $status=null , $startDate=null, $endDate=null, $orderStatu=null);
+{  
+        if (!Biweekly::where('id', $biweekly)->exists()) {
+          return redirect()->back()->with('error', 'The biweekly period does not exist.');
+        }
+  
+      $orders = $this->getOrdersByInstaller($id, $status=null , $startDate=null, $endDate=null, $orderStatu=null);
         //dd($orders);
+        $variable = env('ADMIN_EMAILS_PAYMENT');
+        $adminEmails = explode(',', $variable); // Convierte la cadena en array
         $user = User::find($id);
-        $users[] = $user->email;
-       
-        //dd($users);
+        $users = array_merge([$user->email], $adminEmails); // Une los correos en un solo array
         $installerName = $orders->first()['installer'] ?? '';
             //$companyName = $payments->first()['company_name'] ?? '';
         $companyName = $orders->first()['company_name'] ?? '';
         $biweekly = Biweekly::find((int)$biweekly);
         $biweeklyTitle = Carbon::parse($biweekly->start_biweekly_period)->locale('en')->isoFormat('MMMM D') . ' to ' . Carbon::parse($biweekly->end_biweekly_period)->locale('en')->isoFormat('MMMM D');
         $installationPaymentEmail = new InstallationPaymentEmail($orders, $installerName, $companyName, $biweeklyTitle);
-        SendGmailEmail::dispatch('katiuska28@gmail.com', $installationPaymentEmail)->onQueue('emails');
+        SendGmailEmail::dispatch( $users, $installationPaymentEmail)->onQueue('emails');
         return redirect()->back()->with('success', 'The email was successfully sent to the installer.');
     } 
+
+    public function sendPaidInstaller($id,$biweekly)
+    {  
+            if (!Biweekly::where('id', $biweekly)->exists()) {
+              return redirect()->back()->with('error', 'The biweekly period does not exist.');
+            }
+      
+          $orders = $this->getOrdersByInstaller($id, $status=null , $startDate=null, $endDate=null, $orderStatu=null);
+            //dd($orders);
+            $variable = env('ADMIN_EMAILS_PAYMENT');
+            $adminEmails = explode(',', $variable); // Convierte la cadena en array
+            $user = User::find($id);
+            $users = array_merge([$user->email], $adminEmails); // Une los correos en un solo array
+            $installerName = $orders->first()['installer'] ?? '';
+                //$companyName = $payments->first()['company_name'] ?? '';
+            $companyName = $orders->first()['company_name'] ?? '';
+            $biweekly = Biweekly::find((int)$biweekly);
+            $biweeklyTitle = Carbon::parse($biweekly->start_biweekly_period)->locale('en')->isoFormat('MMMM D') . ' to ' . Carbon::parse($biweekly->end_biweekly_period)->locale('en')->isoFormat('MMMM D');
+            $installationPaymentEmail = new InstallationPaidEmail($orders, $installerName, $companyName, $biweeklyTitle);
+            SendGmailEmail::dispatch( $users, $installationPaymentEmail)->onQueue('emails');
+            return redirect()->back()->with('success', 'The email was successfully sent to the installer.');
+        } 
 }

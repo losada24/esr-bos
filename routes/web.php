@@ -196,16 +196,20 @@ Route::middleware('auth')->group(function () {
       ->name('report.update_installer_payment');
 
       Route::get('/report/excel-installer/{id}/{biweekly}', [ReportController::class, 'exportPaymentInstaller'])
-      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::INSTALLER->value] )
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::INSTALLER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value] )
       ->name('report.excel-installer');
 
       Route::get('/report/biweekly-payment/{id}/{biweekly}', [ReportController::class, 'biweeklyPayment'])
-      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::INSTALLER->value] )
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::INSTALLER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value] )
       ->name('report.payment');
 
       Route::get('/report/send-payment-installer/{id}/{biweekly}', [ReportController::class, 'sendPaymentInstaller'])
-      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::INSTALLER->value] )
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::INSTALLER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value] )
       ->name('report.send-payment-installer');
+
+      Route::get('/report/send-paid-installer/{id}/{biweekly}', [ReportController::class, 'sendPaidInstaller'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::INSTALLER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value] )
+      ->name('report.send-paid-installer');
 
       Route::get('/report/show_supervisor/{id}', [ReportController::class, 'showSupervisor'])
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::SUPERVISOR->value .'|'. RoleEnum::SERVICE_MANAGER->value] )
