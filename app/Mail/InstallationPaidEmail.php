@@ -14,7 +14,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Collection;
 
-class InstallationPaymentEmail extends Mailable implements ShouldQueue
+class InstallationPaidEmail extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
@@ -33,11 +33,11 @@ class InstallationPaymentEmail extends Mailable implements ShouldQueue
      * Get the message envelope.
      */
     public function envelope(): Envelope
-    {
+    { 
       $appName = config('app.name');
       $biweekly= $this->biweeklyTitle;
         return new Envelope(
-          subject: "Biweekly payment proposal [$biweekly]",
+          subject: "Biweekly Payment [$biweekly]",
         );
     }
 
@@ -47,7 +47,7 @@ class InstallationPaymentEmail extends Mailable implements ShouldQueue
     public function content(): Content
     {
         return new Content(
-            view: 'emails.installation-payment',
+            view: 'emails.installation-paid',
             with: [
               'order' => $this->orders,
             ]

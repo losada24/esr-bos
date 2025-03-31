@@ -25,6 +25,6 @@ class Biweekly extends Model
 
   public function installationPayments()
   {
-    return $this->hasMany(InstallationPayment::class);
+    return $this->hasMany(InstallationPayment::class , 'biweekly_id', 'id');
   }
 }

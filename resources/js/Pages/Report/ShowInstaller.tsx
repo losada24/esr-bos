@@ -57,6 +57,14 @@ type IndexUserProps = PageProps & {
 
 export default function ShowInstaller ({ auth, orders, installer, companyName, statuses, orderStatuses, biweeklys }: IndexUserProps) {
   const [selectedBiweekly, setSelectedBiweekly] = useState(0)
+  const [selectedRows, setSelectedRows] = useState<number[]>([]) // Estado para almacenar las filas seleccionadas
+  const handleCheckboxChange = (orderId: number) => {
+    setSelectedRows((prevSelected) =>
+      prevSelected.includes(orderId)
+        ? prevSelected.filter((id) => id !== orderId) // Desmarcar
+        : [...prevSelected, orderId] // Marcar
+    )
+  }
   const grandTotal = orders.reduce((sum, order) => {
     const hasPayments = order.installation_payments && order.installation_payments.length > 0
     if (!hasPayments) return sum
@@ -82,16 +90,30 @@ export default function ShowInstaller ({ auth, orders, installer, companyName, s
                 className="btn btn-primary"
                 href={route('report.payment', { id: installer.id, biweekly: selectedBiweekly })}
                 onClick={(e) => {
-                  if (!window.confirm('¿Estás seguro de que deseas continuar?')) {
+                  if (!window.confirm('Are you sure you want to proceed with the biweekly payment?')) {
                     e.preventDefault() // Evita la navegación si el usuario cancela
                   }
                 }}
               >
                 <span>Biweekly Payment</span>
               </Link>
+              <Link
+                className="btn btn-primary"
+                href={route('report.send-paid-installer', { id: installer.id, biweekly: selectedBiweekly })}
+              >
+                <span>Send Email Payment</span>
+              </Link>
               <button
                 className="btn btn-primary"
-                onClick={() => window.open(route('report.get-payment-list-installer', { id: installer.id, biweekly: selectedBiweekly }), '_blank')}
+                onClick={() => {
+                  if (selectedBiweekly !== 0) {
+                    const UsedBieekly = biweeklys.find((biweekly) => biweekly.id === selectedBiweekly)
+                    window.open(route('report.get-payment-list-installer', { id: installer.id, biweekly: UsedBieekly }), '_blank')
+                  } else {
+                    alert('Please select a biweekly period')
+                  }
+                }
+                }
               >
                 <span>View PDF</span>
               </button>
@@ -112,7 +134,7 @@ export default function ShowInstaller ({ auth, orders, installer, companyName, s
                 className="btn btn-primary"
                 href={route('report.send-payment-installer', { id: installer.id, biweekly: selectedBiweekly })}
               >
-                <span>Send Email</span>
+                <span>Send Email Review</span>
               </Link>
               <Select
                 id='id'
@@ -135,6 +157,7 @@ export default function ShowInstaller ({ auth, orders, installer, companyName, s
           <table className="table-auto w-full">
             <thead>
               <tr className="font-bold text-left">
+              <th className="px-4 pt-5 pb-4">Select</th>
               <th className="px-6 pt-5 pb-4">Start Date</th>
               <th className="px-6 pt-5 pb-4">Pre-Inspection Date</th>
               <th className="px-6 pt-5 pb-4">End Date</th>
@@ -163,6 +186,7 @@ export default function ShowInstaller ({ auth, orders, installer, companyName, s
             </thead>
             <tbody>
               {orders.map((order: OrderInstaller, index) => {
+               const isSelected = selectedRows.includes(order.id)
                 const hasPayments = order.installation_payments && order.installation_payments.length > 0
                 const lastPayment = hasPayments
                   ? parseFloat(order.installation_payments[order.installation_payments.length - 1].percentage_payment as unknown as string)
@@ -185,7 +209,14 @@ export default function ShowInstaller ({ auth, orders, installer, companyName, s
                 }
 
                 return (
-                  <tr key={order.id}>
+                  <tr key={order.id} className={isSelected ? 'bg-blue-200' : ''}>
+                     <td className="px-4 py-4 border-t">
+                    <input
+                      type="checkbox"
+                      onChange={() => { handleCheckboxChange(order.id) }}
+                      checked={isSelected}
+                    />
+                  </td>
                      <td className="px-6 py-4 border-t">
                       {order.installation_date}
                     </td>

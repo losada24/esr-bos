@@ -100,6 +100,7 @@ trait OrderEmails {
         $users = [];
        
         //$installers = $order->loadMissing('installationTeams.user');
+        //dd($order->installationTeams);
         foreach ($order->installationTeams as $installationTeam) {
           $users[] = $installationTeam->user->email;
         }
