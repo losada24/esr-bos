@@ -23,7 +23,7 @@ class UpdateOrder
 
   public function handle(Request $request, Order $order)
   {
-    // dd($request);
+    //dd( $order);
     DB::beginTransaction();
     try {
       $client = Client::find($request->client_id);
@@ -31,7 +31,9 @@ class UpdateOrder
         $client->update([
           'name' => $request->client_name,
           'phone' => $request->phone,
-          'email' => $request->email
+          'email' => $request->email,
+          'vip_clients' =>$request->vip_clients,
+          'vip_notes' => $request->vip_notes,
         ]);
       }
 
@@ -184,7 +186,8 @@ class UpdateOrder
       }
 
       DB::commit();
-      if ($sendEmail) {
+        //dd($sendEmail, $order->is_send_email);
+      if ($sendEmail || $order->is_send_email == 0) {
         $order->orderStatus()->create([
           'status' => $status,
           'user_id' => auth()->user()->id,
@@ -196,6 +199,9 @@ class UpdateOrder
         //dd($request->owners, $request->installation_teams,$order );
      
         $this->sendEmail($order);
+        $order->update([
+          'is_send_email' => true,
+        ]);
       }
 
     } catch (\Throwable $th) {
@@ -297,7 +303,8 @@ class UpdateOrder
 
 
     $sendEmail = $request->status != $statusOrder;
-    if ($sendEmail) {
+   
+    if ($sendEmail && $request->is_send_email == 0) {
 
       $order->orderStatus()->create([
         'status' => $request->status,

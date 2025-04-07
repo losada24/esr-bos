@@ -73,6 +73,7 @@ export interface Order {
   pre_inspection_attach?: Attachment
   inspection_attach?: Attachment
   walk_trough_attach?: Attachment
+  is_send_email?: boolean
 }
 
 export interface TypeOfWork {

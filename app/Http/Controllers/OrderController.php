@@ -274,7 +274,7 @@ class OrderController extends Controller
    * @return \Illuminate\Http\Response
    */
   public function update(UpdateOrderRequest $updateOrderRequest, UpdateOrder $updateOrder, Order $order)
-  {
+ {  
     $updateOrder->handle($updateOrderRequest, $order);
     return redirect()->route('order.index')
       ->with('success', 'Order updated successfully.');
@@ -373,6 +373,7 @@ class OrderController extends Controller
     $newEstimate->name = $newEstimate->name . ' (copy)';
     $newEstimate->user_id = auth()->user()->id;
     $newEstimate->status = OrderStatusEnum::PLANNED->value;
+    $newEstimate->is_send_email = false;
     $newEstimate->pre_inspection = false;
     $newEstimate->inspection = false;
     $newEstimate->walk_trough = false;

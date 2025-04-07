@@ -210,6 +210,16 @@ const EventModal = ({
       setShowValidationErrors(true)
       return
     }
+
+    let completeDate = editableData.complete_date
+    if (editableData.status.value === 'COMPLETE') {
+      completeDate = completeDate || new Date().toISOString().slice(0, 10)
+    }
+
+    let pendingCollect = editableData.pending_collect
+    if (editableData.status.value === 'PENDING COLLECT') {
+      pendingCollect = pendingCollect || new Date().toISOString().slice(0, 10)
+    }
     const data = {
       ...editableData,
       installation_teams: editableData.installation_teams.map((team: any) => team.value),
@@ -219,8 +229,8 @@ const EventModal = ({
       walk_trough_attach: attachmentIWalkTrough,
       inspection_attach: attachmentInspection,
       pre_inspection_attach: attachmentPreInspection,
-      complete_date: editableData.status.value === 'COMPLETE' ? new Date().toISOString().slice(0, 10) : null,
-      pending_collect: editableData.status.value === 'PENDING COLLECT' ? new Date().toISOString().slice(0, 10) : null,
+      complete_date: completeDate,
+      pending_collect: pendingCollect,
       order_id: id
     }
 
