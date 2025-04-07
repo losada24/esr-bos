@@ -40,6 +40,7 @@ class UpdateOrderRequest extends FormRequest
           'phone' => 'required|string|max:255',
           'email' => 'nullable|email|max:255',
           'vip_clients' => 'boolean',
+          'is_send_email' => 'boolean',
           'vip_notes' => 'nullable|string|max:1000',
           'name' => 'required|string|max:255',
            //'order_number' => 'required|integer',
@@ -106,6 +107,7 @@ class UpdateOrderRequest extends FormRequest
               TypeOfFinancing::SUN_LIGHT->value,
               TypeOfFinancing::SLIN->value,
               TypeOfFinancing::YGREEN->value,
+              TypeOfFinancing::GOOD_LEAP->value,
             )
           ],
           'status' =>  [

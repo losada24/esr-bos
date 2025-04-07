@@ -38,6 +38,7 @@ class StoreOrderRequest extends FormRequest
             // 'last_name' => 'required|string|max:255',
             'phone' => 'required|string|max:255',
             'email' => 'nullable|email|max:255',
+            'is_send_email' => 'boolean',
             'vip_clients' => 'boolean',
             'vip_notes' => 'nullable|string|max:1000',
             'name' => 'required|string|max:255',
@@ -102,6 +103,7 @@ class StoreOrderRequest extends FormRequest
                 TypeOfFinancing::SUN_LIGHT->value,
                 TypeOfFinancing::SLIN->value,
                 TypeOfFinancing::YGREEN->value,
+                TypeOfFinancing::GOOD_LEAP->value,
               )
             ],
             'frame_color' => [

@@ -79,6 +79,13 @@ export default function ShowInstaller ({ auth, orders, installer, companyName, s
 
     return sum + totalPayment
   }, 0)
+
+  const getPendingTotal = orders.reduce((sum, order) => {
+    const totalInstallerPayment = order.installation_payments
+      ? order.installation_payments.reduce((total, payment) => total + Number(payment.installer_payment), 0)
+      : 0
+      return sum + (Number(order.amount) - totalInstallerPayment)
+  }, 0)
   return (
       <AuthenticatedLayout
           auth={auth}
@@ -153,9 +160,9 @@ export default function ShowInstaller ({ auth, orders, installer, companyName, s
       >
         <Head title={`Project installed by ${companyName}`} />
         <ShowInstallerFilter id={String(installer.id)} statuses={statuses} orderStatuses={orderStatuses} />
-            <div className='table-responsive'>
-          <table className="table-auto w-full">
-            <thead>
+            <div className='table-responsive overflow-x-auto max-h-[700px]'>
+          <table className="table-auto w-full border-collapse">
+            <thead className="bg-white sticky top-0 z-10 shadow-md">
               <tr className="font-bold text-left">
               <th className="px-4 pt-5 pb-4">Select</th>
               <th className="px-6 pt-5 pb-4">Start Date</th>
@@ -327,11 +334,15 @@ export default function ShowInstaller ({ auth, orders, installer, companyName, s
             <tfoot>
               <tr>
                 {/* Espacios vacíos hasta la columna "Value Project" */}
-                <td colSpan={16} className="px-2 py-4 border-t  font-bold text-right">Total Amount:</td>
+
+                <td colSpan={11} className="px-2 py-4 border-t  font-bold text-right">Total Pending Pay:</td>
                 <td className="px-2 py-4 border-t font-bold text-left">
-                  {formatPrice(grandTotal)}
+                  { formatPrice(getPendingTotal)}
                 </td>
-                <td colSpan={3} className="px-6 py-4 border-t"></td>
+                <td colSpan={5} className="px-2 py-4 border-t  font-bold text-right">Total Amount:</td>
+                <td className="px-2 py-4 border-t font-bold text-left">
+                  {formatPrice(grandTotal) }
+                </td>
               </tr>
             </tfoot>
           </table>

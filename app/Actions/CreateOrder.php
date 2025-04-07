@@ -35,6 +35,8 @@ class CreateOrder {
       'vip_notes' => $request->vip_notes,
     ]);
 
+    //dd($client);
+
     if ($request->service == ServiceEnum::INSTALLATION->value || $request->service == ServiceEnum::INSTALLATION_ONLY->value) {
       if($request->type_of_housing_id == 3){
         $execution_planing_date = PlaningDateSupervisorEnum::COMMERCIAL_PROJECTS->value;
@@ -107,8 +109,6 @@ class CreateOrder {
         'do_not_send_email' => $request->do_not_send_email,
       ]);
 
-      // dd($order);
-
       if ($request->hasFile('attachments')) {
         $files = $request->file('attachments');
         foreach ($files as $file) {
@@ -170,6 +170,9 @@ class CreateOrder {
       } 
 
       $this->sendEmail($order);
+     $order->update([
+        'is_send_email' => true,
+      ]);
 
       if( !$order )
       {

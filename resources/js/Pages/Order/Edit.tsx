@@ -125,7 +125,7 @@ export default function Edit ({
         return getOrderProducts(orderProduct)
       })
     }
-
+    console.log(order)
     delete order.order_products
     router.post(route('order.update', values.id), {
       _method: 'PUT',

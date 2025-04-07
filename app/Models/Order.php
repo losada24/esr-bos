@@ -81,6 +81,7 @@ class Order extends Model
     'walk_trough',
     'partial_payment_installation',
     'final_payment_installation',
+    'is_send_email',
   ];
 
   protected $dates = [
@@ -113,6 +114,7 @@ class Order extends Model
       'walk_trough' => 'boolean',
       'partial_payment_installation' => 'boolean',
       'final_payment_installation' => 'boolean',
+      'is_send_email' => 'boolean',
     ];
   }
 
