@@ -42,7 +42,7 @@ class DashboardController extends Controller
       ServiceEnum::INSTALLATION_ONLY->value
     ];
 
-    if ($user->hasRole(RoleEnum::ACCOUNT_MANAGER->value) || $user->hasRole(RoleEnum::ADMIN->value)) {
+    if ($user->hasRole(RoleEnum::ACCOUNT_MANAGER->value) || $user->hasRole(RoleEnum::ADMIN->value) || $user->hasRole(RoleEnum::OWNER->value) || $user->hasRole(RoleEnum::OWNER_ADMIN->value) ) {
       $status = [
         OrderStatusEnum::PLANNED->value,
         OrderStatusEnum::CONFIRMED->value,

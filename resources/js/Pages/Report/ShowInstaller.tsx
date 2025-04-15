@@ -68,14 +68,18 @@ export default function ShowInstaller ({ auth, orders, installer, companyName, s
   const grandTotal = orders.reduce((sum, order) => {
     const hasPayments = order.installation_payments && order.installation_payments.length > 0
     if (!hasPayments) return sum
+    let totalPayment = 0
 
     const lastPayment = order.installation_payments[order.installation_payments.length - 1]
     const extraWork = Number(lastPayment.extra_work) || 0
     const extraDiscount = Number(lastPayment.extra_discount) || 0
     const otherCost = Number(lastPayment.other_cost_installer) || 0
     const installerPayment = Number(lastPayment.installer_payment) || 0
+    const percentagePayment = Number(lastPayment.percentage_payment) || 0
 
-    const totalPayment = installerPayment + extraWork - extraDiscount + otherCost
+    if (percentagePayment > 0) {
+      totalPayment = Number(installerPayment) + Number(extraWork) - Number(extraDiscount) + Number(otherCost)
+    }
 
     return sum + totalPayment
   }, 0)
@@ -84,7 +88,7 @@ export default function ShowInstaller ({ auth, orders, installer, companyName, s
     const totalInstallerPayment = order.installation_payments
       ? order.installation_payments.reduce((total, payment) => total + Number(payment.installer_payment), 0)
       : 0
-      return sum + (Number(order.amount) - totalInstallerPayment)
+    return sum + (Number(order.amount) - totalInstallerPayment)
   }, 0)
   return (
       <AuthenticatedLayout
@@ -178,34 +182,38 @@ export default function ShowInstaller ({ auth, orders, installer, companyName, s
                <th className="px-6 pt-5 pb-4">Pending Pay </th>
               <th className="px-6 pt-5 pb-4">Payment Processed</th>
                 {/* <th className="px-6 pt-5 pb-4">Pending Pay</th */}
-                <th className="px-6 pt-5 pb-4">Extra Work</th>
-                <th className="px-6 pt-5 pb-4">Responsible Extra Work</th>
-                <th className="px-6 pt-5 pb-4">Extra Discount</th>
-                 <th className="px-6 pt-5 pb-4">Other Cost</th>
-                 <th className="px-6 pt-5 pb-4">Total Payment</th>
-                <th className="px-6 pt-5 pb-4">Collected Payment</th>
-                <th className="px-6 pt-5 pb-4">Remarks</th>
-                <th className="px-6 pt-5 pb-4">Delivered Documents</th>
-                <th className="px-6 pt-5 pb-4">Status Payment </th>
+              <th className="px-6 pt-5 pb-4">Extra Work</th>
+              <th className="px-6 pt-5 pb-4">Responsible Extra Work</th>
+              <th className="px-6 pt-5 pb-4">Extra Discount</th>
+              <th className="px-6 pt-5 pb-4">Other Cost</th>
+              <th className="px-6 pt-5 pb-4">Total Payment</th>
+              <th className="px-6 pt-5 pb-4">Collected Payment</th>
+              <th className="px-6 pt-5 pb-4">Remarks</th>
+              <th className="px-6 pt-5 pb-4">Delivered Documents</th>
+              <th className="px-6 pt-5 pb-4">Status Payment </th>
 
                 <th className="px-6 pt-5 pb-4 w-14">Actions</th>
               </tr>
             </thead>
             <tbody>
               {orders.map((order: OrderInstaller, index) => {
-               const isSelected = selectedRows.includes(order.id)
+                const isSelected = selectedRows.includes(order.id)
                 const hasPayments = order.installation_payments && order.installation_payments.length > 0
                 const lastPayment = hasPayments
                   ? parseFloat(order.installation_payments[order.installation_payments.length - 1].percentage_payment as unknown as string)
                   : null
                 const isZeroPayment = lastPayment === 0
                 const totalPayment = () => {
+                  let total = 0
                   // const hasPayments = order.installation_payments && order.installation_payments.length > 0
                   const extraWork = order.installation_payments && order.installation_payments.length > 0 ? Number(order.installation_payments[order.installation_payments.length - 1].extra_work) : 0
                   const extraDiscount = order.installation_payments && order.installation_payments.length > 0 ? Number(order.installation_payments[order.installation_payments.length - 1].extra_discount) : 0
                   const otherCost = order.installation_payments && order.installation_payments.length > 0 ? Number(order.installation_payments[order.installation_payments.length - 1].other_cost_installer) : 0
                   const installerPayment = order.installation_payments && order.installation_payments.length > 0 ? Number(order.installation_payments[order.installation_payments.length - 1].installer_payment) : 0
-                  const total = Number(installerPayment) + Number(extraWork) - Number(extraDiscount) + Number(otherCost)
+                  const percentagePayment = order.installation_payments && order.installation_payments.length > 0 ? Number(order.installation_payments[order.installation_payments.length - 1].percentage_payment) : 0
+                  if (percentagePayment > 0) {
+                    total = Number(installerPayment) + Number(extraWork) - Number(extraDiscount) + Number(otherCost)
+                  }
                   return total }
 
                 const getPendingAmount = () => {

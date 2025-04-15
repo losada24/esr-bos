@@ -31,6 +31,7 @@ const EventModal = ({
   isPaymentCoordinator,
   installation_teams,
   supervisors,
+  isOwner,
   status,
   attachments
   // auth
@@ -39,6 +40,7 @@ const EventModal = ({
   showModal: boolean
   isSupervisor: boolean
   isInstaller: boolean
+  isOwner: boolean
   onClose: CallableFunction
   id: number
   isPaymentCoordinator: boolean
@@ -612,6 +614,9 @@ const EventModal = ({
               </>
             )}
             </div>
+
+            {!isInstaller && (
+            <>
             <div className='flex flex-row gap-5 mt-3'>
                     <fieldset className='p-3 border rounded-xl mt-3'>
                     <legend className='text-lg font-semibold'>Collected Payments</legend>
@@ -644,6 +649,8 @@ const EventModal = ({
                       </div>
                   </fieldset>
             </div>
+            </>
+            )}
             <div className='flex flex-row gap-2 mt-3'>
               <div className='w-1/3'>
                 <label htmlFor="status" className='font-bold'>Status:</label>
@@ -686,7 +693,7 @@ const EventModal = ({
                   </div>
               )}
             </div>
-            {(editableData.status.value === 'INSPECTION' || editableData.inspection_date != null) && (
+            {((editableData.status.value === 'INSPECTION' || editableData.inspection_date != null) && !isInstaller) && (
                     <div className='w-1/3  mt-8'>
                     <label htmlFor="inspection_date"><strong>Inspection Date:</strong></label>
                     <Flatpickr
@@ -734,7 +741,7 @@ const EventModal = ({
                   </div>
                     )}
 
-                  {(editableData.status.value === 'SERVICE' || editableData.service_date != null) && (
+                  {((editableData.status.value === 'SERVICE' || editableData.service_date != null) && !isInstaller) && (
                     <div className='w-1/3  mt-8'>
                     <label htmlFor="service_date"><strong>Service Date:</strong></label>
                     <Flatpickr
@@ -757,7 +764,7 @@ const EventModal = ({
                   />
                   </div>
                   )}
-                 {(editableData.status.value === 'FINAL INSPECTION' || editableData.final_inspection_date != null) && (
+                 {((editableData.status.value === 'FINAL INSPECTION' || editableData.final_inspection_date != null) && !isInstaller) && (
                     <div className='w-1/3  mt-8'>
                     <label htmlFor="final_inspection_date"><strong>Final Inspection Date:</strong></label>
                     <Flatpickr
@@ -801,6 +808,8 @@ const EventModal = ({
                 onChange={(e) => { setEditableData({ ...editableData, notes: e.target.value }) }}
               />
             </div>
+            {!isInstaller && (
+            <>
             <div className='col-span-4'>
             <fieldset className='p-3 border rounded-xl mt-3'>
                     <legend className='text-lg font-semibold'>Delivered Documents</legend>
@@ -851,9 +860,10 @@ const EventModal = ({
                       </div>
                     </div>
                   </fieldset>
-
                   </div>
-            {(editableData.pre_inspection === true || editableData.pre_inspection === 1) && (
+                   </>
+            )}
+            {((editableData.pre_inspection === true || editableData.pre_inspection === 1) && !isInstaller) && (
             <div className='flex flex-col gap-2  mt-3'>
             <label htmlFor="pre_inspection_attach">Pre Inspection File</label>
                     <input
@@ -867,7 +877,7 @@ const EventModal = ({
                       }}
               />
             </div>)}
-            {(editableData.inspection === true || editableData.inspection === 1) && (
+            {((editableData.inspection === true || editableData.inspection === 1) && !isInstaller) && (
             <div className='flex flex-col gap-2  mt-3'>
             <label htmlFor="inspection_attach">Inspection File</label>
                     <input
@@ -882,7 +892,7 @@ const EventModal = ({
                       }}
               />
             </div>)}
-            {(editableData.walk_trough === true || editableData.walk_trough === 1) && (
+            {((editableData.walk_trough === true || editableData.walk_trough === 1) && !isInstaller) && (
             <div className='flex flex-col gap-2  mt-3'>
             <label htmlFor="walk_trough_attach">Walk Trough File</label>
                     <input

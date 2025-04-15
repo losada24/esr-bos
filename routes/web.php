@@ -87,15 +87,15 @@ Route::middleware('auth')->group(function () {
       ->name('order.update_date_paid');
     
     Route::get('dashboard/get_events/{year}/{month}/{service}/{status}/{name?}', [DashboardController::class, 'getEvents'])
-      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::INSTALLER->value .'|' . RoleEnum::SUPERVISOR->value .'|' . RoleEnum::SERVICE_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::INSTALLER->value .'|' . RoleEnum::SUPERVISOR->value .'|' . RoleEnum::SERVICE_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value . '|' . RoleEnum::OWNER->value . '|' . RoleEnum::OWNER_ADMIN->value])
       ->name('dashboard.get_events');
     
     Route::get('dashboard/get_event/{order}', [DashboardController::class, 'getEvent'])
-      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::INSTALLER->value .'|' . RoleEnum::SUPERVISOR->value .'|' . RoleEnum::SERVICE_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::INSTALLER->value .'|' . RoleEnum::SUPERVISOR->value .'|' . RoleEnum::SERVICE_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value . '|' . RoleEnum::OWNER->value . '|' . RoleEnum::OWNER_ADMIN->value])
       ->name('dashboard.get_event');
     
     Route::post('order/update-from-modal/{order}', [OrderController::class, 'updateFromModal'])
-      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::INSTALLER->value .'|' . RoleEnum::SUPERVISOR->value .'|' . RoleEnum::SERVICE_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::INSTALLER->value .'|' . RoleEnum::SUPERVISOR->value .'|' . RoleEnum::SERVICE_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value . '|' . RoleEnum::OWNER->value . '|' . RoleEnum::OWNER_ADMIN->value])
       ->name('update.order.from.modal');
     
     Route::get('order/get_payment_list/{order}', [DashboardController::class, 'getPaymentList'])

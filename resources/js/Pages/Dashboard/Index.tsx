@@ -4,7 +4,7 @@ import { type Role, type PageProps, type InstallationTeam, type User } from '@/t
 import '@mobiscroll/react/dist/css/mobiscroll.min.css'
 import { Eventcalendar, getJson, setOptions } from '@mobiscroll/react'
 import AuthenticatedCalendarLayout from '@/Layouts/AuthenticatedCalendarLayout'
-import { isAccountManager, isAdmin, isServiceManager, isSupervisor, isInstaller, isPaymentCoordinator } from '@/Utils/user'
+import { isAccountManager, isAdmin, isServiceManager, isSupervisor, isInstaller, isPaymentCoordinator, isOwner } from '@/Utils/user'
 import EventModal from './EventModal'
 
 setOptions({
@@ -28,7 +28,8 @@ export default function Dashboard ({ auth, services, status, statusmodal, legend
   const IS_SUPERVISOR = isSupervisor(auth.user.roles.map((role: Role) => role.name))
   const IS_SERVICE_MANAGER = isServiceManager(auth.user.roles.map((role: Role) => role.name))
   const IS_INSTALLER = isInstaller(auth.user.roles.map((role: Role) => role.name))
-  const IS_PAYMENT_COORDINATOR= isPaymentCoordinator(auth.user.roles.map((role: Role) => role.name))
+  const IS_PAYMENT_COORDINATOR = isPaymentCoordinator(auth.user.roles.map((role: Role) => role.name))
+  const IS_OWNER = isOwner(auth.user.roles.map((role: Role) => role.name))
 
   const [myEvents, setEvents] = useState([])
   const [currentDate, setCurrentDate] = useState(new Date())
@@ -205,6 +206,7 @@ export default function Dashboard ({ auth, services, status, statusmodal, legend
         isSupervisor={IS_SUPERVISOR}
         isServiceManager={IS_SERVICE_MANAGER}
         isInstaller={IS_INSTALLER}
+        isOwner={IS_OWNER}
         isPaymentCoordinator ={IS_PAYMENT_COORDINATOR}
         id={eventId}
         installation_teams ={installation_teams}

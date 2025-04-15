@@ -11,6 +11,9 @@ export const isAccountManager = (roles: string[]): boolean => {
 export const isOwner = (roles: string[]): boolean => {
   return roles.find((role) => role === ROLES.OWNER) !== undefined
 }
+export const isOwnerAdmin = (roles: string[]): boolean => {
+  return roles.find((role) => role === ROLES.OWNER_ADMIN) !== undefined
+}
 
 export const isInstaller = (roles: string[]): boolean => {
   return roles.find((role) => role === ROLES.INSTALLER) !== undefined
@@ -45,6 +48,8 @@ export const getRoleName = (roles: string[]): string => {
     return 'Supervisor'
   } else if (isOwner(roles)) {
     return 'Owner'
+  } else if (isOwnerAdmin(roles)) {
+    return 'Owner Admin'
   } else if (isServiceManager(roles)) {
     return 'Service Manager'
   } else if (isFrontdesk(roles)) {
