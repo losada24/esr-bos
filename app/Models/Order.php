@@ -181,7 +181,7 @@ class Order extends Model
     }
 
 
-    if (!(auth()->user()->hasRole(RoleEnum::ACCOUNT_MANAGER->value)) && !(auth()->user()->hasRole(RoleEnum::ADMIN->value))) {
+    if (!(auth()->user()->hasRole(RoleEnum::ACCOUNT_MANAGER->value)) && !(auth()->user()->hasRole(RoleEnum::ADMIN->value))&& !(auth()->user()->hasRole(RoleEnum::OWNER_ADMIN->value))) {
       if (auth()->user()->hasRole(RoleEnum::INSTALLER->value)) {
         $installationTeams = InstallationTeam::where('user_id', auth()->user()->id)->first();
         $query->whereHas('installationTeams', function ($q) use ($installationTeams) {
@@ -208,6 +208,26 @@ class Order extends Model
             OrderStatusEnum::FINAL_COLLECT,
             OrderStatusEnum::COMPLETE,
           ]);
+      }
+
+      if (auth()->user()->hasRole(RoleEnum::OWNER->value)) {
+        $query->whereHas('owners', function ($ownerQuery) {
+          $ownerQuery->where('user_id', auth()->user()->id);
+        })
+        ->whereIn('status', [
+          OrderStatusEnum::PLANNED,
+          OrderStatusEnum::RESCHEDULE,
+          OrderStatusEnum::CONFIRMED,
+          OrderStatusEnum::EXECUTION,
+          OrderStatusEnum::SUPERVISION,
+          OrderStatusEnum::INSPECTION,
+          OrderStatusEnum::FINISH,
+          OrderStatusEnum::SERVICE,
+          OrderStatusEnum::ON_HOLD,
+          OrderStatusEnum::FINAL_INSPECTION,
+          OrderStatusEnum::FINAL_COLLECT,
+          OrderStatusEnum::COMPLETE,
+        ]);
       }
 
       if (auth()->user()->hasRole(RoleEnum::SERVICE_MANAGER->value) || auth()->user()->hasRole(RoleEnum::PAYMENT_COORDINATOR->value)) {

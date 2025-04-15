@@ -170,7 +170,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                               </>
                           )}
 
-                            {(IS_SUPERVISOR) && (
+                            {/* (IS_SUPERVISOR) && (
                               <>
                                 <li className="menu nav-item">
                                     <NavLink href={route('report.show_supervisor', { id: auth.user.id })} active={route().current('report.show_supervisor')} className="group">
@@ -181,8 +181,8 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                     </NavLink>
                                 </li>
                               </>
-                            )}
-                              {(IS_INSTALLER) && (
+                            ) */ }
+                              {/* (IS_INSTALLER) && (
                               <>
                                 <li className="menu nav-item">
                                     <NavLink href={route('report.show_installer', { id: auth.user.id })} active={route().current('report.show_installer')} className="group">
@@ -193,7 +193,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                     </NavLink>
                                 </li>
                               </>
-                            )}
+                              ) */}
                              {/* (IS_ADMIN || IS_FRONTDESK || IS_ACCOUNT_MANAGER || IS_OWNER) && (
                               <>
                                 <li className="menu nav-item">

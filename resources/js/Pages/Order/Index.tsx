@@ -5,7 +5,7 @@ import Pagination from '@/Components/Pagination'
 import OrderFilter from './OrderFilter'
 import EditIcon from '@/Components/Icons/EditIcon'
 import DeleteIcon from '@/Components/Icons/DeleteIcon'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import EyeIcon from '@/Components/Icons/EyeIcon'
 import CopyIcon from '@/Components/Icons/CopyIcon'
 
@@ -20,10 +20,18 @@ type IndexOrderProps = PageProps & {
 }
 
 export default function Index ({ auth, orders, statuses }: IndexOrderProps) {
+ const [selectedRows, setSelectedRows] = useState<number[]>([])
   const destroy = (id: number) => {
     if (confirm('Are you sure you want to delete this Order?')) {
       router.delete(route('order.destroy', id))
     }
+  }
+  const handleCheckboxChange = (orderId: number) => {
+    setSelectedRows((prevSelected) =>
+      prevSelected.includes(orderId)
+        ? prevSelected.filter((id) => id !== orderId) // Desmarcar
+        : [...prevSelected, orderId] // Marcar
+    )
   }
   const duplicate = (id: number) => {
     if (confirm('Are you sure you want to duplicate this Order?')) {
@@ -57,6 +65,7 @@ export default function Index ({ auth, orders, statuses }: IndexOrderProps) {
           <table className="w-full whitespace-nowrap">
             <thead>
               <tr className="font-bold text-left">
+              <th className="px-4 pt-5 pb-4">Select</th>
                 <th className="px-6 pt-5 pb-4">Order Number</th>
                 <th className="px-6 pt-5 pb-4">Name / Service</th>
                 <th className="px-6 pt-5 pb-4">Job Address</th>
@@ -69,12 +78,20 @@ export default function Index ({ auth, orders, statuses }: IndexOrderProps) {
             </thead>
             <tbody>
               {orders.data.map((order) => {
+                const isSelected = selectedRows.includes(order.id)
                 return (
                   // console.log(order),
                   <tr
                     key={order.id}
-                    className="hover:bg-gray-100 focus-within:bg-gray-100"
+                    className={isSelected ? 'bg-blue-200' : 'hover:bg-gray-100 focus-within:bg-gray-100'}
                   >
+                    <td className="px-4 py-4 border-t">
+                    <input
+                      type="checkbox"
+                      onChange={() => { handleCheckboxChange(order.id) }}
+                      checked={isSelected}
+                    />
+                  </td>
                     <td className="border-t px-6 py-4 align-top">
                       {order.order_number}
                     </td>

@@ -178,7 +178,9 @@ export const ROLES = {
   OWNER: 'owner',
   FRONTDESK: 'frontdesk',
   SERVICE_MANAGER: 'service_manager',
-  PAYMENT_COORDINATOR: 'payment_coordinator'
+  PAYMENT_COORDINATOR: 'payment_coordinator',
+  OWNER_ADMIN: 'owner_admin'
+
 }
 
 export const PERSMISSION_USERS_LIST = 'users list'

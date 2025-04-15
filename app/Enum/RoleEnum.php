@@ -14,4 +14,5 @@ enum RoleEnum: string
     case FRONTDESK = 'frontdesk';
     case ACCOUNTING = 'accounting';
     case PAYMENT_COORDINATOR = 'payment_coordinator';
+    case OWNER_ADMIN = 'owner_admin';
 }

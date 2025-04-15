@@ -43,11 +43,11 @@ class PartialOrderRequest extends FormRequest
           'payment_definition' => 'boolean',
           'pre_inspection'=> [
             'boolean',
-            // new ValidateOrderAttachments
+            new ValidateOrderAttachments
           ],
           'inspection' => [ 
             'boolean', 
-            // new ValidateOrderAttachments
+            new ValidateOrderAttachments
           ],
           'walk_trough' => [
             'boolean',

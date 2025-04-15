@@ -38,7 +38,9 @@ const PaymentInstallerTable = ({
     return totalInstallerPayments + totalExtraWork - totalExtraDiscount + totalOtherCost
   }
   const totalPayment = payment.reduce((acc, p) => {
-    const total = Number(p.installer_payment || 0) + Number(p.extra_work || 0) - Number(p.extra_discount || 0) + Number(p.other_cost_installer || 0)
+    let total = 0
+    if (p.percentage_payment > 0) {
+      total = Number(p.installer_payment || 0) + Number(p.extra_work || 0) - Number(p.extra_discount || 0) + Number(p.other_cost_installer || 0)}
     return acc + total
   }, 0)
   return (
@@ -93,7 +95,7 @@ const PaymentInstallerTable = ({
                       {formatPrice(p.other_cost_installer)}
                     </td>
                     <td className="border-t px-6 py-4 align-top">
-                      {formatPrice(Number(p.installer_payment) + Number(p.extra_work) - Number(p.extra_discount) + Number(p.other_cost_installer))}
+                      {p.percentage_payment > 0 ? formatPrice(Number(p.installer_payment) + Number(p.extra_work) - Number(p.extra_discount) + Number(p.other_cost_installer)) : 0}
                     </td>
                     <td className="border-t px-6 py-4 align-top">
                       {p.payment_status}
