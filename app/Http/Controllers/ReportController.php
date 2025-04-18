@@ -13,6 +13,7 @@ use App\Enum\RoleEnum;
 use App\Enum\SupervisorPaymentStatusEnum;
 use App\Exports\InstallerExport;
 use App\Exports\SupervisorExport;
+use App\Exports\SupervisorExportPayment;
 use App\Http\Requests\StoreInstallerPaymentRequest;
 use App\Http\Resources\InstallationTeamCollection;
 use App\Jobs\SendGmailEmail;
@@ -71,7 +72,6 @@ class ReportController extends Controller
 
     // Obtener los parámetros de filtro de la solicitud (request)
     $status = request()->get('status');
-
     $name = request()->get('name');
     $startDate = request()->get('start_date');
     $endDate = request()->get('end_date');
@@ -116,7 +116,13 @@ class ReportController extends Controller
         SupervisorPaymentStatusEnum::PENDING->value,
         SupervisorPaymentStatusEnum::CLOSED->value,
         SupervisorPaymentStatusEnum::NO_PAID->value,
-      ]
+      ],
+      'filters' => [
+        'status' => $status,
+        'name' => $name,
+        'start_date' => $startDate,
+        'end_date' => $endDate,
+      ],
     ]);
   }
 
@@ -128,6 +134,25 @@ class ReportController extends Controller
       \Maatwebsite\Excel\Excel::XLSX
     );
   }
+
+
+  public function exportPaymentSupervisor(Request $request, $id, User $user )
+  {
+    
+     //dd( $request->all());
+    return Excel::download(
+      new SupervisorExportPayment(
+            $id,
+            $request->status,
+            $request->name,
+            $request->start_date,
+            $request->end_date
+    ),
+      'Supervisor ' . $user->name . '.xlsx',
+      \Maatwebsite\Excel\Excel::XLSX
+    );
+  }
+  
 
 
   public function showInstaller($id)
@@ -245,11 +270,11 @@ class ReportController extends Controller
   public function  updateInstallerReport(Request $request)
   {   // Cargar la orden junto con los campos relacionados
 
-    $data = [
-      'order_id' => $request->input('order_id'),
-      'installation_team_id' => $request->input('installation_team_id'),
-      'installer_payment_status' => $request->input('installer_payment_status'),
-    ];
+      $data = [
+        'order_id' => $request->input('order_id'),
+        'installation_team_id' => $request->input('installation_team_id'),
+        'installer_payment_status' => $request->input('installer_payment_status'),
+      ];
 
     // Si el id es 0, se crea una nueva fila
     if ($request->input('id') == 0) {
@@ -278,27 +303,22 @@ class ReportController extends Controller
   }
 
   public function exportPaymentInstaller($id, $biweekly)
-  {      //$biweeklystar = Carbon::parse( Biweekly::where('id', $id)->value('start_biweekly_period'))->format('d F Y');
-    //$biweeklyend = Carbon::parse( Biweekly::where('id', $id)->value('end_biweekly_period'))->format('d F Y');
-    return Excel::download(
-      new InstallerExport($id, $biweekly),
-      'Biweekly ' . $id . ' to ' . $id . '.xlsx',
-      \Maatwebsite\Excel\Excel::XLSX
-    );
+  {  
+        return Excel::download(
+          new InstallerExport($id, $biweekly),
+          'Biweekly ' . $id . ' to ' . $id . '.xlsx',
+          \Maatwebsite\Excel\Excel::XLSX
+        );
   }
 
   public function biweeklyPayment($id, $biweekly)
-  {   
-      
-    if (!Biweekly::where('id', $biweekly)->exists()) {
+  {   if (!Biweekly::where('id', $biweekly)->exists()) {
       return redirect()->back()->with('error', 'The biweekly period does not exist.');
     }
-
     $paymentExist = InstallationPayment::where('biweekly_id', $biweekly)->where('installation_team_id', $id)->count();
     if ($paymentExist > 0) {
       return redirect()->back()->with('error', 'The payment for this biweekly period already exists.');
     }
-
     $orders = $this->getOrdersByInstaller($id, $status = null, $startDate = null, $endDate = null, $orderStatu = null);
     
     DB::beginTransaction();
@@ -310,7 +330,6 @@ class ReportController extends Controller
       ]);
 
       $ordersToPay = $orders->where('total_payment_amount', '>', 0);
-  
       $ordersToPay->each(function ($order) use ($biweekly, $id) {
         $paymentPercentage = 0;
         //dd($order['installation_payments']);
@@ -347,7 +366,6 @@ class ReportController extends Controller
           ]);
 
           $pendingPaymentPercent = 100 - $paymentPercentage;
-      
           InstallationPayment::create([
             'order_id' => $order['id'],
             'installation_team_id' => $id,
@@ -370,45 +388,41 @@ class ReportController extends Controller
       //dd($e);
       return redirect()->back()->with('error', 'An error occurred while creating the payment for this biweekly period.');
     }
-    //dd($orders);
-    //$biweeklystar = Carbon::parse( Biweekly::where('id', $id)->value('start_biweekly_period'))->format('d F Y');
-    //$biweeklyend = Carbon::parse( Biweekly::where('id', $id)->value('end_biweekly_period'))->format('d F Y');
     
-  }
+   }
 
-  public function getPaymentListInstaller($id,$biweekly)
-  {  
-    $orders = $this->getOrdersByInstaller($id, $status=null , $startDate=null, $endDate=null, $orderStatu=null);
-    $installerName = $orders->first()['installer'] ?? '';
-    //dd($installerName);
-        //$companyName = $payments->first()['company_name'] ?? '';
-    $companyName = $orders->first()['company_name'] ?? '';
-    $biweekly = Biweekly::find((int)$biweekly);
-    $biweeklyTitle = Carbon::parse($biweekly->start_biweekly_period)->locale('en')->isoFormat('MMMM D') . ' to ' . Carbon::parse($biweekly->end_biweekly_period)->locale('en')->isoFormat('MMMM D');
-    $pdf = Pdf::loadView('pdf.payment-list-orders', ['orders' => $orders, 'company' => $companyName, 'installer' => $installerName,  'biweeklyTitle' => $biweeklyTitle])->setPaper('A2', 'landscape');
-    $pdfName = 'pdf.payment-list-orders' .$installerName . '.pdf';
-    return $pdf->stream($pdfName);
+    public function getPaymentListInstaller($id,$biweekly)
+    {  
+        $orders = $this->getOrdersByInstaller($id, $status=null , $startDate=null, $endDate=null, $orderStatu=null);
+        $installerName = $orders->first()['installer'] ?? '';
+        $companyName = $orders->first()['company_name'] ?? '';
+        $biweekly = Biweekly::find((int)$biweekly);
+        $biweeklyTitle = Carbon::parse($biweekly->start_biweekly_period)->locale('en')->isoFormat('MMMM D') . ' to ' . Carbon::parse($biweekly->end_biweekly_period)->locale('en')->isoFormat('MMMM D');
+        $pdf = Pdf::loadView('pdf.payment-list-orders', ['orders' => $orders, 'company' => $companyName, 'installer' => $installerName,  'biweeklyTitle' => $biweeklyTitle])->setPaper('A2', 'landscape');
+        $pdfName = 'pdf.payment-list-orders' .$installerName . '.pdf';
+        return $pdf->stream($pdfName);
     
-  }
-  public function sendPaymentInstaller($id,$biweekly)
-{  
+    }
+
+    public function sendPaymentInstaller($id,$biweekly)
+    {  
         if (!Biweekly::where('id', $biweekly)->exists()) {
           return redirect()->back()->with('error', 'The biweekly period does not exist.');
         }
   
-      $orders = $this->getOrdersByInstaller($id, $status=null , $startDate=null, $endDate=null, $orderStatu=null);
-        //dd($orders);
+        $orders = $this->getOrdersByInstaller($id, $status=null , $startDate=null, $endDate=null, $orderStatu=null);
         $variable = env('ADMIN_EMAILS_PAYMENT');
         $adminEmails = explode(',', $variable); // Convierte la cadena en array
         $user = User::find($id);
         $users = array_merge([$user->email], $adminEmails); // Une los correos en un solo array
         $installerName = $orders->first()['installer'] ?? '';
-            //$companyName = $payments->first()['company_name'] ?? '';
         $companyName = $orders->first()['company_name'] ?? '';
         $biweekly = Biweekly::find((int)$biweekly);
         $biweeklyTitle = Carbon::parse($biweekly->start_biweekly_period)->locale('en')->isoFormat('MMMM D') . ' to ' . Carbon::parse($biweekly->end_biweekly_period)->locale('en')->isoFormat('MMMM D');
         $installationPaymentEmail = new InstallationPaymentEmail($orders, $installerName, $companyName, $biweeklyTitle);
-        SendGmailEmail::dispatch( $users, $installationPaymentEmail)->onQueue('emails');
+        foreach ($users as $user) {
+          SendGmailEmail::dispatch( $user, $installationPaymentEmail)->onQueue('emails');
+        }
         return redirect()->back()->with('success', 'The email was successfully sent to the installer.');
     } 
 
@@ -417,20 +431,22 @@ class ReportController extends Controller
             if (!Biweekly::where('id', $biweekly)->exists()) {
               return redirect()->back()->with('error', 'The biweekly period does not exist.');
             }
-      
-          $orders = $this->getOrdersByInstaller($id, $status=null , $startDate=null, $endDate=null, $orderStatu=null);
-            //dd($orders);
+            $accountings = User::role([RoleEnum::ACCOUNTING->value])->get();
+            $orders = $this->getOrdersByInstaller($id, $status=null , $startDate=null, $endDate=null, $orderStatu=null);
             $variable = env('ADMIN_EMAILS_PAYMENT');
             $adminEmails = explode(',', $variable); // Convierte la cadena en array
             $user = User::find($id);
             $users = array_merge([$user->email], $adminEmails); // Une los correos en un solo array
+            $users = array_merge($users, $accountings->pluck('email')->toArray());
+            //dd($users);
             $installerName = $orders->first()['installer'] ?? '';
-                //$companyName = $payments->first()['company_name'] ?? '';
             $companyName = $orders->first()['company_name'] ?? '';
             $biweekly = Biweekly::find((int)$biweekly);
             $biweeklyTitle = Carbon::parse($biweekly->start_biweekly_period)->locale('en')->isoFormat('MMMM D') . ' to ' . Carbon::parse($biweekly->end_biweekly_period)->locale('en')->isoFormat('MMMM D');
             $installationPaymentEmail = new InstallationPaidEmail($orders, $installerName, $companyName, $biweeklyTitle);
-            SendGmailEmail::dispatch( $users, $installationPaymentEmail)->onQueue('emails');
+            foreach ($users as $user) {
+              SendGmailEmail::dispatch( $users, $installationPaymentEmail)->onQueue('emails');
+            }
             return redirect()->back()->with('success', 'The email was successfully sent to the installer.');
         } 
 }

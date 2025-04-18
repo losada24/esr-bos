@@ -1,5 +1,5 @@
 import { type SyntheticEvent } from 'react'
-import { useForm, router } from '@inertiajs/react'
+import { useForm, router, Link } from '@inertiajs/react'
 import TextInput from '@/Components/TextInput'
 import PrimaryButton from '@/Components/PrimaryButton'
 import InputLabel from '@/Components/InputLabel'
@@ -9,6 +9,13 @@ import 'flatpickr/dist/flatpickr.css'
 interface ShowSupervisorFilterProps {
   id: string// El id del supervisor, debe ser un string
   statuses: string[] // Lista de estados
+}
+
+interface FilterState {
+  status: string
+  name: string
+  start_date: string
+  end_date: string
 }
 
 const ShowSupervisorFilter: React.FC<ShowSupervisorFilterProps> = ({ id, statuses }) => {
@@ -27,7 +34,6 @@ const ShowSupervisorFilter: React.FC<ShowSupervisorFilterProps> = ({ id, statuse
       start_date: '',
       end_date: ''
     })
-
     // Recargar la página sin filtros
     router.get(route('report.show_supervisor', { id }), {
       status: '',
@@ -39,7 +45,6 @@ const ShowSupervisorFilter: React.FC<ShowSupervisorFilterProps> = ({ id, statuse
       preserveState: true
     })
   }
-
   const submit = (e: SyntheticEvent) => {
     e.preventDefault()
     let currentRoute = route().current()
@@ -89,9 +94,10 @@ const ShowSupervisorFilter: React.FC<ShowSupervisorFilterProps> = ({ id, statuse
             className="form-select"
             autoComplete="status"
             placeholder='Status'
-            onChange={(e) => {
+           onChange={(e) => {
               setData('status', e.target.value)
             }}
+            
           >
             <option value="">Select Status</option>
             {statuses.map((status, index) => (
@@ -110,7 +116,7 @@ const ShowSupervisorFilter: React.FC<ShowSupervisorFilterProps> = ({ id, statuse
             name="start_date"
             value={data.start_date}
             className="form-input"
-            onChange={([date]) => {
+         onChange={([date]) => {
               setData('start_date', date.toISOString().slice(0, 10))
             }}
           />
@@ -127,9 +133,10 @@ const ShowSupervisorFilter: React.FC<ShowSupervisorFilterProps> = ({ id, statuse
             name="end_date"
             value={data.end_date}
             className="form-input"
-            onChange={([date]) => {
+         onChange={([date]) => {
               setData('end_date', date.toISOString().slice(0, 10))
             }}
+             
           />
         </div>
         <div className="flex items-end justify-between w-44 pb-3">

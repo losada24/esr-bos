@@ -11,25 +11,25 @@ use Maatwebsite\Excel\Concerns\FromView;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use App\Traits\Reports;
-use Google\Service\Sheets\NumberFormat;
-use Maatwebsite\Excel\Concerns\WithColumnFormatting;
-use Maatwebsite\Excel\Concerns\WithEvents;
-use Maatwebsite\Excel\Events\AfterSheet;
 
-class SupervisorExport implements FromView, WithStyles,WithColumnFormatting,WithEvents
+class SupervisorExportPayment implements FromView, WithStyles
 {
   use Reports;
 
-    public $id;
+    public $id, $status, $name, $start, $end;
 
-    public function __construct($id)
+    public function __construct($id, $status, $name, $start, $end)
     {
         $this->id = $id;
+        $this->status = $status;
+        $this->name = $name;
+        $this->start = $start;
+        $this->end = $end;
     }
 
     public function view(): View 
     {
-        $orders = $this->getOrdersBySupervisor($this->id);
+        $orders = $this->getOrdersBySupervisor($this->id, ['status' => $this->status]);
        //dd($orders);
         
         return view('excels.supervisor-list', [
@@ -145,25 +145,6 @@ class SupervisorExport implements FromView, WithStyles,WithColumnFormatting,With
                     ],
                 ],
             ],*/
-        ];
-    }
-
-    public function columnFormats(): array
-    {
-        return [
-           'M' => '"$"#,##0.00', // Puedes cambiarlo según tu moneda
-            'K' => '"$"#,##0.00', // Puedes cambiarlo según tu moneda
-            
-        ];
-    }
-
-    public function registerEvents(): array
-    {
-        return [
-            AfterSheet::class => function (AfterSheet $event) {
-                // Aplica autofiltro desde A1 hasta N1 (o hasta donde quieras)
-                $event->sheet->getDelegate()->setAutoFilter('N4:N1000');
-            },
         ];
     }
 }
