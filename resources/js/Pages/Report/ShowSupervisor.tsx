@@ -1,5 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
-import { Head } from '@inertiajs/react'
+import { Head, Link } from '@inertiajs/react'
 import { type Role, type InstallationTeam, type PageProps, type User } from '@/types'
 import { formatPrice } from '@/Utils/price'
 import Flatpickr from 'react-flatpickr'
@@ -32,24 +32,117 @@ type IndexUserProps = PageProps & {
   orders: OrderSupervisor[]
   supervisor: User
   statuses: string[]
+  filters: FilterState
 }
 
-export default function ShowSupervisor ({ auth, orders, supervisor, statuses }: IndexUserProps) {
+interface FilterState {
+  status: string
+  name: string
+  start_date: string
+  end_date: string
+}
+
+export default function ShowSupervisor ({ auth, orders, supervisor, statuses, filters }: IndexUserProps) {
   // console.log(supervisor.id)
   const totalProjectAmount = orders.reduce((sum, order) => sum + Number(order.project_amount), 0)
   const totalCommissions = orders.reduce((sum, order) => sum + Number(order.supervisor_commissions), 0)
   const [tableOrders, setTableOrders] = useState<OrderSupervisor[]>(orders)
+  const [paymentDate, setPaymentDate] = useState<string>('')
+  const [selectedRows, setSelectedRows] = useState<number[]>([]) // Estado para almacenar las filas seleccionadas
+  const handleCheckboxChange = (orderId: number) => {
+    setSelectedRows((prevSelected) =>
+      prevSelected.includes(orderId)
+        ? prevSelected.filter((id) => id !== orderId) // Desmarcar
+        : [...prevSelected, orderId] // Marcar
+    )
+  }
   return (
       <AuthenticatedLayout
           auth={auth}
           pageTitle={`Projects supervisions ${supervisor.name}`}
-      >
+          actions={
+          <div className='flex flex-row gap-2 items-right justify-end'>
+
+             <Flatpickr
+              options={{
+                mode: 'single',
+                dateFormat: 'Y-m-d',
+                position: 'auto right'
+              }}
+              name="payment_date"
+              className="form-input"
+              onChange={([date]) => {
+                if (date) {
+                  setPaymentDate(date.toISOString().slice(0, 10))
+                }
+              }}
+            />
+
+          <button
+            className="btn btn-primary ml-2"
+            onClick={() => {
+              if (!paymentDate) {
+                alert('Please select a date.')
+                return
+              }
+
+              // Aquí haces lo que quieras con la fecha y los `selectedRows`
+              fetch(route('order.supervisor-close-all'), {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? ''
+                },
+                body: JSON.stringify({
+                  order_ids: selectedRows,
+                  payment_date: paymentDate,
+                  supervisor_id: supervisor.id
+                })
+              }).then(res => {
+                if (res.ok) {
+                  window.location.href = route('report.show_supervisor', { id: supervisor.id })
+                  setSelectedRows([])
+                  setPaymentDate('')
+                }
+              })
+            }}
+            >
+            Payment
+            </button>
+            <a
+              className="btn btn-secondary ml-2"
+              href={route('report.excel-installer-filter', { id: supervisor.id }) +
+                `?status=${filters.status}&name=${filters.name}&start_date=${filters.start_date}&end_date=${filters.end_date}`
+              }
+               target="_blank"
+              rel="noopener noreferrer"
+            >
+              <span>Export</span>
+            </a>
+
+          </div>
+        }
+              >
         <Head title={`Projects supervisions ${supervisor.name}`} />
-        <ShowSupervisorFilter id={String(supervisor.id)} statuses={statuses}/>
-        <div className='table-responsive'>
-          <table className="table-auto w-full">
-            <thead>
+        <ShowSupervisorFilter id={String(supervisor.id)} statuses={statuses} />
+        <div className='table-responsive overflow-x-auto max-h-[700px]'>
+          <table className="table-auto w-full border-collapse">
+            <thead className="bg-white sticky top-0 z-10 shadow-md">
               <tr className="font-bold text-left">
+              <th className="px-4 pt-5 pb-4">
+                <input
+                type="checkbox"
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    // Selecciona todos
+                    setSelectedRows(orders.map((order) => order.id))
+                  } else {
+                    // Deselecciona todos
+                    setSelectedRows([])
+                  }
+                }}
+                checked={selectedRows.length === orders.length && orders.length > 0}
+              /></th>
                 <th className="px-6 pt-5 pb-4">Name</th>
                 <th className="px-6 pt-5 pb-4">City Permit</th>
                 <th className="px-6 pt-5 pb-4">City</th>
@@ -63,14 +156,22 @@ export default function ShowSupervisor ({ auth, orders, supervisor, statuses }: 
                 <th className="px-6 pt-5 pb-4">Value Project</th>
                 <th className="px-6 pt-5 pb-4">% Commissions</th>
                 <th className="px-6 pt-5 pb-4">Commissions</th>
-                <th className="px-6 pt-5 pb-4">Status</th>
+                <th className="px-6 pt-5 pb-4 wide-column ">Status</th>
                 <th className="px-6 pt-5 pb-4 wide-column">Date Paid</th>
               </tr>
             </thead>
             <tbody>
               {tableOrders.map((order: OrderSupervisor, index) => {
+                const isSelected = selectedRows.includes(order.id)
                 return (
-                  <tr key={order.id}>
+                  <tr key={order.id} className={isSelected ? 'bg-blue-200' : ''}>
+                    <td className="px-4 py-4 border-t">
+                    <input
+                      type="checkbox"
+                      onChange={() => { handleCheckboxChange(order.id) }}
+                      checked={isSelected}
+                    />
+                  </td>
                     <td className="px-6 py-4 border-t">
                       {order.name}
                     </td>
@@ -119,7 +220,41 @@ export default function ShowSupervisor ({ auth, orders, supervisor, statuses }: 
                       {formatPrice(Number(order.supervisor_commissions))}
                     </td>
                     <td className="px-6 py-4 border-t">
-                      {order.supervisor_payment_status}
+
+                            <select
+                              id="status"
+                              name="status"
+                              className="form-select"
+                              autoComplete="status"
+                              placeholder='Status'
+                              value={order.supervisor_payment_status}
+                              onChange={(e) => {
+                                const newStatus = e.target.value
+                                fetch(route('order.update-status-payment'), {
+                                  method: 'POST',
+                                  headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? ''
+                                  },
+                                  body: JSON.stringify({
+                                    order_id: order.id,
+                                    status: newStatus
+                                  })
+                                })
+                                  .then((res) => {
+                                    if (res.ok) {
+                                      const updatedOrders = [...tableOrders]
+                                      updatedOrders[index].supervisor_payment_status = newStatus
+                                      setTableOrders(updatedOrders)
+                                    }
+                                  })
+                              }}
+                            >
+                              <option value="">Select Status</option>
+                              {statuses.map((status, index) => (
+                                <option key={index} value={status}>{status}</option>
+                              ))}
+                            </select>
                     </td>
                     <td className="px-6 pt-5 pb-4 wide-column">
                         <Flatpickr
@@ -171,7 +306,7 @@ export default function ShowSupervisor ({ auth, orders, supervisor, statuses }: 
             <tfoot>
             <tr>
             {/* Espacios vacíos hasta la columna "Value Project" */}
-            <td colSpan={10} className="px-6 py-4 border-t"></td>
+            <td colSpan={11} className="px-6 py-4 border-t"></td>
             <td className="px-6 py-4 border-t font-bold text-left">
               {formatPrice(totalProjectAmount)}
             </td>

@@ -53,9 +53,9 @@
              <td width='20' height='25' text-align='center' valign='middle'>{{$order['final_installation_date'] }}</td>
               <td width='20' height='25' text-align='center' valign='middle'>{{$order['execution_planing_date'] }}</td>
               <td width='20' height='25' text-align='center' valign='middle'>{{$order['qty_days'] }}</td>
-              <td width='20' height='25' text-align='center' valign='middle'>{{'$' . number_format($order['project_amount'], 2, '.', ',') }}</td>
+              <td width='20' height='25' text-align='center' valign='middle'>{{number_format($order['project_amount'], 2, '.', ',') }}</td>
               <td width='20' height='25' text-align='center' valign='middle'>{{$order['supervisor_payment_percentage']}} % </td>
-              <td width='20' height='25' text-align='center' valign='middle'>{{'$' . number_format($order['supervisor_commissions'], 2, '.', ',') }}</td>
+              <td width='20' height='25' text-align='center' valign='middle'>{{ number_format($order['supervisor_commissions'], 2, '.', ',') }}</td>
               <td width='20' height='25' text-align='center' valign='middle'>{{$order['supervisor_payment_status'] }}</td>
               <td width='20' height='25' text-align='center' valign='middle'>{{$order['supervisor_payment_date'] }}</td>
            

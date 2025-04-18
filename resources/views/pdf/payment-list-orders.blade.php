@@ -110,6 +110,7 @@
             $totalPaymentProcessed = 0; // Inicializar suma de Commissions
             $otherCostInstaller = 0;
             $grandTotalPayment = 0;
+            $grandtotalPending = 0;
            /* if (count($payments) > 0) {
               $totalPaymentProcessed = $payments[0]['amount'];
             }*/
@@ -137,6 +138,7 @@
               $otherCostInstaller += (int)$order['installation_payments'][$order['installation_payments']->count() - 1]['other_cost_installer'];
               $totalExtraDiscount += (int)$order['installation_payments'][$order['installation_payments']->count() - 1]['extra_discount'];
               $grandTotalPayment += $totalPaymentAmount;
+              $grandtotalPending += $pendingPaymentAmount;
               //dd($pendingPaymentAmount);
           @endphp
         <tr>
@@ -191,8 +193,8 @@
         <tr>
             <!-- Celdas vacías para alinear las columnas -->
             <td colspan="10" style="font-weight: bold; text-align: right;">Total:</td>
-            <td width='20' height='25' text-align='center' valign='middle' style="font-weight: bold;"></td>
-          
+            
+          <td width='20' height='25' text-align='center' valign='middle' style="font-weight: bold;">{{ '$' . number_format($grandtotalPending, 2, '.', ',') }}</td>
             <td width='20' height='25' text-align='center' valign='middle' style="font-weight: bold;">{{ '$' . number_format($totalExtraWork, 2, '.', ',') }}</td>
             <td width='20' height='25' text-align='center' valign='middle' style="font-weight: bold;"></td>
             <td width='20' height='25' text-align='center' valign='middle' style="font-weight: bold;">{{ '$' . number_format($totalExtraDiscount, 2, '.', ',') }}</td>

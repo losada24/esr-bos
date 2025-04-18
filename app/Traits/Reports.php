@@ -15,10 +15,10 @@ use Carbon\Carbon;
 trait Reports
 {
 
-  public function getOrdersBySupervisor($id)
+  public function getOrdersBySupervisor($id, $filters = [])
   {
 
-    $orders = Order::with(['orderStatus', 'owners', 'installationTeams'])
+    $orders = Order::supervisorFilter($filters)->with(['orderStatus', 'owners', 'installationTeams'])
       ->where('supervisor_id', $id)
       ->whereDate('installation_date', '<=', Carbon::today())
       ->where('status', '!=', OrderStatusEnum::PLANNED->value)

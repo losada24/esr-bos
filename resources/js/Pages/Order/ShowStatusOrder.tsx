@@ -35,7 +35,7 @@ export default function ShowStatusOrder ({ auth, orderStatuses, order }: IndexOr
           <table className="w-full whitespace-nowrap">
             <thead>
               <tr className="font-bold text-left">
-              <th className="px-6 pt-5 pb-4">Status Update Date </th>
+              <th className="px-6 pt-5 pb-4">Date </th>
                 <th className="px-6 pt-5 pb-4">Status</th>
                 <th className="px-6 pt-5 pb-4">Usuario</th>
                 <th className="px-6 pt-5 pb-4">Delivery/Pickup Date</th>

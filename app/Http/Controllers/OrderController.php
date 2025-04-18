@@ -339,6 +339,33 @@ class OrderController extends Controller
     $order->save();
   }
 
+  public function updateStatusPayment(Request $request)
+{
+    $order = Order::find($request->order_id);
+    $order->supervisor_payment_status = $request->status;
+    $order->save();
+
+    return response()->json(['success' => true]);
+}
+
+      public function supervisorCloseAll(Request $request)
+      {   
+            //dd($request->all());
+            foreach ($request->order_ids as $orderId) {
+              $order = Order::find($orderId);
+
+              $order->supervisor_payment_date = $request->payment_date;
+              $order->supervisor_payment_status = 'CLOSED';
+
+              $order->save();
+          }
+
+          //return response()->json(['message' => 'Payment completed successfully.']);
+              
+              return redirect()->route('report.show_supervisor', $request->supervisor_id)
+              ->with('success', 'Order updated successfully.');
+      }
+
   public function statusOrder($id)
   { // Obtener las órdenes por supervisor
     $order = Order::find($id);
@@ -353,7 +380,7 @@ class OrderController extends Controller
       'orderStatuses' => $orderStatuses->map(function ($status) {
         return [
           ...$status->toArray(),
-          'created_at_formatted' => Carbon::parse($status->updated_at)
+          'created_at_formatted' => Carbon::parse($status->created_at)
             ->setTimezone('America/New_York')
             ->format('Y-m-d'),
         ];

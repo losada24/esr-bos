@@ -85,6 +85,14 @@ Route::middleware('auth')->group(function () {
     Route::post('order/update-date-paid', [OrderController::class, 'updateDatePaid'])
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value])
       ->name('order.update_date_paid');
+
+      Route::post('order/update-status-payment', [OrderController::class, 'updateStatusPayment'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value])
+      ->name('order.update-status-payment');
+
+      Route::post('order/supervisor-close-all', [OrderController::class, 'supervisorCloseAll'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value])
+      ->name('order.supervisor-close-all');
     
     Route::get('dashboard/get_events/{year}/{month}/{service}/{status}/{name?}', [DashboardController::class, 'getEvents'])
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::INSTALLER->value .'|' . RoleEnum::SUPERVISOR->value .'|' . RoleEnum::SERVICE_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value . '|' . RoleEnum::OWNER->value . '|' . RoleEnum::OWNER_ADMIN->value])
@@ -218,6 +226,10 @@ Route::middleware('auth')->group(function () {
       Route::get('/report/excel-supervisor/{user}', [ReportController::class, 'export'])
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::SUPERVISOR->value] )
       ->name('report.excel-supervisor');
+
+      Route::get('/report/excel-supervisor-filter/{id}', [ReportController::class, 'exportPaymentSupervisor'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::INSTALLER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value] )
+      ->name('report.excel-installer-filter');
   
      /* Route::get('/email-test', function() {
         echo 'Start Email test <br/>';

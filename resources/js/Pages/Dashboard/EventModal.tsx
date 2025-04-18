@@ -215,12 +215,18 @@ const EventModal = ({
 
     let completeDate = editableData.complete_date
     if (editableData.status.value === 'COMPLETE') {
-      completeDate = completeDate || new Date().toISOString().slice(0, 10)
+      if (!completeDate) {
+        const today = new Date().toLocaleDateString('en-CA') // 'en-CA' devuelve 'YYYY-MM-DD'
+        completeDate = today
+      }
     }
 
     let pendingCollect = editableData.pending_collect
     if (editableData.status.value === 'PENDING COLLECT') {
-      pendingCollect = pendingCollect || new Date().toISOString().slice(0, 10)
+      if (!pendingCollect) {
+        const today = new Date().toLocaleDateString('en-CA') // 'en-CA' devuelve 'YYYY-MM-DD'
+        pendingCollect = today
+      }
     }
     const data = {
       ...editableData,

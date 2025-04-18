@@ -126,6 +126,12 @@ class Order extends Model
       $query->where(DB::raw("CONCAT(name, ' ', order_number, ' ', job_address)"), 'like', '%' . $search . '%');
     });
   }
+  public function scopeSupervisorFilter($query, array $filters)
+  {
+    $query->when($filters['status'] ?? null, function ($query, $search) {
+      $query->where('supervisor_payment_status', $search);
+    });
+  }
 
   public function scopeCalendarFilter($query, array $filters)
   {
@@ -181,7 +187,7 @@ class Order extends Model
     }
 
 
-    if (!(auth()->user()->hasRole(RoleEnum::ACCOUNT_MANAGER->value)) && !(auth()->user()->hasRole(RoleEnum::ADMIN->value))&& !(auth()->user()->hasRole(RoleEnum::OWNER_ADMIN->value))) {
+    if (!(auth()->user()->hasRole(RoleEnum::ACCOUNT_MANAGER->value)) && !(auth()->user()->hasRole(RoleEnum::ADMIN->value))&& !(auth()->user()->hasRole(RoleEnum::OWNER_ADMIN->value))&& !(auth()->user()->hasRole(RoleEnum::FRONTDESK->value))) {
       if (auth()->user()->hasRole(RoleEnum::INSTALLER->value)) {
         $installationTeams = InstallationTeam::where('user_id', auth()->user()->id)->first();
         $query->whereHas('installationTeams', function ($q) use ($installationTeams) {
