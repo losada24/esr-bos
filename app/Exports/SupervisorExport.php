@@ -152,7 +152,7 @@ class SupervisorExport implements FromView, WithStyles,WithColumnFormatting,With
     {
         return [
            'M' => '"$"#,##0.00', // Puedes cambiarlo según tu moneda
-            'K' => '"$"#,##0.00', // Puedes cambiarlo según tu moneda
+            'K' => '"$"##,##0.00', // Puedes cambiarlo según tu moneda
             
         ];
     }
