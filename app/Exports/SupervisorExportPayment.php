@@ -8,11 +8,16 @@ use Maatwebsite\Excel\Concerns\FromCollection;
 use Illuminate\Support\Facades\Request;
 use Illuminate\Contracts\View\View;
 use Maatwebsite\Excel\Concerns\FromView;
+use Maatwebsite\Excel\Concerns\WithColumnFormatting;
 use Maatwebsite\Excel\Concerns\WithStyles;
+use Maatwebsite\Excel\Concerns\WithEvents;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 use App\Traits\Reports;
+use Maatwebsite\Excel\Events\AfterSheet;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
 
-class SupervisorExportPayment implements FromView, WithStyles
+class SupervisorExportPayment implements FromView, WithStyles, WithColumnFormatting, WithEvents
 {
   use Reports;
 
@@ -130,12 +135,12 @@ class SupervisorExportPayment implements FromView, WithStyles
                     ],
                 ],
             // Cambiar tamaño de fuente para toda la hoja
-            'A5:O100' => [
+            /*'A5:O50' => [
               'font' => [
                   'name' => 'Tahoma', // Cambia a tu tipo de letra preferido
                   'size' => 8,
               ],
-          ],
+          ],*/
       
             // Agregar bordes
            /* 'A1:D100' => [
@@ -145,6 +150,64 @@ class SupervisorExportPayment implements FromView, WithStyles
                     ],
                 ],
             ],*/
+        ];
+    }
+
+    public function columnFormats(): array
+    {
+        return [
+           'M' => '"$"#,##0.00', // Puedes cambiarlo según tu moneda
+            'K' => '"$"##,##0.00', // Puedes cambiarlo según tu moneda
+            
+        ];
+    }
+
+    public function registerEvents(): array
+    {
+        return [
+            AfterSheet::class => function (AfterSheet $event) {
+              $sheet = $event->sheet->getDelegate();
+
+              // Aplica autofiltro si quieres
+              $sheet->setAutoFilter('N4:N1000');
+  
+              // Detectar última fila REAL (ignorando celdas con solo formato)
+              $startRow = 5;
+              $endRow = 1000;
+              $lastRow = $startRow;
+              for ($row = $startRow; $row <= $endRow; $row++) {
+                  $value = trim((string) $sheet->getCell("C{$row}")->getValue());
+                  if ($value !== '') {
+                      $lastRow = $row;
+                  }
+              }
+  
+              // Estilo general (ahora que sabemos el lastRow real)
+              $sheet->getStyle("A5:O{$lastRow}")->applyFromArray([
+                  'font' => [
+                      'name' => 'Tahoma',
+                      'size' => 8,
+                  ],
+              ]);
+  
+              // Fila de totales justo debajo de los datos
+              $totalRow = $lastRow + 1;
+  
+              $sheet->setCellValue("I{$totalRow}", 'Se actualiza con el filtro');
+              $sheet->getStyle("I{$totalRow}")->getFont()->setItalic(true);
+              $sheet->setCellValue("J{$totalRow}", 'TOTAL:');
+              $sheet->getStyle("J{$totalRow}")->getFont()->setBold(true);
+  
+              $sheet->setCellValue("K{$totalRow}", "=SUBTOTAL(9,K{$startRow}:K{$lastRow})");
+              $sheet->setCellValue("M{$totalRow}", "=SUBTOTAL(9,M{$startRow}:M{$lastRow})");
+  
+              $sheet->getStyle("K{$totalRow}:M{$totalRow}")->getFont()->setBold(true);
+  
+              // Fondo gris para la fila de totales
+              $sheet->getStyle("I{$totalRow}:M{$totalRow}")
+                  ->getFill()->setFillType(Fill::FILL_SOLID)
+                  ->getStartColor()->setRGB('D9D9D9');
+            },
         ];
     }
 }

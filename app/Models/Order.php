@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enum\OrderStatusEnum;
 use App\Enum\RoleEnum;
 use App\Enum\ServiceEnum;
+use App\Enum\SupervisorPaymentStatusEnum;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -129,7 +130,16 @@ class Order extends Model
   public function scopeSupervisorFilter($query, array $filters)
   {
     $query->when($filters['status'] ?? null, function ($query, $search) {
-      $query->where('supervisor_payment_status', $search);
+      if ($search != '') {
+        if($search == 'null'){
+          $query->whereIn('supervisor_payment_status', [SupervisorPaymentStatusEnum::PENDING->value, SupervisorPaymentStatusEnum::OPEN->value]);
+        }
+        else{
+          $query->where('supervisor_payment_status', $search);
+        }
+      }
+    
+      
     });
   }
 
