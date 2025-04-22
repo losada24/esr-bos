@@ -161,7 +161,7 @@ Route::middleware('auth')->group(function () {
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::INSTALLER->value .'|'. RoleEnum::SERVICE_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value] )
       ->name('report.installer');
 
-      Route::get('/report/show_installer/{id}', [ReportController::class, 'showInstaller'])
+      Route::get('/report/show_installer/{id?}', [ReportController::class, 'showInstaller'])
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::INSTALLER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value .'|'. RoleEnum::SERVICE_MANAGER->value] )
       ->name('report.show_installer');
 
@@ -215,7 +215,7 @@ Route::middleware('auth')->group(function () {
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::INSTALLER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value] )
       ->name('report.send-payment-installer');
 
-      Route::get('/report/send-paid-installer/{id}/{biweekly}', [ReportController::class, 'sendPaidInstaller'])
+      Route::get('/report/send-paid-installer/c', [ReportController::class, 'sendPaidInstaller'])
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::INSTALLER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value] )
       ->name('report.send-paid-installer');
 
@@ -230,6 +230,14 @@ Route::middleware('auth')->group(function () {
       Route::get('/report/excel-supervisor-filter/{id}', [ReportController::class, 'exportPaymentSupervisor'])
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::INSTALLER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value] )
       ->name('report.excel-installer-filter');
+
+      Route::get('/biweekly/show-installer-biweekly/{id}', [BiweeklyController::class, 'showInstallerBiweekly'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::SUPERVISOR->value .'|'. RoleEnum::SERVICE_MANAGER->value] )
+      ->name('biweekly.show-installer-biweekly');
+
+      Route::get('/biweekly/show-pdf-biweekly/{installerId}{biweeklyId}', [BiweeklyController::class, 'showPdfBiweekly'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::SUPERVISOR->value .'|'. RoleEnum::SERVICE_MANAGER->value] )
+      ->name('biweekly.show-pdf-biweekly');
   
      /* Route::get('/email-test', function() {
         echo 'Start Email test <br/>';
