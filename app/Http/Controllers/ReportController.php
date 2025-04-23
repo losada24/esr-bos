@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Actions\CreateBiweekly;
 use App\Actions\UpdateBiweekly;
 use App\Actions\UpdatePaymentInstaller;
+use App\Enum\HistoryPaymentEnum;
 use App\Enum\InstallerPaymentStatusEnum;
 use App\Enum\MethodOfPayment;
 use App\Enum\OrderStatusEnum;
@@ -137,9 +138,7 @@ class ReportController extends Controller
 
 
   public function exportPaymentSupervisor(Request $request, $id, User $user )
-  {
-    
-     //dd( $request->all());
+  { //dd( $request->all());
     return Excel::download(
       new SupervisorExportPayment(
             $id,
@@ -326,7 +325,8 @@ class ReportController extends Controller
       HistoryPendingPayment::create([
         'biweekly_id' => $biweekly,
         'installation_team_id' => $id,
-        'data' => $orders
+        'data' => $orders,
+        'type_history'=> HistoryPaymentEnum::INSTALLER->value
       ]);
 
       $ordersToPay = $orders->where('total_payment_amount', '>', 0);

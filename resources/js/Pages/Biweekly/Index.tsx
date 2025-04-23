@@ -4,6 +4,7 @@ import { type PageProps, type PaginatorLink } from '@/types'
 import 'flatpickr/dist/flatpickr.css'
 import EditIcon from '@/Components/Icons/EditIcon'
 import Pagination from '@/Components/Pagination'
+import EyeIcon from '@/Components/Icons/EyeIcon'
 
 interface BiweeklyInstaller {
   id: number
@@ -68,10 +69,16 @@ export default function Index ({ auth, biweeklies }: IndexUserProps) {
                       <Link
                         href={route('biweekly.edit', { id: biweekly.id })}
                         title='Edit Biweekly'
-                         className='mr-2'
                       >
                         <EditIcon />
                       </Link>
+                      <Link
+                          href={route('biweekly.show-installer-biweekly', biweekly.id)}
+                          title='View Installers'
+                        >
+                          <EyeIcon/>
+                        </Link>
+
                     </td>
                   </tr>
                 )
