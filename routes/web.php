@@ -238,6 +238,14 @@ Route::middleware('auth')->group(function () {
       Route::get('/biweekly/show-pdf-biweekly/{installerId}{biweeklyId}', [BiweeklyController::class, 'showPdfBiweekly'])
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::SUPERVISOR->value .'|'. RoleEnum::SERVICE_MANAGER->value] )
       ->name('biweekly.show-pdf-biweekly');
+
+      Route::get('/biweekly/show-pdf-biweekly-payment/{installerId}{biweeklyId}', [BiweeklyController::class, 'showPdfBiweeklyPayment'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::SUPERVISOR->value .'|'. RoleEnum::SERVICE_MANAGER->value] )
+      ->name('biweekly.show-pdf-biweekly-payment');
+
+      Route::get('/biweekly/show-pdf-biweekly-payment-resumen/{installerId}{biweeklyId}', [BiweeklyController::class, 'showPdfBiweeklyPaymentResumen'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::SUPERVISOR->value .'|'. RoleEnum::SERVICE_MANAGER->value] )
+      ->name('biweekly.show-pdf-biweekly-payment-resumen');
   
      /* Route::get('/email-test', function() {
         echo 'Start Email test <br/>';

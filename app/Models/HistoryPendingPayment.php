@@ -22,6 +22,7 @@ class HistoryPendingPayment extends Model
     'installation_team_id',
     'biweekly_id',
     'data',
+    'type_history'
   ];
 
   protected $casts = [
@@ -39,7 +40,7 @@ class HistoryPendingPayment extends Model
 
   public function installationTeam()
   {
-      return $this->belongsTo(InstallationTeam::class);
+    return $this->belongsTo(User::class, 'installation_team_id');
   }
 
   public function biweekly()
