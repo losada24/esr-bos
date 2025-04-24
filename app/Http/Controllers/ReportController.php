@@ -26,12 +26,14 @@ use App\Models\HistoryPendingPayment;
 use App\Models\InstallationPayment;
 use App\Models\InstallationTeam;
 use App\Models\Order;
+use App\Models\OrderProduct;
 use App\Models\PaymentExtraField;
 use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Router;
 use App\Rules\ValidateInstallationPayment;
+use App\Models\OrderStatus;
 use Barryvdh\LaravelIdeHelper\Method;
 use Inertia\Inertia;
 use Carbon\Carbon;
@@ -449,4 +451,49 @@ class ReportController extends Controller
             }
             return redirect()->back()->with('success', 'The email was successfully sent to the installer.');
         } 
+
+  public function productSummary(Request $request)
+  {
+
+    $startDate = Carbon::parse($request->start_date);
+    $endDate = Carbon::parse($request->end_date);
+
+    // Obtener IDs de órdenes que tienen ambos estados (EXECUTION y COMPLETE) en el rango
+    $filteredOrderIds = Order::whereHas('orderStatus', function ($q) use ($startDate, $endDate) {
+        $q->whereIn('status', ['EXECUTION', 'COMPLETE'])
+          ->whereBetween('created_at', [$startDate, $endDate]);
+    })
+    ->get()
+    ->filter(function ($order) use ($startDate, $endDate) {
+        // Verificar si ambas condiciones están presentes en la misma orden
+        $statuses = $order->orderStatus()->whereBetween('created_at', [$startDate, $endDate])
+                    ->pluck('status');
+        return $statuses->contains('EXECUTION') && $statuses->contains('COMPLETE');
+    })
+    ->pluck('id');
+
+    $totalOrders = $filteredOrderIds->count();
+    //dd($totalOrders);
+
+    // Contar todos los productos por tipo de las órdenes válidas
+    $productCounts = OrderProduct::select('type_of_product_id', DB::raw('COUNT(*) as product_count'))
+        ->whereIn('order_id', $filteredOrderIds)
+        ->groupBy('type_of_product_id')
+        ->with('typeOfProduct:id,name')
+        ->get()
+        ->map(function ($item) use ($totalOrders) {
+            return [
+                'product_type_id' => $item->type_of_product_id,
+                'product_type' => $item->typeOfProduct->name ?? 'N/A',
+                'product_count' => $item->product_count,
+                'total_filtered_orders' => $totalOrders,
+            ];
+        });
+
+    return Inertia::render('Report/ProductSummary', [
+        'productSummary' => $productCounts,
+        'startDate' => $startDate->toDateString(),
+        'endDate' => $endDate->toDateString(),
+    ]);
+}
 }
