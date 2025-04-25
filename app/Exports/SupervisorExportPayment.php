@@ -47,7 +47,9 @@ class SupervisorExportPayment implements FromView, WithStyles, WithColumnFormatt
     {  
       $sheet->setTitle( User::find($this->id)->name);
       // Obtener todas las filas
-      $rows = $sheet->getRowIterator(5);  // Comienza desde la fila 2 si los encabezados están en la fila 1
+      $highestRow = $sheet->getHighestRow();
+        $rows = $sheet->getRowIterator(5, $highestRow);
+      //$rows = $sheet->getRowIterator(5);  // Comienza desde la fila 2 si los encabezados están en la fila 1
 
       foreach ($rows as $row) {
           // Obtener los valores enteros de Qty date (columna B) y Planning date (columna C)
@@ -157,7 +159,7 @@ class SupervisorExportPayment implements FromView, WithStyles, WithColumnFormatt
     {
         return [
            'M' => '"$"#,##0.00', // Puedes cambiarlo según tu moneda
-            'K' => '"$"##,##0.00', // Puedes cambiarlo según tu moneda
+            'K' => '"$"###,##0.00', // Puedes cambiarlo según tu moneda
             
         ];
     }
@@ -176,12 +178,12 @@ class SupervisorExportPayment implements FromView, WithStyles, WithColumnFormatt
               $endRow = 1000;
               $lastRow = $startRow;
               for ($row = $startRow; $row <= $endRow; $row++) {
-                  $value = trim((string) $sheet->getCell("C{$row}")->getValue());
+                $value = trim((string) $sheet->getCell("A{$row}")->getValue());
                   if ($value !== '') {
                       $lastRow = $row;
                   }
               }
-  
+    
               // Estilo general (ahora que sabemos el lastRow real)
               $sheet->getStyle("A5:O{$lastRow}")->applyFromArray([
                   'font' => [
@@ -192,6 +194,7 @@ class SupervisorExportPayment implements FromView, WithStyles, WithColumnFormatt
   
               // Fila de totales justo debajo de los datos
               $totalRow = $lastRow + 1;
+              //dd($totalRow);
   
               $sheet->setCellValue("I{$totalRow}", 'Se actualiza con el filtro');
               $sheet->getStyle("I{$totalRow}")->getFont()->setItalic(true);
@@ -200,6 +203,13 @@ class SupervisorExportPayment implements FromView, WithStyles, WithColumnFormatt
   
               $sheet->setCellValue("K{$totalRow}", "=SUBTOTAL(9,K{$startRow}:K{$lastRow})");
               $sheet->setCellValue("M{$totalRow}", "=SUBTOTAL(9,M{$startRow}:M{$lastRow})");
+              $sheet->getStyle("K{$totalRow}")
+                  ->getNumberFormat()
+                  ->setFormatCode('"$"#,##0.00');
+
+              $sheet->getStyle("M{$totalRow}")
+                  ->getNumberFormat()
+                  ->setFormatCode('"$"#,##0.00');
   
               $sheet->getStyle("K{$totalRow}:M{$totalRow}")->getFont()->setBold(true);
   

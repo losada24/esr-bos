@@ -68,17 +68,6 @@
       @endforeach
     </tbody>
     <tfoot>
-        <tr>
-            <!-- Celdas vacías para alinear las columnas -->
-            <td colspan="10" style="font-weight: bold; text-align: right;">Total:</td>
-            <td width='20' height='25' text-align='center' valign='middle' style="font-weight: bold;">
-                {{ '$' . number_format($totalProjectAmount, 2, '.', ',') }}
-            </td>
-            <td></td>
-            <td width='20' height='25' text-align='center' valign='middle' style="font-weight: bold;">
-                {{ '$' . number_format($totalCommissions, 2, '.', ',') }}
-            </td>
-            <td colspan="2"></td>
-        </tr>
+       
     </tfoot>
 </table>
