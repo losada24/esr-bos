@@ -455,20 +455,20 @@ class ReportController extends Controller
 
   public function productSummary(Request $request)
   {
-      $user = auth()->user();
+      // $user = auth()->user();
     $startDate = Carbon::parse($request->start_date);
     $endDate = Carbon::parse($request->end_date);
 
-    $filteredOrderIds = Order::with(['orderStatus' => function ($q) use ($startDate, $endDate) {
-      $q->whereBetween('created_at', [$startDate, $endDate]);
-  }])->get()->filter(function ($order) {
-      $statuses = $order->orderStatus->pluck('status');
-      return $statuses->contains('EXECUTION') && $statuses->contains('COMPLETE');
-  })->pluck('id');
-  
-    //dd($filteredOrderIds);
-    $totalOrders = $filteredOrderIds->count();
-    //dd($totalOrders);
+          $filteredOrderIds = Order::with(['orderStatus' => function ($q) use ($startDate, $endDate) {
+            $q->whereBetween('created_at', [$startDate, $endDate]);
+        }])->get()->filter(function ($order) {
+            $statuses = $order->orderStatus->pluck('status');
+            return $statuses->contains('CONFIRMED');
+        })->pluck('id');
+        
+            dd($filteredOrderIds);
+            $totalOrders = $filteredOrderIds->count();
+            //dd($totalOrders);
 
             $rawData = OrderProduct::select(
               'type_of_product_id',
