@@ -466,7 +466,7 @@ class ReportController extends Controller
             return $statuses->contains('CONFIRMED');
         })->pluck('id');
         
-            dd($filteredOrderIds);
+            //dd($filteredOrderIds);
             $totalOrders = $filteredOrderIds->count();
             //dd($totalOrders);
 
