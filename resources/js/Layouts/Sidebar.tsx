@@ -170,6 +170,19 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                               </>
                           )}
 
+                          {(IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER) && (
+                              <>
+                                <li className="menu nav-item">
+                                    <NavLink href={route('report.product-summary')} active={route().current('report.product-summary')} className="group">
+                                        <div className="flex items-center">
+                                            <ReferralIcon/>
+                                            <SidebarLinkLabel>Product Summary</SidebarLinkLabel>
+                                        </div>
+                                    </NavLink>
+                                </li>
+                              </>
+                          )}
+
                             {/* (IS_SUPERVISOR) && (
                               <>
                                 <li className="menu nav-item">

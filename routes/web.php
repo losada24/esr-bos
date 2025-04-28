@@ -248,7 +248,7 @@ Route::middleware('auth')->group(function () {
       ->name('biweekly.show-pdf-biweekly-payment-resumen');
 
     Route::get('/report/product-summary', [ReportController::class, 'productSummary'])
-    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value .'|'. RoleEnum::SERVICE_MANAGER->value] )
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::SERVICE_MANAGER->value] )
     ->name('report.product-summary');
   
      /* Route::get('/email-test', function() {
