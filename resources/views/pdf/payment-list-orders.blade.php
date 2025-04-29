@@ -132,7 +132,7 @@
               //$installerPayment = $payments->where('order_id', $payment['order_id'])->where('id', '<=', $payment['id'])->sum('installer_payment');
               $pendingPaymentAmount = (float) $order['amount'] - (float) $installerPayment;
               //$totalPendingPaymentAmount +=  $payment['installer_payment'];
-              $totalPaymentAmount = (int)$order['installation_payments'][$order['installation_payments']->count() - 1]['installer_payment'] + (int)$order['installation_payments'][$order['installation_payments']->count() - 1]['extra_work'] - (int)$order['installation_payments'][$order['installation_payments']->count() - 1]['extra_discount'] - (int)$order['installation_payments'][$order['installation_payments']->count() - 1]['other_cost_installer'];
+              $totalPaymentAmount = (int)$order['installation_payments'][$order['installation_payments']->count() - 1]['installer_payment'] + (int)$order['installation_payments'][$order['installation_payments']->count() - 1]['extra_work'] - (int)$order['installation_payments'][$order['installation_payments']->count() - 1]['extra_discount'] + (int)$order['installation_payments'][$order['installation_payments']->count() - 1]['other_cost_installer'];
                
               $totalExtraWork += (int)$order['installation_payments'][$order['installation_payments']->count() - 1]['extra_work'];
               $otherCostInstaller += (int)$order['installation_payments'][$order['installation_payments']->count() - 1]['other_cost_installer'];
