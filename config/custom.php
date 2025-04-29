@@ -20,4 +20,5 @@ return [
   'google_mail_api_client_id' => env('GOOGLE_MAIL_API_CLIENT_ID'),
   'google_mail_api_client_secret' => env('GOOGLE_MAIL_API_CLIENT_SECRET'),
   'google_mail_refresh_token' => env('GOOGLE_MAIL_REFRESH_TOKEN'),
+  'admin_emails_payment' => env('ADMIN_EMAILS_PAYMENT'),
 ];

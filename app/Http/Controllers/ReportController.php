@@ -414,8 +414,8 @@ class ReportController extends Controller
         }
   
         $orders = $this->getOrdersByInstaller($id, $status=null , $startDate=null, $endDate=null, $orderStatu=null);
-        $variable = env('ADMIN_EMAILS_PAYMENT');
-        $adminEmails = explode(',', $variable); // Convierte la cadena en array
+        $adminEmailsConfig = config('custom.admin_emails_payment');
+        $adminEmails = explode(',', $adminEmailsConfig); // Convierte la cadena en array
         $user = User::find($id);
         $users = array_merge([$user->email], $adminEmails); // Une los correos en un solo array
         $installerName = $orders->first()['installer'] ?? '';
@@ -436,8 +436,8 @@ class ReportController extends Controller
             }
             $accountings = User::role([RoleEnum::ACCOUNTING->value])->get();
             $orders = $this->getOrdersByInstaller($id, $status=null , $startDate=null, $endDate=null, $orderStatu=null);
-            $variable = env('ADMIN_EMAILS_PAYMENT');
-            $adminEmails = explode(',', $variable); // Convierte la cadena en array
+            $adminEmailsConfig = config('custom.admin_emails_payment');
+            $adminEmails = explode(',', $adminEmailsConfig); // Convierte la cadena en array
             $user = User::find($id);
             $users = array_merge([$user->email], $adminEmails); // Une los correos en un solo array
             $users = array_merge($users, $accountings->pluck('email')->toArray());
