@@ -18,7 +18,7 @@ class BiweeklyController extends Controller
   public function index()
   {
     return Inertia::render('Biweekly/Index', [
-      'biweeklies' => Biweekly::paginate()->withQueryString()
+      'biweeklies' => Biweekly::orderBy('id', 'desc')->paginate()->withQueryString(),
     ]);
   }
   public function create()
@@ -118,7 +118,7 @@ class BiweeklyController extends Controller
             ->where('type_history', 'INSTALLER')
             ->get();
             $biweeklys= $biweekly[0]['data'];
-            //dd($biweeklys);
+            dd($biweeklys);
 
             $installerName =$biweekly[0]['data'][0]['installer'] ?? '';
             $companyName = $biweekly[0]['data'][0]['company_name'] ?? '';

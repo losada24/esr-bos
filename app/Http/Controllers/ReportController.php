@@ -239,7 +239,7 @@ class ReportController extends Controller
       'supervisor' // Cargar los propietarios
     ])->findOrFail($id);
 
-    $biweeklys = Biweekly::get();
+    $biweeklys = Biweekly::orderBy('id', 'desc')->get();
 
     $amount = $order->getGrandTotalPrice();
 
