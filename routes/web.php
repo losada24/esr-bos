@@ -215,7 +215,7 @@ Route::middleware('auth')->group(function () {
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::INSTALLER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value] )
       ->name('report.send-payment-installer');
 
-      Route::get('/report/send-paid-installer/c', [ReportController::class, 'sendPaidInstaller'])
+      Route::get('/report/send-paid-installer/{id}/{biweekly}', [ReportController::class, 'sendPaidInstaller'])
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::INSTALLER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value] )
       ->name('report.send-paid-installer');
 
