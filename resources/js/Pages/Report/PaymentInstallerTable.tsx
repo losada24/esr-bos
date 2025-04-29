@@ -95,7 +95,7 @@ const PaymentInstallerTable = ({
                       {formatPrice(p.other_cost_installer)}
                     </td>
                     <td className="border-t px-6 py-4 align-top">
-                      {p.percentage_payment > 0 ? formatPrice(Number(p.installer_payment) + Number(p.extra_work) - Number(p.extra_discount) + Number(p.other_cost_installer)) : 0}
+                      { formatPrice(Number(p.installer_payment) + Number(p.extra_work) - Number(p.extra_discount) + Number(p.other_cost_installer))}
                     </td>
                     <td className="border-t px-6 py-4 align-top">
                       {p.payment_status}
