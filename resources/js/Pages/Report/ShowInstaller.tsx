@@ -77,9 +77,9 @@ export default function ShowInstaller ({ auth, orders, installer, companyName, s
     const installerPayment = Number(lastPayment.installer_payment) || 0
     const percentagePayment = Number(lastPayment.percentage_payment) || 0
 
-    if (percentagePayment > 0) {
+    // if (percentagePayment > 0) {
       totalPayment = Number(installerPayment) + Number(extraWork) - Number(extraDiscount) + Number(otherCost)
-    }
+    // }
 
     return sum + totalPayment
   }, 0)
@@ -211,10 +211,11 @@ export default function ShowInstaller ({ auth, orders, installer, companyName, s
                   const otherCost = order.installation_payments && order.installation_payments.length > 0 ? Number(order.installation_payments[order.installation_payments.length - 1].other_cost_installer) : 0
                   const installerPayment = order.installation_payments && order.installation_payments.length > 0 ? Number(order.installation_payments[order.installation_payments.length - 1].installer_payment) : 0
                   const percentagePayment = order.installation_payments && order.installation_payments.length > 0 ? Number(order.installation_payments[order.installation_payments.length - 1].percentage_payment) : 0
-                  if (percentagePayment > 0) {
+                  // if (percentagePayment > 0) {
                     total = Number(installerPayment) + Number(extraWork) - Number(extraDiscount) + Number(otherCost)
-                  }
-                  return total }
+                  //}
+                  return total
+                }
 
                 const getPendingAmount = () => {
                   const totalInstallerPayment = order.installation_payments
