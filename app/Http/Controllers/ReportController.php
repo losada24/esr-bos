@@ -459,21 +459,24 @@ class ReportController extends Controller
     $startDate = Carbon::parse($request->start_date);
     $endDate = Carbon::parse($request->end_date);
 
-          $filteredOrderIds = Order::with(['orderStatus' => function ($q) use ($startDate, $endDate) {
+          /*$filteredOrderIds = Order::with(['orderStatus' => function ($q) use ($startDate, $endDate) {
             $q->whereBetween('created_at', [$startDate, $endDate]);
         }])->get()->filter(function ($order) {
             $statuses = $order->orderStatus->pluck('status');
-            return $statuses->contains('CONFIRMED');
-        })->pluck('id');
+            return $statuses->contains('PLANNED');
+        })->pluck('id');*/
+        $filteredOrderIds = Order::whereHas('orderStatus', function ($q) use ($startDate, $endDate) {
+          $q->where('status', 'CONFIRMED')
+            ->whereBetween('created_at', [$startDate, $endDate]);
+      })->pluck('id');
         
             //dd($filteredOrderIds);
             $totalOrders = $filteredOrderIds->count();
             //dd($totalOrders);
-
             $rawData = OrderProduct::select(
               'type_of_product_id',
-              DB::raw('SUM(CASE WHEN type_of_product_id IN (1, 2, 3) THEN qty ELSE 0 END) as total_qty'),
-              DB::raw('SUM(CASE WHEN type_of_product_id = 3 THEN storefront_area ELSE 0 END) as total_storefront_area')
+              DB::raw('SUM(qty) as total_qty'),
+              DB::raw('SUM(storefront_area) as total_storefront_area')
           )
           ->whereIn('order_id', $filteredOrderIds)
           ->whereNull('deleted_at')
@@ -484,14 +487,14 @@ class ReportController extends Controller
 
           //dd($rawData);
 
-        $productSummary = $rawData->map(function ($item) use ($totalOrders) {
-          return [
-              'product_type_id' => $item->type_of_product_id,
-              'product_type' => $item->typeOfProduct->name ?? 'N/A',
-              'product_count' => in_array($item->type_of_product_id, [1, 2, 3]) ? $item->total_qty : null,
-              'storefront_area' => $item->type_of_product_id == 3 ? $item->total_storefront_area : null,
-              'total_filtered_orders' => $totalOrders,
-          ];
+          $productSummary = $rawData->map(function ($item) use ($totalOrders) {
+            return [
+                'product_type_id' => $item->type_of_product_id,
+                'product_type' => $item->typeOfProduct->name ?? 'N/A',
+                'product_count' => $item->total_qty,
+                'storefront_area' => $item->type_of_product_id == 3 ? $item->total_storefront_area : null,
+                'total_filtered_orders' => $totalOrders,
+            ];
         });
 
         //dd($productSummary);
