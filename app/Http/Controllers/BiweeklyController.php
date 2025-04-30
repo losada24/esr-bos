@@ -80,7 +80,7 @@ class BiweeklyController extends Controller
             ->where('type_history', 'INSTALLER')
             ->get();
 
-            dd($biweekly);
+            //dd($biweekly);
             $biweeklys= $biweekly[0]['data'];
           
 

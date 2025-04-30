@@ -118,6 +118,11 @@ Route::middleware('auth')->group(function () {
       // ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|other_roles'])
       ->middleware('auth') 
       ->name('order.drop_attachment');
+
+      Route::delete('report/drop_payment/{id}', [ReportController::class, 'dropPayment'])
+      // ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|other_roles'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::PAYMENT_COORDINATOR->value ]) 
+      ->name('report.drop_payment');
     
       Route::get('/order/status_order/{id}', [OrderController::class, 'statusOrder'])
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::SUPERVISOR->value .'|' . RoleEnum::SERVICE_MANAGER->value] )
@@ -235,7 +240,7 @@ Route::middleware('auth')->group(function () {
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value .'|'. RoleEnum::SERVICE_MANAGER->value] )
       ->name('biweekly.show-installer-biweekly');
 
-      Route::get('/biweekly/show-pdf-biweekly/{installerId}{biweeklyId}', [BiweeklyController::class, 'showPdfBiweekly'])
+      Route::get('/biweekly/show-pdf-biweekly/{installerId}/{biweeklyId}', [BiweeklyController::class, 'showPdfBiweekly'])
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value .'|'. RoleEnum::SERVICE_MANAGER->value] )
       ->name('biweekly.show-pdf-biweekly');
 
