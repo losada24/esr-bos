@@ -243,6 +243,7 @@ Route::middleware('auth')->group(function () {
       Route::get('/biweekly/show-pdf-biweekly/{installerId}/{biweeklyId}', [BiweeklyController::class, 'showPdfBiweekly'])
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value .'|'. RoleEnum::SERVICE_MANAGER->value] )
       ->name('biweekly.show-pdf-biweekly');
+      
 
       Route::get('/biweekly/show-pdf-biweekly-payment/{installerId}{biweeklyId}', [BiweeklyController::class, 'showPdfBiweeklyPayment'])
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value  . '|' . RoleEnum::PAYMENT_COORDINATOR->value.'|'. RoleEnum::SERVICE_MANAGER->value] )
