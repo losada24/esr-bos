@@ -99,6 +99,18 @@ export default function ShowInstaller ({ auth, orders, installer, companyName, s
             <div className='flex flex-row gap-2 items-right justify-end'>
               <Link
                 className="btn btn-primary"
+                href={route('report.send-payment-installer', { id: installer.id, biweekly: selectedBiweekly })}
+              >
+                <span>Send Email Review</span>
+              </Link>
+              <Link
+                className="btn btn-primary"
+                href={route('report.send-paid-installer', { id: installer.id, biweekly: selectedBiweekly })}
+              >
+                <span>Send Email Payment</span>
+              </Link>
+              <Link
+                className="btn btn-primary"
                 href={route('report.payment', { id: installer.id, biweekly: selectedBiweekly })}
                 onClick={(e) => {
                   if (!window.confirm('Are you sure you want to proceed with the biweekly payment?')) {
@@ -107,12 +119,6 @@ export default function ShowInstaller ({ auth, orders, installer, companyName, s
                 }}
               >
                 <span>Biweekly Payment</span>
-              </Link>
-              <Link
-                className="btn btn-primary"
-                href={route('report.send-paid-installer', { id: installer.id, biweekly: selectedBiweekly })}
-              >
-                <span>Send Email Payment</span>
               </Link>
               <button
                 className="btn btn-primary"
@@ -141,12 +147,7 @@ export default function ShowInstaller ({ auth, orders, installer, companyName, s
                 >
                 <span>Export</span>
               </button>
-              <Link
-                className="btn btn-primary"
-                href={route('report.send-payment-installer', { id: installer.id, biweekly: selectedBiweekly })}
-              >
-                <span>Send Email Review</span>
-              </Link>
+              
               <Select
                 id='id'
                 name='biweekly_id'
