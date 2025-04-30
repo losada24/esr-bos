@@ -79,8 +79,10 @@ class BiweeklyController extends Controller
             ->where('installation_team_id', $installerId)
             ->where('type_history', 'INSTALLER')
             ->get();
+
+            dd($biweekly, $biweekly[0]['data'] );
             $biweeklys= $biweekly[0]['data'];
-            dd($biweeklys);
+          
 
             $installerName =$biweekly[0]['data'][0]['installer'] ?? '';
             $companyName = $biweekly[0]['data'][0]['company_name'] ?? '';
