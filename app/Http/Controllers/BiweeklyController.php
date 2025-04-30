@@ -72,7 +72,7 @@ class BiweeklyController extends Controller
       'biweekly_id' => $id,
     ]);
   }
-  public function showPdfBiweekly($installerId,$biweeklyId)
+  public function showPdfBiweekly($biweeklyId,$installerId)
   {       
            $biweekly = HistoryPendingPayment::with('installationTeam')
             ->where('biweekly_id', $biweeklyId)

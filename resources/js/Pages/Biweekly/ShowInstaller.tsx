@@ -45,7 +45,7 @@ export default function Index ({ auth, biweeklies }: IndexUserProps) {
                       <button
                       className="btn btn-primary"
                       onClick={() => {
-                        window.open(route('biweekly.show-pdf-biweekly', { installerId: biweekly.installation_team_id, biweeklyId: biweekly.biweekly_id }), '_blank')
+                        window.open(route('biweekly.show-pdf-biweekly', { biweeklyId: biweekly.biweekly_id, installerId: biweekly.installation_team_id }), '_blank')
                       }
                       }
                     >
