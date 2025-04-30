@@ -477,7 +477,8 @@ class ReportController extends Controller
             $biweeklyTitle = Carbon::parse($biweekly->start_biweekly_period)->locale('en')->isoFormat('MMMM D') . ' to ' . Carbon::parse($biweekly->end_biweekly_period)->locale('en')->isoFormat('MMMM D');
             $installationPaymentEmail = new InstallationPaidEmail($orders, $installerName, $companyName, $biweeklyTitle);
             foreach ($users as $user) {
-              SendGmailEmail::dispatch( $users, $installationPaymentEmail)->onQueue('emails');
+              //dd($user, $users);
+              SendGmailEmail::dispatch( $user, $installationPaymentEmail)->onQueue('emails');
             }
             return redirect()->back()->with('success', 'The email was successfully sent to the installer.');
         } 
@@ -533,5 +534,35 @@ class ReportController extends Controller
         'startDate' => $startDate->toDateString(),
         'endDate' => $endDate->toDateString(),
     ]);
+}
+
+
+public function dropPayment($id)
+{
+
+  // Buscar el attachment por ID
+  $attachment = InstallationPayment::find($id);
+  dd($attachment);
+
+  // Verificar si el attachment existe
+  if (!$attachment) {
+    return redirect()
+      ->back()
+      ->with('error', 'Attachment not found');
+  }
+
+  // Obtener el usuario autenticado
+  $user = auth()->user();
+
+  if ($attachment->user_id === auth()->user()->id || $user->hasRole([RoleEnum::ADMIN->value, RoleEnum::ACCOUNT_MANAGER->value])) {
+    $attachment->delete();
+    return redirect()
+      ->back()
+      ->with('success', 'Order deleted successfully.');
+  } else {
+    return redirect()
+      ->back()
+      ->with('error', 'You do not have permission to delete the file.');
+  }
 }
 }
