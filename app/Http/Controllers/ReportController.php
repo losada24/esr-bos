@@ -81,7 +81,7 @@ class ReportController extends Controller
     $endDate = request()->get('end_date');
 
     // Filtrar las órdenes por estado
-    if ($orders instanceof EloquentBuilder || $orders instanceof QueryBuilder) {
+  /*  if ($orders instanceof EloquentBuilder || $orders instanceof QueryBuilder) {
       // Es una consulta, puedes aplicar where y usar toSql
       $query = $orders->where('supervisor_payment_status', 'like', '%' . $status . '%');
       dd($query->toSql(), $query->getBindings()); // Depuración
@@ -93,7 +93,32 @@ class ReportController extends Controller
       });
     } else {
       dd('Tipo desconocido:', get_class($orders));
-    }
+    }*/
+    if ($orders instanceof EloquentBuilder || $orders instanceof QueryBuilder) {
+      $query = $orders;
+  
+      if ($status) {
+          $query = $query->where('supervisor_payment_status', 'like', '%' . $status . '%');
+      } else {
+          $query = $query->whereIn('supervisor_payment_status', [
+              SupervisorPaymentStatusEnum::OPEN->value,
+              SupervisorPaymentStatusEnum::PENDING->value,
+          ]);
+      }
+  
+      $orders = $query->get();
+  } elseif ($orders instanceof Collection) {
+      $orders = $orders->filter(function ($order) use ($status) {
+          if ($status) {
+              return stripos($order['supervisor_payment_status'], $status) !== false;
+          } else {
+              return in_array($order['supervisor_payment_status'], [
+                  SupervisorPaymentStatusEnum::OPEN->value,
+                  SupervisorPaymentStatusEnum::PENDING->value,
+              ]);
+          }
+      });
+  }
 
     if ($name) {
       $orders = $orders->filter(function ($order) use ($name) {
@@ -215,13 +240,15 @@ class ReportController extends Controller
   }
 
   public function installer(Request $request)
-  {
+  {     // dd(InstallationTeam::first());
     return Inertia::render('Report/Installer', [
       'installation_teams' => new InstallationTeamCollection(
         InstallationTeam::filter($request->only(['text']))
-          ->orderBy('updated_at', 'desc')
-          ->paginate()
-          ->withQueryString()
+        ->join('users', 'users.id', '=', 'installation_teams.user_id')
+        ->orderBy('users.name', 'asc')
+        ->select('installation_teams.*') // Importante: evita conflictos en los campos seleccionados
+        ->paginate()
+        ->withQueryString()
       )
     ]);
   }
@@ -417,7 +444,9 @@ class ReportController extends Controller
         $adminEmailsConfig = config('custom.admin_emails_payment');
         $adminEmails = explode(',', $adminEmailsConfig); // Convierte la cadena en array
         $user = User::find($id);
-        $users = array_merge([$user->email], $adminEmails); // Une los correos en un solo array
+        $users = array_merge([$user->email], $adminEmails);
+
+         // Une los correos en un solo array
         $installerName = $orders->first()['installer'] ?? '';
         $companyName = $orders->first()['company_name'] ?? '';
         $biweekly = Biweekly::find((int)$biweekly);
