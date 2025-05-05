@@ -32,32 +32,27 @@ class InstallationTeam extends Model
     ];
 
     public function scopeFilter($query, array $filters)
-{ 
-      $query->when($filters['text'] ?? null, function ($query, $search) {
+   { 
+      /*$query->when($filters['text'] ?? null, function ($query, $search) {
         $query->where(function ($query) use ($search) {
             $query->where(DB::raw("CONCAT(company_name, ' ', phone)"), 'like', '%' . $search . '%')
                   ->orWhereHas('user', function ($query) use ($search) {
                       $query->where(DB::raw("CONCAT(name, ' ', email)"), 'like', '%' . $search . '%');
                   });
             });
-          });
+          });*/
+          $query->when($filters['text'] ?? null, function ($query, $search) {
+            $query->where(function ($query) use ($search) {
+                $query->where(DB::raw("CONCAT(installation_teams.company_name, ' ', installation_teams.phone)"), 'like', '%' . $search . '%')
+                      ->orWhereHas('user', function ($query) use ($search) {
+                          $query->where(DB::raw("CONCAT(users.name, ' ', users.email)"), 'like', '%' . $search . '%');
+                      });
+            });
+        });
         
   
   
-        /* $query->when($filters['status'] ?? null, function ($query, $search) {
-          $query->where('status', $search);
-        })->when($filters['client_id'] ?? null, function ($query, $search) {
-          // $query->where('client_id', $search);
-          $query->whereHas('client', function ($query) use ($search) {
-            //$query->where('name', 'like', '%'.$search.'%');
-            $query->where(DB::raw("CONCAT(name, ' ', email, ' ',phone)"), 'like', '%'.$search.'%');
-          });
-        })->when($filters['entry_date'] ?? null, function ($query, $search) {
-          $query->where('entry_date', $search);
-        })->when($filters['address'] ?? null, function ($query, $search) {
-          $query->where('address', 'like', '%'.$search.'%');
-        }); */
-    }
+    } 
 
     public function attachments(): MorphMany {
         return $this->morphMany(Attachment::class, 'attachable');

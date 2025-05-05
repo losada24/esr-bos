@@ -9,6 +9,7 @@ use App\Models\Client;
 use App\Models\Order;
 use App\Models\OrderProduct;
 use App\Models\PaymentExtraField;
+use App\Traits\ComissionSupervisor;
 use App\Traits\OrderEmails;
 use App\Traits\OrderStatus;
 use Illuminate\Http\Request;
@@ -19,7 +20,7 @@ use App\Traits\Twilio;
 class UpdateOrder
 {
 
-  use OrderEmails, OrderStatus, Twilio;
+  use OrderEmails, OrderStatus, Twilio, ComissionSupervisor;
 
   public function handle(Request $request, Order $order)
   {
@@ -36,21 +37,56 @@ class UpdateOrder
           'vip_notes' => $request->vip_notes,
         ]);
       }
+      $order = Order::with('comissions')->findOrFail($order->id);
+      $oldAmount = $order->project_amount;
+      $newAmount = $request->project_amount;
+      $hasCommissions = $order->comissions()->exists();
+     
+       //dd( $oldAmount, $newAmount, $order);
 
       if ($order->service == ServiceEnum::INSTALLATION->value || $order->service == ServiceEnum::INSTALLATION_ONLY->value) {
         $execution_planing_date = $order->execution_planing_date;
-        $supervisor_payment_percentage = $order->supervisor_payment_percentage;
-        $percentageDecimal = floatval($supervisor_payment_percentage) / 100;
-        $supervisor_commissions = $request->project_amount * $percentageDecimal;
-        if ($request->status == OrderStatusEnum::COMPLETE->value) {
-          $supervisor_payment_status = SupervisorPaymentStatusEnum::PENDING->value;
-        } else {
-          $supervisor_payment_status = $order->supervisor_payment_status;
-        }
+        if ($newAmount != $oldAmount && $hasCommissions) {
+          // Eliminar comisiones previas
+          $order->comissions()->delete();
+      
+          if ($newAmount > 0) {
+              $commissions = $this->ComissionSupervisor($newAmount);
+              $totalCommission = array_sum(array_column($commissions, 'amount'));
+              foreach ($commissions as $data) {
+                  $order->comissions()->create($data);
+              }
+          } else {
+              // Si el nuevo monto es 0, no hay comisiones
+              $totalCommission = 0;
+          }
+      
+      } elseif (!$hasCommissions && $newAmount > 0) {
+          // Crear comisiones si no hay y el monto es mayor a cero
+          $commissions = $this->ComissionSupervisor($newAmount);
+          $totalCommission = array_sum(array_column($commissions, 'amount'));
+          foreach ($commissions as $data) {
+              $order->comissions()->create($data);
+          }
+      
+      } elseif ($newAmount == 0 && $hasCommissions) {
+          // Si el nuevo monto es 0 y hay comisiones, eliminarlas
+          $order->comissions()->delete();
+          $totalCommission = 0;
+      } else {
+          // En todos los demás casos
+          $totalCommission = 0;
+      }
+        
+      if ($request->status == OrderStatusEnum::COMPLETE->value) {
+        $supervisor_payment_status = SupervisorPaymentStatusEnum::PENDING->value;
+      } else {
+        $supervisor_payment_status = $order->supervisor_payment_status;
+      }
       } else {
         $execution_planing_date = 0;
         $supervisor_payment_percentage = 0.00;
-        $supervisor_commissions = 0.00;
+        $totalCommission = 0.00;
         $supervisor_payment_status = null;
       }
 
@@ -105,8 +141,8 @@ class UpdateOrder
         'initial_payment_percentage' => $initial_payment_percentage,
         'payment_definition' => $request->payment_definition,
         'execution_planing_date' => $execution_planing_date,
-        'supervisor_payment_percentage' => $supervisor_payment_percentage,
-        'supervisor_commissions' => $supervisor_commissions,
+        //'supervisor_payment_percentage' => $supervisor_payment_percentage,
+        'supervisor_commissions' => $totalCommission,
         'supervisor_payment_status' => $supervisor_payment_status,
         'hide_on_weekends' => $request->hide_on_weekends,
         'do_not_send_email' => $request->do_not_send_email,
@@ -131,23 +167,7 @@ class UpdateOrder
       $order->load('installationTeams');
      
       $order->owners()->sync($request->owners);
-      //dd($order->installationTeams()->first(), $order->owners()->first());
      
-
-      /*$installer = $order->installationTeams()->count();
-     
-      $orderExtraFields = $order->paymentExtraFields()->count() ?? 0;
-
-      //dd($installer, $orderExtraFields);
-       if ($installer > 0 && $orderExtraFields == 0) {
-        foreach ($order->installationTeams as $team) {
-          PaymentExtraField::create([
-            'installation_team_id' => $team->user_id,
-            'installer_payment_status' => 'OPEN',
-            'order_id' => $order->id,
-          ]);
-        }
-      } */
 
 
       $order->orderProducts()->delete();
@@ -226,27 +246,6 @@ class UpdateOrder
 
     $installer = $order->installationTeams()->count();
     $orderExtraFields = $order->paymentExtraFields()->count() ?? 0;
-
-    //dd($installer, $orderExtraFields);
-    /*if ($installer > 0 && $orderExtraFields == 0) {
-            foreach ($order->installationTeams as $team) {
-                PaymentExtraField::create([
-                    'installation_team_id' => $team->user_id,
-                    'installer_payment_status' => 'OPEN',
-                    'order_id' => $order->id,
-                ]);
-            }
-     } else{ 
-                foreach ($request->installation_teams as $team) {
-                  //dd((int)$team, $order->paymentExtraFields()->first()->installation_team_id);
-                if((int)$team != $order->paymentExtraFields()->first()->installation_team_id){
-                  $order->paymentExtraFields()->update([
-                      'installation_team_id' => (int)$team
-                  ]);
-              }
-
-              }
-            }*/
     $order->update(['supervisor_payment_status' => $supervisor_payment_status]);
     //dd($request->file('walk_trough_attach'));
     if ($request->hasFile('attachments')) {
