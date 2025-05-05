@@ -5,7 +5,8 @@ import { PAYMENT_METHODS, SERVICES } from '@/Utils/constants'
 import { log } from 'console'
 import { getValueIdNotNull } from './ReportInstallerCommon'
 import EditIcon from '@/Components/Icons/EditIcon'
-import { Link } from '@inertiajs/react'
+import { Link, router } from '@inertiajs/react'
+import DeleteIcon from '@/Components/Icons/DeleteIcon'
 
 const PaymentInstallerTable = ({
   amount,
@@ -29,6 +30,13 @@ const PaymentInstallerTable = ({
     // const result = Number(extra_work) + Number(other_cost_installer) - Number(extra_discount)
     const result = 0
     return calculatedPayment + Number(result)
+  }
+
+  const destroy = (id: number) => {
+     console.log(id)
+    if (confirm('Are you sure you want to delete this Payment?')) {
+      router.delete(route('report.drop_payment', id))
+    }
   }
   const getPaymentProcessed = () => {
     const totalInstallerPayments = payment.reduce((acc, p) => acc + Number(p.installer_payment || 0), 0)
@@ -68,7 +76,7 @@ const PaymentInstallerTable = ({
                   .reduce((acc, curr) => acc + Number(curr.installer_payment || 0), 0)
                 // Calcular el pago pendiente actual
                 const pendingPayment = amount - totalProcessedPayments
-                console.log(p)
+                // console.log(p)
                 return (
                   <tr
                     key={index}
@@ -111,6 +119,14 @@ const PaymentInstallerTable = ({
                       >
                         <EditIcon />
                       </button>
+                      {p.payment_status === 'REVIEW' && (
+                        <button
+                          type='button'
+                          onClick={() => { destroy(p.id) }}
+                        >
+                          <DeleteIcon />
+                        </button>
+                      )}
                       </td>
                   </tr>
                 )

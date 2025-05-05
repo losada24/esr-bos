@@ -542,7 +542,7 @@ public function dropPayment($id)
 
   // Buscar el attachment por ID
   $attachment = InstallationPayment::find($id);
-  dd($attachment);
+  //dd($attachment);
 
   // Verificar si el attachment existe
   if (!$attachment) {
@@ -554,7 +554,7 @@ public function dropPayment($id)
   // Obtener el usuario autenticado
   $user = auth()->user();
 
-  if ($attachment->user_id === auth()->user()->id || $user->hasRole([RoleEnum::ADMIN->value, RoleEnum::ACCOUNT_MANAGER->value])) {
+  if ($attachment->user_id === auth()->user()->id || $user->hasRole([RoleEnum::ADMIN->value, RoleEnum::PAYMENT_COORDINATOR->value])) {
     $attachment->delete();
     return redirect()
       ->back()

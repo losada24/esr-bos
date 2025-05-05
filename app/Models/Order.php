@@ -299,6 +299,11 @@ class Order extends Model
     return $this->belongsTo(TravelCost::class);
   }
 
+  public function comissions(): HasMany
+  {
+    return $this->hasMany(SupervisorComissionOrder::class);
+  }
+
   public function durationOfWork(): BelongsTo
   {
     return $this->belongsTo(DurationOfWork::class);
@@ -358,4 +363,5 @@ class Order extends Model
     }
     return $pricesWithExtraWorks + $this->additional_travel_costs + $travelCost;
   }
+
 }

@@ -11,6 +11,8 @@ use App\Enum\ServiceEnum;
 use App\Enum\SupervisorPaymentStatusEnum;
 use App\Models\Order;
 use App\Models\OrderProduct;
+use App\Models\SupervisorComissionOrder;
+use App\Traits\ComissionSupervisor;
 use App\Traits\OrderEmails;
 use App\Traits\OrderStatus;
 use Carbon\Carbon;
@@ -18,12 +20,15 @@ use Illuminate\Support\Str;
 
 class CreateOrder {
 
-  use OrderEmails, OrderStatus;
-  const SUPERVISOR_PAYMENT_PERCENTAGE = 0.3;
+  use OrderEmails, OrderStatus,ComissionSupervisor;
+  //const SUPERVISOR_PAYMENT_PERCENTAGE = 0.3;
+
+
 
   public function handle(Request $request) {
     
     // define('SUPERVISOR_PAYMENT_PERCENTAGE', 0.3);
+   
     
     DB::transaction(function() use ($request) {
 
@@ -36,6 +41,8 @@ class CreateOrder {
     ]);
 
     //dd($client);
+    $project_amount = $request->project_amount;
+    $supervisor_commissions = 0;
 
     if ($request->service == ServiceEnum::INSTALLATION->value || $request->service == ServiceEnum::INSTALLATION_ONLY->value) {
       if($request->type_of_housing_id == 3){
@@ -48,13 +55,26 @@ class CreateOrder {
         $execution_planing_date = PlaningDateSupervisorEnum::PROJECTS_WITHOUT_PERMISSIONS->value;
       }
       
-      $supervisor_payment_percentage = self::SUPERVISOR_PAYMENT_PERCENTAGE;
-      $supervisor_commissions = $request->project_amount * $supervisor_payment_percentage / 100;
-      $supervisor_payment_status = SupervisorPaymentStatusEnum::OPEN->value;
+      //$supervisor_payment_percentage = self::SUPERVISOR_PAYMENT_PERCENTAGE;
+      //$supervisor_commissions = $request->project_amount * $supervisor_payment_percentage / 100;
+      if ($project_amount > 0) {
+          $comissions = $this->ComissionSupervisor($project_amount);
+          $totalCommission = array_sum(array_column($comissions, 'amount'));
+
+         /* */
+          //dd( $comissions,$totalCommission);
+
+    } else {
+      $comissions = [];
+      $totalCommission = 0.00;
+
+    }
+
+       $supervisor_payment_status = SupervisorPaymentStatusEnum::OPEN->value;
     } else {
       $execution_planing_date = 0;
       $supervisor_payment_percentage = 0.00;
-      $supervisor_commissions = 0.00;
+      $totalCommission = 0.00;
       $supervisor_payment_status = null;
      }
      if($request->city_permits){
@@ -103,11 +123,13 @@ class CreateOrder {
         'initial_payment_percentage' =>$initial_payment_percentage,
         'payment_definition' => $request->payment_definition,
         'execution_planing_date'=> $execution_planing_date,
-        'supervisor_payment_percentage'=> $supervisor_payment_percentage,
-        'supervisor_commissions'=> $supervisor_commissions,
+        //'supervisor_payment_percentage'=> $supervisor_payment_percentage,
+        //'supervisor_commissions'=> $supervisor_commissions,
         'supervisor_payment_status' => $supervisor_payment_status,
         'do_not_send_email' => $request->do_not_send_email,
       ]);
+
+     
 
       if ($request->hasFile('attachments')) {
         $files = $request->file('attachments');
@@ -122,7 +144,18 @@ class CreateOrder {
           ]);
         }
       }
-
+     if(!empty($comissions)){
+       //dd('entro');
+      foreach ($comissions as $comission) {
+           SupervisorComissionOrder::create([
+            'order_id' => $order->id,
+            'percentage' => $comission['percentage'],
+            'amount' => $comission['amount'],
+            'tier' => $comission['tier'],
+            'tier_base_amount' => $comission['tier_base_amount'],
+        ]);
+       
+    }}
       $order->orderStatus()->create([
         'status' => $status,
         'user_id' => auth()->user()->id,
@@ -169,9 +202,12 @@ class CreateOrder {
         $orderProduct->orderProductExtraWorks()->attach($extraWorks);
       } 
 
+
+
       $this->sendEmail($order);
      $order->update([
         'is_send_email' => true,
+        'supervisor_commissions'=>$totalCommission
       ]);
 
       if( !$order )
