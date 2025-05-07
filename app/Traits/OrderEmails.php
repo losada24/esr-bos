@@ -40,11 +40,11 @@ trait OrderEmails {
           SendGmailEmail::dispatch($user, $estimateDeliveryInstallationDate)->onQueue('emails');
         }
        
-        foreach ($accountings->pluck('email')->toArray() as $user) {
+       /* foreach ($accountings->pluck('email')->toArray() as $user) {
           // Mail::to($user)->send(new EmailAccounting($order));
           $emailAccounting = new EmailAccounting($order);
           SendGmailEmail::dispatch($user, $emailAccounting)->onQueue('emails');
-        }
+        }*/
       } else if ($order->service === ServiceEnum::DELIVERY->value || $order->service === ServiceEnum::PICKUP->value) {
         foreach ($users as $user) {
           // Mail::to($user)->send(new EstimateMaterialArrivalDate($order));
