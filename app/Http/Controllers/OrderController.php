@@ -198,8 +198,9 @@ class OrderController extends Controller
       $status = [
         OrderStatusEnum::PLANNED->value,
         OrderStatusEnum::CONFIRMED->value,
-        //OrderStatusEnum::EXECUTION->value,
-        //OrderStatusEnum::SUPERVISION->value,
+        OrderStatusEnum::EXECUTION->value,
+        OrderStatusEnum::SUPERVISION->value,
+        OrderStatusEnum::FINAL_COLLECT->value,
         OrderStatusEnum::INSPECTION->value,
         OrderStatusEnum::FINISH->value,
         OrderStatusEnum::SERVICE->value,

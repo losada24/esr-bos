@@ -119,6 +119,7 @@ class UpdateOrderRequest extends FormRequest
               OrderStatusEnum::EXECUTION->value,
               OrderStatusEnum::SUPERVISION->value,
               OrderStatusEnum::INSPECTION->value,
+              OrderStatusEnum::SERVICE->value,
               OrderStatusEnum::FINISH->value,
               OrderStatusEnum::FINAL_INSPECTION->value,
               OrderStatusEnum::FINAL_COLLECT->value,
