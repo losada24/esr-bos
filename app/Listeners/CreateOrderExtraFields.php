@@ -22,6 +22,8 @@ class CreateOrderExtraFields
     $status = $order->status;
     $wt = $order->walk_trough;
     $pi = $order->pre_inspection;
+    $partial_payment = $order->partial_payment_installation;
+    $final_payment = $order->final_payment_installation;
    // \Log::info('Order: ' . $order);
 
     foreach ($order->installationTeams as $team) {
@@ -49,7 +51,7 @@ class CreateOrderExtraFields
         ]);
       }
 
-      if ($status == OrderStatusEnum::INSPECTION->value && $pi == 1) {
+      if ($status == OrderStatusEnum::INSPECTION->value && $pi == 1 && $partial_payment == 1) {
 
         $percentage_payment = 80.00; // Porcentaje fijo
         $installer_payment = ($order->getGrandTotalPrice() * $percentage_payment) / 100; // Cálculo del 80%
@@ -85,7 +87,7 @@ class CreateOrderExtraFields
         }
       }
 
-      if ($status == OrderStatusEnum::COMPLETE->value && $wt == 1) {
+      if ($status == OrderStatusEnum::COMPLETE->value && $wt == 1 && $final_payment == 1) {
         // Buscar pagos previos realizados (ya pagados)
         $ultimo_pagos = InstallationPayment::where('order_id', $order->id)
           ->where('installation_team_id', $team->user_id)
