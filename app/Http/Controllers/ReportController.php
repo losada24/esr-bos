@@ -362,7 +362,7 @@ class ReportController extends Controller
       $ordersToPay = $orders->where('total_payment_amount', '>', 0);
       $ordersToPay->each(function ($order) use ($biweekly, $id) {
         $paymentPercentage = 0;
-        //dd($order['installation_payments']);
+        //dd($order);
         foreach ($order['installation_payments'] as $payment) {
           $installationPayment = InstallationPayment::find($payment['id']);
          
@@ -396,6 +396,15 @@ class ReportController extends Controller
           ]);
 
           $pendingPaymentPercent = 100 - $paymentPercentage;
+
+            //dd( $pendingPaymentPercent);
+
+          if($order['status'] == OrderStatusEnum::INSPECTION->value || $order['pre_inspection'] == 0 || $order['partial_payment_installation'] == 0){
+            $pendingPaymentPercent = 0;
+          }
+          if($order['status'] == OrderStatusEnum::COMPLETE->value && ( $order['walk_trough'] == 0 || $order['final_payment_installation'] == 0)){
+            $pendingPaymentPercent = 0;
+          }
           InstallationPayment::create([
             'order_id' => $order['id'],
             'installation_team_id' => $id,
