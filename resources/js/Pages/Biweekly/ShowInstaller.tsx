@@ -13,16 +13,29 @@ interface BiweeklyInstallerHistory {
 
 type IndexUserProps = PageProps & {
   biweeklies: BiweeklyInstallerHistory[]
+  biweekly_id: number
+  biweeklyTitle: string
 }
 
-export default function Index ({ auth, biweeklies }: IndexUserProps) {
+export default function Index ({ auth, biweeklies, biweekly_id, biweeklyTitle }: IndexUserProps) {
   console.log(biweeklies)
   return (
       <AuthenticatedLayout
           auth={auth}
-          pageTitle={'Biweekly periods'}
+          pageTitle={'Biweekly Reports' + ' - ' + biweeklyTitle}
+          actions={
+            <button
+            className="btn btn-primary"
+            onClick={() => {
+              window.open(route('biweekly.show-pdf-biweekly-payment-resumen-general', { biweeklyId: biweekly_id }), '_blank')
+            }
+            }
+          >
+            <span>Total Summary Report</span>
+          </button>
+          }
       >
-        <Head title={'Biweekly periods'} />
+        <Head title={'Biweekly periods' } />
             <div className='table-responsive'>
           <table className="table-auto w-full">
             <thead>
@@ -54,7 +67,7 @@ export default function Index ({ auth, biweeklies }: IndexUserProps) {
                     <button
                       className="btn btn-primary"
                       onClick={() => {
-                        window.open()
+                        window.open(route('biweekly.export-biweekly-payment', { biweeklyId: biweekly.biweekly_id, installerId: biweekly.installation_team_id }), '_blank')
                       }
                       }
                     >
@@ -62,28 +75,6 @@ export default function Index ({ auth, biweeklies }: IndexUserProps) {
                     </button>
                     </div>
                     </td>
-                    {/* <td className="border-t px-6 py-4">
-                    <div className="flex items-center space-x-4">
-                      <button
-                      className="btn btn-primary"
-                      onClick={() => {
-                        window.open(route('biweekly.show-pdf-biweekly-payment', { installerId: biweekly.installation_team_id, biweeklyId: biweekly.biweekly_id }), '_blank')
-                      }
-                      }
-                    >
-                      <span>View PDF</span>
-                    </button>
-                    <button
-                      className="btn btn-primary"
-                      onClick={() => {
-                        window.open()
-                      }
-                      }
-                    >
-                      <span>Download Excel</span>
-                    </button>
-                    </div>
-                    </td> */}
                     <td className="border-t px-6 py-4">
                     <div className="flex items-center space-x-4">
                       <button

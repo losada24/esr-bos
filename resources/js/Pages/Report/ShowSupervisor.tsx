@@ -154,7 +154,7 @@ export default function ShowSupervisor ({ auth, orders, supervisor, statuses, fi
                 <th className="px-6 pt-5 pb-4">Planning Date</th>
                 <th className="px-6 pt-5 pb-4">Qty Date</th>
                 <th className="px-6 pt-5 pb-4">Value Project</th>
-                <th className="px-6 pt-5 pb-4">% Commissions</th>
+              
                 <th className="px-6 pt-5 pb-4">Commissions</th>
                 <th className="px-6 pt-5 pb-4 wide-column ">Status</th>
                 <th className="px-6 pt-5 pb-4 wide-column">Date Paid</th>
@@ -212,9 +212,6 @@ export default function ShowSupervisor ({ auth, orders, supervisor, statuses, fi
                     </td>
                     <td className="px-6 py-4 border-t">
                       {formatPrice(Number(order.project_amount))}
-                    </td>
-                    <td className="px-6 py-4 border-t">
-                      {order.supervisor_payment_percentage}%
                     </td>
                     <td className="px-6 py-4 border-t">
                       {formatPrice(Number(order.supervisor_commissions))}
