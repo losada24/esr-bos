@@ -94,27 +94,24 @@
 
     @foreach($biweeklys as $biweekly)
   @php
-     dd($biweeklys[10]['data']);
+     //dd($biweekly['data']);
+     $totalPaymentTotal = 0;
+     $totalPendingPaymentAmount = 0;
+     $companyName = $biweekly['data'][0]['company_name'] ?? '';
+    $installerName = $biweekly['data'][0]['installer'] ?? '';
   @endphp
         @foreach ( $biweekly['data'] as $biweeklydata )
           
             @php
            //dd($biweekly['data'] );
-            $totalPaymentTotal = $biweeklydata['total_payment_amount'];
-            $totalPendingPaymentAmount = $biweeklydata['pending_payment_amount'];
-
-          
-
-                //$biweekly['data'][0]['company_name'] = $biweeklydata['company_name'];
-               // $biweekly['data'][0]['installer'] = $biweeklydata['installer'];
-                 
-               
+            $totalPaymentTotal += $biweeklydata['total_payment_amount'];
+            $totalPendingPaymentAmount+= $biweeklydata['pending_payment_amount'];
             @endphp
           
         @endforeach
             <tr>
-            <td>{{ $biweekly['data'][0]['company_name'] }}</td>
-            <td>{{ $biweekly['data'][0]['installer'] }}</td>
+            <td>{{ $companyName }}</td>
+            <td>{{ $installerName}}</td>
             <td>{{ '$' . number_format( $totalPendingPaymentAmount, 2, '.', ',') }}</td>
             <td>{{ '$' . number_format($totalPaymentTotal, 2, '.', ',') }}</td>
         </tr>
