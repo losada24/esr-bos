@@ -95,18 +95,27 @@
 
         @foreach ( $biweekly['data'] as $biweeklydata )
             @php
-            //dd( $biweeklydata);
-            $totalPaymentTotal += $biweeklydata['total_payment_amount'];
-            $totalPendingPaymentAmount += $biweeklydata['pending_payment_amount'];
+           
+            $totalPaymentTotal = $biweeklydata['total_payment_amount'];
+            $totalPendingPaymentAmount = $biweeklydata['pending_payment_amount'];
+
+          
+
                 //$biweekly['data'][0]['company_name'] = $biweeklydata['company_name'];
                // $biweekly['data'][0]['installer'] = $biweeklydata['installer'];
                  
                
             @endphp
-        @endforeach
-      
-         @php
           
+        @endforeach
+            <tr>
+            <td>{{ $biweekly['data'][0]['company_name'] }}</td>
+            <td>{{ $biweekly['data'][0]['installer'] }}</td>
+            <td>{{ '$' . number_format( $totalPendingPaymentAmount, 2, '.', ',') }}</td>
+            <td>{{ '$' . number_format($totalPaymentTotal, 2, '.', ',') }}</td>
+        </tr>
+         @php
+         // dd( $totalPaymentTotal);
            $grandTotalPayment += $totalPaymentTotal;
            $grandtotalPending += $totalPendingPaymentAmount;
           
@@ -135,12 +144,7 @@
 
         @endphp
 
-        <tr>
-            <td>{{ $biweekly['data'][0]['company_name'] }}</td>
-            <td>{{ $biweekly['data'][0]['installer'] }}</td>
-            <td>{{ '$' . number_format( $totalPendingPaymentAmount, 2, '.', ',') }}</td>
-            <td>{{ '$' . number_format($totalPaymentTotal, 2, '.', ',') }}</td>
-        </tr>
+       
     @endforeach
 
     </tbody>
