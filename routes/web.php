@@ -249,9 +249,17 @@ Route::middleware('auth')->group(function () {
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value  . '|' . RoleEnum::PAYMENT_COORDINATOR->value.'|'. RoleEnum::SERVICE_MANAGER->value] )
       ->name('biweekly.show-pdf-biweekly-payment');
 
+      Route::get('/biweekly/export-biweekly-payment/{biweeklyId}/{installerId}', [BiweeklyController::class, 'exportBiweeklyPayment'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value  . '|' . RoleEnum::PAYMENT_COORDINATOR->value.'|'. RoleEnum::SERVICE_MANAGER->value] )
+      ->name('biweekly.export-biweekly-payment');
+
       Route::get('/biweekly/show-pdf-biweekly-payment-resumen/{installerId}{biweeklyId}', [BiweeklyController::class, 'showPdfBiweeklyPaymentResumen'])
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value .'|'. RoleEnum::SERVICE_MANAGER->value] )
       ->name('biweekly.show-pdf-biweekly-payment-resumen');
+
+      Route::get('/biweekly/show-pdf-biweekly-payment-resumen-general/{biweeklyId}', [BiweeklyController::class, 'showPdfBiweeklyPaymentResumenGeneral'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value .'|'. RoleEnum::SERVICE_MANAGER->value] )
+      ->name('biweekly.show-pdf-biweekly-payment-resumen-general');
 
     Route::get('/report/product-summary', [ReportController::class, 'productSummary'])
     ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::SERVICE_MANAGER->value] )
