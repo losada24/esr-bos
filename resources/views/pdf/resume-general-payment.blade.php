@@ -89,13 +89,17 @@
         $grandTotalPayment = 0;
         $grandtotalPending = 0;
         $totalPaymentTotal = 0;
+        //dd($biweeklys);
     @endphp
 
     @foreach($biweeklys as $biweekly)
-
+  @php
+     dd($biweeklys[10]['data']);
+  @endphp
         @foreach ( $biweekly['data'] as $biweeklydata )
+          
             @php
-           
+           //dd($biweekly['data'] );
             $totalPaymentTotal = $biweeklydata['total_payment_amount'];
             $totalPendingPaymentAmount = $biweeklydata['pending_payment_amount'];
 
