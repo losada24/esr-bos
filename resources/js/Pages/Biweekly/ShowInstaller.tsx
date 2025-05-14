@@ -24,15 +24,27 @@ export default function Index ({ auth, biweeklies, biweekly_id, biweeklyTitle }:
           auth={auth}
           pageTitle={'Biweekly Reports' + ' - ' + biweeklyTitle}
           actions={
-            <button
-            className="btn btn-primary"
-            onClick={() => {
-              window.open(route('biweekly.show-pdf-biweekly-payment-resumen-general', { biweeklyId: biweekly_id }), '_blank')
-            }
-            }
-          >
-            <span>Total Summary Report</span>
-          </button>
+                <div className='flex flex-row gap-2 items-right justify-end'>
+                <button
+                className="btn btn-primary"
+                onClick={() => {
+                  window.open(route('biweekly.show-pdf-biweekly-payment-resumen-general', { biweeklyId: biweekly_id }), '_blank')
+                }
+                }
+                  >
+                <span>Total Summary Report</span>
+              </button>
+              <button
+                className="btn btn-primary"
+                onClick={() => {
+                  window.open(route('biweekly.show-pdf-biweekly-payment-extra-work', { biweeklyId: biweekly_id }), '_blank')
+                }
+                }
+                  >
+                <span>Extra Work Report</span>
+              </button>
+
+              </div>
           }
       >
         <Head title={'Biweekly periods' } />

@@ -161,5 +161,23 @@ class BiweeklyController extends Controller
             return $pdf->stream($pdfName);
   }
 
+  
+  public function showPdfBiweeklyPaymentExtraWork($biweeklyId)
+  {       
+           $extraworks = InstallationPayment::with(['installationTeam', 'order.supervisor','order.owners'])
+            ->where('biweekly_id', $biweeklyId)
+             ->where('extra_work', '>', 0.00)
+             ->where('payment_status', 'PAID')
+            ->get();
+
+            //dd($extraworks);
+
+            $biweekly = Biweekly::find($biweeklyId);
+            $biweeklyTitle = Carbon::parse($biweekly->start_biweekly_period)->locale('en')->isoFormat('MMMM D') . ' to ' . Carbon::parse($biweekly->end_biweekly_period)->locale('en')->isoFormat('MMMM D');
+            $pdf = Pdf::loadView('pdf.resume-payment-extrawork', ['extraworks' => $extraworks,'biweeklyTitle' => $biweeklyTitle])->setPaper('A2', 'landscape');
+            $pdfName = 'Resumen-Payment-ExtraWork' .$biweeklyTitle .  '.pdf';
+            return $pdf->stream($pdfName);
+  }
+
 
 }
