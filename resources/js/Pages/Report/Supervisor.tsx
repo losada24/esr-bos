@@ -6,6 +6,8 @@ import SupervisorFilter from './SupervisorFilter'
 import { isAdmin, getRoleName } from '@/Utils/user'
 import EyeIcon from '@/Components/Icons/EyeIcon'
 import ExportIcon from '@/Components/Icons/ExportIcon'
+import MoneyIcon from '@/Components/Icons/MoneyIcon'
+import EyesIcon from '@/Components/Icons/Auth/EyesIcon'
 
 type IndexUserProps = PageProps & {
   users: {
@@ -55,6 +57,11 @@ export default function Supervisor ({ auth, users }: IndexUserProps) {
                     <td className="border-t flex items-center px-6 py-4">
                         <Link
                           href={route('report.show_supervisor', id)}
+                        >
+                          <MoneyIcon/>
+                        </Link>
+                        <Link
+                          href={route('report.show-supervisor-report', id)}
                         >
                           <EyeIcon/>
                         </Link>

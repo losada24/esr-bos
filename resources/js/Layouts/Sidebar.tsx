@@ -183,10 +183,10 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                               </>
                           )}
 
-                            {/* (IS_SUPERVISOR) && (
+                            {(IS_SUPERVISOR) && (
                               <>
                                 <li className="menu nav-item">
-                                    <NavLink href={route('report.show_supervisor', { id: auth.user.id })} active={route().current('report.show_supervisor')} className="group">
+                                    <NavLink href={route('report.show-supervisor-report', { id: auth.user.id })} active={route().current('report.show-supervisor-report')} className="group">
                                         <div className="flex items-center">
                                             <ReferralIcon/>
                                             <SidebarLinkLabel>My Orders</SidebarLinkLabel>
@@ -194,7 +194,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                     </NavLink>
                                 </li>
                               </>
-                            ) */ }
+                            ) }
                               {/* (IS_INSTALLER) && (
                               <>
                                 <li className="menu nav-item">

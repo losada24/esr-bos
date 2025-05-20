@@ -179,6 +179,113 @@ class ReportController extends Controller
       \Maatwebsite\Excel\Excel::XLSX
     );
   }
+
+  public function showSupervisorReport($id)
+  {
+    // Obtener las órdenes por supervisor
+    $orders = $this->getOrdersBySupervisorReport($id);
+
+    //dd($orders);
+
+    // Obtener los parámetros de filtro de la solicitud (request)
+    $status = request()->get('status');
+    $name = request()->get('name');
+    $startDate = request()->get('start_date');
+    $endDate = request()->get('end_date');
+
+    //dd($status, $name, $startDate, $endDate);
+
+    
+    if ($orders instanceof EloquentBuilder || $orders instanceof QueryBuilder) {
+      $query = $orders;
+  
+      if ($status) {
+          $query = $query->where('status', 'like', '%' . $status . '%');
+      } else {
+          $query = $query->whereIn('status', [  
+              OrderStatusEnum::CONFIRMED->value,
+              OrderStatusEnum::EXECUTION->value,
+              OrderStatusEnum::DELIVERY_CONFIRMED->value,
+              OrderStatusEnum::COMPLETE->value,
+              OrderStatusEnum::FINAL_COLLECT->value,
+              OrderStatusEnum::INSPECTION->value,
+              OrderStatusEnum::SUPERVISION->value,
+              OrderStatusEnum::ON_HOLD->value,
+              OrderStatusEnum::RESCHEDULE->value,
+              OrderStatusEnum::FINISH->value,
+              OrderStatusEnum::SERVICE->value,
+              OrderStatusEnum::FINAL_INSPECTION->value,  
+          ]);
+      }
+  
+      $orders = $query->get();
+
+
+  } elseif ($orders instanceof Collection) {
+      $orders = $orders->filter(function ($order) use ($status) {
+          if ($status) {
+              return stripos($order['status'], $status) !== false;
+          } else {
+              return in_array($order['status'], [
+                OrderStatusEnum::CONFIRMED->value,
+              OrderStatusEnum::EXECUTION->value,
+              OrderStatusEnum::DELIVERY_CONFIRMED->value,
+              OrderStatusEnum::COMPLETE->value,
+              OrderStatusEnum::FINAL_COLLECT->value,
+              OrderStatusEnum::INSPECTION->value,
+              OrderStatusEnum::SUPERVISION->value,
+              OrderStatusEnum::ON_HOLD->value,
+              OrderStatusEnum::RESCHEDULE->value,
+              OrderStatusEnum::FINISH->value,
+              OrderStatusEnum::SERVICE->value,
+              OrderStatusEnum::FINAL_INSPECTION->value,  
+              ]);
+          }
+      });
+  }
+
+    if ($name) {
+      $orders = $orders->filter(function ($order) use ($name) {
+        return stripos($order['name'], $name) !== false; // Filtro por nombre
+      });
+    }
+    //dd($orders);
+
+    if ($startDate) {
+      $orders = $orders->where('supervisor_payment_date', '>=', $startDate);
+    }
+
+    if ($endDate) {
+      $orders = $orders->where('supervisor_payment_date', '<=', $endDate);
+    }
+    //dd($orders);
+
+    // Retornar la vista con las órdenes filtradas
+    return Inertia::render('Report/ShowSupervisorReport', [
+      'orders' => $orders->values()->toArray(),
+      'supervisor' => User::find($id),
+      'statuses' => [
+        OrderStatusEnum::CONFIRMED->value,
+        OrderStatusEnum::EXECUTION->value,
+        OrderStatusEnum::DELIVERY_CONFIRMED->value,
+        OrderStatusEnum::COMPLETE->value,
+        OrderStatusEnum::FINAL_COLLECT->value,
+        OrderStatusEnum::INSPECTION->value,
+        OrderStatusEnum::SUPERVISION->value,
+        OrderStatusEnum::ON_HOLD->value,
+        OrderStatusEnum::RESCHEDULE->value,
+        OrderStatusEnum::FINISH->value,
+        OrderStatusEnum::SERVICE->value,
+        OrderStatusEnum::FINAL_INSPECTION->value,  
+      ],
+      'filters' => [
+        'status' => $status,
+        'name' => $name,
+        'start_date' => $startDate,
+        'end_date' => $endDate,
+      ],
+    ]);
+  }
   
 
 

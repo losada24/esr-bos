@@ -18,13 +18,14 @@ trait Reports
   public function getOrdersBySupervisor($id, $filters = [])
   {
 
-    $orders = Order::supervisorFilter($filters)->with(['orderStatus', 'owners', 'installationTeams'])
+   $orders = Order::supervisorFilter($filters)->with(['orderStatus', 'owners', 'installationTeams'])
       ->where('supervisor_id', $id)
       ->whereDate('installation_date', '<=', Carbon::today())
       ->where('status', '!=', OrderStatusEnum::PLANNED->value)
       ->orderBy('created_at', 'desc')
       ->get();
 
+      
 
     $total_amount = $orders->sum('project_amount');
     $total_commissions = $orders->sum('supervisor_commissions');
@@ -71,6 +72,71 @@ trait Reports
         'city_permits' => $order->city_permits,
         'total_amount' => $total_amount,
         'total_commissions' => $total_commissions,
+      ];
+    });
+  }
+
+
+  public function getOrdersBySupervisorReport($id, $filters = [])
+  {
+
+   $orders = Order::supervisorFilter($filters)->with(['orderStatus', 'owners', 'installationTeams'])
+      ->where('supervisor_id', $id)
+      ->whereDate('installation_date', '<=', Carbon::today())
+      ->where('status', '!=', OrderStatusEnum::PLANNED->value)
+      ->orderBy('created_at', 'desc')
+      ->get();
+   
+      //dd($orders);
+
+    $total_amount = $orders->sum('project_amount');
+    $total_commissions = $orders->sum('supervisor_commissions');
+    $preInspection = '';
+    //dd($total_amount,$total_commissions); 
+
+    return $orders->map(function ($order, $key) use ($total_amount, $total_commissions) {
+      $final_installation_date_status = $order->orderStatus->where('status', OrderStatusEnum::COMPLETE->value)->first();
+      $final_installation_date = null;
+      if ($final_installation_date_status) {
+        $final_installation_date = Carbon::parse($final_installation_date_status->created_at)->format('m/d/Y');
+      }
+      $partialPayment =  $order->partial_payment_installation ? 'PARTIAL' : '';
+      $finalPayment = $order->final_payment_installation ? 'FINAL' : '';
+      $walkTrough = $order->walk_trough  ? 'WT' : '';
+      $inspection = $order->inspection ? 'IN' : '';
+      $preInspection = $order->pre_inspection ? 'PI' : '';
+   
+      return [
+        'id' => $order->id,
+        'name' => $order->name,
+        'city' => $order->city,
+        'owners' => $order->owners->map(function ($owner, $key) {
+          return [
+            'id' => $owner->id,
+            'name' => $owner->name,
+          ];
+        }),
+        'installation_team' => $order->installationTeams->map(function ($team, $key) {
+          return [
+            'id' => $team->id,
+            'company_name' => $team->company_name,
+          ];
+        }),
+        //'month' => Carbon::parse($order->installation_date)->format('F'),
+        'installation_date' => Carbon::parse($order->installation_date)->format('m/d/Y'),
+        'inspection_date' => Carbon::parse($order->inspection_date)->format('m/d/Y'),
+        'final_installation_date' => $final_installation_date,
+        'project_amount' => $order->project_amount,
+        'supervisor_payment_status' => $order->supervisor_payment_status,
+        'city_permits' => $order->city_permits,
+        'total_amount' => $total_amount,
+        'total_commissions' => $total_commissions,
+        'status' => $order->status,
+        'pre_inspection' => $preInspection,
+        'inspection' =>$inspection,
+        'walk_trough' => $walkTrough,
+        'partial_payment_installation' => $partialPayment,
+        'final_payment_installation' => $finalPayment,
       ];
     });
   }

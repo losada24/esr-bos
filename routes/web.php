@@ -228,6 +228,10 @@ Route::middleware('auth')->group(function () {
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::SUPERVISOR->value .'|'. RoleEnum::SERVICE_MANAGER->value] )
       ->name('report.show_supervisor');
 
+      Route::get('/report/show-supervisor-report/{id}', [ReportController::class, 'showSupervisorReport'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::SUPERVISOR->value .'|'. RoleEnum::SERVICE_MANAGER->value] )
+      ->name('report.show-supervisor-report');
+
       Route::get('/report/excel-supervisor/{user}', [ReportController::class, 'export'])
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::SUPERVISOR->value] )
       ->name('report.excel-supervisor');
