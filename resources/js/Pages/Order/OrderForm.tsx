@@ -58,7 +58,8 @@ const OrderForm = ({
   frame_colors,
   attachments,
   status,
-  type_of_financing
+  type_of_financing,
+  statusPaymentInstaller
 }: {
   submitCount: number
   errors: FormikErrors<OrderFormValues>
@@ -83,6 +84,7 @@ const OrderForm = ({
   frame_colors: string[]
   attachments?: Attachment[]
   status: string[]
+  statusPaymentInstaller: string
   type_of_financing: string[]
 }) => {
   const inputRef = useRef<google.maps.places.SearchBox | null>(null)
@@ -309,6 +311,20 @@ const OrderForm = ({
         </fieldset>
         <fieldset className='p-3 border rounded-xl'>
           <legend className='text-lg font-semibold px-3'>Order Information</legend>
+              <div className='flex items-center mb-4'>
+                <strong className='mr-2'>STATUS PAYMENT INSTALLER:</strong>
+                <span
+                  className={`px-2 py-1 rounded ${
+                    statusPaymentInstaller === 'PARTIALLY PAID' || statusPaymentInstaller === 'FULLY PAID'
+                      ? 'shadow-md shadow-red-500 text-red-700'
+                      : statusPaymentInstaller === 'OPEN'
+                      ? 'shadow-md shadow-green-500 text-green-700'
+                      : ''
+                  }`}
+                >
+                  {statusPaymentInstaller}
+                </span>
+              </div>
           <div className='grid gap-4 grid-cols-4'>
             <div className={submitCount ? (errors.name) ? 'has-error' : 'has-success' : ''}>
               <label htmlFor="name">Name</label>
@@ -336,6 +352,8 @@ const OrderForm = ({
               />
               {(submitCount && errors.order_number) ? <InputError message={errors.order_number} className="mt-2" /> : ''}
             </div>
+
+           
           { /* <div className={submitCount ? (errors.job_address) ? 'has-error' : 'has-success' : ''}>
               <label htmlFor="job_address">Job Address</label>
               <Field
@@ -965,6 +983,37 @@ const OrderForm = ({
                     </div>
                     {(submitCount && errors.hide_on_weekends) ? <div className='block'><InputError message={errors.hide_on_weekends} className="mt-2" /></div> : ''}
                 </div>
+
+                <div className={submitCount ? (errors.is_new_travel_cost) ? 'has-error inline-flex flex-col' : 'has-success inline-flex' : 'inline-flex items-end'}>
+                    <div className='flex'>
+                      <Field
+                        id="is_new_travel_cost"
+                        name="is_new_travel_cost"
+                        className="form-checkbox"
+                        type='checkbox'
+                        onChange={(e: any) => {
+                          setFieldValue('is_new_travel_cost', e.target.checked)
+                          setFieldValue('new_travel_cost', 0)
+                          // setFieldValue('initial_payment_percentage', 0)
+                        }}
+                      />
+                      <label htmlFor="is_new_travel_cost">New Travel Cost</label>
+                    </div>
+                    {(submitCount && errors.is_new_travel_cost) ? <div className='block'><InputError message={errors.is_new_travel_cost} className="mt-2" /></div> : ''}
+                </div>
+                {(values.is_new_travel_cost) && (
+                        <div className={submitCount ? (errors.new_travel_cost) ? 'has-error' : 'has-success' : ''}>
+                        <label htmlFor="new_travel_cost">New Travel Cost</label>
+                        <Field
+                          id="new_travel_cost"
+                          name="new_travel_cost"
+                          className="form-input text-right"
+                          autoComplete="new_travel_cost"
+                          placeholder='New Travel Cost'
+                          type='number'
+                        />
+                        {(submitCount && errors.new_travel_cost) ? <InputError message={errors.new_travel_cost} className="mt-2" /> : ''}
+                </div>)}
                {/* <div className={submitCount ? (errors.initial_payment_percentage) ? 'has-error' : 'has-success' : ''}>
                   <label htmlFor="initial_payment_percentage">Initial Payment Percentage</label>
                   <Field

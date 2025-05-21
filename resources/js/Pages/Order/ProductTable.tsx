@@ -52,6 +52,9 @@ const ProductTable = ({
 
   const getTravelCost = () => {
     const id = getValueIdNotNull(values.travel_cost_id)
+    if (values.is_new_travel_cost) {
+      return values.new_travel_cost ? Number(values.new_travel_cost) : 0
+    }
     const result = travel_costs.find((type) => Number(type.id) === Number(id))?.price
     return result ? Number(result) : 0
   }

@@ -16,6 +16,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use App\Traits\Twilio;
+use Twilio\TwiML\Voice\Pay;
 
 class UpdateOrder
 {
@@ -37,6 +38,8 @@ class UpdateOrder
           'vip_notes' => $request->vip_notes,
         ]);
       }
+
+     
       $order = Order::with('comissions')->findOrFail($order->id);
       $oldAmount = $order->project_amount;
       $newAmount = $request->project_amount;
@@ -146,6 +149,8 @@ class UpdateOrder
         'supervisor_payment_status' => $supervisor_payment_status,
         'hide_on_weekends' => $request->hide_on_weekends,
         'do_not_send_email' => $request->do_not_send_email,
+        'is_new_travel_cost' => $request->is_new_travel_cost,
+        'new_travel_cost' => $request->new_travel_cost,
       ];
       //dd($orderData);
       $order->update($orderData);

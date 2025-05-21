@@ -25,6 +25,7 @@ use App\Models\DurationOfWork;
 use App\Models\ExtraWork;
 use App\Models\InstallationTeam;
 use App\Models\OrderStatus;
+use App\Models\PaymentExtraField;
 use App\Models\ProductCategory;
 use App\Models\ProductConfig;
 use App\Models\ProductCost;
@@ -213,6 +214,8 @@ class OrderController extends Controller
         $status[] = OrderStatusEnum::RESCHEDULE->value;
       }
     }
+    $statusPaymentInstaller = PaymentExtraField::where('order_id', $order->id)->first();
+    //dd($statusPaymentInstaller->installer_payment_status);
 
     return Inertia::render('Order/Edit', [
       'order' => $order->load([
@@ -225,7 +228,11 @@ class OrderController extends Controller
         'orderProducts.orderProductExtraWorks',
         'installationTeams.user',
       ]),
-      'clients' => Client::all(),
+      
+      //'statusPaymentInstaller' => $statusPaymentInstaller->installer_payment_status,
+      'statusPaymentInstaller' => $statusPaymentInstaller
+    ? $statusPaymentInstaller->installer_payment_status
+    : 'OPEN',
       'type_of_works' => TypeOfWork::all(),
       'types_of_housing' => TypeOfHousing::all(),
       'owners' => User::role(RoleEnum::OWNER->value)->get(),

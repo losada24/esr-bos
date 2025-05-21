@@ -22,6 +22,7 @@ import {
 export default function Edit ({
   auth,
   clients,
+  statusPaymentInstaller,
   owners,
   type_of_works,
   types_of_housing,
@@ -57,6 +58,7 @@ export default function Edit ({
   order: Order
   frame_colors: string[]
   status: string[]
+  statusPaymentInstaller: string
   type_of_financing: string[]
 }) {
   const initialValues: OrderFormValues = loadOrderFormObj(order)
@@ -173,6 +175,7 @@ export default function Edit ({
                 frame_colors={frame_colors}
                 attachments={order.attachments}
                 status={status}
+                statusPaymentInstaller={statusPaymentInstaller}
                 type_of_financing={type_of_financing}
               />
             )}
