@@ -74,6 +74,8 @@ export interface Order {
   inspection_attach?: Attachment
   walk_trough_attach?: Attachment
   is_send_email?: boolean
+  is_new_travel_cost?: boolean
+  new_travel_cost?: number
 }
 
 export interface TypeOfWork {

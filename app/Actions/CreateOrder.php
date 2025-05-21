@@ -127,6 +127,9 @@ class CreateOrder {
         //'supervisor_commissions'=> $supervisor_commissions,
         'supervisor_payment_status' => $supervisor_payment_status,
         'do_not_send_email' => $request->do_not_send_email,
+        'is_new_travel_cost' => $request->is_new_travel_cost,
+        'new_travel_cost' => $request->new_travel_cost,
+
       ]);
 
      

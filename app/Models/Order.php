@@ -83,6 +83,8 @@ class Order extends Model
     'partial_payment_installation',
     'final_payment_installation',
     'is_send_email',
+    'is_new_travel_cost',
+    'new_travel_cost',
   ];
 
   protected $dates = [
@@ -101,6 +103,7 @@ class Order extends Model
     'complete_date',
     'service_date',
     'pending_collect',
+    
   ];
 
   protected function casts(): array
@@ -116,6 +119,7 @@ class Order extends Model
       'partial_payment_installation' => 'boolean',
       'final_payment_installation' => 'boolean',
       'is_send_email' => 'boolean',
+      'is_new_travel_cost' => 'boolean',
     ];
   }
 
@@ -358,8 +362,11 @@ class Order extends Model
   {
     $pricesWithExtraWorks = $this->orderProducts->sum('total_price') + $this->orderProducts->sum('extra_work_price');
     $travelCost = 0;
-    if (isset($this->travel_cost_id)) {
+    if (isset($this->travel_cost_id) && $this->is_new_travel_cost == 0) {
       $travelCost = $this->travelCost->price;
+    }
+    if ($this->is_new_travel_cost == 1) {
+      $travelCost = $this->new_travel_cost;
     }
     return $pricesWithExtraWorks + $this->additional_travel_costs + $travelCost;
   }

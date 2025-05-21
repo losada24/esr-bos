@@ -109,7 +109,9 @@ export const orderFormObj: OrderFormValues = {
   initial_payment_percentage: 0,
   payment_definition: false,
   hide_on_weekends: false,
-  is_send_email: false
+  is_send_email: false,
+  is_new_travel_cost: false,
+  new_travel_cost: 0
 }
 
 export interface OrderProductExtraWorksFormValues {
@@ -171,7 +173,9 @@ export const loadOrderFormObj = (order: Order): OrderFormValues => {
     initial_payment_percentage: order.initial_payment_percentage,
     hide_on_weekends: order.hide_on_weekends ?? false,
     do_not_send_email: order.do_not_send_email ?? false,
-    is_send_email: order.is_send_email ?? false
+    is_send_email: order.is_send_email ?? false,
+    is_new_travel_cost: order.is_new_travel_cost ?? false,
+    new_travel_cost: order.new_travel_cost ?? 0
   }
 }
 

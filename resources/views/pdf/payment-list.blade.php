@@ -88,8 +88,16 @@
               </tr>
             @endforeach
             <tr>
+            @php 
+              $travelCost = $order->travelCost->price;
+            @endphp
+              @if ($order->is_new_travel_cost) 
+                    @php 
+                    $travelCost = $order->new_travel_cost;
+                    @endphp
+              @endif
               <td class="service" colspan="4">Travel Cost</td>
-              <td class="total">{{ '$' . number_format($order->travelCost->price, 2, '.', ',') /* $fmt->formatCurrency($order->travelCost->price, 'USD' )*/ }}</td>
+              <td class="total">{{ '$' . number_format($travelCost, 2, '.', ',') /* $fmt->formatCurrency($order->travelCost->price, 'USD' )*/ }}</td>
             </tr>
             <tr>
               <td class="service" colspan="4">Other Cost</td>
@@ -108,7 +116,7 @@
                 <table class='summary-table'>
                   <tr>
                     <td colspan='2' class="total border-right">Total</td>
-                    <td class="total">{{ '$' . number_format($grandTotal + $order->travelCost->price + $order->additional_travel_costs, 2, '.', ',') /* $fmt->formatCurrency($grandTotal + $order->travelCost->price + $order->additional_travel_costs, 'USD' ) */ }}</td>
+                    <td class="total">{{ '$' . number_format($grandTotal + $travelCost + $order->additional_travel_costs, 2, '.', ',') /* $fmt->formatCurrency($grandTotal + $order->travelCost->price + $order->additional_travel_costs, 'USD' ) */ }}</td>
                   </tr>
                   <tr>
                     <td class="other-services border-right">After Installation</td>
@@ -119,7 +127,7 @@
                     </td>
                     <td class="grand total">
                       @if ($order->city_permits) 
-                        {{ '$' . number_format(($grandTotal + $order->travelCost->price + $order->additional_travel_costs) * $order->initial_payment_percentage / 100, 2, '.', ',') }}
+                        {{ '$' . number_format(($grandTotal + $travelCost + $order->additional_travel_costs) * $order->initial_payment_percentage / 100, 2, '.', ',') }}
                       @endif
                     </td>
                   </tr>
@@ -132,13 +140,13 @@
                     </td>
                     <td class="grand total">
                       @if ($order->city_permits) 
-                        {{ '$' . number_format(($grandTotal + $order->travelCost->price + $order->additional_travel_costs) * (100 - $order->initial_payment_percentage) / 100, 2, '.', ',') }}
+                        {{ '$' . number_format(($grandTotal + $travelCost + $order->additional_travel_costs) * (100 - $order->initial_payment_percentage) / 100, 2, '.', ',') }}
                       @endif
                     </td>
                   </tr>
                   <tr>
                     <td colspan='2' class="grand total border-right">Total</td>
-                    <td class="grand total">{{ '$' . number_format($grandTotal + $order->travelCost->price + $order->additional_travel_costs, 2, '.', ',') /* $fmt->formatCurrency($grandTotal + $order->travelCost->price + $order->additional_travel_costs, 'USD' ) */ }}</td>
+                    <td class="grand total">{{ '$' . number_format($grandTotal + $travelCost + $order->additional_travel_costs, 2, '.', ',') /* $fmt->formatCurrency($grandTotal + $order->travelCost->price + $order->additional_travel_costs, 'USD' ) */ }}</td>
                   </tr>
                 </table>
               </td>
