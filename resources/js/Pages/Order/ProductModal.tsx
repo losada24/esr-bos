@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import Modal from '@/Components/Modal'
 import CloseIcon from '@/Components/Icons/CloseIcon'
-import { type OrderProduct, type ProductCategory, type ProductConfig, type TypeOfProduct, type ProductCost } from '@/types'
+import { type OrderProduct, type ProductCategory, type ProductConfig, type TypeOfProduct, type ProductCost, TypeOfWork } from '@/types'
 import { Field, Form, Formik, type FormikHelpers } from 'formik'
 import { type OrderProductExtraWorksFormValues, orderProductSchema, getValueIdNotNull } from './OrderCommon'
 import InputError from '@/Components/InputError'
@@ -17,6 +17,7 @@ const ProductModal = ({
   productCategories,
   productConfigs,
   typeOfWork,
+  listTypeOfWork,
   productCosts,
   addOrderProduct,
   service
@@ -28,6 +29,7 @@ const ProductModal = ({
   productCategories: ProductCategory[]
   productConfigs: ProductConfig[]
   typeOfWork: number
+  listTypeOfWork: TypeOfWork[]
   productCosts: ProductCost[]
   service: string
   addOrderProduct: CallableFunction
@@ -218,6 +220,27 @@ const ProductModal = ({
                             type='number'
                           />
                           {(submitCount && errors.qty) ? <InputError message={errors.qty} className="mt-2" /> : ''}
+                        </div>
+                        <div className={submitCount ? (errors.type_of_work_id) ? 'has-error' : 'has-success' : ''}>
+                          <label htmlFor="type_of_work">Type of Work</label>
+                          <Field
+                            id="type_of_work_id"
+                            name="type_of_work_id"
+                            className="form-select"
+                            autoComplete="type_of_work_id"
+                            placeholder='Type of Work'
+                            as="select"
+                            onChange={(e: { target: { value: string } }) => {
+                              const type_of_work_id = parseInt(e.target.value)
+                              setFieldValue('type_of_work_id', type_of_work_id)
+                            }}
+                          >
+                            <option value="0">Type of Work</option>
+                            {listTypeOfWork.map((listTypeOfWork, index) => (
+                              <option key={index} value={listTypeOfWork.id}>{listTypeOfWork.name}</option>
+                            ))}
+                          </Field>
+                          {(submitCount && errors.type_of_work_id) ? <InputError message={errors.type_of_work_id} className="mt-2" /> : ''}
                         </div>
 
                         <div className='col-span-3'>

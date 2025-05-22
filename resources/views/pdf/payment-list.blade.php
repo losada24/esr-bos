@@ -40,6 +40,7 @@
             <tr>
               <th class="service">PRODUCT</th>
               <th class="desc">CATEGORY</th>
+              <th class="desc">TYPE OF WORK</th>
               <th class="number-headers">QTY</th>
               <th class="number-headers">PRICE</th>
               <th class="number-headers">SUBTOTAL</th>
@@ -48,10 +49,11 @@
           <tbody>
             @foreach ($order->orderProducts->groupBy('productCategory.name') as $key => $products)
               <tr>
-                <td class="table-section" colspan="5">{{ $key }}</td>
+                <td class="table-section" colspan="6">{{ $key }}</td>
               </tr>
               @foreach ($products as $product)
                 @php
+                //dd($product);
                   $extraWorksCollection = $extraWorksCollection->merge($product->orderProductExtraWorks);
                   $grandTotal += $product->total_price;
                 @endphp
@@ -63,6 +65,7 @@
                        (Other Level) 
                     @endif
                   </td>
+                  <td >{{ $product->typeOfWork->name }}</td>
                   <td class="qty">{{ $product->qty }}</td>
                   <td class="unit">{{ '$' . number_format($product->unit_price, 2, '.', ',') /*$fmt->formatCurrency($product->unit_price, 'USD')*/ }}</td>
                   <td class="total">{{ '$' . number_format($product->total_price, 2, '.', ',') /* $fmt->formatCurrency($product->total_price, 'USD')*/ }}</td>
@@ -70,7 +73,7 @@
               @endforeach
             @endforeach
             <tr>
-              <td class="table-section" colspan="5">Extra Works</td>
+              <td class="table-section" colspan="6">Extra Works</td>
             </tr>
            
             @foreach ($extraWorksCollection->groupBy('name') as $key => $extraWork)
@@ -81,7 +84,7 @@
                 $grandTotal += $total;
               @endphp
               <tr>
-                <td class="service" colspan="2">{{ $key }}</td>
+                <td class="service" colspan="3">{{ $key }}</td>
                 <td class="qty">{{ $count }}</td>
                 <td class="unit">{{ '$' . number_format($price, 2, '.', ',') /* $fmt->formatCurrency($price, 'USD')*/ }}</td>
                 <td class="total">{{ '$' . number_format($total, 2, '.', ',')/* $fmt->formatCurrency($total, 'USD')*/ }}</td>
@@ -96,11 +99,11 @@
                     $travelCost = $order->new_travel_cost;
                     @endphp
               @endif
-              <td class="service" colspan="4">Travel Cost</td>
+              <td class="service" colspan="5">Travel Cost</td>
               <td class="total">{{ '$' . number_format($travelCost, 2, '.', ',') /* $fmt->formatCurrency($order->travelCost->price, 'USD' )*/ }}</td>
             </tr>
             <tr>
-              <td class="service" colspan="4">Other Cost</td>
+              <td class="service" colspan="5">Other Cost</td>
               <td class="total">{{ '$' . number_format($order->additional_travel_costs, 2, '.', ',') /* $fmt->formatCurrency($order->additional_travel_costs, 'USD' ) */}}</td>
             </tr>
             <tr>
@@ -112,7 +115,7 @@
                   </div>
                 @endif
               </td>
-              <td class='order-notes' colspan='2'>
+              <td class='order-notes' colspan='3'>
                 <table class='summary-table'>
                   <tr>
                     <td colspan='2' class="total border-right">Total</td>

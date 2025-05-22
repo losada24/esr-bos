@@ -352,8 +352,6 @@ const OrderForm = ({
               />
               {(submitCount && errors.order_number) ? <InputError message={errors.order_number} className="mt-2" /> : ''}
             </div>
-
-           
           { /* <div className={submitCount ? (errors.job_address) ? 'has-error' : 'has-success' : ''}>
               <label htmlFor="job_address">Job Address</label>
               <Field
@@ -1105,6 +1103,7 @@ const OrderForm = ({
             service={values.service}
             values= {values}
             travel_costs={travel_costs}
+            type_of_works={type_of_works}
             removeOrderProduct={(index: number) => { removeOrderProduct(index) }}
             updateOrderProduct={(index: number) => { updateOrderProduct(index) }}
           />
@@ -1122,6 +1121,7 @@ const OrderForm = ({
         productCategories={product_category}
         productConfigs={products_config}
         typeOfWork={values.type_of_work_id}
+        listTypeOfWork={type_of_works}
         productCosts={product_costs}
         service={values.service}
         onClose={() => {
