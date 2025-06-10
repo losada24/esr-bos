@@ -86,10 +86,28 @@ export default function Index ({ auth, installation_teams }: IndexCompanyProps) 
                     </td>
                     <td className="border-t px-6 py-4 align-top">
                       {installation_team.attachments.map((attachment) => {
+                        let label = ''
+
+                        switch (attachment.file_type) {
+                          case 'worker_compensation_attach':
+                            label = 'Worker Compensation'
+                            break
+                          case 'liability_expiration_attach':
+                            label = 'Liability Expiration'
+                            break
+                          case 'installer_agrement_attach':
+                            label = 'Installer Agreement'
+                            break
+                          case 'annual_w9_attach':
+                            label = 'Annual W-9'
+                            break
+                          default:
+                            label = 'Attachment'
+                        }
                         return (
                           <div key={attachment.id}>
                             <a href={attachment.file_path} target="_blank" className="text-blue-500 hover:underline" rel="noreferrer">
-                              {attachment.file_type === 'worker_compensation_attach' ? 'Worker Compensation' : 'Liability Expiration'}
+                            {label}
                             </a>
                           </div>
                         )

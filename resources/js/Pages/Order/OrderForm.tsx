@@ -59,7 +59,8 @@ const OrderForm = ({
   attachments,
   status,
   type_of_financing,
-  statusPaymentInstaller
+  statusPaymentInstaller,
+  extraWorks
 }: {
   submitCount: number
   errors: FormikErrors<OrderFormValues>
@@ -86,6 +87,7 @@ const OrderForm = ({
   status: string[]
   statusPaymentInstaller: string
   type_of_financing: string[]
+  extraWorks: Array<{ id: number, name: string }>
 }) => {
   const inputRef = useRef<google.maps.places.SearchBox | null>(null)
   const libraries: any[] = ['places']
@@ -149,6 +151,7 @@ const OrderForm = ({
   const updateOrderProduct = (index: number) => {
     console.log('updateOrderProduct', index)
   }
+  console.log(values)
 
   const addOrderProduct = (orderProduct: OrderProduct) => {
     const orderProductsList = [...orderProducts, orderProduct]
@@ -216,6 +219,8 @@ const OrderForm = ({
     value: values.duration_of_work_id ?? 0,
     label: duration_of_works.find((duration_of_work) => duration_of_work.id === values.duration_of_work_id)?.name ?? ''
   }
+
+  //console.log('selectedStatus', selectedStatus)
   return (
     <>
       <Form className='space-y-5'>
@@ -1026,6 +1031,25 @@ const OrderForm = ({
                 </div> */}
               </>
            )}
+            { ((values.status && values.status === 'MATERIALS RECEIVED') || (((values.status as unknown) as { value: string })?.value === 'MATERIALS RECEIVED')) && (
+            <div className={submitCount ? (errors.material_received_date) ? 'has-error' : 'has-success' : ''}>
+              <label htmlFor="material_received_date">Materials Received Date:</label>
+              <Flatpickr
+                options={{
+                  mode: 'single',
+                  dateFormat: 'Y-m-d',
+                  position: 'auto right'
+                }}
+                name="material_received_date"
+                value={values.material_received_date?.toString()}
+                className="form-input"
+                onChange={([date]) => {
+                  setFieldValue('material_received_date', date.toISOString().slice(0, 10))
+                }}
+              />
+              {(submitCount && errors.material_received_date) ? <InputError message={errors.material_received_date?.toString()} className="mt-2" /> : ''}
+            </div>
+          ) }
             <div className='col-span-4'>
               <label htmlFor="notes">Notes</label>
               <Field
@@ -1106,6 +1130,7 @@ const OrderForm = ({
             type_of_works={type_of_works}
             removeOrderProduct={(index: number) => { removeOrderProduct(index) }}
             updateOrderProduct={(index: number) => { updateOrderProduct(index) }}
+            extraWorks={extraWorks}
           />
         </fieldset>
         <div className="flex items-center justify-between mt-4">

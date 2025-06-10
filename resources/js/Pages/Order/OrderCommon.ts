@@ -111,7 +111,8 @@ export const orderFormObj: OrderFormValues = {
   hide_on_weekends: false,
   is_send_email: false,
   is_new_travel_cost: false,
-  new_travel_cost: 0
+  new_travel_cost: 0,
+  material_received_date: null
 }
 
 export interface OrderProductExtraWorksFormValues {
@@ -174,8 +175,9 @@ export const loadOrderFormObj = (order: Order): OrderFormValues => {
     hide_on_weekends: order.hide_on_weekends ?? false,
     do_not_send_email: order.do_not_send_email ?? false,
     is_send_email: order.is_send_email ?? false,
-    is_new_travel_cost: order.is_new_travel_cost ?? false,
-    new_travel_cost: order.new_travel_cost ?? 0
+    is_new_travel_cost: !!order.is_new_travel_cost,
+    new_travel_cost: order.new_travel_cost,
+    material_received_date: order.material_received_date ?? null
   }
 }
 

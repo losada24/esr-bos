@@ -129,6 +129,7 @@ class UpdateOrderRequest extends FormRequest
               OrderStatusEnum::DELIVERY_CONFIRMED->value,
               OrderStatusEnum::COMPLETE->value,
               OrderStatusEnum::RESCHEDULE->value,
+              OrderStatusEnum::MATERIALS_RECEIVED->value,
             ),
             new ValidateOrderStatus
           ],
@@ -191,6 +192,7 @@ class UpdateOrderRequest extends FormRequest
           'finish_date' => 'nullable|date_format:Y-m-d',
           'final_inspection_date' => 'nullable|date_format:Y-m-d',
           'inspection_date' => 'nullable|date_format:Y-m-d',
+          'material_received_date' => 'nullable|date_format:Y-m-d',
           'complete_date' => 'nullable|date_format:Y-m-d',
           'attachments' => 'nullable|array',
           'attachments.*' => 'file|mimes:jpeg,png,jpg,pdf,docx,doc,xlsx|max:10240',

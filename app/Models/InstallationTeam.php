@@ -19,16 +19,19 @@ class InstallationTeam extends Model
         'number_of_member',
         'worker_compensation_expiration_date',
         'liability_expiration_date',
+        'annual_w9_expiration_date',
         'notes',
         'user_id',
         'company_name',
         'phone',
         'work_area'
+
     ];
 
     protected $dates = [
       'worker_compensation_expiration_date',
       'liability_expiration_date',
+      'annual_w9_expiration_date',
     ];
 
     public function scopeFilter($query, array $filters)

@@ -83,6 +83,9 @@ trait OrderStatus {
     case OrderStatusEnum::FINAL_COLLECT->value:
       $color = StatusColorEnum::FINAL_COLLECT->value;
     break;
+    case OrderStatusEnum::MATERIALS_RECEIVED->value:
+      $color = StatusColorEnum::MATERIALS_RECEIVED->value;
+    break;
     }
 
     return $color;

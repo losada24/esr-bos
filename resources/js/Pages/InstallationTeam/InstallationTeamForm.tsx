@@ -150,6 +150,23 @@ const InstallationTeamForm = ({
         />
         {(submitCount && errors.liability_expiration_date) ? <InputError message={errors.liability_expiration_date.toString()} className="mt-2" /> : ''}
       </div>
+      <div className={submitCount ? (errors.annual_w9_expiration_date) ? 'has-error' : 'has-success' : ''}>
+        <label htmlFor="annual_w9_expiration_date">Annual W9 Expiration Date</label>
+        <Flatpickr
+          options={{
+            mode: 'single',
+            dateFormat: 'Y-m-d',
+            position: 'auto right'
+          }}
+          name="annual_w9_expiration_date"
+          value={values.annual_w9_expiration_date ?? ''}
+          className="form-input"
+          onChange={([date]) => {
+            setFieldValue('annual_w9_expiration_date', date.toISOString().slice(0, 10))
+          }}
+        />
+        {(submitCount && errors.annual_w9_expiration_date) ? <InputError message={errors.annual_w9_expiration_date.toString()} className="mt-2" /> : ''}
+      </div>
       <div className={submitCount ? (errors.liability_expiration_attach) ? 'has-error' : 'has-success' : ''}>
         <label htmlFor="liability_expiration_attach">Liability Expiration File</label>
         <input
@@ -178,6 +195,37 @@ const InstallationTeamForm = ({
           }}
         />
         {(submitCount && errors.worker_compensation_attach) ? <InputError message={errors.worker_compensation_attach} className="mt-2" /> : ''}
+      </div>
+      <div className={submitCount ? (errors.installer_agrement_attach) ? 'has-error' : 'has-success' : ''}>
+        <label htmlFor="installer_agrement_attach">Installer Agrement</label>
+        <input
+          id="installer_agrement_attach"
+          name="installer_agrement_attach"
+          type="file"
+          accept="*"
+          className="form-input file:py-2 file:px-4 file:border-0 file:font-semibold p-0 file:bg-primary/90 ltr:file:mr-5 rtl:file:ml-5 file:text-white file:hover:bg-primary"
+          placeholder="Qty"
+          onChange={(event: any) => {
+            setFieldValue('installer_agrement_attach', event.currentTarget.files[0])
+          }}
+        />
+        {(submitCount && errors.installer_agrement_attach) ? <InputError message={errors.installer_agrement_attach} className="mt-2" /> : ''}
+      </div>
+
+      <div className={submitCount ? (errors.annual_w9_attach) ? 'has-error' : 'has-success' : ''}>
+        <label htmlFor="annual_w9_attach">Annual W9</label>
+        <input
+          id="annual_w9_attach"
+          name="annual_w9_attach"
+          type="file"
+          accept="*"
+          className="form-input file:py-2 file:px-4 file:border-0 file:font-semibold p-0 file:bg-primary/90 ltr:file:mr-5 rtl:file:ml-5 file:text-white file:hover:bg-primary"
+          placeholder="Qty"
+          onChange={(event: any) => {
+            setFieldValue('annual_w9_attach', event.currentTarget.files[0])
+          }}
+        />
+        {(submitCount && errors.annual_w9_attach) ? <InputError message={errors.annual_w9_attach} className="mt-2" /> : ''}
       </div>
       <div className="flex items-center justify-between mt-4">
         <Link className='btn btn-danger uppercase' href={route('installation_team.index')}>Cancel</Link>

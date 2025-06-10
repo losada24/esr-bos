@@ -66,6 +66,7 @@ const EventModal = ({
     final_inspection_date: null,
     pending_collect: null,
     complete_date: null,
+    material_received_date: null,
     installation_team_id: [],
     additional_travel_costs: 0,
     type_of_work_id: 0,
@@ -165,6 +166,7 @@ const EventModal = ({
             pending_collect: data.pending_collect ?? null,
             complete_date: data.complete_date ?? null,
             final_inspection_date: data.final_inspection_date ?? null,
+            material_received_date: data.material_received_date ?? null,
             installation_end_date: data.installation_end_date ?? null,
             installation_teams: data.installation_teams.map((item) => { return { label: item.user?.name, value: item.id } }) ?? [],
             supervisor_id: data.supervisor?.id ?? 0, // Asumimos que `data.supervisor` es un objeto con los datos del superviso
@@ -208,7 +210,7 @@ const EventModal = ({
 
   const handle = () => {
     // Actualizamos editableData con los nuevos valores
-    if (event?.service === 'DELIVERY AND INSTALLATION' && (editableData.installation_teams.length === 0 || editableData.supervisor_id === 0) && (editableData.status.value !== 'PLANNED' && editableData.status.value !== 'DELIVERY CONFIRMED')) {
+    if (event?.service === 'DELIVERY AND INSTALLATION' && (editableData.installation_teams.length === 0 || editableData.supervisor_id === 0) && (editableData.status.value !== 'PLANNED' && editableData.status.value !== 'DELIVERY CONFIRMED' && editableData.status.value !== 'MATERIALS RECEIVED')) {
       setShowValidationErrors(true)
       return
     }
@@ -793,6 +795,30 @@ const EventModal = ({
                   />
                   </div>
                  )}
+                  {((editableData.status.value === 'MATERIALS RECEIVED' || editableData.material_received_date != null) && isAdminOrAccountManager) && (
+                    <div className='w-1/3  mt-8'>
+                    <label htmlFor="material_received_date"><strong>Materials Received Date:</strong></label>
+                    <Flatpickr
+                    options={{
+                      mode: 'single',
+                      dateFormat: 'Y-m-d',
+                      position: 'auto right'
+                    }}
+
+                    name="material_received_date"
+                    value={editableData.material_received_date ?? ''}
+                    // disabled={!isAdminOrAccountManager && isSupervisor}
+                    className="form-input"
+                    disabled={isInstaller}
+                    onChange={([date]) => {
+                      if (date) {
+                        // Manejar la fecha seleccionada
+                        handleInputChange('material_received_date', date.toISOString().slice(0, 10)) // Guardar en formato 'YYYY-MM-DD'
+                      }
+                    }}
+                  />
+                  </div>
+            )}
             {event?.work_team_notes && (
               <div className='flex flex-col gap-2'>
                   <strong>Work Team Notes:</strong>
