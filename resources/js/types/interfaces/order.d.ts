@@ -76,6 +76,7 @@ export interface Order {
   is_send_email?: boolean
   is_new_travel_cost?: boolean
   new_travel_cost?: number
+  material_received_date?: Date | null
 }
 
 export interface TypeOfWork {
@@ -182,6 +183,7 @@ export interface InstallationTeam {
   number_of_member: number
   worker_compensation_expiration_date: Date | null
   liability_expiration_date: Date | null
+  annual_w9_expiration_date: Date | null
   notes?: string
   user_id: number
   user?: User
@@ -232,6 +234,7 @@ export interface OrderStatus {
   service_date: Date
   final_inspection_date: Date
   complete_date: Date
+  material_received_date?: Date
 }
 
 export interface PaymentExtraFields {

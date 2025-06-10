@@ -18,7 +18,7 @@ type IndexUserProps = PageProps & {
   }
 }
 
-export default function Installer ({ auth, installation_teams,  }: IndexUserProps) {
+export default function Installer ({ auth, installation_teams}: IndexUserProps) {
   // const IS_ADMIN = isAdmin(auth.user.roles.map((role: Role) => role.name))
   const destroy = (id: number) => {
     if (confirm('Are you sure you want to delete this User?')) {

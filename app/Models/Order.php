@@ -85,6 +85,7 @@ class Order extends Model
     'is_send_email',
     'is_new_travel_cost',
     'new_travel_cost',
+    'material_received_date',
   ];
 
   protected $dates = [
@@ -103,6 +104,7 @@ class Order extends Model
     'complete_date',
     'service_date',
     'pending_collect',
+    'material_received_date',
     
   ];
 

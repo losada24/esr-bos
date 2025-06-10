@@ -25,7 +25,18 @@ class UpdateOrder
 
   public function handle(Request $request, Order $order)
   {
-    //dd( $order);
+    $order->loadMissing(['installationTeams']);
+    $installer = $order->installationTeams()->pluck('installation_teams.id')->toArray();
+    $currentInstallers = array_map('intval', $installer);
+    $requestInstallers = array_map('intval', $request->installation_teams ?? []);
+
+      sort($currentInstallers);
+      sort($requestInstallers);
+
+      $installationTeamsChanged = $currentInstallers !== $requestInstallers;
+      $supervisorChanged = ((int) $order->supervisor_id !== (int) $request->supervisor_id);
+    //dd($supervisorChanged);
+    //dd($order->supervisor_id, $request->supervisor_id);
     DB::beginTransaction();
     try {
       $client = Client::find($request->client_id);
@@ -38,12 +49,11 @@ class UpdateOrder
           'vip_notes' => $request->vip_notes,
         ]);
       }
-
-     
       $order = Order::with('comissions')->findOrFail($order->id);
       $oldAmount = $order->project_amount;
       $newAmount = $request->project_amount;
       $hasCommissions = $order->comissions()->exists();
+  
      
        //dd( $oldAmount, $newAmount, $order);
 
@@ -151,6 +161,9 @@ class UpdateOrder
         'do_not_send_email' => $request->do_not_send_email,
         'is_new_travel_cost' => $request->is_new_travel_cost,
         'new_travel_cost' => $request->new_travel_cost,
+        'material_received_date' => $request->material_received_date,
+
+        
       ];
       //dd($orderData);
       $order->update($orderData);
@@ -228,6 +241,13 @@ class UpdateOrder
           'is_send_email' => true,
         ]);
       }
+      else if (($installationTeamsChanged || $supervisorChanged) && $request->status== OrderStatusEnum::CONFIRMED->value) {
+            $order->update([
+              'do_not_send_email' => true,
+            ]);
+            $this->sendEmail($order);
+        
+      }
 
     } catch (\Throwable $th) {
        DB::rollback();
@@ -238,6 +258,17 @@ class UpdateOrder
   public function partialUpdate(Request $request, Order $order)
   {
     $statusOrder = $order->status;
+
+    $order->loadMissing(['installationTeams']);
+    $installer = $order->installationTeams()->pluck('installation_teams.id')->toArray();
+    $currentInstallers = array_map('intval', $installer);
+    $requestInstallers = array_map('intval', $request->installation_teams ?? []);
+
+      sort($currentInstallers);
+      sort($requestInstallers);
+
+      $installationTeamsChanged = $currentInstallers !== $requestInstallers;
+      $supervisorChanged = ((int) $order->supervisor_id !== (int) $request->supervisor_id);
 
     $order->update($request->except('installation_teams', 'supervisor_payment_status'));
     if ($request->status == OrderStatusEnum::COMPLETE->value) {
@@ -322,11 +353,18 @@ class UpdateOrder
         'final_inspection_date' => $request->final_inspection_date,
         'service_date' => $request->service_date,
         'complete_date' => $request->complete_date,
+        'material_received_date' => $request->material_received_date,
       ]);
 
       $this->sendEmail($order);
       //$this->whatsapp($order);
-    } else {
+    }  else if (($installationTeamsChanged || $supervisorChanged) && $request->status== OrderStatusEnum::CONFIRMED->value) {
+      $order->update([
+        'do_not_send_email' => true,
+      ]);
+      $this->sendEmail($order);
+  
+    }else {
       $orderStatus = $order->orderStatus()->where('status', $request->status)->first(); // Busca el registro relacionado
 
       if ($orderStatus) {
@@ -343,6 +381,7 @@ class UpdateOrder
           'service_date' => $request->service_date,
           'final_inspection_date' => $request->final_inspection_date,
           'complete_date' => $request->complete_date,
+          'material_received_date' => $request->material_received_date,
         ]);
       }
     }

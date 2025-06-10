@@ -21,5 +21,6 @@ enum StatusColorEnum: string
     case FINAL_INSPECTION = '#FBCC0E';
     case SUPERVISION = '#9A4F08';
     case EXECUTION = '#E47207';
+    case MATERIALS_RECEIVED = '#008080';
     
 }

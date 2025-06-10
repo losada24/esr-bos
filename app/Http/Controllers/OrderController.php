@@ -68,7 +68,8 @@ class OrderController extends Controller
         OrderStatusEnum::FINAL_INSPECTION->value,
         OrderStatusEnum::COMPLETE->value,
         OrderStatusEnum::ON_HOLD->value,
-        OrderStatusEnum::RESCHEDULE->value
+        OrderStatusEnum::RESCHEDULE->value,
+        OrderStatusEnum::MATERIALS_RECEIVED->value,
       ]
     ]);
   }
@@ -134,6 +135,7 @@ class OrderController extends Controller
       'type_of_products' => TypeOfProduct::with(['extraWorks'])->get(),
       'product_category' => ProductCategory::all(),
       'extra_works' => ExtraWork::all(),
+      'extraWorks' => ExtraWork::select('id', 'name')->get(),
       'product_costs' => ProductCost::all(),
       'status' => [
         OrderStatusEnum::PLANNED->value,
@@ -190,6 +192,7 @@ class OrderController extends Controller
   {
     $status = [
       OrderStatusEnum::PLANNED->value,
+      OrderStatusEnum::MATERIALS_RECEIVED->value,
       OrderStatusEnum::CONFIRMED->value,
       OrderStatusEnum::ON_HOLD->value,
       OrderStatusEnum::COMPLETE->value,
@@ -208,6 +211,7 @@ class OrderController extends Controller
         OrderStatusEnum::FINAL_INSPECTION->value,
         OrderStatusEnum::COMPLETE->value,
         OrderStatusEnum::ON_HOLD->value,
+        OrderStatusEnum::MATERIALS_RECEIVED->value,
 
       ];
       if ($order->status === OrderStatusEnum::CONFIRMED->value) {
@@ -226,8 +230,11 @@ class OrderController extends Controller
         'attachments',
         'owners',
         'orderProducts.orderProductExtraWorks',
+        
         'installationTeams.user',
       ]),
+
+      'extraWorks' => ExtraWork::select('id', 'name')->get(),
       
       //'statusPaymentInstaller' => $statusPaymentInstaller->installer_payment_status,
       'statusPaymentInstaller' => $statusPaymentInstaller

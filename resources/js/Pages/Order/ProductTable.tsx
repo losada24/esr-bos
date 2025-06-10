@@ -3,9 +3,10 @@ import EditIcon from '@/Components/Icons/EditIcon'
 import { type TypeOfProduct, type OrderProduct, type ProductConfig, type ProductCategory, type TravelCost, type TypeOfWork } from '@/types'
 import { OrderProductsExtraWorks} from '@/types/interfaces/order'
 import { formatPrice } from '@/Utils/price'
-import React from 'react'
+import React, { useState } from 'react'
 import { PAYMENT_METHODS, SERVICES } from '@/Utils/constants'
 import { type OrderFormValues, getValueIdNotNull } from './OrderCommon'
+import BookIcon from '@/Components/Icons/BookIcon'
 
 const ProductTable = ({
   orderProducts,
@@ -16,6 +17,7 @@ const ProductTable = ({
   values,
   travel_costs,
   type_of_works,
+  extraWorks,
   removeOrderProduct,
   updateOrderProduct
 }: {
@@ -27,20 +29,23 @@ const ProductTable = ({
   type_of_works: TypeOfWork[]
   values: OrderFormValues
   travel_costs: TravelCost[]
+  extraWorks: Array<{ id: number, name: string }>
 
   removeOrderProduct: (index: number) => void
   updateOrderProduct: (index: number) => void
 }) => {
+  const extraWorkMap = Object.fromEntries((extraWorks ?? []).map(ew => [ew.id, ew.name]))
   const getProductType = (id: number) => {
     return type_of_products.find((type) => type.id === id)?.name
   }
+  const [expandedRows, setExpandedRows] = useState<number[]>([])
+
   const getTypeOfWork = (id: number) => {
     return type_of_works.find((type) => type.id === id)?.name
   }
   const getProductCategory = (id: number) => {
     return product_category.find((type) => type.id === id)?.name
   }
-  console.log('orderProducts', orderProducts)
   const getProductConfig = (id: number) => {
     return products_config.find((type) => type.id === id)?.name
   }
@@ -90,70 +95,110 @@ const ProductTable = ({
               </tr>
             </thead>
             <tbody>
-              {orderProducts.map((product, index) => {
-                return (
-                  <tr
-                    key={index}
-                    className="hover:bg-gray-100 focus-within:bg-gray-100"
-                  >
-                    <td className="border-t px-6 py-4 align-top">
-                      {getProductType(product.type_of_product_id)}
-                    </td>
-                    <td className="border-t px-6 py-4 align-top">
-                      {getProductCategory(product.product_category_id)}
-                    </td>
-                    <td className="border-t px-6 py-4 align-top">
-                      {getProductConfig(product.product_config_id)}
-                    </td>
-                    <td className="border-t px-6 py-4 align-top">
-                      {getTypeOfWork(product.type_of_work_id)}
-                    </td>
-                    <td className="border-t px-6 py-4 align-top text-right">
-                      {product.qty}
-                    </td>
-                    {service === SERVICES.DELIVERY_AND_INSTALLATION && (
-                    <>
-                    <td className="border-t px-6 py-4 align-top text-right">
-                      {formatPrice(product.unit_price)}
-                    </td>
-                    <td className="border-t px-6 py-4 align-top text-right">
-                      {formatPrice(product.extra_work_price) }
-                    </td>
-                    <td className="border-t px-6 py-4 align-top text-right">
-                      {formatPrice(Number(product.total_price) + Number(product.extra_work_price))}
-                    </td>
-                    </>
-                    )}
-                    <td className="border-t px-6 py-4 align-top">
-                      {/* <button
-                          onClick={(e) => {
-                            e.preventDefault()
-                            updateOrderProduct(index)
-                          }}
-                          title='Edit Order'
-                        >
-                          <EditIcon />
-                      </button> */}
-                      <button
-                          onClick={(e) => {
-                            e.preventDefault()
-                            removeOrderProduct(index)
-                          }}
-                          title='Delete Product'
-                        >
-                          <DeleteIcon />
-                      </button>
+            {orderProducts.map((product, index) => {
+              const isExpanded = expandedRows.includes(index)
+              return (
+          <React.Fragment key={index}>
+            <tr className="hover:bg-gray-100 focus-within:bg-gray-100">
+              <td className="border-t px-6 py-4 align-top">
+                {getProductType(product.type_of_product_id)}
+              </td>
+              <td className="border-t px-6 py-4 align-top">
+                {getProductCategory(product.product_category_id)}
+              </td>
+              <td className="border-t px-6 py-4 align-top">
+                {getProductConfig(product.product_config_id)}
+              </td>
+              <td className="border-t px-6 py-4 align-top">
+                {getTypeOfWork(product.type_of_work_id)}
+              </td>
+              <td className="border-t px-6 py-4 align-top text-right">{product.qty}</td>
+
+              {service === SERVICES.DELIVERY_AND_INSTALLATION && (
+                <>
+                  <td className="border-t px-6 py-4 align-top text-right">
+                    {formatPrice(product.unit_price)}
+                  </td>
+                  <td className="border-t px-6 py-4 align-top text-right">
+                    {formatPrice(product.extra_work_price)}
+                  </td>
+                  <td className="border-t px-6 py-4 align-top text-right">
+                    {formatPrice(Number(product.total_price) + Number(product.extra_work_price))}
+                  </td>
+                </>
+              )}
+
+        <td className="border-t px-6 py-4 align-top">
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={(e) => {
+              e.preventDefault()
+              removeOrderProduct(index)
+            }}
+            title="Delete Product"
+          >
+            <DeleteIcon />
+          </button>
+          {(product.extra_works ?? []).length > 0 && (
+          <button
+            className="ml-2 text-blue-600 text-sm hover:underline"
+            onClick={(e) => {
+              e.preventDefault()
+              setExpandedRows((prev) =>
+                prev.includes(index)
+                  ? prev.filter((id) => id !== index)
+                  : [...prev, index]
+              )
+            }}
+            title="Extra Works"
+          >
+            <BookIcon/>
+          </button>
+       )}
+         </div>
+        </td>
+      </tr>
+
+      {/* Extra Works Table */}
+      {(product.extra_works ?? []).length > 0 && isExpanded && (
+        <tr>
+          {/* Esta celda ocupa solo las primeras 4 columnas */}
+          <td colSpan={4} className="p-0">
+          <div className="bg-gray-100 px-2 py-1 font-semibold text-sm border-b border-gray-300">
+        Extra Works
+      </div>
+
+            <table className="w-full text-sm border">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="px-2 py-1 text-left">Name</th>
+                  <th className="px-2 py-1 text-right">Qty</th>
+                  <th className="px-2 py-1 text-right">Unit Price</th>
+                  <th className="px-2 py-1 text-right">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(product.extra_works ?? []).map((extra, i) => (
+                  <tr key={i}>
+                    <td className="px-2 py-1">{extraWorkMap[extra.extra_work_id] || 'Unknown'}</td>
+                    <td className="px-2 py-1 text-right">{extra.amount}</td>
+                    <td className="px-2 py-1 text-right">{formatPrice(extra.price)}</td>
+                    <td className="px-2 py-1 text-right">
+                      {formatPrice(Number(extra.price) * Number(extra.amount))}
                     </td>
                   </tr>
-                )
-              })}
-              {orderProducts.length === 0 && (
-                <tr>
-                  <td className="px-6 py-4 border-t" colSpan={7}>
-                    No Products found.
-                  </td>
-                </tr>
-              )}
+                ))}
+        </tbody>
+      </table>
+    </td>
+
+    {/* Estas celdas mantienen el espacio de las demás columnas */}
+    <td colSpan={service === SERVICES.DELIVERY_AND_INSTALLATION ? 5 : 2}></td>
+  </tr>
+      )}
+     </React.Fragment>
+              )
+})}
             </tbody>
             {service === SERVICES.DELIVERY_AND_INSTALLATION && (
               <tfoot>

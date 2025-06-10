@@ -70,6 +70,7 @@ class PartialOrderRequest extends FormRequest
               OrderStatusEnum::DELIVERY_CONFIRMED->value,
               OrderStatusEnum::COMPLETE->value,
               OrderStatusEnum::RESCHEDULE->value,
+              OrderStatusEnum::MATERIALS_RECEIVED->value,
             ),
           ],
             'supervisor_payment_status' => [

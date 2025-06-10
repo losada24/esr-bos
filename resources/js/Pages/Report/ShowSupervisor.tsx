@@ -154,7 +154,6 @@ export default function ShowSupervisor ({ auth, orders, supervisor, statuses, fi
                 <th className="px-6 pt-5 pb-4">Planning Date</th>
                 <th className="px-6 pt-5 pb-4">Qty Date</th>
                 <th className="px-6 pt-5 pb-4">Value Project</th>
-              
                 <th className="px-6 pt-5 pb-4">Commissions</th>
                 <th className="px-6 pt-5 pb-4 wide-column ">Status</th>
                 <th className="px-6 pt-5 pb-4 wide-column">Date Paid</th>

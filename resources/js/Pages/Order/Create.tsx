@@ -37,7 +37,8 @@ export default function Create ({
   frame_colors,
   status,
   type_of_financing,
-  statusPaymentInstaller
+  statusPaymentInstaller,
+  extraWorks
 }: PageProps & {
   clients: Client[]
   owners: User[]
@@ -57,6 +58,7 @@ export default function Create ({
   status: string[]
   type_of_financing: string[]
   statusPaymentInstaller: string
+  extraWorks: Array<{ id: number, name: string }>
 }) {
   const initialValues: OrderFormValues = orderFormObj
 
@@ -117,6 +119,7 @@ export default function Create ({
                 status={status}
                 type_of_financing={type_of_financing}
                 statusPaymentInstaller={statusPaymentInstaller}
+                extraWorks={extraWorks}
 
               />
             )}

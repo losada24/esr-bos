@@ -20,6 +20,7 @@ class InstallationTeamResource extends JsonResource
           'number_of_member' => $this->number_of_member ?? '',
           'worker_compensation_expiration_date' => $this->worker_compensation_expiration_date ?? '',
           'liability_expiration_date' => $this->liability_expiration_date ?? '',
+          'annual_w9_expiration_date' => $this->annual_w9_expiration_date ?? '',
           'company_name' => $this->company_name ?? '',
           'phone' => $this->phone ?? '',
           'notes' => $this->notes ?? '',

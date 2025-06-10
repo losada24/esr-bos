@@ -41,6 +41,7 @@ export default function ShowStatusOrder ({ auth, orderStatuses, order }: IndexOr
                 <th className="px-6 pt-5 pb-4">Delivery/Pickup Date</th>
                 <th className="px-6 pt-5 pb-4">Installation Date</th>
                 <th className="px-6 pt-5 pb-4"> Installation End Date</th>
+                <th className="px-6 pt-5 pb-4">Materials Received Date</th>
                 <th className="px-6 pt-5 pb-4">Inspection Date</th>
                 <th className="px-6 pt-5 pb-4">Finish Date</th>
                 <th className="px-6 pt-5 pb-4">Service Date</th>
@@ -72,6 +73,9 @@ export default function ShowStatusOrder ({ auth, orderStatuses, order }: IndexOr
                     </td>
                     <td className="border-t px-6 py-4 align-top">
                     {['PLANNED', 'CONFIRMED', 'RESCHEDULED', 'SUPERVISION'].includes(order.status) ? order.end_date?.toString() : ''}
+                    </td>
+                    <td className="border-t px-6 py-4 align-top">
+                    {order.status === 'MATERIALS RECEIVED' ? order.material_received_date?.toString() : ''}
                     </td>
                     <td className="border-t px-6 py-4 align-top">
                     {order.status === 'INSPECTION' ? order.inspection_date?.toString() : ''}

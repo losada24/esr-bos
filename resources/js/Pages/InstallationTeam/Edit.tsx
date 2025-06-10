@@ -12,6 +12,7 @@ export default function Edit ({ auth, type_of_housings, users, installation_team
     number_of_member: installation_team.number_of_member,
     worker_compensation_expiration_date: installation_team.worker_compensation_expiration_date,
     liability_expiration_date: installation_team.liability_expiration_date,
+    annual_w9_expiration_date: installation_team.annual_w9_expiration_date,
     user_id: { value: installation_team.user_id, label: users.find((user: User) => user.id === installation_team.user_id)?.name ?? '' },
     attachments: [],
     type_housing: installation_team.type_housing?.map((typeOfHousing) => {
@@ -22,6 +23,8 @@ export default function Edit ({ auth, type_of_housings, users, installation_team
     }) ?? [],
     worker_compensation_attach: '',
     liability_expiration_attach: '',
+    annual_w9_attach: '',
+    installer_agrement_attach: '',
     company_name: installation_team.company_name,
     phone: installation_team.phone
   }
@@ -32,9 +35,12 @@ export default function Edit ({ auth, type_of_housings, users, installation_team
       number_of_member: values.number_of_member,
       worker_compensation_expiration_date: values.worker_compensation_expiration_date,
       liability_expiration_date: values.liability_expiration_date,
+      annual_w9_expiration_date: values.annual_w9_expiration_date,
       user_id: values.user_id.value,
       worker_compensation_attach: values.worker_compensation_attach,
       liability_expiration_attach: values.liability_expiration_attach,
+      annual_w9_attach: values.annual_w9_attach,
+      installer_agrement_attach: values.installer_agrement_attach,
       company_name: values.company_name,
       phone: values.phone,
       type_of_housings: values.type_housing.map((typeHousing: any) => typeHousing.value),

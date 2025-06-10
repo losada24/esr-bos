@@ -13,6 +13,8 @@ export const installationTeamSchema = Yup.object({
 export type InstallationTeamFormValues = Omit<InstallationTeam, 'user_id' | 'type_housing' | 'travel_costs'> & {
   worker_compensation_attach: string
   liability_expiration_attach: string
+  installer_agrement_attach: string
+  annual_w9_attach: string
   user_id: OptionType
   type_housing: MultiValue<OptionType>
   travel_costs: MultiValue<OptionType>

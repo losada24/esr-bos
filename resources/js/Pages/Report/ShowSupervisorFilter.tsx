@@ -19,7 +19,6 @@ interface FilterState {
 }
 
 const ShowSupervisorFilter: React.FC<ShowSupervisorFilterProps> = ({ id, statuses }) => {
-  
   const { data, setData } = useForm({
     status: '',
     name: '',
@@ -95,9 +94,8 @@ const ShowSupervisorFilter: React.FC<ShowSupervisorFilterProps> = ({ id, statuse
             autoComplete="status"
             placeholder='Status'
            onChange={(e) => {
-              setData('status', e.target.value)
-            }}
-            
+             setData('status', e.target.value)
+           }}
           >
             <option value="">Select Status</option>
             {statuses.map((status, index) => (
