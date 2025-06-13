@@ -2,6 +2,7 @@
   // $fmt = new NumberFormatter( 'us_US', NumberFormatter::CURRENCY );
   $extraWorksCollection = collect();
   $grandTotal = 0;
+ //dd('Generating payment list for order: ' . $order->orderColors);
 @endphp
 <html>
 <header>
@@ -31,7 +32,7 @@
                         (!empty($order->job_state) ? ', ' . $order->job_state : '') .
                         (!empty($order->job_zip) ? ', ' . $order->job_zip : '') 
                     }}<div>
-        <div><span>COLOR</span> {{ $order->frame_color}}</div>
+        <div><span>COLOR</span> {{ $order->orderColors->pluck('name')->implode(', ') }}</div>
       </div>
     </header>
       <main>
