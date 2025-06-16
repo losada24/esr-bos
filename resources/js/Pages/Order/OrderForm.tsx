@@ -32,6 +32,7 @@ import DeleteIcon from '@/Components/Icons/DeleteIcon'
 import { PAYMENT_METHODS, SERVICES, STOREFRONT_CATEGORY } from '@/Utils/constants'
 import { capitalizeWords } from '@/Utils/string'
 import { getProductExtraWorkPrice, getProductPrice, getProductPriceWithExtraWorks } from '@/Utils/price'
+import { type OrderColor } from '@/types/interfaces/order'
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
 
@@ -60,7 +61,8 @@ const OrderForm = ({
   status,
   type_of_financing,
   statusPaymentInstaller,
-  extraWorks
+  extraWorks,
+  order_colors
 }: {
   submitCount: number
   errors: FormikErrors<OrderFormValues>
@@ -83,6 +85,7 @@ const OrderForm = ({
   product_category: ProductCategory[]
   product_costs: ProductCost[]
   frame_colors: string[]
+  order_colors: OrderColor[]
   attachments?: Attachment[]
   status: string[]
   statusPaymentInstaller: string
@@ -473,26 +476,24 @@ const OrderForm = ({
               </Field>
               {(submitCount && errors.service) ? <InputError message={errors.service} className="mt-2" /> : ''}
             </div>
-            {(values.service === SERVICES.DELIVERY_AND_INSTALLATION) && (
-            <div className={submitCount ? (errors.frame_color) ? 'has-error' : 'has-success' : ''}>
-              <label htmlFor="frame_color">Frame Color</label>
-              <Field
-                id="frame_color"
-                name="frame_color"
-                className="form-select"
-                autoComplete="frame_color"
-                placeholder='Frame Color'
-                as="select"
-              >
-                <option value="">Select Frame color</option>
-                {frame_colors.map((frame_color, index) => (
-                  <option key={index} value={frame_color}>{frame_color}</option>
-                ))}
-              </Field>
-              {(submitCount && errors.frame_color) ? <InputError message={errors.frame_color} className="mt-2" /> : ''}
+            { (values.service === SERVICES.DELIVERY_AND_INSTALLATION) && (
+             <div className={submitCount ? (errors.owners) ? 'has-error' : 'has-success' : ''}>
+              <label htmlFor="frame_color">Frame Colors</label>
+              <Select
+                id='frame_color'
+                placeholder="Select Colors"
+                name='frame_color'
+                defaultValue={ values.order_colors?.map((order_color) => { return { label: order_color.name, value: order_color.id } }) }
+                onChange={(value) => {
+                  setFieldValue('frame_color', value)
+                }}
+                isMulti={true}
+                options={frame_colors.map((color, index) => ({ label: color, value: index }))}
+              />
+              {(submitCount && errors.frame_color) ? <InputError message={errors.frame_color?.toString()} className="mt-2" /> : ''}
             </div>
-            )}
-
+            ) }
+           
             {(values.service === SERVICES.DELIVERY_AND_INSTALLATION) && (
             <>
             <div className={submitCount ? (errors.type_of_work_id) ? 'has-error' : 'has-success' : ''}>

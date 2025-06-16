@@ -65,6 +65,7 @@ export default function Create ({
   const handleSubmit = async (values: any, helpers: FormikHelpers<OrderFormValues>) => {
     const order = {
       ...values,
+      frame_color: values.frame_color.map((color: { label: string, value: string }) => color.label),
       duration_of_work_id: values.duration_of_work_id.value !== 0 ? values.duration_of_work_id.value : '',
       type_of_work_id: values.type_of_work_id !== 0 ? values.type_of_work_id : getValueIdNotNull(values.type_of_work_id),
       type_of_housing_id: values.type_of_housing_id !== 0 ? values.type_of_housing_id : getValueIdNotNull(values.type_of_housing_id),
@@ -120,6 +121,7 @@ export default function Create ({
                 type_of_financing={type_of_financing}
                 statusPaymentInstaller={statusPaymentInstaller}
                 extraWorks={extraWorks}
+                order_colors={[]} // Assuming frame_colors are used for order colors
 
               />
             )}

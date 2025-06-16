@@ -133,11 +133,11 @@ class UpdateOrderRequest extends FormRequest
             ),
             new ValidateOrderStatus
           ],
-          'frame_color' => [
+          /*'frame_color' => [
             'nullable',
             Rule::when(
               fn($input) => $input->service == ServiceEnum::INSTALLATION->value
-              , ['required', 'string', Rule::in([
+              , ['required', 'array', Rule::in([
                 FrameColorEnum::WHITE->value,
                 FrameColorEnum::BLACK->value,
                 FrameColorEnum::BRONZE->value,
@@ -145,7 +145,7 @@ class UpdateOrderRequest extends FormRequest
                 FrameColorEnum::OTHERS->value
               ])]
             ),
-          ],
+          ],*/
           'service' => [
               'required',
               'string',
@@ -195,7 +195,7 @@ class UpdateOrderRequest extends FormRequest
           'material_received_date' => 'nullable|date_format:Y-m-d',
           'complete_date' => 'nullable|date_format:Y-m-d',
           'attachments' => 'nullable|array',
-          'attachments.*' => 'file|mimes:jpeg,png,jpg,pdf,docx,doc,xlsx|max:10240',
+          'attachments.*' => 'file|mimes:jpeg,png,jpg,pdf,docx,doc,xlsx,heic|max:10240',
           'orderProducts' => 'required|array',
           'orderProducts.*.type_of_product_id' => 'required|integer|exists:type_of_products,id',
           'orderProducts.*.product_category_id' => 'required|integer|exists:product_categories,id',

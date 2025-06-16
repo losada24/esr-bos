@@ -25,6 +25,7 @@ class UpdateOrder
 
   public function handle(Request $request, Order $order)
   {
+    //dd($request->all());
     $order->loadMissing(['installationTeams']);
     $installer = $order->installationTeams()->pluck('installation_teams.id')->toArray();
     $currentInstallers = array_map('intval', $installer);
@@ -112,7 +113,7 @@ class UpdateOrder
       $status = $request->status;
       $type_of_work_id = $request->type_of_work_id;
       
-      //dd($status);
+      //dd($request->complete_date);
       $sendEmail = $status != $order->status;
       //dd($sendEmail,$status,$order->status);
       $orderData = [
@@ -144,7 +145,7 @@ class UpdateOrder
         'work_team_notes' => $request->work_team_notes,
         'delivery_date' => $request->delivery_date,
         'status' => $status,
-        'frame_color' => $request->frame_color,
+        //'frame_color' => $request->frame_color,
         'cost_delivery' => $request->cost_delivery,
         'cost_city_fee' => $request->cost_city_fee,
         'project_amount' => $request->project_amount,
@@ -165,7 +166,7 @@ class UpdateOrder
 
         
       ];
-      //dd($orderData);
+      //dd($request->frame_color);
       $order->update($orderData);
       //dd($request->file('attachments'));
       if ($request->hasFile('attachments')) {
@@ -185,6 +186,9 @@ class UpdateOrder
       $order->load('installationTeams');
      
       $order->owners()->sync($request->owners);
+      //$order->orderColors()->sync($request->frame_color);
+      $order->syncFrameColors($request->frame_color ?? []);
+      
      
 
 
@@ -233,6 +237,9 @@ class UpdateOrder
           'start_date' => $request->installation_date,
           'end_date' => $request->installation_end_date,
           'pickup_date' => $request->delivery_date,
+          'service_date' => $request->service_date,
+          'complete_date' => $request->complete_date,
+          'material_received_date' => $request->material_received_date,
         ]);
         //dd($request->owners, $request->installation_teams,$order );
      
@@ -264,11 +271,11 @@ class UpdateOrder
     $currentInstallers = array_map('intval', $installer);
     $requestInstallers = array_map('intval', $request->installation_teams ?? []);
 
-      sort($currentInstallers);
-      sort($requestInstallers);
+    sort($currentInstallers);
+    sort($requestInstallers);
 
-      $installationTeamsChanged = $currentInstallers !== $requestInstallers;
-      $supervisorChanged = ((int) $order->supervisor_id !== (int) $request->supervisor_id);
+    $installationTeamsChanged = $currentInstallers !== $requestInstallers;
+    $supervisorChanged = ((int) $order->supervisor_id !== (int) $request->supervisor_id);
 
     $order->update($request->except('installation_teams', 'supervisor_payment_status'));
     if ($request->status == OrderStatusEnum::COMPLETE->value) {

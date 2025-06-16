@@ -108,19 +108,19 @@ class StoreOrderRequest extends FormRequest
                 TypeOfFinancing::GOOD_LEAP->value,
               )
             ],
-            'frame_color' => [
-              'nullable',
-              Rule::when(
-                fn($input) => $input->service == ServiceEnum::INSTALLATION->value
-                , ['required', 'string', Rule::in([
-                  FrameColorEnum::WHITE->value,
-                  FrameColorEnum::BLACK->value,
-                  FrameColorEnum::BRONZE->value,
-                  FrameColorEnum::CLEAR_ANODIZED->value,
-                  FrameColorEnum::OTHERS->value
-                ])]
-              ),
-            ],
+        /*'frame_color' => [
+            'nullable',
+            Rule::when(
+              fn($input) => $input->service == ServiceEnum::INSTALLATION->value
+              , ['required', 'array', Rule::in([
+                FrameColorEnum::WHITE->value,
+                FrameColorEnum::BLACK->value,
+                FrameColorEnum::BRONZE->value,
+                FrameColorEnum::CLEAR_ANODIZED->value,
+                FrameColorEnum::OTHERS->value
+              ])]
+            ),
+          ],*/
             'service' => [
                 'required',
                 'string',
@@ -182,7 +182,7 @@ class StoreOrderRequest extends FormRequest
             'complete_date' => 'nullable|date_format:Y-m-d',
             'inspection_date' => 'nullable|date_format:Y-m-d',
             'attachments' => 'nullable|array',
-            'attachments.*' => 'file|mimes:jpeg,png,jpg,pdf,docx,doc,xlsx|max:10240',
+            'attachments.*' => 'file|mimes:jpeg,png,jpg,pdf,docx,doc,xlsx,heic|max:10240',
             'orderProducts' => 'required|array',
             'orderProducts.*.type_of_product_id' => 'required|integer|exists:type_of_products,id',
             'orderProducts.*.product_category_id' => 'required|integer|exists:product_categories,id',
