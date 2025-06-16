@@ -76,7 +76,7 @@ const EventModal = ({
     equipment_rental: false,
     notes: '',
     work_team_notes: '',
-    frame_color: '',
+    order_colors: [],
     installation_teams: [],
     supervisor_id: 0,
     travel_cost_id: 0,
@@ -351,7 +351,9 @@ const EventModal = ({
               <div className='w-1/3'>
                 <strong>Frame Color:</strong>
                 <div className='flex flex-row justify-start'>
-                  {event?.frame_color}
+                {event?.order_colors && event?.order_colors.length > 0
+                  ? event.order_colors.map(c => c.name).join(', ')
+                  : ''}
                 </div>
               </div>
             </div>

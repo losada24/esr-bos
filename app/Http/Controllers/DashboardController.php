@@ -502,6 +502,7 @@ class DashboardController extends Controller
       'travelCost',
       'durationOfWork',
       'orderProducts.orderProductExtraWorks',
+      'orderColors',
     ]);
 
     return response()
@@ -522,6 +523,7 @@ class DashboardController extends Controller
       'supervisor',
       'travelCost',
       'durationOfWork',
+      'orderColors',
     ]);
 
     $pdf = Pdf::loadView('pdf.payment-list', ['order' => $order]);

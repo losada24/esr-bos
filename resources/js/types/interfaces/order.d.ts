@@ -51,7 +51,7 @@ export interface Order {
   attachments?: Attachment[]
   eta_date?: Date
   installation_end_date?: Date
-  frame_color: string
+  frame_color: string []
   status?: string
   cost_delivery?: number
   cost_city_fee?: number
@@ -77,6 +77,7 @@ export interface Order {
   is_new_travel_cost?: boolean
   new_travel_cost?: number
   material_received_date?: Date | null
+  order_colors?: OrderColor[] | []
 }
 
 export interface TypeOfWork {
@@ -86,6 +87,13 @@ export interface TypeOfWork {
   productCosts: ProductCost[]
   orders: Order[]
   orderProducts?: OrderProduct[]
+}
+
+export interface OrderColor {
+  id: number
+  name: string
+  order_id: number
+  order?: Order
 }
 
 export interface ProductCost {

@@ -18,6 +18,7 @@ import {
   type ProductCategory,
   type ProductCost
 } from '@/types'
+import { OrderColor } from '@/types/interfaces/order'
 
 export default function Edit ({
   auth,
@@ -38,9 +39,10 @@ export default function Edit ({
   product_costs,
   order,
   frame_colors,
+  order_colors,
   status,
   type_of_financing,
-  extraWorks,
+  extraWorks
 }: PageProps & {
   clients: Client[]
   owners: User[]
@@ -58,13 +60,14 @@ export default function Edit ({
   product_costs: ProductCost[]
   order: Order
   frame_colors: string[]
+  order_colors: OrderColor[]
   status: string[]
   statusPaymentInstaller: string
   type_of_financing: string[]
   extraWorks: Array<{ id: number, name: string }>
 }) {
   const initialValues: OrderFormValues = loadOrderFormObj(order)
-  // console.log(initialValues)
+  console.log(initialValues)
   const getSupervisorId = (supervisor: any) => {
     let value = null
     if (supervisor !== null && Object.prototype.hasOwnProperty.call(supervisor, 'value')) {
@@ -97,6 +100,8 @@ export default function Edit ({
 
     const order = {
       ...values,
+      frame_color: (values.frame_color || []).map((color: { label: string, value: string }) => color.label),
+      complete_date: values.status.value === 'COMPLETE' ? new Date().toLocaleDateString('en-CA') : null,
       duration_of_work_id: typeof values.duration_of_work_id === 'number' ? values.duration_of_work_id : getValueIdNotNull(values.duration_of_work_id),
       installation_teams: values.installation_teams.map((installation_team: any) => {
         let value = 0
@@ -180,6 +185,7 @@ export default function Edit ({
                 statusPaymentInstaller={statusPaymentInstaller}
                 type_of_financing={type_of_financing}
                 extraWorks={extraWorks}
+                order_colors={order_colors}
               />
             )}
           </Formik>

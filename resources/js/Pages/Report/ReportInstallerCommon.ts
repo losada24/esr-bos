@@ -84,7 +84,7 @@ export const orderFormObj: OrderFormValues = {
   owners: [],
   order_products: [],
   attachments: [],
-  frame_color: '',
+  frame_color: [],
   initial_payment_percentage: 0,
   payment_definition: false,
   hide_on_weekends: false

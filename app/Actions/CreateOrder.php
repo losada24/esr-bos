@@ -116,7 +116,7 @@ class CreateOrder {
         'delivery_date' => $request->delivery_date,
         'installation_date' => $request->installation_date,
         'status' => $status,
-        'frame_color' => $request->frame_color,
+        //'frame_color' => $request->frame_color,
         'cost_delivery' => $request->cost_delivery,
         'cost_city_fee'=> $request->cost_city_fee,
         'project_amount'=> $request->project_amount,
@@ -170,6 +170,7 @@ class CreateOrder {
 
       $order->installationTeams()->attach($request->installation_teams);
       $order->owners()->attach($request->owners);
+      $order->syncFrameColors($request->frame_color ?? []);
 
       foreach ($request->orderProducts as $product) {
         $orderProduct = OrderProduct::create([

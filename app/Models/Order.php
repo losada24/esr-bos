@@ -360,6 +360,11 @@ class Order extends Model
     return $this->hasOne(Permit::class);
   }
 
+  public function orderColors(): HasMany
+  {
+    return $this->hasMany(OrderColors::class, 'order_id', 'id');
+  }
+
   public function getGrandTotalPrice()
   {
     $pricesWithExtraWorks = $this->orderProducts->sum('total_price') + $this->orderProducts->sum('extra_work_price');
@@ -371,6 +376,15 @@ class Order extends Model
       $travelCost = $this->new_travel_cost;
     }
     return $pricesWithExtraWorks + $this->additional_travel_costs + $travelCost;
+  }
+
+  public function syncFrameColors(array $colors): void
+  {
+      $this->orderColors()->delete();
+
+      $this->orderColors()->createMany(
+          collect($colors)->map(fn($color) => ['name' => $color])->toArray()
+      );
   }
 
 }

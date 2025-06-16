@@ -105,7 +105,7 @@ export const orderFormObj: OrderFormValues = {
   owners: [],
   order_products: [],
   attachments: [],
-  frame_color: '',
+  frame_color: [],
   initial_payment_percentage: 0,
   payment_definition: false,
   hide_on_weekends: false,
@@ -177,7 +177,8 @@ export const loadOrderFormObj = (order: Order): OrderFormValues => {
     is_send_email: order.is_send_email ?? false,
     is_new_travel_cost: !!order.is_new_travel_cost,
     new_travel_cost: order.new_travel_cost,
-    material_received_date: order.material_received_date ?? null
+    material_received_date: order.material_received_date ?? null,
+    order_colors: order.order_colors ?? []
   }
 }
 

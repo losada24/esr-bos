@@ -230,6 +230,7 @@ class OrderController extends Controller
         'attachments',
         'owners',
         'orderProducts.orderProductExtraWorks',
+        'orderColors',
         
         'installationTeams.user',
       ]),
@@ -279,6 +280,7 @@ class OrderController extends Controller
       'product_costs' => ProductCost::all(),
       'status' => $status
     ]);
+   
   }
 
   /**
