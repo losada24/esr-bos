@@ -152,6 +152,8 @@ class BiweeklyController extends Controller
             ->where('type_history', 'INSTALLER')
             ->get();
 
+            //dd($biweeklys [0]['data']);
+
             $installerName =$biweekly[0]['data'][0]['installer'] ?? '';
             $companyName = $biweekly[0]['data'][0]['company_name'] ?? '';
             $biweekly = Biweekly::find($biweeklyId);
@@ -178,6 +180,47 @@ class BiweeklyController extends Controller
             $pdfName = 'Resumen-Payment-ExtraWork' .$biweeklyTitle .  '.pdf';
             return $pdf->stream($pdfName);
   }
+  public function uncollectedCustomerPaymentsReport($biweeklyId)
+  {       
+           $biweeklys = HistoryPendingPayment::with('installationTeam')
+            ->where('biweekly_id', $biweeklyId)
+            ->where('type_history', 'INSTALLER')
+            ->get();
+
+            //dd($biweeklys);
+            $uncollected = collect();
+
+            foreach ($biweeklys as $uncollectBiweekly) {
+              foreach ($uncollectBiweekly['data'] as $uncollect) {
+                  $payments = collect($uncollect['installation_payments']);
+                  $lastPayment = $payments->last();
+      
+                  if (!$lastPayment) {
+                      continue; // No hay pagos, saltamos este item
+                  }
+      
+                  if (
+                      ($lastPayment['percentage_payment'] == '80' && $uncollect['partial_payment_installation'] == 0) ||
+                      ($lastPayment['percentage_payment'] == '20' && $uncollect['final_payment_installation'] == 0) ||
+                      ($lastPayment['percentage_payment'] == '100' && $uncollect['final_payment_installation'] == 0)
+                  ) {
+                      $uncollected->push($uncollect);
+                  }
+              }
+          }
+             
+               //dd($uncollected);
+            
+
+            //$installerName =$biweekly[0]['data'][0]['installer'] ?? '';
+            //$companyName = $biweekly[0]['data'][0]['company_name'] ?? '';
+            $biweekly = Biweekly::find($biweeklyId);
+            $biweeklyTitle = Carbon::parse($biweekly->start_biweekly_period)->locale('en')->isoFormat('MMMM D') . ' to ' . Carbon::parse($biweekly->end_biweekly_period)->locale('en')->isoFormat('MMMM D');
+            $pdf = Pdf::loadView('pdf.uncollected-payments-report', ['biweeklys' => $uncollected,'biweeklyTitle' => $biweeklyTitle])->setPaper('A2', 'landscape');
+            $pdfName = 'Uncollected-Payments-Report' .$biweeklyTitle .  '.pdf';
+            return $pdf->stream($pdfName);
+  }
+
 
 
 }
