@@ -43,6 +43,15 @@ export default function Index ({ auth, biweeklies, biweekly_id, biweeklyTitle }:
                   >
                 <span>Extra Work Report</span>
               </button>
+              <button
+                className="btn btn-primary"
+                onClick={() => {
+                  window.open(route('biweekly.uncollected-customer-payments-report', { biweeklyId: biweekly_id }), '_blank')
+                }
+                }
+                  >
+                <span> Uncollected Payment Report</span>
+              </button>
 
               </div>
           }
