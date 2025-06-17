@@ -448,7 +448,7 @@ const EventModal = ({
                 name="entry_date"
                 value={editableData.entry_date ?? ''}
                 className="form-input"
-                disabled={!isAdminOrAccountManager && isSupervisor}
+                disabled={!isAdminOrAccountManager}
                 onChange={([date]) => {
                   if (date) {
                     // Manejar la fecha seleccionada
@@ -465,7 +465,7 @@ const EventModal = ({
                   dateFormat: 'Y-m-d',
                   position: 'auto right'
                 }}
-                disabled={!isAdminOrAccountManager && isSupervisor}
+                disabled={!isAdminOrAccountManager}
                 name="contract_signing_date"
                 value={editableData.contract_signing_date ?? ''}
                 className="form-input"
@@ -487,7 +487,7 @@ const EventModal = ({
                 }}
                 // disabled={values.supervisor_id === ''}
                 name="payment_factory_date"
-                disabled={!isAdminOrAccountManager && isSupervisor}
+                disabled={!isAdminOrAccountManager}
                 value={editableData.payment_factory_date ?? ''}
                 className="form-input"
                 onChange={([date]) => {
@@ -514,7 +514,7 @@ const EventModal = ({
                 // disabled={values.supervisor_id === ''}
                 name="eta_date"
                 value={editableData.eta_date ?? ''}
-                disabled={!isAdminOrAccountManager && isSupervisor}
+                disabled={!isAdminOrAccountManager}
                 className="form-input"
                 onChange={([date]) => {
                   if (date) {
@@ -625,7 +625,7 @@ const EventModal = ({
             )}
             </div>
 
-            {!isInstaller && (
+            {!(isInstaller || isOwner) && (
             <>
             <div className='flex flex-row gap-5 mt-3'>
                     <fieldset className='p-3 border rounded-xl mt-3'>
@@ -669,7 +669,7 @@ const EventModal = ({
                     placeholder="status"
                     name='status'
                     value={editableData.status}
-                    isDisabled={isInstaller}
+                    isDisabled={isInstaller || isOwner}
                     isMulti={false}
                     onChange={(value) => { setEditableData({ ...editableData, status: value }) }}
                     options={(() => {
@@ -717,7 +717,7 @@ const EventModal = ({
                     value={editableData.inspection_date ?? ''}
                     // disabled={!isAdminOrAccountManager && isSupervisor}
                     className="form-input"
-                    disabled={isInstaller}
+                    disabled={isInstaller || isOwner}
                     onChange={([date]) => {
                       if (date) {
                         // Manejar la fecha seleccionada
@@ -739,7 +739,7 @@ const EventModal = ({
 
                     name="finish_date"
                     value={editableData.finish_date ?? ''}
-                    disabled={isInstaller}
+                    disabled={isInstaller || isOwner}
                     className="form-input"
                     onChange={([date]) => {
                       if (date) {
@@ -763,7 +763,7 @@ const EventModal = ({
 
                     name="service_date"
                     value={editableData.service_date ?? ''}
-                    disabled={isInstaller}
+                    disabled={isInstaller || isOwner}
                     className="form-input"
                     onChange={([date]) => {
                       if (date) {
@@ -786,7 +786,7 @@ const EventModal = ({
 
                     name="final_inspection_date"
                     value={editableData.final_inspection_date ?? ''}
-                    disabled={isInstaller}
+                    disabled={isInstaller || isOwner}
                     className="form-input"
                     onChange={([date]) => {
                       if (date) {
@@ -811,7 +811,7 @@ const EventModal = ({
                     value={editableData.material_received_date ?? ''}
                     // disabled={!isAdminOrAccountManager && isSupervisor}
                     className="form-input"
-                    disabled={isInstaller}
+                    disabled={isInstaller || isOwner}
                     onChange={([date]) => {
                       if (date) {
                         // Manejar la fecha seleccionada
@@ -829,20 +829,20 @@ const EventModal = ({
                   </div>
               </div>
             )}
-            <div className='col-span-4'>
-              <label htmlFor="notes">Notes</label>
+            <div className='col-span-4 mt-4'>
+              <label htmlFor="notes"><strong>Notes </strong></label>
               <textarea
                 id="notes"
                 name="notes"
                 rows = {6}
                 value={editableData.notes ?? ''}
-                disabled={isInstaller}
+                disabled={isInstaller }
                 className="form-textarea resize-none placeholder:text-white-dark"
                 placeholder='Notes'
                 onChange={(e) => { setEditableData({ ...editableData, notes: e.target.value }) }}
               />
             </div>
-            {!isInstaller && (
+            {!(isInstaller || isOwner) && (
             <>
             <div className='col-span-4'>
             <fieldset className='p-3 border rounded-xl mt-3'>
@@ -897,7 +897,7 @@ const EventModal = ({
                   </div>
                    </>
             )}
-            {((editableData.pre_inspection === true || editableData.pre_inspection === 1) && !isInstaller) && (
+            {((editableData.pre_inspection === true || editableData.pre_inspection === 1) && !(isInstaller || isOwner)) && (
             <div className='flex flex-col gap-2  mt-3'>
             <label htmlFor="pre_inspection_attach">Pre Inspection File</label>
                     <input
@@ -911,7 +911,7 @@ const EventModal = ({
                       }}
               />
             </div>)}
-            {((editableData.inspection === true || editableData.inspection === 1) && !isInstaller) && (
+            {((editableData.inspection === true || editableData.inspection === 1) && !isInstaller && !(isInstaller || isOwner)) && (
             <div className='flex flex-col gap-2  mt-3'>
             <label htmlFor="inspection_attach">Inspection File</label>
                     <input
@@ -926,7 +926,7 @@ const EventModal = ({
                       }}
               />
             </div>)}
-            {((editableData.walk_trough === true || editableData.walk_trough === 1) && !isInstaller) && (
+            {((editableData.walk_trough === true || editableData.walk_trough === 1) && !(isInstaller || isOwner)) && (
             <div className='flex flex-col gap-2  mt-3'>
             <label htmlFor="walk_trough_attach">Walk Trough File</label>
                     <input
@@ -1027,7 +1027,7 @@ const EventModal = ({
               <InputError message='Please select an installation team and a supervisor' />
             </div>
           )}
-          {((isAdminOrAccountManager) || (isSupervisor) || (isServiceManager)) && (
+          {((isAdminOrAccountManager) || (isSupervisor) || (isServiceManager) || (isOwner)) && (
             <div className="flex items-center justify-between mt-4">
               <button className='btn btn-danger uppercase' onClick={() => { onClose(); setShowValidationErrors(false); setMessage(null) }}>Cancel</button>
               <PrimaryButton className="btn btn-primary" type='button' onClick={() => { handle() }}>

@@ -43,7 +43,12 @@ export interface ProductOrderFields {
   unit?: string
 }
 
-export type OrderFormValues = Omit<Order, 'installation_date' | 'delivery_date' | 'payment_factory_date' | 'contract_signing_date' | 'eta_date' | 'installation_end_date' | 'entry_date'> & {
+interface DropdownOption {
+  label: string
+  value: string
+}
+
+export type OrderFormValues = Omit<Order, 'installation_date' | 'delivery_date' | 'payment_factory_date' | 'contract_signing_date' | 'eta_date' | 'installation_end_date' | 'entry_date' | 'frame_color'> & {
   client_name: string
   last_name: string
   phone: string
@@ -59,6 +64,7 @@ export type OrderFormValues = Omit<Order, 'installation_date' | 'delivery_date' 
   eta_date: Date | null
   entry_date: Date | null
   installation_end_date: Date | null
+  frame_color: string[] | DropdownOption[]
 }
 
 export const orderFormObj: OrderFormValues = {
@@ -168,7 +174,10 @@ export const loadOrderFormObj = (order: Order): OrderFormValues => {
     order_products: order.order_products,
     attachments: [],
     installation_end_date: order.installation_end_date ?? null,
-    frame_color: order.frame_color,
+    frame_color: order.order_colors?.map((color) => ({
+      label: color.name,
+      value: color.name
+    })) ?? [],
     status: order.status,
     payment_definition: order.payment_definition,
     initial_payment_percentage: order.initial_payment_percentage,
