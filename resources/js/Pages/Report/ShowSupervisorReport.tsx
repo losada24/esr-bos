@@ -18,7 +18,7 @@ interface OrderSupervisor {
   month: string
   installation_date: string
   final_installation_date: string
-  inspection_date: number
+  inspection_date: string
   status: string
   pre_inspection: string
   inspection: string
@@ -42,7 +42,7 @@ interface FilterState {
   end_date: string
 }
 
-export default function ShowSupervisor ({ auth, orders, supervisor, statuses, filters }: IndexUserProps) {
+export default function ShowSupervisorReport ({ auth, orders, supervisor, statuses, filters }: IndexUserProps) {
   // console.log(supervisor.id)
   // const totalProjectAmount = orders.reduce((sum, order) => sum + Number(order.project_amount), 0)
   // const totalCommissions = orders.reduce((sum, order) => sum + Number(order.supervisor_commissions), 0)

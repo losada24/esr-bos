@@ -73,6 +73,7 @@ class ReportController extends Controller
   {
     // Obtener las órdenes por supervisor
     $orders = $this->getOrdersBySupervisor($id);
+    //dd($orders);
 
     // Obtener los parámetros de filtro de la solicitud (request)
     $status = request()->get('status');

@@ -14,8 +14,6 @@ use App\Mail\InstallationDateConfirmation;
 use App\Mail\InstallationDateConfirmationClient;
 use App\Models\Order;
 use App\Models\User;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 
 trait OrderEmails {
 

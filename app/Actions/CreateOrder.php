@@ -1,12 +1,11 @@
 <?php
+
 namespace App\Actions;
 
-use App\Enum\OrderStatusEnum;
 use App\Enum\PlaningDateSupervisorEnum;
 use App\Models\Client;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use App\Enum\RoleEnum;
 use App\Enum\ServiceEnum;
 use App\Enum\SupervisorPaymentStatusEnum;
 use App\Models\Order;
@@ -15,74 +14,55 @@ use App\Models\SupervisorComissionOrder;
 use App\Traits\ComissionSupervisor;
 use App\Traits\OrderEmails;
 use App\Traits\OrderStatus;
-use Carbon\Carbon;
 use Illuminate\Support\Str;
 
-class CreateOrder {
+class CreateOrder
+{
 
-  use OrderEmails, OrderStatus,ComissionSupervisor;
-  //const SUPERVISOR_PAYMENT_PERCENTAGE = 0.3;
+  use OrderEmails, OrderStatus, ComissionSupervisor;
+ 
+  public function handle(Request $request)
+  {
+    DB::transaction(function () use ($request) {
+      $client = Client::create([
+        'name' => $request->client_name,
+        'phone' => $request->phone,
+        'email' => $request->email,
+        'vip_clients' => $request->vip_clients,
+        'vip_notes' => $request->vip_notes,
+      ]);
 
+      $project_amount = $request->project_amount;
 
+      if ($request->service == ServiceEnum::INSTALLATION->value || $request->service == ServiceEnum::INSTALLATION_ONLY->value) {
+        if ($request->type_of_housing_id == 3) {
+          $execution_planing_date = PlaningDateSupervisorEnum::COMMERCIAL_PROJECTS->value;
+        } else if ($request->city_permits == 1) {
+          $execution_planing_date = PlaningDateSupervisorEnum::PROJECTS_WITH_PERMISSIONS->value;
+        } else {
+          $execution_planing_date = PlaningDateSupervisorEnum::PROJECTS_WITHOUT_PERMISSIONS->value;
+        }
 
-  public function handle(Request $request) {
-    
-    // define('SUPERVISOR_PAYMENT_PERCENTAGE', 0.3);
-   
-    
-    DB::transaction(function() use ($request) {
-
-    $client = Client::create([
-      'name' => $request->client_name,
-      'phone' => $request->phone,
-      'email' => $request->email,
-      'vip_clients' =>$request->vip_clients,
-      'vip_notes' => $request->vip_notes,
-    ]);
-
-    //dd($client);
-    $project_amount = $request->project_amount;
-    $supervisor_commissions = 0;
-
-    if ($request->service == ServiceEnum::INSTALLATION->value || $request->service == ServiceEnum::INSTALLATION_ONLY->value) {
-      if($request->type_of_housing_id == 3){
-        $execution_planing_date = PlaningDateSupervisorEnum::COMMERCIAL_PROJECTS->value;
-      }
-      else if($request->city_permits == 1){
-        $execution_planing_date = PlaningDateSupervisorEnum::PROJECTS_WITH_PERMISSIONS->value;
-      }
-      else{
-        $execution_planing_date = PlaningDateSupervisorEnum::PROJECTS_WITHOUT_PERMISSIONS->value;
-      }
-      
-      //$supervisor_payment_percentage = self::SUPERVISOR_PAYMENT_PERCENTAGE;
-      //$supervisor_commissions = $request->project_amount * $supervisor_payment_percentage / 100;
-      if ($project_amount > 0) {
+        if ($project_amount > 0) {
           $comissions = $this->ComissionSupervisor($project_amount);
           $totalCommission = array_sum(array_column($comissions, 'amount'));
+        } else {
+          $comissions = [];
+          $totalCommission = 0.00;
+        }
 
-         /* */
-          //dd( $comissions,$totalCommission);
+        $supervisor_payment_status = SupervisorPaymentStatusEnum::OPEN->value;
+      } else {
+        $execution_planing_date = 0;
+        $totalCommission = 0.00;
+        $supervisor_payment_status = null;
+      }
 
-    } else {
-      $comissions = [];
-      $totalCommission = 0.00;
-
-    }
-
-       $supervisor_payment_status = SupervisorPaymentStatusEnum::OPEN->value;
-    } else {
-      $execution_planing_date = 0;
-      $supervisor_payment_percentage = 0.00;
-      $totalCommission = 0.00;
-      $supervisor_payment_status = null;
-     }
-     if($request->city_permits){
-      $initial_payment_percentage = 80.00;
-     } 
-     else{
-      $initial_payment_percentage = 100.00;
-    }
+      if ($request->city_permits) {
+        $initial_payment_percentage = 80.00;
+      } else {
+        $initial_payment_percentage = 100.00;
+      }
 
       $status = $request->status;
       $order = Order::create([
@@ -91,7 +71,7 @@ class CreateOrder {
         'name' => $request->name,
         'job_address' => $request->job_address,
         'order_number' => $request->order_number,
-        'type_of_work_id' => $request->type_of_work_id, 
+        'type_of_work_id' => $request->type_of_work_id,
         'type_of_housing_id' => $request->type_of_housing_id,
         'supervisor_id' => $request->supervisor_id,
         'travel_cost_id' => $request->travel_cost_id,
@@ -116,23 +96,21 @@ class CreateOrder {
         'delivery_date' => $request->delivery_date,
         'installation_date' => $request->installation_date,
         'status' => $status,
-        //'frame_color' => $request->frame_color,
         'cost_delivery' => $request->cost_delivery,
-        'cost_city_fee'=> $request->cost_city_fee,
-        'project_amount'=> $request->project_amount,
-        'initial_payment_percentage' =>$initial_payment_percentage,
+        'cost_city_fee' => $request->cost_city_fee,
+        'project_amount' => $request->project_amount,
+        'initial_payment_percentage' => $initial_payment_percentage,
         'payment_definition' => $request->payment_definition,
-        'execution_planing_date'=> $execution_planing_date,
-        //'supervisor_payment_percentage'=> $supervisor_payment_percentage,
-        //'supervisor_commissions'=> $supervisor_commissions,
+        'execution_planing_date' => $execution_planing_date,
         'supervisor_payment_status' => $supervisor_payment_status,
         'do_not_send_email' => $request->do_not_send_email,
         'is_new_travel_cost' => $request->is_new_travel_cost,
         'new_travel_cost' => $request->new_travel_cost,
-
+        'supervisor_commissions' => $totalCommission,
+        'is_send_email' => true,
       ]);
 
-     
+
 
       if ($request->hasFile('attachments')) {
         $files = $request->file('attachments');
@@ -147,18 +125,19 @@ class CreateOrder {
           ]);
         }
       }
-     if(!empty($comissions)){
-       //dd('entro');
-      foreach ($comissions as $comission) {
-           SupervisorComissionOrder::create([
+
+      if (!empty($comissions)) {
+        foreach ($comissions as $comission) {
+          SupervisorComissionOrder::create([
             'order_id' => $order->id,
             'percentage' => $comission['percentage'],
             'amount' => $comission['amount'],
             'tier' => $comission['tier'],
             'tier_base_amount' => $comission['tier_base_amount'],
-        ]);
-       
-    }}
+          ]);
+        }
+      }
+
       $order->orderStatus()->create([
         'status' => $status,
         'user_id' => auth()->user()->id,
@@ -192,10 +171,10 @@ class CreateOrder {
           'type_of_product_id' => $product['type_of_product_id'],
           'pivot_cost' => $product['pivot_cost'],
         ]);
-        
+
         $extraWorks = [];
         $product_extra_works = $product['extra_works'] ?? [];
-        
+
         for ($i = 0; $i < count($product_extra_works); $i++) {
           $extraWorks[$product_extra_works[$i]['extra_work_id']] = [
             'price' => $product_extra_works[$i]['price'],
@@ -204,19 +183,12 @@ class CreateOrder {
         }
 
         $orderProduct->orderProductExtraWorks()->attach($extraWorks);
-      } 
-
-
+      }
 
       $this->sendEmail($order);
-     $order->update([
-        'is_send_email' => true,
-        'supervisor_commissions'=>$totalCommission
-      ]);
-
-      if( !$order )
-      {
-          throw new \Exception('Client not created');
+     
+      if (!$order) {
+        throw new \Exception('Order not created');
       }
     });
   }

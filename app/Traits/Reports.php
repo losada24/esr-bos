@@ -87,14 +87,15 @@ trait Reports
       ->orderBy('created_at', 'desc')
       ->get();
    
-      //dd($orders);
-
     $total_amount = $orders->sum('project_amount');
     $total_commissions = $orders->sum('supervisor_commissions');
     $preInspection = '';
     //dd($total_amount,$total_commissions); 
 
     return $orders->map(function ($order, $key) use ($total_amount, $total_commissions) {
+      
+      //dd($order->inspection_date);
+
       $final_installation_date_status = $order->orderStatus->where('status', OrderStatusEnum::COMPLETE->value)->first();
       $final_installation_date = null;
       if ($final_installation_date_status) {
@@ -123,8 +124,12 @@ trait Reports
           ];
         }),
         //'month' => Carbon::parse($order->installation_date)->format('F'),
-        'installation_date' => Carbon::parse($order->installation_date)->format('m/d/Y'),
-        'inspection_date' => Carbon::parse($order->inspection_date)->format('m/d/Y'),
+        'installation_date' => $order->installation_date
+        ? Carbon::parse($order->installation_date)->format('m/d/Y')
+        : '',
+        'inspection_date' => $order->inspection_date
+        ? Carbon::parse($order->inspection_date)->format('m/d/Y')
+        : '',
         'final_installation_date' => $final_installation_date,
         'project_amount' => $order->project_amount,
         'supervisor_payment_status' => $order->supervisor_payment_status,
