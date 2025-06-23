@@ -186,12 +186,7 @@ class UpdateOrder
       $order->load('installationTeams');
      
       $order->owners()->sync($request->owners);
-      //$order->orderColors()->sync($request->frame_color);
       $order->syncFrameColors($request->frame_color ?? []);
-      
-     
-
-
       $order->orderProducts()->delete();
       foreach ($request->orderProducts as $product) {
         $orderProduct = OrderProduct::create([
@@ -228,7 +223,6 @@ class UpdateOrder
       }
 
       DB::commit();
-        //dd($sendEmail, $order->is_send_email);
       if ($sendEmail || $order->is_send_email == 0) {
         $order->orderStatus()->create([
           'status' => $status,
@@ -241,8 +235,7 @@ class UpdateOrder
           'complete_date' => $request->complete_date,
           'material_received_date' => $request->material_received_date,
         ]);
-        //dd($request->owners, $request->installation_teams,$order );
-     
+        
         $this->sendEmail($order);
         $order->update([
           'is_send_email' => true,

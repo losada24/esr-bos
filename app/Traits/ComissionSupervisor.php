@@ -2,15 +2,6 @@
 
 namespace App\Traits;
 
-use App\Enum\OrderStatusEnum;
-use App\Models\Biweekly;
-use App\Models\InstallationPayment;
-use App\Models\InstallationTeam;
-use App\Models\Order;
-use App\Models\Setting;
-use App\Models\User;
-use Illuminate\Support\Facades\Http;
-use Carbon\Carbon;
 
 trait ComissionSupervisor
 {
