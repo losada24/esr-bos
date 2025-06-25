@@ -219,6 +219,7 @@ class Order extends Model
       if (auth()->user()->hasRole(RoleEnum::SUPERVISOR->value)) {
         $query->where('supervisor_id', auth()->user()->id)
           ->whereIn('status', [
+            OrderStatusEnum::PLANNED,        // Solo órdenes en "PLANNED"
             OrderStatusEnum::RESCHEDULE,   // Solo órdenes en "EXECUTION"
             OrderStatusEnum::CONFIRMED,   // Solo órdenes en "EXECUTION"
             OrderStatusEnum::EXECUTION,
@@ -226,6 +227,7 @@ class Order extends Model
             OrderStatusEnum::INSPECTION,
             OrderStatusEnum::FINISH,
             OrderStatusEnum::SERVICE,
+            OrderStatusEnum::ON_HOLD,
             OrderStatusEnum::FINAL_INSPECTION,
             OrderStatusEnum::FINAL_COLLECT,
             OrderStatusEnum::COMPLETE,
