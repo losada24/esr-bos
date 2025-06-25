@@ -98,7 +98,7 @@
     @foreach($biweeklys as $biweekly)
   @php
      //dd($biweekly);
-     $totalPaymentTotal = 0;
+     $totalPaymentTotal+= $biweekly['total_payment_amount'];
      $totalPendingPaymentAmount = 0;
      $companyName = $biweekly['data'][0]['company_name'] ?? '';
     $installerName = $biweekly['data'][0]['installer'] ?? '';
@@ -168,6 +168,17 @@
     @endforeach
 
     </tbody>
+    <tfoot>
+        <tr>
+            
+
+        <!-- Ajustamos colspan a 4 → ahora se convierte en 3 -->
+            <td colspan="5" style="font-weight: bold; text-align: right;">Total:</td>
+            <td width='20' height='25' text-align='center' valign='middle' style="font-weight: bold;">{{ '$' . number_format($totalPaymentTotal, 2, '.', ',') }}</td>
+            
+            <td></td>
+        </tr>
+    </tfoot>
 
       </table>
 

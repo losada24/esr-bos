@@ -127,12 +127,15 @@ class DashboardController extends Controller
     } else if ($user->hasRole(RoleEnum::SUPERVISOR->value) || $user->hasRole(RoleEnum::SERVICE_MANAGER->value) || $user->hasRole(RoleEnum::INSTALLER->value) || $user->hasRole(RoleEnum::PAYMENT_COORDINATOR->value)) {
       $status = [
         //OrderStatusEnum::RESCHEDULE->value,
+        OrderStatusEnum::PLANNED->value,
         OrderStatusEnum::CONFIRMED->value,
+        OrderStatusEnum::ON_HOLD->value,
         OrderStatusEnum::EXECUTION->value,
         OrderStatusEnum::SUPERVISION->value,
         OrderStatusEnum::INSPECTION->value,
         OrderStatusEnum::FINISH->value,
         OrderStatusEnum::SERVICE->value,
+        
         OrderStatusEnum::FINAL_INSPECTION->value,
         OrderStatusEnum::FINAL_COLLECT->value,
         OrderStatusEnum::COMPLETE->value,
@@ -528,6 +531,28 @@ class DashboardController extends Controller
 
     $pdf = Pdf::loadView('pdf.payment-list', ['order' => $order]);
     $pdfName = 'payment-list-' . $order->order_number . '.pdf';
+    return $pdf->stream($pdfName);
+  }
+
+  public function getSupervisorList(Order $order)
+  {
+    $order->load([
+      'client',
+      'typeOfWork',
+      'typeOfHousing',
+      'user',
+      'attachments',
+      'owners',
+      'orderProducts.orderProductExtraWorks',
+      'installationTeams.user',
+      'supervisor',
+      'travelCost',
+      'durationOfWork',
+      'orderColors',
+    ]);
+
+    $pdf = Pdf::loadView('pdf.supervisor-list', ['order' => $order]);
+    $pdfName = 'supervisor-list-' . $order->order_number . '.pdf';
     return $pdf->stream($pdfName);
   }
 

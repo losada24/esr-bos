@@ -4,11 +4,13 @@ use App\Enum\RoleEnum;
 use App\Http\Controllers\BiginController;
 use App\Http\Controllers\BiweeklyController;
 use App\Http\Controllers\ClientController;
+use App\Http\Controllers\CompanyContactController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\FrontdeskController;
 use App\Http\Controllers\InstallationTeamController;
 use App\Http\Controllers\ReportController;
 use App\Models\Biweekly;
@@ -72,6 +74,9 @@ Route::middleware('auth')->group(function () {
 
     Route::resource('user', UserController::class)
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value ]);
+
+      Route::resource('company_contact', CompanyContactController::class)
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value ]);
     
     Route::resource('order', OrderController::class)
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value .'|'. RoleEnum::SERVICE_MANAGER->value]);
@@ -109,6 +114,10 @@ Route::middleware('auth')->group(function () {
     Route::get('order/get_payment_list/{order}', [DashboardController::class, 'getPaymentList'])
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::INSTALLER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value])
       ->name('order.get_payment_list');
+
+      Route::get('order/get_supervisor_list/{order}', [DashboardController::class, 'getSupervisorList'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::SUPERVISOR->value])
+      ->name('order.get_supervisor_list');
     
     Route::put('dashboard/update_events/{id}', [DashboardController::class, 'updateEvent'])
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::SUPERVISOR->value .'|' . RoleEnum::SERVICE_MANAGER->value])
@@ -195,6 +204,9 @@ Route::middleware('auth')->group(function () {
       ->name('report.edit_biweekly'); */
       Route::resource('biweekly', BiweeklyController::class)
         ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value ]);
+
+      Route::resource('frontdesk', FrontdeskController::class)
+        ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value ]);
 
       Route::get('/report/edit_report_installer/{id}/{installation_team}', [ReportController::class, 'editReportInstaller'])
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value] )

@@ -19,7 +19,7 @@
         max-width: 1200px; /* Puedes ajustar este valor si necesitas más ancho */
         border-collapse: collapse;
         font-family: Arial, sans-serif;
-        font-size: 12px;
+        font-size: 22px;
     }
 
     /* Bordes y alineación de celdas */
@@ -50,7 +50,7 @@
     /* Títulos principales */
     .header-info {
         font-weight: bold;
-        font-size: 16px;
+        font-size: 22px;
         text-align: left;
         background-color: #dcdcdc;
         padding: 10px;
