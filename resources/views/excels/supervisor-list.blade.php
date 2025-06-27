@@ -21,7 +21,6 @@
           <th width='50'>Planning Date</th>
           <th width='50'>Qty Date</th>
           <th width='50'>Value Project</th>
-          <th width='50'>% Commissions</th>
           <th width='50'>Commissions</th>
           <th width='50'>Status</th>
           <th width='50'>Date Paid</th>
@@ -54,7 +53,6 @@
               <td width='20' height='25' text-align='center' valign='middle'>{{$order['execution_planing_date'] }}</td>
               <td width='20' height='25' text-align='center' valign='middle'>{{$order['qty_days'] }}</td>
               <td width='20' height='25' text-align='center' valign='middle'>{{$order['project_amount'] }}</td>
-              <td width='20' height='25' text-align='center' valign='middle'>{{$order['supervisor_payment_percentage']}} % </td>
               <td width='20' height='25' text-align='center' valign='middle'>{{ $order['supervisor_commissions'] }}</td>
               <td width='20' height='25' text-align='center' valign='middle'>{{$order['supervisor_payment_status'] }}</td>
               <td width='20' height='25' text-align='center' valign='middle'>{{$order['supervisor_payment_date'] }}</td>
