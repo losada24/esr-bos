@@ -140,7 +140,7 @@ class PartialOrderRequest extends FormRequest
           'walk_trough_attach' => [
               'nullable',
               'file', 
-              'mimes:jpeg,png,jpg,pdf,docx,doc,xlsx',
+              'mimes:jpeg,png,jpg,pdf,docx,doc,xlsx,heic',
               'max:10240',
               /* Rule::when(
                 fn($input) => $input['walk_trough']== 1
@@ -150,7 +150,7 @@ class PartialOrderRequest extends FormRequest
             'pre_inspection_attach' => [
               'nullable',
               'file', 
-              'mimes:jpeg,png,jpg,pdf,docx,doc,xlsx',
+              'mimes:jpeg,png,jpg,pdf,docx,doc,xlsx,heic',
               'max:10240',
               /* Rule::when(
                 fn($input) => $input['walk_trough']== 1
@@ -160,7 +160,7 @@ class PartialOrderRequest extends FormRequest
             'inspection_attach' => [
               'nullable',
               'file', 
-              'mimes:jpeg,png,jpg,pdf,docx,doc,xlsx',
+              'mimes:jpeg,png,jpg,pdf,docx,doc,xlsx,heic',
               'max:10240',
               /* Rule::when(
                 fn($input) => $input['walk_trough']== 1

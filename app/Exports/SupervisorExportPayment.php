@@ -68,7 +68,7 @@ class SupervisorExportPayment implements FromView, WithStyles, WithColumnFormatt
       }
         return [
             // Estilos para toda la tabla
-            'A4:O4' => [
+            'A4:N4' => [
                 'font' => [
                     'bold' => true,
                     'size' => 14,
@@ -112,25 +112,19 @@ class SupervisorExportPayment implements FromView, WithStyles, WithColumnFormatt
                         'vertical' => 'center',  // Centro vertical
                     ],
                 ],
-                'L' => [
-                  'alignment' => [
-                      'horizontal' => 'center', // Derecha
-                      'vertical' => 'center',  // Centro vertical
-                  ],
-              ],
-              'M' => [
+              'L' => [
                     'alignment' => [
                         'horizontal' => 'right', // Derecha
                         'vertical' => 'center',  // Centro vertical
                     ],
                 ],
-                'N' => [
+                'M' => [
                   'alignment' => [
                       'horizontal' => 'center', // Derecha
                       'vertical' => 'center',  // Centro vertical
                   ],
               ],
-              'O' => [
+              'N' => [
                     'alignment' => [
                         'horizontal' => 'right', // Derecha
                         'vertical' => 'center',  // Centro vertical
@@ -158,7 +152,7 @@ class SupervisorExportPayment implements FromView, WithStyles, WithColumnFormatt
     public function columnFormats(): array
     {
         return [
-           'M' => '"$"#,##0.00', // Puedes cambiarlo según tu moneda
+           'L' => '"$"#,##0.00', // Puedes cambiarlo según tu moneda
             'K' => '"$"###,##0.00', // Puedes cambiarlo según tu moneda
             
         ];
@@ -171,7 +165,7 @@ class SupervisorExportPayment implements FromView, WithStyles, WithColumnFormatt
               $sheet = $event->sheet->getDelegate();
 
               // Aplica autofiltro si quieres
-              $sheet->setAutoFilter('N4:N1000');
+              $sheet->setAutoFilter('M4:N1000');
   
               // Detectar última fila REAL (ignorando celdas con solo formato)
               $startRow = 5;
@@ -185,7 +179,7 @@ class SupervisorExportPayment implements FromView, WithStyles, WithColumnFormatt
               }
     
               // Estilo general (ahora que sabemos el lastRow real)
-              $sheet->getStyle("A5:O{$lastRow}")->applyFromArray([
+              $sheet->getStyle("A5:N{$lastRow}")->applyFromArray([
                   'font' => [
                       'name' => 'Tahoma',
                       'size' => 8,
@@ -202,19 +196,19 @@ class SupervisorExportPayment implements FromView, WithStyles, WithColumnFormatt
               $sheet->getStyle("J{$totalRow}")->getFont()->setBold(true);
   
               $sheet->setCellValue("K{$totalRow}", "=SUBTOTAL(9,K{$startRow}:K{$lastRow})");
-              $sheet->setCellValue("M{$totalRow}", "=SUBTOTAL(9,M{$startRow}:M{$lastRow})");
+              $sheet->setCellValue("L{$totalRow}", "=SUBTOTAL(9,L{$startRow}:L{$lastRow})");
               $sheet->getStyle("K{$totalRow}")
                   ->getNumberFormat()
                   ->setFormatCode('"$"#,##0.00');
 
-              $sheet->getStyle("M{$totalRow}")
+              $sheet->getStyle("L{$totalRow}")
                   ->getNumberFormat()
                   ->setFormatCode('"$"#,##0.00');
   
-              $sheet->getStyle("K{$totalRow}:M{$totalRow}")->getFont()->setBold(true);
+              $sheet->getStyle("K{$totalRow}:L{$totalRow}")->getFont()->setBold(true);
   
               // Fondo gris para la fila de totales
-              $sheet->getStyle("I{$totalRow}:M{$totalRow}")
+              $sheet->getStyle("I{$totalRow}:L{$totalRow}")
                   ->getFill()->setFillType(Fill::FILL_SOLID)
                   ->getStartColor()->setRGB('D9D9D9');
             },
