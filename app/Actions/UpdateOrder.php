@@ -89,7 +89,7 @@ class UpdateOrder
           $totalCommission = 0;
       } else {
           // En todos los demás casos
-          $totalCommission = 0;
+          $totalCommission = $order->project_amount > 0 ? $order->comissions()->sum('amount') : 0;
       }
         
       if ($request->status == OrderStatusEnum::COMPLETE->value) {
@@ -166,8 +166,10 @@ class UpdateOrder
 
         
       ];
+      //dd( $orderData);
       //dd($request->frame_color);
       $order->update($orderData);
+      
       //dd($request->file('attachments'));
       if ($request->hasFile('attachments')) {
         $files = $request->file('attachments');
@@ -240,12 +242,14 @@ class UpdateOrder
         $order->update([
           'is_send_email' => true,
         ]);
+       
       }
       else if (($installationTeamsChanged || $supervisorChanged) && $request->status== OrderStatusEnum::CONFIRMED->value) {
             $order->update([
               'do_not_send_email' => true,
             ]);
             $this->sendEmail($order);
+             //dd( $order->toArray());
         
       }
 
