@@ -173,6 +173,7 @@ const EventModal = ({
             status: { label: data.status, value: data.status },
             hide_on_weekends: data.hide_on_weekends ?? null,
             notes: data.notes ?? '',
+            work_team_notes: data.work_team_notes ?? '',
             pre_inspection: data.pre_inspection ?? false,
             inspection: data.inspection ?? false,
             walk_trough: data.walk_trough ?? false,
@@ -821,14 +822,27 @@ const EventModal = ({
                   />
                   </div>
             )}
-            {event?.work_team_notes && (
+            {/* event?.work_team_notes && (
               <div className='flex flex-col gap-2'>
                   <strong>Work Team Notes:</strong>
                   <div className='flex flex-row justify-start'>
                     {event?.work_team_notes ?? ''}
                   </div>
               </div>
-            )}
+            ) */}
+               <div className='col-span-4 mt-4'>
+              <label htmlFor="work_team_notes"><strong>Work Team Notes </strong></label>
+              <textarea
+                id="work_team_notes"
+                name="work_team_notes"
+                rows = {6}
+                value={editableData.work_team_notes ?? ''}
+                disabled={isInstaller }
+                className="form-textarea resize-none placeholder:text-white-dark"
+                placeholder='Work Team Notes'
+                onChange={(e) => { setEditableData({ ...editableData, work_team_notes: e.target.value }) }}
+              />
+            </div>
             <div className='col-span-4 mt-4'>
               <label htmlFor="notes"><strong>Notes </strong></label>
               <textarea
