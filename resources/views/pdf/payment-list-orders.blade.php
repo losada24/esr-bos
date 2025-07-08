@@ -19,7 +19,7 @@
         max-width: 1200px; /* Puedes ajustar este valor si necesitas más ancho */
         border-collapse: collapse;
         font-family: Arial, sans-serif;
-        font-size: 22px;
+        font-size:18px;
     }
 
     /* Bordes y alineación de celdas */
@@ -50,7 +50,7 @@
     /* Títulos principales */
     .header-info {
         font-weight: bold;
-        font-size: 22px;
+        font-size: 18px;
         text-align: left;
         background-color: #dcdcdc;
         padding: 10px;
@@ -62,16 +62,16 @@
 <table>
     <thead>
       <tr>
-        <td colspan="4" style="font-weight: bold; font-size: 16px; text-align: left; background-color: #f0f0f0;" >
+        <td colspan="4" style="font-weight: bold; font-size: 18px; text-align: left; background-color: #f0f0f0;" >
             Payments Installer by : {{$installer}}
         </td>
-        <td colspan="4" style="font-weight: bold; font-size: 16px; text-align: left; background-color: #f0f0f0;" >
+        <td colspan="4" style="font-weight: bold; font-size: 18px; text-align: left; background-color: #f0f0f0;" >
             Company Name : {{$company}}
         </td>
-         <td colspan="4" style="font-weight: bold; font-size: 16px; text-align: left; background-color: #f0f0f0;" >
+         <td colspan="4" style="font-weight: bold; font-size: 18px; text-align: left; background-color: #f0f0f0;" >
             Biweekly : {{$biweeklyTitle}}
         </td>
-        <td colspan="8" style="font-weight: bold; font-size: 16px; text-align: left; background-color: #f0f0f0;"></td>
+        <td colspan="8" style="font-weight: bold; font-size: 18px; text-align: left; background-color: #f0f0f0;"></td>
       
     </tr>
     
