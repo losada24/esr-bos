@@ -18,7 +18,7 @@ import {
   type ProductCategory,
   type ProductCost
 } from '@/types'
-import { OrderColor } from '@/types/interfaces/order'
+import { type OrderColor } from '@/types/interfaces/order'
 
 export default function Edit ({
   auth,
@@ -102,6 +102,7 @@ export default function Edit ({
       ...values,
       frame_color: (values.frame_color || []).map((color: { label: string, value: string }) => color.label),
       complete_date: values.status.value === 'COMPLETE' ? new Date().toLocaleDateString('en-CA') : null,
+      pending_collect: values.status.value === 'PENDING COLLECT' ? new Date().toLocaleDateString('en-CA') : null,
       duration_of_work_id: typeof values.duration_of_work_id === 'number' ? values.duration_of_work_id : getValueIdNotNull(values.duration_of_work_id),
       installation_teams: values.installation_teams.map((installation_team: any) => {
         let value = 0

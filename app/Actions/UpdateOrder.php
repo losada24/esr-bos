@@ -113,7 +113,7 @@ class UpdateOrder
       $status = $request->status;
       $type_of_work_id = $request->type_of_work_id;
       
-      //dd($request->complete_date);
+      //dd($request->pending_collect);
       $sendEmail = $status != $order->status;
       //dd($sendEmail,$status,$order->status);
       $orderData = [
@@ -163,6 +163,8 @@ class UpdateOrder
         'is_new_travel_cost' => $request->is_new_travel_cost,
         'new_travel_cost' => $request->new_travel_cost,
         'material_received_date' => $request->material_received_date,
+        'complete_date' => $request->complete_date,
+        'pending_collect'=> $request->pending_collect,
 
         
       ];
