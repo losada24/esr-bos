@@ -18,7 +18,7 @@ trait Reports
   public function getOrdersBySupervisor($id, $filters = [])
   {
 
-   $orders = Order::supervisorFilter($filters)->with(['orderStatus', 'owners', 'installationTeams'])
+   $orders = Order::supervisorFilter($filters)->with(['orderStatus', 'owners', 'installationTeams','comissions'])
       ->where('supervisor_id', $id)
       ->whereDate('installation_date', '<=', Carbon::today())
       ->where('status', '!=', OrderStatusEnum::PLANNED->value)
@@ -29,9 +29,10 @@ trait Reports
 
     $total_amount = $orders->sum('project_amount');
     $total_commissions = $orders->sum('supervisor_commissions');
-    //dd($total_amount,$total_commissions); 
+    //dd($orders); 
 
     return $orders->map(function ($order, $key) use ($total_amount, $total_commissions) {
+      //dd($order->comissions); 
       $final_installation_date_status = $order->orderStatus->where('status', OrderStatusEnum::COMPLETE->value)->first();
       $final_installation_date = null;
       $qty_days = 0;
