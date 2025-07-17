@@ -144,6 +144,17 @@ export const SERVICES = {
 
 }
 
+export const SOURCES = {
+  EXTERNAL_REFERAL: 'EXTERNAL REFERAL',
+  INTERNAL_REFERAL: 'INTERNAL REFERAL'
+
+}
+export const CONTACT_TYPES = {
+  RESIDENTIAL_CONTACT: 'RESIDENTIAL CONTACT',
+  COMMERCIAL_CONTACT: 'COMMERCIAL CONTACT'
+
+}
+
 export interface ThemeConfig {
   locale: Locale
   theme: Theme

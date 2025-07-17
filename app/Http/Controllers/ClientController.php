@@ -6,9 +6,12 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Actions\CreateClient;
 use App\Actions\UpdateClient;
+use App\Enum\ContactSourceEnum;
+use App\Enum\ContactTypeEnum;
 use App\Http\Requests\StoreClientRequest;
 use App\Http\Requests\UpdateClientRequest;
 use App\Models\ClientAddress;
+use App\Models\CompanyContact;
 use Barryvdh\DomPDF\Facade\Pdf;
 
 class ClientController extends Controller
@@ -35,7 +38,23 @@ class ClientController extends Controller
      */
     public function create()
     {
-        return Inertia::render('Client/Create', []);
+        return Inertia::render('Client/Create', [ 
+          'contact_type' => [
+          ContactTypeEnum::RESIDENTIAL_CONTACT->value,
+          ContactTypeEnum::COMMERCIAL_CONTACT->value,
+        ],
+        'companies' => CompanyContact::all(),
+          'sources' => [
+            ContactSourceEnum::TIK_TOK->value,
+            ContactSourceEnum::INSTAGRAM_FACEBOOK->value,
+            ContactSourceEnum::META->value,
+            ContactSourceEnum::DESTINO_TOLK->value,
+            ContactSourceEnum::RESOURCE_MAGAZINE->value,
+            ContactSourceEnum::BANNER_PUBLICITARIO->value,
+            ContactSourceEnum::EXTERNAL_REFERAL->value,
+            ContactSourceEnum::INTERNAL_REFERAL->value,
+            ContactSourceEnum::GOOGLE_MY_BUSINESS->value,
+            ContactSourceEnum::PICHY_BOYS->value,]]);
     }
 
     /**
@@ -58,9 +77,33 @@ class ClientController extends Controller
      * @return \Illuminate\Http\Response
      */
     public function edit(Client $client)
-    {
+    {    
+      
         return Inertia::render('Client/Edit', [
-          'client' => $client,
+          //'clients' => $client,
+          'contact_type' => [
+            ContactTypeEnum::RESIDENTIAL_CONTACT->value,
+            ContactTypeEnum::COMMERCIAL_CONTACT->value,
+          ],
+          'companies' => CompanyContact::all(),
+          'sources' => [
+            ContactSourceEnum::TIK_TOK->value,
+            ContactSourceEnum::INSTAGRAM_FACEBOOK->value,
+            ContactSourceEnum::META->value,
+            ContactSourceEnum::DESTINO_TOLK->value,
+            ContactSourceEnum::RESOURCE_MAGAZINE->value,
+            ContactSourceEnum::BANNER_PUBLICITARIO->value,
+            ContactSourceEnum::EXTERNAL_REFERAL->value,
+            ContactSourceEnum::INTERNAL_REFERAL->value,
+            ContactSourceEnum::GOOGLE_MY_BUSINESS->value,
+            ContactSourceEnum::PICHY_BOYS->value,
+          ],
+          'clients' => $client->load([
+              'clientAddress',
+              'referral',
+            ]),
+           
+            
         ]);
     }
 
@@ -86,10 +129,17 @@ class ClientController extends Controller
      */
     public function destroy(Client $client)
     {
+            if ($client->orders()->exists()) {
+            return redirect()
+                ->back()
+                ->with('error', 'The client cannot be deleted because they are associated with one or more orders.');
+        }
+
         $client->delete();
+
         return redirect()
-          ->back()
-          ->with('success', 'Client deleted successfully.');
+            ->back()
+            ->with('success', 'Client deleted successfully.');
     }
 
     /**

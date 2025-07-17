@@ -7,11 +7,13 @@ use Inertia\Inertia;
 use App\Actions\CreateClient;
 use App\Actions\CreateCompanyContact;
 use App\Actions\UpdateClient;
+use App\Actions\UpdateCompanyContact;
 use App\Enum\ContactSourceEnum;
 use App\Enum\ContactTypeEnum;
 use App\Http\Requests\StoreClientRequest;
 use App\Http\Requests\StoreCompanyContactRequest;
 use App\Http\Requests\UpdateClientRequest;
+use App\Http\Requests\UpdateCompanyContactRequest;
 use App\Models\ClientAddress;
 use App\Models\CompanyContact;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -40,7 +42,24 @@ class CompanyContactController extends Controller
      */
     public function create()
     {
-        return Inertia::render('CompanyContact/Create', [] );
+        return Inertia::render('CompanyContact/Create', [
+          'contact_type' => [
+            ContactTypeEnum::RESIDENTIAL_CONTACT->value,
+            ContactTypeEnum::COMMERCIAL_CONTACT->value,
+          ],
+          'sources' => [
+            ContactSourceEnum::TIK_TOK->value,
+            ContactSourceEnum::INSTAGRAM_FACEBOOK->value,
+            ContactSourceEnum::META->value,
+            ContactSourceEnum::DESTINO_TOLK->value,
+            ContactSourceEnum::RESOURCE_MAGAZINE->value,
+            ContactSourceEnum::BANNER_PUBLICITARIO->value,
+            ContactSourceEnum::EXTERNAL_REFERAL->value,
+            ContactSourceEnum::INTERNAL_REFERAL->value,
+            ContactSourceEnum::GOOGLE_MY_BUSINESS->value,
+            ContactSourceEnum::PICHY_BOYS->value,
+          ],
+        ] );
     }
 
     /**
@@ -51,7 +70,10 @@ class CompanyContactController extends Controller
      */
     public function store(StoreCompanyContactRequest $storeCompanyContactRequest, CreateCompanyContact $createCompanyContact)
     {
-        $createCompanyContact->handle($storeCompanyContactRequest);
+        $company = $createCompanyContact->handle($storeCompanyContactRequest);
+        if ($storeCompanyContactRequest->boolean('from_modal')) {
+            return response()->json(['company' => $company]);
+        }
         return redirect()->route('company_contact.index')
           ->with('success', 'Company created successfully.');
     }
@@ -62,10 +84,10 @@ class CompanyContactController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function edit(Client $client)
+    public function edit(CompanyContact $companyContact)
     {    
       
-        return Inertia::render('Client/Edit', [
+        return Inertia::render('CompanyContact/Edit', [
           //'clients' => $client,
           'contact_type' => [
             ContactTypeEnum::RESIDENTIAL_CONTACT->value,
@@ -83,9 +105,8 @@ class CompanyContactController extends Controller
             ContactSourceEnum::GOOGLE_MY_BUSINESS->value,
             ContactSourceEnum::PICHY_BOYS->value,
           ],
-          'clients' => $client->load([
-              'clientAddress',
-            ]),
+          'companyContact' => $companyContact,
+          'clientslist' => $companyContact->clients,
         ]);
     }
 
@@ -96,11 +117,11 @@ class CompanyContactController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(UpdateClientRequest $updateClientRequest, UpdateClient $updateUser, Client $client)
+    public function update(UpdateCompanyContactRequest $UpdateCompanyContactRequest, UpdateCompanyContact $updateCompanyContact, CompanyContact $companyContact)
     {
-        $updateUser->handle($updateClientRequest, $client);
-        return redirect()->route('client.index')
-          ->with('success', 'Client updated successfully.');
+        $updateCompanyContact->handle($UpdateCompanyContactRequest, $companyContact);
+        return redirect()->route('company_contact.index')
+          ->with('success', 'Company updated successfully.');
     }
 
     /**
@@ -109,12 +130,20 @@ class CompanyContactController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function destroy(Client $client)
+    public function destroy(CompanyContact $companyContact)
     {
-        $client->delete();
-        return redirect()
-          ->back()
-          ->with('success', 'Client deleted successfully.');
+      // Suponiendo que tienes una relación definida: $companyContact->clients()
+          if ($companyContact->clients()->exists()) {
+              return redirect()
+                  ->back()
+                  ->with('error', 'The company cannot be deleted because it has associated clients');
+          }
+
+          $companyContact->delete();
+
+          return redirect()
+              ->back()
+              ->with('success', 'Company deleted successfully.');
     }
 
     /**

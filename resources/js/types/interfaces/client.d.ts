@@ -16,6 +16,7 @@ export interface Client {
   updated_at: Date
   vip_clients: boolean
   vip_notes: string
+  contact_type: string
 }
 
 export interface ClientAddress {

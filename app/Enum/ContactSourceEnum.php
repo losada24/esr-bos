@@ -1,0 +1,19 @@
+<?php
+
+namespace App\Enum;
+
+enum ContactSourceEnum: string
+{
+    case TIK_TOK = 'TIK TOK';
+    case INSTAGRAM_FACEBOOK = 'INSTAGRAM/FACEBOOK';
+    case META = 'META';
+    case DESTINO_TOLK = 'DESTINO TOLK';
+    case RESOURCE_MAGAZINE = 'RESOURCE MAGAZINE';
+    case BANNER_PUBLICITARIO = 'BANNER PUBLICITARIO';
+    case EXTERNAL_REFERAL = 'EXTERNAL REFERAL';
+    case INTERNAL_REFERAL = 'INTERNAL REFERAL';
+    case GOOGLE_MY_BUSINESS = 'GOOGLE MY BUSINESS';
+    case PICHY_BOYS = 'PICHY BOYS';
+    
+
+}
