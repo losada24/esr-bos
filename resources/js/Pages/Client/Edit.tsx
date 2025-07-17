@@ -1,34 +1,36 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
 import { Head, router } from '@inertiajs/react'
 import { Formik, type FormikHelpers } from 'formik'
-import { clientSchema, type ClientFormType } from './ClientCommon'
+import { type ClientEditFormType, clientSchema, type ClientFormType } from './ClientCommon'
 import ClientForm from './ClientForm'
-import {type CompanyContact, type PageProps } from '@/types'
+import { type User, type PageProps, type ClientAddress, CompanyContact } from '@/types'
 import { useState, useRef } from 'react'
 import AddressModal from './AddressModal'
 
-export default function Create ({ auth, contact_type, sources, companies }: PageProps & { contact_type: string[], sources: string[], companies: CompanyContact[] }) {
-  const formikRef = useRef<any>()
+export default function Edit ({ auth, clients, clientAddress, contact_type, sources, companies }: PageProps & { auth: User, clients: ClientEditFormType, clientAddress: ClientAddress, contact_type: string[], sources: string[], companies: CompanyContact[] }) {
+
+ const formikRef = useRef<any>()
   const [showAddressModal, setShowAddressModal] = useState<boolean>(false)
   const [address, setAddress] = useState<string[]>([])
   const [currentAddress, setCurrentAddress] = useState<string>('')
-  const [companiesList, setCompaniesList] = useState<CompanyContact[]>(companies)
   const initialValues: ClientFormType = {
-    id: 0,
-    name: '',
-    email: '',
-    address: '',
-    appointment_date: null,
-    phone: '',
+    id: clients.id,
+    name: clients.name,
+    email: clients.email,
+    address: clients?.client_address?.[0]?.address ?? '',
+    appointment_date: clients?.client_address?.[0]?.appointment_date ?? null,
+    phone: clients.phone,
     confirmed: false,
-    notes: '',
-    contact_type: '',
-    other_phone: '',
-    secondary_email: '',
-    source: '',
-    vip_clients: false,
-    vip_notes: '',
-    company_contact_id: 0
+    notes: clients?.client_address?.[0]?.notes ?? '',
+    contact_type: clients.contact_type,
+    other_phone: clients.other_phone,
+    secondary_email: clients.secondary_email,
+    source: clients.source,
+    vip_clients: clients.vip_clients ?? false,
+    vip_notes: clients.vip_notes ?? '',
+    refer_name: clients?.referral?.name ?? '',
+    refer_phone: clients?.referral?.phone ?? '',
+    company_contact_id: clients?.company_contact_id ?? 0
   }
 
   const setModalAddress = (address: string) => {
@@ -46,7 +48,11 @@ export default function Create ({ auth, contact_type, sources, companies }: Page
     const data = await response.json()
 
     if (data.length === 0 || values.confirmed) {
-      router.post(route('client.store'), values, {
+      router.post(route('client.update', values.id), {
+        _method: 'PUT',
+        ...values
+      }, {
+        forceFormData: true,
         onError: (errors: any) => {
           helpers.setErrors(errors)
         }
@@ -61,9 +67,9 @@ export default function Create ({ auth, contact_type, sources, companies }: Page
   return (
       <AuthenticatedLayout
           auth={auth}
-          pageTitle="Create Contact"
+          pageTitle="Edit Contact"
       >
-          <Head title="Create Contact" />
+          <Head title="Edit Contact" />
           <Formik<ClientFormType>
             initialValues={initialValues}
             validationSchema={clientSchema}
@@ -75,11 +81,11 @@ export default function Create ({ auth, contact_type, sources, companies }: Page
                 errors={errors}
                 setFieldValue={setFieldValue}
                 submitCount={submitCount}
-                isCreate={true}
+                isCreate={false}
                 values={values}
                 contact_type={contact_type}
-                companies={companiesList}
                 sources={sources}
+                companies={companies}
               />
             )}
           </Formik>

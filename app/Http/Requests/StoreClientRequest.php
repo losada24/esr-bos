@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests;
 
+use App\Enum\ContactSourceEnum;
+use App\Enum\ContactTypeEnum;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use App\Enum\States;
@@ -34,6 +36,33 @@ class StoreClientRequest extends FormRequest
             'notes' => 'nullable|string',
             'vip_clients' => 'boolean',
             'vip_notes' => 'nullable|string|max:1000',
+            'contact_type' => [
+              'required',
+              'string',
+              Rule::in(
+                ContactTypeEnum::RESIDENTIAL_CONTACT->value,
+                ContactTypeEnum::COMMERCIAL_CONTACT->value,
+              )
+            ],
+            'source' => [
+              'required',
+              'string',
+              Rule::in(
+                ContactSourceEnum::TIK_TOK->value,
+                ContactSourceEnum::INSTAGRAM_FACEBOOK->value,
+                ContactSourceEnum::META->value,
+                ContactSourceEnum::DESTINO_TOLK->value,
+                ContactSourceEnum::RESOURCE_MAGAZINE->value,
+                ContactSourceEnum::BANNER_PUBLICITARIO->value,
+                ContactSourceEnum::EXTERNAL_REFERAL->value,
+                ContactSourceEnum::INTERNAL_REFERAL->value,
+                ContactSourceEnum::GOOGLE_MY_BUSINESS->value,
+                ContactSourceEnum::PICHY_BOYS->value,
+              )
+            ],
+            'other_phone' => 'nullable|string|max:20',
+            'secondary_email' => 'nullable|email|max:255',
+            'source' => 'nullable|string|max:255',
         ];
     }
 }

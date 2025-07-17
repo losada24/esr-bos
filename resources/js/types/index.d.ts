@@ -13,6 +13,8 @@ import {
 } from '@/types/interfaces/order'
 import { type Status } from './interfaces/status'
 import { type OptionType } from './interfaces/optionType'
+import { type Pipelines } from './interfaces/pipelines'
+import { type CompanyContact } from './interfaces/companyContact'
 
 export type {
   User,
@@ -41,6 +43,7 @@ export type {
   ClientAddress,
   PaymentExtraFields,
   InstallationPayment,
-  BiweeklyInstaller
-
+  BiweeklyInstaller,
+  Pipelines,
+  CompanyContact
 }

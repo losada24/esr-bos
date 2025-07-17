@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\DB;
 
-class Client extends Model
+class CompanyContact extends Model
 {
     use HasFactory, SoftDeletes;
 
@@ -17,24 +17,19 @@ class Client extends Model
       'name',
       'phone',
       'email',
-      'user_id',
-      'vip_clients',
-      'vip_notes',
-      'contact_type',
-      'other_phone',
-      'secondary_email',
-      'source',
-      'company_contact_id',
-      'referral_id', // Foreign key to Referral model
+      'website',
+      'billing_street',
+      'billing_city',
+      'billing_state',
+      'billing_code',
+      'bid_due_date',
 
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'vip_clients' => 'boolean'
-        ];
-    }
+
+    protected $dates = [
+      'bid_due_date',
+    ];
 
     /**
      * The attributes that should be cast.
@@ -56,22 +51,13 @@ class Client extends Model
     public function user(): BelongsTo {
       return $this->belongsTo(User::class);
     }
-
-    public function companyContact(): BelongsTo {
-      return $this->belongsTo(CompanyContact::class);
-    }
     
-    public function orders(): HasMany {
-      return $this->hasMany(Order::class);
+    public function clients(): HasMany {
+      return $this->hasMany(Client::class);
     }
 
     public function clientAddress(): HasMany {
       return $this->hasMany(ClientAddress::class);
-    }
-
-    public function referral()
-    {
-        return $this->belongsTo(Referral::class);
     }
 
 }

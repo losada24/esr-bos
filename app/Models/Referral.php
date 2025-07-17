@@ -9,32 +9,16 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\DB;
 
-class Client extends Model
+class Referral extends Model
 {
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
       'name',
       'phone',
-      'email',
-      'user_id',
-      'vip_clients',
-      'vip_notes',
-      'contact_type',
-      'other_phone',
-      'secondary_email',
-      'source',
-      'company_contact_id',
-      'referral_id', // Foreign key to Referral model
+      'type',
 
     ];
-
-    protected function casts(): array
-    {
-        return [
-            'vip_clients' => 'boolean'
-        ];
-    }
 
     /**
      * The attributes that should be cast.
@@ -52,26 +36,9 @@ class Client extends Model
           $query->where(DB::raw("CONCAT(name, ' ', email, ' ', phone)"), 'like', '%'.$search.'%');
         });
     }
-
-    public function user(): BelongsTo {
-      return $this->belongsTo(User::class);
-    }
-
-    public function companyContact(): BelongsTo {
-      return $this->belongsTo(CompanyContact::class);
-    }
-    
-    public function orders(): HasMany {
-      return $this->hasMany(Order::class);
-    }
-
-    public function clientAddress(): HasMany {
-      return $this->hasMany(ClientAddress::class);
-    }
-
-    public function referral()
+    public function clients()
     {
-        return $this->belongsTo(Referral::class);
+        return $this->hasMany(Client::class);
     }
 
 }

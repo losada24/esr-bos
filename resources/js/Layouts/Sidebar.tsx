@@ -10,6 +10,10 @@ import CompanyIcon from '@/Components/Icons/CompanyIcon'
 import { isAdmin, isAccountManager, isFrontdesk, isOwner, isSupervisor, isServiceManager, isInstaller, isPaymentCoordinator } from '@/Utils/user'
 import { type Role, type Auth } from '@/types'
 import WindowsIcon from '@/Components/Icons/WindowsIcon'
+import PrintIcon from '@/Components/Icons/PrintIcon'
+import CodeIcon from '@/Components/Icons/CodeIcon'
+import CalendarIcon from '@/Components/Icons/CalendarIcon'
+import FolderIcon from '@/Components/Icons/FolderIcon'
 
 const Sidebar = ({ auth }: { auth: Auth }) => {
   const [themeState, toggleSidebar] = useStore((state: ThemeState) => [
@@ -110,7 +114,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                 <li className="menu nav-item">
                                     <NavLink href={route('order.index')} active={route().current('order.index')} className="group">
                                         <div className="flex items-center">
-                                            <CompanyIcon />
+                                            <FolderIcon />
                                             <SidebarLinkLabel>Order</SidebarLinkLabel>
                                         </div>
                                     </NavLink>
@@ -119,16 +123,42 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                             )}
                             {(IS_ADMIN || IS_FRONTDESK || IS_ACCOUNT_MANAGER || IS_OWNER) && (
                               <>
-                                <li className="menu nav-item">
+                              </>
+                            )}
+
+                            <h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">
+                                <svg className="w-4 h-5 flex-none hidden" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                </svg>
+                                <span>Frontdesk</span>
+                            </h2>
+
+                            <li className="menu nav-item">
+                                <NavLink href={route('frontdesk.index')} active={route().current('frontdesk.index')} className="group">
+                                    <div className="flex items-center">
+                                        <CodeIcon />
+                                        <SidebarLinkLabel>Pipeline</SidebarLinkLabel>
+                                    </div>
+                                </NavLink>
+                            </li>
+
+                            <li className="menu nav-item">
                                     <NavLink href={route('client.index')} active={route().current('client.index')} className="group">
                                         <div className="flex items-center">
                                             <ReferralIcon />
-                                            <SidebarLinkLabel>Client</SidebarLinkLabel>
+                                            <SidebarLinkLabel>Contact</SidebarLinkLabel>
                                         </div>
                                     </NavLink>
                                 </li>
-                              </>
-                            )}
+
+                                <li className="menu nav-item">
+                                    <NavLink href={route('company_contact.index')} active={route().current('company_contact.index')} className="group">
+                                        <div className="flex items-center">
+                                            <ReferralIcon />
+                                            <SidebarLinkLabel>Company</SidebarLinkLabel>
+                                        </div>
+                                    </NavLink>
+                                </li>
 
                           <h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">
                                 <svg className="w-4 h-5 flex-none hidden" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
@@ -162,7 +192,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                 <li className="menu nav-item">
                                     <NavLink href={route('biweekly.index')} active={route().current('biweekly.index')} className="group">
                                         <div className="flex items-center">
-                                            <ReferralIcon/>
+                                            <CalendarIcon/>
                                             <SidebarLinkLabel>Biweekly</SidebarLinkLabel>
                                         </div>
                                     </NavLink>
