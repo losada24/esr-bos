@@ -7,6 +7,12 @@ export const orderSchema = Yup.object({
   // notes: Yup.string().required().max(1000, 'Notes must be less than 255 characters')
 })
 
+export const requestSchema = Yup.object({
+  client_name: Yup.string().required('Request Name is required')
+  // status: Yup.string().required('Status is required'),
+  // notes: Yup.string().required().max(1000, 'Notes must be less than 255 characters')
+})
+
 export const getValueIdNotNull = (formField: any) => {
   let value: string | number = ''
   if ((formField !== undefined && formField !== null) && Object.prototype.hasOwnProperty.call(formField, 'value')) {

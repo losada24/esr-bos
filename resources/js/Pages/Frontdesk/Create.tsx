@@ -8,7 +8,7 @@ import {
   type User
 
 } from '@/types'
-import { getValueIdNotNull, orderFormObj, orderSchema, type OrderFormValues } from './OrderCommon'
+import { getValueIdNotNull, orderFormObj, requestSchema, type OrderFormValues } from './OrderCommon'
 
 export default function Create ({
   auth,
@@ -49,7 +49,7 @@ export default function Create ({
           <Head title="Create Request" />
           <Formik<OrderFormValues>
             initialValues={initialValues}
-            validationSchema={orderSchema}
+            validationSchema={requestSchema}
             onSubmit={handleSubmit}
           >
             {({ errors, submitCount, setFieldValue, values }) => (
