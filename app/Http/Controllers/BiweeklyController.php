@@ -57,7 +57,7 @@ class BiweeklyController extends Controller
   
     $updateBiweekly->handle($request, $biweekly);
     return redirect()->route('biweekly.index')
-      ->with('success', 'Order updated successfully.');
+      ->with('success', 'Biweekly updated successfully.');
   }
 
   public function showInstallerBiweekly($id)

@@ -17,6 +17,14 @@ export interface Client {
   vip_clients: boolean
   vip_notes: string
   contact_type: string
+  source: string
+  other_phone?: string
+  secondary_email?: string
+  refer_name?: string
+  refer_phone?: string
+  referral_id?: number
+  company_contact_id?: number
+  company_contact?: CompanyContact[]
 }
 
 export interface ClientAddress {

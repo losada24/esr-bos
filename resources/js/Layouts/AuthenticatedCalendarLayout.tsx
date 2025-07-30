@@ -3,16 +3,16 @@ import { type Auth } from '@/types'
 import { useStore, type ThemeState } from '@/Store/theme'
 import Sidebar from './Sidebar'
 import Header from './Header'
-import Footer from './Footer'
 import Portals from './Portals'
 import FlashMessages from '@/Components/FlashMessages'
 
 export default function AuthenticatedCalendarLayout ({
   auth,
-  pageTitle,
   children,
-  actions
-}: PropsWithChildren<{ auth: Auth, pageTitle?: string, actions?: ReactNode }>) {
+  actions,
+  pageTitle,
+  printPanel = true
+}: PropsWithChildren<{ auth: Auth, printPanel?: boolean, actions?: ReactNode, pageTitle?: string }>) {
   const [themeState, toggleSidebar] = useStore((state: ThemeState) => [
     state.themeState,
     state.toggleSidebar
@@ -35,11 +35,20 @@ export default function AuthenticatedCalendarLayout ({
             {/* END TOP NAVBAR */}
             {/* BEGIN CONTENT AREA */}
             <Suspense>
-                <div className={`${themeState.animation} p-3 animate__animated`}>
-                  <div className="panel p-3">
-                    {children}
+              <div className={`${themeState.animation} p-6 animate__animated`}>
+                 <div>
+                    <div className={`${printPanel ? 'panel' : ''} p-3 bg-white`}>
+                      <div className="flex flex-row items-center justify-between mb-5">
+                        <div className="sm:mb-0 mb-4">
+                          {pageTitle !== null && <div className="text-lg font-semibold ltr:sm:text-left rtl:sm:text-right text-center">{pageTitle}</div>}
+                        </div>
+                        {actions}
+                      </div>
+                      <FlashMessages />
+                      {children}
+                    </div>
                   </div>
-                </div>
+                  </div>
             </Suspense>
             {/* END FOOTER */}
             <Portals />

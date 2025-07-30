@@ -86,6 +86,7 @@ class Order extends Model
     'is_new_travel_cost',
     'new_travel_cost',
     'material_received_date',
+    'loss_reason_frontdesk',
   ];
 
   protected $dates = [

@@ -3,7 +3,7 @@ import { Head, router } from '@inertiajs/react'
 import { Formik, type FormikHelpers } from 'formik'
 import { type ClientEditFormType, clientSchema, type ClientFormType } from './ClientCommon'
 import ClientForm from './ClientForm'
-import { type User, type PageProps, type ClientAddress, CompanyContact } from '@/types'
+import { type User, type PageProps, type ClientAddress, type CompanyContact } from '@/types'
 import { useState, useRef } from 'react'
 import AddressModal from './AddressModal'
 

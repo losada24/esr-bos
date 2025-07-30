@@ -102,7 +102,7 @@ export default function Dashboard ({ auth, services, status, statusmodal, legend
   return (
     <AuthenticatedCalendarLayout
       auth={auth}
-      pageTitle='Calendar'
+      // pageTitle='Calendar'
     >
       <Head title="Calendar" />
       <div
