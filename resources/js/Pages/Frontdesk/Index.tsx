@@ -8,7 +8,7 @@ import { isAccountManager, isAdmin, isServiceManager, isSupervisor, isInstaller,
 import EditIcon from '@/Components/Icons/EditIcon'
 import DeleteIcon from '@/Components/Icons/DeleteIcon'
 import LostRequestModal from './LostRequestModal'
-import QuantifiedModal from './QuantifiedModal'
+// import QuantifiedModal from './QuantifiedModal'
 
 export default function Frontdesk ({ auth, data, lossReasonFrontdesk }: PageProps & { data: Pipelines[], lossReasonFrontdesk: string [] }) {
   const IS_ADMIN = isAdmin(auth.user.roles.map((role: Role) => role.name))
