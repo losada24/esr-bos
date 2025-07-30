@@ -10,9 +10,11 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DownloadController;
 use App\Http\Controllers\FrontdeskController;
 use App\Http\Controllers\InstallationTeamController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\SourceController;
 use App\Models\Biweekly;
 use Barryvdh\DomPDF\Facade\Pdf;
 use SebastianBergmann\CodeCoverage\Report\Html\Dashboard;
@@ -208,6 +210,9 @@ Route::middleware('auth')->group(function () {
       Route::resource('frontdesk', FrontdeskController::class)
         ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value ]);
 
+    Route::resource('source', SourceController::class)
+        ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value ]);
+
       Route::get('/report/edit_report_installer/{id}/{installation_team}', [ReportController::class, 'editReportInstaller'])
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value] )
       ->name('report.edit_report_installer');
@@ -272,6 +277,14 @@ Route::middleware('auth')->group(function () {
       Route::get('/biweekly/show-pdf-biweekly-payment-resumen/{installerId}{biweeklyId}', [BiweeklyController::class, 'showPdfBiweeklyPaymentResumen'])
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value .'|'. RoleEnum::SERVICE_MANAGER->value] )
       ->name('biweekly.show-pdf-biweekly-payment-resumen');
+      
+     /* Route::get('/download/{id}', [DownloadController::class, 'secureDownload'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value .'|'. RoleEnum::SERVICE_MANAGER->value] )
+      ->name('download.file');
+
+      Route::get('/download/image-download/{id}', [DownloadController::class, 'imageDownload'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value .'|'. RoleEnum::SERVICE_MANAGER->value] )
+      ->name('download.image-download');*/
 
       Route::get('/biweekly/show-pdf-biweekly-payment-resumen-general/{biweeklyId}', [BiweeklyController::class, 'showPdfBiweeklyPaymentResumenGeneral'])
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value .'|'. RoleEnum::SERVICE_MANAGER->value] )
@@ -289,7 +302,15 @@ Route::middleware('auth')->group(function () {
     Route::get('/report/product-summary', [ReportController::class, 'productSummary'])
     ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::SERVICE_MANAGER->value] )
     ->name('report.product-summary');
-  
+
+    Route::post('/frontdesk/{order}/update-status', [FrontdeskController::class, 'updateStatus'])
+     ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::SERVICE_MANAGER->value] )
+    ->name('frontdesk.updateStatus');
+
+    Route::post('/frontdesk/{order}/update-status-lost', [FrontdeskController::class, 'updateStatusLost'])
+     ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::SERVICE_MANAGER->value] )
+    ->name('frontdesk.updateStatusLost');
+
      /* Route::get('/email-test', function() {
         echo 'Start Email test <br/>';
           $order = App\Models\Order::with(['client', 'owners', 'supervisor', 'installationTeams.user'])->find(587);

@@ -14,6 +14,8 @@ import PrintIcon from '@/Components/Icons/PrintIcon'
 import CodeIcon from '@/Components/Icons/CodeIcon'
 import CalendarIcon from '@/Components/Icons/CalendarIcon'
 import FolderIcon from '@/Components/Icons/FolderIcon'
+import RoundIcon from '@/Components/Icons/RoundIcon'
+import BuildingIcon from '@/Components/Icons/BuildingIcon'
 
 const Sidebar = ({ auth }: { auth: Auth }) => {
   const [themeState, toggleSidebar] = useStore((state: ThemeState) => [
@@ -154,11 +156,19 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                 <li className="menu nav-item">
                                     <NavLink href={route('company_contact.index')} active={route().current('company_contact.index')} className="group">
                                         <div className="flex items-center">
-                                            <ReferralIcon />
+                                            <BuildingIcon />
                                             <SidebarLinkLabel>Company</SidebarLinkLabel>
                                         </div>
                                     </NavLink>
                                 </li>
+                                 <li className="menu nav-item">
+                                <NavLink href={route('source.index')} active={route().current('source.index')} className="group">
+                                    <div className="flex items-center">
+                                        <RoundIcon />
+                                        <SidebarLinkLabel>Sources</SidebarLinkLabel>
+                                    </div>
+                                </NavLink>
+                            </li>
 
                           <h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">
                                 <svg className="w-4 h-5 flex-none hidden" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">

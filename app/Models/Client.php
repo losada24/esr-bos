@@ -25,6 +25,7 @@ class Client extends Model
       'secondary_email',
       'source',
       'company_contact_id',
+      'is_contact',
       'referral_id', // Foreign key to Referral model
 
     ];
@@ -32,7 +33,8 @@ class Client extends Model
     protected function casts(): array
     {
         return [
-            'vip_clients' => 'boolean'
+            'vip_clients' => 'boolean',
+            'is_contact' => 'boolean',
         ];
     }
 

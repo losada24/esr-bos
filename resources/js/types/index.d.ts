@@ -13,7 +13,7 @@ import {
 } from '@/types/interfaces/order'
 import { type Status } from './interfaces/status'
 import { type OptionType } from './interfaces/optionType'
-import { type Pipelines } from './interfaces/pipelines'
+import { type Pipelines, type Tasks } from './interfaces/pipelines'
 import { type CompanyContact } from './interfaces/companyContact'
 
 export type {
@@ -45,5 +45,6 @@ export type {
   InstallationPayment,
   BiweeklyInstaller,
   Pipelines,
-  CompanyContact
+  CompanyContact,
+  Tasks
 }
