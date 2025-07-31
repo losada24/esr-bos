@@ -58,6 +58,7 @@ class OrderController extends Controller
           ->withQueryString()
       ),
       'statuses' => [
+        OrderStatusEnum::REVIEW->value,
         OrderStatusEnum::PLANNED->value,
         OrderStatusEnum::CONFIRMED->value,
         OrderStatusEnum::EXECUTION->value,
@@ -138,7 +139,9 @@ class OrderController extends Controller
       'extraWorks' => ExtraWork::select('id', 'name')->get(),
       'product_costs' => ProductCost::all(),
       'status' => [
+        OrderStatusEnum::REVIEW->value,
         OrderStatusEnum::PLANNED->value,
+        OrderStatusEnum::REVIEW->value,
         OrderStatusEnum::CONFIRMED->value,
         OrderStatusEnum::DELIVERY_CONFIRMED->value,
       ]
@@ -191,6 +194,7 @@ class OrderController extends Controller
   public function edit(Order $order)
   {
     $status = [
+      OrderStatusEnum::REVIEW->value,
       OrderStatusEnum::PLANNED->value,
       OrderStatusEnum::MATERIALS_RECEIVED->value,
       OrderStatusEnum::CONFIRMED->value,
@@ -200,6 +204,7 @@ class OrderController extends Controller
 
     if ($order->service === ServiceEnum::INSTALLATION->value) {
       $status = [
+        OrderStatusEnum::REVIEW->value,
         OrderStatusEnum::PLANNED->value,
         OrderStatusEnum::CONFIRMED->value,
         OrderStatusEnum::EXECUTION->value,
@@ -234,6 +239,7 @@ class OrderController extends Controller
         
         'installationTeams.user',
       ]),
+      //dd($order),
 
       'extraWorks' => ExtraWork::select('id', 'name')->get(),
       
