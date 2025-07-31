@@ -116,6 +116,7 @@ class UpdateOrderRequest extends FormRequest
             'required',
             'string',
             Rule::in(
+              OrderStatusEnum::REVIEW->value,
               OrderStatusEnum::PLANNED->value,
               OrderStatusEnum::CONFIRMED->value,
               OrderStatusEnum::EXECUTION->value,
@@ -174,12 +175,44 @@ class UpdateOrderRequest extends FormRequest
                 PlaningDateSupervisorEnum::COMMERCIAL_PROJECTS->value,
               )
             ],
-          'contract_signing_date' => 'required|date_format:Y-m-d',
-          'payment_factory_date' => 'required|date_format:Y-m-d',
-          'eta_date' => 'required|date_format:Y-m-d',
+          //'contract_signing_date' => 'required|date_format:Y-m-d',
+          'contract_signing_date' => [
+           Rule::when(
+                  fn ($input) => $input->status === OrderStatusEnum::REVIEW->value,
+                  ['nullable'],
+                  ['required']
+              ),
+              'date_format:Y-m-d',
+          ],
+          // 'payment_factory_date' => 'required|date_format:Y-m-d',
+          'payment_factory_date' => [
+              Rule::when(
+                  fn ($input) => $input->status === OrderStatusEnum::REVIEW->value,
+                  ['nullable'],
+                  ['required']
+              ),
+              'date_format:Y-m-d',
+          ],
+          'eta_date' => [
+            Rule::when(
+              fn ($input) => $input->status === OrderStatusEnum::REVIEW->value,
+              ['nullable'],
+              ['required']
+            ),
+            'date_format:Y-m-d',
+          ],
+          // 'eta_date' => 'required|date_format:Y-m-d',
           'installation_end_date' => 'nullable|date_format:Y-m-d',
           'delivery_date' => 'nullable|date_format:Y-m-d',
-          'entry_date' => 'required|date_format:Y-m-d',
+          'entry_date' => [
+            Rule::when(
+              fn ($input) => $input->status === OrderStatusEnum::REVIEW->value,
+              ['nullable'],
+              ['required']
+            ),
+            'date_format:Y-m-d',
+          ],
+          // 'entry_date' => 'required|date_format:Y-m-d',
           'installation_date' => 'nullable|date_format:Y-m-d',
           'city_permits' => 'boolean',
           'association_permits' => 'boolean',

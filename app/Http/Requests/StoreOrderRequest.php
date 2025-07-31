@@ -10,6 +10,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use App\Enum\ServiceEnum;
 use App\Enum\SupervisorPaymentStatusEnum;
 use App\Enum\TypeOfFinancing;
+use App\Models\Order;
 use App\Rules\ValidateOrderStatus;
 use Illuminate\Validation\Rule;
 
@@ -136,6 +137,7 @@ class StoreOrderRequest extends FormRequest
               Rule::in(
                 OrderStatusEnum::PLANNED->value,
                 OrderStatusEnum::CONFIRMED->value,
+                OrderStatusEnum::REVIEW->value,
               ),
               new ValidateOrderStatus
             ],
@@ -159,12 +161,44 @@ class StoreOrderRequest extends FormRequest
               )
             ],
             'inspection_date' => 'nullable|date_format:Y-m-d',
-            'eta_date' => 'required|date_format:Y-m-d',
+             'contract_signing_date' => [
+               Rule::when(
+                  fn ($input) => $input->status === OrderStatusEnum::REVIEW->value,
+                  ['nullable'],
+                  ['required']
+              ),
+              'date_format:Y-m-d',
+          ],
+          'payment_factory_date' => [
+              Rule::when(
+                  fn ($input) => $input->status === OrderStatusEnum::REVIEW->value,
+                  ['nullable'],
+                  ['required']
+              ),
+              'date_format:Y-m-d',
+          ],
+          'eta_date' => [
+            Rule::when(
+              fn ($input) => $input->status === OrderStatusEnum::REVIEW->value,
+              ['nullable'],
+              ['required']
+            ),
+            'date_format:Y-m-d',
+          ],
+            // 'eta_date' => 'nullable|date_format:Y-m-d',
             'installation_end_date' => 'nullable|date_format:Y-m-d',
-            'contract_signing_date' => 'required|date_format:Y-m-d',
-            'payment_factory_date' => 'required|date_format:Y-m-d',
+            //'contract_signing_date' => 'nullable|date_format:Y-m-d',
+            // 'payment_factory_date' => 'nullable|date_format:Y-m-d',
+             'entry_date' => [
+            Rule::when(
+              fn ($input) => $input->status === OrderStatusEnum::REVIEW->value,
+              ['nullable'],
+              ['required']
+            ),
+            'date_format:Y-m-d',
+          ],
             'delivery_date' => 'nullable|date_format:Y-m-d',
-            'entry_date' => 'required|date_format:Y-m-d',
+            // 'entry_date' => 'nullable|date_format:Y-m-d',
             'installation_date' => 'nullable|date_format:Y-m-d',
             'city_permits' => 'boolean',
             'city' => 'nullable|string|max:100',

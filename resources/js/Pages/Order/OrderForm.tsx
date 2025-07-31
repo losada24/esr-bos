@@ -154,7 +154,7 @@ const OrderForm = ({
   const updateOrderProduct = (index: number) => {
     console.log('updateOrderProduct', index)
   }
-  console.log(values)
+  // console.log(values)
 
   const addOrderProduct = (orderProduct: OrderProduct) => {
     const orderProductsList = [...orderProducts, orderProduct]
@@ -163,7 +163,18 @@ const OrderForm = ({
   }
 
   const selectDeliveryAndInstallationDate = async (payment_factory_date: string, cityPermits: boolean) => {
-    const travel_cost_id = 'value' in ((values.travel_cost_id) as any) ? (values.travel_cost_id as any).value : 0
+    console.log(values.travel_cost_id)
+    let travel_cost_id = 0
+    if (
+      values.travel_cost_id &&
+                typeof values.travel_cost_id === 'object' &&
+                'value' in values.travel_cost_id
+    ) {
+      travel_cost_id = (values.travel_cost_id as any).value
+    } else if (typeof values.travel_cost_id === 'number') {
+      travel_cost_id = values.travel_cost_id
+    }
+    // const travel_cost_id = 'value' in ((values.travel_cost_id) as any) ? (values.travel_cost_id as any).value : 0
     const response = await fetch(
       `/order/get_delivery_and_installation_date/${payment_factory_date}/${values.type_of_housing_id}/${travel_cost_id}/${values.service}/${cityPermits}`)
     const data = await response.json()
@@ -493,7 +504,6 @@ const OrderForm = ({
               {(submitCount && errors.frame_color) ? <InputError message={errors.frame_color?.toString()} className="mt-2" /> : ''}
             </div>
             ) }
-           
             {(values.service === SERVICES.DELIVERY_AND_INSTALLATION) && (
             <>
             <div className={submitCount ? (errors.type_of_work_id) ? 'has-error' : 'has-success' : ''}>
@@ -1050,7 +1060,7 @@ const OrderForm = ({
               />
               {(submitCount && errors.material_received_date) ? <InputError message={errors.material_received_date?.toString()} className="mt-2" /> : ''}
             </div>
-          ) }
+            ) }
             <div className='col-span-4'>
               <label htmlFor="notes">Notes</label>
               <Field
