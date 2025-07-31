@@ -141,7 +141,6 @@ class OrderController extends Controller
       'status' => [
         OrderStatusEnum::REVIEW->value,
         OrderStatusEnum::PLANNED->value,
-        OrderStatusEnum::REVIEW->value,
         OrderStatusEnum::CONFIRMED->value,
         OrderStatusEnum::DELIVERY_CONFIRMED->value,
       ]
