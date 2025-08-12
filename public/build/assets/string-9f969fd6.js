@@ -1,0 +1,1 @@
+const s=(t,e)=>t.length>e?`${t.substring(0,e)}...`:t,i=t=>{const e=t.split(" ");let r=t;return e.length>1?r=e[0].charAt(0)+e[1].charAt(0):t.length>1&&(r=t.charAt(0)+t.charAt(1)),r},a=t=>t.toLowerCase().replace(/\b\w/g,e=>e.toUpperCase());export{a as c,s as e,i as g};
