@@ -189,23 +189,39 @@ class BiweeklyController extends Controller
 
             //dd($biweeklys);
             $uncollected = collect();
+            $uncollect1 = collect(); 
 
             foreach ($biweeklys as $uncollectBiweekly) {
-              foreach ($uncollectBiweekly['data'] as $uncollect) {
-                  $payments = collect($uncollect['installation_payments']);
+              $items = collect(data_get($uncollectBiweekly, 'data', []));
+              foreach ($items as $uncollectItem) {
+                 $payments = collect(data_get($uncollectItem, 'installation_payments', []));
                   $lastPayment = $payments->last();
       
                   if (!$lastPayment) {
                       continue; // No hay pagos, saltamos este item
                   }
       
-                  if (
+                 /* if (
                       ($lastPayment['percentage_payment'] == '80' && $uncollect['partial_payment_installation'] == 0) ||
                       ($lastPayment['percentage_payment'] == '20' && $uncollect['final_payment_installation'] == 0) ||
                       ($lastPayment['percentage_payment'] == '100' && $uncollect['final_payment_installation'] == 0)
                   ) {
                       $uncollected->push($uncollect);
-                  }
+                      dd($uncollect);
+                  }*/
+                       $percent        = (int) data_get($lastPayment, 'percentage_payment', 0);
+            $partialPending = (int) data_get($uncollectItem, 'partial_payment_installation', 0) === 0;
+            $finalPending   = (int) data_get($uncollectItem, 'final_payment_installation', 0) === 0;
+
+            // Regla 1: 80% y parcial pendiente
+            if ($percent === 80 && $partialPending) {
+                $uncollected->push($uncollectItem);
+            }
+
+            // Regla 2: (20% o 100%) y final pendiente
+            if (($percent === 20 || $percent === 100) && $finalPending) {
+                $uncollect1->push($uncollectItem);
+            }
               }
           }
              
@@ -216,7 +232,7 @@ class BiweeklyController extends Controller
             //$companyName = $biweekly[0]['data'][0]['company_name'] ?? '';
             $biweekly = Biweekly::find($biweeklyId);
             $biweeklyTitle = Carbon::parse($biweekly->start_biweekly_period)->locale('en')->isoFormat('MMMM D') . ' to ' . Carbon::parse($biweekly->end_biweekly_period)->locale('en')->isoFormat('MMMM D');
-            $pdf = Pdf::loadView('pdf.uncollected-payments-report', ['biweeklys' => $uncollected,'biweeklyTitle' => $biweeklyTitle])->setPaper('A2', 'landscape');
+            $pdf = Pdf::loadView('pdf.uncollected-payments-report', ['biweeklys' => $uncollected, 'biweeklys1' => $uncollect1, 'biweeklyTitle' => $biweeklyTitle])->setPaper('A2', 'landscape');
             $pdfName = 'Uncollected-Payments-Report' .$biweeklyTitle .  '.pdf';
             return $pdf->stream($pdfName);
   }
