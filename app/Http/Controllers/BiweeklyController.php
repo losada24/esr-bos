@@ -209,7 +209,7 @@ class BiweeklyController extends Controller
                       $uncollected->push($uncollect);
                       dd($uncollect);
                   }*/
-            $percent        = (int) data_get($lastPayment, 'percentage_payment', 0);
+            $percent= (int) data_get($lastPayment, 'percentage_payment', 0);
             $partialPending = (int) data_get($uncollectItem, 'partial_payment_installation', 0) === 0;
             $finalPending   = (int) data_get($uncollectItem, 'final_payment_installation', 0) === 0;
 
