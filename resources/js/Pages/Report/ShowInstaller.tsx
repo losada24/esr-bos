@@ -172,14 +172,14 @@ export default function ShowInstaller ({ auth, orders, installer, companyName, s
               <th className="px-6 pt-5 pb-4">Start Date</th>
               <th className="px-6 pt-5 pb-4">Pre-Inspection Date</th>
               <th className="px-6 pt-5 pb-4">End Date</th>
+              <th className="px-6 pt-5 pb-4">Owners</th>
+              <th className="px-6 pt-5 pb-4">City Permit</th>
               <th className="px-6 pt-5 pb-4">Order Status</th>
-                <th className="px-6 pt-5 pb-4">Name</th>
-                <th className="px-6 pt-5 pb-4">Owners</th>
-                <th className="px-6 pt-5 pb-4">Supervisor</th>
-                <th className="px-6 pt-5 pb-4">City Permit</th>
-                <th className="px-6 pt-5 pb-4">Total Project Payment</th>
-                <th className="px-6 pt-5 pb-4">% Project </th>
-               <th className="px-6 pt-5 pb-4">Pending Pay </th>
+              <th className="px-6 pt-5 pb-4">Name</th>
+              <th className="px-6 pt-5 pb-4">Supervisor</th>
+              <th className="px-6 pt-5 pb-4">Total Project Payment</th>
+              <th className="px-6 pt-5 pb-4">% Project </th>
+              <th className="px-6 pt-5 pb-4">Pending Pay </th>
               <th className="px-6 pt-5 pb-4">Payment Processed</th>
                 {/* <th className="px-6 pt-5 pb-4">Pending Pay</th */}
               <th className="px-6 pt-5 pb-4">Extra Work</th>
@@ -240,24 +240,24 @@ export default function ShowInstaller ({ auth, orders, installer, companyName, s
                     <td className="px-6 py-4 border-t ">
                       {order.final_installation_date}
                     </td>
+                     <td className="px-6 py-4 border-t">
+                      {order.owners.map((owner) => {
+                        return owner.name
+                      }).join(', ')}
+                    </td>
+                    <td className="px-6 py-4 border-t">
+                    {order.city_permits ? 'YES' : 'NO'}
+                    </td>
                     <td className="px-6 py-4 border-t ">
                       {order.status}
                     </td>
                     <td className={`px-6 py-4 border-t ${isZeroPayment ? 'bg-yellow-200' : ''}`}>
                       {order.name}
                     </td>
-                    <td className="px-6 py-4 border-t">
-                      {order.owners.map((owner) => {
-                        return owner.name
-                      }).join(', ')}
-                    </td>
-                    <td className="px-6 py-4 border-t">
+                     <td className="px-6 py-4 border-t">
                       <ul>
                         {order.supervisor}
                       </ul>
-                    </td>
-                    <td className="px-6 py-4 border-t">
-                    {order.city_permits ? 'YES' : 'NO'}
                     </td>
                     <td className="px-6 py-4 border-t">
                     {formatPrice(Number(order.amount))}
