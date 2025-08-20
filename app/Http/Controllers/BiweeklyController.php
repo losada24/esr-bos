@@ -212,7 +212,7 @@ class BiweeklyController extends Controller
                     }
 
                     // Regla 2: (20% o 100%) y final pendiente
-                    if ($percent === 20 && $finalPending) {
+                    if ($percent === 20 && $finalPending && !$partialPending) {
                         $uncollect1->push($uncollectItem);
                     }
                       }
