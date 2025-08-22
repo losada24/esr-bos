@@ -139,6 +139,7 @@ class DashboardController extends Controller
         OrderStatusEnum::FINAL_INSPECTION->value,
         OrderStatusEnum::FINAL_COLLECT->value,
         OrderStatusEnum::COMPLETE->value,
+        OrderStatusEnum::MATERIALS_RECEIVED->value,
       ];
     $statusmodal = [  
         OrderStatusEnum::SUPERVISION->value,
@@ -148,6 +149,7 @@ class DashboardController extends Controller
         OrderStatusEnum::FINAL_INSPECTION->value,
         OrderStatusEnum::FINAL_COLLECT->value,
         OrderStatusEnum::COMPLETE->value,
+        OrderStatusEnum::MATERIALS_RECEIVED->value,
       ];
 
       $legend = [
