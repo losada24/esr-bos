@@ -48,6 +48,8 @@ class UpdateOrder
           'email' => $request->email,
           'vip_clients' =>$request->vip_clients,
           'vip_notes' => $request->vip_notes,
+          'contact_type' => $request->contact_type,
+          'user_id' => auth()->user()->id,
         ]);
       }
       $order = Order::with('comissions')->findOrFail($order->id);

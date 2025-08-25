@@ -14,6 +14,7 @@ use App\Http\Controllers\DownloadController;
 use App\Http\Controllers\FrontdeskController;
 use App\Http\Controllers\InstallationTeamController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\SalesController;
 use App\Http\Controllers\SourceController;
 use App\Models\Biweekly;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -207,8 +208,11 @@ Route::middleware('auth')->group(function () {
       Route::resource('biweekly', BiweeklyController::class)
         ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value ]);
 
-      Route::resource('frontdesk', FrontdeskController::class)
+      Route::resource('frontdesk', FrontdeskController::class)->except(['show'])
         ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value ]);
+
+      Route::resource('sales', SalesController::class)
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value ]);
 
     Route::resource('source', SourceController::class)
         ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value ]);
@@ -310,6 +314,22 @@ Route::middleware('auth')->group(function () {
     Route::post('/frontdesk/{order}/update-status-lost', [FrontdeskController::class, 'updateStatusLost'])
      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::SERVICE_MANAGER->value] )
     ->name('frontdesk.updateStatusLost');
+
+      Route::get('/frontdesk/show-quantified-modal/{order}', [FrontdeskController::class, 'showQuantifiedModal'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value ])
+    ->name('frontdesk.show-quantified-modal');
+
+     Route::post('/frontdesk/update-status-quantified/{order}', [FrontdeskController::class, 'updateStatusQuantified'])
+     ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value ] )
+    ->name('frontdesk.update-status-quantified');
+
+    Route::get('/frontdesk/create-qualified', [FrontdeskController::class, 'createQualified'])
+     ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value ] )
+    ->name('frontdesk.create-qualified');
+
+     Route::post('/frontdesk/store-qualified-order', [FrontdeskController::class, 'storeQualifiedOrder'])
+     ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value ] )
+    ->name('frontdesk.store-qualified-order');
 
      /* Route::get('/email-test', function() {
         echo 'Start Email test <br/>';

@@ -8,8 +8,6 @@ export const clientSchema = Yup.object({
   phone: Yup.string().required('Name is required').max(20, 'Phone number must be 10 digits'),
   notes: Yup.string().max(20, 'Notes must be less than 500 characters'),
   address: Yup.string().max(500, 'Address must be less than 500 characters'),
-  contact_type: Yup.string()
-    .required('Contact type is required'),
   source: Yup.string()
     .required('Source is required')
 })

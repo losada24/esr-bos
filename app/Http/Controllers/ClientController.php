@@ -65,7 +65,11 @@ class ClientController extends Controller
      */
     public function store(StoreClientRequest $storeClientRequest, CreateClient $createClient)
     {
-        $createClient->handle($storeClientRequest);
+        $client = $createClient->handle($storeClientRequest);
+            //dd($client);
+        if ($storeClientRequest->boolean('from_modal')) {
+            return response()->json(['client' => $client]);
+        }
         return redirect()->route('client.index')
           ->with('success', 'Client created successfully.');
     }

@@ -30,6 +30,8 @@ class CreateOrder
         'email' => $request->email,
         'vip_clients' => $request->vip_clients,
         'vip_notes' => $request->vip_notes,
+        'contact_type' => $request->contact_type,
+        'user_id' => auth()->user()->id,
       ]);
 
       $project_amount = $request->project_amount;
@@ -63,7 +65,7 @@ class CreateOrder
       } else {
         $initial_payment_percentage = 100.00;
       }
-
+     
       $status = $request->status;
       $order = Order::create([
         'client_id' => $client->id,
@@ -108,6 +110,7 @@ class CreateOrder
         'new_travel_cost' => $request->new_travel_cost,
         'supervisor_commissions' => $totalCommission,
         'is_send_email' => true,
+        
       ]);
 
 

@@ -3,6 +3,7 @@ export interface Tasks {
   title: string
   // description: string
   date: string
+  date_edited: string
   tags: string[]
   // status?: string
   // name: user

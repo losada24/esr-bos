@@ -76,4 +76,9 @@ class Client extends Model
         return $this->belongsTo(Referral::class);
     }
 
+    public function orderClientTemps()
+    {
+        return $this->hasMany(OrderClientTemps::class);
+    }
+
 }

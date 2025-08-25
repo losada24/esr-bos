@@ -15,7 +15,7 @@ class CreateClient {
   
   public function handle(Request $request) {
     
-    DB::transaction(function() use ($request) {
+    return DB::transaction(function() use ($request) {
 
       $existingClient = Client::where('phone', $request->phone)->first();
         //dd($request);
@@ -38,7 +38,7 @@ class CreateClient {
             'name' => $request->name,
             'email' => $request->email,
             'phone' => $request->phone,
-            'contact_type' => $request->contact_type,
+            'contact_type' => $request->contact_type ? $request->contact_type : '',
             'other_phone' => $request->other_phone,
             'secondary_email' => $request->secondary_email,
             'source' => $request->source,
@@ -48,7 +48,7 @@ class CreateClient {
           ]);
 
 
-          $tag = new \stdClass();
+          /*$tag = new \stdClass();
           $tag->name = 'New Client';
           
           $this->createContact([
@@ -61,11 +61,11 @@ class CreateClient {
             'Tag' => [
               $tag
             ]
-          ]);
+          ]);*/
       }
 
 
-      if ($request->address != null) {
+      /*if ($request->address != null) {
         $existingAddress = ClientAddress::where('address', $request->address)->where('client_id', $existingClient->id)->first();
   
         if( !$existingAddress )
@@ -76,12 +76,14 @@ class CreateClient {
             'notes' => $request->notes,
           ]));
         }
-      }
+      }*/
 
       if( !$existingClient )
       {
           throw new \Exception('Client not created');
       }
+        //dd($existingClient);
+      return $existingClient;
 
     });
   }
