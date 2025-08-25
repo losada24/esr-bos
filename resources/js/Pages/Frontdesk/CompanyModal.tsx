@@ -12,11 +12,12 @@ import { router } from '@inertiajs/react'
 const CompanyModal = ({
   showModal,
   onClose,
-  addCompany
+  onConfirm
 }: {
   showModal: boolean
   onClose: () => void
-  addCompany: (company: CompanyContact) => void
+  onConfirm: (company: CompanyContact) => void
+  // addCompany: (company: CompanyContact) => void
 }) => {
   const initialValues: CompanyContact = {
     id: 0,
@@ -62,7 +63,8 @@ const CompanyModal = ({
       const data = await response.json()
 
       if (data.company) {
-        addCompany(data.company)
+        // addCompany(data.company)
+        onConfirm(data.company)
         onClose()
       }
     } catch (error) {

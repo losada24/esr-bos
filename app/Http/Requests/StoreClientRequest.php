@@ -37,7 +37,7 @@ class StoreClientRequest extends FormRequest
             'vip_clients' => 'boolean',
             'vip_notes' => 'nullable|string|max:1000',
             'contact_type' => [
-              'required',
+              'nullable',
               'string',
               Rule::in(
                 ContactTypeEnum::RESIDENTIAL_CONTACT->value,
@@ -62,7 +62,8 @@ class StoreClientRequest extends FormRequest
             ],
             'other_phone' => 'nullable|string|max:20',
             'secondary_email' => 'nullable|email|max:255',
-            'source' => 'nullable|string|max:255',
+            //'source' => 'nullable|string|max:255',
+            'from_modal' => 'sometimes|boolean',
         ];
     }
 }

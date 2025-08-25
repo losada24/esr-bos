@@ -7,10 +7,9 @@ import { isAccountManager, isAdmin, isServiceManager, isSupervisor, isInstaller,
 
 import EditIcon from '@/Components/Icons/EditIcon'
 import DeleteIcon from '@/Components/Icons/DeleteIcon'
-import LostRequestModal from './LostRequestModal'
-import QuantifiedModal from './QuantifiedModal'
 
-export default function Frontdesk ({ auth, data, lossReasonFrontdesk, sources, order_types }: PageProps & { data: Pipelines[], lossReasonFrontdesk: string [], sources: string[], order_types: string[] }) {
+
+export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order_types }: PageProps & { data: Pipelines[], lossReasonFrontdesk: string [], sources: string[], order_types: string[] }) {
   const IS_ADMIN = isAdmin(auth.user.roles.map((role: Role) => role.name))
   const IS_ACCOUNT_MANAGER = isAccountManager(auth.user.roles.map((role: Role) => role.name))
   const IS_SUPERVISOR = isSupervisor(auth.user.roles.map((role: Role) => role.name))
@@ -59,34 +58,24 @@ export default function Frontdesk ({ auth, data, lossReasonFrontdesk, sources, o
       auth={auth}
       printPanel={false}
       actions={
-         <div className="flex gap-2">
             <Link
               className="btn btn-primary"
               href={route('frontdesk.create')}
             >
               <span>Create Request</span>
             </Link>
-
-            <Link
-              className="btn btn-primary"
-              href={route('frontdesk.create-qualified')}
-            >
-              <span>Create Order</span>
-            </Link>
-            </div>
           }
     >
-      <Head title="Frontdesk" />
+      <Head title="Sales" />
       <div className="'w-full h-[90vh] flex flex-col overflow-y-scroll">
         <div className="relative pt-5">
           <div className="overflow-x-auto w-full h-full">
               <div className="flex gap-4 min-w-max">
                   {projectList.map((project: any) => {
                     return (
-                      <div key={project.id} className="panel w-80 flex-none" data-group={project.id}><div className="flex flex-col mb-5">
-                        <h4 className="text-base font-semibold mb-2">{project.title} <span className="mt-1 inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] text-slate-600">
-                        {project.tasks.length} {project.tasks.length === 1 ? 'Order' : 'Orders'}
-                        </span></h4>
+                      <div key={project.id} className="panel w-80 flex-none" data-group={project.id}>
+                        <div className="flex flex-col mb-5">
+                          <h4 className="text-base font-semibold mb-2">{project.title}</h4>
                           <ReactSortable<Tasks>
                                 list={project.tasks}
                                 setList={() => {}} // Desactivado para manejarlo manualmente
@@ -94,10 +83,7 @@ export default function Frontdesk ({ auth, data, lossReasonFrontdesk, sources, o
                                 animation={200}
                                 onEnd={(evt) => {
                                   const { item, from, to } = evt
-                                  // const movedTaskId = item.getAttribute('data-id')
-                                  const movedTaskIdAttr = item.getAttribute('data-id')
-                                  if (!movedTaskIdAttr) return// No hay ID, no seguimos
-                                  const movedTaskId = Number(movedTaskIdAttr)
+                                  const movedTaskId = item.getAttribute('data-id')
                                   const oldStatus = from.closest('[data-group]')?.getAttribute('data-group') ?? ''
                                   const newStatus = to.closest('[data-group]')?.getAttribute('data-group') ?? ''
 
@@ -105,7 +91,7 @@ export default function Frontdesk ({ auth, data, lossReasonFrontdesk, sources, o
 
                                   let movedTask!: Tasks
 
-                                  /* setProjectList((prev) => {
+                                  setProjectList((prev) => {
                                     const updatedList = prev.map((pipeline) => {
                                       if (pipeline.id.toString() === oldStatus) {
                                         const newTasks = pipeline.tasks.filter((t) => {
@@ -120,31 +106,29 @@ export default function Frontdesk ({ auth, data, lossReasonFrontdesk, sources, o
                                       return pipeline
                                     })
                                     return updatedList
-                                  }) */
-                                  setProjectList(prev =>
-                                    prev.map(p => {
-                                      if (p.id.toString() === oldStatus) {
-                                        const remaining = p.tasks.filter(t => {
-                                          if (Number(t.id) === movedTaskId) {
-                                            movedTask = t
-                                            return false
-                                          }
-                                          return true
-                                        })
-                                        return { ...p, tasks: remaining }
-                                      }
-                                      return p
-                                    })
-                                  )
+                                  })
 
                                   /* if (newStatus === 'LOST REQUEST' && movedTask) {
                                     setLostTask(movedTask)
                                     setShowModal(true)
                                     return // detenemos aquí, no movemos aún
                                   } */
+                                  if (movedTask) {
+                                    /* setLostTask(null)
+                                    setPreviousStatusId(null)
+                                    if (newStatus === 'QUALIFIED') {
+                                      setLostTask(movedTask)
+                                      setPreviousStatusId(oldStatus)
+                                      setShowQuantifiedModal(true)
+                                      return
+                                    }
 
-                                  if (!movedTask) return
-                                  /* if (movedTask) {
+                                    if (newStatus === 'LOST REQUEST') {
+                                      setLostTask(movedTask)
+                                      setPreviousStatusId(oldStatus)
+                                      setShowModal(true)
+                                      return
+                                    } */
                                     setTimeout(() => {
                                       setLostTask(movedTask)
                                       setPreviousStatusId(oldStatus)
@@ -159,16 +143,9 @@ export default function Frontdesk ({ auth, data, lossReasonFrontdesk, sources, o
                                     }, 0)
 
                                     return
-                                  } */
-                                 if (newStatus === 'QUALIFIED' || newStatus === 'LOST REQUEST') {
-                                      setLostTask(movedTask)
-                                      setPreviousStatusId(oldStatus)
-                                      if (newStatus === 'QUALIFIED') setShowQuantifiedModal(true)
-                                      if (newStatus === 'LOST REQUEST') setShowModal(true)
-                                      return
-                                    }
+                                  }
 
-                                 /* if (movedTask) {
+                                  if (movedTask) {
                                     setProjectList((prev) =>
                                       prev.map((pipeline) => {
                                         if (pipeline.id.toString() === newStatus) {
@@ -181,33 +158,7 @@ export default function Frontdesk ({ auth, data, lossReasonFrontdesk, sources, o
                                     updateOrderStatus(Number(movedTaskId), newStatus)
                                       .then(() => { console.log('✅ Estado actualizado en backend') })
                                       .catch((err) => { console.error('❌ Error al actualizar el estado:', err) })
-                                  } */
-                                  setProjectList(prev =>
-                                    prev.map(p =>
-                                      p.id.toString() === newStatus
-                                                      ? { ...p, tasks: [...p.tasks, movedTask] }
-                                                      : p
-                                                  )
-                                                )
-
-                                                // 4) Actualizar backend y revertir si falla
-                                                updateOrderStatus(movedTaskId, newStatus)
-                                                  .then(() => { console.log('✅ Estado actualizado en backend') })
-                                                  .catch(err => {
-                                                    console.error('❌ Error al actualizar el estado:', err)
-                                                    // revertir
-                                                    setProjectList(prev =>
-                                                      prev.map(p => {
-                                                        if (p.id.toString() === newStatus) {
-                                                          return { ...p, tasks: p.tasks.filter(t => Number(t.id) !== movedTaskId) }
-                                                        }
-                                                        if (p.id.toString() === oldStatus) {
-                                                          return { ...p, tasks: [...p.tasks, movedTask] }
-                                                        }
-                                                        return p
-                                                      })
-                                                    )
-                                                  })
+                                  }
                                 }}
                                 ghostClass="sortable-ghost"
                                 dragClass="sortable-drag"
@@ -261,9 +212,6 @@ export default function Frontdesk ({ auth, data, lossReasonFrontdesk, sources, o
                                                 }
                                                   </div>
                                                 <p className="break-all">{task.date}</p>
-                                                {task.date_edited !== task.date && (
-                                                  <p className="break-all">{task.date_edited}</p>
-                                                )}
                                                {/* <p className="break-all">{formatPrice(Number(task.precio))}</p> */}
                                             </div>
                                         </div>
@@ -278,7 +226,7 @@ export default function Frontdesk ({ auth, data, lossReasonFrontdesk, sources, o
             </div>
           </div>
       </div>
-      <LostRequestModal
+      {/* <LostRequestModal
         lostTask={lostTask}
         showModal={showModal}
         onClose={() => {
@@ -291,8 +239,8 @@ export default function Frontdesk ({ auth, data, lossReasonFrontdesk, sources, o
         lostStatusId="LOST REQUEST"
         lossReasonFrontdesk={lossReasonFrontdesk}
          previousStatusId={previousStatusId}
-      />
-    <QuantifiedModal
+      /> */}
+   {/* <QuantifiedModal
         showModal={showQuantifiedModal}
         onClose={() => {
           setShowQuantifiedModal(false)
@@ -308,7 +256,7 @@ export default function Frontdesk ({ auth, data, lossReasonFrontdesk, sources, o
         previousStatusId={previousStatusId}
         order_types={order_types ?? []}
         // errors={FormikErrors<OrderFormValues>}
-      />
+      /> */}
     </AuthenticatedCalendarLayout>
   )
 }

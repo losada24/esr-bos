@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Actions\CreateOrderPipeline;
-use App\Actions\CreateQualifiedOrder;
 use App\Enum\ContactSourceEnum;
 use App\Enum\FrontdeskStatusEnum;
 use App\Enum\LostReasonfrontdeskEnum;
@@ -11,18 +10,14 @@ use App\Enum\OrderStatusEnum;
 use App\Enum\OrderTypeEnum;
 use App\Enum\RoleEnum;
 use App\Http\Requests\StoreFrontDeskOrderRequest;
-use App\Http\Requests\StoreQualifiedOrderRequest;
 use App\Models\Client;
-use App\Models\CompanyContact;
 use Illuminate\Http\Request;
 use App\Models\InstallationTeam;
 use App\Models\Order;
-use App\Models\OrderStatus;
-use App\Models\Source;
 use App\Models\User;
 use Inertia\Inertia;
 
-class FrontdeskController extends Controller
+class SalesController extends Controller
 {
     public function index()
     {
@@ -96,12 +91,16 @@ class FrontdeskController extends Controller
         ],
       ]; */
       // Definir los estados del Frontdesk (como strings usando el enum)
-    $frontdeskStatuses = [
-        OrderStatusEnum::NEW_CUSTOMER_REQUEST->value,
-        OrderStatusEnum::NEW_CUSTOMER_REQUEST_FOLLOW_UP->value,
-        OrderStatusEnum::NEW_CUSTOMER_REQUEST_STAND_BY->value,
-        OrderStatusEnum::LOST_CUSTOMER_REQUEST->value,
-        OrderStatusEnum::QUALIFIED->value,
+    $salesStatuses = [
+        OrderStatusEnum::COMMERCIAL_ASSIGNMENT->value,
+        OrderStatusEnum::PENDING_ASSIGNMENT->value,
+        OrderStatusEnum::REQUEST_RE_SCHEDULE->value,
+        OrderStatusEnum::ESTIMATE_APPT_SCHEDULE->value,
+        OrderStatusEnum::FOLLOW_UP->value,
+        OrderStatusEnum::FOLLOW_UP_PROJECTS->value,
+        OrderStatusEnum::STAND_BY->value,
+        OrderStatusEnum::PRE_CONTRACT_APPOINTMENT->value,
+        OrderStatusEnum::CONTRACT_SIGNED_BY_CLIENT->value,
     ];
     $lossReasonFrontdesk = [
         LostReasonfrontdeskEnum::NO_RESPONSE_FROM_CLIENT->value,
@@ -129,26 +128,14 @@ class FrontdeskController extends Controller
    
 
     // Obtener órdenes con esos estados y sus relaciones necesarias
-    $orders = Order::with('client', 'user', 'orderStatus') // si tienes relación con el cliente
-        ->whereIn('status', $frontdeskStatuses)
+    $orders = Order::with('client', 'user') // si tienes relación con el cliente
+        ->whereIn('status', $salesStatuses)
         ->get()
         ->groupBy('status');
 
-    $qualifiedOrders = OrderStatus::where('status', OrderStatusEnum::QUALIFIED->value)
-    ->with('order') // relación definida en el modelo OrderStatus
-    ->get()
-    ->pluck('order')
-    ->unique('id');
-
     // Armar el arreglo que espera el componente React
-   /* $data = collect($frontdeskStatuses)->map(function ($status) use ($orders) {
-        $ordersByStatus = $orders[$status] ?? collect(); */
-      $data = collect($frontdeskStatuses)->map(function ($status) use ($orders, $qualifiedOrders) {
-    if ($status === OrderStatusEnum::QUALIFIED->value) {
-        $ordersByStatus = $qualifiedOrders;
-    } else {
+    $data = collect($salesStatuses)->map(function ($status) use ($orders) {
         $ordersByStatus = $orders[$status] ?? collect();
-    }
 
         return [
             'id' => $status, // puedes usar el valor del estado como id
@@ -159,7 +146,6 @@ class FrontdeskController extends Controller
                     'title' => $order->name ?? 'No Title',
                     'client_id' => $order->client_id ?? null,
                     //'description' => $order->notes ?? '',
-                    'date_edited' => optional($order->updated_at)->format('M d, Y h:i A'),
                     'date' => optional($order->created_at)->format('M d, Y h:i A'),
                     //'names' => $order->user->name ?? 'No Name',
                     //'precio' => $order->price ?? 0,
@@ -169,7 +155,7 @@ class FrontdeskController extends Controller
         ];
     });
 
-      return Inertia::render('Frontdesk/Index', [
+      return Inertia::render('Sales/Index', [
         'data' => $data,
         'lossReasonFrontdesk' => $lossReasonFrontdesk,
         'sources' => $sources,
@@ -198,41 +184,6 @@ class FrontdeskController extends Controller
         ContactSourceEnum::PICHY_BOYS->value,
         ContactSourceEnum::GOOGLE_MY_BUSINESS->value,
       ],
-    ]);
-  }
-
-   public function createQualified()
-  {
-    return Inertia::render('Frontdesk/CreateQualified', [
-      'clients' => Client::all(),
-      'owners' => User::role(RoleEnum::OWNER->value)->get(),
-      'status' => [
-        OrderStatusEnum::NEW_CUSTOMER_REQUEST->value,
-        OrderStatusEnum::NEW_CUSTOMER_REQUEST_FOLLOW_UP->value,
-        OrderStatusEnum::NEW_CUSTOMER_REQUEST_STAND_BY->value,
-        OrderStatusEnum::LOST_CUSTOMER_REQUEST->value,
-        OrderStatusEnum::QUALIFIED->value,
-      ],
-      'sources' => Source::all(),
-      'sourcesClients' => [
-            ContactSourceEnum::TIK_TOK->value,
-            ContactSourceEnum::INSTAGRAM_FACEBOOK->value,
-            ContactSourceEnum::META->value,
-            ContactSourceEnum::DESTINO_TOLK->value,
-            ContactSourceEnum::RESOURCE_MAGAZINE->value,
-            ContactSourceEnum::BANNER_PUBLICITARIO->value,
-            ContactSourceEnum::EXTERNAL_REFERAL->value,
-            ContactSourceEnum::INTERNAL_REFERAL->value,
-            ContactSourceEnum::GOOGLE_MY_BUSINESS->value,
-            ContactSourceEnum::PICHY_BOYS->value,
-          ],
-      //dd(Source::all()),
-      'order_types' => [
-        OrderTypeEnum::RESIDENTIAL->value,
-        OrderTypeEnum::COMMERCIAL->value,
-        OrderTypeEnum::SUPPLY->value,
-      ],
-      'companies' => CompanyContact::all(),
     ]);
   }
 
@@ -284,14 +235,6 @@ public function showQuantifiedModal(Order $order)
     public function updateStatusQuantified(Request $request, Order $order)
     {     
         //dd($request->all());
-        $status = $request['status'];
-        if ($request['order_type'] === OrderTypeEnum::RESIDENTIAL->value || $request['order_type'] === OrderTypeEnum::SUPPLY->value) {
-          $status = OrderStatusEnum::PENDING_ASSIGNMENT->value;
-        } 
-        if ($request['order_type'] === OrderTypeEnum::COMMERCIAL->value) {
-          $status = OrderStatusEnum::COMMERCIAL_ASSIGNMENT->value;
-        }
-        
         $order->update([
         'name' => $request['name'],
         'order_type' => $request['order_type'],
@@ -302,7 +245,7 @@ public function showQuantifiedModal(Order $order)
         'bid_due_date' => $request['bid_due_date'],
         'project_amount' => $request['project_amount'],
         'description' => $request['description'],
-        'status' => $status,
+        'status' => $request['status'],
     ]);
 
       if ($order->client) {
@@ -325,22 +268,9 @@ public function showQuantifiedModal(Order $order)
             'notes' => "{$request['status']} created by " . auth()->user()->name,
           ]);
 
-          $order->orderStatus()->create([
-            'status' => $status,
-            'user_id' => auth()->user()->id,
-            'notes' => "{$status} created by " . auth()->user()->name,
-          ]);
-
 
 
         return response()->json(['success' => true, 'order' => $order]);
     }
-
-    public function storeQualifiedOrder(StoreQualifiedOrderRequest $storeQualifiedOrderRequest, CreateQualifiedOrder $createQualifiedOrder)
-  {
-    $createQualifiedOrder->handle($storeQualifiedOrderRequest);
-    return redirect()->route('frontdesk.index')
-      ->with('success', 'Contact created successfully.');
-  }
 
 }

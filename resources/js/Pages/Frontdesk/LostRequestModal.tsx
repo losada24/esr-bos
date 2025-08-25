@@ -14,6 +14,7 @@ import { router } from '@inertiajs/react'
 const LostRequestModal = ({
   lostTask,
   onClose,
+  previousStatusId,
   setProjectList,
   updateOrderStatus,
   lostStatusId,
@@ -26,6 +27,7 @@ const LostRequestModal = ({
   updateOrderStatus: (orderId: number, newStatus: string) => Promise<void>
   lostStatusId: string
   showModal: boolean
+  previousStatusId: string | null
   lossReasonFrontdesk: string[]
 }) => {
   const initialValues: OrderStatusUpdate = {
@@ -73,15 +75,31 @@ const LostRequestModal = ({
       helpers.setSubmitting(false)
     }
   }
+  const handleClose = () => {
+    if (lostTask && previousStatusId) {
+      setProjectList(prev =>
+        prev.map(pipeline => {
+          if (pipeline.id.toString() === previousStatusId) {
+            const taskExists = pipeline.tasks.some(t => t.id === lostTask.id)
+            if (!taskExists) {
+              return { ...pipeline, tasks: [...pipeline.tasks, lostTask] }
+            }
+          }
+          return pipeline
+        })
+      )
+    }
+    onClose()
+  }
   return (
     <Modal
       show={showModal}
       closeable={true}
-      onClose={onClose}
+      onClose={handleClose}
     >
         <div className="flex items-center justify-between bg-[#fbfbfb] px-5 py-3 dark:bg-[#121c2c]">
           <div className="text-lg font-bold">Loss Request</div>
-          <button type="button" className="text-white-dark hover:text-dark" onClick={() => { onClose() }}>
+          <button type="button" className="text-white-dark hover:text-dark" onClick={handleClose}>
             <CloseIcon />
           </button>
         </div>
@@ -128,10 +146,7 @@ const LostRequestModal = ({
                         </div>
                       </div>
                       <div className="flex items-center justify-between mt-4">
-                        <button className='btn btn-danger uppercase' onClick={ (e) => {
-                          e.preventDefault()
-                          onClose()
-                        }}>Cancel</button>
+                        <button className='btn btn-danger uppercase' onClick={handleClose}>Cancel</button>
                         <PrimaryButton className="btn btn-primary" type='submit'>
                           Save Changes
                         </PrimaryButton>

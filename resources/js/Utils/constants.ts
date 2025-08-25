@@ -154,6 +154,11 @@ export const CONTACT_TYPES = {
   COMMERCIAL_CONTACT: 'COMMERCIAL CONTACT'
 
 }
+export const ORDER_TYPES = {
+  RESIDENTIAL: 'RESIDENTIAL',
+  COMMERCIAL: 'COMMERCIAL',
+  SUPPLY: 'SUPPLY'
+}
 
 export interface ThemeConfig {
   locale: Locale

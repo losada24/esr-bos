@@ -134,7 +134,7 @@ const CompanyContactForm = ({ submitCount, errors, isCreate, setFieldValue, valu
                   }}
                 />
                 {(submitCount && errors.bid_due_date) ? <InputError message={errors.bid_due_date.toString()} className="mt-2" /> : ''}
-              </div>
+          </div>
       </div>
       <div className='flex flex-col'>
         <div className='flex justify-end p-3'>

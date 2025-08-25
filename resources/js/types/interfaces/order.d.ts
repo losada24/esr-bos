@@ -277,3 +277,9 @@ export interface BiweeklyInstaller {
   end_biweekly_period: Date | null
   period: string[]
 }
+
+export interface Source {
+  id: number
+  name: string
+  description: string
+}

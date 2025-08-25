@@ -46,9 +46,9 @@ const ClientForm = ({ submitCount, errors, isCreate, setFieldValue, values, cont
   /* useEffect(() => {
     setCompaniesList(companies)
   }, [companies]) */
- const addCompany = (company: CompanyContact) => {
-  setCompaniesList(prev => [...prev, company])
-  setFieldValue('company_contact_id', company.id)// Opcional: selecciona automáticamente la compañía creada
+  const addCompany = (company: CompanyContact) => {
+    setCompaniesList(prev => [...prev, company])
+    setFieldValue('company_contact_id', company.id)// Opcional: selecciona automáticamente la compañía creada
 }
 
   const selectedCompany = values.company_contact_id
