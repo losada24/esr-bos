@@ -49,7 +49,7 @@ class OrderController extends Controller
    */
   public function index(Request $request)
   {
-    return Inertia::render('Order/Index', [
+    /*return Inertia::render('Order/Index', [
       'orders' => new OrderCollection(
         Order::with(['installationTeams.user'])->filter($request->only(['text', 'status']))
           ->orderBy('orders.updated_at', 'desc')
@@ -72,6 +72,34 @@ class OrderController extends Controller
         OrderStatusEnum::RESCHEDULE->value,
         OrderStatusEnum::MATERIALS_RECEIVED->value,
       ]
+    ]);*/
+     $allowedStatuses = [
+        OrderStatusEnum::REVIEW->value,
+        OrderStatusEnum::PLANNED->value,
+        OrderStatusEnum::CONFIRMED->value,
+        OrderStatusEnum::EXECUTION->value,
+        OrderStatusEnum::SUPERVISION->value,
+        OrderStatusEnum::INSPECTION->value,
+        OrderStatusEnum::FINISH->value,
+        OrderStatusEnum::SERVICE->value,
+        OrderStatusEnum::FINAL_INSPECTION->value,
+        OrderStatusEnum::COMPLETE->value,
+        OrderStatusEnum::ON_HOLD->value,
+        OrderStatusEnum::RESCHEDULE->value,
+        OrderStatusEnum::MATERIALS_RECEIVED->value,
+    ];
+
+    $orders = Order::with(['installationTeams.user'])
+        ->whereIn('orders.status', $allowedStatuses)   // <- filtro duro por status permitidos
+        ->filter($request->only(['text', 'status']))   // si viene un status fuera de la lista, igual quedará excluido
+        ->orderBy('orders.updated_at', 'desc')
+        ->orderBy('orders.id', 'desc')
+        ->paginate()
+        ->withQueryString();
+
+    return Inertia::render('Order/Index', [
+        'orders'   => new OrderCollection($orders),
+        'statuses' => $allowedStatuses, // reutiliza los mismos para el frontend (select/filtros)
     ]);
   }
 
