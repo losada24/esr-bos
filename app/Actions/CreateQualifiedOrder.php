@@ -47,7 +47,7 @@ class CreateQualifiedOrder
         'user_id' => auth()->user()->id,
         'order_type' => $request->order_type,
         'name' => $request->name,
-        'job_adress' => $request->job_address,
+        'job_address' => $request->job_address,
         'job_city' => $request->job_city,
         'job_state' => $request->job_state,
         'job_zip' => $request->job_zip,

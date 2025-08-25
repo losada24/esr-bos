@@ -87,9 +87,9 @@ class Order extends Model
     'new_travel_cost',
     'material_received_date',
     'loss_reason_frontdesk',
-   /* 'description',
+    'description',
     'order_type',
-    'bid_due_date',*/
+    'bid_due_date',
   ];
 
   protected $dates = [
@@ -109,7 +109,7 @@ class Order extends Model
     'service_date',
     'pending_collect',
     'material_received_date',
-    // 'bid_due_date',
+    'bid_due_date',
     
   ];
 
@@ -373,10 +373,10 @@ class Order extends Model
     return $this->hasMany(OrderColors::class, 'order_id', 'id');
   }
 
- /* public function orderClientTemps()
+  public function orderClientTemps()
   {
     return $this->hasMany(OrderClientTemps::class);
-  }*/
+  }
 
   public function getGrandTotalPrice()
   {
