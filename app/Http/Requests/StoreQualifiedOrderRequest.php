@@ -62,7 +62,7 @@ class StoreQualifiedOrderRequest extends FormRequest
             'notes' => 'nullable|string|max:1000',
            
             // Solo obligatoria en COMMERCIAL
-            'company_contact_id' => ['required_if:order_type,COMMERCIAL', 'integer', 'exists:company_contacts,id'],
+            'company_contact_id' => [  'nullable','required_if:order_type,COMMERCIAL', 'integer', 'exists:company_contacts,id'],
             // Company asociadas (opcionales)
             'associate_company_contact_id_1' => ['nullable','integer','exists:company_contacts,id'],
             'associate_company_contact_id_2' => ['nullable','integer','exists:company_contacts,id'],
