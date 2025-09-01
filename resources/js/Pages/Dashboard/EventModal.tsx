@@ -990,7 +990,7 @@ const EventModal = ({
                          <td className='border-t px-6 py-4 align-top'>{attachment.file_type}</td>
                          <td className='border-t px-6 py-4 align-top'>
                           <div className='flex flex-row gap-2 justify-end'>
-                            <a key={attachment.id} href={`storage/${attachment.file_path}`} target='_blank' rel="noreferrer">
+                            <a key={attachment.id} href={route('download.file', { id: attachment.id })} target='_blank' rel="noreferrer">
                               <ExportIcon />
                             </a>
                             <button

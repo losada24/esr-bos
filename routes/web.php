@@ -282,13 +282,13 @@ Route::middleware('auth')->group(function () {
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value .'|'. RoleEnum::SERVICE_MANAGER->value] )
       ->name('biweekly.show-pdf-biweekly-payment-resumen');
       
-     /* Route::get('/download/{id}', [DownloadController::class, 'secureDownload'])
+     Route::get('/download/{id}', [DownloadController::class, 'secureDownload'])
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value .'|'. RoleEnum::SERVICE_MANAGER->value] )
       ->name('download.file');
 
       Route::get('/download/image-download/{id}', [DownloadController::class, 'imageDownload'])
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value .'|'. RoleEnum::SERVICE_MANAGER->value] )
-      ->name('download.image-download');*/
+      ->name('download.image-download');
 
       Route::get('/biweekly/show-pdf-biweekly-payment-resumen-general/{biweeklyId}', [BiweeklyController::class, 'showPdfBiweeklyPaymentResumenGeneral'])
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value .'|'. RoleEnum::SERVICE_MANAGER->value] )
@@ -330,6 +330,14 @@ Route::middleware('auth')->group(function () {
      Route::post('/frontdesk/store-qualified-order', [FrontdeskController::class, 'storeQualifiedOrder'])
      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value ] )
     ->name('frontdesk.store-qualified-order');
+
+    
+      Route::get('/frontdesk/order_view/{id}', [FrontdeskController::class, 'orderView'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value] )
+      ->name('frontdesk.order_view');
+
+      Route::patch('/frontdesk/tags_update/{order}', [FrontdeskController::class, 'tagsUpdate'])
+    ->name('frontdesk.tags_update');
 
      /* Route::get('/email-test', function() {
         echo 'Start Email test <br/>';

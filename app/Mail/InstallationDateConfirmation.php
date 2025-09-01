@@ -10,6 +10,7 @@ use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Mail\Mailables\Attachment;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Barryvdh\DomPDF\PDF as DomPDFPDF;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Storage;
 
@@ -63,12 +64,20 @@ class InstallationDateConfirmation extends Mailable implements ShouldQueue
     {
         $attachments = [];
         if ($this->orderAttachments) {
-          foreach ($this->order->attachments as $attachment) {
+         /* foreach ($this->order->attachments as $attachment) {
             $attachments[] = Attachment::fromPath(storage_path('app/public/' . $attachment->file_path));
-          }
+          } */
+              foreach ($this->order->attachments as $attachment) {
+          
+                // En producción, accede al contenido desde el bucket (usando driver s3)
+                //$content = Storage::disk('public')->get($attachment->file_path);
+                //$filename = basename($attachment->file_path);
+                //$attachments[] = Attachment::fromData(fn () => $content, $filename);
+                $attachments[] = Attachment::fromStorageDisk('public', $attachment->file_path);
+            }
         }
 
-        if ($this->installationAttachments) {
+         /* if ($this->installationAttachments) {
           $numberorder = preg_replace('/[^A-Za-z0-9]/', '', $this->order->order_number);
           $pdfName = 'payment-list-' . $numberorder. '.pdf';
           $pdfPath = storage_path('app/public/pdf/' . $pdfName);
@@ -79,9 +88,26 @@ class InstallationDateConfirmation extends Mailable implements ShouldQueue
           $pdf = Pdf::loadView('pdf.payment-list', ['order' => $this->order]);
           $pdf->save($pdfPath);
           $attachments[] = Attachment::fromPath($pdfPath);
+        } */
+         if ($this->installationAttachments) {
+        $numberorder = preg_replace('/[^A-Za-z0-9]/', '', $this->order->order_number);
+        $pdfName = 'payment-list-' . $numberorder . '.pdf';
+        $pdfPath = 'pdf/' . $pdfName;
+
+        // Eliminar si ya existe
+        if (Storage::disk('public')->exists($pdfPath)) {
+            Storage::disk('public')->delete($pdfPath);
         }
 
-        if ($this->supervisorAttachments) {
+        // Generar PDF y guardarlo en el disco 'public' (S3 o local)
+        $pdf = Pdf::loadView('pdf.payment-list', ['order' => $this->order]);
+        Storage::disk('public')->put($pdfPath, $pdf->output());
+
+        // Agregar como adjunto desde el disco
+        $attachments[] = Attachment::fromStorageDisk('public', $pdfPath);
+    }
+
+        /*if ($this->supervisorAttachments) {
           $numberorder = preg_replace('/[^A-Za-z0-9]/', '', $this->order->order_number);
           $pdfName = 'supervisor-list-' . $numberorder . '.pdf';
           $pdfPath = storage_path('app/public/pdf/' . $pdfName);
@@ -92,7 +118,22 @@ class InstallationDateConfirmation extends Mailable implements ShouldQueue
           $pdf = Pdf::loadView('pdf.supervisor-list', ['order' => $this->order]);
           $pdf->save($pdfPath);
           $attachments[] = Attachment::fromPath($pdfPath);
+        }*/
+
+        if ($this->supervisorAttachments) {
+        $numberorder = preg_replace('/[^A-Za-z0-9]/', '', $this->order->order_number);
+        $pdfName = 'supervisor-list-' . $numberorder . '.pdf';
+        $pdfPath = 'pdf/' . $pdfName;
+
+        if (Storage::disk('public')->exists($pdfPath)) {
+            Storage::disk('public')->delete($pdfPath);
         }
+
+        $pdf = Pdf::loadView('pdf.supervisor-list', ['order' => $this->order]);
+        Storage::disk('public')->put($pdfPath, $pdf->output());
+
+        $attachments[] = Attachment::fromStorageDisk('public', $pdfPath);
+    }
 
         return $attachments;
     }

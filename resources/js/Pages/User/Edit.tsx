@@ -28,7 +28,7 @@ export default function Edit ({ auth, roles, user }: UserPageProps) {
   useEffect(() => {
     setModalProps({
       title: user?.data.name ?? '',
-      image: user?.data.featured_image ?? ''
+      image: user?.data.id ?? 0
     })
   }, [])
 

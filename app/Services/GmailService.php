@@ -9,6 +9,7 @@ use Google\Service\Gmail\Message;
 use Illuminate\Support\Facades\View;
 use ReflectionClass;
 use ReflectionFunction;
+use Illuminate\Support\Facades\Storage;
 
 class GmailService
 {
@@ -88,7 +89,7 @@ class GmailService
       $email .= "Content-Type: text/html; charset=UTF-8\r\n";
       $email .= "$htmlContent\r\n";
 
-      foreach ($mailable->attachments() as $attachment) {
+      /*foreach ($mailable->attachments() as $attachment) {
         $attachmentPath = $this->getAttachmentPath($attachment);
         if (file_exists($attachmentPath)) {
           $attachmentData = base64_encode(file_get_contents($attachmentPath));
@@ -102,6 +103,35 @@ class GmailService
           $email .= "Content-Transfer-Encoding: base64\r\n\r\n";
           $email .= "$attachmentData\r\n";
         }
+      }*/
+      foreach ($mailable->attachments() as $attachment) {
+        $attachmentPath = $this->getAttachmentPath($attachment);
+
+          if (Storage::disk('public')->exists($attachmentPath)) {
+              $fileContents = Storage::disk('public')->get($attachmentPath);
+              $attachmentData = base64_encode($fileContents);
+              $attachmentData = chunk_split($attachmentData, 76, "\r\n");
+
+              $filename = basename($attachmentPath);
+
+              try {
+                $mimeType = Storage::disk('public')->getDriver()->getMimetype($attachmentPath) ?? 'application/octet-stream';
+              } catch (\Throwable  $e) {
+                $extension = pathinfo($attachmentPath, PATHINFO_EXTENSION);
+                $mimeType = match (strtolower($extension)) {
+                    'pdf' => 'application/pdf',
+                    'jpg', 'jpeg' => 'image/jpeg',
+                    'png' => 'image/png',
+                    default => 'application/octet-stream',
+                };
+              }
+
+              $email .= "--$boundary\r\n";
+              $email .= "Content-Type: $mimeType; name=\"$filename\"\r\n";
+              $email .= "Content-Disposition: attachment; filename=\"$filename\"\r\n";
+              $email .= "Content-Transfer-Encoding: base64\r\n\r\n";
+              $email .= "$attachmentData\r\n";
+          }
       }
 
       $email .= "--$boundary--";
