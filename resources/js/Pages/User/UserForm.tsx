@@ -22,6 +22,7 @@ const UserForm = ({ submitCount, errors, roles, isCreate, /* companies, isAdmin,
 }) => {
   const [showModal, setShowModal] = useState(false)
 
+  const imagePath = featured_image ?? null
   return (
     <Form className='space-y-5'>
       <div className={submitCount ? (errors.name) ? 'has-error' : 'has-success' : ''}>
@@ -119,7 +120,7 @@ const UserForm = ({ submitCount, errors, roles, isCreate, /* companies, isAdmin,
               e.preventDefault()
               setShowModal(true)
             }}>
-             <img src={featured_image} className="w-20 h-20 object-cover rounded-md overflow-hidden" />
+             <img src={route('download.image-download', { id: values.id ?? 0 })} className="w-20 h-20 object-cover rounded-md overflow-hidden" />
             </button>
           </div>
         )}

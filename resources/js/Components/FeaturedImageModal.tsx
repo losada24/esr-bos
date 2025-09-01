@@ -18,8 +18,7 @@ const FeaturedImageModal = ({ showModal, onClose, selectedModalProps }: { showMo
         <div className='p-5'>
           <div className='flex justify-center'>
             <img
-              src={selectedModalProps?.image}
-              alt={selectedModalProps?.title} />
+              src={ route('download.image-download', { id: selectedModalProps?.image ?? 0 })} alt={selectedModalProps?.title} />
           </div>
         </div>
     </Modal>
