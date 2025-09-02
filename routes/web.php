@@ -283,11 +283,11 @@ Route::middleware('auth')->group(function () {
       ->name('biweekly.show-pdf-biweekly-payment-resumen');
       
      Route::get('/download/{id}', [DownloadController::class, 'secureDownload'])
-      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value .'|'. RoleEnum::SERVICE_MANAGER->value] )
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value .'|'. RoleEnum::SERVICE_MANAGER->value . '|' . RoleEnum::SUPERVISOR->value] )
       ->name('download.file');
 
       Route::get('/download/image-download/{id}', [DownloadController::class, 'imageDownload'])
-      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value .'|'. RoleEnum::SERVICE_MANAGER->value] )
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value .'|'. RoleEnum::SERVICE_MANAGER->value . '|' . RoleEnum::SUPERVISOR->value] )
       ->name('download.image-download');
 
       Route::get('/biweekly/show-pdf-biweekly-payment-resumen-general/{biweeklyId}', [BiweeklyController::class, 'showPdfBiweeklyPaymentResumenGeneral'])
