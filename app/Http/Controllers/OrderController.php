@@ -87,6 +87,7 @@ class OrderController extends Controller
         OrderStatusEnum::ON_HOLD->value,
         OrderStatusEnum::RESCHEDULE->value,
         OrderStatusEnum::MATERIALS_RECEIVED->value,
+        OrderStatusEnum::FINAL_COLLECT->value
     ];
 
     $orders = Order::with(['installationTeams.user'])
