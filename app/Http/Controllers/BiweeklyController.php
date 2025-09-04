@@ -88,7 +88,7 @@ class BiweeklyController extends Controller
             //dd($biweekly);
             $biweeklys= $biweekly[0]['data'];
 
-            dd($biweeklys);
+            //dd($biweeklys);
           
 
             $installerName =$biweekly[0]['data'][0]['installer'] ?? '';
