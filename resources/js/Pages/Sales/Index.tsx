@@ -7,6 +7,7 @@ import { isAccountManager, isAdmin, isServiceManager, isSupervisor, isInstaller,
 
 import EditIcon from '@/Components/Icons/EditIcon'
 import DeleteIcon from '@/Components/Icons/DeleteIcon'
+import { tagClasses, TagColor } from '@/Utils/tags'
 
 
 export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order_types }: PageProps & { data: Pipelines[], lossReasonFrontdesk: string [], sources: string[], order_types: string[] }) {
@@ -24,12 +25,11 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
   const [showQuantifiedModal, setShowQuantifiedModal] = useState(false)
   const [previousStatusId, setPreviousStatusId] = useState<string | null>(null)
 
-  async function updateOrderStatus (orderId: number, newStatus: string) {
+  /* async function updateOrderStatus (orderId: number, newStatus: string) {
     const url = route('frontdesk.updateStatus', { order: orderId })
 
     const response = await fetch(url, {
-      method: 'POST',
-      headers: {
+      met aders: {
         'Content-Type': 'application/json',
         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '',
         Accept: 'application/json'
@@ -42,7 +42,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
       throw new Error(errorData.message || 'Error updating status')
     }
     return await response.json()
-  }
+  } */
 
   /* const loadEvents = (date: Date) => {
     const year = date.getFullYear()
@@ -155,9 +155,9 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
                                       })
                                     )
 
-                                    updateOrderStatus(Number(movedTaskId), newStatus)
+                                    /* updateOrderStatus(Number(movedTaskId), newStatus)
                                       .then(() => { console.log('✅ Estado actualizado en backend') })
-                                      .catch((err) => { console.error('❌ Error al actualizar el estado:', err) })
+                                      .catch((err) => { console.error('❌ Error al actualizar el estado:', err) }) */
                                   }
                                 }}
                                 ghostClass="sortable-ghost"
@@ -195,23 +195,28 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
                                                   </div>
                                                 </div>
                                                 <div className="flex gap-2 items-center flex-wrap">
-                                                {
-                                                    task.tags?.length
-                                                      ? (
-                                                          task.tags.map((tag: any, i: any) => (
-                                                                <div key={i} className="btn px-2 py-1 flex btn-outline-primary">
-                                                                    <span className="ltr:ml-2 rtl:mr-2">{tag}</span>
-                                                                </div>
-                                                          ))
-                                                        )
-                                                      : (
-                                                            <div className="btn px-2 py-1 flex text-white-dark dark:border-white-dark/50 shadow-none">
-                                                                <span className="ltr:ml-2 rtl:mr-2">No Tags</span>
-                                                            </div>
-                                                        )
-                                                }
-                                                  </div>
-                                                <p className="break-all">{task.date}</p>
+                                                {task.tags?.length
+                                                  ? (
+                                                      task.tags.map((tag: any, i: number) => (
+                                                    <span
+                                                      key={i}
+                                                      className={tagClasses((tag.color as TagColor) || 'gray')}
+                                                      title={tag.name}
+                                                    >
+                                                      <span className="truncate">{tag.name}</span>
+                                                    </span>
+                                                      ))
+                                                    )
+                                                  : (
+                                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ring-1 bg-slate-100 text-slate-600 ring-slate-200">
+                                                    No Tags
+                                                  </span>
+                                                    )}
+                                              </div>
+                                              <p className="break-all">{task.date}</p>
+                                                {task.date_edited !== task.date && (
+                                                  <p className="break-all">{task.date_edited}</p>
+                                                )}
                                                {/* <p className="break-all">{formatPrice(Number(task.precio))}</p> */}
                                             </div>
                                         </div>

@@ -1,15 +1,16 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
-import { Head, router } from '@inertiajs/react'
+import { Head, router, useForm } from '@inertiajs/react'
 import { Formik, type FormikHelpers } from 'formik'
 import { type ClientEditFormType, clientSchema, type ClientFormType } from './ClientCommon'
 import ClientForm from './ClientForm'
 import { type User, type PageProps, type ClientAddress, type CompanyContact } from '@/types'
 import { useState, useRef } from 'react'
 import AddressModal from './AddressModal'
+import TagPicker, { type TagItem } from '@/Components/TagPicker'
 
-export default function Edit ({ auth, clients, clientAddress, contact_type, sources, companies }: PageProps & { auth: User, clients: ClientEditFormType, clientAddress: ClientAddress, contact_type: string[], sources: string[], companies: CompanyContact[] }) {
+export default function Edit ({ auth, clients, tags, clientAddress, contact_type, sources, companies }: PageProps & { auth: User, clients: ClientEditFormType, tags: TagItem[], clientAddress: ClientAddress, contact_type: string[], sources: string[], companies: CompanyContact[] }) {
 
- const formikRef = useRef<any>()
+  const formikRef = useRef<any>()
   const [showAddressModal, setShowAddressModal] = useState<boolean>(false)
   const [address, setAddress] = useState<string[]>([])
   const [currentAddress, setCurrentAddress] = useState<string>('')
@@ -30,7 +31,8 @@ export default function Edit ({ auth, clients, clientAddress, contact_type, sour
     vip_notes: clients.vip_notes ?? '',
     refer_name: clients?.referral?.name ?? '',
     refer_phone: clients?.referral?.phone ?? '',
-    company_contact_id: clients?.company_contact_id ?? 0
+    company_contact_id: clients?.company_contact_id ?? 0,
+    tags: tags ?? []
   }
 
   const setModalAddress = (address: string) => {
@@ -86,6 +88,7 @@ export default function Edit ({ auth, clients, clientAddress, contact_type, sour
                 contact_type={contact_type}
                 sources={sources}
                 companies={companies}
+                tags={tags}
               />
             )}
           </Formik>

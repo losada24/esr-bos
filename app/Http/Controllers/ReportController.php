@@ -306,7 +306,7 @@ class ReportController extends Controller
     //$biweeklys = Biweekly::get();
     $biweeklys = Biweekly::whereDoesntHave('installationPayments', function ($query) use ($id) {
       $query->where('installation_team_id', $id);
-  })->orderBy('id', 'desc')->get();
+    })->orderBy('id', 'desc')->get();
 
 
     $companyName = InstallationTeam::where('user_id', $id)->value('company_name');

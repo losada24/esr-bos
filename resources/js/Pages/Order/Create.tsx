@@ -61,7 +61,7 @@ export default function Create ({
   extraWorks: Array<{ id: number, name: string }>
 }) {
   const initialValues: OrderFormValues = orderFormObj
-
+  // console.log('Initial values:', initialValues)
   const handleSubmit = async (values: any, helpers: FormikHelpers<OrderFormValues>) => {
     const order = {
       ...values,
@@ -73,8 +73,11 @@ export default function Create ({
       owners: values.owners.map((owner: any) => owner.value),
       supervisor_id: values.supervisor_id.value,
       travel_cost_id: values.travel_cost_id.value !== 0 ? values.travel_cost_id.value : '',
-      status: typeof values.status === 'string' ? values.status : getValueIdNotNull(values.status)
+      status: typeof values.status === 'string' ? values.status : getValueIdNotNull(values.status),
+      contact_type: 'RESIDENTIAL CONTACT'
     }
+
+    console.log('Order data:', order)
 
     router.post(route('order.store'), order, {
       forceFormData: true,

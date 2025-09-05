@@ -1,3 +1,4 @@
+import { type TagItem } from '@/Components/TagPicker'
 import { ClientAddress, CompanyContact } from '@/types'
 import * as Yup from 'yup'
 export {}
@@ -28,6 +29,7 @@ export interface Client {
   referral_id?: number
   company_contact_id?: number
   company_contact?: CompanyContact[]
+  tags?: TagItem[]
 }
 
 export type ClientFormType = Client & {

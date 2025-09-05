@@ -378,6 +378,16 @@ class Order extends Model
     return $this->hasMany(OrderClientTemps::class);
   }
 
+  public function tags(): MorphMany
+  {
+    return $this->morphMany(Tag::class, 'taggable');
+  }
+
+  public function notes(): MorphMany
+  {
+    return $this->morphMany(Note::class, 'noteable');
+  }
+
   public function getGrandTotalPrice()
   {
     $pricesWithExtraWorks = $this->orderProducts->sum('total_price') + $this->orderProducts->sum('extra_work_price');

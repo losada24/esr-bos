@@ -5,7 +5,7 @@ import { SOURCES, CONTACT_TYPES } from '@/Utils/constants'
 import InputError from '@/Components/InputError'
 import Select, { type SingleValue } from 'react-select'
 import PrimaryButton from '@/Components/PrimaryButton'
-import { Link } from '@inertiajs/react'
+import { Link, useForm } from '@inertiajs/react'
 import { type FormikErrors } from 'formik'
 import { type ClientFormType } from './ClientCommon'
 import Flatpickr from 'react-flatpickr'
@@ -14,10 +14,11 @@ import { type CompanyContact, type OptionType } from '@/types'
 import SearchIcon from '@/Components/Icons/SearchIcon'
 import PlusIcon from '@/Components/Icons/PlusIcon'
 import CompanyModal from './CompanyModal'
+import TagPicker, { TagItem } from '@/Components/TagPicker'
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
 
-const ClientForm = ({ submitCount, errors, isCreate, setFieldValue, values, contact_type, sources, companies }: {
+const ClientForm = ({ submitCount, errors, isCreate, setFieldValue, values, contact_type, sources, companies,tags }: {
   submitCount: number
   errors: FormikErrors<ClientFormType>
   setFieldValue: (field: string, value: any, shouldValidate?: boolean) => void
@@ -26,6 +27,7 @@ const ClientForm = ({ submitCount, errors, isCreate, setFieldValue, values, cont
   contact_type: string[]
   sources: string[]
   companies: CompanyContact[]
+  tags: TagItem[]
 }) => {
   const inputRef = useRef<google.maps.places.SearchBox | null>(null)
   const libraries: any[] = ['places']
@@ -34,6 +36,11 @@ const ClientForm = ({ submitCount, errors, isCreate, setFieldValue, values, cont
     id: 'google-map-script',
     googleMapsApiKey: GOOGLE_MAPS_API_KEY,
     libraries: menoLibraries
+  })
+
+  
+   const { data, setData, processing,  patch } = useForm<{ tags: TagItem[] }>({
+    tags: tags ?? []
   })
 
   /* const selectedCompany: SingleValue<OptionType> = {
@@ -263,6 +270,16 @@ const ClientForm = ({ submitCount, errors, isCreate, setFieldValue, values, cont
               />
             </div>
       )}
+      </div>
+       <div>
+        <label className="block text-sm font-medium text-slate-700">Tags</label>
+        <div className="mt-1">
+          <TagPicker
+            value={data.tags}
+            onChange={(t) => { setData('tags', t) }}
+            placeholder="Agregar tag"
+          />
+        </div>
       </div>
       <div className='grid gap-4 grid-cols-2'>
       <div className={submitCount ? (errors.address) ? 'has-error' : 'has-success' : ''}>

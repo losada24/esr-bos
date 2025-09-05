@@ -1,4 +1,4 @@
-import { type CompanyContact, type Client } from '@/types'
+import { type CompanyContact, type Client, User } from '@/types'
 import * as Yup from 'yup'
 
 export const orderSchema = Yup.object({
@@ -63,6 +63,7 @@ export interface Order {
   description?: string
   order_type?: string
   bid_due_date?: Date | null
+  user: User
 }
 
 export type OrderFormValues = Order & {
@@ -111,7 +112,8 @@ export const orderFormObj: OrderFormValues = {
   city: '',
   description: '',
   order_type: '',
-  bid_due_date: null
+  bid_due_date: null,
+  user: null as unknown as User
 }
 
 export const loadOrderFormObj = (order: Order): OrderFormValues => {
@@ -143,6 +145,7 @@ export const loadOrderFormObj = (order: Order): OrderFormValues => {
     city: order.city ?? '',
     description: order.description ?? '',
     order_type: order.order_type ?? '',
-    bid_due_date: order.bid_due_date ?? null
+    bid_due_date: order.bid_due_date ?? null,
+    user: order.user
   }
 }

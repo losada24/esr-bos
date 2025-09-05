@@ -82,7 +82,7 @@ class ClientController extends Controller
      */
     public function edit(Client $client)
     {    
-      
+        $client->load('tags:id,name,color,taggable_id,taggable_type');
         return Inertia::render('Client/Edit', [
           //'clients' => $client,
           'contact_type' => [
@@ -106,6 +106,12 @@ class ClientController extends Controller
               'clientAddress',
               'referral',
             ]),
+
+            'tags' => $client->tags->map(fn($t) => [
+                'name'  => $t->name,
+                'color' => $t->color,
+            ]),
+
            
             
         ]);
