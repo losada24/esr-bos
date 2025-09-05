@@ -51,6 +51,11 @@
         .totals-label {
             background-color: #fafafa;
         }
+
+         th:last-child,
+        td:last-child {
+            width: 100%;
+        }
     </style>
 </head>
 <body>
@@ -68,14 +73,14 @@
       <table class="summary-table">
       <thead>
        <tr>
-           <th width='20'>Project Name</th>
-          <th width='20'>Installer Name</th>
-          <th width='50'>Owner Name</th>
-          <th width='50'>Supervisor Name</th>
-          <th width='50'>% Project</th>
-          <th width='50'>Payments</th>
-           <th width='50'>Collected Payment</th>
-        
+           <th style="width: 30%">Project Name</th>
+          <th style="width: 10%">Installer Name</th>
+          <th style="width: 15%">Owner Name</th>
+          <th style="width: 15%">Supervisor Name</th>
+          <th style="width: 10%">% Project</th>
+          <th style="width: 30%">Payments</th>
+           <th style="width: auto">Collected Payment</th>
+
       </tr>
     </thead>
 
@@ -184,14 +189,14 @@
        <table class="summary-table">
       <thead>
        <tr>
-           <th width='20'>Project Name</th>
-          <th width='20'>Installer Name</th>
-          <th width='50'>Owner Name</th>
-          <th width='50'>Supervisor Name</th>
-          <th width='50'>% Project</th>
-          <th width='50'>Payments</th>
-           <th width='50'>Collected Payment</th>
-        
+           <th style="width: 30%">Project Name</th>
+          <th style="width: 10%">Installer Name</th>
+          <th style="width: 15%">Owner Name</th>
+          <th style="width: 15%">Supervisor Name</th>
+          <th style="width: 10%">% Project</th>
+          <th style="width: 30%">Payments</th>
+           <th style="width: auto">Collected Payment</th>
+
       </tr>
     </thead>
 
