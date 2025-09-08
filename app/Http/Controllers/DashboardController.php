@@ -36,28 +36,28 @@ class DashboardController extends Controller
     
 
     $services = [ 
-      ServiceEnum::INSTALLATION->value,
+      //ServiceEnum::INSTALLATION->value,
       ServiceEnum::DELIVERY->value,
       ServiceEnum::PICKUP->value,
-      ServiceEnum::INSTALLATION_ONLY->value
+      //ServiceEnum::INSTALLATION_ONLY->value
     ];
 
     if ($user->hasRole(RoleEnum::ACCOUNT_MANAGER->value) || $user->hasRole(RoleEnum::ADMIN->value) || $user->hasRole(RoleEnum::OWNER->value) || $user->hasRole(RoleEnum::OWNER_ADMIN->value) ) {
       $status = [
         OrderStatusEnum::PLANNED->value,
         OrderStatusEnum::CONFIRMED->value,
-        OrderStatusEnum::DELIVERY_CONFIRMED->value,
-        OrderStatusEnum::EXECUTION->value,
-        OrderStatusEnum::SUPERVISION->value,
-        OrderStatusEnum::INSPECTION->value,
-        OrderStatusEnum::FINISH->value,
-        OrderStatusEnum::SERVICE->value,
-        OrderStatusEnum::FINAL_INSPECTION->value,
-        OrderStatusEnum::FINAL_COLLECT->value,
+        //OrderStatusEnum::DELIVERY_CONFIRMED->value,
+        //OrderStatusEnum::EXECUTION->value,
+        //OrderStatusEnum::SUPERVISION->value,
+        //OrderStatusEnum::INSPECTION->value,
+        //OrderStatusEnum::FINISH->value,
+        //OrderStatusEnum::SERVICE->value,
+        //OrderStatusEnum::FINAL_INSPECTION->value,
+        //OrderStatusEnum::FINAL_COLLECT->value,
         OrderStatusEnum::COMPLETE->value,
         OrderStatusEnum::ON_HOLD->value,
-        OrderStatusEnum::RESCHEDULE->value,
-        OrderStatusEnum::CONFIRMED_FINISH->value,
+        //OrderStatusEnum::RESCHEDULE->value,
+        //OrderStatusEnum::CONFIRMED_FINISH->value,
         OrderStatusEnum::MATERIALS_RECEIVED->value,
         
         
@@ -276,6 +276,13 @@ class DashboardController extends Controller
         $shortName = $customAbbreviations[$productName] ?? strtolower(substr($productName, 0, 1)); // Primera letra del tipo de producto
         return $item->total . $shortName;
       })->join(', ');
+
+       if (!is_null($order->area) && $order->area !== '' && (float)$order->area > 0) {
+          $sqft = rtrim(rtrim(number_format((float) $order->area, 2, '.', ''), '0'), '.');
+          $productDetails = $productDetails
+              ? $productDetails . ', ' . $sqft . 'SQFT'
+              : $sqft . 'SQFT';
+      }
 
       $isVip = $order->client->vip_clients ?? false;
       $serviceLabel = $isVip ? 'VIP' : '';

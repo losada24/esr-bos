@@ -99,7 +99,8 @@ const EventModal = ({
     final_payment_installation: false,
     pre_inspection_attach: [],
     inspection_attach: [],
-    walk_trough_attach: []
+    walk_trough_attach: [],
+    client_pending_payment: 0
   }
 
   /* interface PageProps {
@@ -350,6 +351,16 @@ const EventModal = ({
                 </div>
               </div>
               <div className='w-1/3'>
+                <strong>Payment Method:</strong>
+                <div className='flex flex-row justify-start'>
+                  {event?.method_of_payment}
+                </div>
+              </div>
+            </div>
+            <div className='flex flex-row gap-2 mt-3'>
+            {(event?.service === 'DELIVERY AND INSTALLATION') && (
+              <>
+              <div className='w-1/3'>
                 <strong>Frame Color:</strong>
                 <div className='flex flex-row justify-start'>
                 {event?.order_colors && event?.order_colors.length > 0
@@ -357,10 +368,6 @@ const EventModal = ({
                   : ''}
                 </div>
               </div>
-            </div>
-            <div className='flex flex-row gap-2 mt-3'>
-            {(event?.service === 'DELIVERY AND INSTALLATION') && (
-              <>
               <div className='w-1/3'>
                 <strong>Type of Housing:</strong>
                 <div className='flex flex-row justify-start'>
@@ -396,15 +403,16 @@ const EventModal = ({
              {!isInstaller && (
               <>
               <div className='w-1/3'>
-                <strong>Payment Method:</strong>
+                <strong>Client Pending Payment:</strong>
                 <div className='flex flex-row justify-start'>
-                  {event?.method_of_payment}
+                  {formatPrice(event?.cost_delivery ?? 0)}
                 </div>
               </div>
-              <div className='w-1/3'>
-                <strong>Other Cost:</strong>
-                <div className='flex flex-row justify-start'>
-                  {formatPrice(event?.additional_travel_costs ?? 0)}
+               <div className="w-1/3">
+                <strong>Area:</strong>
+                <div className="flex flex-row justify-start items-center">
+                  <span>{event?.area ?? 0}</span>
+                  <span className="ml-1 text-gray-500 text-sm">SQFT</span>
                 </div>
               </div>
               </>)}
@@ -546,6 +554,31 @@ const EventModal = ({
                 }}
               />
               </div>
+               <div className='w-1/3'>
+              <label htmlFor="status" className='font-bold'>Status:</label>
+                <Select
+                  id='status'
+                  placeholder="status"
+                  name='status'
+                  value={editableData.status}
+                  isDisabled={isInstaller || isOwner}
+                  isMulti={false}
+                  onChange={(value) => { setEditableData({ ...editableData, status: value }) }}
+                  options={(() => {
+                    let options = status.map((status) => { return { label: status, value: status } })
+                    if (event?.service === 'PICKUP' || event?.service === 'DELIVERY ONLY') {
+                      options = status.filter((status) =>
+                        status === 'PLANNED' ||
+                        status === 'COMPLETE' ||
+                        status === 'CONFIRMED' ||
+                        status === 'DELIVERY CONFIRMED'
+                      ).map((status) => { return { label: status, value: status } })
+                    }
+
+                    return options
+                  })()}
+                />
+              </div>
               {(event?.service === 'DELIVERY AND INSTALLATION') && (
               <div className='w-1/3'>
               <label htmlFor="installation_date"><strong>Installation Date:</strong></label>
@@ -622,11 +655,24 @@ const EventModal = ({
                       options={supervisors.map((supervisor) => { return { label: supervisor.name, value: supervisor.id } })}
                     />
               </div>
+              <div className='w-1/3  mt-8'>
+                   <input
+                      id="hide_on_weekends"
+                      name="hide_on_weekends"
+                      className="form-checkbox"
+                      type="checkbox"
+                      checked={editableData.hide_on_weekends} // Controlado por el estado
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                        setEditableData({ ...editableData, hide_on_weekends: e.target.checked }) // Actualiza el estado
+                      }}
+                    />
+                    <label htmlFor="hide_on_weekends" className='font-bold inline-flex'>Hide On Weekends</label>
+                  </div>
               </>
             )}
             </div>
 
-            {!(isInstaller || isOwner) && (
+           {/* {!(isInstaller || isOwner) && (
             <>
             <div className='flex flex-row gap-5 mt-3'>
                     <fieldset className='p-3 border rounded-xl mt-3'>
@@ -661,49 +707,7 @@ const EventModal = ({
                   </fieldset>
             </div>
             </>
-            )}
-            <div className='flex flex-row gap-2 mt-3'>
-              <div className='w-1/3'>
-                <label htmlFor="status" className='font-bold'>Status:</label>
-                  <Select
-                    id='status'
-                    placeholder="status"
-                    name='status'
-                    value={editableData.status}
-                    isDisabled={isInstaller || isOwner}
-                    isMulti={false}
-                    onChange={(value) => { setEditableData({ ...editableData, status: value }) }}
-                    options={(() => {
-                      let options = status.map((status) => { return { label: status, value: status } })
-                      if (event?.service === 'PICKUP' || event?.service === 'DELIVERY ONLY') {
-                        options = status.filter((status) =>
-                          status === 'PLANNED' ||
-                          status === 'COMPLETE' ||
-                          status === 'CONFIRMED' ||
-                          status === 'DELIVERY CONFIRMED'
-                        ).map((status) => { return { label: status, value: status } })
-                      }
-
-                      return options
-                    })()}
-                  />
-              </div>
-              {(isAdminOrAccountManager) && (
-              <div className='w-1/3  mt-8'>
-                   <input
-                      id="hide_on_weekends"
-                      name="hide_on_weekends"
-                      className="form-checkbox"
-                      type="checkbox"
-                      checked={editableData.hide_on_weekends} // Controlado por el estado
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                        setEditableData({ ...editableData, hide_on_weekends: e.target.checked }) // Actualiza el estado
-                      }}
-                    />
-                    <label htmlFor="hide_on_weekends" className='font-bold inline-flex'>Hide On Weekends</label>
-                  </div>
-              )}
-            </div>
+            )} */}
             {((editableData.status.value === 'INSPECTION' || editableData.inspection_date != null) && !isInstaller) && (
                     <div className='w-1/3  mt-8'>
                     <label htmlFor="inspection_date"><strong>Inspection Date:</strong></label>
@@ -856,7 +860,7 @@ const EventModal = ({
                 onChange={(e) => { setEditableData({ ...editableData, notes: e.target.value }) }}
               />
             </div>
-            {!(isInstaller || isOwner) && (
+            {/* {!(isInstaller || isOwner) && (
             <>
             <div className='col-span-4'>
             <fieldset className='p-3 border rounded-xl mt-3'>
@@ -910,7 +914,7 @@ const EventModal = ({
                   </fieldset>
                   </div>
                    </>
-            )}
+            )} */}
             {((editableData.pre_inspection === true || editableData.pre_inspection === 1) && !(isInstaller || isOwner)) && (
             <div className='flex flex-col gap-2  mt-3'>
             <label htmlFor="pre_inspection_attach">Pre Inspection File</label>
@@ -1055,7 +1059,28 @@ const EventModal = ({
                   updateOrderProduct={(index: number) => { updateOrderProduct(index) }}
                 /> */}
               </>
-            )}
+              )}
+               {(isAdminOrAccountManager) && (event?.service === 'PICKUP' || event?.service === 'DELIVERY ONLY') && (
+              <>
+              <div className='flex flex-col gap-2  mt-3'>
+                <strong>Payment List:</strong>
+                <div className='flex flex-col justify-start'>
+                  <a href={route('order.get_supervisor_list', { id: event?.id ?? 0 })} target='_blank' className='badge badge-outline-dark' rel="noreferrer">Download Payment List</a>
+                </div>
+              </div>
+             {/* <ProductTable
+                  orderProducts={orderProducts}
+                  type_of_products={type_of_products}
+                  product_category={product_category}
+                  products_config={products_config}
+                  service={values.service}
+                  values= {values}
+                  travel_costs={travel_costs}
+                  removeOrderProduct={(index: number) => { removeOrderProduct(index) }}
+                  updateOrderProduct={(index: number) => { updateOrderProduct(index) }}
+                /> */}
+              </>
+                )}
           </div>
           {showValidationErrors && (
             <div className='flex flex-row gap-2'>

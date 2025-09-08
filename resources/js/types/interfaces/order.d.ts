@@ -78,6 +78,8 @@ export interface Order {
   new_travel_cost?: number
   material_received_date?: Date | null
   order_colors?: OrderColor[] | []
+  client_pending_payment?: number
+  area?: number
 }
 
 export interface TypeOfWork {

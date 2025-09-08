@@ -200,6 +200,7 @@ class StoreOrderRequest extends FormRequest
             'delivery_date' => 'nullable|date_format:Y-m-d',
             // 'entry_date' => 'nullable|date_format:Y-m-d',
             'installation_date' => 'nullable|date_format:Y-m-d',
+            'area' => 'nullable|numeric',
             'city_permits' => 'boolean',
             'city' => 'nullable|string|max:100',
             'job_state' => 'nullable|string|max:100',

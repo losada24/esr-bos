@@ -108,6 +108,7 @@ class CreateOrder
         'new_travel_cost' => $request->new_travel_cost,
         'supervisor_commissions' => $totalCommission,
         'is_send_email' => true,
+        'area' => $request->area,
       ]);
 
 

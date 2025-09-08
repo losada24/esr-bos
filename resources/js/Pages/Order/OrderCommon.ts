@@ -118,7 +118,8 @@ export const orderFormObj: OrderFormValues = {
   is_send_email: false,
   is_new_travel_cost: false,
   new_travel_cost: 0,
-  material_received_date: null
+  material_received_date: null,
+  area: 0
 }
 
 export interface OrderProductExtraWorksFormValues {
@@ -187,7 +188,8 @@ export const loadOrderFormObj = (order: Order): OrderFormValues => {
     is_new_travel_cost: !!order.is_new_travel_cost,
     new_travel_cost: order.new_travel_cost,
     material_received_date: order.material_received_date ?? null,
-    order_colors: order.order_colors ?? []
+    order_colors: order.order_colors ?? [],
+    area: order.area ?? 0
   }
 }
 

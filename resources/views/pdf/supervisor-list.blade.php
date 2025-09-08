@@ -18,7 +18,7 @@
       <div id="logo">
         <img src="{{ base_path('resources/assets/images/logo-reylos.jpg') }}">
       </div>
-      <h1>MATERIAL LIST {{ strtoupper($order->typeOfWork->name) }}</h1>
+      <h1>MATERIAL LIST </h1>
       <div id="company" class="clearfix">
         <div><span>DATE</span> {{ Carbon\Carbon::parse($order->installation_date)->format('m/d/Y') }}</div>
       </div>
@@ -31,7 +31,7 @@
                     (!empty($order->job_state) ? ', ' . $order->job_state : '') .
                     (!empty($order->job_zip) ? ', ' . $order->job_zip : '') 
                 }}</div>
-        <div><span>COLOR</span> {{ $order->frame_color}}</div>
+        <div><span>AREA</span> {{ $order->area}}<span class="text-gray-500 text-sm">SQFT</span></div>
       </div>
     </header>
       <main>
@@ -64,22 +64,7 @@
                   <td class="qty">{{ $product->qty }}</td>
                 </tr>
               @endforeach
-            @endforeach
-            <tr>
-              <td class="table-section" colspan="5">Extra Works</td>
-            </tr>
-           
-            @foreach ($extraWorksCollection->groupBy('name') as $key => $extraWork)
-              @php 
-                $count = $extraWork->sum('pivot.amount');
-                
-              @endphp
-              <tr>
-                <td class="service" colspan="2">{{ $key }}</td>
-                <td class="qty">{{ $count }}</td>
-                
-              </tr>
-            @endforeach
+            @endforeach   
             <tr>
               <td class='order-notes' colspan="3">
                 @if ($order->notes != '')

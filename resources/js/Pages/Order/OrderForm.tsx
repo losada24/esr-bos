@@ -330,7 +330,7 @@ const OrderForm = ({
         </fieldset>
         <fieldset className='p-3 border rounded-xl'>
           <legend className='text-lg font-semibold px-3'>Order Information</legend>
-              <div className='flex items-center mb-4'>
+             {/* <div className='flex items-center mb-4'>
                 <strong className='mr-2'>STATUS PAYMENT INSTALLER:</strong>
                 <span
                   className={`px-2 py-1 rounded ${
@@ -343,7 +343,7 @@ const OrderForm = ({
                 >
                   {statusPaymentInstaller}
                 </span>
-              </div>
+              </div> */}
           <div className='grid gap-4 grid-cols-4'>
             <div className={submitCount ? (errors.name) ? 'has-error' : 'has-success' : ''}>
               <label htmlFor="name">Name</label>
@@ -622,7 +622,7 @@ const OrderForm = ({
             </div>
             </>
             )}
-            <div className={submitCount ? (errors.additional_travel_costs) ? 'has-error' : 'has-success' : ''}>
+            {/* <div className={submitCount ? (errors.additional_travel_costs) ? 'has-error' : 'has-success' : ''}>
               <label htmlFor="additional_travel_costs">Other Cost</label>
               <Field
                 id="additional_travel_costs"
@@ -633,7 +633,7 @@ const OrderForm = ({
                 type='number'
               />
               {(submitCount && errors.additional_travel_costs) ? <InputError message={errors.additional_travel_costs} className="mt-2" /> : ''}
-            </div>
+            </div> */}
             <div className={submitCount ? (errors.entry_date) ? 'has-error' : 'has-success' : ''}>
               <label htmlFor="entry_date">Entry Date</label>
               <Flatpickr
@@ -967,7 +967,25 @@ const OrderForm = ({
               />
               {(submitCount && errors.status) ? <InputError message={errors.status} className="mt-2" /> : ''}
             </div>
-            <div className={submitCount ? (errors.project_amount) ? 'has-error' : 'has-success' : ''}>
+            <div className={submitCount ? (errors.area) ? 'has-error' : 'has-success' : ''}>
+                <label htmlFor="area"> Area</label>
+                <div className="relative">
+                <Field
+                  id="area"
+                  name="area"
+                  className="form-input text-right pr-12"
+                  autoComplete="area"
+                  placeholder='Area'
+                  type='number'
+                />
+                <span className="absolute inset-y-0 right-3 flex items-center text-gray-500 text-sm">
+                  SQFT
+                </span>
+                </div>
+
+                {(submitCount && errors.area) ? <InputError message={errors.area} className="mt-2" /> : ''}
+              </div>
+            {/* <div className={submitCount ? (errors.project_amount) ? 'has-error' : 'has-success' : ''}>
               <label htmlFor="project_amount">Project Amount</label>
               <Field
                 id="project_amount"
@@ -978,7 +996,7 @@ const OrderForm = ({
                 type='number'
               />
               {(submitCount && errors.project_amount) ? <InputError message={errors.project_amount} className="mt-2" /> : ''}
-            </div>
+            </div> */}
            {(values.service === SERVICES.DELIVERY_AND_INSTALLATION) && (
               <>
                <div className={submitCount ? (errors.hide_on_weekends) ? 'has-error inline-flex flex-col' : 'has-success inline-flex' : 'inline-flex items-end'}>

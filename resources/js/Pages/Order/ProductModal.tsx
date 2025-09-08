@@ -221,7 +221,7 @@ const ProductModal = ({
                           />
                           {(submitCount && errors.qty) ? <InputError message={errors.qty} className="mt-2" /> : ''}
                         </div>
-                        <div className={submitCount ? (errors.type_of_work_id) ? 'has-error' : 'has-success' : ''}>
+                       {/* <div className={submitCount ? (errors.type_of_work_id) ? 'has-error' : 'has-success' : ''}>
                           <label htmlFor="type_of_work">Type of Work</label>
                           <Field
                             id="type_of_work_id"
@@ -241,7 +241,7 @@ const ProductModal = ({
                             ))}
                           </Field>
                           {(submitCount && errors.type_of_work_id) ? <InputError message={errors.type_of_work_id} className="mt-2" /> : ''}
-                        </div>
+                        </div> */}
 
                         <div className='col-span-3'>
                             <label htmlFor="notes">Notes</label>

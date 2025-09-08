@@ -87,6 +87,7 @@ class Order extends Model
     'new_travel_cost',
     'material_received_date',
     'loss_reason_frontdesk',
+    'area',
   ];
 
   protected $dates = [
@@ -204,7 +205,7 @@ class Order extends Model
     }
 
 
-    if (!(auth()->user()->hasRole(RoleEnum::ACCOUNT_MANAGER->value)) && !(auth()->user()->hasRole(RoleEnum::ADMIN->value))&& !(auth()->user()->hasRole(RoleEnum::OWNER_ADMIN->value))&& !(auth()->user()->hasRole(RoleEnum::FRONTDESK->value))) {
+    if ( !(auth()->user()->hasRole(RoleEnum::ADMIN->value))&& !(auth()->user()->hasRole(RoleEnum::OWNER_ADMIN->value))&& !(auth()->user()->hasRole(RoleEnum::FRONTDESK->value))) {
       if (auth()->user()->hasRole(RoleEnum::INSTALLER->value)) {
         $installationTeams = InstallationTeam::where('user_id', auth()->user()->id)->first();
         $query->whereHas('installationTeams', function ($q) use ($installationTeams) {
@@ -217,20 +218,23 @@ class Order extends Model
           $q->where('supervisor_id', $supervisor->user->id);
         });*/
 
-      if (auth()->user()->hasRole(RoleEnum::SUPERVISOR->value)) {
-        $query->where('supervisor_id', auth()->user()->id)
-          ->whereIn('status', [
+      if (auth()->user()->hasRole(RoleEnum::ACCOUNT_MANAGER->value)) {
+        
+         $query ->whereIn('status', [
             OrderStatusEnum::PLANNED,        // Solo órdenes en "PLANNED"
-            OrderStatusEnum::RESCHEDULE,   // Solo órdenes en "EXECUTION"
-            OrderStatusEnum::CONFIRMED,   // Solo órdenes en "EXECUTION"
-            OrderStatusEnum::EXECUTION,
-            OrderStatusEnum::SUPERVISION,
-            OrderStatusEnum::INSPECTION,
-            OrderStatusEnum::FINISH,
-            OrderStatusEnum::SERVICE,
+            OrderStatusEnum::REVIEW,         // Solo órdenes en "REVIEW"
+            OrderStatusEnum::CONFIRMED,
+            OrderStatusEnum::MATERIALS_RECEIVED, 
+           
+              // Solo órdenes en "EXECUTION"
+            //OrderStatusEnum::EXECUTION,
+            //OrderStatusEnum::SUPERVISION,
+            //OrderStatusEnum::INSPECTION,
+           //OrderStatusEnum::FINISH,
+            //OrderStatusEnum::SERVICE,
             OrderStatusEnum::ON_HOLD,
-            OrderStatusEnum::FINAL_INSPECTION,
-            OrderStatusEnum::FINAL_COLLECT,
+            //OrderStatusEnum::FINAL_INSPECTION,
+            //OrderStatusEnum::FINAL_COLLECT,
             OrderStatusEnum::COMPLETE,
           ]);
       }

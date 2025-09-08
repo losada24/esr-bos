@@ -165,6 +165,7 @@ class UpdateOrder
         'material_received_date' => $request->material_received_date,
         'complete_date' => $request->complete_date,
         'pending_collect'=> $request->pending_collect,
+        'area' => $request->area,
 
         
       ];

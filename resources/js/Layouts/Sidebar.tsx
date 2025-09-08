@@ -60,7 +60,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                 <NavLink href={route('dashboard')} active={route().current('dashboard')} className="group">
                                     <div className="flex items-center">
                                         <DashboardIcon />
-                                        <SidebarLinkLabel>Project Schedule Reylos</SidebarLinkLabel>
+                                        <SidebarLinkLabel>Project Schedule ESR</SidebarLinkLabel>
                                     </div>
                                 </NavLink>
                             </li>
@@ -72,17 +72,14 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                     </svg>
                                     <span>ADMINISTRATION</span>
                                 </h2>
-
-                                <li className="nav-item">
-                                    <ul>
-                                        <li className="nav-item">
+                                    {/* <li className="nav-item">
                                           <NavLink href={route('bigin.index')} active={route().current('bigin.index')} className="group">
                                                 <div className="flex items-center">
                                                   <WindowsIcon />
                                                   <SidebarLinkLabel>Bigin Integration</SidebarLinkLabel>
                                                 </div>
                                             </NavLink>
-                                        </li>
+                                        </li> */}
                                         <li className="nav-item">
                                             <NavLink href={route('user.index')} active={route().current('user.index') || route().current('user.create') || route().current('user.edit')} className="group">
                                                 <div className="flex items-center">
@@ -91,18 +88,14 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                                 </div>
                                             </NavLink>
                                         </li>
-                                    </ul>
-                                    <ul>
-                                        <li className="nav-item">
+                                       {/* <li className="nav-item">
                                             <NavLink href={route('installation_team.index')} active={route().current('installation_team.index') || route().current('installation_team.create') || route().current('installation_team.edit')} className="group">
                                                 <div className="flex items-center">
                                                   <ReferralIcon />
                                                   <SidebarLinkLabel>Installation Team</SidebarLinkLabel>
                                                 </div>
                                             </NavLink>
-                                        </li>
-                                    </ul>
-                                </li>
+                                        </li> */}
                               </>
                             )}
                             <h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">
@@ -128,7 +121,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                               </>
                             )}
 
-                            <h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">
+                            {/* <h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">
                                 <svg className="w-4 h-5 flex-none hidden" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
                                     <line x1="5" y1="12" x2="19" y2="12"></line>
                                 </svg>
@@ -142,7 +135,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                         <SidebarLinkLabel>Pipeline</SidebarLinkLabel>
                                     </div>
                                 </NavLink>
-                            </li>
+                            </li> */}
 
                             <li className="menu nav-item">
                                     <NavLink href={route('client.index')} active={route().current('client.index')} className="group">
@@ -153,7 +146,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                     </NavLink>
                                 </li>
 
-                                <li className="menu nav-item">
+                                {/* <li className="menu nav-item">
                                     <NavLink href={route('company_contact.index')} active={route().current('company_contact.index')} className="group">
                                         <div className="flex items-center">
                                             <BuildingIcon />
@@ -168,9 +161,9 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                         <SidebarLinkLabel>Sources</SidebarLinkLabel>
                                     </div>
                                 </NavLink>
-                            </li>
+                            </li> */}
 
-                          <h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">
+                          {/* <h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">
                                 <svg className="w-4 h-5 flex-none hidden" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
                                     <line x1="5" y1="12" x2="19" y2="12"></line>
                                 </svg>
@@ -187,7 +180,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                     </NavLink>
                                 </li>
                               </>
-                            )}
+                            )} 
 
                           {(IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER || IS_PAYMENT_COORDINATOR) && (
                               <>
@@ -234,7 +227,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                     </NavLink>
                                 </li>
                               </>
-                            ) }
+                            ) } */}
                               {/* (IS_INSTALLER) && (
                               <>
                                 <li className="menu nav-item">
