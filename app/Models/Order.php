@@ -90,6 +90,7 @@ class Order extends Model
     'description',
     'order_type',
     'bid_due_date',
+    'is_supply',
   ];
 
   protected $dates = [
@@ -127,6 +128,7 @@ class Order extends Model
       'final_payment_installation' => 'boolean',
       'is_send_email' => 'boolean',
       'is_new_travel_cost' => 'boolean',
+      'is_supply' => 'boolean',
     ];
   }
 

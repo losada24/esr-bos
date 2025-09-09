@@ -138,7 +138,7 @@ const OrderForm = ({
               />
               {(submitCount && errors.phone) ? <InputError message={errors.phone} className="mt-2" /> : ''}
             </div>
-            <div className={submitCount ? (errors.status) ? 'has-error' : 'has-success' : ''}>
+             <div className={submitCount ? (errors.status) ? 'has-error' : 'has-success' : ''}>
               <label htmlFor="status">Status</label>
               <Select
                 id='status'

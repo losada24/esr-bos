@@ -162,7 +162,6 @@ $data = collect($frontdeskStatuses)->map(function ($status) use ($orders, $quali
       'order_types' => [
         OrderTypeEnum::RESIDENTIAL->value,
         OrderTypeEnum::COMMERCIAL->value,
-        OrderTypeEnum::SUPPLY->value,
       ],
       'companies' => CompanyContact::all(),
     ]);
@@ -235,6 +234,8 @@ public function showQuantifiedModal(Order $order)
         'project_amount' => $request['project_amount'],
         'description' => $request['description'],
         'status' => $status,
+        'is_supply' => $request['is_supply'] ?? false,
+
     ]);
 
       if ($order->client) {

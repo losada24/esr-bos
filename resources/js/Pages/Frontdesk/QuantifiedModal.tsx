@@ -38,7 +38,7 @@ const QuantifiedModal = ({
   // errors: FormikErrors<OrderFormValues>
 
 }) => {
-   // const initialValues: OrderFormValues = loadOrderFormObj(order)
+  // const initialValues: OrderFormValues = loadOrderFormObj(order)
   const [orderFormData, setOrderFormData] = useState<OrderFormValues | null>(null)
   useEffect(() => {
     const fetchOrder = async () => {
@@ -352,8 +352,19 @@ const QuantifiedModal = ({
                     />
                     {(submitCount && errors.job_zip) ? <InputError message={errors.job_zip} className="mt-2" /> : ''}
                   </div>
-                   
-                  <div className={submitCount ? (errors.project_amount) ? 'has-error' : 'has-success' : ''}>
+                   <div className='flex mt-0'>
+                      <Field
+                        id="is_supply"
+                        name="is_supply"
+                        className="form-checkbox"
+                        type='checkbox'
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                          setFieldValue('is_supply', e.target.checked)
+                        }}
+                      />
+                      <label htmlFor="is_supply" className='font-bold inline-flex'>Supply</label>
+                    </div>
+                        <div className={submitCount ? (errors.project_amount) ? 'has-error' : 'has-success' : ''}>
                      { /* <label htmlFor="project_amount">Project Amount</label>
                      <Field
                         id="project_amount"

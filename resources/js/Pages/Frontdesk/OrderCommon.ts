@@ -64,6 +64,7 @@ export interface Order {
   order_type?: string
   bid_due_date?: Date | null
   user: User
+  is_supply: boolean
 }
 
 export type OrderFormValues = Order & {
@@ -113,7 +114,8 @@ export const orderFormObj: OrderFormValues = {
   description: '',
   order_type: '',
   bid_due_date: null,
-  user: null as unknown as User
+  user: null as unknown as User,
+  is_supply: false
 }
 
 export const loadOrderFormObj = (order: Order): OrderFormValues => {
@@ -146,6 +148,7 @@ export const loadOrderFormObj = (order: Order): OrderFormValues => {
     description: order.description ?? '',
     order_type: order.order_type ?? '',
     bid_due_date: order.bid_due_date ?? null,
-    user: order.user
+    user: order.user,
+    is_supply: order.is_supply ?? false
   }
 }
