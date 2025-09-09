@@ -8,8 +8,9 @@ import PrimaryButton from '@/Components/PrimaryButton'
 import Flatpickr from 'react-flatpickr'
 import 'flatpickr/dist/flatpickr.css'
 import { type Tasks } from '@/types/interfaces/pipelines'
-import { loadOrderFormObj, Order, orderQuantifiedSchema , type OrderFormValues } from './OrderCommon'
+import { loadOrderFormObj, type Order, orderQuantifiedSchema, type OrderFormValues } from './OrderCommon'
 import { router } from '@inertiajs/react'
+import { ORDER_TYPES } from '@/Utils/constants'
 
 const QuantifiedModal = ({
   task,
@@ -286,6 +287,8 @@ const QuantifiedModal = ({
                       />
                       {(submitCount && errors.name) ? <InputError message={errors.name} className="mt-2" /> : ''}
                     </div>
+                    {(values.order_type === ORDER_TYPES.COMMERCIAL) && (
+                    <>
                     <div className={submitCount ? (errors.bid_due_date) ? 'has-error' : 'has-success' : ''}>
                       <label htmlFor="bid_due_date">Bid Due Date</label>
                       <Flatpickr
@@ -303,6 +306,8 @@ const QuantifiedModal = ({
                       />
                       {(submitCount && errors.bid_due_date) ? <InputError message={errors.bid_due_date.toString()} className="mt-2" /> : ''}
                     </div>
+                    </>
+                    )}
                     <div className={submitCount ? (errors.job_address ? 'has-error' : 'has-success') : ''}>
                       <label htmlFor="address"> Job Address</label>
                         <Field

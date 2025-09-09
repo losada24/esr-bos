@@ -216,6 +216,7 @@ export default function Frontdesk ({ auth, data, lossReasonFrontdesk, sources, o
                                 className="connect-sorting-content min-h-[150px]"
 >
                                 {project.tasks.map((task: any) => {
+                                  console.log('tags →', task.tags)
                                   return (
                                         <div className="sortable-list " key={task.id} data-id={task.id}>
                                             <div className="shadow bg-[#f4f4f4] dark:bg-white-dark/20 p-3 pb-5 rounded-md mb-5 space-y-3 cursor-move">
@@ -244,25 +245,31 @@ export default function Frontdesk ({ auth, data, lossReasonFrontdesk, sources, o
                                                     </button>
                                                   </div>
                                                 </div>
-                                           <div className="flex gap-2 items-center flex-wrap">
-                                                  {task.tags?.length
-                                                    ? (
-                                                        task.tags.map((tag: any, i: number) => (
-                                                      <span
-                                                        key={i}
-                                                        className={tagClasses((tag.color as TagColor) || 'gray')}
-                                                        title={tag.name}
-                                                      >
-                                                        <span className="truncate">{tag.name}</span>
-                                                      </span>
-                                                        ))
-                                                      )
-                                                    : (
-                                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ring-1 bg-slate-100 text-slate-600 ring-slate-200">
-                                                      No Tags
-                                                    </span>
-                                                      )}
-                                                </div>
+                                         <div className="flex gap-2 items-center flex-wrap">
+                                        {(() => {
+                                          const tagsArr = Array.isArray(task.tags)
+                                            ? task.tags
+                                            : Object.values(task.tags ?? {}) // ← si viene como objeto, conviértelo en array
+
+                                          return tagsArr.length
+                                            ? (
+                                                tagsArr.map((tag: any, i: number) => (
+                                              <span
+                                                key={i}
+                                                className={tagClasses((tag.color as TagColor) || 'gray')}
+                                                title={tag.name}
+                                              >
+                                                <span className="truncate">{tag.name}</span>
+                                              </span>
+                                                ))
+                                              )
+                                            : (
+                                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ring-1 bg-slate-100 text-slate-600 ring-slate-200">
+                                              No Tags
+                                            </span>
+                                              )
+                                        })()}
+                                      </div>
                                                 <p className="break-all">{task.date}</p>
                                                 {task.date_edited !== task.date && (
                                                   <p className="break-all">{task.date_edited}</p>

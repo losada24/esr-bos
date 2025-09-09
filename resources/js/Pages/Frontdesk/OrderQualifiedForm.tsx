@@ -354,7 +354,7 @@ const OrderQualifiedForm = ({
                   {(submitCount && errors.company_contact_id) ? <InputError message={errors.company_contact_id as any} className="mt-2" /> : null}
                 </div>
 
-                <div className={submitCount ? ((errors as any).associate_company_contact_id_1 ? 'has-error' : 'has-success') : ''}>
+               {/* <div className={submitCount ? ((errors as any).associate_company_contact_id_1 ? 'has-error' : 'has-success') : ''}>
                   <label htmlFor="associate_company_contact_id_1">Other Company Associate 1</label>
                   <div className="flex items-center">
                     <div className="flex-grow">
@@ -493,7 +493,24 @@ const OrderQualifiedForm = ({
                   {(submitCount && (errors as any).associate_client_id_2)
                     ? <InputError message={(errors as any).associate_client_id_2} className="mt-2" />
                     : null}
-                </div>
+                </div> */}
+                 <div className={submitCount ? (errors.bid_due_date) ? 'has-error' : 'has-success' : ''}>
+              <label htmlFor="bid_due_date">Bid Due Date</label>
+              <Flatpickr
+                options={{
+                  mode: 'single',
+                  dateFormat: 'Y-m-d',
+                  position: 'auto right'
+                }}
+                name="bid_due_date"
+                value={values.bid_due_date ?? ''}
+                className="form-input"
+                onChange={([date]) => {
+                  setFieldValue('bid_due_date', date.toISOString().slice(0, 10))
+                }}
+              />
+              {(submitCount && errors.bid_due_date) ? <InputError message={errors.bid_due_date.toString()} className="mt-2" /> : ''}
+            </div>
                 </>
                )}
              <div className={submitCount ? (errors.status) ? 'has-error' : 'has-success' : ''}>
@@ -522,23 +539,7 @@ const OrderQualifiedForm = ({
               />
               {(submitCount && errors.source) ? <InputError message={errors.source} className="mt-2" /> : ''}
             </div>
-             <div className={submitCount ? (errors.bid_due_date) ? 'has-error' : 'has-success' : ''}>
-              <label htmlFor="bid_due_date">Bid Due Date</label>
-              <Flatpickr
-                options={{
-                  mode: 'single',
-                  dateFormat: 'Y-m-d',
-                  position: 'auto right'
-                }}
-                name="bid_due_date"
-                value={values.bid_due_date ?? ''}
-                className="form-input"
-                onChange={([date]) => {
-                  setFieldValue('bid_due_date', date.toISOString().slice(0, 10))
-                }}
-              />
-              {(submitCount && errors.bid_due_date) ? <InputError message={errors.bid_due_date.toString()} className="mt-2" /> : ''}
-            </div>
+            
               <div className='col-span-4'>
               <label htmlFor="description"> Description</label>
               <Field
