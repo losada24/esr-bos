@@ -6,8 +6,9 @@ import ClientForm from './ClientForm'
 import {type CompanyContact, type PageProps } from '@/types'
 import { useState, useRef } from 'react'
 import AddressModal from './AddressModal'
+import { TagItem } from '@/Components/TagPicker'
 
-export default function Create ({ auth, contact_type, sources, companies }: PageProps & { contact_type: string[], sources: string[], companies: CompanyContact[] }) {
+export default function Create ({ auth, contact_type, sources, companies,tags }: PageProps & { contact_type: string[], sources: string[], companies: CompanyContact[], tags: TagItem[],}) {
   const formikRef = useRef<any>()
   const [showAddressModal, setShowAddressModal] = useState<boolean>(false)
   const [address, setAddress] = useState<string[]>([])
@@ -28,7 +29,8 @@ export default function Create ({ auth, contact_type, sources, companies }: Page
     source: '',
     vip_clients: false,
     vip_notes: '',
-    company_contact_id: 0
+    company_contact_id: 0,
+    tags: []
   }
 
   const setModalAddress = (address: string) => {
@@ -80,6 +82,7 @@ export default function Create ({ auth, contact_type, sources, companies }: Page
                 contact_type={contact_type}
                 companies={companiesList}
                 sources={sources}
+                tags={tags}
               />
             )}
           </Formik>
