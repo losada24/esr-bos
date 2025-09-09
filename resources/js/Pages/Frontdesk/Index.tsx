@@ -9,6 +9,8 @@ import EditIcon from '@/Components/Icons/EditIcon'
 import DeleteIcon from '@/Components/Icons/DeleteIcon'
 import LostRequestModal from './LostRequestModal'
 import QuantifiedModal from './QuantifiedModal'
+import EyeIcon from '@/Components/Icons/EyeIcon'
+import { tagClasses, TagColor } from '@/Utils/tags'
 
 export default function Frontdesk ({ auth, data, lossReasonFrontdesk, sources, order_types }: PageProps & { data: Pipelines[], lossReasonFrontdesk: string [], sources: string[], order_types: string[] }) {
   const IS_ADMIN = isAdmin(auth.user.roles.map((role: Role) => role.name))
@@ -160,15 +162,15 @@ export default function Frontdesk ({ auth, data, lossReasonFrontdesk, sources, o
 
                                     return
                                   } */
-                                 if (newStatus === 'QUALIFIED' || newStatus === 'LOST REQUEST') {
-                                      setLostTask(movedTask)
-                                      setPreviousStatusId(oldStatus)
-                                      if (newStatus === 'QUALIFIED') setShowQuantifiedModal(true)
-                                      if (newStatus === 'LOST REQUEST') setShowModal(true)
-                                      return
-                                    }
+                                  if (newStatus === 'QUALIFIED' || newStatus === 'LOST REQUEST') {
+                                    setLostTask(movedTask)
+                                    setPreviousStatusId(oldStatus)
+                                    if (newStatus === 'QUALIFIED') setShowQuantifiedModal(true)
+                                    if (newStatus === 'LOST REQUEST') setShowModal(true)
+                                    return
+                                  }
 
-                                 /* if (movedTask) {
+                                  /* if (movedTask) {
                                     setProjectList((prev) =>
                                       prev.map((pipeline) => {
                                         if (pipeline.id.toString() === newStatus) {
@@ -185,35 +187,36 @@ export default function Frontdesk ({ auth, data, lossReasonFrontdesk, sources, o
                                   setProjectList(prev =>
                                     prev.map(p =>
                                       p.id.toString() === newStatus
-                                                      ? { ...p, tasks: [...p.tasks, movedTask] }
-                                                      : p
-                                                  )
-                                                )
+                                        ? { ...p, tasks: [...p.tasks, movedTask] }
+                                        : p
+                                    )
+                                  )
 
-                                                // 4) Actualizar backend y revertir si falla
-                                                updateOrderStatus(movedTaskId, newStatus)
-                                                  .then(() => { console.log('✅ Estado actualizado en backend') })
-                                                  .catch(err => {
-                                                    console.error('❌ Error al actualizar el estado:', err)
-                                                    // revertir
-                                                    setProjectList(prev =>
-                                                      prev.map(p => {
-                                                        if (p.id.toString() === newStatus) {
-                                                          return { ...p, tasks: p.tasks.filter(t => Number(t.id) !== movedTaskId) }
-                                                        }
-                                                        if (p.id.toString() === oldStatus) {
-                                                          return { ...p, tasks: [...p.tasks, movedTask] }
-                                                        }
-                                                        return p
-                                                      })
-                                                    )
-                                                  })
+                                  // 4) Actualizar backend y revertir si falla
+                                  updateOrderStatus(movedTaskId, newStatus)
+                                    .then(() => { console.log('✅ Estado actualizado en backend') })
+                                    .catch(err => {
+                                      console.error('❌ Error al actualizar el estado:', err)
+                                      // revertir
+                                      setProjectList(prev =>
+                                        prev.map(p => {
+                                          if (p.id.toString() === newStatus) {
+                                            return { ...p, tasks: p.tasks.filter(t => Number(t.id) !== movedTaskId) }
+                                          }
+                                          if (p.id.toString() === oldStatus) {
+                                            return { ...p, tasks: [...p.tasks, movedTask] }
+                                          }
+                                          return p
+                                        })
+                                      )
+                                    })
                                 }}
                                 ghostClass="sortable-ghost"
                                 dragClass="sortable-drag"
                                 className="connect-sorting-content min-h-[150px]"
 >
                                 {project.tasks.map((task: any) => {
+                                  console.log('tags →', task.tags)
                                   return (
                                         <div className="sortable-list " key={task.id} data-id={task.id}>
                                             <div className="shadow bg-[#f4f4f4] dark:bg-white-dark/20 p-3 pb-5 rounded-md mb-5 space-y-3 cursor-move">
@@ -226,6 +229,13 @@ export default function Frontdesk ({ auth, data, lossReasonFrontdesk, sources, o
 
                                                   {/* Botones a la derecha */}
                                                   <div className="flex items-center gap-2">
+                                                <Link
+                                                  href={route('frontdesk.order_view', task.id)}
+                                                  title='Order View'
+                                                  className='flex items-center gap-1 hover:text-success'
+                                                >
+                                                  <EyeIcon />
+                                                </Link>
                                                     <button
                                                       onClick={() => ' '}
                                                       type="button"
@@ -233,33 +243,33 @@ export default function Frontdesk ({ auth, data, lossReasonFrontdesk, sources, o
                                                     >
                                                       <EditIcon />
                                                     </button>
-
-                                                    <button
-                                                      onClick={() => ''}
-                                                      type="button"
-                                                      className="flex items-center gap-1 hover:text-danger"
-                                                    >
-                                                      <DeleteIcon />
-                                                    </button>
                                                   </div>
                                                 </div>
-                                                <div className="flex gap-2 items-center flex-wrap">
-                                                {
-                                                    task.tags?.length
-                                                      ? (
-                                                          task.tags.map((tag: any, i: any) => (
-                                                                <div key={i} className="btn px-2 py-1 flex btn-outline-primary">
-                                                                    <span className="ltr:ml-2 rtl:mr-2">{tag}</span>
-                                                                </div>
-                                                          ))
-                                                        )
-                                                      : (
-                                                            <div className="btn px-2 py-1 flex text-white-dark dark:border-white-dark/50 shadow-none">
-                                                                <span className="ltr:ml-2 rtl:mr-2">No Tags</span>
-                                                            </div>
-                                                        )
-                                                }
-                                                  </div>
+                                         <div className="flex gap-2 items-center flex-wrap">
+                                        {(() => {
+                                          const tagsArr = Array.isArray(task.tags)
+                                            ? task.tags
+                                            : Object.values(task.tags ?? {}) // ← si viene como objeto, conviértelo en array
+
+                                          return tagsArr.length
+                                            ? (
+                                                tagsArr.map((tag: any, i: number) => (
+                                              <span
+                                                key={i}
+                                                className={tagClasses((tag.color as TagColor) || 'gray')}
+                                                title={tag.name}
+                                              >
+                                                <span className="truncate">{tag.name}</span>
+                                              </span>
+                                                ))
+                                              )
+                                            : (
+                                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ring-1 bg-slate-100 text-slate-600 ring-slate-200">
+                                              No Tags
+                                            </span>
+                                              )
+                                        })()}
+                                      </div>
                                                 <p className="break-all">{task.date}</p>
                                                 {task.date_edited !== task.date && (
                                                   <p className="break-all">{task.date_edited}</p>

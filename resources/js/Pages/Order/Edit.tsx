@@ -67,7 +67,7 @@ export default function Edit ({
   extraWorks: Array<{ id: number, name: string }>
 }) {
   const initialValues: OrderFormValues = loadOrderFormObj(order)
-  console.log(initialValues)
+  // console.log(initialValues)
   const getSupervisorId = (supervisor: any) => {
     let value = null
     if (supervisor !== null && Object.prototype.hasOwnProperty.call(supervisor, 'value')) {
@@ -126,16 +126,18 @@ export default function Edit ({
       }),
       supervisor_id: getSupervisorId(values.supervisor_id),
       travel_cost_id: typeof values.travel_cost_id === 'number' ? values.travel_cost_id : getValueIdNotNull(values.travel_cost_id),
-      status: selectedStatus
+      status: selectedStatus,
+      contact_type: values.contact_type ?? 'RESIDENTIAL CONTACT'
     }
+
+    console.log(order)
 
     if (!Object.prototype.hasOwnProperty.call(order, 'orderProducts')) {
       order.orderProducts = values.order_products.map((orderProduct: any) => {
-        console.log(orderProduct)
+        // console.log(orderProduct)
         return getOrderProducts(orderProduct)
       })
     }
-    console.log(order)
     delete order.order_products
     router.post(route('order.update', values.id), {
       _method: 'PUT',

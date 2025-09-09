@@ -19,82 +19,17 @@ use App\Models\InstallationTeam;
 use App\Models\Order;
 use App\Models\OrderStatus;
 use App\Models\Source;
+use App\Models\Tag;
 use App\Models\User;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class FrontdeskController extends Controller
 {
     public function index()
     {
-      /* $data = [
-        [
-          'id' => 1,
-          'title' => FrontdeskStatusEnum::NEW_CUSTOMER_REQUEST->value,
-          'tasks' => [
-            [
-              'id' => 1,
-              'title' => 'Task 1',
-              'description' => 'Description for Task 1',
-              'date' => 'Jun 18, 2023 10:00 AM',
-              'names' => 'Salome Acosta',
-              'precio'=> 1000,
-            ],
-            [
-              'id' => 2,
-              'title' => 'Task 2',
-              'description' => 'Description for Task 2',
-              'date' => 'Jun 18, 2023 10:00 AM',
-              'names' => 'Salome Acosta',
-              'precio'=> 1000,
-            ]
-          ]
-        ],
-        [
-          'id' => 2,
-          'title' => FrontdeskStatusEnum::NEW_REQUEST_FOLLOWUP->value,
-          'tasks' => [
-            [
-              'id' => 3,
-              'title' => 'Task 3',
-              'description' => 'Description for Task 3',
-              'date' => 'Jun 18, 2023 10:00 AM',
-              'names' => 'Salome Acosta',
-              'precio'=> 1000,
-            ],
-            [
-              'id' => 4,
-              'title' => 'Task 4',
-              'description' => 'Description for Task 4',
-              'date' => 'Jun 18, 2023 10:00 AM',
-              'names' => 'Salome Acosta',
-              'precio'=> 1000,
-            ]
-          ]
-        ],
-        [
-          'id' => 3,
-          'title' => FrontdeskStatusEnum::NEW_REQUEST_STANDBY->value,
-          'tasks' => [
-            [
-              'id' => 3,
-              'title' => 'Task 3',
-              'description' => 'Description for Task 3',
-              'date' => 'Jun 18, 2023 10:00 AM',
-              'tags'=> ['designing', 'development'],
-              'names' => 'Salome Acosta',
-              'precio'=> 1000,
-            ],
-            [
-              'id' => 4,
-              'title' => 'Task 4',
-              'description' => 'Description for Task 4',
-              'date' => 'Jun 18, 2023 10:00 AM',
-              'names' => 'Salome Acosta',
-              'precio'=> 1000,
-            ]
-          ]
-        ],
-      ]; */
+      
       // Definir los estados del Frontdesk (como strings usando el enum)
     $frontdeskStatuses = [
         OrderStatusEnum::NEW_CUSTOMER_REQUEST->value,
@@ -128,47 +63,44 @@ class FrontdeskController extends Controller
 
    
 
-    // Obtener órdenes con esos estados y sus relaciones necesarias
-    $orders = Order::with('client', 'user', 'orderStatus') // si tienes relación con el cliente
-        ->whereIn('status', $frontdeskStatuses)
-        ->get()
-        ->groupBy('status');
-
-    $qualifiedOrders = OrderStatus::where('status', OrderStatusEnum::QUALIFIED->value)
-    ->with('order') // relación definida en el modelo OrderStatus
+   $orders = Order::with(['client','user','orderStatus','tags:id,name,color,taggable_id,taggable_type'])
+    ->whereIn('status', $frontdeskStatuses)
     ->get()
-    ->pluck('order')
-    ->unique('id');
+    ->groupBy('status');
 
-    // Armar el arreglo que espera el componente React
-   /* $data = collect($frontdeskStatuses)->map(function ($status) use ($orders) {
-        $ordersByStatus = $orders[$status] ?? collect(); */
-      $data = collect($frontdeskStatuses)->map(function ($status) use ($orders, $qualifiedOrders) {
-    if ($status === OrderStatusEnum::QUALIFIED->value) {
-        $ordersByStatus = $qualifiedOrders;
-    } else {
-        $ordersByStatus = $orders[$status] ?? collect();
-    }
+$qualifiedOrderIds = OrderStatus::where('status', OrderStatusEnum::QUALIFIED->value)
+    ->whereHas('order')
+    ->pluck('order_id')
+    ->unique()
+    ->values();
 
-        return [
-            'id' => $status, // puedes usar el valor del estado como id
-            'title' => $status,
-            'tasks' => $ordersByStatus->map(function ($order) {
-                return [
-                    'id' => $order->id,
-                    'title' => $order->name ?? 'No Title',
-                    'client_id' => $order->client_id ?? null,
-                    //'description' => $order->notes ?? '',
-                    'date_edited' => optional($order->updated_at)->format('M d, Y h:i A'),
-                    'date' => optional($order->created_at)->format('M d, Y h:i A'),
-                    //'names' => $order->user->name ?? 'No Name',
-                    //'precio' => $order->price ?? 0,
-                   'tags' => $order->tags ?? [], // si usas JSON
-                ];
-            })->values(),
-        ];
-    });
+$qualifiedOrders = Order::with(['client','user','orderStatus','tags:id,name,color,taggable_id,taggable_type'])
+    ->whereIn('id', $qualifiedOrderIds)
+    ->get();
 
+$data = collect($frontdeskStatuses)->map(function ($status) use ($orders, $qualifiedOrders) {
+    $ordersByStatus = $status === OrderStatusEnum::QUALIFIED->value
+        ? $qualifiedOrders
+        : ($orders[$status] ?? collect());
+
+    return [
+        'id' => $status,
+        'title' => $status,
+        'tasks' => $ordersByStatus->map(function ($order) {
+            return [
+                'id'          => $order->id,
+                'title'       => $order->name ?? 'No Title',
+                'client_id'   => $order->client_id ?? null,
+                'date_edited' => optional($order->updated_at)->format('M d, Y h:i A'),
+                'date'        => optional($order->created_at)->format('M d, Y h:i A'),
+                'tags'        => ($order->tags ?? collect())->map(fn($t) => [
+                    'name'  => $t->name,
+                    'color' => $t->color,
+                ])->values(),
+            ];
+        })->values(),
+    ];
+});
       return Inertia::render('Frontdesk/Index', [
         'data' => $data,
         'lossReasonFrontdesk' => $lossReasonFrontdesk,
@@ -230,7 +162,6 @@ class FrontdeskController extends Controller
       'order_types' => [
         OrderTypeEnum::RESIDENTIAL->value,
         OrderTypeEnum::COMMERCIAL->value,
-        OrderTypeEnum::SUPPLY->value,
       ],
       'companies' => CompanyContact::all(),
     ]);
@@ -303,6 +234,8 @@ public function showQuantifiedModal(Order $order)
         'project_amount' => $request['project_amount'],
         'description' => $request['description'],
         'status' => $status,
+        'is_supply' => $request['is_supply'] ?? false,
+
     ]);
 
       if ($order->client) {
@@ -342,5 +275,97 @@ public function showQuantifiedModal(Order $order)
     return redirect()->route('frontdesk.index')
       ->with('success', 'Contact created successfully.');
   }
+  
+    public function orderView($id)
+  { // Obtener las órdenes por supervisor
+
+    $order = Order::find($id);
+    $order->load('tags:id,name,color,taggable_id,taggable_type', 'client', 'user',  'attachments', 'orderStatus.user');
+    $orderStatuses = OrderStatus::where('order_id', $id)
+      ->with(['order', 'user'])
+      ->get();
+
+        $usedTags = Tag::select('name', 'color', DB::raw('COUNT(*) AS count'))
+            ->where('type', 'order')     // o ->where('taggable_type', Order::class)
+            ->groupBy('name', 'color')
+            ->orderByDesc('count')
+            ->limit(200)
+            ->get()
+            ->map(fn ($t) => [
+                'name'  => $t->name,
+                'color' => $t->color ?? 'gray',
+                'count' => (int) $t->count,
+            ]);
+
+            //dd($usedTags);
+
+
+    // Obtener los parámetros de filtro de la solicitud (request)
+    return Inertia::render('Frontdesk/OrderView', [
+      //'orderStatuses' => $orderStatuses,
+      'order' => $order,
+       'tags' => $order->tags->map(fn($t) => [
+                'name'  => $t->name,
+                'color' => $t->color,
+            ]),
+      'usedTags' => $usedTags,
+      /*'orderStatuses' => $orderStatuses->map(function ($status) {
+        return [
+          ...$status->toArray(),
+          'created_at_formatted' => Carbon::parse($status->created_at)
+            ->setTimezone('America/New_York')
+            ->format('Y-m-d'),
+        ];
+      }),*/
+
+
+    ]);
+  }
+
+  public function tagsUpdate(Request $request, Order $order)
+    {
+        $validated = $request->validate([
+            'tags'         => ['array'],
+            'tags.*.name'  => ['required', 'string', 'max:28'],
+            'tags.*.color' => ['nullable', 'string', 'in:none,red,orange,amber,yellow,lime,green,teal,sky,blue,indigo,violet,purple,pink,gray'],
+        ]);
+
+        // Normaliza y elimina duplicados por nombre (case-insensitive)
+        $uniqueTags = collect($validated['tags'] ?? [])
+            ->map(fn($t) => [
+                'name'  => trim($t['name']),
+                'color' => $t['color'] ?? 'gray',
+            ])
+            ->filter(fn($t) => $t['name'] !== '')
+            ->unique(fn($t) => mb_strtolower($t['name']))
+            ->values()
+            ->all();
+
+        DB::transaction(function () use ($order, $uniqueTags) {
+            $this->replaceTags($order, $uniqueTags, 'order');
+        });
+
+        return back()->with('success', 'Tags actualizados.');
+    }
+
+      protected function replaceTags($model, array $tags, string $type): void
+      {
+          // ❌ Antes: ->where('taggable_type', $type)  // estaba mal
+          // ✅ Ahora: borra los tags de ESTE modelo (morph) y solo del type lógico dado
+          $model->tags()
+              ->when($type, fn($q) => $q->where('type', $type))
+              ->delete();
+
+          if (!empty($tags)) {
+              $rows = array_map(fn($t) => [
+                  'name'    => $t['name'],
+                  'color'   => $t['color'] ?? 'gray',
+                  'type'    => $type,          // tu tipo lógico
+                  'user_id' => auth()->id(),
+              ], $tags);
+
+              $model->tags()->createMany($rows);
+          }
+      }
 
 }

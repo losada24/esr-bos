@@ -34,7 +34,7 @@ class CreateQualifiedOrder
         'source' => $request->source,
         'user_id' => auth()->user()->id,
       ]);*/
-      $status = $request->status;
+      $status = OrderStatusEnum::QUALIFIED->value;
         if ($request->order_type === OrderTypeEnum::RESIDENTIAL->value || $request->order_type === OrderTypeEnum::SUPPLY->value) {
           $status = OrderStatusEnum::PENDING_ASSIGNMENT->value;
         } 
@@ -55,11 +55,12 @@ class CreateQualifiedOrder
         'status' => $status,
         'source' => $request->source ? $request->source : '',
         'bid_due_date' => $request->bid_due_date ? $request->bid_due_date : null,
+        'is_supply' => $request->is_supply ? $request->is_supply : false,
         
       ]);
 
        $order->orderStatus()->create([
-        'status' => $request->status,
+        'status' => OrderStatusEnum::QUALIFIED->value,
         'user_id' => auth()->user()->id,
         'notes' => "$status created by " . auth()->user()->name,
       ]);

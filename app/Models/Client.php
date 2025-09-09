@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Facades\DB;
 
 class Client extends Model
@@ -79,6 +80,16 @@ class Client extends Model
     public function orderClientTemps()
     {
         return $this->hasMany(OrderClientTemps::class);
+    }
+
+    public function tags()
+    {
+        return $this->morphMany(Tag::class, 'taggable');
+    }
+
+    public function notes(): MorphMany
+    {
+        return $this->morphMany(Note::class, 'noteable');
     }
 
 }

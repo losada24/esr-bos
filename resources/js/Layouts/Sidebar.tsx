@@ -35,10 +35,10 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
   return (
         <div className={`${themeState.semidark ? 'dark' : ''}`}>
             <nav
-                className={`sidebar fixed min-h-screen h-full top-0 bottom-0 w-[260px] shadow-[5px_0_25px_0_rgba(94,92,154,0.1)] z-50 transition-all duration-300 ${themeState.semidark ? 'text-white-dark' : ''}`}
+                className={`sidebar fixed min-h-screen h-full flex flex-col top-0 bottom-0 w-[260px] shadow-[5px_0_25px_0_rgba(94,92,154,0.1)] z-50 transition-all duration-300 ${themeState.semidark ? 'text-white-dark' : ''}`}
             >
-                <div className="bg-white dark:bg-black h-full">
-                    <div className="flex justify-between items-center px-4 py-3">
+                <div className="bg-white dark:bg-black h-full flex flex-col">
+                    <div className="flex justify-between items-center px-4 py-3 shrink-0">
                         <NavLink href={route('dashboard')} active={false} className="main-logo flex items-center shrink-0">
                             <img className="w-52 flex-none" src={logo} alt="logo" />
                         </NavLink>
@@ -55,80 +55,11 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                         </button>
                     </div>
                     <PerfectScrollbar className="h-[calc(100vh-80px)] relative">
-                        <ul className="relative font-semibold space-y-0.5 p-4 py-0">
-                            <li className="menu nav-item">
-                                <NavLink href={route('dashboard')} active={route().current('dashboard')} className="group">
-                                    <div className="flex items-center">
-                                        <DashboardIcon />
-                                        <SidebarLinkLabel>Project Schedule Reylos</SidebarLinkLabel>
-                                    </div>
-                                </NavLink>
-                            </li>
-                            {(IS_ADMIN || IS_ACCOUNT_MANAGER) && (
-                              <>
-                                <h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">
-                                    <svg className="w-4 h-5 flex-none hidden" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                                        <line x1="5" y1="12" x2="19" y2="12"></line>
-                                    </svg>
-                                    <span>ADMINISTRATION</span>
-                                </h2>
+                      <ul className="relative font-semibold space-y-0.5 p-4 py-0">
 
-                                <li className="nav-item">
-                                    <ul>
-                                        <li className="nav-item">
-                                          <NavLink href={route('bigin.index')} active={route().current('bigin.index')} className="group">
-                                                <div className="flex items-center">
-                                                  <WindowsIcon />
-                                                  <SidebarLinkLabel>Bigin Integration</SidebarLinkLabel>
-                                                </div>
-                                            </NavLink>
-                                        </li>
-                                        <li className="nav-item">
-                                            <NavLink href={route('user.index')} active={route().current('user.index') || route().current('user.create') || route().current('user.edit')} className="group">
-                                                <div className="flex items-center">
-                                                  <UserIcon />
-                                                  <SidebarLinkLabel>Users</SidebarLinkLabel>
-                                                </div>
-                                            </NavLink>
-                                        </li>
-                                    </ul>
-                                    <ul>
-                                        <li className="nav-item">
-                                            <NavLink href={route('installation_team.index')} active={route().current('installation_team.index') || route().current('installation_team.create') || route().current('installation_team.edit')} className="group">
-                                                <div className="flex items-center">
-                                                  <ReferralIcon />
-                                                  <SidebarLinkLabel>Installation Team</SidebarLinkLabel>
-                                                </div>
-                                            </NavLink>
-                                        </li>
-                                    </ul>
-                                </li>
-                              </>
-                            )}
-                            <h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">
-                                <svg className="w-4 h-5 flex-none hidden" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                                </svg>
-                                <span>Actions</span>
-                            </h2>
-                            {(IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER) && (
+                          {(IS_ADMIN || IS_FRONTDESK) && (
                               <>
-                                <li className="menu nav-item">
-                                    <NavLink href={route('order.index')} active={route().current('order.index')} className="group">
-                                        <div className="flex items-center">
-                                            <FolderIcon />
-                                            <SidebarLinkLabel>Order</SidebarLinkLabel>
-                                        </div>
-                                    </NavLink>
-                                </li>
-                              </>
-                            )}
-                            {(IS_ADMIN || IS_FRONTDESK || IS_ACCOUNT_MANAGER || IS_OWNER) && (
-                              <>
-                              </>
-                            )}
-
-                            <h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">
+                              <h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">
                                 <svg className="w-4 h-5 flex-none hidden" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
                                     <line x1="5" y1="12" x2="19" y2="12"></line>
                                 </svg>
@@ -169,6 +100,11 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                     </div>
                                 </NavLink>
                             </li>
+                              </>
+                          )}
+
+                           {(IS_ADMIN || IS_OWNER) && (
+                            <>
                             <h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">
                                 <svg className="w-4 h-5 flex-none hidden" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
                                     <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -184,97 +120,152 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                     </div>
                                 </NavLink>
                             </li>
-
-                          <h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">
+                               </>
+                           )}
+                           {(IS_ADMIN ) && (
+                            <>
+                             <h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">
                                 <svg className="w-4 h-5 flex-none hidden" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
                                     <line x1="5" y1="12" x2="19" y2="12"></line>
                                 </svg>
-                                <span>Reports</span>
+                                <span>Order Processing</span>
                             </h2>
-                            {(IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER) && (
-                              <>
-                                <li className="menu nav-item">
-                                    <NavLink href={route('report.supervisor')} active={route().current('report.supervisor')} className="group">
+                            </>
+                           )}
+                           {(IS_ADMIN) && (
+                               <>
+                             <h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">
+                                <svg className="w-4 h-5 flex-none hidden" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                </svg>
+                                <span>Order Storage</span>
+                            </h2>
+                               </>
+                           )}
+                           <h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">
+                                <svg className="w-4 h-5 flex-none hidden" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                </svg>
+                                <span>Operations</span>
+                            </h2>
+                            {(IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER || IS_PAYMENT_COORDINATOR) && (
+                            <>
+                             <li className="menu nav-item">
+                                <NavLink href={route('dashboard')} active={route().current('dashboard')} className="group">
+                                    <div className="flex items-center">
+                                        <DashboardIcon />
+                                        <SidebarLinkLabel>Project Schedule Operations</SidebarLinkLabel>
+                                    </div>
+                                </NavLink>
+                            </li>
+                            <li className="menu nav-item">
+                                    <NavLink href={route('order.index')} active={route().current('order.index')} className="group">
                                         <div className="flex items-center">
-                                            <ReferralIcon/>
-                                            <SidebarLinkLabel>Supervisors</SidebarLinkLabel>
+                                            <FolderIcon />
+                                            <SidebarLinkLabel>Order</SidebarLinkLabel>
                                         </div>
                                     </NavLink>
-                                </li>
-                              </>
+                            </li>
+                            <li className="menu nav-item">
+                              <NavLink href={route('installation_team.index')} active={route().current('installation_team.index') || route().current('installation_team.create') || route().current('installation_team.edit')} className="group">
+                                  <div className="flex items-center">
+                                    <ReferralIcon />
+                                    <SidebarLinkLabel>Installation Team</SidebarLinkLabel>
+                                  </div>
+                              </NavLink>
+                          </li>
+
+                           </>
                             )}
-
-                          {(IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER || IS_PAYMENT_COORDINATOR) && (
+                             {(IS_SUPERVISOR) && (
                               <>
-                                <li className="menu nav-item">
-                                    <NavLink href={route('report.installer')} active={route().current('report.installer')} className="group">
-                                        <div className="flex items-center">
-                                            <ReferralIcon/>
-                                            <SidebarLinkLabel>Installers</SidebarLinkLabel>
-                                        </div>
-                                    </NavLink>
-                                </li>
-                                <li className="menu nav-item">
-                                    <NavLink href={route('biweekly.index')} active={route().current('biweekly.index')} className="group">
-                                        <div className="flex items-center">
-                                            <CalendarIcon/>
-                                            <SidebarLinkLabel>Biweekly</SidebarLinkLabel>
-                                        </div>
-                                    </NavLink>
-                                </li>
-                              </>
-                          )}
-
-                          {(IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER) && (
-                              <>
-                                <li className="menu nav-item">
-                                    <NavLink href={route('report.product-summary')} active={route().current('report.product-summary')} className="group">
-                                        <div className="flex items-center">
-                                            <ReferralIcon/>
-                                            <SidebarLinkLabel>Product Summary</SidebarLinkLabel>
-                                        </div>
-                                    </NavLink>
-                                </li>
-                              </>
-                          )}
-
-                            {(IS_SUPERVISOR) && (
-                              <>
-                                <li className="menu nav-item">
+                               <li className="menu nav-item">
+                                <NavLink href={route('dashboard')} active={route().current('dashboard')} className="group">
+                                    <div className="flex items-center">
+                                        <DashboardIcon />
+                                        <SidebarLinkLabel>Project Schedule Operations</SidebarLinkLabel>
+                                    </div>
+                                </NavLink>
+                              </li>
+                              <li className="menu nav-item">
                                     <NavLink href={route('report.show-supervisor-report', { id: auth.user.id })} active={route().current('report.show-supervisor-report')} className="group">
                                         <div className="flex items-center">
                                             <ReferralIcon/>
                                             <SidebarLinkLabel>My Orders</SidebarLinkLabel>
                                         </div>
                                     </NavLink>
-                                </li>
+                              </li>
                               </>
-                            ) }
-                              {/* (IS_INSTALLER) && (
+                             ) }
+                              { (IS_ADMIN || IS_SERVICE_MANAGER || IS_PAYMENT_COORDINATOR) && (
+                                <>
+                                <h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">
+                                      <svg className="w-4 h-5 flex-none hidden" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                                          <line x1="5" y1="12" x2="19" y2="12"></line>
+                                      </svg>
+                                      <span>Reports</span>
+                                  </h2>
+                                  <li className="menu nav-item">
+                                          <NavLink href={route('report.supervisor')} active={route().current('report.supervisor')} className="group">
+                                              <div className="flex items-center">
+                                                  <ReferralIcon/>
+                                                  <SidebarLinkLabel>Supervisors</SidebarLinkLabel>
+                                              </div>
+                                          </NavLink>
+                                      </li>
+                                      <li className="menu nav-item">
+                                          <NavLink href={route('report.installer')} active={route().current('report.installer')} className="group">
+                                              <div className="flex items-center">
+                                                  <ReferralIcon/>
+                                                  <SidebarLinkLabel>Installers</SidebarLinkLabel>
+                                              </div>
+                                          </NavLink>
+                                      </li>
+                                      <li className="menu nav-item">
+                                          <NavLink href={route('biweekly.index')} active={route().current('biweekly.index')} className="group">
+                                              <div className="flex items-center">
+                                                  <CalendarIcon/>
+                                                  <SidebarLinkLabel>Biweekly</SidebarLinkLabel>
+                                              </div>
+                                          </NavLink>
+                                      </li>
+                                      <li className="menu nav-item">
+                                          <NavLink href={route('report.product-summary')} active={route().current('report.product-summary')} className="group">
+                                              <div className="flex items-center">
+                                                  <ReferralIcon/>
+                                                  <SidebarLinkLabel>Product Summary</SidebarLinkLabel>
+                                              </div>
+                                          </NavLink>
+                                      </li>
+                                </>
+                              )}
+                            {(IS_ADMIN) && (
                               <>
-                                <li className="menu nav-item">
-                                    <NavLink href={route('report.show_installer', { id: auth.user.id })} active={route().current('report.show_installer')} className="group">
-                                        <div className="flex items-center">
-                                            <ReferralIcon/>
-                                            <SidebarLinkLabel>My Orders</SidebarLinkLabel>
-                                        </div>
-                                    </NavLink>
-                                </li>
+                                <h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">
+                                    <svg className="w-4 h-5 flex-none hidden" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                                    </svg>
+                                    <span>ADMINISTRATION</span>
+                                </h2>
+                                        <li className="menu nav-item">
+                                          <NavLink href={route('bigin.index')} active={route().current('bigin.index')} className="group">
+                                                <div className="flex items-center">
+                                                  <WindowsIcon />
+                                                  <SidebarLinkLabel>Bigin Integration</SidebarLinkLabel>
+                                                </div>
+                                            </NavLink>
+                                        </li>
+                                        <li className="menu nav-item">
+                                            <NavLink href={route('user.index')} active={route().current('user.index') || route().current('user.create') || route().current('user.edit')} className="group">
+                                                <div className="flex items-center">
+                                                  <UserIcon />
+                                                  <SidebarLinkLabel>Users</SidebarLinkLabel>
+                                                </div>
+                                            </NavLink>
+                                        </li>
                               </>
-                              ) */}
-                             {/* (IS_ADMIN || IS_FRONTDESK || IS_ACCOUNT_MANAGER || IS_OWNER) && (
-                              <>
-                                <li className="menu nav-item">
-                                    <NavLink href={route('client.index')} active={route().current('client.index')} className="group">
-                                        <div className="flex items-center">
-                                            <WindowsIcon />
-                                            <SidebarLinkLabel>Installers</SidebarLinkLabel>
-                                        </div>
-                                    </NavLink>
-                                </li>
-                              </>
-                            ) */}
-                        </ul>
+                            )}
+                      </ul>
                     </PerfectScrollbar>
                 </div>
             </nav>

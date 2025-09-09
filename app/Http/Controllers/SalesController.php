@@ -141,15 +141,21 @@ class SalesController extends Controller
             'id' => $status, // puedes usar el valor del estado como id
             'title' => $status,
             'tasks' => $ordersByStatus->map(function ($order) {
-                return [
+               return [
                     'id' => $order->id,
                     'title' => $order->name ?? 'No Title',
                     'client_id' => $order->client_id ?? null,
                     //'description' => $order->notes ?? '',
+                    'date_edited' => optional($order->updated_at)->format('M d, Y h:i A'),
                     'date' => optional($order->created_at)->format('M d, Y h:i A'),
                     //'names' => $order->user->name ?? 'No Name',
                     //'precio' => $order->price ?? 0,
-                   'tags' => $order->tags ?? [], // si usas JSON
+                    'tags'       => ($order->tags ?? collect())->map(function ($t) {
+                    return [
+                        'name'  => $t->name,
+                        'color' => $t->color,
+                    ];
+                })->values(),
                 ];
             })->values(),
         ];

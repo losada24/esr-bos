@@ -45,11 +45,10 @@ class StoreQualifiedOrderRequest extends FormRequest
               Rule::in(
                 OrderTypeEnum::RESIDENTIAL->value,
                 OrderTypeEnum::COMMERCIAL->value,
-                OrderTypeEnum::SUPPLY->value,
               )
             ],
             'status' =>  [
-            'required',
+            'nullable',
             'string',
               Rule::in(
                 OrderStatusEnum::NEW_CUSTOMER_REQUEST->value,

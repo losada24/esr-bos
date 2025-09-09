@@ -191,7 +191,10 @@ const OrderQualifiedForm = ({
     value: values.source ?? '',
     label: sources.find(source => source.name === values.source)?.name ?? ''
   }
-
+const selectedSourceClients: SingleValue<OptionType> = {
+    value: values.source ?? '',
+    label: sourcesClients.find((source) => source === values.source) ?? ''
+  }
   //console.log('selectedStatus', selectedStatus)
   return (
     <>
@@ -226,6 +229,7 @@ const OrderQualifiedForm = ({
             </Field>
             {(submitCount && errors.order_type) ? <InputError message={errors.order_type} className="mt-2" /> : ''}
             </div>
+             
              <div className={submitCount ? (errors.name) ? 'has-error' : 'has-success' : ''}>
                 <label htmlFor="name">Order Name</label>
                 <Field
@@ -323,6 +327,19 @@ const OrderQualifiedForm = ({
                     </div>
                     {(submitCount && errors.client_id) ? <InputError message={errors.client_id} className="mt-2" /> : null}
                   </div>
+             {/* <div className={submitCount ? (errors.source) ? 'has-error' : 'has-success' : ''}>
+              <label htmlFor="source">Clients Source</label>
+              <Select
+                id='source'
+                placeholder="sources"
+                name='source'
+                defaultValue={selectedSourceClients}
+                isMulti={false}
+                onChange={(value) => { setFieldValue('source', value) }}
+                options={sourcesClients.map((source) => { return { label: source, value: source } })}
+              />
+              {(submitCount && errors.source) ? <InputError message={errors.source} className="mt-2" /> : ''}
+            </div> */}
                {(values.order_type === ORDER_TYPES.COMMERCIAL) && (
                 <>
                 <div className={submitCount ? (errors.company_contact_id ? 'has-error' : 'has-success') : ''}>
@@ -354,7 +371,7 @@ const OrderQualifiedForm = ({
                   {(submitCount && errors.company_contact_id) ? <InputError message={errors.company_contact_id as any} className="mt-2" /> : null}
                 </div>
 
-                <div className={submitCount ? ((errors as any).associate_company_contact_id_1 ? 'has-error' : 'has-success') : ''}>
+               {/* <div className={submitCount ? ((errors as any).associate_company_contact_id_1 ? 'has-error' : 'has-success') : ''}>
                   <label htmlFor="associate_company_contact_id_1">Other Company Associate 1</label>
                   <div className="flex items-center">
                     <div className="flex-grow">
@@ -493,36 +510,8 @@ const OrderQualifiedForm = ({
                   {(submitCount && (errors as any).associate_client_id_2)
                     ? <InputError message={(errors as any).associate_client_id_2} className="mt-2" />
                     : null}
-                </div>
-                </>
-               )}
-             <div className={submitCount ? (errors.status) ? 'has-error' : 'has-success' : ''}>
-              <label htmlFor="status">Status</label>
-              <Select
-                id='status'
-                placeholder="status"
-                name='status'
-                defaultValue={selectedStatus}
-                isMulti={false}
-                onChange={(value) => { setFieldValue('status', value) }}
-                options={status.map((status) => { return { label: status, value: status } })}
-              />
-              {(submitCount && errors.status) ? <InputError message={errors.status} className="mt-2" /> : ''}
-            </div>
-            <div className={submitCount ? (errors.source) ? 'has-error' : 'has-success' : ''}>
-              <label htmlFor="source">Sources</label>
-              <Select
-                id='source'
-                placeholder="sources"
-                name='source'
-                defaultValue={selectedSource}
-                isMulti={false}
-                onChange={(value) => { setFieldValue('source', value) }}
-               options={sources.map((source) => { return { label: source.name, value: source.id } })}
-              />
-              {(submitCount && errors.source) ? <InputError message={errors.source} className="mt-2" /> : ''}
-            </div>
-             <div className={submitCount ? (errors.bid_due_date) ? 'has-error' : 'has-success' : ''}>
+                </div> */}
+                 <div className={submitCount ? (errors.bid_due_date) ? 'has-error' : 'has-success' : ''}>
               <label htmlFor="bid_due_date">Bid Due Date</label>
               <Flatpickr
                 options={{
@@ -539,6 +528,47 @@ const OrderQualifiedForm = ({
               />
               {(submitCount && errors.bid_due_date) ? <InputError message={errors.bid_due_date.toString()} className="mt-2" /> : ''}
             </div>
+
+             <div className={submitCount ? (errors.source) ? 'has-error' : 'has-success' : ''}>
+              <label htmlFor="source">Sources</label>
+              <Select
+                id='source'
+                placeholder="sources"
+                name='source'
+                defaultValue={selectedSource}
+                isMulti={false}
+                onChange={(value) => { setFieldValue('source', value) }}
+               options={sources.map((source) => { return { label: source.name, value: source.id } })}
+              />
+              {(submitCount && errors.source) ? <InputError message={errors.source} className="mt-2" /> : ''}
+            </div>
+                </>
+               )}
+             {/* <div className={submitCount ? (errors.status) ? 'has-error' : 'has-success' : ''}>
+              <label htmlFor="status">Status</label>
+              <Select
+                id='status'
+                placeholder="status"
+                name='status'
+                defaultValue={selectedStatus}
+                isMulti={false}
+                onChange={(value) => { setFieldValue('status', value) }}
+                options={status.map((status) => { return { label: status, value: status } })}
+              />
+              {(submitCount && errors.status) ? <InputError message={errors.status} className="mt-2" /> : ''}
+            </div> */}
+             <div className='flex mt-8'>
+                <Field
+                  id="is_supply"
+                  name="is_supply"
+                  className="form-checkbox"
+                  type='checkbox'
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                    setFieldValue('is_supply', e.target.checked)
+                  }}
+                />
+                <label htmlFor="is_supply" className='font-bold inline-flex'>Supply</label>
+              </div>
               <div className='col-span-4'>
               <label htmlFor="description"> Description</label>
               <Field
