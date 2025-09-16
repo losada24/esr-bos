@@ -63,6 +63,8 @@ class DashboardController extends Controller
         
       ];
       $statusmodal = [  
+        OrderStatusEnum::PLANNED->value,
+        OrderStatusEnum::MATERIALS_RECEIVED->value,
         OrderStatusEnum::CONFIRMED->value,
         OrderStatusEnum::EXECUTION->value,
         OrderStatusEnum::DELIVERY_CONFIRMED->value,
