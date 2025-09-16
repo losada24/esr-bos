@@ -239,7 +239,7 @@ trait Reports
             'name' => $owner->name,
           ];
         }),
-        'supervisor' => $order->supervisor->name,
+        'supervisor' => $order->supervisor->name ?? '',
         'installation_team' => $order->installationTeams->map(function ($team, $key) {
           return [
             'id' => $team->id,
