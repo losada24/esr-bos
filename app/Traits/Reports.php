@@ -150,7 +150,7 @@ trait Reports
   public function getOrdersByInstaller($id, $status = null, $startDate = null, $endDate = null, $orderStatus = null)
   {
 
-    $orders = Order::whereNotIn('status', [OrderStatusEnum::PLANNED->value, OrderStatusEnum::CONFIRMED->value])
+    $orders = Order::whereNotIn('status', [OrderStatusEnum::PLANNED->value, OrderStatusEnum::CONFIRMED->value,OrderStatusEnum::MATERIALS_RECEIVED->value])
       ->whereHas('installationTeams', function ($query) use ($id) {
         $query->whereHas('user', function ($subQuery) use ($id) {
           $subQuery->where('id', $id);
