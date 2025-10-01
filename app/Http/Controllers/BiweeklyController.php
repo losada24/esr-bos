@@ -209,7 +209,7 @@ class BiweeklyController extends Controller
                     $finalPending   = (int) data_get($uncollectItem, 'final_payment_installation', 0) === 0;
 
                     // Regla 1: 80% y parcial pendiente
-                    if (($percent >= 1 && $percent <= 80 && $partialPending && !$finalPending) || ($percent === 100 &&  $partialPending &&  $finalPending) || ($percent === 20 && $partialPending && $finalPending) ) {
+                    if (($percent >= 1 && $percent <= 80 && $partialPending && !$finalPending) || ($percent >= 1 && $percent <= 100 &&  $partialPending &&  $finalPending) || ($percent === 20 && $partialPending && $finalPending) ) {
                         $uncollected->push($uncollectItem);
                     }
 
@@ -223,7 +223,7 @@ class BiweeklyController extends Controller
                       }
                   }
                     
-                      dd($uncollected,$uncollect1);
+                      //dd($uncollected,$uncollect1);
                     $biweekly = Biweekly::find($biweeklyId);
                     $biweeklyTitle = Carbon::parse($biweekly->start_biweekly_period)->locale('en')->isoFormat('MMMM D') . ' to ' . Carbon::parse($biweekly->end_biweekly_period)->locale('en')->isoFormat('MMMM D');
                     $pdf = Pdf::loadView('pdf.uncollected-payments-report', ['biweeklys' => $uncollected, 'biweeklys1' => $uncollect1, 'biweeklyTitle' => $biweeklyTitle])->setPaper('A2', 'landscape');
