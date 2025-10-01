@@ -207,9 +207,10 @@ class BiweeklyController extends Controller
                     $percent= (int) data_get($lastPayment, 'percentage_payment', 0);
                     $partialPending = (int) data_get($uncollectItem, 'partial_payment_installation', 0) === 0;
                     $finalPending   = (int) data_get($uncollectItem, 'final_payment_installation', 0) === 0;
+                  
 
                     // Regla 1: 80% y parcial pendiente
-                    if (($percent >= 1 && $percent <= 80 && $partialPending && !$finalPending) || ($percent >= 1 && $percent <= 100 &&  $partialPending &&  $finalPending) || ($percent === 20 && $partialPending && $finalPending) ) {
+                    if ( ($percent >= 1 && $percent <= 100 &&  $partialPending &&  $finalPending) || ($percent === 20 && $partialPending && $finalPending) ) {
                         $uncollected->push($uncollectItem);
                     }
 
