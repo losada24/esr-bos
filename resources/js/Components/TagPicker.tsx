@@ -2,44 +2,31 @@ import React, { useMemo, useRef, useState } from 'react'
 
 type TagColor =
   | 'none' | 'red' | 'orange' | 'amber' | 'yellow' | 'lime'
-  | 'green' | 'teal' | 'sky' | 'blue' | 'indigo' | 'violet' | 'purple' | 'pink' | 'gray';
+  | 'green' | 'teal' | 'sky' | 'blue' | 'indigo' | 'violet' | 'purple' | 'pink' | 'gray'
 
 export interface TagItem { name: string, color?: TagColor | null, count?: number }
 
-const COLOR_STYLES: Record<TagColor, { chip: string, ring: string, text: string }> = {
-  none: { chip: 'bg-slate-100 text-slate-700', ring: 'ring-slate-200', text: 'text-slate-700' },
-  red: { chip: 'bg-red-100 text-red-800', ring: 'ring-red-200', text: 'text-red-800' },
-  orange: { chip: 'bg-orange-100 text-orange-800', ring: 'ring-orange-200', text: 'text-orange-800' },
-  amber: { chip: 'bg-amber-100 text-amber-800', ring: 'ring-amber-200', text: 'text-amber-800' },
-  yellow: { chip: 'bg-yellow-100 text-yellow-800', ring: 'ring-yellow-200', text: 'text-yellow-800' },
-  lime: { chip: 'bg-lime-100 text-lime-800', ring: 'ring-lime-200', text: 'text-lime-800' },
-  green: { chip: 'bg-green-100 text-green-800', ring: 'ring-green-200', text: 'text-green-800' },
-  teal: { chip: 'bg-teal-100 text-teal-800', ring: 'ring-teal-200', text: 'text-teal-800' },
-  sky: { chip: 'bg-sky-100 text-sky-800', ring: 'ring-sky-200', text: 'text-sky-800' },
-  blue: { chip: 'bg-blue-100 text-blue-800', ring: 'ring-blue-200', text: 'text-blue-800' },
-  indigo: { chip: 'bg-indigo-100 text-indigo-800', ring: 'ring-indigo-200', text: 'text-indigo-800' },
-  violet: { chip: 'bg-violet-100 text-violet-800', ring: 'ring-violet-200', text: 'text-violet-800' },
-  purple: { chip: 'bg-purple-100 text-purple-800', ring: 'ring-purple-200', text: 'text-purple-800' },
-  pink: { chip: 'bg-pink-100 text-pink-800', ring: 'ring-pink-200', text: 'text-pink-800' },
-  gray: { chip: 'bg-gray-100 text-gray-800', ring: 'ring-gray-200', text: 'text-gray-800' }
-}
-
-const DOT_BG: Record<TagColor, string> = {
-  none: 'bg-slate-400',
-  red: 'bg-red-500',
-  orange: 'bg-orange-500',
-  amber: 'bg-amber-500',
-  yellow: 'bg-yellow-500',
-  lime: 'bg-lime-500',
-  green: 'bg-green-500',
-  teal: 'bg-teal-500',
-  sky: 'bg-sky-500',
-  blue: 'bg-blue-500',
-  indigo: 'bg-indigo-500',
-  violet: 'bg-violet-500',
-  purple: 'bg-purple-500',
-  pink: 'bg-pink-500',
-  gray: 'bg-gray-500'
+const COLOR_TOKENS: Record<TagColor, {
+  bg: string
+  text: string
+  dot: string
+  focus: string
+}> = {
+  none: { bg: 'bg-slate-200', text: 'text-slate-800', dot: 'bg-slate-500', focus: 'focus:ring-slate-200/60' },
+  red: { bg: 'bg-red-200', text: 'text-red-900', dot: 'bg-red-500', focus: 'focus:ring-red-200/60' },
+  orange: { bg: 'bg-orange-200', text: 'text-orange-900', dot: 'bg-orange-500', focus: 'focus:ring-orange-200/60' },
+  amber:{ bg: 'bg-amber-200', text: 'text-amber-900', dot: 'bg-amber-500', focus: 'focus:ring-amber-200/60' },
+  yellow: { bg: 'bg-yellow-200', text: 'text-yellow-900', dot: 'bg-yellow-500', focus: 'focus:ring-yellow-200/60' },
+  lime: { bg: 'bg-lime-200', text: 'text-lime-900', dot: 'bg-lime-500', focus: 'focus:ring-lime-200/60' },
+  green: { bg: 'bg-green-200', text: 'text-green-900', dot: 'bg-green-500', focus: 'focus:ring-green-200/60' },
+  teal: { bg: 'bg-teal-200', text: 'text-teal-900', dot: 'bg-teal-500', focus: 'focus:ring-teal-200/60' },
+  sky: { bg: 'bg-cyan-200', text: 'text-cyan-900', dot: 'bg-cyan-500', focus: 'focus:ring-cyan-200/60' },
+  blue: { bg: 'bg-blue-200', text: 'text-blue-900', dot: 'bg-blue-500', focus: 'focus:ring-blue-200/60' },
+  indigo: { bg: 'bg-indigo-200', text: 'text-indigo-900', dot: 'bg-indigo-500', focus: 'focus:ring-indigo-200/60' },
+  violet: { bg: 'bg-purple-200', text: 'text-purple-900', dot: 'bg-purple-500', focus: 'focus:ring-purple-200/60' },
+  purple: { bg: 'bg-violet-200', text: 'text-violet-900', dot: 'bg-violet-500', focus: 'focus:ring-violet-200/60' },
+  pink: { bg: 'bg-pink-200', text: 'text-pink-900', dot: 'bg-pink-500', focus: 'focus:ring-pink-200/60' },
+  gray: { bg: 'bg-gray-200', text: 'text-gray-900', dot: 'bg-gray-500', focus: 'focus:ring-gray-200/60' }
 }
 
 const PALETTE: TagColor[] = ['none', 'red', 'orange', 'amber', 'yellow', 'lime', 'green', 'teal', 'sky', 'blue', 'indigo', 'violet', 'purple', 'pink', 'gray']
@@ -110,14 +97,14 @@ export default function TagPicker({
   }
 
   // Quitar chip
-  function remove(i: number) {
+  function remove (i: number) {
     const next = [...value]
     next.splice(i, 1)
     onChange(next)
   }
 
   // Teclado (Enter opcional, no requerido)
-  function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+  function onKeyDown (e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === 'Enter') {
       e.preventDefault()
       if (canCreate) createNew()
@@ -133,21 +120,22 @@ export default function TagPicker({
   return (
     <div className="w-full">
       {/* Chips seleccionados (pequeños, sin círculo, centrados) */}
-      <div className="flex flex-wrap gap-2 mb-2">
+      <div className="mb-3 flex flex-wrap gap-2">
         {value.map((t, i) => {
-          const c = COLOR_STYLES[(t.color as TagColor) || 'gray']
+          const palette = COLOR_TOKENS[(t.color as TagColor) || 'gray']
           return (
             <span
               key={`${t.name}-${i}`}
-              className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${c.chip} ring-1 ${c.ring}`}
-              style={{ minWidth: 64 }}
+              className={`group inline-flex items-center gap-2 rounded-full ${palette.bg} ${palette.text} px-3 py-1 text-xs font-semibold shadow-sm transition`}
+              style={{ minWidth: 66 }}
               title={t.name}
             >
-              <span className="flex-1 text-center truncate">{t.name}</span>
+              <span className={`h-2.5 w-2.5 rounded-full ${palette.dot} shadow-sm shadow-black/15`} />
+              <span className="flex-1 truncate">{t.name}</span>
               <button
                 type="button"
                 onClick={() => { remove(i) }}
-                className="ml-1 inline-flex h-3 w-3 items-center justify-center rounded-full hover:bg-black/10"
+                className="ml-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-black/10 text-slate-600 transition group-hover:bg-black/15 group-hover:text-slate-800"
                 aria-label={`Quitar ${t.name}`}
               >
                 <svg viewBox="0 0 20 20" className="h-3 w-3" fill="currentColor">
@@ -169,20 +157,20 @@ export default function TagPicker({
         <div className="relative">
           <button
             type="button"
+            onMouseDown={(e) => e.preventDefault()}
             onClick={() => { setPaletteOpen(v => !v) }}
-            className={`h-9 w-9 shrink-0 rounded-lg ring-1 ${COLOR_STYLES[color].ring} flex items-center justify-center`}
+            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/50 bg-white text-slate-500 shadow-sm transition hover:shadow-md focus:outline-none ${COLOR_TOKENS[color].focus}`}
             title="Color para nuevos tags"
           >
-            <span className={`h-4 w-4 rounded-full ${DOT_BG[color]}`} />
+            <span className={`block h-4 w-4 rounded-full ${COLOR_TOKENS[color].dot} shadow-sm shadow-black/20`} />
           </button>
 
           {paletteOpen && (
             <div
-              className="absolute z-30 mt-2 left-0 w-64 rounded-xl border border-slate-200 bg-white p-3 shadow-xl"
+              className="absolute left-0 z-30 mt-2 w-64 rounded-2xl border border-slate-200 bg-white/95 p-3 shadow-2xl backdrop-blur"
               onMouseDown={(e) => { e.preventDefault() }}
-              onMouseLeave={() => { setPaletteOpen(false) }}
             >
-              <div className="mb-2 text-xs font-semibold text-slate-600 uppercase tracking-wide">
+              <div className="mb-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">
                 Color nuevo tag
               </div>
               <div className="grid grid-cols-8 gap-2">
@@ -192,9 +180,9 @@ export default function TagPicker({
                     type="button"
                     aria-label={c}
                     onClick={() => { setColor(c); setPaletteOpen(false) }}
-                    className={`h-7 w-7 rounded-full ring-2 ${COLOR_STYLES[c].ring} flex items-center justify-center`}
+                    className={`relative flex h-8 w-8 items-center justify-center rounded-full border border-white/60 bg-white/70 shadow-sm transition hover:-translate-y-0.5 hover:shadow focus:outline-none ${COLOR_TOKENS[c].focus}`}
                   >
-                    <span className={`h-4 w-4 rounded-full ${DOT_BG[c]}`} />
+                    <span className={`block h-5 w-5 rounded-full ${COLOR_TOKENS[c].dot} shadow-inner shadow-black/20`} />
                     {color === c && (
                       <svg viewBox="0 0 20 20" className="absolute h-3.5 w-3.5 text-white">
                         <path fill="currentColor" d="M8.143 13.314 4.586 9.757l1.414-1.414 2.143 2.143 5.857-5.857 1.414 1.414z"/>
@@ -217,7 +205,7 @@ export default function TagPicker({
             onFocus={() => { setOpen(true) }}
             onBlur={() => setTimeout(() => { setOpen(false) }, 120)}
             placeholder={placeholder}
-            className="w-full h-9 rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none focus:ring-4 focus:ring-primary/20 focus:border-primary"
+            className="h-10 w-full rounded-xl border border-slate-200 bg-white/90 px-3 text-sm text-slate-600 shadow-sm outline-none transition focus:border-sky-300 focus:ring-4 focus:ring-sky-100"
             role="combobox"
             aria-expanded={open}
             aria-controls="tagpicker-options"
@@ -257,24 +245,26 @@ export default function TagPicker({
                     }`}
                     title={t.name}
                   >
-                    <div className="flex items-center gap-2 min-w-0">
-                      {/* checkbox visual */}
-                      <span className={`h-4 w-4 rounded-sm border ${isSelected ? 'bg-blue-600 border-blue-600' : 'border-slate-300'}`}>
-                        {isSelected && (
-                          <svg viewBox="0 0 20 20" className="h-4 w-4 text-white">
-                            <path fill="currentColor" d="M8.143 13.314 4.586 9.757l1.414-1.414 2.143 2.143 5.857-5.857 1.414 1.414z"/>
-                          </svg>
-                        )}
-                      </span>
-                      <span className="truncate">{t.name}</span>
+                    <div className="flex min-w-0 items-center gap-3">
+                      <span className={`h-2.5 w-2.5 rounded-full ${COLOR_TOKENS[(t.color as TagColor) || 'gray'].dot} shadow-sm`} />
+                      <span className={`truncate font-medium ${COLOR_TOKENS[(t.color as TagColor) || 'gray'].text}`}>{t.name}</span>
                     </div>
 
                     {/* contador opcional */}
-                    {typeof t.count === 'number' && (
-                      <span className="ml-3 text-[10px] px-1.5 py-0.5 rounded bg-black/5">
-                        {t.count}
-                      </span>
-                    )}
+                    <div className="flex items-center gap-2 pl-3">
+                      {typeof t.count === 'number' && (
+                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">
+                          {t.count}
+                        </span>
+                      )}
+                      {isSelected && (
+                        <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-sky-100 text-sky-600">
+                          <svg viewBox="0 0 20 20" className="h-3 w-3" fill="currentColor">
+                            <path d="M8.143 13.314 4.586 9.757l1.414-1.414 2.143 2.143 5.857-5.857 1.414 1.414z" />
+                          </svg>
+                        </span>
+                      )}
+                    </div>
                   </li>
                 )
               })}

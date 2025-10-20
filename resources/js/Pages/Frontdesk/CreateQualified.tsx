@@ -20,7 +20,12 @@ export default function CreateQualified ({
   sources,
   order_types,
   companies,
-  sourcesClients
+  sourcesClients,
+  frame_colors,
+  glass_colors,
+  glass_types,
+  glass_coatings,
+  languages
 }: PageProps & {
   clients: Client[]
   owners: User[]
@@ -29,11 +34,16 @@ export default function CreateQualified ({
   order_types: string[]
   companies: CompanyContact[]
   sourcesClients: string[]
+  frame_colors: string[]
+  glass_colors: string[]
+  glass_types: string[]
+  glass_coatings: string[]
+  languages: string[]
 }) {
   const initialValues: OrderFormValues = orderFormObj
-    // console.log('Initial values:', initialValues)
-    const toNull = (v: any) =>
-  (v === 0 || v === '0' || v === '' || v === undefined) ? null : v
+  // console.log('Initial values:', initialValues)
+  const toNull = (v: any) =>
+ (v === 0 || v === '0' || v === '' || v === undefined) ? null : v
 
   const handleSubmit = async (values: any, helpers: FormikHelpers<OrderFormValues>) => {
     const order = {
@@ -81,13 +91,14 @@ export default function CreateQualified ({
                 order_types={order_types}
                 companies={companies}
                 sourcesClients={sourcesClients}
+                frame_colors={frame_colors}
+                glass_colors={glass_colors}
+                glass_types={glass_types}
+                glass_coatings={glass_coatings}
+                languages={languages}
               />
             )}
           </Formik>
       </AuthenticatedLayout>
   )
 }
-function toNull(associate_client_id_1: any) {
-  throw new Error('Function not implemented.')
-}
-

@@ -39,7 +39,12 @@ const OrderQualifiedForm = ({
   sources,
   order_types,
   companies,
-  sourcesClients
+  sourcesClients,
+  frame_colors,
+  glass_colors,
+  glass_types,
+  glass_coatings,
+  languages
 }: {
   submitCount: number
   errors: FormikErrors<OrderFormValues>
@@ -54,6 +59,11 @@ const OrderQualifiedForm = ({
   order_types: string[]
   companies: CompanyContact[]
   sourcesClients: string[]
+  frame_colors: string[]
+  glass_colors: string[]
+  glass_types: string[]
+  glass_coatings: string[]
+  languages: string[]
 }) => {
   const inputRef = useRef<google.maps.places.SearchBox | null>(null)
   const libraries: any[] = ['places']
@@ -191,11 +201,12 @@ const OrderQualifiedForm = ({
     value: values.source ?? '',
     label: sources.find(source => source.name === values.source)?.name ?? ''
   }
+
 const selectedSourceClients: SingleValue<OptionType> = {
     value: values.source ?? '',
     label: sourcesClients.find((source) => source === values.source) ?? ''
   }
-  //console.log('selectedStatus', selectedStatus)
+  console.log('frame_colors ->', frame_colors)
   return (
     <>
       <Form className='space-y-5'>
@@ -229,7 +240,6 @@ const selectedSourceClients: SingleValue<OptionType> = {
             </Field>
             {(submitCount && errors.order_type) ? <InputError message={errors.order_type} className="mt-2" /> : ''}
             </div>
-             
              <div className={submitCount ? (errors.name) ? 'has-error' : 'has-success' : ''}>
                 <label htmlFor="name">Order Name</label>
                 <Field
@@ -327,6 +337,30 @@ const selectedSourceClients: SingleValue<OptionType> = {
                     </div>
                     {(submitCount && errors.client_id) ? <InputError message={errors.client_id} className="mt-2" /> : null}
                   </div>
+                  <div className={submitCount ? (errors.schedule_appointment) ? 'has-error' : 'has-success' : ''}>
+                           <label htmlFor="schedule_appointment">Appointment Date</label>
+                           <Flatpickr
+                             options={{
+                               enableTime: true,
+                               dateFormat: 'Y-m-d H:i'
+                             }}
+                             name="schedule_appointment"
+                             className="form-input"
+                             value={values.schedule_appointment ?? ''}
+                             onChange={([date]) => {
+                               if (!date) return
+                               const year = date.getFullYear()
+                               const month = String(date.getMonth() + 1).padStart(2, '0') // Meses empiezan en 0
+                               const day = String(date.getDate()).padStart(2, '0')
+                               const hours = String(date.getHours()).padStart(2, '0')
+                               const minutes = String(date.getMinutes()).padStart(2, '0')
+                               // Combinar en el formato deseado
+                               const formattedDate = `${year}-${month}-${day} ${hours}:${minutes}`
+                               setFieldValue('schedule_appointment', formattedDate)
+                             }}
+                           />
+                           {(submitCount && typeof errors.schedule_appointment === 'string') ? <InputError message={errors.schedule_appointment} className="mt-2" /> : ''}
+                         </div>
              {/* <div className={submitCount ? (errors.source) ? 'has-error' : 'has-success' : ''}>
               <label htmlFor="source">Clients Source</label>
               <Select
@@ -580,7 +614,325 @@ const selectedSourceClients: SingleValue<OptionType> = {
                 placeholder='Description'
               />
             </div>
+            </div>
+        </fieldset>
+        <fieldset className='p-3 border rounded-xl'>
+        <legend className='text-lg font-semibold px-3'>Sales Information</legend>
+        <div className='grid grid-cols-1 gap-4'>
+        <fieldset className='p-3 border rounded-xl w-full'>
+          <legend className='text-sm font-semibold px-3'>Type of Work and / or Service</legend>
+          <div className="flex items-center gap-6 mt-4">
+            <div className="flex items-center gap-2">
+                <Field
+                  id="sale"
+                  name="sale"
+                  className="form-checkbox"
+                  type='checkbox'
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                    setFieldValue('sale', e.target.checked)
+                  }}
+                />
+                <label htmlFor="sale" className='font-bold inline-flex'>Sale</label>
+              </div>
+             <div className="flex items-center gap-2">
+                <Field
+                  id="installation"
+                  name="installation"
+                  className="form-checkbox"
+                  type='checkbox'
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                    setFieldValue('installation', e.target.checked)
+                  }}
+                />
+                <label htmlFor="installation" className='font-bold inline-flex'>Installation</label>
+            </div>
+            <div className="flex items-center gap-2">
+                <Field
+                  id="permit"
+                  name="permit"
+                  className="form-checkbox"
+                  type='checkbox'
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                    setFieldValue('permit', e.target.checked)
+                  }}
+                />
+                <label htmlFor="permit" className='font-bold inline-flex'>Permit</label>
+            </div>
+             <div className={submitCount ? (errors.hoa ? 'has-error' : 'has-success') : ''}>
+            <div className="flex items-center gap-2 mt-4 md:mt-0">
+              <Field
+                id="hoa"
+                name="hoa"
+                className="form-checkbox"
+                type='checkbox'
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                  setFieldValue('hoa', e.target.checked)
+                }}
+              />
+              <label htmlFor="hoa" className='font-bold inline-flex'>HOA</label>
+            </div>
+            {(submitCount && errors.hoa && typeof errors.hoa === 'string')
+              ? <InputError message={errors.hoa} className="mt-2" />
+              : null}
           </div>
+           {/* <div className="flex items-center gap-2">
+                <Field
+                  id="replacement"
+                  name="replacement"
+                  className="form-checkbox"
+                  type='checkbox'
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                    setFieldValue('replacement', e.target.checked)
+                  }}
+                />
+              <label htmlFor="replacement" className='font-bold inline-flex'>Replacement</label>
+          </div> */}
+          {/* <div className="flex items-center gap-2">
+                <Field
+                  id="new_construction"
+                  name="new_construction"
+                  className="form-checkbox"
+                  type='checkbox'
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                    setFieldValue('new_construction', e.target.checked)
+                  }}
+                />
+              <label htmlFor="new_construction" className='font-bold inline-flex'>New Construction</label>
+          </div> */}
+          <div className="flex items-center gap-2">
+                <Field
+                  id="financing"
+                  name="financing"
+                  className="form-checkbox"
+                  type='checkbox'
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                    setFieldValue('financing', e.target.checked)
+                  }}
+                />
+              <label htmlFor="financing" className='font-bold inline-flex'>Financing</label>
+          </div>
+          </div>
+        </fieldset>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        </div>
+       <fieldset className="p-3 border rounded-xl w-full col-start-1 mt-4">
+          <legend className="text-sm font-semibold px-3"> Project Specifications</legend>
+          <div className="grid grid-cols-6 gap-6 mt-4">
+            <div className={submitCount ? (errors.frame_color) ? 'has-error' : 'has-success' : ''}>
+            <label htmlFor="frame_color">Frame Color</label>
+            <Field
+              id="frame_color"
+              name="frame_color"
+              className="form-select"
+              autoComplete="frame_color"
+              placeholder='frame_color'
+              as="select"
+              onChange={(e: { target: { value: string } }) => {
+                setFieldValue('frame_color', e.target.value)
+              }}
+            >
+              <option value="">Frame Color</option>
+              {frame_colors?.map((frame_color, index) => (
+                <option key={index} value={frame_color}>{frame_color}</option>
+              ))}
+            </Field>
+            {(submitCount && errors.frame_color) ? <InputError message={errors.frame_color} className="mt-2" /> : ''}
+            </div>
+            <div className={submitCount ? (errors.glass_color) ? 'has-error' : 'has-success' : ''}>
+            <label htmlFor="glass_color">Glass Color</label>
+            <Field
+              id="glass_color"
+              name="glass_color"
+              className="form-select"
+              autoComplete="glass_color"
+              placeholder='glass_color'
+              as="select"
+              onChange={(e: { target: { value: string } }) => {
+                setFieldValue('glass_color', e.target.value)
+              }}
+            >
+              <option value="">Glass Color</option>
+              {glass_colors?.map((glass_color, index) => (
+                <option key={index} value={glass_color}>{glass_color}</option>
+              ))}
+            </Field>
+            {(submitCount && errors.glass_color) ? <InputError message={errors.glass_color} className="mt-2" /> : ''}
+            </div>
+
+            
+          <div className={submitCount ? (errors.language ? 'has-error' : 'has-success') : ''}>
+            <label htmlFor="language">Language</label>
+            <Field
+              id="language"
+              name="language"
+              className="form-select"
+              as="select"
+              onChange={(e: { target: { value: string } }) => {
+                setFieldValue('language', e.target.value)
+              }}
+            >
+              <option value="">Select Language</option>
+              {languages.map((language) => (
+                <option key={language} value={language}>
+                  {capitalizeWords(language)}
+                </option>
+              ))}
+            </Field>
+            {(submitCount && errors.language && typeof errors.language === 'string')
+              ? <InputError message={errors.language} className="mt-2" />
+              : null}
+          </div>
+          {/* <div className={submitCount ? (errors.glass_color) ? 'has-error' : 'has-success' : ''}>
+            <label htmlFor="glass_type">Glass Type</label>
+            <Field
+              id="glass_type"
+              name="glass_type"
+              className="form-select"
+              autoComplete="glass_type"
+              placeholder='glass_type'
+              as="select"
+              onChange={(e: { target: { value: string } }) => {
+                setFieldValue('glass_type', e.target.value)
+              }}
+            >
+              <option value="">Glass Type</option>
+              {glass_types?.map((glass_type, index) => (
+                <option key={index} value={glass_type}>{glass_type}</option>
+              ))}
+            </Field>
+            {(submitCount && errors.glass_type) ? <InputError message={errors.glass_type} className="mt-2" /> : ''}
+            </div>
+            <div className={submitCount ? (errors.glass_coating) ? 'has-error' : 'has-success' : ''}>
+            <label htmlFor="glass_coating">Glass Coating</label>
+            <Field
+              id="glass_coating"
+              name="glass_coating"
+              className="form-select"
+              autoComplete="glass_coating"
+              placeholder='glass_coating'
+              as="select"
+              onChange={(e: { target: { value: string } }) => {
+                setFieldValue('glass_coating', e.target.value)
+              }}
+            >
+              <option value="">Glass Coating</option>
+              {glass_coatings?.map((glass_coating, index) => (
+                <option key={index} value={glass_coating}>{glass_coating}</option>
+              ))}
+            </Field>
+            {(submitCount && errors.glass_coating) ? <InputError message={errors.glass_coating} className="mt-2" /> : ''}
+            </div> */}
+             <div className={submitCount ? (errors.door_quantity) ? 'has-error' : 'has-success' : ''}>
+              <label htmlFor="door_quantity">Door Quantity</label>
+              <Field
+                id="door_quantity"
+                name="door_quantity"
+                className="form-input text-right"
+                autoComplete="door_quantity"
+                placeholder='Door Quantity'
+                type='number'
+              />
+              {(submitCount && errors.door_quantity) ? <InputError message={errors.door_quantity} className="mt-2" /> : ''}
+            </div>
+             <div className={submitCount ? (errors.window_quantity) ? 'has-error' : 'has-success' : ''}>
+                <label htmlFor="window_quantity">Window Quantity</label>
+                <Field
+                  id="window_quantity"
+                  name="window_quantity"
+                  className="form-input text-right"
+                  autoComplete="window_quantity"
+                  placeholder='Window Quantity'
+                  type='number'
+                />
+                {(submitCount && errors.window_quantity) ? <InputError message={errors.window_quantity} className="mt-2" /> : ''}
+              </div>
+             {/* <div className="flex items-center gap-2">
+                <Field
+                  id="screen"
+                  name="screen"
+                  className="form-checkbox"
+                  type='checkbox'
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                    setFieldValue('screen', e.target.checked)
+                  }}
+                />
+              <label htmlFor="screen" className='font-bold inline-flex'>Screen</label>
+            </div>
+            <div className="flex items-center gap-2">
+                <Field
+                  id="door_design"
+                  name="door_design"
+                  className="form-checkbox"
+                  type='checkbox'
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                    setFieldValue('door_design', e.target.checked)
+                  }}
+                />
+              <label htmlFor="door_design" className='font-bold inline-flex'>Door Design</label>
+            </div>
+            <div className="flex items-center gap-2">
+              <Field
+                id="mountin"
+                name="mountin"
+                className="form-checkbox"
+                type='checkbox'
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                  setFieldValue('mountin', e.target.checked)
+                }}
+              />
+            <label htmlFor="mountin" className='font-bold inline-flex'>Mounting</label>
+          </div>
+          <div className="flex items-center gap-2">
+              <Field
+                id="bar"
+                name="bar"
+                className="form-checkbox"
+                type='checkbox'
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                  setFieldValue('bar', e.target.checked)
+                }}
+              />
+            <label htmlFor="bar" className='font-bold inline-flex'>Bar</label>
+          </div>
+          <div className="flex items-center gap-2">
+              <Field
+                id="shutter_hole"
+                name="shutter_hole"
+                className="form-checkbox"
+                type='checkbox'
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                  setFieldValue('shutter_hole', e.target.checked)
+                }}
+              />
+            <label htmlFor="shutter_hole" className='font-bold inline-flex'>Shutter Hole</label>
+          </div>
+          <div className="flex items-center gap-2">
+              <Field
+                id="floor_cutting"
+                name="floor_cutting"
+                className="form-checkbox"
+                type='checkbox'
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                  setFieldValue('floor_cutting', e.target.checked)
+                }}
+              />
+            <label htmlFor="floor_cutting" className='font-bold inline-flex'>Floor Cutting</label>
+          </div>
+          <div className="flex items-center gap-2">
+              <Field
+                id="interior_finish"
+                name="interior_finish"
+                className="form-checkbox"
+                type='checkbox'
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                  setFieldValue('interior_finish', e.target.checked)
+                }}
+              />
+            <label htmlFor="interior_finish" className='font-bold inline-flex'>Interior Finish</label>
+          </div> */}
+            </div>
+        </fieldset>
+        </div>
         </fieldset>
         <div className="flex items-center justify-between mt-4">
           <Link className='btn btn-danger uppercase' href={route('frontdesk.index')}>Cancel</Link>

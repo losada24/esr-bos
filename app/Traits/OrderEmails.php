@@ -8,6 +8,7 @@ use App\Enum\ServiceEnum;
 use App\Jobs\SendGmailEmail;
 use App\Mail\DeliveryConfirmed;
 use App\Mail\EmailAccounting;
+use App\Mail\EstimateAppointmentScheduleSaleForm;
 use App\Mail\EstimateDeliveryInstallationDate;
 use App\Mail\EstimateMaterialArrivalDate;
 use App\Mail\InstallationDateConfirmation;
@@ -48,6 +49,19 @@ trait OrderEmails {
           // Mail::to($user)->send(new EstimateMaterialArrivalDate($order));
           $estimateMaterialArrivalDate = new EstimateMaterialArrivalDate($order);
           SendGmailEmail::dispatch($user, $estimateMaterialArrivalDate)->onQueue('emails');
+        }
+      }
+    } else if ($order->status === OrderStatusEnum::ESTIMATE_APPT_SCHEDULE->value) {
+      if ($order->saleForm) {
+
+            $ownerEmails = [];
+          foreach ($order->owners as $owner) {
+            $ownerEmails[] = $owner->email;
+          }
+
+        foreach ($ownerEmails as $email) {
+          $mailable = new EstimateAppointmentScheduleSaleForm($order);
+          SendGmailEmail::dispatch($email, $mailable)->onQueue('emails');
         }
       }
     } else if ($order->status === OrderStatusEnum::DELIVERY_CONFIRMED->value) {

@@ -72,7 +72,7 @@ export default function Index ({ auth, biweeklies, biweekly_id, biweeklyTitle }:
                 return (
                   <tr key={biweekly.biweekly_id}>
                      <td className="px-6 py-4 border-t">
-                     {biweekly.installation_team.name}
+                     {biweekly.installation_team?.name}
                     </td>
                     <td className="border-t px-6 py-4">
                     <div className="flex items-center space-x-4">

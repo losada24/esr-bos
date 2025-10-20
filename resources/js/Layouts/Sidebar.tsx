@@ -120,6 +120,14 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                     </div>
                                 </NavLink>
                             </li>
+                            <li className="menu nav-item">
+                                <NavLink href={route('sales.calendar')} active={route().current('sales.calendar')} className="group">
+                                    <div className="flex items-center">
+                                        <CalendarIcon />
+                                        <SidebarLinkLabel>Sales Calendar</SidebarLinkLabel>
+                                    </div>
+                                </NavLink>
+                            </li>
                                </>
                            )}
                            {(IS_ADMIN ) && (
@@ -177,7 +185,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
 
                            </>
                             )}
-                             {(IS_SUPERVISOR) && (
+                             {(IS_SUPERVISOR || IS_OWNER) && (
                               <>
                                <li className="menu nav-item">
                                 <NavLink href={route('dashboard')} active={route().current('dashboard')} className="group">

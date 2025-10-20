@@ -1,4 +1,5 @@
 import { type User } from '@/types/interfaces/user'
+import { type CompanyContact } from '@/types/interfaces/companyContact'
 
 export interface Client {
   id: number
@@ -24,7 +25,7 @@ export interface Client {
   refer_phone?: string
   referral_id?: number
   company_contact_id?: number
-  company_contact?: CompanyContact[]
+  company_contact?: CompanyContact
 }
 
 export interface ClientAddress {
