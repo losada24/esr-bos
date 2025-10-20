@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Head, router } from '@inertiajs/react'
 import '@mobiscroll/react/dist/css/mobiscroll.min.css'
 import { Eventcalendar, getJson, setOptions } from '@mobiscroll/react'
+import type { MbscEventcalendarView } from '@mobiscroll/react'
 import AuthenticatedCalendarLayout from '@/Layouts/AuthenticatedCalendarLayout'
 import { type PageProps } from '@/types'
 
@@ -41,26 +42,19 @@ export default function SalesCalendar ({ auth, statuses, legend }: SalesCalendar
     loadEvents(currentDate)
   }, [currentDate, loadEvents])
 
-  const view = useMemo(() => {
-    if (viewMode === 'week') {
+  const view = useMemo<MbscEventcalendarView>(() => {
+    if (viewMode === 'month') {
       return {
-        schedule: {
-          type: 'week'
-        }
-      }
-    }
-
-    if (viewMode === 'day') {
-      return {
-        schedule: {
-          type: 'day'
+        calendar: {
+          type: 'month',
+          labels: eventsPerDay
         }
       }
     }
 
     return {
-      calendar: {
-        labels: eventsPerDay
+      schedule: {
+        type: viewMode
       }
     }
   }, [eventsPerDay, viewMode])
