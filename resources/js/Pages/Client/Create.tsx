@@ -6,7 +6,7 @@ import ClientForm from './ClientForm'
 import {type CompanyContact, type PageProps } from '@/types'
 import { useState, useRef } from 'react'
 import AddressModal from './AddressModal'
-import { TagItem } from '@/Components/TagPicker'
+import { type TagItem } from '@/Components/TagPicker'
 
 export default function Create ({ auth, contact_type, sources, companies,tags }: PageProps & { contact_type: string[], sources: string[], companies: CompanyContact[], tags: TagItem[],}) {
   const formikRef = useRef<any>()

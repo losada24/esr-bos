@@ -5,7 +5,12 @@ namespace App\Http\Controllers;
 use App\Actions\CreateOrderPipeline;
 use App\Actions\CreateQualifiedOrder;
 use App\Enum\ContactSourceEnum;
+use App\Enum\FrameColorEnum;
 use App\Enum\FrontdeskStatusEnum;
+use App\Enum\GlassCoatingEnum;
+use App\Enum\GlassColorEnum;
+use App\Enum\GlassTypeEnum;
+use App\Enum\LanguageEnum;
 use App\Enum\LostReasonfrontdeskEnum;
 use App\Enum\OrderStatusEnum;
 use App\Enum\OrderTypeEnum;
@@ -18,12 +23,14 @@ use Illuminate\Http\Request;
 use App\Models\InstallationTeam;
 use App\Models\Order;
 use App\Models\OrderStatus;
+use App\Models\SaleForm;
 use App\Models\Source;
 use App\Models\Tag;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class FrontdeskController extends Controller
 {
@@ -93,6 +100,8 @@ $data = collect($frontdeskStatuses)->map(function ($status) use ($orders, $quali
                 'client_id'   => $order->client_id ?? null,
                 'date_edited' => optional($order->updated_at)->format('M d, Y h:i A'),
                 'date'        => optional($order->created_at)->format('M d, Y h:i A'),
+                'schedule_appointment' => $order->schedule_appointment ? Carbon::parse($order->schedule_appointment)->format('M d, Y h:i A') : null,
+                'phone'       => $order->client->phone ?? null,
                 'tags'        => ($order->tags ?? collect())->map(fn($t) => [
                     'name'  => $t->name,
                     'color' => $t->color,
@@ -130,6 +139,8 @@ $data = collect($frontdeskStatuses)->map(function ($status) use ($orders, $quali
         ContactSourceEnum::PICHY_BOYS->value,
         ContactSourceEnum::GOOGLE_MY_BUSINESS->value,
       ],
+       
+      
     ]);
   }
 
@@ -158,11 +169,38 @@ $data = collect($frontdeskStatuses)->map(function ($status) use ($orders, $quali
             ContactSourceEnum::GOOGLE_MY_BUSINESS->value,
             ContactSourceEnum::PICHY_BOYS->value,
           ],
+      'frame_colors' => [
+        FrameColorEnum::BLACK->value,
+        FrameColorEnum::WHITE->value,
+        FrameColorEnum::BRONZE->value,
+        FrameColorEnum::CLEAR_ANODIZED->value,
+        FrameColorEnum::OTHERS->value,
+      ],
+      'glass_colors' => [
+        GlassColorEnum::BRONZE->value,
+        GlassColorEnum::CLEAR->value,
+        GlassColorEnum::GRAY->value,
+        GlassColorEnum::GREEN->value,
+        GlassColorEnum::OTHERS->value,
+      ],
       //dd(Source::all()),
       'order_types' => [
         OrderTypeEnum::RESIDENTIAL->value,
         OrderTypeEnum::COMMERCIAL->value,
       ],
+      'glass_coatings' => [
+        GlassCoatingEnum::LOWE70->value,
+        GlassCoatingEnum::LOWE60->value,
+      ],
+      'glass_types' => [
+        GlassTypeEnum::LAMINATED->value,
+        GlassTypeEnum::INSULATED->value,
+        GlassTypeEnum::INSULATED_LAMINATED->value,
+      ],
+      'languages' => array_map(
+        static fn (LanguageEnum $language) => $language->value,
+        LanguageEnum::cases()
+      ),
       'companies' => CompanyContact::all(),
     ]);
   }
@@ -280,7 +318,12 @@ public function showQuantifiedModal(Order $order)
   { // Obtener las órdenes por supervisor
 
     $order = Order::find($id);
-    $order->load('tags:id,name,color,taggable_id,taggable_type', 'client', 'user',  'attachments', 'orderStatus.user');
+    $order->load('tags:id,name,color,taggable_id,taggable_type', 'client.companyContact', 'user', 'owners', 'saleForm', 'attachments.user', 'orderStatus.user');
+
+    if ($order->status === OrderStatusEnum::ESTIMATE_APPT_SCHEDULE->value && !$order->saleForm) {
+      $order->saleForm()->create($this->buildSaleFormPayload($order, null));
+      $order->load('saleForm');
+    }
     $orderStatuses = OrderStatus::where('order_id', $id)
       ->with(['order', 'user'])
       ->get();
@@ -322,50 +365,99 @@ public function showQuantifiedModal(Order $order)
     ]);
   }
 
-  public function tagsUpdate(Request $request, Order $order)
-    {
-        $validated = $request->validate([
-            'tags'         => ['array'],
-            'tags.*.name'  => ['required', 'string', 'max:28'],
-            'tags.*.color' => ['nullable', 'string', 'in:none,red,orange,amber,yellow,lime,green,teal,sky,blue,indigo,violet,purple,pink,gray'],
-        ]);
+  public function saleFormPdf(Request $request, Order $order)
+  {
+    $order->load(['client.companyContact', 'owners', 'saleForm']);
 
-        // Normaliza y elimina duplicados por nombre (case-insensitive)
-        $uniqueTags = collect($validated['tags'] ?? [])
-            ->map(fn($t) => [
-                'name'  => trim($t['name']),
-                'color' => $t['color'] ?? 'gray',
-            ])
-            ->filter(fn($t) => $t['name'] !== '')
-            ->unique(fn($t) => mb_strtolower($t['name']))
-            ->values()
-            ->all();
-
-        DB::transaction(function () use ($order, $uniqueTags) {
-            $this->replaceTags($order, $uniqueTags, 'order');
-        });
-
-        return back()->with('success', 'Tags actualizados.');
+    if (!$order->saleForm) {
+      abort(404, 'Sale form not found for this order.');
     }
 
-      protected function replaceTags($model, array $tags, string $type): void
-      {
-          // ❌ Antes: ->where('taggable_type', $type)  // estaba mal
-          // ✅ Ahora: borra los tags de ESTE modelo (morph) y solo del type lógico dado
-          $model->tags()
-              ->when($type, fn($q) => $q->where('type', $type))
-              ->delete();
+    $pdf = Pdf::loadView('pdf.sale-form', [
+      'order' => $order,
+    ]);
 
-          if (!empty($tags)) {
-              $rows = array_map(fn($t) => [
-                  'name'    => $t['name'],
-                  'color'   => $t['color'] ?? 'gray',
-                  'type'    => $type,          // tu tipo lógico
-                  'user_id' => auth()->id(),
-              ], $tags);
+    $filename = 'sale-form-' . ($order->order_number ?? $order->id) . '.pdf';
 
-              $model->tags()->createMany($rows);
-          }
+    if ($request->boolean('download')) {
+      return $pdf->download($filename);
+    }
+
+    return $pdf->stream($filename, ['Attachment' => false]);
+  }
+
+  public function tagsUpdate(Request $request, Order $order)
+  {
+      $validated = $request->validate([
+          'tags'         => ['array'],
+          'tags.*.name'  => ['required', 'string', 'max:28'],
+          'tags.*.color' => ['nullable', 'string', 'in:none,red,orange,amber,yellow,lime,green,teal,sky,blue,indigo,violet,purple,pink,gray'],
+      ]);
+
+      $uniqueTags = collect($validated['tags'] ?? [])
+          ->map(fn($t) => [
+              'name'  => trim($t['name']),
+              'color' => $t['color'] ?? 'gray',
+          ])
+          ->filter(fn($t) => $t['name'] !== '')
+          ->unique(fn($t) => mb_strtolower($t['name']))
+          ->values()
+          ->all();
+
+      DB::transaction(function () use ($order, $uniqueTags) {
+          $this->replaceTags($order, $uniqueTags, 'order');
+      });
+
+      return back()->with('success', 'Tags actualizados.');
+  }
+
+  protected function replaceTags($model, array $tags, string $type): void
+  {
+      $model->tags()
+          ->when($type, fn($q) => $q->where('type', $type))
+          ->delete();
+
+      if (!empty($tags)) {
+          $rows = array_map(fn($t) => [
+              'name'    => $t['name'],
+              'color'   => $t['color'] ?? 'gray',
+              'type'    => $type,
+              'user_id' => auth()->id(),
+          ], $tags);
+
+          $model->tags()->createMany($rows);
       }
+  }
+
+  protected function buildSaleFormPayload(Order $order, ?SaleForm $existing = null): array
+  {
+      return [
+          'sale' => $existing?->sale ?? false,
+          'installation' => $existing?->installation ?? false,
+          'permit' => $existing?->permit ?? false,
+          'replacement' => $existing?->replacement ?? false,
+          'new_construction' => $existing?->new_construction ?? false,
+          'financing' => $existing?->financing ?? false,
+          'screen' => $existing?->screen ?? false,
+          'design' => $existing?->design ?? false,
+          'mountin' => $existing?->mountin ?? false,
+          'bar' => $existing?->bar ?? false,
+          'shutter_hole' => $existing?->shutter_hole ?? false,
+          'floor_cutting' => $existing?->floor_cutting ?? false,
+          'interior_finish' => $existing?->interior_finish ?? false,
+          'floor' => $existing?->floor ?? '',
+          'frame_color' => $existing?->frame_color ?? ($order->frame_color ?? ''),
+          'glass_color' => $existing?->glass_color ?? ($order->glass_color ?? ''),
+          'glass_type' => $existing?->glass_type ?? ($order->glass_type ?? ''),
+          'glass_coating' => $existing?->glass_coating ?? ($order->glass_coating ?? ''),
+          'door_quantity' => $existing?->door_quantity ?? 0,
+          'window_quantity' => $existing?->window_quantity ?? 0,
+      ];
+  }
+
+
+
 
 }
+
+  

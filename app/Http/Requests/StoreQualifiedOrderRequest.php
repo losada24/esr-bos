@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Enum\ContactSourceEnum;
 use App\Enum\FrameColorEnum;
+use App\Enum\LanguageEnum;
 use App\Enum\MethodOfPayment;
 use App\Enum\OrderStatusEnum;
 use App\Enum\OrderTypeEnum;
@@ -69,6 +70,15 @@ class StoreQualifiedOrderRequest extends FormRequest
             // Client asociado requerido si hay company asociada
             'associate_client_id_1' => ['nullable','integer','exists:clients,id','required_with:associate_company_contact_id_1'],
             'associate_client_id_2' => ['nullable','integer','exists:clients,id','required_with:associate_company_contact_id_2'],  
+            'hoa' => ['nullable', 'boolean'],
+            'language' => [
+              'nullable',
+              'string',
+              Rule::in(array_map(
+                static fn (LanguageEnum $language) => $language->value,
+                LanguageEnum::cases()
+              ))
+            ],
         ];
     }
 }

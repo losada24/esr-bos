@@ -8,6 +8,8 @@ use App\Enum\FrontdeskStatusEnum;
 use App\Enum\LostReasonfrontdeskEnum;
 use App\Enum\OrderStatusEnum;
 use App\Enum\OrderTypeEnum;
+use App\Enum\MethodOfPayment;
+use App\Enum\TypeOfFinancing;
 use App\Enum\RoleEnum;
 use App\Http\Requests\StoreFrontDeskOrderRequest;
 use App\Models\Client;
@@ -15,93 +17,26 @@ use Illuminate\Http\Request;
 use App\Models\InstallationTeam;
 use App\Models\Order;
 use App\Models\User;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
+use App\Traits\OrderEmails;
+use Illuminate\Http\JsonResponse;
 
 class SalesController extends Controller
 {
+    use OrderEmails;
+
     public function index()
     {
-      /* $data = [
-        [
-          'id' => 1,
-          'title' => FrontdeskStatusEnum::NEW_CUSTOMER_REQUEST->value,
-          'tasks' => [
-            [
-              'id' => 1,
-              'title' => 'Task 1',
-              'description' => 'Description for Task 1',
-              'date' => 'Jun 18, 2023 10:00 AM',
-              'names' => 'Salome Acosta',
-              'precio'=> 1000,
-            ],
-            [
-              'id' => 2,
-              'title' => 'Task 2',
-              'description' => 'Description for Task 2',
-              'date' => 'Jun 18, 2023 10:00 AM',
-              'names' => 'Salome Acosta',
-              'precio'=> 1000,
-            ]
-          ]
-        ],
-        [
-          'id' => 2,
-          'title' => FrontdeskStatusEnum::NEW_REQUEST_FOLLOWUP->value,
-          'tasks' => [
-            [
-              'id' => 3,
-              'title' => 'Task 3',
-              'description' => 'Description for Task 3',
-              'date' => 'Jun 18, 2023 10:00 AM',
-              'names' => 'Salome Acosta',
-              'precio'=> 1000,
-            ],
-            [
-              'id' => 4,
-              'title' => 'Task 4',
-              'description' => 'Description for Task 4',
-              'date' => 'Jun 18, 2023 10:00 AM',
-              'names' => 'Salome Acosta',
-              'precio'=> 1000,
-            ]
-          ]
-        ],
-        [
-          'id' => 3,
-          'title' => FrontdeskStatusEnum::NEW_REQUEST_STANDBY->value,
-          'tasks' => [
-            [
-              'id' => 3,
-              'title' => 'Task 3',
-              'description' => 'Description for Task 3',
-              'date' => 'Jun 18, 2023 10:00 AM',
-              'tags'=> ['designing', 'development'],
-              'names' => 'Salome Acosta',
-              'precio'=> 1000,
-            ],
-            [
-              'id' => 4,
-              'title' => 'Task 4',
-              'description' => 'Description for Task 4',
-              'date' => 'Jun 18, 2023 10:00 AM',
-              'names' => 'Salome Acosta',
-              'precio'=> 1000,
-            ]
-          ]
-        ],
-      ]; */
-      // Definir los estados del Frontdesk (como strings usando el enum)
-    $salesStatuses = [
-        OrderStatusEnum::COMMERCIAL_ASSIGNMENT->value,
-        OrderStatusEnum::PENDING_ASSIGNMENT->value,
-        OrderStatusEnum::REQUEST_RE_SCHEDULE->value,
-        OrderStatusEnum::ESTIMATE_APPT_SCHEDULE->value,
-        OrderStatusEnum::FOLLOW_UP->value,
-        OrderStatusEnum::FOLLOW_UP_PROJECTS->value,
-        OrderStatusEnum::STAND_BY->value,
-        OrderStatusEnum::PRE_CONTRACT_APPOINTMENT->value,
-        OrderStatusEnum::CONTRACT_SIGNED_BY_CLIENT->value,
-    ];
+        $user = auth()->user();
+
+    $salesStatuses = $this->salesStatuses();
+    $ownerVisibleStatuses = $this->ownerVisibleSalesStatuses();
+
+    $visibleStatuses = $salesStatuses;
     $lossReasonFrontdesk = [
         LostReasonfrontdeskEnum::NO_RESPONSE_FROM_CLIENT->value,
         LostReasonfrontdeskEnum::CLIENT_NOT_INTERESTED->value,
@@ -128,13 +63,24 @@ class SalesController extends Controller
    
 
     // Obtener órdenes con esos estados y sus relaciones necesarias
-    $orders = Order::with('client', 'user') // si tienes relación con el cliente
-        ->whereIn('status', $salesStatuses)
+    $ordersQuery = Order::with('client.companyContact', 'user', 'owners')
+        ->whereIn('status', $salesStatuses);
+
+    if ($this->isOwnerRestricted($user)) {
+        $visibleStatuses = $ownerVisibleStatuses;
+
+        $ordersQuery->whereHas('owners', function ($query) use ($user) {
+            $query->where('users.id', $user->id);
+        });
+    }
+
+    $orders = $ordersQuery
+        ->whereIn('status', $visibleStatuses)
         ->get()
         ->groupBy('status');
 
     // Armar el arreglo que espera el componente React
-    $data = collect($salesStatuses)->map(function ($status) use ($orders) {
+    $data = collect($visibleStatuses)->map(function ($status) use ($orders) {
         $ordersByStatus = $orders[$status] ?? collect();
 
         return [
@@ -150,6 +96,22 @@ class SalesController extends Controller
                     'date' => optional($order->created_at)->format('M d, Y h:i A'),
                     //'names' => $order->user->name ?? 'No Name',
                     //'precio' => $order->price ?? 0,
+                    'schedule_appointment' => $order->schedule_appointment ? Carbon::parse($order->schedule_appointment)->format('M d, Y h:i A') : null,
+                    'schedule_appointment_iso' => $order->schedule_appointment ? Carbon::parse($order->schedule_appointment)->format('Y-m-d\TH:i') : null,
+                    'phone'=> $order->client->phone ?? null,
+                    'project_amount' => $order->project_amount ? (float) $order->project_amount : 0,
+                    'down_payment' => $order->down_payment ? (float) $order->down_payment : null,
+                    'job_address' => $order->job_address ?? null,
+                    'city' => $order->city ?? null,
+                    'job_state' => $order->job_state ?? null,
+                    'job_zip' => $order->job_zip ?? null,
+                    'method_of_payment' => $order->method_of_payment ?? null,
+                    'type_of_financing' => $order->type_of_financing ?? null,
+                    'owner_ids' => $order->owners->pluck('id')->values(),
+                    'owners' => $order->owners->map(fn ($owner) => [
+                      'id' => $owner->id,
+                      'name' => $owner->name,
+                    ])->values(),
                     'tags'       => ($order->tags ?? collect())->map(function ($t) {
                     return [
                         'name'  => $t->name,
@@ -161,14 +123,163 @@ class SalesController extends Controller
         ];
     });
 
-      return Inertia::render('Sales/Index', [
-        'data' => $data,
-        'lossReasonFrontdesk' => $lossReasonFrontdesk,
-        'sources' => $sources,
-        'order_types' => $order_types,
-      ]);
+      $ownerOptions = User::role(RoleEnum::OWNER->value)
+          ->select('id', 'name')
+          ->orderBy('name');
+
+      if ($this->isOwnerRestricted($user)) {
+          $ownerOptions->where('id', $user->id);
+      }
+
+    return Inertia::render('Sales/Index', [
+      'data' => $data,
+      'lossReasonFrontdesk' => $lossReasonFrontdesk,
+      'sources' => $sources,
+      'order_types' => $order_types,
+      'owners' => $ownerOptions->get(),
+      'methods_of_payment' => array_map(fn (MethodOfPayment $method) => $method->value, MethodOfPayment::cases()),
+      'type_of_financing' => array_map(fn (TypeOfFinancing $financing) => $financing->value, TypeOfFinancing::cases()),
+    ]);
+  }
+
+  public function calendar()
+  {
+    $user = auth()->user();
+
+    $statuses = $this->salesStatuses();
+    if ($this->isOwnerRestricted($user)) {
+      $statuses = $this->ownerVisibleSalesStatuses();
     }
-    public function create()
+
+    $legend = collect($statuses)->map(fn ($status) => [
+      'label' => $status,
+      'color' => $this->salesStatusColor($status),
+    ])->values();
+
+    return Inertia::render('Sales/Calendar', [
+      'statuses' => $statuses,
+      'legend' => $legend,
+    ]);
+  }
+
+  public function calendarEvents(Request $request, int $year, int $month): JsonResponse
+  {
+    $user = auth()->user();
+    $statusFilter = $request->query('status');
+
+    $allowedStatuses = $this->salesStatuses();
+    if ($this->isOwnerRestricted($user)) {
+      $allowedStatuses = $this->ownerVisibleSalesStatuses();
+    }
+
+    $start = Carbon::createFromDate($year, $month, 1)->startOfMonth()->subWeek();
+    $end = Carbon::createFromDate($year, $month, 1)->endOfMonth()->addWeek();
+
+    $ordersQuery = Order::with(['client', 'owners'])
+      ->whereNotNull('schedule_appointment')
+      ->whereBetween('schedule_appointment', [$start, $end])
+      ->whereIn('status', $allowedStatuses);
+
+    if (!empty($statusFilter) && $statusFilter !== 'all') {
+      if (!in_array($statusFilter, $allowedStatuses, true)) {
+        return response()->json([]);
+      }
+      $ordersQuery->where('status', $statusFilter);
+    }
+
+    if ($this->isOwnerRestricted($user)) {
+      $ordersQuery->whereHas('owners', function ($query) use ($user) {
+        $query->where('users.id', $user->id);
+      });
+    }
+
+    $events = $ordersQuery->get()->map(function (Order $order) {
+      $start = Carbon::parse($order->schedule_appointment);
+      $end = (clone $start)->addHour();
+
+      $clientName = $order->client->name ?? 'Client';
+      $title = ($order->name ?? 'Order') . ' - ' . $start->format('h:i A');
+      $tooltipParts = [
+        'Client: ' . $clientName,
+        'Status: ' . $order->status,
+      ];
+      if (!empty($order->city)) {
+        $tooltipParts[] = 'City: ' . $order->city;
+      }
+      $tooltip = implode(' | ', $tooltipParts);
+
+      return [
+        'order_id' => $order->id,
+        'title' => $title,
+        'tooltip' => $tooltip,
+        'start' => $start->format('Y-m-d\TH:i'),
+        'end' => $end->format('Y-m-d\TH:i'),
+        'color' => $this->salesStatusColor($order->status),
+        'type_of_event' => $order->status,
+      ];
+    });
+
+    return response()->json($events);
+  }
+
+  private function salesStatuses(): array
+  {
+    return [
+      OrderStatusEnum::COMMERCIAL_ASSIGNMENT->value,
+      OrderStatusEnum::PENDING_ASSIGNMENT->value,
+      OrderStatusEnum::REQUEST_RE_SCHEDULE->value,
+      OrderStatusEnum::ESTIMATE_APPT_SCHEDULE->value,
+      OrderStatusEnum::FOLLOW_UP->value,
+      OrderStatusEnum::FOLLOW_UP_PROJECTS->value,
+      OrderStatusEnum::STAND_BY->value,
+      OrderStatusEnum::PRE_CONTRACT_APPOINTMENT->value,
+      OrderStatusEnum::CONTRACT_SIGNED_BY_CLIENT->value,
+      OrderStatusEnum::LOST_CONTRACT->value,
+    ];
+  }
+
+  private function ownerVisibleSalesStatuses(): array
+  {
+    return [
+      OrderStatusEnum::ESTIMATE_APPT_SCHEDULE->value,
+      OrderStatusEnum::FOLLOW_UP->value,
+      OrderStatusEnum::FOLLOW_UP_PROJECTS->value,
+      OrderStatusEnum::STAND_BY->value,
+      OrderStatusEnum::PRE_CONTRACT_APPOINTMENT->value,
+      OrderStatusEnum::CONTRACT_SIGNED_BY_CLIENT->value,
+      OrderStatusEnum::LOST_CONTRACT->value,
+    ];
+  }
+
+  private function isOwnerRestricted(?User $user): bool
+  {
+    if (!$user) {
+      return false;
+    }
+
+    return $user->hasRole(RoleEnum::OWNER->value) && !$user->hasAnyRole([
+      RoleEnum::ADMIN->value,
+      RoleEnum::ACCOUNT_MANAGER->value,
+    ]);
+  }
+
+  private function salesStatusColor(string $status): string
+  {
+    return [
+      OrderStatusEnum::COMMERCIAL_ASSIGNMENT->value => '#2563eb',
+      OrderStatusEnum::PENDING_ASSIGNMENT->value => '#7c3aed',
+      OrderStatusEnum::REQUEST_RE_SCHEDULE->value => '#f97316',
+      OrderStatusEnum::ESTIMATE_APPT_SCHEDULE->value => '#0ea5e9',
+      OrderStatusEnum::FOLLOW_UP->value => '#22c55e',
+      OrderStatusEnum::FOLLOW_UP_PROJECTS->value => '#16a34a',
+      OrderStatusEnum::STAND_BY->value => '#facc15',
+      OrderStatusEnum::PRE_CONTRACT_APPOINTMENT->value => '#ec4899',
+      OrderStatusEnum::CONTRACT_SIGNED_BY_CLIENT->value => '#14b8a6',
+      OrderStatusEnum::LOST_CONTRACT->value => '#ef4444',
+    ][$status] ?? '#6b7280';
+  }
+
+  public function create()
   {
     return Inertia::render('Frontdesk/Create', [
       'clients' => Client::all(),
@@ -215,8 +326,391 @@ class SalesController extends Controller
     return response()->json(['success' => true, 'order' => $order]);
 }
 
+  public function assignEstimate(Request $request, Order $order)
+  {
+    $validated = $request->validate([
+      'schedule_appointment' => ['required', 'date'],
+      'owner_ids' => ['array'],
+      'owner_ids.*' => ['integer', Rule::exists('users', 'id')],
+    ]);
+
+   // $send = new OrderEmails();
+
+    $order->load('saleForm');
+    $existingSaleForm = $order->saleForm;
+
+    DB::transaction(function () use ($order, $validated, $existingSaleForm) {
+      $order->schedule_appointment = $validated['schedule_appointment'] ?? null;
+      $order->status = OrderStatusEnum::ESTIMATE_APPT_SCHEDULE->value;
+      $order->save();
+
+
+      if (array_key_exists('owner_ids', $validated)) {
+        $order->owners()->sync($validated['owner_ids']);
+      }
+
+      $order->orderStatus()->create([
+        'status' => OrderStatusEnum::ESTIMATE_APPT_SCHEDULE->value,
+        'user_id' => auth()->id(),
+        'notes' => OrderStatusEnum::ESTIMATE_APPT_SCHEDULE->value . ' updated by ' . auth()->user()->name,
+      ]);
+
+      $saleFormPayload = [
+        'sale' => $existingSaleForm->sale ?? false,
+        'installation' => $existingSaleForm->installation ?? false,
+        'permit' => $existingSaleForm->permit ?? false,
+        'replacement' => $existingSaleForm->replacement ?? false,
+        'new_construction' => $existingSaleForm->new_construction ?? false,
+        'financing' => $existingSaleForm->financing ?? false,
+        'screen' => $existingSaleForm->screen ?? false,
+        'design' => $existingSaleForm->design ?? false,
+        'mountin' => $existingSaleForm->mountin ?? false,
+        'bar' => $existingSaleForm->bar ?? false,
+        'shutter_hole' => $existingSaleForm->shutter_hole ?? false,
+        'floor_cutting' => $existingSaleForm->floor_cutting ?? false,
+        'interior_finish' => $existingSaleForm->interior_finish ?? false,
+        'floor' => $existingSaleForm->floor ?? '',
+        'frame_color' => $existingSaleForm->frame_color ?? ($order->frame_color ?? ''),
+        'glass_color' => $existingSaleForm->glass_color ?? ($order->glass_color ?? ''),
+        'glass_type' => $existingSaleForm->glass_type ?? ($order->glass_type ?? ''),
+        'glass_coating' => $existingSaleForm->glass_coating ?? ($order->glass_coating ?? ''),
+        'door_quantity' => $existingSaleForm->door_quantity ?? 0,
+        'window_quantity' => $existingSaleForm->window_quantity ?? 0,
+      ];
+
+      $order->saleForm()->updateOrCreate([], $saleFormPayload);
+    });
+
+    $order->load('owners', 'saleForm', 'notes.user');
+
+    $this->sendEmail($order);
+
+    $schedule = $order->schedule_appointment
+      ? Carbon::parse($order->schedule_appointment)
+      : null;
+      
+    return response()->json([
+      'order' => [
+        'id' => $order->id,
+        'status' => $order->status,
+        'schedule_appointment' => $schedule ? $schedule->format('M d, Y h:i A') : null,
+        'schedule_appointment_iso' => $schedule ? $schedule->format('Y-m-d\TH:i') : null,
+        'owner_ids' => $order->owners->pluck('id')->values(),
+        'owners' => $order->owners->map(fn ($owner) => [
+          'id' => $owner->id,
+          'name' => $owner->name,
+        ])->values(),
+        'has_sale_form' => $order->saleForm !== null,
+      ],
+    ]);
+  }
+
+  public function assignFollowUp(Request $request, Order $order)
+    {
+        $validated = $request->validate([
+          'status' => ['required', Rule::in([
+            OrderStatusEnum::FOLLOW_UP->value,
+            OrderStatusEnum::FOLLOW_UP_PROJECTS->value,
+          ])],
+          'project_amount' => ['required', 'numeric', 'min:1'],
+          'note' => ['nullable', 'string'],
+          'attachments' => ['required', 'array'],
+          'attachments.*' => ['file', 'max:10240', 'mimes:pdf'],
+        ]);
+
+        DB::transaction(function () use ($order, $validated, $request) {
+          $order->project_amount = $validated['project_amount'];
+          $order->status = $validated['status'];
+          $order->save();
+
+          $order->orderStatus()->create([
+            'status' => $order->status,
+            'user_id' => auth()->id(),
+            'notes' => $order->status . ' updated by ' . auth()->user()->name,
+          ]);
+
+          $order->notes()->create([
+            'content' => $validated['note'],
+            'type' => 'order_note',
+            'user_id' => auth()->id(),
+          ]);
+
+          if ($request->hasFile('attachments')) {
+            foreach ($request->file('attachments') as $file) {
+              $fileName = time() . '_' . Str::replace(' ', '_', $file->getClientOriginalName());
+              $filePath = $file->storeAs('order_files', $fileName, 'public');
+
+              $order->attachments()->create([
+                'filename' => $file->getClientOriginalName(),
+                'file_path' => $filePath,
+                'file_type' => 'order_files',
+                'user_id' => auth()->id(),
+              ]);
+            }
+          }
+        });
+
+        $order->load('owners');
+
+        $schedule = $order->schedule_appointment
+          ? Carbon::parse($order->schedule_appointment)
+          : null;
+
+        return response()->json([
+          'order' => [
+            'id' => $order->id,
+            'status' => $order->status,
+            'schedule_appointment' => $schedule ? $schedule->format('M d, Y h:i A') : null,
+            'schedule_appointment_iso' => $schedule ? $schedule->format('Y-m-d\TH:i') : null,
+            'project_amount' => $order->project_amount,
+            'owner_ids' => $order->owners->pluck('id')->values(),
+            'owners' => $order->owners->map(fn ($owner) => [
+              'id' => $owner->id,
+              'name' => $owner->name,
+            ])->values(),
+          ],
+        ]);
+      }
+
+  public function assignStandBy(Request $request, Order $order)
+  {
+    $validated = $request->validate([
+      'note' => ['required', 'string'],
+    ]);
+
+    $noteContent = trim($validated['note']);
+
+    if ($noteContent === '') {
+      return response()->json([
+        'message' => 'The note is required.',
+        'errors' => ['note' => ['The note is required.']],
+      ], 422);
+    }
+
+    DB::transaction(function () use ($order, $noteContent) {
+      $order->status = OrderStatusEnum::STAND_BY->value;
+      $order->save();
+
+      $order->orderStatus()->create([
+        'status' => $order->status,
+        'user_id' => auth()->id(),
+        'notes' => $order->status . ' updated by ' . auth()->user()->name,
+      ]);
+
+      $order->notes()->create([
+        'content' => $noteContent,
+        'type' => 'order_note',
+        'user_id' => auth()->id(),
+      ]);
+    });
+
+    $order->load('owners');
+
+    $schedule = $order->schedule_appointment
+      ? Carbon::parse($order->schedule_appointment)
+      : null;
+
+    return response()->json([
+      'order' => [
+        'id' => $order->id,
+        'status' => $order->status,
+        'schedule_appointment' => $schedule ? $schedule->format('M d, Y h:i A') : null,
+        'schedule_appointment_iso' => $schedule ? $schedule->format('Y-m-d\\TH:i') : null,
+        'owner_ids' => $order->owners->pluck('id')->values(),
+        'owners' => $order->owners->map(fn ($owner) => [
+          'id' => $owner->id,
+          'name' => $owner->name,
+        ])->values(),
+      ],
+    ]);
+  }
+
+  public function assignPreContract(Request $request, Order $order)
+  {
+    $validated = $request->validate([
+      'note' => ['nullable', 'string'],
+    ]);
+
+    $noteContent = trim($validated['note']);
+
+    /*if ($noteContent === '') {
+      return response()->json([
+        'message' => 'La nota es obligatoria.',
+        'errors' => ['note' => ['La nota es obligatoria.']],
+      ], 422);
+    }*/
+
+    DB::transaction(function () use ($order, $noteContent) {
+      $order->status = OrderStatusEnum::PRE_CONTRACT_APPOINTMENT->value;
+      $order->save();
+
+      $order->orderStatus()->create([
+        'status' => $order->status,
+        'user_id' => auth()->id(),
+        'notes' => $order->status . ' updated by ' . auth()->user()->name,
+      ]);
+
+      $order->notes()->create([
+        'content' => $noteContent,
+        'type' => 'order_note',
+        'user_id' => auth()->id(),
+      ]);
+    });
+
+    $order->load('owners');
+
+    $schedule = $order->schedule_appointment
+      ? Carbon::parse($order->schedule_appointment)
+      : null;
+
+    return response()->json([
+      'order' => [
+        'id' => $order->id,
+        'status' => $order->status,
+        'schedule_appointment' => $schedule ? $schedule->format('M d, Y h:i A') : null,
+        'schedule_appointment_iso' => $schedule ? $schedule->format('Y-m-d\\TH:i') : null,
+        'owner_ids' => $order->owners->pluck('id')->values(),
+        'owners' => $order->owners->map(fn ($owner) => [
+          'id' => $owner->id,
+          'name' => $owner->name,
+        ])->values(),
+      ],
+    ]);
+  }
+
+  public function assignContractSigned(Request $request, Order $order)
+  {
+    if ($request->has('type_of_financing') && trim((string) $request->input('type_of_financing')) === '') {
+      $request->merge(['type_of_financing' => null]);
+    }
+
+    if ($request->has('down_payment') && trim((string) $request->input('down_payment')) === '') {
+      $request->merge(['down_payment' => null]);
+    }
+
+    $validated = $request->validate([
+      'project_name' => ['required', 'string', 'max:255'],
+      'project_amount' => ['required', 'numeric', 'min:1'],
+      'job_address' => ['nullable', 'string'],
+      'city' => ['nullable', 'string', 'max:255'],
+      'job_state' => ['nullable', 'string', 'max:255'],
+      'job_zip' => ['nullable', 'string', 'max:50'],
+      'method_of_payment' => ['required', Rule::in(array_map(fn (MethodOfPayment $method) => $method->value, MethodOfPayment::cases()))],
+      'type_of_financing' => ['nullable', Rule::in(array_map(fn (TypeOfFinancing $financing) => $financing->value, TypeOfFinancing::cases()))],
+      'down_payment' => ['nullable', 'numeric', 'min:0'],
+      'attachments' => ['sometimes', 'array'],
+      'attachments.*' => ['file', 'max:10240', 'mimes:pdf'],
+    ]);
+
+    DB::transaction(function () use ($order, $validated, $request) {
+      $order->name = $validated['project_name'];
+      $order->project_amount = $validated['project_amount'];
+      $order->job_address = isset($validated['job_address']) && $validated['job_address'] !== ''
+        ? $validated['job_address']
+        : null;
+      $order->city = isset($validated['city']) && $validated['city'] !== ''
+        ? $validated['city']
+        : null;
+      $order->job_state = isset($validated['job_state']) && $validated['job_state'] !== ''
+        ? $validated['job_state']
+        : null;
+      $order->job_zip = isset($validated['job_zip']) && $validated['job_zip'] !== ''
+        ? $validated['job_zip']
+        : null;
+      $order->method_of_payment = $validated['method_of_payment'];
+      $order->type_of_financing = isset($validated['type_of_financing']) && $validated['type_of_financing'] !== null
+        ? trim($validated['type_of_financing'])
+        : null;
+      $order->down_payment = $validated['down_payment'] ?? null;
+      $order->status = OrderStatusEnum::CONTRACT_SIGNED_BY_CLIENT->value;
+      $order->save();
+
+      $order->orderStatus()->create([
+        'status' => $order->status,
+        'user_id' => auth()->id(),
+        'notes' => $order->status . ' updated by ' . auth()->user()->name,
+      ]);
+
+      if ($request->hasFile('attachments')) {
+        foreach ($request->file('attachments') as $file) {
+          $fileName = time() . '_' . Str::replace(' ', '_', $file->getClientOriginalName());
+          $filePath = $file->storeAs('order_files', $fileName, 'public');
+
+          $order->attachments()->create([
+            'filename' => $file->getClientOriginalName(),
+            'file_path' => $filePath,
+            'file_type' => 'order_files',
+            'user_id' => auth()->id(),
+          ]);
+        }
+      }
+    });
+
+    $order->load('owners');
+
+    $schedule = $order->schedule_appointment
+      ? Carbon::parse($order->schedule_appointment)
+      : null;
+
+    return response()->json([
+      'order' => [
+        'id' => $order->id,
+        'name' => $order->name,
+        'status' => $order->status,
+        'project_amount' => $order->project_amount,
+        'down_payment' => $order->down_payment,
+        'job_address' => $order->job_address,
+        'city' => $order->city,
+        'job_state' => $order->job_state,
+        'job_zip' => $order->job_zip,
+        'method_of_payment' => $order->method_of_payment,
+        'type_of_financing' => $order->type_of_financing,
+        'schedule_appointment' => $schedule ? $schedule->format('M d, Y h:i A') : null,
+        'schedule_appointment_iso' => $schedule ? $schedule->format('Y-m-d\\TH:i') : null,
+        'owner_ids' => $order->owners->pluck('id')->values(),
+        'owners' => $order->owners->map(fn ($owner) => [
+          'id' => $owner->id,
+          'name' => $owner->name,
+        ])->values(),
+      ],
+    ]);
+  }
+
+  public function assignLostContract(Request $request, Order $order)
+  {
+    $validated = $request->validate([
+      'loss_reason_frontdesk' => ['required', 'string', 'max:255'],
+      'notes' => ['nullable', 'string'],
+    ]);
+
+    DB::transaction(function () use ($order, $validated) {
+      $order->status = OrderStatusEnum::LOST_CONTRACT->value;
+      $order->loss_reason_frontdesk = $validated['loss_reason_frontdesk'];
+      $order->save();
+
+      $noteContent = 'Lost Contract: ' . $validated['loss_reason_frontdesk'];
+      if (!empty($validated['notes'])) {
+        $noteContent .= ' - ' . $validated['notes'];
+      }
+
+      $order->orderStatus()->create([
+        'status' => $order->status,
+        'user_id' => auth()->id(),
+        'notes' => $noteContent,
+      ]);
+    });
+
+    return response()->json([
+      'order' => [
+        'id' => $order->id,
+        'status' => $order->status,
+        'loss_reason_frontdesk' => $order->loss_reason_frontdesk,
+      ],
+    ]);
+  }
+
   public function updateStatusLost(Request $request, Order $order)
-{     
+{
     //dd($request->all());
     $order->status = $request->input('status');
 
@@ -238,7 +732,7 @@ public function showQuantifiedModal(Order $order)
     return response()->json($order);
 }
     
-    public function updateStatusQuantified(Request $request, Order $order)
+   /* public function updateStatusQuantified(Request $request, Order $order)
     {     
         //dd($request->all());
         $order->update([
@@ -277,6 +771,6 @@ public function showQuantifiedModal(Order $order)
 
 
         return response()->json(['success' => true, 'order' => $order]);
-    }
+    } */
 
 }

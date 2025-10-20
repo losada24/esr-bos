@@ -36,6 +36,7 @@ use App\Models\TypeOfWork;
 use App\Models\User;
 use App\Traits\OrderDates;
 use Carbon\Carbon;
+use Illuminate\Support\Str;
 use Doctrine\DBAL\Types\Type;
 
 class OrderController extends Controller
@@ -354,32 +355,80 @@ class OrderController extends Controller
       ->with('success', 'Order deleted successfully.');
   }
 
-  public function dropAttachment($id)
+  public function storeAttachment(Request $request, Order $order)
   {
+    $validated = $request->validate([
+      'attachments' => ['required', 'array'],
+      'attachments.*' => ['file', 'max:10240'],
+    ]);
 
-    // Buscar el attachment por ID
+    if ($request->hasFile('attachments')) {
+      foreach ($request->file('attachments') as $file) {
+        $fileName = time() . '_' . Str::replace(' ', '_', $file->getClientOriginalName());
+        $filePath = $file->storeAs('order_files', $fileName, 'public');
+
+        $order->attachments()->create([
+          'filename' => $file->getClientOriginalName(),
+          'file_path' => $filePath,
+          'file_type' => 'order_files',
+          'user_id' => auth()->id(),
+        ]);
+      }
+    }
+
+    $order->load('attachments.user');
+
+    return response()->json([
+      'attachments' => $order->attachments->map(fn ($attachment) => [
+        'id' => $attachment->id,
+        'filename' => $attachment->filename,
+        'file_path' => $attachment->file_path,
+        'file_type' => $attachment->file_type,
+        'created_at' => optional($attachment->created_at)->toIso8601String(),
+        'uploaded_by' => $attachment->user?->name,
+        'user_id' => $attachment->user_id,
+      ])->values(),
+      'message' => 'Attachments uploaded successfully.'
+    ], 201);
+  }
+
+  public function dropAttachment(Request $request, $id)
+  {
     $attachment = Attachment::find($id);
 
-    // Verificar si el attachment existe
     if (!$attachment) {
+      if ($request->expectsJson()) {
+        return response()->json(['message' => 'Attachment not found.'], 404);
+      }
+
       return redirect()
         ->back()
         ->with('error', 'Attachment not found');
     }
 
-    // Obtener el usuario autenticado
     $user = auth()->user();
 
-    if ($attachment->user_id === auth()->user()->id || $user->hasRole([RoleEnum::ADMIN->value, RoleEnum::ACCOUNT_MANAGER->value])) {
-      $attachment->delete();
-      return redirect()
-        ->back()
-        ->with('success', 'Order deleted successfully.');
-    } else {
+    $canDelete = $user && $attachment->user_id === $user->id;
+
+    if (!$canDelete) {
+      if ($request->expectsJson()) {
+        return response()->json(['message' => 'You do not have permission to delete this file.'], 403);
+      }
+
       return redirect()
         ->back()
         ->with('error', 'You do not have permission to delete the file.');
     }
+
+    $attachment->delete();
+
+    if ($request->expectsJson()) {
+      return response()->json(['message' => 'Attachment deleted.']);
+    }
+
+    return redirect()
+      ->back()
+      ->with('success', 'Attachment deleted successfully.');
   }
 
   public function updateDatePaid(Request $request)

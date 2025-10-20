@@ -31,6 +31,7 @@ class Order extends Model
     'order_number',
     'name',
     'job_address',
+    'job_city',
     'city_permits',
     'association_permits',
     'equipment_rental',
@@ -57,7 +58,8 @@ class Order extends Model
     'frame_color',
     'cost_delivery',
     'cost_city_fee',
-    'project_amount',
+        'project_amount',
+        'down_payment',
     'city',
     'type_of_financing',
     'payment_definition',
@@ -91,6 +93,7 @@ class Order extends Model
     'order_type',
     'bid_due_date',
     'is_supply',
+    'schedule_appointment',
   ];
 
   protected $dates = [
@@ -389,6 +392,11 @@ class Order extends Model
   {
     return $this->morphMany(Note::class, 'noteable');
   }
+
+    public function saleForm()
+    {
+        return $this->hasOne(SaleForm::class, 'order_id', 'id');
+    }
 
   public function getGrandTotalPrice()
   {

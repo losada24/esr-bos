@@ -13,6 +13,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DownloadController;
 use App\Http\Controllers\FrontdeskController;
 use App\Http\Controllers\InstallationTeamController;
+use App\Http\Controllers\OrderNoteController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SalesController;
 use App\Http\Controllers\SourceController;
@@ -75,6 +76,13 @@ Route::middleware('auth')->group(function () {
       phpinfo();
     })->name('myphpinfo');*/
 
+     Route::prefix('order/{order}')->name('order.')->group(function () {
+        Route::get('notes',  [OrderNoteController::class, 'index'])->name('notes.index');
+        Route::post('notes', [OrderNoteController::class, 'store'])->name('notes.store');
+        Route::put('notes/{note}',    [OrderNoteController::class, 'update'])->name('notes.update');
+        Route::delete('notes/{note}', [OrderNoteController::class, 'destroy'])->name('notes.destroy');
+    });
+
     Route::resource('user', UserController::class)
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value ]);
 
@@ -126,9 +134,12 @@ Route::middleware('auth')->group(function () {
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::SUPERVISOR->value .'|' . RoleEnum::SERVICE_MANAGER->value])
       ->name('dashboard.update_event');
 
+    Route::post('order/{order}/attachments', [OrderController::class, 'storeAttachment'])
+      ->middleware('auth')
+      ->name('order.attachments.store');
+
     Route::delete('order/drop_attachment/{id}', [OrderController::class, 'dropAttachment'])
-      // ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|other_roles'])
-      ->middleware('auth') 
+      ->middleware('auth')
       ->name('order.drop_attachment');
 
       Route::delete('report/drop_payment/{id}', [ReportController::class, 'dropPayment'])
@@ -211,8 +222,38 @@ Route::middleware('auth')->group(function () {
       Route::resource('frontdesk', FrontdeskController::class)->except(['show'])
         ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value ]);
 
+      Route::get('sales/calendar', [SalesController::class, 'calendar'])->name('sales.calendar');
+      Route::get('sales/calendar/events/{year}/{month}', [SalesController::class, 'calendarEvents'])->name('sales.calendar.events');
       Route::resource('sales', SalesController::class)
-    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value ]);
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::OWNER->value ]);
+
+      Route::get('/frontdesk/orders/{order}/sale-form', [FrontdeskController::class, 'saleFormPdf'])
+        ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::OWNER->value  ])
+        ->name('frontdesk.order.sale_form');
+
+      Route::post('/sales/{order}/assign-estimate', [SalesController::class, 'assignEstimate'])
+        ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value ])
+        ->name('sales.assign_estimate');
+
+      Route::post('/sales/{order}/assign-follow-up', [SalesController::class, 'assignFollowUp'])
+        ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value ])
+        ->name('sales.assign_follow_up');
+
+      Route::post('/sales/{order}/assign-stand-by', [SalesController::class, 'assignStandBy'])
+        ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value ])
+        ->name('sales.assign_stand_by');
+
+      Route::post('/sales/{order}/assign-pre-contract', [SalesController::class, 'assignPreContract'])
+        ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value ])
+        ->name('sales.assign_pre_contract');
+
+      Route::post('/sales/{order}/assign-contract-signed', [SalesController::class, 'assignContractSigned'])
+        ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value ])
+        ->name('sales.assign_contract_signed');
+
+      Route::post('/sales/{order}/assign-lost-contract', [SalesController::class, 'assignLostContract'])
+        ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value ])
+        ->name('sales.assign_lost_contract');
 
     Route::resource('source', SourceController::class)
         ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value ]);
@@ -333,7 +374,7 @@ Route::middleware('auth')->group(function () {
 
     
       Route::get('/frontdesk/order_view/{id}', [FrontdeskController::class, 'orderView'])
-      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value] )
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::OWNER->value  ])
       ->name('frontdesk.order_view');
 
       Route::patch('/frontdesk/tags_update/{order}', [FrontdeskController::class, 'tagsUpdate'])

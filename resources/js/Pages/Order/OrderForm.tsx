@@ -520,7 +520,7 @@ const OrderForm = ({
                   setFieldValue('type_of_work_id', type_of_work_id)
 
                   // TODO: RECALCULATE PRICES
-                  //console.log(orderProducts)
+                  // console.log(orderProducts)
                   if (type_of_work_id !== 0 && orderProducts.length > 0) {
                     const recalculateOrderProducts = orderProducts.map((orderProduct) => {
                       const product = {

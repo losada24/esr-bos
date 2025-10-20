@@ -14,7 +14,7 @@ import { type CompanyContact, type OptionType } from '@/types'
 import SearchIcon from '@/Components/Icons/SearchIcon'
 import PlusIcon from '@/Components/Icons/PlusIcon'
 import CompanyModal from './CompanyModal'
-import TagPicker, { TagItem } from '@/Components/TagPicker'
+import TagPicker, { type TagItem } from '@/Components/TagPicker'
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
 

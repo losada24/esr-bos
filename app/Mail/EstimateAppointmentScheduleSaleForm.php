@@ -1,0 +1,89 @@
+<?php
+
+namespace App\Mail;
+
+use App\Models\Order;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Attachment;
+use Illuminate\Mail\Mailables\Content;
+use Illuminate\Mail\Mailables\Envelope;
+use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Storage;
+
+class EstimateAppointmentScheduleSaleForm extends Mailable implements ShouldQueue
+{
+    use Queueable, SerializesModels;
+
+    protected ?string $tempAttachmentPath = null;
+
+    public function __construct(protected Order $order)
+    {
+    }
+
+    protected function ensureRelationsLoaded(): void
+    {
+        $this->order->loadMissing([
+            'saleForm',
+            'client.companyContact',
+            'owners',
+            'notes.user',
+        ]);
+    }
+
+    public function envelope(): Envelope
+    {
+        $appName = config('app.name');
+
+        return new Envelope(
+            subject: "Sale form for estimate appointment. [$appName]",
+        );
+    }
+
+    public function content(): Content
+    {
+        $this->ensureRelationsLoaded();
+
+        return new Content(
+            view: 'emails.estimate-appointment-schedule',
+            with: [
+                'order' => $this->order,
+            ],
+        );
+    }
+
+    public function attachments(): array
+    {
+        $this->ensureRelationsLoaded();
+
+        if (!$this->order->saleForm) {
+            return [];
+        }
+
+        $filename = 'sale-form-' . ($this->order->order_number ?? $this->order->id) . '.pdf';
+        $tempPath = 'tmp/' . uniqid('sale-form-') . '.pdf';
+
+        Storage::disk('public')->makeDirectory('tmp');
+
+        Pdf::loadView('pdf.sale-form', [
+            'order' => $this->order,
+        ])->save(Storage::disk('public')->path($tempPath));
+
+        $this->tempAttachmentPath = $tempPath;
+
+        return [
+            Attachment::fromStorageDisk('public', $tempPath)
+                ->as($filename)
+                ->withMime('application/pdf'),
+        ];
+    }
+
+    public function __destruct()
+    {
+        if ($this->tempAttachmentPath) {
+            Storage::disk('public')->delete($this->tempAttachmentPath);
+        }
+    }
+}

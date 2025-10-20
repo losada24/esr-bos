@@ -56,7 +56,10 @@ export interface Order {
   cost_delivery?: number
   cost_city_fee?: number
   project_amount?: number
+  down_payment?: number
   city?: string
+  job_state?: string
+  job_zip?: string
   type_of_financing?: string
   payment_definition?: boolean
   initial_payment_percentage?: number
@@ -209,6 +212,9 @@ export interface Attachment {
   filename: string
   file_path: string
   file_type: string
+  created_at?: string
+  uploaded_by?: string | null
+  user_id?: number
 }
 
 export interface TravelCost {

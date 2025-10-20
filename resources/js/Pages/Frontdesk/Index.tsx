@@ -10,7 +10,8 @@ import DeleteIcon from '@/Components/Icons/DeleteIcon'
 import LostRequestModal from './LostRequestModal'
 import QuantifiedModal from './QuantifiedModal'
 import EyeIcon from '@/Components/Icons/EyeIcon'
-import { tagClasses, TagColor } from '@/Utils/tags'
+import { tagClasses, type TagColor } from '@/Utils/tags'
+import InfoTooltip from '@/Components/InfoTooltip'
 
 export default function Frontdesk ({ auth, data, lossReasonFrontdesk, sources, order_types }: PageProps & { data: Pipelines[], lossReasonFrontdesk: string [], sources: string[], order_types: string[] }) {
   const IS_ADMIN = isAdmin(auth.user.roles.map((role: Role) => role.name))
@@ -79,16 +80,26 @@ export default function Frontdesk ({ auth, data, lossReasonFrontdesk, sources, o
           }
     >
       <Head title="Frontdesk" />
-      <div className="'w-full h-[90vh] flex flex-col overflow-y-scroll">
-        <div className="relative pt-5">
-          <div className="overflow-x-auto w-full h-full">
-              <div className="flex gap-4 min-w-max">
+      <div className="w-full h-[calc(100vh-140px)]">
+          <div className="overflow-x-auto  overflow-y-hidden h-full">
+              <div className="flex gap-4 min-w-max h-full">
                   {projectList.map((project: any) => {
                     return (
-                      <div key={project.id} className="panel w-80 flex-none" data-group={project.id}><div className="flex flex-col mb-5">
-                        <h4 className="text-base font-semibold mb-2">{project.title} <span className="mt-1 inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] text-slate-600">
-                        {project.tasks.length} {project.tasks.length === 1 ? 'Order' : 'Orders'}
-                        </span></h4>
+                      <div key={project.id} className="panel w-80 min-w-[20rem] flex-none flex flex-col h-full overflow-y-auto overflow-x-hidden" data-group={project.id}>
+                        <div className="sticky top-0 z-20 bg-white dark:bg-[#0b1220] pt-3 pb-2 shadow-sm">
+                          <div className="flex items-start justify-between gap-3">
+                            <h4 className="flex-1 text-xs font-semibold leading-tight text-slate-700 dark:text-white mb-0">
+                              {project.title}
+                            </h4>
+                            <div className="flex flex-col items-end gap-1 text-[11px] font-semibold text-slate-600 dark:text-white shrink-0">
+                              <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide shadow-sm dark:border-white-dark/30 dark:bg-white-dark/10">
+                                <span className="text-[11px]">{project.tasks.length}</span>
+                                <span>{project.tasks.length === 1 ? 'Order' : 'Orders'}</span>
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex-1 overflow-y-auto pr-2 pt-2">
                           <ReactSortable<Tasks>
                                 list={project.tasks}
                                 setList={() => {}} // Desactivado para manejarlo manualmente
@@ -213,22 +224,22 @@ export default function Frontdesk ({ auth, data, lossReasonFrontdesk, sources, o
                                 }}
                                 ghostClass="sortable-ghost"
                                 dragClass="sortable-drag"
-                                className="connect-sorting-content min-h-[150px]"
->
+                                className="min-h-[1px] space-y-4  pt-2"
+                                >
                                 {project.tasks.map((task: any) => {
                                   console.log('tags →', task.tags)
                                   return (
                                         <div className="sortable-list " key={task.id} data-id={task.id}>
-                                            <div className="shadow bg-[#f4f4f4] dark:bg-white-dark/20 p-3 pb-5 rounded-md mb-5 space-y-3 cursor-move">
+                                            <div className="shadow bg-[#f4f4f4] dark:bg-white-dark/20 p-3 pb-4 rounded-md space-y-2 cursor-move text-xs text-slate-600">
                                                 {task.image ? <img src="/assets/images/carousel1.jpeg" alt="images" className="h-32 w-full object-cover rounded-md" /> : ''}
                                                 <div className="flex items-center justify-between w-full">
                                                   {/* Nombre + ícono */}
-                                                  <p className="flex items-center gap-2 break-all text-base font-medium">
+                                                  <p className="flex items-center gap-2 break-all text-sm font-semibold text-slate-700">
                                                   {task.title}
                                                   </p>
 
                                                   {/* Botones a la derecha */}
-                                                  <div className="flex items-center gap-2">
+                                                <div className="flex items-center gap-2 text-[11px]">
                                                 <Link
                                                   href={route('frontdesk.order_view', task.id)}
                                                   title='Order View'
@@ -243,6 +254,20 @@ export default function Frontdesk ({ auth, data, lossReasonFrontdesk, sources, o
                                                     >
                                                       <EditIcon />
                                                     </button>
+                                                    <InfoTooltip
+                                                      side="left"
+                                                      width={220}
+                                                      content={
+                                                        <div>
+                                                          <div style={{ fontWeight: 700, marginBottom: 6, fontSize: '15px', color: '#0f172a' }}>Information</div>
+                                                          <ul style={{ margin: 0, paddingLeft: 16, fontSize: '13px', color: '#1e293b', lineHeight: '1.6' }}>
+                                                            <li style={{ marginBottom: 6 }}>Phone: {task.phone ?? '—'}</li>
+                                                            <li style={{ marginBottom: 6 }}>Appt Date: {task.schedule_appointment ?? 'No Appt Scheduled'}</li>
+
+                                                          </ul>
+                                                        </div>
+                                                      }
+                                                    />
                                                   </div>
                                                 </div>
                                          <div className="flex gap-2 items-center flex-wrap">
@@ -264,7 +289,7 @@ export default function Frontdesk ({ auth, data, lossReasonFrontdesk, sources, o
                                                 ))
                                               )
                                             : (
-                                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ring-1 bg-slate-100 text-slate-600 ring-slate-200">
+                                            <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium ring-1 bg-slate-100 text-slate-600 ring-slate-200">
                                               No Tags
                                             </span>
                                               )
@@ -280,13 +305,12 @@ export default function Frontdesk ({ auth, data, lossReasonFrontdesk, sources, o
                                   )
                                 })}
                             </ReactSortable>
-                        </div>
+                            </div>
                       </div>
                     )
                   })}
                 </div>
             </div>
-          </div>
       </div>
       <LostRequestModal
         lostTask={lostTask}

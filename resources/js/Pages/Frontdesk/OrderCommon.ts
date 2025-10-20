@@ -1,4 +1,6 @@
-import { type CompanyContact, type Client, User } from '@/types'
+import { type CompanyContact, type Client, type User } from '@/types'
+import { type Attachment } from '@/types/interfaces/order'
+import { type SaleForm } from '@/types/interfaces/saleForm'
 import * as Yup from 'yup'
 
 export const orderSchema = Yup.object({
@@ -64,7 +66,12 @@ export interface Order {
   order_type?: string
   bid_due_date?: Date | null
   user: User
+  owners?: User[]
   is_supply: boolean
+  sale_form?: SaleForm
+  schedule_appointment?: Date | null
+  attachments?: Attachment[]
+  method_of_payment?: string | null
 }
 
 export type OrderFormValues = Order & {
@@ -83,6 +90,28 @@ export type OrderFormValues = Order & {
   associate_company_contact_id_1: number | null
   associate_company_contact_id_2: number | null
   company_contact?: CompanyContact[]
+  sale: boolean
+  installation: boolean
+  permit: boolean
+  replacement: boolean
+  new_construction: boolean
+  financing: boolean
+  screen: boolean
+  design: boolean
+  mountin: boolean
+  bar: boolean
+  shutter_hole: boolean
+  floor_cutting: boolean
+  interior_finish: boolean
+  hoa: boolean
+  floor: string
+  frame_color: string
+  glass_color: string
+  glass_type: string
+  glass_coating: string
+  language: string
+  door_quantity: number
+  window_quantity: number
 }
 
 export const orderFormObj: OrderFormValues = {
@@ -115,10 +144,38 @@ export const orderFormObj: OrderFormValues = {
   order_type: '',
   bid_due_date: null,
   user: null as unknown as User,
-  is_supply: false
+  is_supply: false,
+  sale: false,
+  installation: false,
+  permit: false,
+  replacement: false,
+  new_construction: false,
+  financing: false,
+  screen: false,
+  design: false,
+  mountin: false,
+  bar: false,
+  shutter_hole: false,
+  floor_cutting: false,
+  interior_finish: false,
+  hoa: false,
+  floor: '',
+  frame_color: '',
+  glass_color: '',
+  glass_type: '',
+  glass_coating: '',
+  language: '',
+  door_quantity: 0,
+  window_quantity: 0,
+  schedule_appointment: null
 }
 
 export const loadOrderFormObj = (order: Order): OrderFormValues => {
+  const rawCompanyContact = order.client?.company_contact as CompanyContact[] | CompanyContact | undefined
+  const companyContacts = rawCompanyContact
+    ? (Array.isArray(rawCompanyContact) ? rawCompanyContact : [rawCompanyContact])
+    : []
+
   return {
     id: order.id,
     client_name: order.client?.name ?? '',
@@ -139,7 +196,7 @@ export const loadOrderFormObj = (order: Order): OrderFormValues => {
     company_contact_id: order.client?.company_contact_id ?? 0,
     associate_company_contact_id_1: order.client?.company_contact_id ?? null,
     associate_company_contact_id_2: order.client?.company_contact_id ?? null,
-    company_contact: order.client?.company_contact ?? [],
+    company_contact: companyContacts,
     job_address: order.job_address ?? '',
     job_city: order.job_city ?? '',
     job_state: order.job_state ?? '',
@@ -149,6 +206,29 @@ export const loadOrderFormObj = (order: Order): OrderFormValues => {
     order_type: order.order_type ?? '',
     bid_due_date: order.bid_due_date ?? null,
     user: order.user,
-    is_supply: order.is_supply ?? false
+    is_supply: order.is_supply ?? false,
+    sale: order.sale_form ? order.sale_form.sale : false,
+    installation: order.sale_form ? order.sale_form.installation : false,
+    permit: order.sale_form ? order.sale_form.permit : false,
+    replacement: order.sale_form ? order.sale_form.replacement : false,
+    new_construction: order.sale_form ? order.sale_form.new_construction : false,
+    financing: order.sale_form ? order.sale_form.financing : false,
+    screen: order.sale_form ? order.sale_form.screen : false,
+    design: order.sale_form ? order.sale_form.design : false,
+    mountin: order.sale_form ? order.sale_form.mountin : false,
+    bar: order.sale_form ? order.sale_form.bar : false,
+    shutter_hole: order.sale_form ? order.sale_form.shutter_hole : false,
+    floor_cutting: order.sale_form ? order.sale_form.floor_cutting : false,
+    interior_finish: order.sale_form ? order.sale_form.interior_finish : false,
+    hoa: order.sale_form ? order.sale_form.hoa : false,
+    floor: order.sale_form ? order.sale_form.floor : '',
+    frame_color: order.sale_form ? order.sale_form.frame_color : '',
+    glass_color: order.sale_form ? order.sale_form.glass_color : '',
+    glass_type: order.sale_form ? order.sale_form.glass_type : '',
+    glass_coating: order.sale_form ? order.sale_form.glass_coating : '',
+    language: order.sale_form ? (order.sale_form.language ?? '') : '',
+    door_quantity: order.sale_form ? order.sale_form.door_quantity : 0,
+    window_quantity: order.sale_form ? order.sale_form.window_quantity : 0,
+    schedule_appointment: order.schedule_appointment ?? null
   }
 }
