@@ -8,4 +8,5 @@ enum ServiceEnum: string
     case INSTALLATION = 'DELIVERY AND INSTALLATION';
     case PICKUP = 'PICKUP';
     case INSTALLATION_ONLY = 'INSTALLATION';
+    case SERVICE = 'SERVICE';
 }

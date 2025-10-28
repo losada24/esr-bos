@@ -1122,7 +1122,7 @@ const OrderForm = ({
         </fieldset>
         <fieldset className='p-3 border rounded-xl'>
           <legend className='text-lg font-semibold px-3'>Product Information</legend>
-          {((values.service === SERVICES.DELIVERY_AND_INSTALLATION && values.type_of_work_id !== 0) || (values.service === SERVICES.DELIVERY_ONLY || values.service === SERVICES.PICKUP)) && (
+          {((values.service === SERVICES.DELIVERY_AND_INSTALLATION && values.type_of_work_id !== 0) || (values.service === SERVICES.DELIVERY_ONLY || values.service === SERVICES.PICKUP || values.service === SERVICES.SERVICE)) && (
             <div className='flex items-center justify-end'>
               <button onClick={(e) => {
                 e.preventDefault()

@@ -50,12 +50,20 @@ export default function Index ({ auth, orders, statuses }: IndexOrderProps) {
           auth={auth}
           pageTitle='Orders'
           actions={
-            <Link
-              className="btn btn-primary"
-              href={route('order.create')}
-            >
-              <span>Create Order</span>
-            </Link>
+            <div className="flex gap-2">
+              <Link
+                className="btn btn-primary"
+                href={route('order.create')}
+              >
+                <span>Create Order</span>
+              </Link>
+              <Link
+                className="btn btn-secondary"
+                href={route('order.create_service')}
+              >
+                <span>Create Service</span>
+              </Link>
+            </div>
           }
       >
         <Head title="Orders" />

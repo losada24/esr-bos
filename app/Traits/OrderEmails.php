@@ -32,7 +32,7 @@ trait OrderEmails {
       //$accountManager = User::role([RoleEnum::ACCOUNT_MANAGER->value])->get();
       //$users = array_merge($users, $accountManager->pluck('email')->toArray());
 
-      if ($order->service === ServiceEnum::INSTALLATION->value) {
+      if ($order->service === ServiceEnum::INSTALLATION->value || $order->service === ServiceEnum::SERVICE->value) {
         foreach ($users as $user) {
           // Mail::to($user)->send(new EstimateDeliveryInstallationDate($order));
           $estimateDeliveryInstallationDate = new EstimateDeliveryInstallationDate($order);
@@ -81,7 +81,7 @@ trait OrderEmails {
       }
     } else if ($order->status === OrderStatusEnum::CONFIRMED->value || $order->status === OrderStatusEnum::RESCHEDULE->value) {
       $users = [];
-      if ($order->service === ServiceEnum::INSTALLATION->value) {
+      if ($order->service === ServiceEnum::INSTALLATION->value || $order->service === ServiceEnum::SERVICE->value) {
         $owners = $order->owners->pluck('email')->toArray();
         foreach ($owners as $owner){
           // Mail::to($owner)->send(new InstallationDateConfirmationClient($order));

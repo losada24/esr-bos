@@ -36,7 +36,7 @@ class CreateOrder
 
       $project_amount = $request->project_amount;
 
-      if ($request->service == ServiceEnum::INSTALLATION->value || $request->service == ServiceEnum::INSTALLATION_ONLY->value) {
+      if ($request->service == ServiceEnum::INSTALLATION->value || $request->service == ServiceEnum::INSTALLATION_ONLY->value || $request->service == ServiceEnum::SERVICE->value) {
         if ($request->type_of_housing_id == 3) {
           $execution_planing_date = PlaningDateSupervisorEnum::COMMERCIAL_PROJECTS->value;
         } else if ($request->city_permits == 1) {
@@ -67,17 +67,22 @@ class CreateOrder
       }
      
       $status = $request->status;
+      $typeOfWorkId = $request->type_of_work_id ?: null;
+      $typeOfHousingId = $request->type_of_housing_id ?: null;
+      $travelCostId = $request->travel_cost_id ?: null;
+      $durationOfWorkId = $request->duration_of_work_id ?: null;
+
       $order = Order::create([
         'client_id' => $client->id,
         'user_id' => auth()->user()->id,
         'name' => $request->name,
         'job_address' => $request->job_address,
         'order_number' => $request->order_number,
-        'type_of_work_id' => $request->type_of_work_id,
-        'type_of_housing_id' => $request->type_of_housing_id,
+        'type_of_work_id' => $typeOfWorkId,
+        'type_of_housing_id' => $typeOfHousingId,
         'supervisor_id' => $request->supervisor_id,
-        'travel_cost_id' => $request->travel_cost_id,
-        'duration_of_work_id' => $request->duration_of_work_id,
+        'travel_cost_id' => $travelCostId,
+        'duration_of_work_id' => $durationOfWorkId,
         'method_of_payment' => $request->method_of_payment,
         'type_of_financing' => $request->type_of_financing,
         'service' => $request->service,
@@ -150,11 +155,20 @@ class CreateOrder
         'pickup_date' => $request->delivery_date,
       ]);
 
-      $order->installationTeams()->attach($request->installation_teams);
-      $order->owners()->attach($request->owners);
+      $installationTeams = $request->installation_teams ?? [];
+      if (!empty($installationTeams)) {
+        $order->installationTeams()->attach($installationTeams);
+      }
+
+      $owners = $request->owners ?? [];
+      if (!empty($owners)) {
+        $order->owners()->attach($owners);
+      }
       $order->syncFrameColors($request->frame_color ?? []);
 
-      foreach ($request->orderProducts as $product) {
+      $orderProductsPayload = $request->orderProducts ?? [];
+
+      foreach ($orderProductsPayload as $product) {
         $orderProduct = OrderProduct::create([
           'order_id' => $order->id,
           'product_config_id' => $product['product_config_id'],
