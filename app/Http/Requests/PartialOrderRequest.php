@@ -121,9 +121,27 @@ class PartialOrderRequest extends FormRequest
                 , ['required', 'date_format:Y-m-d',]
               ),
             ],
-          'contract_signing_date' => 'required|date_format:Y-m-d',
-          'payment_factory_date' => 'required|date_format:Y-m-d',
-          'eta_date' => 'required|date_format:Y-m-d',
+          'contract_signing_date' => [
+            Rule::when(
+              fn ($input) => ($input['service'] ?? null) !== ServiceEnum::SERVICE->value,
+              ['required', 'date_format:Y-m-d'],
+              ['nullable', 'date_format:Y-m-d']
+            )
+          ],
+          'payment_factory_date' => [
+            Rule::when(
+              fn ($input) => ($input['service'] ?? null) !== ServiceEnum::SERVICE->value,
+              ['required', 'date_format:Y-m-d'],
+              ['nullable', 'date_format:Y-m-d']
+            )
+          ],
+          'eta_date' => [
+            Rule::when(
+              fn ($input) => ($input['service'] ?? null) !== ServiceEnum::SERVICE->value,
+              ['required', 'date_format:Y-m-d'],
+              ['nullable', 'date_format:Y-m-d']
+            )
+          ],
           'installation_end_date' => 'nullable|date_format:Y-m-d',
           'delivery_date' => 'nullable|date_format:Y-m-d',
           'entry_date' => 'required|date_format:Y-m-d',

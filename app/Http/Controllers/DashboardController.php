@@ -39,7 +39,8 @@ class DashboardController extends Controller
       ServiceEnum::INSTALLATION->value,
       ServiceEnum::DELIVERY->value,
       ServiceEnum::PICKUP->value,
-      ServiceEnum::INSTALLATION_ONLY->value
+      ServiceEnum::INSTALLATION_ONLY->value,
+      ServiceEnum::SERVICE->value
     ];
 
     if ($user->hasRole(RoleEnum::ACCOUNT_MANAGER->value) || $user->hasRole(RoleEnum::ADMIN->value) || $user->hasRole(RoleEnum::OWNER->value) || $user->hasRole(RoleEnum::OWNER_ADMIN->value) ) {
@@ -224,6 +225,9 @@ class DashboardController extends Controller
     $showOnlyInstallation = $service === ServiceEnum::INSTALLATION_ONLY->value;
     $showOnlyDeliveries = $service === ServiceEnum::DELIVERY->value;
     $service_filter = $service === ServiceEnum::INSTALLATION_ONLY->value ? ServiceEnum::INSTALLATION->value : $service;
+    if ($service === ServiceEnum::SERVICE->value) {
+      $service_filter = ServiceEnum::SERVICE->value;
+    }
 
     $currentPassingDate = Carbon::parse($year . '-' . $month . '-01');
     $previewMonth = $currentPassingDate->copy()->subMonth()->startOfMonth();
@@ -301,7 +305,9 @@ class DashboardController extends Controller
         $events[] = $event;
       }
 
-      if ($order->service === ServiceEnum::INSTALLATION->value) {
+       
+
+      if ($order->service === ServiceEnum::INSTALLATION->value || $order->service === ServiceEnum::SERVICE->value) {
         /*if($order->status === OrderStatusEnum::INSPECTION->value) {
           $color = StatusColorEnum::PLANNED->value;
           $startDate = $order->inspection_date;

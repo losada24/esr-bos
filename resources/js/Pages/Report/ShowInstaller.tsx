@@ -43,6 +43,7 @@ interface OrderInstaller {
   partial_payment_installation: boolean
   final_payment_installation: boolean
   status: string
+  service: string
 }
 
 type IndexUserProps = PageProps & {
@@ -78,7 +79,7 @@ export default function ShowInstaller ({ auth, orders, installer, companyName, s
     const percentagePayment = Number(lastPayment.percentage_payment) || 0
 
     // if (percentagePayment > 0) {
-      totalPayment = Number(installerPayment) + Number(extraWork) - Number(extraDiscount) + Number(otherCost)
+    totalPayment = Number(installerPayment) + Number(extraWork) - Number(extraDiscount) + Number(otherCost)
     // }
 
     return sum + totalPayment
@@ -252,7 +253,12 @@ export default function ShowInstaller ({ auth, orders, installer, companyName, s
                       {order.status}
                     </td>
                     <td className={`px-6 py-4 border-t ${isZeroPayment ? 'bg-yellow-200' : ''}`}>
-                      {order.name}
+                      <div className="font-medium">{order.name}</div>
+                      {order.service === 'SERVICE' && (
+                        <span className="inline-flex items-center mt-1 px-2 py-0.5 text-xs font-semibold text-blue-600 border border-blue-600 bg-transparent rounded-full dark:text-blue-300 dark:border-blue-400">
+                          {order.service}
+                        </span>
+                      )}
                     </td>
                      <td className="px-6 py-4 border-t">
                       <ul>

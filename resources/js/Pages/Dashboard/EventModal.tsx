@@ -155,6 +155,7 @@ const EventModal = ({
           // const endDate = new Date(installationDate.setDate(installationDate.getDate() + duration - 1))
           setEditableData({
             entry_date: data.entry_date ?? null,
+            service: data.service ?? '',
             contract_signing_date: data.contract_signing_date ?? null,
             payment_factory_date: data.payment_factory_date ?? null,
             eta_date: data.eta_date ?? null,
@@ -208,6 +209,32 @@ const EventModal = ({
   }
 
   const [showValidationErrors, setShowValidationErrors] = useState(false)
+  const isService = event?.service === 'SERVICE'
+  const InfoItem = ({ label, children }: { label: string, children: React.ReactNode }) => (
+    <div>
+      <strong>{label}</strong>
+      <div className='mt-1 text-sm text-slate-700 dark:text-slate-200'>
+        {children}
+      </div>
+    </div>
+  )
+  const SECTION_GRID_CLASSES: Record<number, string> = {
+    1: 'grid gap-4',
+    2: 'grid gap-4 md:grid-cols-2',
+    3: 'grid gap-4 md:grid-cols-3',
+    4: 'grid gap-4 md:grid-cols-4'
+  }
+  const Section = ({ title, children, columns = 3 }: { title: string, children: React.ReactNode, columns?: 1 | 2 | 3 | 4 }) => {
+    const gridClass = SECTION_GRID_CLASSES[columns] ?? SECTION_GRID_CLASSES[3]
+    return (
+      <div className='mt-6'>
+        <h3 className='text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-3'>{title}</h3>
+        <div className={gridClass}>
+          {children}
+        </div>
+      </div>
+    )
+  }
 
   const handle = () => {
     // Actualizamos editableData con los nuevos valores
@@ -285,383 +312,319 @@ const EventModal = ({
         </div>
         <div className='p-5'>
           <div className="h-[550px] overflow-y-scroll">
+            <div className='mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide'>
+              <span className='text-slate-500 dark:text-slate-300'>Service:</span>
+              <span className='inline-flex items-center rounded-full bg-primary/15 px-4 py-1 text-primary'>
+                {event?.service ?? 'SERVICE'}
+              </span>
+            </div>
               {isVipClient && (
-                <div className='flex flex-row gap-2'>
-                  <div className='w-1/3'>
-                    <strong>Client:</strong>
-                    <div className='flex flex-row justify-start'>
-                      {event?.client?.name}
-                    </div>
-                  </div>
-                  <div className='w-1/3'>
-                    <strong>Is VIP:</strong>
-                    <div className='flex flex-row justify-start'>
-                      VIP
-                    </div>
-                  </div>
-                  <div className="w-1/3">
-                    <strong>VIP Notes:</strong>
-                    <div className="flex flex-row justify-start">
-                        {event?.client?.vip_notes
-                          ? event?.client?.vip_notes
-                          : 'No VIP notes available'}
-                    </div>
-                  </div>
-                </div>
+                <Section title='VIP Client' columns={3}>
+                  <InfoItem label='Client'>
+                    {event?.client?.name ?? 'N/A'}
+                  </InfoItem>
+                  <InfoItem label='Is VIP'>
+                    VIP
+                  </InfoItem>
+                  <InfoItem label='VIP Notes'>
+                    {event?.client?.vip_notes ?? 'No VIP notes available'}
+                  </InfoItem>
+                </Section>
               )}
-            <div className='flex flex-row gap-2'>
-              <div className='w-1/3'>
-                <strong>Order number:</strong> {`#${event?.order_number}`}
-              </div>
-              <div className='w-1/3'>
-                <strong>Name:</strong> {event?.name}
-              </div>
-              <div className='w-1/3'>
-              <strong>Address:</strong>{' '}
-                      <a
-                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${event?.job_address ?? ''}, ${event?.city ?? ''}, ${event?.job_state ?? ''}, ${event?.job_zip ?? ''}`)}`} 
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-500 underline"
-                      >
-                        {`${event?.job_address ?? ''}${event?.city ? `, ${event.city}` : ''}${event?.job_state ? `, ${event.job_state}` : ''}${event?.job_zip ? `, ${event.job_zip}` : ''}`}
-                      </a>
-              </div>
-              <div className='w-1/3'>
-                <strong>Client Phone:</strong>
-                <a href={`tel:${event?.client?.phone}`} className="text-blue-500 underline">
-                {event?.client?.phone}
-                </a>
-              </div>
-            </div>
-            <div className='flex flex-row gap-2 mt-3'>
-              <div className='w-1/3'>
-                <strong>Owner:</strong>
-                <div className='flex flex-row justify-start'>
-                  {event?.owners.map((owner) => {
-                    return <div key={owner.id} className='badge badge-outline-dark'>{owner.name}</div>
-                  })}
-                </div>
-              </div>
-              <div className='w-1/3'>
-                <strong>Service:</strong>
-                <div className='flex flex-row justify-start'>
-                  {event?.service}
-                </div>
-              </div>
-              <div className='w-1/3'>
-                <strong>Frame Color:</strong>
-                <div className='flex flex-row justify-start'>
-                {event?.order_colors && event?.order_colors.length > 0
-                  ? event.order_colors.map(c => c.name).join(', ')
-                  : ''}
-                </div>
-              </div>
-            </div>
-            <div className='flex flex-row gap-2 mt-3'>
+            <Section title='Order Overview'>
+              <InfoItem label="Order number">
+                {`#${event?.order_number ?? 'N/A'}`}
+              </InfoItem>
+              <InfoItem label="Name">
+                {event?.name ?? 'N/A'}
+              </InfoItem>
+              <InfoItem label="Address">
+                {event?.job_address ? (
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${event?.job_address ?? ''}, ${event?.city ?? ''}, ${event?.job_state ?? ''}, ${event?.job_zip ?? ''}`)}`} 
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-500 underline"
+                  >
+                    {`${event?.job_address ?? ''}${event?.city ? `, ${event.city}` : ''}${event?.job_state ? `, ${event.job_state}` : ''}${event?.job_zip ? `, ${event?.job_zip}` : ''}`}
+                  </a>
+                ) : 'N/A'}
+              </InfoItem>
+              <InfoItem label="Client Phone">
+                {event?.client?.phone ? (
+                  <a href={`tel:${event.client.phone}`} className="text-blue-500 underline">
+                    {event.client.phone}
+                  </a>
+                ) : 'N/A'}
+              </InfoItem>
+              <InfoItem label="County">
+                {event?.travel_cost?.name ?? 'N/A'}
+              </InfoItem>
+              {!isService && (
+                <>
+                  <InfoItem label="Owner">
+                    {event?.owners.length
+                      ? event.owners.map((owner) => (
+                        <span key={owner.id} className='badge badge-outline-dark mr-1'>{owner.name}</span>
+                        ))
+                      : 'N/A'}
+                  </InfoItem>
+                </>
+              )}
+            </Section>
             {(event?.service === 'DELIVERY AND INSTALLATION') && (
-              <>
-              <div className='w-1/3'>
-                <strong>Type of Housing:</strong>
-                <div className='flex flex-row justify-start'>
-                  {event?.type_of_housing?.name}
-                </div>
-              </div>
-              <div className='w-1/3'>
-                <strong>Type of Work:</strong>
-                <div className='flex flex-row justify-start'>
-                  {event?.type_of_work?.name}
-                </div>
-              </div>
-              <div className='w-1/3'>
-                <strong>County:</strong>
-                <div className='flex flex-row justify-start'>
-                  {event?.travel_cost?.name}
-                </div>
-              </div>
-              </>
+              <Section title='Installation Details'>
+                <InfoItem label='Type of Housing'>
+                  {event?.type_of_housing?.name ?? 'N/A'}
+                </InfoItem>
+                <InfoItem label='Type of Work'>
+                  {event?.type_of_work?.name ?? 'N/A'}
+                </InfoItem>
+                <InfoItem label='Frame Color'>
+                  {event?.order_colors && event?.order_colors.length > 0
+                    ? event.order_colors.map(c => c.name).join(', ')
+                    : 'N/A'}
+                </InfoItem>
+              </Section>
             )}
-            </div>
-            <div className='flex flex-row gap-2 mt-3'>
-            {(event?.service === 'DELIVERY AND INSTALLATION' && !isInstaller) && (
-              <>
-              <div className='w-1/3'>
-                <strong>Duration of Work:</strong>
-                <div className='flex flex-row justify-start'>
-                  {event?.duration_of_work?.name}
-                </div>
-              </div>
-              </>
-            )}
-             {!isInstaller && (
-              <>
-              <div className='w-1/3'>
-                <strong>Payment Method:</strong>
-                <div className='flex flex-row justify-start'>
-                  {event?.method_of_payment}
-                </div>
-              </div>
-              <div className='w-1/3'>
-                <strong>Other Cost:</strong>
-                <div className='flex flex-row justify-start'>
+            {!isInstaller && (
+              <Section title='Financial' columns={2}>
+                <InfoItem label='Payment Method'>
+                  {event?.method_of_payment ?? 'N/A'}
+                </InfoItem>
+                <InfoItem label='Other Cost'>
                   {formatPrice(event?.additional_travel_costs ?? 0)}
-                </div>
-              </div>
-              </>)}
-            </div>
+                </InfoItem>
+              </Section>
+            )}
             {(event?.service === 'DELIVERY AND INSTALLATION') && (
               <>
             <div className='flex flex-row gap-2 mt-3'>
-              <div className='w-1/3'>
-                <strong>City Permits:</strong>
-                <div className='flex flex-row justify-start'>
-                  {event?.city_permits ?? true ? 'Yes' : 'No'}
-                </div>
-              </div>
-              <div className='w-1/3'>
-                <strong>Association Permits:</strong>
-                <div className='flex flex-row justify-start'>
-                  {event?.association_permits ?? true ? 'Yes' : 'No'}
-                </div>
-              </div>
-              <div className='w-1/3'>
-                <strong>Rental Equipment:</strong>
-                <div className='flex flex-row justify-start'>
-                  {event?.equipment_rental ?? true ? 'Yes' : 'No'}
-                </div>
-              </div>
+              <Section title='Permissions & Equipment'>
+                <InfoItem label='City Permits'>
+                  {event?.city_permits ? 'Yes' : 'No'}
+                </InfoItem>
+                <InfoItem label='Association Permits'>
+                  {event?.association_permits ? 'Yes' : 'No'}
+                </InfoItem>
+                <InfoItem label='Rental Equipment'>
+                  {event?.equipment_rental ? 'Yes' : 'No'}
+                </InfoItem>
+              </Section>
             </div>
             </>
             )}
 
             {!isInstaller && (
-            <>
-            <div className='flex flex-row gap-2 mt-3'>
-              <div className='w-1/3'>
-              <label htmlFor="entry_date"><strong>Entry Date:</strong></label>
-                <Flatpickr
-                options={{
-                  mode: 'single',
-                  dateFormat: 'Y-m-d',
-                  position: 'auto right'
-                }}
-                // disabled={values.supervisor_id === ''}
-                name="entry_date"
-                value={editableData.entry_date ?? ''}
-                className="form-input"
-                disabled={!isAdminOrAccountManager}
-                onChange={([date]) => {
-                  if (date) {
-                    // Manejar la fecha seleccionada
-                    handleInputChange('entry_date', date.toISOString().slice(0, 10)) // Guardar en formato 'YYYY-MM-DD'
-                  }
-                }}
-              />
-              </div>
-              <div className='w-1/3'>
-              <label htmlFor="contract_signing_date"><strong>Contract Signing Date:</strong></label>
-              <Flatpickr
-                options={{
-                  mode: 'single',
-                  dateFormat: 'Y-m-d',
-                  position: 'auto right'
-                }}
-                disabled={!isAdminOrAccountManager}
-                name="contract_signing_date"
-                value={editableData.contract_signing_date ?? ''}
-                className="form-input"
-                onChange={([date]) => {
-                  if (date) {
-                    // Manejar la fecha seleccionada
-                    handleInputChange('contract_signing_date', date.toISOString().slice(0, 10)) // Guardar en formato 'YYYY-MM-DD'
-                  }
-                }}
-              />
-              </div>
-              <div className='w-1/3'>
-                <label htmlFor="payment_factory_date"><strong>Payment Factory Date:</strong></label>
-              <Flatpickr
-                options={{
-                  mode: 'single',
-                  dateFormat: 'Y-m-d',
-                  position: 'auto right'
-                }}
-                // disabled={values.supervisor_id === ''}
-                name="payment_factory_date"
-                disabled={!isAdminOrAccountManager}
-                value={editableData.payment_factory_date ?? ''}
-                className="form-input"
-                onChange={([date]) => {
-                  if (date) {
-                    // Manejar la fecha seleccionada
-                    handleInputChange('payment_factory_date', date.toISOString().slice(0, 10)) // Guardar en formato 'YYYY-MM-DD'
-                  }
-                }}
-              />
-              </div>
-            </div>
-            </>
-            )}
-            <div className='flex flex-row gap-2 mt-3'>
-            {!isInstaller && (
-              <div className='w-1/3'>
-              <label htmlFor="eta_date"><strong>Eta Date: </strong></label>
-              <Flatpickr
-                options={{
-                  mode: 'single',
-                  dateFormat: 'Y-m-d',
-                  position: 'auto right'
-                }}
-                // disabled={values.supervisor_id === ''}
-                name="eta_date"
-                value={editableData.eta_date ?? ''}
-                disabled={!isAdminOrAccountManager}
-                className="form-input"
-                onChange={([date]) => {
-                  if (date) {
-                    // Manejar la fecha seleccionada
-                    handleInputChange('eta_date', date.toISOString().slice(0, 10)) // Guardar en formato 'YYYY-MM-DD'
-                  }
-                }}
-              />
-              </div>)}
-              <div className='w-1/3'>
-                <label htmlFor="delivery_date"><strong>Delivery/Pickup Date:</strong></label>
-                <Flatpickr
-                options={{
-                  mode: 'single',
-                  dateFormat: 'Y-m-d',
-                  position: 'auto right'
-                }}
-                // disabled={values.supervisor_id === ''}
-                name="delivery_date"
-                disabled={!isAdminOrAccountManager}
-                value={editableData.delivery_date ?? ''}
-                className="form-input"
-                onChange={([date]) => {
-                  if (date) {
-                    // Manejar la fecha seleccionada
-                    handleInputChange('delivery_date', date.toISOString().slice(0, 10)) // Guardar en formato 'YYYY-MM-DD'
-                  }
-                }}
-              />
-              </div>
-              {(event?.service === 'DELIVERY AND INSTALLATION') && (
-              <div className='w-1/3'>
-              <label htmlFor="installation_date"><strong>Installation Date:</strong></label>
-                <Flatpickr
-                options={{
-                  mode: 'single',
-                  dateFormat: 'Y-m-d',
-                  position: 'auto right'
-                }}
-                // disabled={values.supervisor_id === ''}
-                name="installation_date"
-                value={editableData.installation_date ?? ''}
-                disabled={!isAdminOrAccountManager && !isSupervisor}
-                className="form-input"
-                onChange={([date]) => {
-                  if (date) {
-                    // Manejar la fecha seleccionada
-                    handleInputChange('installation_date', date.toISOString().slice(0, 10)) // Guardar en formato 'YYYY-MM-DD'
-                  }
-                }}
-              />
-              </div>
-              )}
-            </div>
-            <div className='flex flex-row gap-2 mt-3'>
-            {(event?.service === 'DELIVERY AND INSTALLATION') && (
-              <>
-              <div className='w-1/3'>
-                <label htmlFor="installation_end_date"><strong>Installation End Date:</strong></label>
-                <Flatpickr
-                options={{
-                  mode: 'single',
-                  dateFormat: 'Y-m-d',
-                  position: 'auto right'
-                }}
-                // disabled={values.supervisor_id === ''}
-                name="installation_end_date"
-                value={editableData.installation_end_date ?? ''}
-                disabled={!isAdminOrAccountManager}
-                className="form-input"
-                onChange={([date]) => {
-                  if (date) {
-                    // Manejar la fecha seleccionada
-                    handleInputChange('installation_end_date', date.toISOString().slice(0, 10)) // Guardar en formato 'YYYY-MM-DD'
-                  }
-                }}
-              />
-              </div>
-              <div className='w-1/3'>
-                  <label htmlFor="installationTeams"><strong>Installation Team: </strong></label>
-                  <Select
-                    id='installation_teams'
-                    placeholder="Installation Team"
-                    name='installation_teams'
-                    isDisabled={!isAdminOrAccountManager}
-                    value={editableData.installation_teams}
-                    isMulti={true}
-                    onChange={(value) => {
-                      setEditableData({ ...editableData, installation_teams: value })
+              <Section title='Scheduling'>
+                <div>
+                  <label htmlFor="entry_date" className='block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1'>Entry Date</label>
+                  <Flatpickr
+                    options={{
+                      mode: 'single',
+                      dateFormat: 'Y-m-d',
+                      position: 'auto right'
                     }}
-                    options={installation_teams.map((installation_team) => { return { label: installation_team.user?.name, value: installation_team.id } })}
+                    name="entry_date"
+                    value={editableData.entry_date ?? ''}
+                    className="form-input"
+                    disabled={!isAdminOrAccountManager}
+                    onChange={([date]) => {
+                      if (date) {
+                        handleInputChange('entry_date', date.toISOString().slice(0, 10))
+                      }
+                    }}
                   />
                 </div>
-                <div className='w-1/3'>
-                  <label htmlFor="installationTeams" className='font-bold block'>Supervisor:</label>
-                    <Select
-                      id='supervisor'
-                      placeholder="supervisor"
-                      name='supervisor'
-                      isDisabled={!isAdminOrAccountManager}
-                      value ={{ label: supervisors.find((s) => s.id === editableData.supervisor_id)?.name, value: editableData.supervisor_id }}
-                      isMulti={false}
-                      onChange={(value) => { setEditableData({ ...editableData, supervisor_id: value?.value }) }}
-                      options={supervisors.map((supervisor) => { return { label: supervisor.name, value: supervisor.id } })}
-                    />
-              </div>
-              </>
+                {!isService && (
+                  <>
+                    <div>
+                      <label htmlFor="contract_signing_date" className='block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1'>Contract Signing Date</label>
+                      <Flatpickr
+                        options={{
+                          mode: 'single',
+                          dateFormat: 'Y-m-d',
+                          position: 'auto right'
+                        }}
+                        disabled={!isAdminOrAccountManager}
+                        name="contract_signing_date"
+                        value={editableData.contract_signing_date ?? ''}
+                        className="form-input"
+                        onChange={([date]) => {
+                          if (date) {
+                            handleInputChange('contract_signing_date', date.toISOString().slice(0, 10))
+                          }
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="payment_factory_date" className='block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1'>Payment Factory Date</label>
+                      <Flatpickr
+                        options={{
+                          mode: 'single',
+                          dateFormat: 'Y-m-d',
+                          position: 'auto right'
+                        }}
+                        name="payment_factory_date"
+                        disabled={!isAdminOrAccountManager}
+                        value={editableData.payment_factory_date ?? ''}
+                        className="form-input"
+                        onChange={([date]) => {
+                          if (date) {
+                            handleInputChange('payment_factory_date', date.toISOString().slice(0, 10))
+                          }
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="eta_date" className='block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1'>Eta Date</label>
+                      <Flatpickr
+                        options={{
+                          mode: 'single',
+                          dateFormat: 'Y-m-d',
+                          position: 'auto right'
+                        }}
+                        name="eta_date"
+                        value={editableData.eta_date ?? ''}
+                        disabled={!isAdminOrAccountManager}
+                        className="form-input"
+                        onChange={([date]) => {
+                          if (date) {
+                            handleInputChange('eta_date', date.toISOString().slice(0, 10))
+                          }
+                        }}
+                      />
+                    </div>
+                  </>
+                )}
+                <div>
+                  <label htmlFor="delivery_date" className='block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1'>Delivery/Pickup Date</label>
+                  <Flatpickr
+                    options={{
+                      mode: 'single',
+                      dateFormat: 'Y-m-d',
+                      position: 'auto right'
+                    }}
+                    name="delivery_date"
+                    disabled={!isAdminOrAccountManager}
+                    value={editableData.delivery_date ?? ''}
+                    className="form-input"
+                    onChange={([date]) => {
+                      if (date) {
+                        handleInputChange('delivery_date', date.toISOString().slice(0, 10))
+                      }
+                    }}
+                  />
+                </div>
+                {(event?.service === 'DELIVERY AND INSTALLATION' || event?.service === 'SERVICE') && (
+                  <>
+                    <div>
+                      <label htmlFor="installation_date" className='block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1'>Installation Date</label>
+                      <Flatpickr
+                        options={{
+                          mode: 'single',
+                          dateFormat: 'Y-m-d',
+                          position: 'auto right'
+                        }}
+                        name="installation_date"
+                        value={editableData.installation_date ?? ''}
+                        disabled={!isAdminOrAccountManager && !isSupervisor}
+                        className="form-input"
+                        onChange={([date]) => {
+                          if (date) {
+                            handleInputChange('installation_date', date.toISOString().slice(0, 10))
+                          }
+                        }}
+                      />
+                    </div>
+                    {!isService && (
+                      <div>
+                        <label htmlFor="installation_end_date" className='block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1'>Installation End Date</label>
+                        <Flatpickr
+                          options={{
+                            mode: 'single',
+                            dateFormat: 'Y-m-d',
+                            position: 'auto right'
+                          }}
+                          name="installation_end_date"
+                          value={editableData.installation_end_date ?? ''}
+                          disabled={!isAdminOrAccountManager}
+                          className="form-input"
+                          onChange={([date]) => {
+                            if (date) {
+                              handleInputChange('installation_end_date', date.toISOString().slice(0, 10))
+                            }
+                          }}
+                        />
+                      </div>
+                    )}
+                    <div>
+                      <label htmlFor="installationTeams" className='block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1'>Installation Team</label>
+                      <Select
+                        id='installation_teams'
+                        placeholder="Installation Team"
+                        name='installation_teams'
+                        isDisabled={!isAdminOrAccountManager}
+                        value={editableData.installation_teams}
+                        isMulti={true}
+                        onChange={(value) => {
+                          setEditableData({ ...editableData, installation_teams: value })
+                        }}
+                        options={installation_teams.map((installation_team) => { return { label: installation_team.user?.name, value: installation_team.id } })}
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="supervisor" className='block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1'>Supervisor</label>
+                      <Select
+                        id='supervisor'
+                        placeholder="Supervisor"
+                        name='supervisor'
+                        isDisabled={!isAdminOrAccountManager}
+                        value={editableData.supervisor_id ? { label: supervisors.find((s) => s.id === editableData.supervisor_id)?.name, value: editableData.supervisor_id } : null}
+                        isMulti={false}
+                        onChange={(value) => { setEditableData({ ...editableData, supervisor_id: value?.value }) }}
+                        options={supervisors.map((supervisor) => ({ label: supervisor.name, value: supervisor.id }))}
+                      />
+                    </div>
+                  </>
+                )}
+              </Section>
             )}
-            </div>
 
-            {!(isInstaller || isOwner) && (
-            <>
-            <div className='flex flex-row gap-5 mt-3'>
-                    <fieldset className='p-3 border rounded-xl mt-3'>
-                    <legend className='text-lg font-semibold'>Collected Payments</legend>
-                     <div className ='flex mt-8'>
-                      <input
+            {!(isInstaller || isOwner) && !isService && (
+              <div className='flex flex-row gap-5 mt-3'>
+                <fieldset className='p-3 border rounded-xl mt-3'>
+                  <legend className='text-lg font-semibold'>Collected Payments</legend>
+                  <div className ='flex mt-8'>
+                    <input
                       id="partial_payment_installation"
                       name="partial_payment_installation"
                       className="form-checkbox"
                       type="checkbox"
-                      checked={editableData.partial_payment_installation} // Controlado por el estado
+                      checked={editableData.partial_payment_installation}
                       onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                        setEditableData({ ...editableData, partial_payment_installation: e.target.checked }) // Actualiza el estado
+                        setEditableData({ ...editableData, partial_payment_installation: e.target.checked })
                       }}
                     />
-                        <label htmlFor="partial_payment_installation" className='font-bold inline-flex'>Partial Payment Installation</label>
-                      </div>
-
-                      <div className ='flex mt-8'>
-                      <input
+                    <label htmlFor="partial_payment_installation" className='font-bold inline-flex'>Partial Payment Installation</label>
+                  </div>
+                  <div className ='flex mt-8'>
+                    <input
                       id="final_payment_installation"
                       name="final_payment_installation"
                       className="form-checkbox"
                       type="checkbox"
-                      checked={editableData.final_payment_installation} // Controlado por el estado
+                      checked={editableData.final_payment_installation}
                       onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                        setEditableData({ ...editableData, final_payment_installation: e.target.checked }) // Actualiza el estado
+                        setEditableData({ ...editableData, final_payment_installation: e.target.checked })
                       }}
                     />
-                        <label htmlFor="inspection" className='font-bold inline-flex'>Final Payment Installation</label>
-                      </div>
-                  </fieldset>
-            </div>
-            </>
-            )}
+                    <label htmlFor="inspection" className='font-bold inline-flex'>Final Payment Installation</label>
+                  </div>
+                </fieldset>
+              </div>
+            )} 
+            
             <div className='flex flex-row gap-2 mt-3'>
               <div className='w-1/3'>
                 <label htmlFor="status" className='font-bold'>Status:</label>
@@ -688,7 +651,7 @@ const EventModal = ({
                     })()}
                   />
               </div>
-              {(isAdminOrAccountManager) && (
+              {(isAdminOrAccountManager) && !isService && (
               <div className='w-1/3  mt-8'>
                    <input
                       id="hide_on_weekends"
@@ -856,7 +819,7 @@ const EventModal = ({
                 onChange={(e) => { setEditableData({ ...editableData, notes: e.target.value }) }}
               />
             </div>
-            {!(isInstaller || isOwner) && (
+            {!(isInstaller || isOwner) && !isService && (
             <>
             <div className='col-span-4'>
             <fieldset className='p-3 border rounded-xl mt-3'>
@@ -957,106 +920,75 @@ const EventModal = ({
                         }}
               />
             </div>)}
-            {attachmentsList && (event?.service === 'DELIVERY AND INSTALLATION') && (
-                <>
-               <div className='flex flex-col gap-2  mt-3'>
-               {!isInstaller && (
-                <>
-               <label htmlFor="attachments" className='font-bold'>Attachments:</label>
-               <input
-                 id="attachments"
-                 name="attachments"
-                 type="file"
-                 accept="*"
-                 className="form-input file:py-2 file:px-4 file:border-0 file:font-semibold p-0 file:bg-primary/90 ltr:file:mr-5 rtl:file:ml-5 file:text-white file:hover:bg-primary"
-                 placeholder="Qty"
-                 multiple={true}
-                 onChange={(event: any) => {
-                   setAttachmentsArray(event.currentTarget.files)
-                 }}
-               />
-               </>)}
-                 <div className="flex flex-col rounded-md border border-[#e0e6ed] dark:border-[#1b2e4b] mt-3">
-                  {message !== '' && (
-                    <div className='flex items-center p-3.5 rounded text-danger dark:bg-danger-dark-light'>{message}</div>
+            {(attachmentsList && (event?.service === 'DELIVERY AND INSTALLATION' || event?.service === 'SERVICE')) && (
+              <div className='space-y-3 mt-3'>
+                <div className='flex flex-col gap-2'>
+                  {!isInstaller && (
+                    <>
+                      <label htmlFor='attachments' className='font-bold'>Attachments:</label>
+                      <input
+                        id='attachments'
+                        name='attachments'
+                        type='file'
+                        accept='*'
+                        className='form-input file:py-2 file:px-4 file:border-0 file:font-semibold p-0 file:bg-primary/90 ltr:file:mr-5 rtl:file:ml-5 file:text-white file:hover:bg-primary'
+                        placeholder='Qty'
+                        multiple={true}
+                        onChange={(event: any) => {
+                          setAttachmentsArray(event.currentTarget.files)
+                        }}
+                      />
+                    </>
                   )}
-                  <table className='w-full whitespace-nowrap'>
-                  <tbody>
-                   {attachmentsList.map((attachment, index) => {
-                     return (
-                       <tr key={index} className='hover:bg-gray-100 focus-within:bg-gray-100'>
-
-                         <td className='border-t px-6 py-4 align-top'>{attachment.filename}</td>
-                         <td className='border-t px-6 py-4 align-top'>{attachment.file_type}</td>
-                         <td className='border-t px-6 py-4 align-top'>
-                          <div className='flex flex-row gap-2 justify-end'>
-                            <a key={attachment.id} href={route('download.file', { id: attachment.id })} target='_blank' rel="noreferrer">
-                              <ExportIcon />
-                            </a>
-                            <button
-                              onClick={(e) => {
-                                e.preventDefault()
-                                removeAttachmentProduct(index)
-                              }}
-
-                              title='Delete Attachment'
-                            >
-                              <DeleteIcon />
-                            </button>
-                          </div>
-                         </td>
-                       </tr>
-                     )
-                   })}
-                   </tbody>
-                  </table>
-                 </div>
-             </div>
-             </>
-            )}
-            {(isAdminOrAccountManager || isInstaller || isPaymentCoordinator) && (event?.service === 'DELIVERY AND INSTALLATION') && (
-              <>
-              <div className='flex flex-col gap-2  mt-3'>
-                <strong>Payment List:</strong>
-                <div className='flex flex-col justify-start'>
-                  <a href={route('order.get_payment_list', { id: event?.id ?? 0 })} target='_blank' className='badge badge-outline-dark' rel="noreferrer">Download Payment List</a>
+                  <div className='flex flex-col rounded-md border border-[#e0e6ed] dark:border-[#1b2e4b] mt-3'>
+                    {message !== '' && (
+                      <div className='flex items-center p-3.5 rounded text-danger dark:bg-danger-dark-light'>{message}</div>
+                    )}
+                    <table className='w-full whitespace-nowrap'>
+                      <tbody>
+                        {attachmentsList.map((attachment, index) => (
+                          <tr key={index} className='hover:bg-gray-100 focus-within:bg-gray-100'>
+                            <td className='border-t px-6 py-4 align-top'>{attachment.filename}</td>
+                            <td className='border-t px-6 py-4 align-top'>{attachment.file_type}</td>
+                            <td className='border-t px-6 py-4 align-top'>
+                              <div className='flex flex-row gap-2 justify-end'>
+                                <a key={attachment.id} href={route('download.file', { id: attachment.id })} target='_blank' rel='noreferrer'>
+                                  <ExportIcon />
+                                </a>
+                                <button
+                                  onClick={(e) => {
+                                    e.preventDefault()
+                                    removeAttachmentProduct(index)
+                                  }}
+                                  title='Delete Attachment'
+                                >
+                                  <DeleteIcon />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+                <div className='flex flex-col gap-2'>
+                  <strong>Payment List:</strong>
+                  <div className='flex flex-col justify-start'>
+                    <a href={route('order.get_payment_list', { id: event?.id ?? 0 })} target='_blank' className='badge badge-outline-dark' rel='noreferrer'>Download Payment List</a>
+                  </div>
                 </div>
               </div>
-             {/* <ProductTable
-                  orderProducts={orderProducts}
-                  type_of_products={type_of_products}
-                  product_category={product_category}
-                  products_config={products_config}
-                  service={values.service}
-                  values= {values}
-                  travel_costs={travel_costs}
-                  removeOrderProduct={(index: number) => { removeOrderProduct(index) }}
-                  updateOrderProduct={(index: number) => { updateOrderProduct(index) }}
-                /> */}
-              </>
             )}
-              {(isSupervisor) && (event?.service === 'DELIVERY AND INSTALLATION') && (
-              <>
-              <div className='flex flex-col gap-2  mt-3'>
+            {(isSupervisor) && (event?.service === 'DELIVERY AND INSTALLATION') && (
+              <div className='flex flex-col gap-2 mt-3'>
                 <strong>Payment List:</strong>
                 <div className='flex flex-col justify-start'>
-                  <a href={route('order.get_supervisor_list', { id: event?.id ?? 0 })} target='_blank' className='badge badge-outline-dark' rel="noreferrer">Download Payment List</a>
+                  <a href={route('order.get_supervisor_list', { id: event?.id ?? 0 })} target='_blank' className='badge badge-outline-dark' rel='noreferrer'>Download Payment List</a>
                 </div>
               </div>
-             {/* <ProductTable
-                  orderProducts={orderProducts}
-                  type_of_products={type_of_products}
-                  product_category={product_category}
-                  products_config={products_config}
-                  service={values.service}
-                  values= {values}
-                  travel_costs={travel_costs}
-                  removeOrderProduct={(index: number) => { removeOrderProduct(index) }}
-                  updateOrderProduct={(index: number) => { updateOrderProduct(index) }}
-                /> */}
-              </>
             )}
-          </div>
+          
           {showValidationErrors && (
             <div className='flex flex-row gap-2'>
               <InputError message='Please select an installation team and a supervisor' />
@@ -1071,8 +1003,10 @@ const EventModal = ({
             </div>
           )}
         </div>
+        </div>
     </Modal>
   )
 }
+
 
 export default EventModal

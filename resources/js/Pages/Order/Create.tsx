@@ -38,7 +38,9 @@ export default function Create ({
   status,
   type_of_financing,
   statusPaymentInstaller,
-  extraWorks
+  extraWorks,
+  defaultService,
+  pageTitle
 }: PageProps & {
   clients: Client[]
   owners: User[]
@@ -59,8 +61,14 @@ export default function Create ({
   type_of_financing: string[]
   statusPaymentInstaller: string
   extraWorks: Array<{ id: number, name: string }>
+  defaultService?: string
+  pageTitle?: string
 }) {
-  const initialValues: OrderFormValues = orderFormObj
+  const initialValues: OrderFormValues = {
+    ...orderFormObj,
+    service: defaultService ?? orderFormObj.service
+  }
+  const resolvedTitle = pageTitle ?? 'Create Order'
   // console.log('Initial values:', initialValues)
   const handleSubmit = async (values: any, helpers: FormikHelpers<OrderFormValues>) => {
     const order = {
@@ -90,9 +98,9 @@ export default function Create ({
   return (
       <AuthenticatedLayout
           auth={auth}
-          pageTitle="Create Order"
+          pageTitle={resolvedTitle}
       >
-          <Head title="Create Order" />
+          <Head title={resolvedTitle} />
           <Formik<OrderFormValues>
             initialValues={initialValues}
             validationSchema={orderSchema}

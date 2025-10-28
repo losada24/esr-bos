@@ -128,7 +128,8 @@ class StoreOrderRequest extends FormRequest
                 Rule::in([
                   ServiceEnum::DELIVERY->value, 
                   ServiceEnum::INSTALLATION->value,
-                  ServiceEnum::PICKUP->value
+                  ServiceEnum::PICKUP->value,
+                  ServiceEnum::SERVICE->value,
                 ]),
             ],
             'status' =>  [

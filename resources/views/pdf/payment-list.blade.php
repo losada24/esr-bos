@@ -19,7 +19,7 @@
       <div id="logo">
         <img src="{{ base_path('resources/assets/images/logo-reylos.jpg') }}">
       </div>
-      <h1>PAYMENT LIST {{ strtoupper($order->typeOfWork->name) }}</h1>
+      <h1>PAYMENT LIST {{ strtoupper(optional($order->typeOfWork)->name ?? $order->service) }}</h1>
       <div id="company" class="clearfix">
         <div><span>DATE</span> {{ Carbon\Carbon::parse($order->installation_date)->format('m/d/Y') }}</div>
       </div>

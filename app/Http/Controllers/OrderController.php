@@ -18,7 +18,9 @@ use App\Enum\SupervisorPaymentStatusEnum;
 use App\Enum\TypeOfFinancing;
 use App\Http\Requests\PartialOrderRequest;
 use App\Http\Requests\StoreOrderRequest;
+use App\Http\Requests\StoreServiceRequest;
 use App\Http\Requests\UpdateOrderRequest;
+use App\Http\Requests\UpdateServiceRequest;
 use App\Models\Attachment;
 use App\Models\Client;
 use App\Models\DurationOfWork;
@@ -110,9 +112,9 @@ class OrderController extends Controller
    *
    * @return \Illuminate\Http\Response
    */
-  public function create()
+  protected function getOrderFormData(array $services = null): array
   {
-    return Inertia::render('Order/Create', [
+    return [
       'clients' => Client::all(),
       'type_of_works' => TypeOfWork::all(),
       'types_of_housing' => TypeOfHousing::all(),
@@ -133,10 +135,10 @@ class OrderController extends Controller
         TypeOfFinancing::SLIN->value,
         TypeOfFinancing::GOOD_LEAP->value,
       ],
-      'services' => [
+      'services' => $services ?? [
         ServiceEnum::INSTALLATION->value,
         ServiceEnum::DELIVERY->value,
-        ServiceEnum::PICKUP->value
+        ServiceEnum::PICKUP->value,
       ],
       'frame_colors' => [
         FrameColorEnum::WHITE->value,
@@ -174,7 +176,34 @@ class OrderController extends Controller
         OrderStatusEnum::CONFIRMED->value,
         OrderStatusEnum::DELIVERY_CONFIRMED->value,
       ]
-    ]);
+    ];
+  }
+
+  public function create()
+  {
+    return Inertia::render('Order/Create', $this->getOrderFormData());
+  }
+
+  public function createService()
+  {
+    $data = $this->getOrderFormData([ServiceEnum::SERVICE->value]);
+    $data['defaultService'] = ServiceEnum::SERVICE->value;
+    $data['status'] = [
+      OrderStatusEnum::PLANNED->value,
+      OrderStatusEnum::CONFIRMED->value,
+      OrderStatusEnum::EXECUTION->value,
+      OrderStatusEnum::SUPERVISION->value,
+      OrderStatusEnum::FINAL_COLLECT->value,
+      OrderStatusEnum::COMPLETE->value,
+    ];
+    $data['supervisors'] = $data['supervisors']->map(function ($supervisor) {
+      return [
+        'id' => $supervisor->id,
+        'name' => $supervisor->name,
+      ];
+    })->values();
+
+    return Inertia::render('Order/CreateService', $data);
   }
 
   public function getDeliveryAndInstallationDate($payment_factory_date, $type_of_housing, $county_id, $service, $hasPermit = false)
@@ -207,12 +236,29 @@ class OrderController extends Controller
    *
    * @param  \Illuminate\Http\Request  $request
    * @return \Illuminate\Http\Response
-   */
+  */
   public function store(StoreOrderRequest $storeOrderRequest, CreateOrder $createOrder)
   {
     $createOrder->handle($storeOrderRequest);
     return redirect()->route('order.index')
       ->with('success', 'Order created successfully.');
+  }
+
+  public function storeService(StoreServiceRequest $storeServiceRequest, CreateOrder $createOrder)
+  {
+    $createOrder->handle($storeServiceRequest);
+
+    return redirect()->route('order.index')
+      ->with('success', 'Service created successfully.');
+  }
+
+  public function updateService(UpdateServiceRequest $updateServiceRequest, UpdateOrder $updateOrder, Order $order)
+  {
+    // \\Log::info('UpdateService payload', $updateServiceRequest->all());
+    $updateOrder->handle($updateServiceRequest, $order);
+
+    return redirect()->route('order.index')
+      ->with('success', 'Service updated successfully.');
   }
 
   /**
@@ -222,6 +268,38 @@ class OrderController extends Controller
    */
   public function edit(Order $order)
   {
+    if ($order->service === ServiceEnum::SERVICE->value) {
+      $data = $this->getOrderFormData([ServiceEnum::SERVICE->value]);
+      $data['defaultService'] = ServiceEnum::SERVICE->value;
+      $data['status'] = [
+        OrderStatusEnum::PLANNED->value,
+        OrderStatusEnum::CONFIRMED->value,
+        OrderStatusEnum::EXECUTION->value,
+        OrderStatusEnum::SUPERVISION->value,
+        OrderStatusEnum::FINAL_COLLECT->value,
+        OrderStatusEnum::COMPLETE->value,
+      ];
+      $data['supervisors'] = $data['supervisors']->map(function ($supervisor) {
+        return [
+          'id' => $supervisor->id,
+          'name' => $supervisor->name,
+        ];
+      })->values();
+
+      $data['order'] = $order->load([
+        'client',
+        'installationTeams.user',
+        'orderProducts.productConfig',
+        'orderProducts.productCategory',
+        'orderProducts.orderProductExtraWorks',
+        'orderProducts.typeOfWork',
+        'owners',
+        'attachments'
+      ]);
+
+      return Inertia::render('Order/EditService', $data);
+    }
+
     $status = [
       OrderStatusEnum::REVIEW->value,
       OrderStatusEnum::PLANNED->value,

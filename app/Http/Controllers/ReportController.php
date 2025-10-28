@@ -108,8 +108,11 @@ class ReportController extends Controller
       }
   
       $orders = $query->get();
+       
   } elseif ($orders instanceof Collection) {
+      
       $orders = $orders->filter(function ($order) use ($status) {
+      
           if ($status) {
               return stripos($order['supervisor_payment_status'], $status) !== false;
           } else {
@@ -120,6 +123,7 @@ class ReportController extends Controller
           }
       });
   }
+  //dd($orders);
 
     if ($name) {
       $orders = $orders->filter(function ($order) use ($name) {

@@ -29,7 +29,7 @@ trait Reports
 
     $total_amount = $orders->sum('project_amount');
     $total_commissions = $orders->sum('supervisor_commissions');
-    //dd($orders); 
+   //dd($orders); 
 
     return $orders->map(function ($order, $key) use ($total_amount, $total_commissions) {
       //dd($order->comissions); 
@@ -278,6 +278,7 @@ trait Reports
         'payment_extra_fields' => $transformedFields,
         'pending_payment_amount' => $pendingPaymentAmount,
         'total_payment_amount' => $totalPaymentAmount,
+        'service' => $order->service,
       ];
     });
   }

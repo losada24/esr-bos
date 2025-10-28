@@ -74,6 +74,7 @@ const ProductTable = ({
     const result = getProductsTotal() + getOtherCost() + getTravelCost()
     return result
   }
+  const showPricingColumns = service === SERVICES.DELIVERY_AND_INSTALLATION || service === SERVICES.SERVICE
   return (
     <div className='table-responsive mt-3'>
           <table className="w-full whitespace-nowrap">
@@ -84,7 +85,7 @@ const ProductTable = ({
                   <th className="px-6 pt-5 pb-4">Product Config</th>
                   <th className="px-6 pt-5 pb-4">Type of Work</th>
                   <th className="px-6 pt-5 pb-4 text-right">Count</th>
-                {service === SERVICES.DELIVERY_AND_INSTALLATION && (
+                {showPricingColumns && (
                   <>
                   <th className="px-6 pt-5 pb-4 text-right">Unit Price</th>
                   <th className="px-6 pt-5 pb-4 text-right">Extra Work</th>
@@ -114,7 +115,7 @@ const ProductTable = ({
               </td>
               <td className="border-t px-6 py-4 align-top text-right">{product.qty}</td>
 
-              {service === SERVICES.DELIVERY_AND_INSTALLATION && (
+              {showPricingColumns && (
                 <>
                   <td className="border-t px-6 py-4 align-top text-right">
                     {formatPrice(product.unit_price)}
@@ -193,14 +194,14 @@ const ProductTable = ({
     </td>
 
     {/* Estas celdas mantienen el espacio de las demás columnas */}
-    <td colSpan={service === SERVICES.DELIVERY_AND_INSTALLATION ? 5 : 2}></td>
+    <td colSpan={showPricingColumns ? 5 : 2}></td>
   </tr>
       )}
      </React.Fragment>
               )
 })}
             </tbody>
-            {service === SERVICES.DELIVERY_AND_INSTALLATION && (
+            {showPricingColumns && (
               <tfoot>
                 <tr>
                     <td colSpan={7} className="px-6 py-4 align-top text-right">Total</td>

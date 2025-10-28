@@ -60,7 +60,7 @@ class UpdateOrder
      
        //dd( $oldAmount, $newAmount, $order);
 
-      if ($order->service == ServiceEnum::INSTALLATION->value || $order->service == ServiceEnum::INSTALLATION_ONLY->value) {
+      if ($order->service == ServiceEnum::INSTALLATION->value || $order->service == ServiceEnum::INSTALLATION_ONLY->value || $order->service == ServiceEnum::SERVICE->value) {
         $execution_planing_date = $order->execution_planing_date;
         if ($newAmount != $oldAmount && $hasCommissions) {
           // Eliminar comisiones previas
@@ -188,13 +188,14 @@ class UpdateOrder
           ]);
         }
       }
-      $order->installationTeams()->sync($request->installation_teams);
+      $order->installationTeams()->sync($request->installation_teams ?? []);
       $order->load('installationTeams');
      
-      $order->owners()->sync($request->owners);
+      $order->owners()->sync($request->owners ?? []);
       $order->syncFrameColors($request->frame_color ?? []);
       $order->orderProducts()->delete();
-      foreach ($request->orderProducts as $product) {
+      $orderProductsPayload = $request->orderProducts ?? [];
+      foreach ($orderProductsPayload as $product) {
         $orderProduct = OrderProduct::create([
           'order_id' => $order->id,
           'product_config_id' => $product['product_config_id'],

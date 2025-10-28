@@ -47,8 +47,14 @@ class UpdateOrderRequest extends FormRequest
            //'order_number' => 'required|integer',
            'order_number' => 'required|string|max:255',
           'job_address' => 'required|string|max:255',
-          'owners' => 'required|array',
-          'owners.*' => 'required|integer|exists:users,id',
+          'owners' => [
+            Rule::when(
+              fn ($input) => $input->service == ServiceEnum::SERVICE->value,
+              ['nullable', 'array'],
+              ['required', 'array']
+            )
+          ],
+          'owners.*' => 'integer|exists:users,id',
           'type_of_work_id' =>  [
             'nullable',
              Rule::when(
@@ -64,7 +70,7 @@ class UpdateOrderRequest extends FormRequest
             ),
           ],
           'installation_teams' => 'nullable|array',
-          'installation_teams.*' => 'required|integer|exists:installation_teams,id',
+          'installation_teams.*' => 'integer|exists:installation_teams,id',
           'supervisor_id' => 'nullable|integer|exists:users,id',
           'travel_cost_id' =>[
             'nullable',
@@ -153,7 +159,8 @@ class UpdateOrderRequest extends FormRequest
               Rule::in([
                 ServiceEnum::DELIVERY->value, 
                 ServiceEnum::INSTALLATION->value,
-                ServiceEnum::PICKUP->value
+                ServiceEnum::PICKUP->value,
+                ServiceEnum::SERVICE->value,
               ]),
             ],
             'supervisor_payment_status' => [
@@ -229,18 +236,24 @@ class UpdateOrderRequest extends FormRequest
           'complete_date' => 'nullable|date_format:Y-m-d',
           'attachments' => 'nullable|array',
           'attachments.*' => 'file|mimes:jpeg,png,jpg,pdf,docx,doc,xlsx,heic|max:10240',
-          'orderProducts' => 'required|array',
-          'orderProducts.*.type_of_product_id' => 'required|integer|exists:type_of_products,id',
-          'orderProducts.*.product_category_id' => 'required|integer|exists:product_categories,id',
-          'orderProducts.*.product_config_id' => 'required|integer|exists:product_configs,id',
+          'orderProducts' => [
+            Rule::when(
+              fn ($input) => $input->service == ServiceEnum::SERVICE->value,
+              ['nullable', 'array'],
+              ['required', 'array']
+            )
+          ],
+          'orderProducts.*.type_of_product_id' => 'required_with:orderProducts|integer|exists:type_of_products,id',
+          'orderProducts.*.product_category_id' => 'required_with:orderProducts|integer|exists:product_categories,id',
+          'orderProducts.*.product_config_id' => 'required_with:orderProducts|integer|exists:product_configs,id',
           'orderProducts.*.width' => 'nullable|numeric',
           'orderProducts.*.height' => 'nullable|numeric',
-          'orderProducts.*.qty' => 'required|numeric',
-          'orderProducts.*.unit_price' => 'required|numeric',
-          'orderProducts.*.total_price' => 'required|numeric',
-          'orderProducts.*.unit_price_with_extraworks' => 'required|numeric',
-          'orderProducts.*.total_price_with_extraworks' => 'required|numeric',
-          'orderProducts.*.extra_work_price' => 'required|numeric',
+          'orderProducts.*.qty' => 'required_with:orderProducts|numeric',
+          'orderProducts.*.unit_price' => 'required_with:orderProducts|numeric',
+          'orderProducts.*.total_price' => 'required_with:orderProducts|numeric',
+          'orderProducts.*.unit_price_with_extraworks' => 'required_with:orderProducts|numeric',
+          'orderProducts.*.total_price_with_extraworks' => 'required_with:orderProducts|numeric',
+          'orderProducts.*.extra_work_price' => 'required_with:orderProducts|numeric',
           'orderProducts.*.extra_works' => 'nullable|array',
           'orderProducts.*.pivot_cost' => 'nullable|numeric',
         ];
