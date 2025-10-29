@@ -486,7 +486,13 @@ class OrderController extends Controller
 
     $user = auth()->user();
 
-    $canDelete = $user && $attachment->user_id === $user->id;
+    $canDelete = $user && (
+      $attachment->user_id === $user->id ||
+      $user->hasRole([
+        RoleEnum::ADMIN->value,
+        RoleEnum::ACCOUNT_MANAGER->value,
+      ])
+    );
 
     if (!$canDelete) {
       if ($request->expectsJson()) {
@@ -582,6 +588,7 @@ class OrderController extends Controller
     $newEstimate->pre_inspection = false;
     $newEstimate->inspection = false;
     $newEstimate->walk_trough = false;
+    $newEstimate->project_amount= 0;
 
     $client = $estimate->client->replicate();
     $client->push(); // Guardar el nuevo cliente duplicado
