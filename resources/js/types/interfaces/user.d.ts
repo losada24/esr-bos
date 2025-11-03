@@ -8,4 +8,5 @@ export interface User {
   roles: Role[]
   featured_image?: string
   phone: string
+  status?: string
 }

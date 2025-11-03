@@ -9,6 +9,7 @@ export const userSchema = Yup.object({
   email: Yup.string().email('Invalid email address').required('Email is required'),
   password: Yup.string().required('Password is required'),
   password_confirmation: Yup.string().oneOf([Yup.ref('password'), null], 'Passwords must match').required('Password confirmation is required'),
+  status: Yup.string().required('Status is required'),
   // role: Yup.number().required('Role is required'),
   // role: Yup.array().of(Yup.number()).min(1, 'At least one role is required').required('Role is required'), // Cambié a array
   featured_image: Yup.mixed()
@@ -28,6 +29,7 @@ export const userUpdateSchema = Yup.object({
   email: Yup.string().email('Invalid email address').required('Email is required'),
   password: Yup.string().nullable(),
   password_confirmation: Yup.string().oneOf([Yup.ref('password'), null], 'Passwords must match').nullable(),
+  status: Yup.string().required('Status is required'),
   // role: Yup.number().required('Role is required'),
   // role: Yup.array().of(Yup.number()).min(1, 'At least one role is required').required('Role is required'), // Cambié a array
   markup: Yup.number().nullable().integer().min(0).max(100),
@@ -50,6 +52,7 @@ export interface User {
   role: Role[]
   featured_image?: string
   phone: string
+  status: string
 }
 
 interface UserResource {
@@ -58,6 +61,7 @@ interface UserResource {
 
 export type UserPageProps = PageProps & {
   roles: Role[]
+  statuses: OptionType[]
   // companies: Company[]
   user?: UserResource
 }

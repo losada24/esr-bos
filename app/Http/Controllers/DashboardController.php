@@ -60,6 +60,7 @@ class DashboardController extends Controller
         OrderStatusEnum::RESCHEDULE->value,
         OrderStatusEnum::CONFIRMED_FINISH->value,
         OrderStatusEnum::MATERIALS_RECEIVED->value,
+        OrderStatusEnum::CANCELED->value,
         
         
       ];
@@ -78,7 +79,8 @@ class DashboardController extends Controller
         OrderStatusEnum::FINISH->value,
         OrderStatusEnum::SERVICE->value,
         OrderStatusEnum::FINAL_INSPECTION->value,
-        OrderStatusEnum::MATERIALS_RECEIVED->value,  
+        OrderStatusEnum::MATERIALS_RECEIVED->value,
+        OrderStatusEnum::CANCELED->value,  
       ];
 
       $legend = [

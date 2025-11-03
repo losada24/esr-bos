@@ -6,7 +6,7 @@ import UserForm from './UserForm'
 import { type ModalProps, type Role } from '@/types'
 import { useEffect, useState } from 'react'
 
-export default function Edit ({ auth, roles, user }: UserPageProps) {
+export default function Edit ({ auth, roles, user, statuses }: UserPageProps) {
   const [modalProps, setModalProps] = useState<ModalProps | null>(null)
   // const IS_ADMIN = isAdmin(auth.user.roles.map((role: Role) => role.name)) || isAccountManager(auth.user.roles.map((role: Role) => role.name))
   console.log(roles)
@@ -22,7 +22,8 @@ export default function Edit ({ auth, roles, user }: UserPageProps) {
     }) ?? [],
     // company_id: user?.data.company_id ?? 0,
     // markup: user?.data.markup ?? 0,
-    featured_image: ''
+    featured_image: '',
+    status: user?.data.status ?? statuses[0]?.value?.toString() ?? ''
   }
   console.log(initialValues)
   useEffect(() => {
@@ -64,6 +65,7 @@ export default function Edit ({ auth, roles, user }: UserPageProps) {
               errors={errors}
               submitCount={submitCount}
               roles={roles}
+              statuses={statuses}
               isCreate={false}
               setFieldValue={setFieldValue}
               featured_image={user?.data.featured_image ?? ''}

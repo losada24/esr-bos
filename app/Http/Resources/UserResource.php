@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use App\Enum\StatusUserEnum;
 
 class UserResource extends JsonResource
 {
@@ -26,6 +27,7 @@ class UserResource extends JsonResource
           'company_id' => $this->company_id ?? '',
           'markup' => $this->markup ?? 0,
           'featured_image' => $this->featured_image ? asset('storage/'.$this->featured_image) : '',
+          'status' => $this->status ?? StatusUserEnum::ACTIVE->value,
         ];
     }
 }
