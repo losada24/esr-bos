@@ -4,7 +4,7 @@ import { Formik, type FormikHelpers } from 'formik'
 import { userSchema, type UserPageProps, type User, type UserFormValues } from './UserCommon'
 import UserForm from './UserForm'
 
-export default function Create ({ auth, roles }: UserPageProps) {
+export default function Create ({ auth, roles, statuses }: UserPageProps) {
   // const IS_ADMIN = isAdmin(auth.user.roles.map((role: Role) => role.name)) || isAccountManager(auth.user.roles.map((role: Role) => role.name))
   const initialValues: UserFormValues = {
     name: '',
@@ -13,7 +13,8 @@ export default function Create ({ auth, roles }: UserPageProps) {
     password_confirmation: '',
     role: [],
     featured_image: '',
-    phone: ''
+    phone: '',
+    status: statuses[0]?.value?.toString() ?? ''
   }
 
   const handleSubmit = async (values: any, helpers: FormikHelpers<UserFormValues>) => {
@@ -45,6 +46,7 @@ export default function Create ({ auth, roles }: UserPageProps) {
                 errors={errors}
                 submitCount={submitCount}
                 roles={roles}
+                statuses={statuses}
                 isCreate={true}
                 // companies={companies}
                 // isAdmin={IS_ADMIN}

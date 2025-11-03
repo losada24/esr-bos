@@ -34,6 +34,9 @@ class SendExpiredInstallationTeamDocumentsLiabilityDaily extends Command
     {
         $installationTeams = InstallationTeam::with('user')
           ->where('liability_expiration_date', '<=', Carbon::now()->addMonth(1))
+          ->whereHas('user', function ($query) {
+            $query->where('status', 'ACTIVE');
+          })
           ->get();
 
           $users = [];

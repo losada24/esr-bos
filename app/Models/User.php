@@ -32,6 +32,7 @@ class User extends Authenticatable
         'created_by',
         'featured_image',
         'phone',
+        'status',
     ];
 
     /**

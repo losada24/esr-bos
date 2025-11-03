@@ -2,8 +2,10 @@
 
 namespace App\Http\Requests;
 
+use App\Enum\StatusUserEnum;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Enum;
 
 class UpdateUserRequest extends FormRequest
 {
@@ -38,6 +40,7 @@ class UpdateUserRequest extends FormRequest
           'role' => 'required|array', // Debe ser un array
           'role.*' => 'exists:roles,id', // Cada rol debe existir en la tabla roles
           'featured_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:512',
+          'status' => ['required', new Enum(StatusUserEnum::class)],
         ];
     }
 }

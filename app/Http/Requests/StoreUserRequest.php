@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests;
 
+use App\Enum\StatusUserEnum;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rules\Enum;
 
 class StoreUserRequest extends FormRequest
 {
@@ -32,6 +34,7 @@ class StoreUserRequest extends FormRequest
             'role.*' => 'exists:roles,id', // Cada rol debe existir en la tabla roles
             'featured_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:512',
             'phone' => 'nullable|max:20',
+            'status' => ['required', new Enum(StatusUserEnum::class)],
         ];
     }
 }

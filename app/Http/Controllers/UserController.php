@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Actions\CreateUser;
 use App\Actions\UpdateUser;
+use App\Enum\StatusUserEnum;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Http\Resources\UserResource;
@@ -44,6 +45,10 @@ class UserController extends Controller
             'id' => $role->id,
             'name' => $role->name
           ]),
+          'statuses' => collect(StatusUserEnum::cases())->map(fn (StatusUserEnum $status) => [
+            'value' => $status->value,
+            'label' => ucwords(strtolower(str_replace('_', ' ', $status->value))),
+          ]),
         ]);
     }
 
@@ -72,6 +77,10 @@ class UserController extends Controller
         return Inertia::render('User/Edit', [
           'user' => new UserResource($user),
           'roles' => Role::orderBy('name')->get(),
+          'statuses' => collect(StatusUserEnum::cases())->map(fn (StatusUserEnum $status) => [
+            'value' => $status->value,
+            'label' => ucwords(strtolower(str_replace('_', ' ', $status->value))),
+          ]),
         ]);
     }
 

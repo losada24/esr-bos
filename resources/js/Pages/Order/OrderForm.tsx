@@ -934,9 +934,12 @@ const OrderForm = ({
                     defaultValue={ values.installation_teams.map((installation_team) => { return { label: installation_team.user?.name, value: installation_team.id } }) }
                     isMulti={true}
                     onChange={(value) => { setFieldValue('installation_teams', value) }}
-                    options={installation_teams.filter((team_member) =>
-                      team_member.type_housing?.find((type_of_housing) => type_of_housing.id === values.type_of_housing_id)
-                    ).map((installation_team) => { return { label: installation_team.user?.name, value: installation_team.id } })}
+                    options={installation_teams
+                      .filter((team_member) =>
+                        team_member.user?.status === 'ACTIVE' &&
+                        team_member.type_housing?.some((type_of_housing) => type_of_housing.id === values.type_of_housing_id)
+                      )
+                      .map((installation_team) => { return { label: installation_team.user?.name, value: installation_team.id } })}
                   />
                   {(submitCount && errors.installation_teams) ? <InputError message={errors.installation_teams.toString()} className="mt-2" /> : ''}
                 </div>

@@ -2,7 +2,7 @@ import { Field, Form } from 'formik'
 import InputError from '@/Components/InputError'
 import PrimaryButton from '@/Components/PrimaryButton'
 import { Link } from '@inertiajs/react'
-import { type Role, type ModalProps } from '@/types'
+import { type Role, type ModalProps, type OptionType } from '@/types'
 import { type FormikErrors } from 'formik'
 import { type UserFormValues, type User } from './UserCommon'
 import FeaturedImageModal from '@/Components/FeaturedImageModal'
@@ -10,10 +10,11 @@ import { useState } from 'react'
 import { capitalizeWords } from '@/Utils/string'
 import Select from 'react-select'
 
-const UserForm = ({ submitCount, errors, roles, isCreate, /* companies, isAdmin, */ featured_image, setFieldValue, modalProps, values }: {
+const UserForm = ({ submitCount, errors, roles, statuses, isCreate, /* companies, isAdmin, */ featured_image, setFieldValue, modalProps, values }: {
   submitCount: number
   errors: FormikErrors<UserFormValues>
   roles: Role[]
+  statuses: OptionType[]
   isCreate: boolean
   values: UserFormValues
   featured_image?: string
@@ -62,6 +63,21 @@ const UserForm = ({ submitCount, errors, roles, isCreate, /* companies, isAdmin,
               />
               {(submitCount && errors.phone) ? <InputError message={errors.phone} className="mt-2" /> : ''}
             </div>
+      <div className={submitCount ? (errors.status ? 'has-error' : 'has-success') : ''}>
+          <label htmlFor="status">Status</label>
+          <Select
+            id="status"
+            placeholder="Select Status"
+            name="status"
+            options={statuses}
+            value={statuses.find((status) => status.value === values.status) ?? null}
+            onChange={(option) => {
+              const selectedOption = option as OptionType | null
+              setFieldValue('status', selectedOption?.value ?? '')
+            }}
+          />
+          {(submitCount && errors.status) ? <InputError message={errors.status as string} className="mt-2" /> : ''}
+      </div>
       <div className={submitCount ? (errors.role ? 'has-error' : 'has-success') : ''}>
           <label htmlFor="roles">Roles</label>
           <Select
