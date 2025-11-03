@@ -796,7 +796,7 @@ const EventModal = ({
                     }}
                   />
                   </div>
-            )}
+                  )}
             {/* event?.work_team_notes && (
               <div className='flex flex-col gap-2'>
                   <strong>Work Team Notes:</strong>
