@@ -10,6 +10,7 @@ use App\Enum\OrderStatusEnum;
 use App\Enum\PlaningDateSupervisorEnum;
 use App\Enum\SupervisorPaymentStatusEnum;
 use App\Enum\TypeOfFinancing;
+use App\Models\Order;
 use App\Rules\ValidateOrderStatus;
 use Illuminate\Validation\Rule;
 
@@ -137,6 +138,7 @@ class UpdateOrderRequest extends FormRequest
               OrderStatusEnum::COMPLETE->value,
               OrderStatusEnum::RESCHEDULE->value,
               OrderStatusEnum::MATERIALS_RECEIVED->value,
+              OrderStatusEnum::CANCELED->value,
             ),
             new ValidateOrderStatus
           ],

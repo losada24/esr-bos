@@ -90,7 +90,8 @@ class OrderController extends Controller
         OrderStatusEnum::ON_HOLD->value,
         OrderStatusEnum::RESCHEDULE->value,
         OrderStatusEnum::MATERIALS_RECEIVED->value,
-        OrderStatusEnum::FINAL_COLLECT->value
+        OrderStatusEnum::FINAL_COLLECT->value,
+        OrderStatusEnum::CANCELED->value
     ];
 
     $orders = Order::with(['installationTeams.user'])
@@ -324,6 +325,7 @@ class OrderController extends Controller
         OrderStatusEnum::COMPLETE->value,
         OrderStatusEnum::ON_HOLD->value,
         OrderStatusEnum::MATERIALS_RECEIVED->value,
+        OrderStatusEnum::CANCELED->value,
 
       ];
       if ($order->status === OrderStatusEnum::CONFIRMED->value) {
