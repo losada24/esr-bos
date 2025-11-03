@@ -15,6 +15,7 @@ use App\Enum\OrderStatusEnum;
 use App\Enum\RoleEnum;
 use App\Enum\ServiceEnum;
 use App\Enum\SupervisorPaymentStatusEnum;
+use App\Enum\StatusUserEnum;
 use App\Enum\TypeOfFinancing;
 use App\Http\Requests\PartialOrderRequest;
 use App\Http\Requests\StoreOrderRequest;
@@ -119,9 +120,17 @@ class OrderController extends Controller
       'clients' => Client::all(),
       'type_of_works' => TypeOfWork::all(),
       'types_of_housing' => TypeOfHousing::all(),
-      'owners' => User::role(RoleEnum::OWNER->value)->get(),
-      'installation_teams' => InstallationTeam::with(['user', 'typeHousing'])->get(),
-      'supervisors' => User::role(RoleEnum::SUPERVISOR->value)->get(),
+      'owners' => User::role(RoleEnum::OWNER->value)
+        ->where('status', StatusUserEnum::ACTIVE->value)
+        ->get(),
+      'installation_teams' => InstallationTeam::with(['user', 'typeHousing'])
+        ->whereHas('user', function ($query) {
+          $query->where('status', StatusUserEnum::ACTIVE->value);
+        })
+        ->get(),
+      'supervisors' => User::role(RoleEnum::SUPERVISOR->value)
+        ->where('status', StatusUserEnum::ACTIVE->value)
+        ->get(),
       'methods_of_payment' => [
         MethodOfPayment::CASH->value,
         MethodOfPayment::FINANCED->value,
@@ -358,9 +367,20 @@ class OrderController extends Controller
     : 'OPEN',
       'type_of_works' => TypeOfWork::all(),
       'types_of_housing' => TypeOfHousing::all(),
-      'owners' => User::role(RoleEnum::OWNER->value)->get(),
+      /*'owners' => User::role(RoleEnum::OWNER->value)->get(),
       'installation_teams' => InstallationTeam::with(['user', 'typeHousing'])->get(),
-      'supervisors' => User::role(RoleEnum::SUPERVISOR->value)->get(),
+      'supervisors' => User::role(RoleEnum::SUPERVISOR->value)->get(),*/
+      'owners' => User::role(RoleEnum::OWNER->value)
+        ->where('status', StatusUserEnum::ACTIVE->value)
+        ->get(),
+      'installation_teams' => InstallationTeam::with(['user', 'typeHousing'])
+        ->whereHas('user', function ($query) {
+          $query->where('status', StatusUserEnum::ACTIVE->value);
+        })
+        ->get(),
+      'supervisors' => User::role(RoleEnum::SUPERVISOR->value)
+        ->where('status', StatusUserEnum::ACTIVE->value)
+        ->get(),
       'methods_of_payment' => [
         MethodOfPayment::CASH->value,
         MethodOfPayment::FINANCED->value,

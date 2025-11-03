@@ -219,8 +219,14 @@ class DashboardController extends Controller
       'status' => $status,
       'legend' => $legend,
       'statusmodal' => $statusmodal,
-      'installation_teams' => InstallationTeam::with(['user', 'typeHousing'])->get(),
-      'supervisors' => User::role(RoleEnum::SUPERVISOR->value)->get(),
+      'installation_teams' => InstallationTeam::with(['user', 'typeHousing'])
+        ->whereHas('user', function ($query) {
+          $query->where('status', 'ACTIVE');
+        })
+        ->get(),
+      'supervisors' => User::role(RoleEnum::SUPERVISOR->value)
+        ->where('status', 'ACTIVE')
+        ->get(),
     ]);
   }
 
