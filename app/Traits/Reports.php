@@ -3,6 +3,7 @@
 namespace App\Traits;
 
 use App\Enum\OrderStatusEnum;
+use App\Enum\ServiceEnum;
 use App\Models\Biweekly;
 use App\Models\InstallationPayment;
 use App\Models\InstallationTeam;
@@ -22,6 +23,7 @@ trait Reports
       ->where('supervisor_id', $id)
       ->whereDate('installation_date', '<=', Carbon::today())
       ->where('status', '!=', OrderStatusEnum::PLANNED->value)
+      ->where('service', '!=', ServiceEnum::SERVICE->value) 
       ->orderBy('created_at', 'desc')
       ->get();
 
@@ -85,6 +87,7 @@ trait Reports
       ->where('supervisor_id', $id)
       ->whereDate('installation_date', '<=', Carbon::today())
       ->where('status', '!=', OrderStatusEnum::PLANNED->value)
+      ->where('service', '!=', ServiceEnum::SERVICE->value) 
       ->orderBy('created_at', 'desc')
       ->get();
    

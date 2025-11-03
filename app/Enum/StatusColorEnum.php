@@ -22,5 +22,6 @@ enum StatusColorEnum: string
     case SUPERVISION = '#9A4F08';
     case EXECUTION = '#E47207';
     case MATERIALS_RECEIVED = '#008080';
+    case CANCELED = '#700409';
     
 }

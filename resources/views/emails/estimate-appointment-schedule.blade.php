@@ -13,7 +13,7 @@
 
 <p>
     An estimate appointment has been scheduled for order
-    <strong>{{ $order->order_number ?? $order->id }}</strong>
+    <strong>{{ $order->order_number ?? $order->name }}</strong>
     @if($appointmentDate)
         on <strong>{{ $appointmentDate }}</strong>
     @endif

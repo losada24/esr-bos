@@ -360,6 +360,18 @@ const EventModal = ({
               <InfoItem label="County">
                 {event?.travel_cost?.name ?? 'N/A'}
               </InfoItem>
+              <InfoItem label="Duration of Work">
+                {event?.duration_of_work
+                  ? (
+                    <>
+                      {event.duration_of_work.name}
+                      {typeof event.duration_of_work.number_of_day === 'number' && (
+                        <> ({event.duration_of_work.number_of_day} {event.duration_of_work.number_of_day === 1 ? 'day' : 'days'})</>
+                      )}
+                    </>
+                    )
+                  : 'N/A'}
+              </InfoItem>
               {!isService && (
                 <>
                   <InfoItem label="Owner">

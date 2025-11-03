@@ -94,6 +94,9 @@ trait OrderStatus {
     case OrderStatusEnum::MATERIALS_RECEIVED->value:
       $color = StatusColorEnum::MATERIALS_RECEIVED->value;
     break;
+      case OrderStatusEnum::CANCELED->value:
+      $color = StatusColorEnum::CANCELED->value;
+    break;
     }
 
     return $color;

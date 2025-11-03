@@ -126,6 +126,10 @@ class DashboardController extends Controller
           'color' => StatusColorEnum::FINISH->value,
           'label' => 'FINISH'
         ],
+         [
+          'color' => StatusColorEnum::CANCELED->value,
+          'label' => 'CANCELED'
+        ],
       ];
     } else if ($user->hasRole(RoleEnum::SUPERVISOR->value) || $user->hasRole(RoleEnum::SERVICE_MANAGER->value) || $user->hasRole(RoleEnum::INSTALLER->value) || $user->hasRole(RoleEnum::PAYMENT_COORDINATOR->value)) {
       $status = [
@@ -143,6 +147,7 @@ class DashboardController extends Controller
         OrderStatusEnum::FINAL_COLLECT->value,
         OrderStatusEnum::COMPLETE->value,
         OrderStatusEnum::MATERIALS_RECEIVED->value,
+        OrderStatusEnum::CANCELED->value,
       ];
     $statusmodal = [  
         OrderStatusEnum::SUPERVISION->value,
@@ -153,6 +158,7 @@ class DashboardController extends Controller
         OrderStatusEnum::FINAL_COLLECT->value,
         OrderStatusEnum::COMPLETE->value,
         OrderStatusEnum::MATERIALS_RECEIVED->value,
+        OrderStatusEnum::CANCELED->value,
       ];
 
       $legend = [
@@ -191,6 +197,10 @@ class DashboardController extends Controller
         [
           'color' => StatusColorEnum::COMPLETE->value,
           'label' => 'COMPLETE'
+        ],
+         [
+          'color' => StatusColorEnum::CANCELED->value,
+          'label' => 'CANCELED'
         ],
       ];
 
