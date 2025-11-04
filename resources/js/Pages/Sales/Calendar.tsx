@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Head, router } from '@inertiajs/react'
 import '@mobiscroll/react/dist/css/mobiscroll.min.css'
 import { Eventcalendar, getJson, setOptions } from '@mobiscroll/react'
-import type { MbscEventcalendarView } from '@mobiscroll/react'
+import type { MbscEventcalendarView, MbscCalendarEventData } from '@mobiscroll/react'
 import AuthenticatedCalendarLayout from '@/Layouts/AuthenticatedCalendarLayout'
 import { type PageProps } from '@/types'
 
@@ -67,6 +67,39 @@ export default function SalesCalendar ({ auth, statuses, legend }: SalesCalendar
     const orderId = args?.event?.order_id
     if (!orderId) return
     router.visit(route('order.show', orderId))
+  }, [])
+
+  const renderEventLabelContent = useCallback((eventData: MbscCalendarEventData) => {
+    const originalEvent = (eventData.original as Record<string, any>) ?? {}
+    const orderName: string = originalEvent.order_name ?? eventData.title ?? ''
+    const secondaryLabel: string = originalEvent.secondary_label ?? ''
+
+    return (
+      <div className="flex items-center gap-[4px] leading-tight">
+        <span className="text-xs font-semibold truncate">{orderName}</span>
+        {secondaryLabel && (
+          <span className="text-[10px] text-gray-700 dark:text-gray-200 truncate">
+            {secondaryLabel}
+          </span>
+        )}
+      </div>
+    )
+  }, [])
+  const renderScheduleEventContent = useCallback((eventData: MbscCalendarEventData) => {
+    const originalEvent = (eventData.original as Record<string, any>) ?? {}
+    const orderName: string = originalEvent.order_name ?? eventData.title ?? ''
+    const appointmentTime: string = originalEvent.appointment_time ?? ''
+    const ownerNames: string = originalEvent.owner_names ?? ''
+    const detailLine = [appointmentTime, ownerNames].filter(Boolean).join(' • ')
+
+    return (
+      <div className="flex flex-col gap-[2px] leading-tight">
+        <span className="text-sm font-semibold">{orderName}</span>
+        {detailLine && (
+          <span className="text-xs text-gray-700 dark:text-gray-200">{detailLine}</span>
+        )}
+      </div>
+    )
   }, [])
 
   return (
@@ -142,6 +175,8 @@ export default function SalesCalendar ({ auth, statuses, legend }: SalesCalendar
           eventDelete={false}
           onPageChange={handlePageChange}
           onEventClick={handleEventClick}
+          renderLabelContent={renderEventLabelContent}
+          renderScheduleEventContent={renderScheduleEventContent}
         />
       </div>
     </AuthenticatedCalendarLayout>

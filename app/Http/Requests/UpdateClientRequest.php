@@ -31,7 +31,11 @@ class UpdateClientRequest extends FormRequest
             'id' => 'required|exists:clients,id',
             'name' => 'required|string|max:255',
             'email' => 'nullable|email',
-            'phone' => 'required|max:20',
+           //'phone' => 'required|max:20',
+            'phone' => [
+              'required',
+              'regex:/^\d{10}$/'
+            ],
             'address' => 'nullable|string|max:500',
             'vip_clients' => 'boolean',
             'vip_notes' => 'nullable|string|max:1000',

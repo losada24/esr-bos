@@ -253,6 +253,9 @@ public function showQuantifiedModal(Order $order)
     public function updateStatusQuantified(Request $request, Order $order)
     {     
         //dd($request->all());
+        $request->validate([
+          'phone' => ['required', 'regex:/^\d{10}$/'],
+        ]);
         $status = $request['status'];
         if ($request['order_type'] === OrderTypeEnum::RESIDENTIAL->value || $request['order_type'] === OrderTypeEnum::SUPPLY->value) {
           $status = OrderStatusEnum::PENDING_ASSIGNMENT->value;
