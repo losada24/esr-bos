@@ -198,7 +198,9 @@ class SalesController extends Controller
       $end = (clone $start)->addHour();
 
       $clientName = $order->client->name ?? 'Client';
-      $title = ($order->name ?? 'Order') . ' - ' . $start->format('h:i A');
+      $owners = $order->owners->pluck('name')->filter();
+      $primaryLine = ($order->name ?? 'Order');
+      $secondaryLine = $start->format('h:i A') . ($owners->isNotEmpty() ? ' (' . $owners->implode(', ') . ')' : '');
       $tooltipParts = [
         'Client: ' . $clientName,
         'Status: ' . $order->status,
@@ -210,12 +212,17 @@ class SalesController extends Controller
 
       return [
         'order_id' => $order->id,
-        'title' => $title,
+        'title' => $primaryLine,
         'tooltip' => $tooltip,
         'start' => $start->format('Y-m-d\TH:i'),
         'end' => $end->format('Y-m-d\TH:i'),
         'color' => $this->salesStatusColor($order->status),
         'type_of_event' => $order->status,
+        'text' => $order->name ?? 'Order',
+        'order_name' => $order->name ?? 'Order',
+        'appointment_time' => $start->format('h:i A'),
+        'owner_names' => $owners->implode(', '),
+        'secondary_label' => $secondaryLine,
       ];
     });
 

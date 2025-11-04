@@ -26,7 +26,11 @@ class UpdateServiceRequest extends FormRequest
     {
         return [
             'client_name' => 'required|string|max:255',
-            'phone' => 'required|string|max:255',
+            //'phone' => 'required|string|max:255',
+             'phone' => [
+              'required',
+              'regex:/^\d{10}$/'
+            ],
             'email' => 'nullable|email|max:255',
             'name' => 'required|string|max:255',
             'order_number' => 'nullable|string|max:255',

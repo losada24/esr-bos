@@ -245,11 +245,11 @@ export default function ShowStatusOrder ({ auth, orderStatuses = [], tags = [], 
                     )}
                   </div>
                 </div>
-                {order.notes && (
-                  <p className="text-sm text-slate-500">
-                    {order.notes}
-                  </p>
-                )}
+                {/* {order.notes && (
+                    <p className="text-sm text-slate-500">
+                      {order.notes}
+                    </p>
+                  )} */}
               </div>
             </div>
             <div className="flex flex-col items-start gap-2 md:items-end">

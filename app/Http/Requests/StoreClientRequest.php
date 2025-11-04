@@ -30,7 +30,10 @@ class StoreClientRequest extends FormRequest
         return [
             'name' => 'required|string|max:255',
             'email' => 'nullable|email',
-            'phone' => 'required|max:20',
+            'phone' => [
+              'required',
+              'regex:/^\d{10}$/'
+            ],
             'address' => 'nullable|string|max:500',
             'appointment_date' => 'nullable|date',
             'notes' => 'nullable|string',

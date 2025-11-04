@@ -37,7 +37,11 @@ class StoreOrderRequest extends FormRequest
            // 'client_id' => 'nullable|integer|exists:clients,id',
             'client_name' => 'required|string|max:255',
             // 'last_name' => 'required|string|max:255',
-            'phone' => 'required|string|max:255',
+            //'phone' => 'required|string|max:255',
+             'phone' => [
+              'required',
+              'regex:/^\d{10}$/'
+            ],
             'email' => 'nullable|email|max:255',
             'is_send_email' => 'boolean',
             'is_new_travel_cost' => 'boolean',
