@@ -56,6 +56,17 @@
         padding: 10px;
     }
 
+    .service-label {
+        display: inline-block;
+        margin-top: 4px;
+        padding: 2px 6px;
+        font-size: 12px;
+        font-weight: bold;
+        background-color: #007bff;
+        color: #fff;
+        border-radius: 4px;
+    }
+
 </style>
 <div class="table-container">
 <div class="table-wrapper">
@@ -115,6 +126,11 @@
               $totalPaymentProcessed = $payments[0]['amount'];
             }*/
         @endphp
+
+       @php
+        //  dd($orders);
+          @endphp
+        @endphp
       @foreach($orders as $order)
         @php
               // Acumular valores para las sumas totales
@@ -151,6 +167,9 @@
               @endif
           >
               {{ $order['name'] }}
+              @if(($order['service'] ?? null) === \App\Enum\ServiceEnum::SERVICE->value)
+                <div class="service-label">{{ \App\Enum\ServiceEnum::SERVICE->value }}</div>
+              @endif
           </td>
             <td width='20' height='25' text-align='left' valign='middle'>
               @foreach ($order['owners'] as $owner)
