@@ -144,7 +144,7 @@ class UpdateOrder
         'association_permits' => $request->association_permits,
         'equipment_rental' => $request->equipment_rental,
         'notes' => $request->notes,
-        'work_team_notes' => $request->work_team_notes,
+        'work_team_notes' => null,
         'delivery_date' => $request->delivery_date,
         'status' => $status,
         //'frame_color' => $request->frame_color,
@@ -173,6 +173,22 @@ class UpdateOrder
       //dd( $orderData);
       //dd($request->frame_color);
       $order->update($orderData);
+
+      $currentWorkTeamNotes = trim((string) ($request->work_team_notes ?? ''));
+      if ($currentWorkTeamNotes !== '') {
+        $latestWorkTeamNote = $order->notes()
+          ->where('type', 'work_team_note')
+          ->latest()
+          ->first();
+
+        if (!$latestWorkTeamNote || trim((string) $latestWorkTeamNote->content) !== $currentWorkTeamNotes) {
+          $order->notes()->create([
+            'content' => $currentWorkTeamNotes,
+            'type' => 'work_team_note',
+            'user_id' => auth()->id(),
+          ]);
+        }
+      }
       
       //dd($request->file('attachments'));
       if ($request->hasFile('attachments')) {

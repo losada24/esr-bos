@@ -189,6 +189,7 @@ export default function Edit ({
                 type_of_financing={type_of_financing}
                 extraWorks={extraWorks}
                 order_colors={order_colors}
+                showWorkTeamNotes={false}
               />
             )}
           </Formik>

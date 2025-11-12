@@ -135,6 +135,26 @@ class Order extends Model
     ];
   }
 
+  public function getNotesAttribute($value)
+  {
+    if (!empty($value)) {
+      return $value;
+    }
+
+    if (!$this->exists) {
+      return $value;
+    }
+
+    if ($this->relationLoaded('notes')) {
+      $note = $this->getRelation('notes')->sortByDesc('created_at')->first();
+      return $note?->content ?? $value;
+    }
+
+    $latestNote = $this->notes()->latest()->first();
+
+    return $latestNote?->content ?? $value;
+  }
+
   public function scopeFilter($query, array $filters)
   {
     $query->when($filters['status'] ?? null, function ($query, $search) {

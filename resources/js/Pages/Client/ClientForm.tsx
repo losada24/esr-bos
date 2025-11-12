@@ -18,7 +18,7 @@ import TagPicker, { type TagItem } from '@/Components/TagPicker'
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
 
-const ClientForm = ({ submitCount, errors, isCreate, setFieldValue, values, contact_type, sources, companies,tags }: {
+const ClientForm = ({ submitCount, errors, isCreate, setFieldValue, values, contact_type, sources, companies }: {
   submitCount: number
   errors: FormikErrors<ClientFormType>
   setFieldValue: (field: string, value: any, shouldValidate?: boolean) => void
@@ -27,7 +27,7 @@ const ClientForm = ({ submitCount, errors, isCreate, setFieldValue, values, cont
   contact_type: string[]
   sources: string[]
   companies: CompanyContact[]
-  tags: TagItem[]
+  // tags: TagItem[]
 }) => {
   const inputRef = useRef<google.maps.places.SearchBox | null>(null)
   const libraries: any[] = ['places']
@@ -37,11 +37,9 @@ const ClientForm = ({ submitCount, errors, isCreate, setFieldValue, values, cont
     googleMapsApiKey: GOOGLE_MAPS_API_KEY,
     libraries: menoLibraries
   })
-
-  
-   const { data, setData, processing,  patch } = useForm<{ tags: TagItem[] }>({
+  /* const { data, setData, processing,  patch } = useForm<{ tags: TagItem[] }>({
     tags: tags ?? []
-  })
+  }) */
 
   /* const selectedCompany: SingleValue<OptionType> = {
     value: values.company_contact_id ?? 0,
@@ -271,7 +269,7 @@ const ClientForm = ({ submitCount, errors, isCreate, setFieldValue, values, cont
             </div>
       )}
       </div>
-       <div>
+      {/* <div>
         <label className="block text-sm font-medium text-slate-700">Tags</label>
         <div className="mt-1">
           <TagPicker
@@ -280,9 +278,9 @@ const ClientForm = ({ submitCount, errors, isCreate, setFieldValue, values, cont
             placeholder="Agregar tag"
           />
         </div>
-      </div>
+      </div> */}
       <div className='grid gap-4 grid-cols-2'>
-      <div className={submitCount ? (errors.address) ? 'has-error' : 'has-success' : ''}>
+      {/* <div className={submitCount ? (errors.address) ? 'has-error' : 'has-success' : ''}>
         <label htmlFor="address">Address</label>
           {isLoaded &&
             <StandaloneSearchBox
@@ -299,8 +297,8 @@ const ClientForm = ({ submitCount, errors, isCreate, setFieldValue, values, cont
             </StandaloneSearchBox>
           }
           {(submitCount && errors.address) ? <InputError message={errors.address} className="mt-2" /> : ''}
-        </div>
-        <div className={submitCount ? (errors.appointment_date) ? 'has-error' : 'has-success' : ''}>
+        </div> */}
+        {/* <div className={submitCount ? (errors.appointment_date) ? 'has-error' : 'has-success' : ''}>
           <label htmlFor="appointment_date">Appointment Date</label>
           <Flatpickr
             options={{
@@ -324,7 +322,7 @@ const ClientForm = ({ submitCount, errors, isCreate, setFieldValue, values, cont
             }}
           />
           {(submitCount && typeof errors.appointment_date === 'string') ? <InputError message={errors.appointment_date} className="mt-2" /> : ''}
-        </div>
+        </div> */}
       </div>
       <div className='col-span-4'>
         <label htmlFor="notes">Notes</label>

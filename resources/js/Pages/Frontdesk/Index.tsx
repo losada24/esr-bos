@@ -13,7 +13,28 @@ import EyeIcon from '@/Components/Icons/EyeIcon'
 import { tagClasses, type TagColor } from '@/Utils/tags'
 import InfoTooltip from '@/Components/InfoTooltip'
 
-export default function Frontdesk ({ auth, data, lossReasonFrontdesk, sources, order_types }: PageProps & { data: Pipelines[], lossReasonFrontdesk: string [], sources: string[], order_types: string[] }) {
+export default function Frontdesk ({
+  auth,
+  data,
+  lossReasonFrontdesk,
+  sources,
+  order_types,
+  frame_colors,
+  glass_colors,
+  glass_types,
+  glass_coatings,
+  languages
+}: PageProps & {
+  data: Pipelines[]
+  lossReasonFrontdesk: string[]
+  sources: string[]
+  order_types: string[]
+  frame_colors: string[]
+  glass_colors: string[]
+  glass_types: string[]
+  glass_coatings: string[]
+  languages: string[]
+}) {
   const IS_ADMIN = isAdmin(auth.user.roles.map((role: Role) => role.name))
   const IS_ACCOUNT_MANAGER = isAccountManager(auth.user.roles.map((role: Role) => role.name))
   const IS_SUPERVISOR = isSupervisor(auth.user.roles.map((role: Role) => role.name))
@@ -341,6 +362,11 @@ export default function Frontdesk ({ auth, data, lossReasonFrontdesk, sources, o
         sources={sources ?? []}
         previousStatusId={previousStatusId}
         order_types={order_types ?? []}
+        frame_colors={frame_colors ?? []}
+        glass_colors={glass_colors ?? []}
+        glass_types={glass_types ?? []}
+        glass_coatings={glass_coatings ?? []}
+        languages={languages ?? []}
         // errors={FormikErrors<OrderFormValues>}
       />
     </AuthenticatedCalendarLayout>

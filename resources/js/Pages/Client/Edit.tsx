@@ -88,7 +88,7 @@ export default function Edit ({ auth, clients, tags, clientAddress, contact_type
                 contact_type={contact_type}
                 sources={sources}
                 companies={companies}
-                tags={tags}
+               // tags={tags}
               />
             )}
           </Formik>
