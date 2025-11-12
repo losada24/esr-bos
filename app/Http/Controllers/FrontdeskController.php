@@ -115,6 +115,33 @@ $data = collect($frontdeskStatuses)->map(function ($status) use ($orders, $quali
         'lossReasonFrontdesk' => $lossReasonFrontdesk,
         'sources' => $sources,
         'order_types' => $order_types,
+        'frame_colors' => [
+          FrameColorEnum::BLACK->value,
+          FrameColorEnum::WHITE->value,
+          FrameColorEnum::BRONZE->value,
+          FrameColorEnum::CLEAR_ANODIZED->value,
+          FrameColorEnum::OTHERS->value,
+        ],
+        'glass_colors' => [
+          GlassColorEnum::BRONZE->value,
+          GlassColorEnum::CLEAR->value,
+          GlassColorEnum::GRAY->value,
+          GlassColorEnum::GREEN->value,
+          GlassColorEnum::OTHERS->value,
+        ],
+        'glass_types' => [
+          GlassTypeEnum::LAMINATED->value,
+          GlassTypeEnum::INSULATED->value,
+          GlassTypeEnum::INSULATED_LAMINATED->value,
+        ],
+        'glass_coatings' => [
+          GlassCoatingEnum::LOWE70->value,
+          GlassCoatingEnum::LOWE60->value,
+        ],
+        'languages' => array_map(
+          static fn (LanguageEnum $language) => $language->value,
+          LanguageEnum::cases()
+        ),
       ]);
     }
     public function create()
@@ -246,6 +273,8 @@ $data = collect($frontdeskStatuses)->map(function ($status) use ($orders, $quali
 public function showQuantifiedModal(Order $order)
 {
     $order->load('client'); // Relación con Client
+    $latestNote = $order->notes()->latest()->first();
+    $order->setAttribute('latest_note', $latestNote?->content ?? '');
 
     return response()->json($order);
 }
@@ -278,6 +307,42 @@ public function showQuantifiedModal(Order $order)
         'is_supply' => $request['is_supply'] ?? false,
 
     ]);
+
+        $existingSaleForm = $order->saleForm;
+        $saleFormPayload = [
+          'sale' => $request->boolean('sale'),
+          'installation' => $request->boolean('installation'),
+          'permit' => $request->boolean('permit'),
+          'replacement' => $request->boolean('replacement'),
+          'new_construction' => $request->boolean('new_construction'),
+          'financing' => $request->boolean('financing'),
+          'screen' => $request->boolean('screen'),
+          'design' => $request->boolean('design'),
+          'mountin' => $request->boolean('mountin'),
+          'bar' => $request->boolean('bar'),
+          'shutter_hole' => $request->boolean('shutter_hole'),
+          'floor_cutting' => $request->boolean('floor_cutting'),
+          'interior_finish' => $request->boolean('interior_finish'),
+          'hoa' => $request->boolean('hoa'),
+          'floor' => $request->input('floor', $existingSaleForm->floor ?? ''),
+          'frame_color' => $request->input('frame_color', $existingSaleForm->frame_color ?? ''),
+          'glass_color' => $request->input('glass_color', $existingSaleForm->glass_color ?? ''),
+          'glass_type' => $request->input('glass_type', $existingSaleForm->glass_type ?? ''),
+          'glass_coating' => $request->input('glass_coating', $existingSaleForm->glass_coating ?? ''),
+          'language' => $request->input('language', $existingSaleForm->language ?? ''),
+          'door_quantity' => $request->filled('door_quantity')
+            ? (int) $request->input('door_quantity')
+            : ($existingSaleForm->door_quantity ?? 0),
+          'window_quantity' => $request->filled('window_quantity')
+            ? (int) $request->input('window_quantity')
+            : ($existingSaleForm->window_quantity ?? 0),
+        ];
+
+        if ($existingSaleForm) {
+          $existingSaleForm->update($saleFormPayload);
+        } else {
+          $order->saleForm()->create($saleFormPayload);
+        }
 
       if ($order->client) {
         $order->client->update([

@@ -43,7 +43,7 @@ class OrderNoteController extends Controller
 
         $note = $order->notes()->create([
             'content' => $data['content'],
-            'type'    => 'order_note',
+            'type'    => $data['type'] ?? 'order_note',
             'user_id' => $request->user()->id,
         ]);
 
@@ -85,7 +85,7 @@ class OrderNoteController extends Controller
         return [
             'id'         => $note->id,
             'content'    => $note->content,
-            'type'       => 'order_note',
+            'type'       => $note->type,
             'created_at' => optional($note->created_at)->toISOString(),
             'user'       => $note->user ? ['name' => $note->user->name] : null,
             'can'        => [

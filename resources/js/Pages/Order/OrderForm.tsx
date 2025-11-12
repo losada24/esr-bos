@@ -33,6 +33,7 @@ import { PAYMENT_METHODS, SERVICES, STOREFRONT_CATEGORY } from '@/Utils/constant
 import { capitalizeWords } from '@/Utils/string'
 import { getProductExtraWorkPrice, getProductPrice, getProductPriceWithExtraWorks } from '@/Utils/price'
 import { type OrderColor } from '@/types/interfaces/order'
+import OrderNotesForOrder from '@/Components/OrderNotesForOrder'
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
 
@@ -62,7 +63,8 @@ const OrderForm = ({
   type_of_financing,
   statusPaymentInstaller,
   extraWorks,
-  order_colors
+  order_colors,
+  showWorkTeamNotes = true
 }: {
   submitCount: number
   errors: FormikErrors<OrderFormValues>
@@ -91,6 +93,7 @@ const OrderForm = ({
   statusPaymentInstaller: string
   type_of_financing: string[]
   extraWorks: Array<{ id: number, name: string }>
+  showWorkTeamNotes?: boolean
 }) => {
   const inputRef = useRef<google.maps.places.SearchBox | null>(null)
   const libraries: any[] = ['places']
@@ -1075,17 +1078,19 @@ const OrderForm = ({
                 placeholder='Notes'
               />
             </div>
-            <div className='col-span-4'>
-              <label htmlFor="work_team_notes">Work Team Notes</label>
-              <Field
-                id="work_team_notes"
-                name="work_team_notes"
-                component="textarea"
-                rows="4"
-                className="form-textarea resize-none placeholder:text-white-dark"
-                placeholder='Work Team Notes'
-              />
-            </div>
+            {showWorkTeamNotes && (
+              <div className='col-span-4'>
+                <label htmlFor="work_team_notes">Work Team Notes</label>
+                <Field
+                  id="work_team_notes"
+                  name="work_team_notes"
+                  component="textarea"
+                  rows="4"
+                  className="form-textarea resize-none placeholder:text-white-dark"
+                  placeholder='Work Team Notes'
+                />
+              </div>
+            )}
             <div className='col-span-4'>
               <label htmlFor="attachments">Attachments</label>
               <input
@@ -1146,6 +1151,10 @@ const OrderForm = ({
             updateOrderProduct={(index: number) => { updateOrderProduct(index) }}
             extraWorks={extraWorks}
           />
+        </fieldset>
+        <fieldset className='p-3 border rounded-xl'>
+          <legend className='text-lg font-semibold px-3'>Work Team Notes History</legend>
+          <OrderNotesForOrder orderId={values.id || null} canCreate={values.id !== 0} noteType="work_team_note" />
         </fieldset>
         <div className="flex items-center justify-between mt-4">
           <Link className='btn btn-danger uppercase' href={route('order.index')}>Cancel</Link>

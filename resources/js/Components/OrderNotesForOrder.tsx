@@ -31,14 +31,16 @@ export interface UiNote {
   id: number | string
   body: string
   title?: string | null
+  type?: string | null
   authorName: string
   createdAt: string
   can?: { update?: boolean, delete?: boolean } | null
 }
 
 interface OrderNotesForOrderProps {
-  orderId: number | string
+  orderId?: number | string | null
   canCreate?: boolean
+  noteType?: string
 }
 
 // ===== UI utils =====
@@ -58,13 +60,14 @@ const initials = (name: string) =>
 const normalize = (n: NoteDTO): UiNote => ({
   id: n.id,
   body: n.content,
-  title: n.type ?? undefined,
+  title: n.type && n.type !== 'work_team_note' ? n.type : undefined,
+  type: n.type ?? null,
   authorName: n.user?.name ?? 'Unknown',
   createdAt: n.created_at,
   can: n.can ?? null
 })
 
-export default function OrderNotesForOrder({ orderId, canCreate = true }: OrderNotesForOrderProps) {
+export default function OrderNotesForOrder({ orderId, canCreate = true, noteType }: OrderNotesForOrderProps) {
   const [notes, setNotes] = useState<UiNote[] | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -81,19 +84,35 @@ export default function OrderNotesForOrder({ orderId, canCreate = true }: OrderN
   const [deletingId, setDeletingId] = useState<string | number | null>(null)
 
   // GET list
+  const resolvedOrderId = orderId ?? null
+  const canActuallyCreate = canCreate && resolvedOrderId !== null
+  const showTitleInput = !noteType
+
   useEffect(() => {
+    if (resolvedOrderId === null) {
+      setNotes([])
+      setLoading(false)
+      return
+    }
+
     let alive = true
     ;(async () => {
       try {
         setLoading(true)
         setError(null)
-        const res = await fetch(`/order/${orderId}/notes`, {
+        const res = await fetch(`/order/${resolvedOrderId}/notes`, {
           credentials: 'include',
           headers: { 'X-Requested-With': 'XMLHttpRequest' }
         })
         if (!res.ok) throw new Error('No se pudieron cargar las notas')
         const list: NoteDTO[] = await parseList(res)
-        if (alive) setNotes(list.map(normalize))
+        if (alive) {
+          let normalized = list.map(normalize)
+          if (noteType) {
+            normalized = normalized.filter((note) => note.type === noteType)
+          }
+          setNotes(normalized)
+        }
       } catch (e: any) {
         if (alive) setError(e?.message ?? 'Error cargando notas')
       } finally {
@@ -103,19 +122,21 @@ export default function OrderNotesForOrder({ orderId, canCreate = true }: OrderN
     return () => {
       alive = false
     }
-  }, [orderId])
+  }, [resolvedOrderId])
 
   // CREATE
   const onSave = async (e?: React.MouseEvent | React.FormEvent) => {
     e?.preventDefault?.()
-    if (!body.trim()) return
+    if (!body.trim() || resolvedOrderId === null) return
     setSaving(true)
     setError(null)
 
+    const resolvedType = noteType ?? (title.trim() || null)
     const optimistic: UiNote = {
       id: `tmp-${Date.now()}`,
       body,
-      title: title.trim() || undefined,
+      title: showTitleInput ? (title.trim() || undefined) : undefined,
+      type: resolvedType ?? null,
       authorName: 'You',
       createdAt: new Date().toISOString(),
       can: { update: true, delete: true }
@@ -123,7 +144,7 @@ export default function OrderNotesForOrder({ orderId, canCreate = true }: OrderN
     setNotes((prev) => (prev ? [optimistic, ...prev] : [optimistic]))
 
     try {
-      const res = await fetch(`/order/${orderId}/notes`, {
+      const res = await fetch(`/order/${resolvedOrderId}/notes`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -131,13 +152,15 @@ export default function OrderNotesForOrder({ orderId, canCreate = true }: OrderN
           'X-CSRF-TOKEN': getCsrf()
         },
         credentials: 'include',
-        body: JSON.stringify({ content: body, type: title.trim() || null }),
+        body: JSON.stringify({ content: body, type: resolvedType }),
       })
       if (!res.ok) throw new Error('No se pudo guardar la nota')
       const created: NoteDTO = await parseItem(res)
       const ui = normalize(created)
       setNotes((prev) => (prev ?? []).map((n) => (n.id === optimistic.id ? ui : n)))
-      setTitle('')
+      if (showTitleInput) {
+        setTitle('')
+      }
       setBody('')
     } catch (err: any) {
       setNotes((prev) => (prev ?? []).filter((n) => n.id !== optimistic.id))
@@ -161,17 +184,17 @@ export default function OrderNotesForOrder({ orderId, canCreate = true }: OrderN
   }
 
   const saveEdit = async () => {
-    if (!editingId || !editBody.trim()) return
+    if (!editingId || !editBody.trim() || resolvedOrderId === null) return
     setSavingEdit(true)
     setError(null)
 
     const prev = notes
     setNotes((p) =>
-      (p ?? []).map((n) => (n.id === editingId ? { ...n, body: editBody, title: editTitle || undefined } : n))
+      (p ?? []).map((n) => (n.id === editingId ? { ...n, body: editBody, title: showTitleInput ? (editTitle || undefined) : n.title } : n))
     )
 
     try {
-      const res = await fetch(`/order/${orderId}/notes/${editingId}`, {
+      const res = await fetch(`/order/${resolvedOrderId}/notes/${editingId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -179,7 +202,7 @@ export default function OrderNotesForOrder({ orderId, canCreate = true }: OrderN
           'X-CSRF-TOKEN': getCsrf()
         },
         credentials: 'include',
-        body: JSON.stringify({ content: editBody, type: editTitle.trim() || null }),
+        body: JSON.stringify({ content: editBody, type: noteType ?? (editTitle.trim() || null) }),
       })
       if (!res.ok) throw new Error('No se pudo actualizar la nota')
       const updated: NoteDTO = await parseItem(res)
@@ -196,7 +219,7 @@ export default function OrderNotesForOrder({ orderId, canCreate = true }: OrderN
 
   // DELETE
   const deleteNote = async (id: string | number) => {
-    if (!confirm('¿Eliminar esta nota?')) return
+    if (!confirm('¿Eliminar esta nota?') || resolvedOrderId === null) return
     setDeletingId(id)
     setError(null)
 
@@ -204,7 +227,7 @@ export default function OrderNotesForOrder({ orderId, canCreate = true }: OrderN
     setNotes((p) => (p ?? []).filter((n) => n.id !== id))
 
     try {
-      const res = await fetch(`/order/${orderId}/notes/${id}`, {
+      const res = await fetch(`/order/${resolvedOrderId}/notes/${id}`, {
         method: 'DELETE',
         headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': getCsrf() },
         credentials: 'include'
@@ -218,24 +241,37 @@ export default function OrderNotesForOrder({ orderId, canCreate = true }: OrderN
     }
   }
 
+  if (resolvedOrderId === null) {
+    const placeholder = noteType === 'work_team_note'
+      ? 'Save the order first to add and view work team notes.'
+      : 'Save the order first to add and view notes.'
+    return (
+      <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+        {placeholder}
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       {/* Editor */}
-      {canCreate && (
+      {canActuallyCreate && (
         <form
           onSubmit={(e) => { e.preventDefault() }}
           className="space-y-3 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4"
         >
-          <div>
-            <input
-              type="text"
-              placeholder="Add a title (optional)"
-              value={title}
-              onChange={(e) => { setTitle(e.target.value) }}
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-sky-400 focus:outline-none focus:ring-4 focus:ring-sky-100"
-              aria-label="Note title"
-            />
-          </div>
+          {showTitleInput && (
+            <div>
+              <input
+                type="text"
+                placeholder="Add a title (optional)"
+                value={title}
+                onChange={(e) => { setTitle(e.target.value) }}
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-sky-400 focus:outline-none focus:ring-4 focus:ring-sky-100"
+                aria-label="Note title"
+              />
+            </div>
+          )}
           <textarea
             placeholder="What's this note about?"
             value={body}
@@ -253,13 +289,15 @@ export default function OrderNotesForOrder({ orderId, canCreate = true }: OrderN
             >
               {saving ? 'Saving…' : 'Save'}
             </button>
-            <button
-              type="button"
-              onClick={() => { setTitle(''); setBody('') }}
-              className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
-            >
-              Cancel
-            </button>
+            {showTitleInput && (
+              <button
+                type="button"
+                onClick={() => { setTitle(''); setBody('') }}
+                className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+            )}
             {error && <span className="ml-auto text-sm text-red-600">{error}</span>}
           </div>
         </form>
@@ -267,7 +305,9 @@ export default function OrderNotesForOrder({ orderId, canCreate = true }: OrderN
 
       {/* Lista */}
       <div className="space-y-4">
-        <h4 className="text-sm font-semibold uppercase tracking-wide text-slate-400">All Notes</h4>
+        <h4 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
+          {noteType === 'work_team_note' ? 'Work Team Notes' : 'All Notes'}
+        </h4>
 
         {loading && <div className="text-sm text-slate-500">Cargando notas…</div>}
 
@@ -292,12 +332,14 @@ export default function OrderNotesForOrder({ orderId, canCreate = true }: OrderN
                     {editingId === n.id
                       ? (
                       <>
-                        <input
-                          className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-sky-400 focus:outline-none focus:ring-4 focus:ring-sky-100"
-                          value={editTitle}
-                          onChange={(e) => { setEditTitle(e.target.value) } }
-                          placeholder="Edit title (optional)"
-                        />
+                        {showTitleInput && (
+                          <input
+                            className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-sky-400 focus:outline-none focus:ring-4 focus:ring-sky-100"
+                            value={editTitle}
+                            onChange={(e) => { setEditTitle(e.target.value) } }
+                            placeholder="Edit title (optional)"
+                          />
+                        )}
                         <textarea
                           className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-sky-400 focus:outline-none focus:ring-4 focus:ring-sky-100"
                           rows={3}
