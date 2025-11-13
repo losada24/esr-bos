@@ -77,6 +77,7 @@ class CreateOrder
         'user_id' => auth()->user()->id,
         'name' => $request->name,
         'job_address' => $request->job_address,
+        // 'job_city' => $request->job_city ?? $request->city,
         'order_number' => $request->order_number,
         'type_of_work_id' => $typeOfWorkId,
         'type_of_housing_id' => $typeOfHousingId,

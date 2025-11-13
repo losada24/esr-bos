@@ -90,7 +90,6 @@ export default function EditService ({
       name: values.name,
       order_number: values.order_number,
       job_address: values.job_address,
-      job_city: values.job_city,
       job_state: values.job_state,
       job_zip: values.job_zip,
       city: values.city,
