@@ -79,7 +79,6 @@ export const orderFormObj: OrderFormValues = {
   name: '',
   order_number: 0,
   job_address: '',
-  job_city: '',
   job_state: '',
   job_zip: '',
   city_permits: false,
