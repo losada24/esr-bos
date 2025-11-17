@@ -58,7 +58,7 @@
                   $grandTotal += $product->total_price;
                   $storefrontBasePrice = null;
                   $parsedNewStorefrontPrice = floatval($product->new_price_storefront ?? 0);
-                  if ((int) $product->type_of_product_id === 3 && $order->service !== 'SERVICE') {
+                  if ((int) $product->type_of_product_id === 3) {
                     $productCosts = $product->productConfig?->productCosts ?? collect();
                     $storefrontBasePrice = optional(
                       $productCosts->firstWhere('type_of_work_id', $product->type_of_work_id)
@@ -117,7 +117,7 @@
             @endforeach
             <tr>
             @php 
-              $travelCost = $order->travelCost->price;
+              $travelCost = optional($order->travelCost)->price ?? 0;
             @endphp
               @if ($order->is_new_travel_cost) 
                     @php 
