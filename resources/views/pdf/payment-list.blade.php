@@ -59,20 +59,21 @@
                   $storefrontBasePrice = null;
                   $parsedNewStorefrontPrice = floatval($product->new_price_storefront ?? 0);
                   if ((int) $product->type_of_product_id === 3) {
+                    $productCosts = $product->productConfig?->productCosts ?? collect();
                     $storefrontBasePrice = optional(
-                      $product->productConfig->productCosts->firstWhere('type_of_work_id', $product->type_of_work_id)
+                      $productCosts->firstWhere('type_of_work_id', $product->type_of_work_id)
                     )->price;
                   }
                 @endphp
                 <tr>
                   <td class="service">&nbsp;</td>
                   <td class="desc">
-                    {{ $product->productConfig->name }}
+                    {{ optional($product->productConfig)->name }}
                     @if ($product->installation_other_level) 
                        (Other Level) 
                     @endif
                   </td>
-                  <td >{{ $product->typeOfWork->name }}</td>
+                  <td >{{ optional($product->typeOfWork)->name }}</td>
                   <td class="qty">
                     {{ $product->qty }}
                     @if ((int) $product->type_of_product_id === 3)
