@@ -58,7 +58,7 @@
                   $grandTotal += $product->total_price;
                   $storefrontBasePrice = null;
                   $parsedNewStorefrontPrice = floatval($product->new_price_storefront ?? 0);
-                  if ((int) $product->type_of_product_id === 3) {
+                  if ((int) $product->type_of_product_id === 3 && $order->service !== 'SERVICE') {
                     $productCosts = $product->productConfig?->productCosts ?? collect();
                     $storefrontBasePrice = optional(
                       $productCosts->firstWhere('type_of_work_id', $product->type_of_work_id)
