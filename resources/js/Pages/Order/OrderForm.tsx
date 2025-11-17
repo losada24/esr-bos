@@ -1256,6 +1256,7 @@ const OrderForm = ({
             removeOrderProduct={(index: number) => { removeOrderProduct(index) }}
             updateOrderProduct={(index: number) => { updateOrderProduct(index) }}
             extraWorks={extraWorks}
+            product_costs={product_costs}
           />
         </fieldset>
         <fieldset className='p-3 border rounded-xl'>

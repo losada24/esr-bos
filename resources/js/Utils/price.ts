@@ -40,6 +40,9 @@ export const getProductPrice = (
   )
 
   let price: number = parseFloat(productCostPrice?.price.toString() ?? '0')
+  if (product.new_price_storefront !== 0.00 && product.new_price_storefront !== undefined) {
+    price = product.new_price_storefront
+  }
   if (product.type_of_product_id === 3) {
     price = price * product.storefront_area
   } else if (product.product_config_id === PIVOT_CONFIG) {

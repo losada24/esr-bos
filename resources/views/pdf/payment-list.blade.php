@@ -54,9 +54,15 @@
               </tr>
               @foreach ($products as $product)
                 @php
-                //dd($product);
                   $extraWorksCollection = $extraWorksCollection->merge($product->orderProductExtraWorks);
                   $grandTotal += $product->total_price;
+                  $storefrontBasePrice = null;
+                  $parsedNewStorefrontPrice = floatval($product->new_price_storefront ?? 0);
+                  if ((int) $product->type_of_product_id === 3) {
+                    $storefrontBasePrice = optional(
+                      $product->productConfig->productCosts->firstWhere('type_of_work_id', $product->type_of_work_id)
+                    )->price;
+                  }
                 @endphp
                 <tr>
                   <td class="service">&nbsp;</td>
@@ -67,8 +73,25 @@
                     @endif
                   </td>
                   <td >{{ $product->typeOfWork->name }}</td>
-                  <td class="qty">{{ $product->qty }}</td>
-                  <td class="unit">{{ '$' . number_format($product->unit_price, 2, '.', ',') /*$fmt->formatCurrency($product->unit_price, 'USD')*/ }}</td>
+                  <td class="qty">
+                    {{ $product->qty }}
+                    @if ((int) $product->type_of_product_id === 3)
+                      ({{ $product->storefront_area }} SQFT)
+                    @endif
+                  </td>
+                  <td class="unit">
+                    @if ((int) $product->type_of_product_id === 3)
+                      @if ($parsedNewStorefrontPrice !== 0.0)
+                        {{ '$' . number_format($parsedNewStorefrontPrice, 2, '.', ',') }}
+                      @elseif (!is_null($storefrontBasePrice))
+                        {{ ' $' . number_format($storefrontBasePrice, 2, '.', ',') }}
+                      @else
+                        {{ ' N/A' }}
+                      @endif
+                    @else
+                      {{ '$' . number_format($product->unit_price, 2, '.', ',') }}
+                    @endif
+                  </td>
                   <td class="total">{{ '$' . number_format($product->total_price, 2, '.', ',') /* $fmt->formatCurrency($product->total_price, 'USD')*/ }}</td>
                 </tr>
               @endforeach

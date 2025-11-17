@@ -218,6 +218,7 @@ export const getOrderProducts = (orderProduct: OrderProductFormValues) => {
     product_config_id: orderProduct.product_config_id,
     type_of_work_id: orderProduct.type_of_work_id,
     storefront_area: orderProduct.storefront_area,
+    new_price_storefront: orderProduct.new_price_storefront,
     installation_other_level: orderProduct.installation_other_level,
     product_category_id: orderProduct.product_category_id,
     type_of_product_id: orderProduct.type_of_product_id,
