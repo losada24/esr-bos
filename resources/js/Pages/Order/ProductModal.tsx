@@ -6,7 +6,7 @@ import { Field, Form, Formik, type FormikHelpers } from 'formik'
 import { type OrderProductExtraWorksFormValues, orderProductSchema, getValueIdNotNull } from './OrderCommon'
 import InputError from '@/Components/InputError'
 import PrimaryButton from '@/Components/PrimaryButton'
-import { getProductPriceWithExtraWorks, getProductPrice, getProductExtraWorkPrice } from '@/Utils/price'
+import { getProductPriceWithExtraWorks, getProductPrice, getProductExtraWorkPrice, formatPrice } from '@/Utils/price'
 import { PAYMENT_METHODS, SERVICES, STOREFRONT_CATEGORY, PIVOT_CONFIG} from '@/Utils/constants'
 
 const ProductModal = ({
@@ -57,7 +57,8 @@ const ProductModal = ({
     product_category_id: 0,
     type_of_product_id: 0,
     extra_works: [],
-    pivot_cost: 0
+    pivot_cost: 0,
+    new_price_storefront: 0
   }
 
   const handleSubmit = async (values: any, helpers: FormikHelpers<OrderProduct>) => {
@@ -103,8 +104,16 @@ const ProductModal = ({
                 validationSchema={orderProductSchema}
                 onSubmit={handleSubmit}
               >
-                {({ errors, submitCount, setFieldValue, values }) => (
-                  <Form>
+                {({ errors, submitCount, setFieldValue, values }) => {
+                  const storefrontBasePrice = productCosts.find(
+                    (productCost) =>
+                      productCost.product_config_id === values.product_config_id &&
+                      productCost.type_of_work_id === values.type_of_work_id
+                  )?.price
+                  const storefrontBasePriceLabel = storefrontBasePrice !== undefined ? formatPrice(storefrontBasePrice) : null
+
+                  return (
+                    <Form>
                     <div className='grid gap-4 grid-cols-3'>
                       <div className={submitCount ? (errors.type_of_product_id) ? 'has-error' : 'has-success' : ''}>
                         <label htmlFor="type_of_product_id">Type of Product</label>
@@ -256,6 +265,7 @@ const ProductModal = ({
                                {(submitCount && errors.notes) ? <InputError message={errors.notes} className="mt-2" /> : ''}
                         </div>
                         {(values.type_of_product_id === 3 && service === SERVICES.DELIVERY_AND_INSTALLATION) && (
+                          <>
                           <div className={submitCount ? (errors.storefront_area) ? 'has-error' : 'has-success' : ''}>
                             <label htmlFor="storefront_area">Storefront Area</label>
                             <Field
@@ -268,6 +278,24 @@ const ProductModal = ({
                             />
                             {(submitCount && errors.storefront_area) ? <InputError message={errors.storefront_area} className="mt-2" /> : ''}
                           </div>
+                          <div className={submitCount ? (errors.new_price_storefront) ? 'has-error' : 'has-success' : ''}>
+                            <label htmlFor="new_price_storefront">New Price Storefront</label>
+                            <Field
+                              id="new_price_storefront"
+                              name="new_price_storefront"
+                              className="form-input text-right"
+                              autoComplete="new_price_storefront"
+                              placeholder='Qty'
+                              type='number'
+                            />
+                            {(submitCount && errors.new_price_storefront) ? <InputError message={errors.new_price_storefront} className="mt-2" /> : ''}
+                            {storefrontBasePriceLabel !== null && (
+                              <span className="mt-2 inline-block rounded bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-600" aria-live="polite">
+                               Current Price: {storefrontBasePriceLabel}
+                              </span>
+                            )}
+                          </div>
+                          </>
                         )}
                           {(values.product_config_id === 30 && service === SERVICES.DELIVERY_AND_INSTALLATION) && (
                           <div className={submitCount ? (errors.pivot_cost) ? 'has-error' : 'has-success' : ''}>
@@ -369,7 +397,8 @@ const ProductModal = ({
                     </PrimaryButton>
                   </div>
                 </Form>
-                )}
+                  )
+                }}
             </Formik>
           </div>
         </div>

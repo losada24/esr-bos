@@ -663,6 +663,7 @@ const ServiceForm = ({
             removeOrderProduct={(index: number) => { removeOrderProduct(index) }}
             updateOrderProduct={(index: number) => { updateOrderProduct(index) }}
             extraWorks={extraWorks}
+            product_costs={product_costs}
           />
         </fieldset>
 

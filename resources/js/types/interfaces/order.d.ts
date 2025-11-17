@@ -163,6 +163,7 @@ export interface OrderProduct {
   type_of_product_id: number
   typeOfProduct?: TypeOfProduct
   pivot_cost?: number
+  new_price_storefront?: number
 }
 
 export interface OrderProductsExtraWorks {

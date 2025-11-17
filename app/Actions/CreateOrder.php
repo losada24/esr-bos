@@ -203,6 +203,7 @@ class CreateOrder
           'product_category_id' => $product['product_category_id'],
           'type_of_product_id' => $product['type_of_product_id'],
           'pivot_cost' => $product['pivot_cost'],
+          'new_price_storefront' => $product['new_price_storefront'],
         ]);
 
         $extraWorks = [];

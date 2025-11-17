@@ -1,6 +1,6 @@
 import DeleteIcon from '@/Components/Icons/DeleteIcon'
 import EditIcon from '@/Components/Icons/EditIcon'
-import { type TypeOfProduct, type OrderProduct, type ProductConfig, type ProductCategory, type TravelCost, type TypeOfWork } from '@/types'
+import { type TypeOfProduct, type OrderProduct, type ProductConfig, type ProductCategory, type TravelCost, type TypeOfWork, type ProductCost } from '@/types'
 import { OrderProductsExtraWorks} from '@/types/interfaces/order'
 import { formatPrice } from '@/Utils/price'
 import React, { useState } from 'react'
@@ -18,6 +18,7 @@ const ProductTable = ({
   travel_costs,
   type_of_works,
   extraWorks,
+  product_costs,
   removeOrderProduct,
   updateOrderProduct
 }: {
@@ -30,6 +31,7 @@ const ProductTable = ({
   values: OrderFormValues
   travel_costs: TravelCost[]
   extraWorks: Array<{ id: number, name: string }>
+  product_costs: ProductCost[]
 
   removeOrderProduct: (index: number) => void
   updateOrderProduct: (index: number) => void
@@ -98,6 +100,14 @@ const ProductTable = ({
             <tbody>
             {orderProducts.map((product, index) => {
               const isExpanded = expandedRows.includes(index)
+              const storefrontBasePrice = product_costs.find(
+                (productCost) =>
+                  productCost.product_config_id === product.product_config_id &&
+                  productCost.type_of_work_id === product.type_of_work_id
+              )?.price
+              const storefrontBasePriceLabel = storefrontBasePrice !== undefined ? formatPrice(storefrontBasePrice) : null
+              const parsedStorefrontPrice = Number(product.new_price_storefront ?? 0) || 0
+              const hasNewStorefrontPrice = parsedStorefrontPrice !== 0
               return (
           <React.Fragment key={index}>
             <tr className="hover:bg-gray-100 focus-within:bg-gray-100">
@@ -113,12 +123,23 @@ const ProductTable = ({
               <td className="border-t px-6 py-4 align-top">
                 {getTypeOfWork(product.type_of_work_id)}
               </td>
-              <td className="border-t px-6 py-4 align-top text-right">{product.qty}</td>
+              <td className="border-t px-6 py-4 align-top text-right">
+                {product.qty}
+                {product.type_of_product_id === 3 && (
+                  <> ({product.storefront_area} SQFT)</>
+                )}
+              </td>
 
               {showPricingColumns && (
                 <>
                   <td className="border-t px-6 py-4 align-top text-right">
-                    {formatPrice(product.unit_price)}
+                    {product.type_of_product_id === 3
+                      ? (
+                        hasNewStorefrontPrice
+                          ? formatPrice(parsedStorefrontPrice)
+                          : (storefrontBasePriceLabel !== null ? `${storefrontBasePriceLabel}` : 'N/A')
+                        )
+                      : formatPrice(product.unit_price)}
                   </td>
                   <td className="border-t px-6 py-4 align-top text-right">
                     {formatPrice(product.extra_work_price)}
