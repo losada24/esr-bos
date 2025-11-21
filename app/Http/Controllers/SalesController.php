@@ -99,6 +99,7 @@ class SalesController extends Controller
                     'schedule_appointment' => $order->schedule_appointment ? Carbon::parse($order->schedule_appointment)->format('M d, Y h:i A') : null,
                     'schedule_appointment_iso' => $order->schedule_appointment ? Carbon::parse($order->schedule_appointment)->format('Y-m-d\TH:i') : null,
                     'phone'=> $order->client->phone ?? null,
+                    'is_supply' => (bool) ($order->is_supply ?? false),
                     'project_amount' => $order->project_amount ? (float) $order->project_amount : 0,
                     'down_payment' => $order->down_payment ? (float) $order->down_payment : null,
                     'job_address' => $order->job_address ?? null,
@@ -336,7 +337,7 @@ class SalesController extends Controller
   public function assignEstimate(Request $request, Order $order)
   {
     $validated = $request->validate([
-      'schedule_appointment' => ['required', 'date'],
+      'schedule_appointment' => ['nullable', 'date'],
       'owner_ids' => ['array'],
       'owner_ids.*' => ['integer', Rule::exists('users', 'id')],
     ]);
@@ -629,13 +630,19 @@ class SalesController extends Controller
         ? trim($validated['type_of_financing'])
         : null;
       $order->down_payment = $validated['down_payment'] ?? null;
-      $order->status = OrderStatusEnum::CONTRACT_SIGNED_BY_CLIENT->value;
+      $order->status = OrderStatusEnum::RECTIFICATION_OF_MEASURES_AND_HOA->value;
       $order->save();
 
       $order->orderStatus()->create([
-        'status' => $order->status,
+        'status' => OrderStatusEnum::CONTRACT_SIGNED_BY_CLIENT->value,
         'user_id' => auth()->id(),
-        'notes' => $order->status . ' updated by ' . auth()->user()->name,
+        'notes' => OrderStatusEnum::CONTRACT_SIGNED_BY_CLIENT->value . ' updated by ' . auth()->user()->name,
+      ]);
+
+      $order->orderStatus()->create([
+        'status' => OrderStatusEnum::RECTIFICATION_OF_MEASURES_AND_HOA->value,
+        'user_id' => auth()->id(),
+        'notes' => OrderStatusEnum::RECTIFICATION_OF_MEASURES_AND_HOA->value . ' created by ' . auth()->user()->name,
       ]);
 
       if ($request->hasFile('attachments')) {

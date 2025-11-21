@@ -4,6 +4,7 @@ export interface Tasks {
   // description: string
   date: string
   date_edited: string
+  is_supply?: boolean
   tags: Array<{ name: string, color: string }>
   schedule_appointment: string | null
   schedule_appointment_iso?: string | null

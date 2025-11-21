@@ -13,6 +13,7 @@ use App\Mail\EstimateDeliveryInstallationDate;
 use App\Mail\EstimateMaterialArrivalDate;
 use App\Mail\InstallationDateConfirmation;
 use App\Mail\InstallationDateConfirmationClient;
+use App\Mail\PendingAssigment;
 use App\Models\Order;
 use App\Models\User;
 
@@ -64,7 +65,17 @@ trait OrderEmails {
           SendGmailEmail::dispatch($email, $mailable)->onQueue('emails');
         }
       }
-    } else if ($order->status === OrderStatusEnum::DELIVERY_CONFIRMED->value) {
+    } else if ($order->status === OrderStatusEnum::PENDING_ASSIGNMENT->value || $order->status === OrderStatusEnum::COMMERCIAL_ASSIGNMENT->value) {
+      if ($order->saleForm) {
+        $ownerAdminEmails = User::role([RoleEnum::OWNER_ADMIN->value])->pluck('email')->toArray();
+
+        foreach ($ownerAdminEmails as $email) {
+          $mailable = new PendingAssigment($order);
+          SendGmailEmail::dispatch($email, $mailable)->onQueue('emails');
+        }
+      }
+    }
+    else if ($order->status === OrderStatusEnum::DELIVERY_CONFIRMED->value) {
       $users = [];
       if($order->do_not_send_email != 1){
         $users[] = $order->client->email;

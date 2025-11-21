@@ -29,6 +29,13 @@ type IndexOrderProps = PageProps & {
 
 type TabKey = 'home' | 'profile' | 'contact' | 'sales' | 'attachments'
 
+const HIDE_DESCRIPTION_AND_JOB_STATUS = new Set([
+  'NEW REQUEST',
+  'REQUEST FOLLOW UP',
+  'REQUEST STAND BY',
+  'LOST REQUEST'
+])
+
 export default function ShowStatusOrder ({ auth, orderStatuses = [], tags = [], order, usedTags = [] }: IndexOrderProps) {
   const safeOrderStatuses = Array.isArray(orderStatuses) ? orderStatuses : []
   const safeTags = Array.isArray(tags) ? tags : []
@@ -198,6 +205,10 @@ export default function ShowStatusOrder ({ auth, orderStatuses = [], tags = [], 
   const { data, setData, processing, patch } = useForm<{ tags: TagItem[] }>({
     tags: safeTags
   })
+  const normalizedOrderStatus = typeof order.status === 'string' ? order.status.trim().toUpperCase() : ''
+  const shouldHideDescriptionAndJobInfo = normalizedOrderStatus
+    ? HIDE_DESCRIPTION_AND_JOB_STATUS.has(normalizedOrderStatus)
+    : false
   const selectedTagCount = data.tags?.length ?? 0
   const statusCount = safeOrderStatuses.length
 
@@ -227,8 +238,11 @@ export default function ShowStatusOrder ({ auth, orderStatuses = [], tags = [], 
                   </h1>
                   <div className="flex flex-wrap items-center gap-2 text-sm text-slate-500">
                     {order.order_type && (
-                      <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+                      <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-600">
                         {order.order_type}
+                        {order.is_supply ? (
+                          <span className="text-xs font-bold uppercase tracking-wide text-sky-600">(SUPPLY)</span>
+                        ) : null}
                       </span>
                     )}
                     {primaryOwnerDisplay && (
@@ -352,28 +366,32 @@ export default function ShowStatusOrder ({ auth, orderStatuses = [], tags = [], 
                 </div>
               </form>
 
-              <div className="panel space-y-3">
-                <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">Description</h2>
-                {descriptionText
-                  ? <p className="text-sm leading-relaxed text-slate-600">{descriptionText}</p>
-                  : <p className="text-sm text-slate-400">No description available.</p>}
-              </div>
+              {!shouldHideDescriptionAndJobInfo && (
+                <div className="panel space-y-3">
+                  <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">Description</h2>
+                  {descriptionText
+                    ? <p className="text-sm leading-relaxed text-slate-600">{descriptionText}</p>
+                    : <p className="text-sm text-slate-400">No description available.</p>}
+                </div>
+              )}
 
-              <div className="panel space-y-3">
-                <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">Job Site</h2>
-                {jobLocation
-                  ? (
-                    <div className="flex items-start gap-3 text-sm text-slate-600">
-                      <span className="mt-1 text-sky-500">
-                        <LocationIcon className="h-5 w-5" />
-                      </span>
-                      <span>{jobLocation}</span>
-                    </div>
-                    )
-                  : (
-                    <p className="text-sm text-slate-400">No job site information provided.</p>
-                    )}
-              </div>
+              {!shouldHideDescriptionAndJobInfo && (
+                <div className="panel space-y-3">
+                  <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">Job Site</h2>
+                  {jobLocation
+                    ? (
+                      <div className="flex items-start gap-3 text-sm text-slate-600">
+                        <span className="mt-1 text-sky-500">
+                          <LocationIcon className="h-5 w-5" />
+                        </span>
+                        <span>{jobLocation}</span>
+                      </div>
+                      )
+                    : (
+                      <p className="text-sm text-slate-400">No job site information provided.</p>
+                      )}
+                </div>
+              )}
 
               <div className="panel space-y-3">
                 <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">Source</h2>

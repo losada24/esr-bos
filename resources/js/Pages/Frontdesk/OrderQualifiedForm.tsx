@@ -1,5 +1,5 @@
-import { useState, useRef, useMemo } from 'react'
-import { useJsApiLoader, StandaloneSearchBox } from '@react-google-maps/api'
+import { useState, useRef, useMemo, useEffect, useCallback, type FocusEvent } from 'react'
+import { useJsApiLoader } from '@react-google-maps/api'
 import { Field, Form } from 'formik'
 import InputError from '@/Components/InputError'
 import PrimaryButton from '@/Components/PrimaryButton'
@@ -25,6 +25,42 @@ import ClientModal from './ClientModal'
 import { type Client } from '../Client/ClientCommon'
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
+const GOOGLE_MAPS_LIBRARIES: Array<'places'> = ['places']
+
+const parseAddressComponents = (components: google.maps.GeocoderAddressComponent[] = []) => {
+  const find = (type: string) =>
+    components.find((component) => component.types.includes(type)) ?? null
+
+  const streetNumber = find('street_number')?.long_name ?? ''
+  const route = find('route')?.long_name ?? ''
+  const subpremise = find('subpremise')?.long_name ?? ''
+  const city =
+    find('locality')?.long_name ??
+    find('postal_town')?.long_name ??
+    find('administrative_area_level_2')?.long_name ??
+    ''
+  const stateComponent = find('administrative_area_level_1')
+  const stateLong = stateComponent?.long_name ?? ''
+  const stateShort = stateComponent?.short_name ?? ''
+  const postalCode = find('postal_code')?.long_name ?? ''
+
+  return {
+    streetNumber,
+    route,
+    subpremise,
+    city,
+    stateLong,
+    stateShort,
+    postalCode
+  }
+}
+
+const buildJobAddress = (streetNumber: string, route: string, subpremise: string) => {
+  const base = [streetNumber, route].filter(Boolean).join(' ').trim()
+  if (!base) return ''
+  if (!subpremise) return base
+  return `${base} ${subpremise}`.trim()
+}
 
 const OrderQualifiedForm = ({
   submitCount,
@@ -65,9 +101,11 @@ const OrderQualifiedForm = ({
   glass_coatings: string[]
   languages: string[]
 }) => {
-  const inputRef = useRef<google.maps.places.SearchBox | null>(null)
-  const libraries: any[] = ['places']
-  const menoLibraries = useMemo(() => libraries, [])
+  const jobAddressInputRef = useRef<HTMLInputElement | null>(null)
+  const autocompleteInstanceRef = useRef<google.maps.places.Autocomplete | null>(null)
+  const autocompleteListenerRef = useRef<google.maps.MapsEventListener | null>(null)
+  const geocoderRef = useRef<google.maps.Geocoder | null>(null)
+  const menoLibraries = useMemo(() => GOOGLE_MAPS_LIBRARIES, [])
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
     googleMapsApiKey: GOOGLE_MAPS_API_KEY,
@@ -78,6 +116,11 @@ const OrderQualifiedForm = ({
   const [clientsList, setClientsList] = useState<Client[]>(clients)
   const [showCompanyModal, setShowCompanyModal] = useState<boolean>(false)
   const [showClientModal, setShowClientModal] = useState<boolean>(false)
+
+  useEffect(() => {
+    if (!isLoaded) return
+    geocoderRef.current = new google.maps.Geocoder()
+  }, [isLoaded])
 
   /* const addCompany = (company: CompanyContact) => {
     setCompaniesList(prev => [...prev, company])
@@ -149,36 +192,98 @@ const OrderQualifiedForm = ({
       }
     : null */
 
-  const handleOnPlaceChanged = () => {
-    const searchBox = inputRef.current
-    if (searchBox) {
-      const places = searchBox.getPlaces()
-      if (places && places.length > 0) {
-        // Usamos setFieldValue para actualizar el valor del campo 'address'
-        // setFieldValue('job_address', places[0].formatted_address ?? '')
-        const place = places[0]
-        if (place.address_components) {
-          const addressComponents = place.address_components
+  const syncAddressFromString = useCallback((address: string) => {
+    const trimmedAddress = address.trim()
+    setFieldValue('job_address', trimmedAddress)
+    if (!trimmedAddress || !geocoderRef.current) return
 
-          // Función para obtener un componente por tipo
-          const getComponent = (type: string) =>
-            addressComponents.find((component) => component.types.includes(type))?.long_name ?? ''
+    geocoderRef.current.geocode({ address: trimmedAddress }, (results, status) => {
+      if (status !== 'OK' || !results || results.length === 0) return
+      const components = results[0].address_components ?? []
+      const {
+        streetNumber,
+        route,
+        subpremise,
+        city,
+        stateLong,
+        stateShort,
+        postalCode
+      } = parseAddressComponents(components)
 
-          // Extraemos cada parte de la dirección
-          const address = `${getComponent('street_number')} ${getComponent('route')}, ${getComponent('subpremise')}`.trim()
-          const city = getComponent('locality') // Ciudad
-          const state = getComponent('administrative_area_level_1') // Estado
-          const zip = getComponent('postal_code') // Código postal
-
-          // Actualizamos los campos en Formik
-          setFieldValue('job_address', address)
-          setFieldValue('city', city)
-          setFieldValue('job_state', state)
-          setFieldValue('job_zip', zip)
-        }
+      const jobAddress = buildJobAddress(streetNumber, route, subpremise)
+      if (jobAddress) {
+        setFieldValue('job_address', jobAddress)
       }
+
+      if (city) setFieldValue('city', city)
+      if (stateShort || stateLong) setFieldValue('job_state', stateShort || stateLong)
+      if (postalCode) setFieldValue('job_zip', postalCode)
+    })
+  }, [setFieldValue])
+
+  const handlePlaceResult = useCallback((placeResult?: google.maps.places.PlaceResult | null) => {
+    const inputValue = jobAddressInputRef.current?.value ?? ''
+    const formattedAddress =
+      placeResult?.formatted_address ??
+      (placeResult as { formattedAddress?: string } | undefined)?.formattedAddress ??
+      inputValue
+    const components =
+      placeResult?.address_components ??
+      (placeResult as { addressComponents?: google.maps.GeocoderAddressComponent[] } | undefined)?.addressComponents ??
+      []
+
+    const {
+      streetNumber,
+      route,
+      subpremise,
+      city,
+      stateLong,
+      stateShort,
+      postalCode
+    } = parseAddressComponents(components)
+
+    const jobAddress = buildJobAddress(streetNumber, route, subpremise) || formattedAddress
+    if (jobAddress) {
+      setFieldValue('job_address', jobAddress)
+    } else if (formattedAddress) {
+      setFieldValue('job_address', formattedAddress)
     }
-  }
+
+    if (city) {
+      setFieldValue('city', city)
+    }
+    if (stateShort || stateLong) setFieldValue('job_state', stateShort || stateLong)
+    if (postalCode) setFieldValue('job_zip', postalCode)
+
+    if ((!city || !(stateShort || stateLong) || !postalCode) && (jobAddress || formattedAddress)) {
+      syncAddressFromString(jobAddress || formattedAddress)
+    }
+  }, [setFieldValue, syncAddressFromString])
+
+  useEffect(() => {
+    if (!isLoaded || typeof google === 'undefined' || !google.maps?.places || !jobAddressInputRef.current) return
+
+    const options: google.maps.places.AutocompleteOptions = {
+      fields: ['address_components', 'formatted_address'],
+      types: ['address']
+    }
+
+    const autocomplete = new google.maps.places.Autocomplete(jobAddressInputRef.current, options)
+    autocompleteInstanceRef.current = autocomplete
+
+    const listener = autocomplete.addListener('place_changed', () => {
+      handlePlaceResult(autocomplete.getPlace())
+    })
+    autocompleteListenerRef.current = listener
+
+    return () => {
+      if (autocompleteListenerRef.current) {
+        google.maps.event.removeListener(autocompleteListenerRef.current)
+        autocompleteListenerRef.current = null
+      }
+      autocompleteInstanceRef.current = null
+    }
+  }, [isLoaded, handlePlaceResult])
   const [isCreated] = useState<boolean>(true)
   const [showProductModal, setShowProductModal] = useState<boolean>(false)
   const [attachmentsArray, setAttachmentsList] = useState<Attachment[]>(attachments ?? [])
@@ -257,13 +362,23 @@ const selectedSourceClients: SingleValue<OptionType> = {
                 {(submitCount && errors.name) ? <InputError message={errors.name} className="mt-2" /> : ''}
               </div>
               <div className={submitCount ? (errors.job_address ? 'has-error' : 'has-success') : ''}>
-                  <label htmlFor="address"> Job Address</label>
+                  <label htmlFor="job_address"> Job Address</label>
                     <Field
                       id="job_address"
                       name="job_address"
-                      className="form-textarea resize-none placeholder:text-white-dark"
+                      className="form-input placeholder:text-white-dark"
                       autoComplete="off"
                       placeholder="Address"
+                      innerRef={jobAddressInputRef}
+                      onBlur={(e: FocusEvent<HTMLInputElement>) => {
+                        const value = e.target.value ?? ''
+                        if (value.trim()) {
+                          syncAddressFromString(value)
+                        }
+                      }}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                        setFieldValue('job_address', e.target.value)
+                      }}
                     />
                 {(submitCount && errors.job_address) ? <InputError message={errors.job_address} className="mt-2" /> : ''}
               </div>

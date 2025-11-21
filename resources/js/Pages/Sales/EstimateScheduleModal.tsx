@@ -66,9 +66,9 @@ export default function EstimateScheduleModal ({
           validate={(values) => {
             const issues: Partial<Record<keyof EstimateScheduleFormValues, string>> = {}
 
-            if (!values.scheduleDate) {
+            /* if (!values.scheduleDate) {
               issues.scheduleDate = 'Appointment date is required.'
-            }
+            } */
 
             if (!values.ownerIds || values.ownerIds.length === 0) {
               issues.ownerIds = 'Select at least one owner.'
@@ -79,7 +79,7 @@ export default function EstimateScheduleModal ({
           onSubmit={(values) => {
             onSubmit({
               scheduleDate: values.scheduleDate,
-              ownerIds: values.ownerIds,
+              ownerIds: values.ownerIds
             })
           }}
         >

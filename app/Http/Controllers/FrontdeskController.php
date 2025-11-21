@@ -31,9 +31,11 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Barryvdh\DomPDF\Facade\Pdf;
+use App\Traits\OrderEmails;
 
 class FrontdeskController extends Controller
-{
+{   
+    use OrderEmails;
     public function index()
     {
       
@@ -65,7 +67,7 @@ class FrontdeskController extends Controller
     $order_types = [
       OrderTypeEnum::RESIDENTIAL->value,
       OrderTypeEnum::COMMERCIAL->value,
-      OrderTypeEnum::SUPPLY->value,
+      //OrderTypeEnum::SUPPLY->value,
     ];
 
    
@@ -102,6 +104,7 @@ $data = collect($frontdeskStatuses)->map(function ($status) use ($orders, $quali
                 'date'        => optional($order->created_at)->format('M d, Y h:i A'),
                 'schedule_appointment' => $order->schedule_appointment ? Carbon::parse($order->schedule_appointment)->format('M d, Y h:i A') : null,
                 'phone'       => $order->client->phone ?? null,
+                'is_supply'   => (bool) ($order->is_supply ?? false),
                 'tags'        => ($order->tags ?? collect())->map(fn($t) => [
                     'name'  => $t->name,
                     'color' => $t->color,
@@ -370,7 +373,9 @@ public function showQuantifiedModal(Order $order)
             'notes' => "{$status} created by " . auth()->user()->name,
           ]);
 
+        $order->load('saleForm', 'client');
 
+          $this->sendEmail($order);
 
         return response()->json(['success' => true, 'order' => $order]);
     }
