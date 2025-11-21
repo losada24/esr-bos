@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import type { Dispatch, SetStateAction } from 'react'
 import { Head, Link } from '@inertiajs/react'
 import { ReactSortable } from 'react-sortablejs'
 import { type Role, type PageProps, type Pipelines, type Tasks } from '@/types'
@@ -19,6 +20,86 @@ import LostContractModal from './LostContractModal'
 
 export interface OwnerOption { id: number, name: string }
 
+const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const
+
+const MONTH_INDEX: Record<string, number> = MONTH_LABELS.reduce((acc, label, index) => {
+  const lower = label.toLowerCase()
+  acc[lower] = index
+  if (lower === 'sep') {
+    acc.sept = index
+  }
+  return acc
+}, {} as Record<string, number>)
+
+const parseDisplayDateToTimestamp = (value?: string | null): number => {
+  if (!value) return 0
+  const trimmedValue = value.trim()
+  if (!trimmedValue) return 0
+
+  const match = trimmedValue.match(/^([A-Za-z]+)\s+(\d{1,2}),\s*(\d{4})\s+(\d{1,2}):(\d{2})\s*(AM|PM)$/i)
+  if (match) {
+    const [, monthLabel, dayStr, yearStr, hourStr, minuteStr, periodRaw] = match
+    const monthIndex = MONTH_INDEX[monthLabel.toLowerCase()]
+    const day = Number(dayStr)
+    const year = Number(yearStr)
+    let hours = Number(hourStr)
+    const minutes = Number(minuteStr)
+    const period = periodRaw.toUpperCase()
+
+    if (
+      monthIndex != null &&
+      !Number.isNaN(day) &&
+      !Number.isNaN(year) &&
+      !Number.isNaN(hours) &&
+      !Number.isNaN(minutes)
+    ) {
+      hours = hours % 12
+      if (period === 'PM') {
+        hours += 12
+      }
+
+      const timestamp = Date.UTC(year, monthIndex, day, hours, minutes)
+      return Number.isNaN(timestamp) ? 0 : timestamp
+    }
+  }
+
+  const fallback = Date.parse(trimmedValue)
+  return Number.isNaN(fallback) ? 0 : fallback
+}
+
+const sortTasksByRecentActivity = (tasks: Tasks[] = []): Tasks[] => {
+  return [...tasks].sort((taskA, taskB) => {
+    const timestampA = parseDisplayDateToTimestamp(taskA?.date_edited ?? taskA?.date)
+    const timestampB = parseDisplayDateToTimestamp(taskB?.date_edited ?? taskB?.date)
+    return timestampB - timestampA
+  })
+}
+
+const sortPipelinesByRecentActivity = (pipelines: Pipelines[] = []): Pipelines[] => {
+  return pipelines.map(pipeline => ({
+    ...pipeline,
+    tasks: sortTasksByRecentActivity(pipeline.tasks ?? [])
+  }))
+}
+
+const formatDateForDisplay = (date: Date): string => {
+  const monthLabel = MONTH_LABELS[date.getMonth()] ?? MONTH_LABELS[0]
+  const day = date.getDate().toString().padStart(2, '0')
+  const year = date.getFullYear()
+  let hours = date.getHours()
+  const minutes = date.getMinutes().toString().padStart(2, '0')
+  const period = hours >= 12 ? 'PM' : 'AM'
+  hours = hours % 12
+  if (hours === 0) hours = 12
+  const hourDisplay = hours.toString().padStart(2, '0')
+  return `${monthLabel} ${day}, ${year} ${hourDisplay}:${minutes} ${period}`
+}
+
+const stampTaskAsUpdated = (task: Tasks): Tasks => ({
+  ...task,
+  date_edited: formatDateForDisplay(new Date())
+})
+
 export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order_types, owners, methods_of_payment, type_of_financing }: PageProps & { data: Pipelines[], lossReasonFrontdesk: string [], sources: string[], order_types: string[], owners: OwnerOption[], methods_of_payment: string[], type_of_financing: string[] }) {
   const IS_ADMIN = isAdmin(auth.user.roles.map((role: Role) => role.name))
   const IS_ACCOUNT_MANAGER = isAccountManager(auth.user.roles.map((role: Role) => role.name))
@@ -30,7 +111,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
 
   const ESTIMATE_STATUS = 'ESTIMATE & APPT SCHEDULE'
 
-  const [projectList, setProjectList] = useState<Pipelines[]>(data)
+  const [projectList, setProjectListState] = useState<Pipelines[]>(() => sortPipelinesByRecentActivity(data))
   const [showModal, setShowModal] = useState(false)
   const [lostTask, setLostTask] = useState<Tasks | null>(null)
   const [showQuantifiedModal, setShowQuantifiedModal] = useState(false)
@@ -64,6 +145,20 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
   const [lostContractSaving, setLostContractSaving] = useState(false)
   const [lostContractError, setLostContractError] = useState<string | null>(null)
   const [pendingLostContract, setPendingLostContract] = useState<{ task: Tasks, oldStatus: string, newStatus: string } | null>(null)
+
+  useEffect(() => {
+    setProjectListState(sortPipelinesByRecentActivity(data))
+  }, [data])
+
+  const setProjectList = useCallback<Dispatch<SetStateAction<Pipelines[]>>>((value) => {
+    setProjectListState(prevState => {
+      const nextState = typeof value === 'function'
+        ? (value as (prev: Pipelines[]) => Pipelines[])(prevState)
+        : value
+
+      return sortPipelinesByRecentActivity(nextState)
+    })
+  }, [setProjectListState])
 
   const FOLLOW_UP_STATUSES = ['FOLLOW UP', 'FOLLOW UP PROJECTS']
   const ownerOptions = owners ?? []
@@ -126,13 +221,13 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
       }
 
       const data = await response.json()
-      const updatedTask: Tasks = {
+      const updatedTask: Tasks = stampTaskAsUpdated({
         ...pendingMove.task,
         schedule_appointment: data.order.schedule_appointment,
         schedule_appointment_iso: data.order.schedule_appointment_iso,
         owner_ids: data.order.owner_ids,
         owners: data.order.owners
-      }
+      })
 
       setProjectList(prev =>
         prev.map(pipeline => {
@@ -256,14 +351,14 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
           : projectAmountValue
       )
 
-      const updatedTask: Tasks = {
+      const updatedTask: Tasks = stampTaskAsUpdated({
         ...pendingFollowUp.task,
         schedule_appointment: data.order.schedule_appointment ?? pendingFollowUp.task.schedule_appointment,
         schedule_appointment_iso: data.order.schedule_appointment_iso ?? pendingFollowUp.task.schedule_appointment_iso,
         owner_ids: data.order.owner_ids ?? pendingFollowUp.task.owner_ids,
         owners: data.order.owners ?? pendingFollowUp.task.owners,
         project_amount: Number.isFinite(normalizedProjectAmount) ? normalizedProjectAmount : 0
-      }
+      })
 
       setProjectList(prev => prev.map(pipeline => {
         if (pipeline.id.toString() === pendingFollowUp.oldStatus) {
@@ -323,13 +418,13 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
 
       const data = payload
 
-      const updatedTask: Tasks = {
+      const updatedTask: Tasks = stampTaskAsUpdated({
         ...pendingStandBy.task,
         schedule_appointment: data.order.schedule_appointment ?? pendingStandBy.task.schedule_appointment,
         schedule_appointment_iso: data.order.schedule_appointment_iso ?? pendingStandBy.task.schedule_appointment_iso,
         owner_ids: data.order.owner_ids ?? pendingStandBy.task.owner_ids,
-        owners: data.order.owners ?? pendingStandBy.task.owners,
-      }
+        owners: data.order.owners ?? pendingStandBy.task.owners
+      })
 
       setProjectList(prev => prev.map(pipeline => {
         if (pipeline.id.toString() === pendingStandBy.oldStatus) {
@@ -389,13 +484,13 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
 
       const data = payload
 
-      const updatedTask: Tasks = {
+      const updatedTask: Tasks = stampTaskAsUpdated({
         ...pendingPreContract.task,
         schedule_appointment: data.order.schedule_appointment ?? pendingPreContract.task.schedule_appointment,
         schedule_appointment_iso: data.order.schedule_appointment_iso ?? pendingPreContract.task.schedule_appointment_iso,
         owner_ids: data.order.owner_ids ?? pendingPreContract.task.owner_ids,
         owners: data.order.owners ?? pendingPreContract.task.owners
-      }
+      })
 
       setProjectList(prev => prev.map(pipeline => {
         if (pipeline.id.toString() === pendingPreContract.oldStatus) {
@@ -491,7 +586,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
               : downPaymentRaw
           )
 
-      const updatedTask: Tasks = {
+      const updatedTask: Tasks = stampTaskAsUpdated({
         ...pendingContractSigned.task,
         title: data.order.name ?? values.projectName,
         project_amount: Number.isFinite(normalizedProjectAmount) ? normalizedProjectAmount : 0,
@@ -505,8 +600,8 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
         schedule_appointment: data.order.schedule_appointment ?? pendingContractSigned.task.schedule_appointment,
         schedule_appointment_iso: data.order.schedule_appointment_iso ?? pendingContractSigned.task.schedule_appointment_iso,
         owner_ids: data.order.owner_ids ?? pendingContractSigned.task.owner_ids,
-        owners: data.order.owners ?? pendingContractSigned.task.owners,
-      }
+        owners: data.order.owners ?? pendingContractSigned.task.owners
+      })
 
       setProjectList(prev => prev.map(pipeline => {
         if (pipeline.id.toString() === pendingContractSigned.oldStatus) {
@@ -565,9 +660,9 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
         throw new Error('Unexpected server response.')
       }
 
-      const updatedTask: Tasks = {
+      const updatedTask: Tasks = stampTaskAsUpdated({
         ...pendingLostContract.task
-      }
+      })
 
       setProjectList(prev => prev.map(pipeline => {
         if (pipeline.id.toString() === pendingLostContract.oldStatus) {
@@ -836,7 +931,8 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
                           prev.map(pipeline => {
                             const filtered = pipeline.tasks.filter(task => Number(task.id) !== Number(movedTask.id))
                             if (pipeline.id.toString() === newStatus) {
-                              return { ...pipeline, tasks: [...filtered, movedTask] }
+                              const stampedTask = stampTaskAsUpdated(movedTask)
+                              return { ...pipeline, tasks: [...filtered, stampedTask] }
                             }
                             return { ...pipeline, tasks: filtered }
                           })
@@ -854,7 +950,6 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
                             <div className="shadow bg-[#f4f4f4] dark:bg-white-dark/20 p-3 pb-4 rounded-md mb-5 space-y-2 cursor-move text-xs text-slate-600">
                               {task.image ? <img src="/assets/images/carousel1.jpeg" alt="images" className="h-32 w-full object-cover rounded-md" /> : ''}
                               <div className="flex items-center justify-between w-full">
-                                {/* Nombre + ícono */}
                                 <p className="flex items-center gap-2 break-all text-sm font-semibold text-slate-700">
                                   {task.title}
                                 </p>
@@ -914,11 +1009,28 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
                               {task.date_edited !== task.date && (
                                 <p className="break-all">{task.date_edited}</p>
                               )}
-                              {task.project_amount !== undefined && task.project_amount !== null && (
-                                <p className="break-all font-semibold text-slate-700">
-                                  {formatCurrency(Number(task.project_amount))}
-                                </p>
-                              )}
+                            {(task.project_amount !== undefined && task.project_amount !== null)
+                              ? (
+                                <div className="mt-1 flex items-center justify-between gap-2">
+                                  <p className="break-all font-semibold text-slate-700">
+                                    {formatCurrency(Number(task.project_amount))}
+                                  </p>
+                                  {task.is_supply && (
+                                    <span className="text-xs font-bold uppercase tracking-wide text-sky-600">
+                                      SUPPLY
+                                    </span>
+                                  )}
+                                </div>
+                                )
+                              : (
+                                task.is_supply && (
+                                  <div className="mt-1 flex justify-end">
+                                    <span className="text-xs font-bold uppercase tracking-wide text-sky-600">
+                                      SUPPLY
+                                    </span>
+                                  </div>
+                                )
+                                )}
                               {/* <p className="break-all">{formatPrice(Number(task.precio))}</p> */}
                             </div>
                           </div>

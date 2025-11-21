@@ -131,6 +131,10 @@ class CreateQualifiedOrder
         'user_id' => auth()->user()->id,
         'notes' => "$status created by " . auth()->user()->name,
       ]);
+
+       $order->load('saleForm', 'client');
+
+      $this->sendEmail($order);
       if (!$order) {
         throw new \Exception('Order not created');
       }

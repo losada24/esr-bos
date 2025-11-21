@@ -14,6 +14,7 @@ use App\Http\Controllers\DownloadController;
 use App\Http\Controllers\FrontdeskController;
 use App\Http\Controllers\InstallationTeamController;
 use App\Http\Controllers\OrderNoteController;
+use App\Http\Controllers\OrderProcessingController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SalesController;
 use App\Http\Controllers\SourceController;
@@ -238,6 +239,9 @@ Route::middleware('auth')->group(function () {
       Route::get('sales/calendar/events/{year}/{month}', [SalesController::class, 'calendarEvents'])->name('sales.calendar.events');
       Route::resource('sales', SalesController::class)
     ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::OWNER->value ]);
+      Route::get('order-processing', [OrderProcessingController::class, 'index'])
+        ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::OWNER->value ])
+        ->name('order-processing.index');
 
       Route::get('/frontdesk/orders/{order}/sale-form', [FrontdeskController::class, 'saleFormPdf'])
         ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::OWNER->value  ])

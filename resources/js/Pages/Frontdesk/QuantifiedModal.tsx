@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState, type FocusEvent } from 'react'
 import Modal from '@/Components/Modal'
 import CloseIcon from '@/Components/Icons/CloseIcon'
 import { type Pipelines } from '@/types'
@@ -12,6 +12,45 @@ import { loadOrderFormObj, type Order, orderQuantifiedSchema, type OrderFormValu
 import { router } from '@inertiajs/react'
 import { ORDER_TYPES } from '@/Utils/constants'
 import { capitalizeWords } from '@/Utils/string'
+import { useJsApiLoader } from '@react-google-maps/api'
+
+const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
+const GOOGLE_MAPS_LIBRARIES: Array<'places'> = ['places']
+
+const parseAddressComponents = (components: google.maps.GeocoderAddressComponent[] = []) => {
+  const find = (type: string) =>
+    components.find((component) => component.types.includes(type)) ?? null
+
+  const streetNumber = find('street_number')?.long_name ?? ''
+  const route = find('route')?.long_name ?? ''
+  const subpremise = find('subpremise')?.long_name ?? ''
+  const city =
+    find('locality')?.long_name ??
+    find('postal_town')?.long_name ??
+    find('administrative_area_level_2')?.long_name ??
+    ''
+  const stateComponent = find('administrative_area_level_1')
+  const stateLong = stateComponent?.long_name ?? ''
+  const stateShort = stateComponent?.short_name ?? ''
+  const postalCode = find('postal_code')?.long_name ?? ''
+
+  return {
+    streetNumber,
+    route,
+    subpremise,
+    city,
+    stateLong,
+    stateShort,
+    postalCode
+  }
+}
+
+const buildJobAddress = (streetNumber: string, route: string, subpremise: string) => {
+  const base = [streetNumber, route].filter(Boolean).join(' ').trim()
+  if (!base) return ''
+  if (!subpremise) return base
+  return `${base} ${subpremise}`.trim()
+}
 
 const QuantifiedModal = ({
   task,
@@ -49,8 +88,131 @@ const QuantifiedModal = ({
   // errors: FormikErrors<OrderFormValues>
 
 }) => {
-  // const initialValues: OrderFormValues = loadOrderFormObj(order)
   const [orderFormData, setOrderFormData] = useState<OrderFormValues | null>(null)
+  const jobAddressInputRef = useRef<HTMLInputElement | null>(null)
+  const autocompleteInstanceRef = useRef<google.maps.places.Autocomplete | null>(null)
+  const autocompleteListenerRef = useRef<google.maps.MapsEventListener | null>(null)
+  const placesServiceRef = useRef<google.maps.places.PlacesService | null>(null)
+  const setFieldValueRef = useRef<((field: string, value: any, shouldValidate?: boolean) => void) | null>(null)
+  const memoLibraries = useMemo(() => GOOGLE_MAPS_LIBRARIES, [])
+  const { isLoaded } = useJsApiLoader({
+    id: 'google-map-script',
+    googleMapsApiKey: GOOGLE_MAPS_API_KEY,
+    libraries: memoLibraries
+  })
+  const setFieldValueSafe = useCallback((field: string, value: any) => {
+    setFieldValueRef.current?.(field, value)
+  }, [])
+
+  useEffect(() => {
+    if (!isLoaded || typeof google === 'undefined') return
+    placesServiceRef.current = new google.maps.places.PlacesService(document.createElement('div'))
+  }, [isLoaded])
+
+  const syncAddressFromString = useCallback((address: string) => {
+    const trimmedAddress = address.trim()
+    setFieldValueSafe('job_address', trimmedAddress)
+    if (!trimmedAddress || !placesServiceRef.current) return
+
+    placesServiceRef.current.findPlaceFromQuery(
+      {
+        query: trimmedAddress,
+        fields: ['place_id', 'formatted_address']
+      },
+      (results, status) => {
+        if (status === google.maps.places.PlacesServiceStatus.OK && results && results.length > 0) {
+          const [firstResult] = results
+          if (firstResult.place_id) {
+            placesServiceRef.current?.getDetails(
+              {
+                placeId: firstResult.place_id,
+                fields: ['address_components', 'formatted_address']
+              },
+              (place, detailsStatus) => {
+                if (detailsStatus === google.maps.places.PlacesServiceStatus.OK && place) {
+                  handlePlaceResult(place)
+                } else if (firstResult.formatted_address) {
+                  setFieldValueSafe('job_address', firstResult.formatted_address)
+                }
+              }
+            )
+          } else if (firstResult.formatted_address) {
+            setFieldValueSafe('job_address', firstResult.formatted_address)
+          }
+        }
+      }
+    )
+  }, [setFieldValueSafe])
+
+  const handlePlaceResult = useCallback((placeResult?: google.maps.places.PlaceResult | null) => {
+    const inputValue = jobAddressInputRef.current?.value ?? ''
+    const formattedAddress =
+      placeResult?.formatted_address ??
+      (placeResult as { formattedAddress?: string } | undefined)?.formattedAddress ??
+      inputValue
+    const components =
+      placeResult?.address_components ??
+      (placeResult as { addressComponents?: google.maps.GeocoderAddressComponent[] } | undefined)?.addressComponents ??
+      []
+
+    const {
+      streetNumber,
+      route,
+      subpremise,
+      city,
+      stateLong,
+      stateShort,
+      postalCode
+    } = parseAddressComponents(components)
+
+    const jobAddress = buildJobAddress(streetNumber, route, subpremise) || formattedAddress
+    if (jobAddress) {
+      setFieldValueSafe('job_address', jobAddress)
+    } else if (formattedAddress) {
+      setFieldValueSafe('job_address', formattedAddress)
+    }
+
+    if (city) {
+      setFieldValueSafe('city', city)
+    }
+    if (stateShort || stateLong) setFieldValueSafe('job_state', stateShort || stateLong)
+    if (postalCode) setFieldValueSafe('job_zip', postalCode)
+
+    if ((!city || !(stateShort || stateLong) || !postalCode) && (jobAddress || formattedAddress)) {
+      syncAddressFromString(jobAddress || formattedAddress)
+    }
+  }, [setFieldValueSafe, syncAddressFromString])
+
+  useEffect(() => {
+    if (
+      !isLoaded ||
+      typeof google === 'undefined' ||
+      !google.maps?.places ||
+      !jobAddressInputRef.current ||
+      !orderFormData
+    ) return
+
+    const options: google.maps.places.AutocompleteOptions = {
+      fields: ['address_components', 'formatted_address'],
+      types: ['address']
+    }
+
+    const autocomplete = new google.maps.places.Autocomplete(jobAddressInputRef.current, options)
+    autocompleteInstanceRef.current = autocomplete
+
+    const listener = autocomplete.addListener('place_changed', () => {
+      handlePlaceResult(autocomplete.getPlace())
+    })
+    autocompleteListenerRef.current = listener
+
+    return () => {
+      if (autocompleteListenerRef.current) {
+        google.maps.event.removeListener(autocompleteListenerRef.current)
+        autocompleteListenerRef.current = null
+      }
+      autocompleteInstanceRef.current = null
+    }
+  }, [isLoaded, handlePlaceResult, orderFormData, showModal])
   useEffect(() => {
     const fetchOrder = async () => {
       if (showModal && task?.id) {
@@ -147,7 +309,9 @@ const QuantifiedModal = ({
                 validationSchema={orderQuantifiedSchema}
                 onSubmit={handleSubmit}
               >
-      {({ errors, submitCount, setFieldValue, values }) => (
+      {({ errors, submitCount, setFieldValue, values }) => {
+        setFieldValueRef.current = setFieldValue
+        return (
           <Form className='space-y-5' >
             <fieldset className='p-3 border rounded-xl'>
             <legend className='text-lg font-semibold px-3'>Client Information</legend>
@@ -320,13 +484,23 @@ const QuantifiedModal = ({
                     </>
                     )}
                     <div className={submitCount ? (errors.job_address ? 'has-error' : 'has-success') : ''}>
-                      <label htmlFor="address"> Job Address</label>
+                      <label htmlFor="job_address"> Job Address</label>
                         <Field
                           id="job_address"
                           name="job_address"
-                          className="form-textarea resize-none placeholder:text-white-dark"
+                          className="form-input placeholder:text-white-dark"
                           autoComplete="off"
                           placeholder="Address"
+                          innerRef={jobAddressInputRef}
+                          onBlur={(e: FocusEvent<HTMLInputElement>) => {
+                            const value = e.target.value ?? ''
+                            if (value.trim()) {
+                              syncAddressFromString(value)
+                            }
+                          }}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                            setFieldValue('job_address', e.target.value)
+                          }}
                         />
                     {(submitCount && errors.job_address) ? <InputError message={errors.job_address} className="mt-2" /> : ''}
                   </div>
@@ -611,7 +785,8 @@ const QuantifiedModal = ({
                 </PrimaryButton>
               </div>
           </Form>
-)}
+        )
+      }}
             </Formik>
           </div>
         </div>
