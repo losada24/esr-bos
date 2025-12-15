@@ -196,7 +196,8 @@ export const ROLES = {
   FRONTDESK: 'frontdesk',
   SERVICE_MANAGER: 'service_manager',
   PAYMENT_COORDINATOR: 'payment_coordinator',
-  OWNER_ADMIN: 'owner_admin'
+  OWNER_ADMIN: 'owner_admin',
+  FRONTDESK_ADMIN: 'frontdesk_admin'
 
 }
 

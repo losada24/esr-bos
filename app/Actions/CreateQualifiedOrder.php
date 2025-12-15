@@ -52,6 +52,7 @@ class CreateQualifiedOrder
         'job_state' => $request->job_state,
         'job_zip' => $request->job_zip,
         'description' => $request->description,
+        'notes' => $request->notes,
         'status' => $status,
         'source' => $request->source ? $request->source : '',
         'bid_due_date' => $request->bid_due_date ? $request->bid_due_date : null,
@@ -120,11 +121,19 @@ class CreateQualifiedOrder
 
 
 
-       $order->orderStatus()->create([
+      $order->orderStatus()->create([
         'status' => OrderStatusEnum::QUALIFIED->value,
         'user_id' => auth()->user()->id,
         'notes' => "$status created by " . auth()->user()->name,
       ]);
+
+      if ($request->filled('notes')) {
+        $order->notes()->create([
+          'content' => $request->notes,
+          'type' => 'order_note',
+          'user_id' => auth()->id(),
+        ]);
+      }
 
       $order->orderStatus()->create([
         'status' => $status,

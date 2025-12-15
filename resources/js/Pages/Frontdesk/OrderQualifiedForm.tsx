@@ -718,7 +718,7 @@ const selectedSourceClients: SingleValue<OptionType> = {
                 />
                 <label htmlFor="is_supply" className='font-bold inline-flex'>Supply</label>
               </div>
-              <div className='col-span-4'>
+              {/* <div className='col-span-4'>
               <label htmlFor="description"> Description</label>
               <Field
                 id="description"
@@ -728,6 +728,18 @@ const selectedSourceClients: SingleValue<OptionType> = {
                 className="form-textarea resize-none placeholder:text-white-dark"
                 placeholder='Description'
               />
+            </div> */}
+            <div className={`col-span-4 ${submitCount ? (errors.notes) ? 'has-error' : 'has-success' : ''}`}>
+              <label htmlFor="notes"> Notes</label>
+              <Field
+                id="notes"
+                name="notes"
+                component="textarea"
+                rows="3"
+                className="form-textarea resize-none placeholder:text-white-dark"
+                placeholder='Notes'
+              />
+              {(submitCount && errors.notes) ? <InputError message={errors.notes} className="mt-2" /> : ''}
             </div>
             </div>
         </fieldset>

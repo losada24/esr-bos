@@ -39,8 +39,20 @@ class CreateOrderPipeline
         'name' => $request->client_name,
         'notes' => $request->notes,
         'status' => $status,
+        'name_check' => $request->boolean('name_check'),
+        'address_check' => $request->boolean('address_check'),
+        'amount_check' => $request->boolean('amount_check'),
+        'email_check' => $request->boolean('email_check'),
         
       ]);
+
+      if ($request->filled('notes')) {
+        $order->notes()->create([
+          'content' => $request->notes,
+          'type' => 'order_note',
+          'user_id' => auth()->id(),
+        ]);
+      }
 
       $order->orderStatus()->create([
         'status' => $status,

@@ -82,6 +82,10 @@ export interface Order {
   material_received_date?: Date | null
   order_colors?: OrderColor[] | []
   description?: string
+  name_check?: boolean
+  address_check?: boolean
+  amount_check?: boolean
+  email_check?: boolean
 }
 
 export interface TypeOfWork {

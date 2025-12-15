@@ -14,8 +14,11 @@ use App\Mail\EstimateMaterialArrivalDate;
 use App\Mail\InstallationDateConfirmation;
 use App\Mail\InstallationDateConfirmationClient;
 use App\Mail\PendingAssigment;
+use App\Mail\RequestReSchedule;
+use App\Mail\RequestStandBy;
 use App\Models\Order;
 use App\Models\User;
+use Symfony\Component\HttpFoundation\Request;
 
 trait OrderEmails {
 
@@ -74,6 +77,26 @@ trait OrderEmails {
           SendGmailEmail::dispatch($email, $mailable)->onQueue('emails');
         }
       }
+    }
+    else if ($order->status === OrderStatusEnum::NEW_CUSTOMER_REQUEST_STAND_BY->value) {
+      
+        $frontdeskAdminEmails = User::role([RoleEnum::FRONTDESK_ADMIN->value])->pluck('email')->toArray();
+
+        foreach ($frontdeskAdminEmails as $email) {
+          $mailable = new RequestStandBy($order);
+          SendGmailEmail::dispatch($email, $mailable)->onQueue('emails');
+        }
+      
+    }
+    else if ($order->status === OrderStatusEnum::REQUEST_RE_SCHEDULE->value) {
+      
+        $frontdeskAdminEmails = User::role([RoleEnum::FRONTDESK_ADMIN->value])->pluck('email')->toArray();
+
+        foreach ($frontdeskAdminEmails as $email) {
+          $mailable = new RequestReSchedule($order);
+          SendGmailEmail::dispatch($email, $mailable)->onQueue('emails');
+        }
+      
     }
     else if ($order->status === OrderStatusEnum::DELIVERY_CONFIRMED->value) {
       $users = [];

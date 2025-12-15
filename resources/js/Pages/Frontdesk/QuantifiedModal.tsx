@@ -295,15 +295,14 @@ const QuantifiedModal = ({
       closeable={true}
       onClose={handleClose}
     >
-      <div className="w-full max-w-4xl mx-auto bg-white dark:bg-[#121c2c] rounded-xl overflow-hidden">
+      <div className="w-full max-w-4xl mx-auto bg-white dark:bg-[#121c2c] rounded-xl overflow-hidden flex flex-col max-h-[90vh]">
         <div className="flex items-center justify-between bg-[#fbfbfb] px-5 py-3 dark:bg-[#121c2c]">
           <div className="text-lg font-bold">Create Order</div>
           <button type="button" className="text-white-dark hover:text-dark" onClick={() => { handleClose() }}>
             <CloseIcon />
           </button>
-      </div>
-      <div className='p-5'>
-      <div className="max-h-[70vh] overflow-y-auto">
+        </div>
+        <div className='flex-1 overflow-y-auto p-5'>
             <Formik<OrderFormValues>
                 initialValues={orderFormData}
                 validationSchema={orderQuantifiedSchema}
@@ -566,7 +565,7 @@ const QuantifiedModal = ({
                       {(submitCount && errors.project_amount) ? <InputError message={errors.project_amount} className="mt-2" /> : ''}
                     </div>
                     </div>
-                     <div className={submitCount ? (errors.notes) ? 'has-error' : 'has-success' : ''}>
+                    {/* <div className={submitCount ? (errors.description) ? 'has-error' : 'has-success' : ''}>
                       <label htmlFor="description">Description</label>
                       <Field
                         id="description"
@@ -577,6 +576,18 @@ const QuantifiedModal = ({
                         placeholder='Description'
                       />
                       {(submitCount && errors.description) ? <InputError message={errors.description} className="mt-2" /> : ''}
+                    </div> */}
+                    <div className={submitCount ? (errors.notes) ? 'has-error' : 'has-success' : ''}>
+                      <label htmlFor="notes">Notes</label>
+                      <Field
+                        id="notes"
+                        name="notes"
+                        component="textarea"
+                        rows="3"
+                        className="form-textarea resize-none placeholder:text-white-dark"
+                        placeholder='Notes'
+                      />
+                      {(submitCount && errors.notes) ? <InputError message={errors.notes} className="mt-2" /> : ''}
                     </div>
               </fieldset>
               <fieldset className='p-3 border rounded-xl'>
@@ -789,7 +800,6 @@ const QuantifiedModal = ({
       }}
             </Formik>
           </div>
-        </div>
         </div>
     </Modal>
   )

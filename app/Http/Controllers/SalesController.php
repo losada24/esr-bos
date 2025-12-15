@@ -35,6 +35,11 @@ class SalesController extends Controller
 
     $salesStatuses = $this->salesStatuses();
     $ownerVisibleStatuses = $this->ownerVisibleSalesStatuses();
+    $pipelineStatuses = [
+        OrderStatusEnum::RECTIFICATION_OF_MEASURES_AND_HOA->value,
+        OrderStatusEnum::ORDER_MATERIALS_AND_FILE_ORGANIZATION->value,
+    ];
+    $queryStatuses = array_unique(array_merge($salesStatuses, $pipelineStatuses));
 
     $visibleStatuses = $salesStatuses;
     $lossReasonFrontdesk = [
@@ -63,8 +68,8 @@ class SalesController extends Controller
    
 
     // Obtener órdenes con esos estados y sus relaciones necesarias
-    $ordersQuery = Order::with('client.companyContact', 'user', 'owners')
-        ->whereIn('status', $salesStatuses);
+    $ordersQuery = Order::with('client.companyContact', 'user', 'owners', 'orderStatus')
+        ->whereIn('status', $queryStatuses);
 
     if ($this->isOwnerRestricted($user)) {
         $visibleStatuses = $ownerVisibleStatuses;
@@ -74,19 +79,32 @@ class SalesController extends Controller
         });
     }
 
-    $orders = $ordersQuery
-        ->whereIn('status', $visibleStatuses)
-        ->get()
-        ->groupBy('status');
+    $orders = $ordersQuery->get();
+
+    $ordersWithBoardStatus = $orders->map(function (Order $order) {
+        $order->board_status = $this->determineSalesBoardStatus($order);
+        return $order;
+    })->filter(fn (Order $order) => $order->board_status !== null);
 
     // Armar el arreglo que espera el componente React
-    $data = collect($visibleStatuses)->map(function ($status) use ($orders) {
-        $ordersByStatus = $orders[$status] ?? collect();
+    $data = collect($visibleStatuses)->map(function ($status) use ($ordersWithBoardStatus) {
+        $ordersByStatus = $ordersWithBoardStatus->filter(fn (Order $order) => $order->board_status === $status);
 
         return [
             'id' => $status, // puedes usar el valor del estado como id
             'title' => $status,
-            'tasks' => $ordersByStatus->map(function ($order) {
+            'tasks' => $ordersByStatus->map(function ($order) use ($status) {
+               $statusHistoryEntry = $order->orderStatus
+                   ->where('status', $status)
+                   ->sortByDesc('created_at')
+                   ->first();
+               $statusCreatedAt = optional($statusHistoryEntry)->created_at ?? $order->created_at;
+               $followUpStartedAt = optional(
+                   $order->orderStatus
+                       ->where('status', OrderStatusEnum::FOLLOW_UP->value)
+                       ->sortBy('created_at')
+                       ->first()
+               )->created_at;
                return [
                     'id' => $order->id,
                     'title' => $order->name ?? 'No Title',
@@ -94,12 +112,20 @@ class SalesController extends Controller
                     //'description' => $order->notes ?? '',
                     'date_edited' => optional($order->updated_at)->format('M d, Y h:i A'),
                     'date' => optional($order->created_at)->format('M d, Y h:i A'),
+                    'status_created_at_iso' => optional($statusCreatedAt)->toIso8601String(),
+                    'follow_up_started_at_iso' => optional($followUpStartedAt)->toIso8601String(),
                     //'names' => $order->user->name ?? 'No Name',
                     //'precio' => $order->price ?? 0,
                     'schedule_appointment' => $order->schedule_appointment ? Carbon::parse($order->schedule_appointment)->format('M d, Y h:i A') : null,
                     'schedule_appointment_iso' => $order->schedule_appointment ? Carbon::parse($order->schedule_appointment)->format('Y-m-d\TH:i') : null,
                     'phone'=> $order->client->phone ?? null,
+                    'contact_email' => $order->client->email ?? null,
+                    'created_by' => $order->user->name ?? null,
                     'is_supply' => (bool) ($order->is_supply ?? false),
+                    'name_check' => (bool) ($order->name_check ?? false),
+                    'address_check' => (bool) ($order->address_check ?? false),
+                    'amount_check' => (bool) ($order->amount_check ?? false),
+                    'email_check' => (bool) ($order->email_check ?? false),
                     'project_amount' => $order->project_amount ? (float) $order->project_amount : 0,
                     'down_payment' => $order->down_payment ? (float) $order->down_payment : null,
                     'job_address' => $order->job_address ?? null,
@@ -113,6 +139,7 @@ class SalesController extends Controller
                       'id' => $owner->id,
                       'name' => $owner->name,
                     ])->values(),
+                    'order_type' => $order->order_type,
                     'tags'       => ($order->tags ?? collect())->map(function ($t) {
                     return [
                         'name'  => $t->name,
@@ -141,6 +168,26 @@ class SalesController extends Controller
       'methods_of_payment' => array_map(fn (MethodOfPayment $method) => $method->value, MethodOfPayment::cases()),
       'type_of_financing' => array_map(fn (TypeOfFinancing $financing) => $financing->value, TypeOfFinancing::cases()),
     ]);
+  }
+  private function determineSalesBoardStatus(Order $order): ?string
+  {
+    $status = $order->status;
+    if (in_array($status, $this->salesStatuses(), true)) {
+      return $status;
+    }
+    if (in_array($status, [
+      OrderStatusEnum::RECTIFICATION_OF_MEASURES_AND_HOA->value,
+      OrderStatusEnum::ORDER_MATERIALS_AND_FILE_ORGANIZATION->value
+    ], true)) {
+      $hadContractSigned = $order->orderStatus->contains(function ($orderStatus) {
+        return $orderStatus->status === OrderStatusEnum::CONTRACT_SIGNED_BY_CLIENT->value;
+      });
+      if ($hadContractSigned) {
+        return OrderStatusEnum::CONTRACT_SIGNED_BY_CLIENT->value;
+      }
+    }
+
+    return null;
   }
 
   public function calendar()
@@ -533,6 +580,68 @@ class SalesController extends Controller
     ]);
   }
 
+  public function assignRequestReschedule(Request $request, Order $order)
+  {
+    $validated = $request->validate([
+      'note' => ['required', 'string'],
+    ]);
+
+    $noteContent = trim($validated['note']);
+
+    if ($noteContent === '') {
+      return response()->json([
+        'message' => 'The note is required.',
+        'errors' => ['note' => ['The note is required.']],
+      ], 422);
+    }
+
+    if ($order->status !== OrderStatusEnum::ESTIMATE_APPT_SCHEDULE->value) {
+      return response()->json([
+        'message' => 'Orders can only move to REQUEST RE-SCHEDULE from ESTIMATE & APPT SCHEDULE.',
+      ], 422);
+    }
+
+    DB::transaction(function () use ($order, $noteContent) {
+      $order->status = OrderStatusEnum::REQUEST_RE_SCHEDULE->value;
+      $order->save();
+
+      $order->orderStatus()->create([
+        'status' => $order->status,
+        'user_id' => auth()->id(),
+        'notes' => $order->status . ' updated by ' . auth()->user()->name,
+      ]);
+
+      $order->notes()->create([
+        'content' => $noteContent,
+        'type' => 'order_note',
+        'user_id' => auth()->id(),
+      ]);
+    });
+
+    $order->load('owners', 'notes.user');
+    // $order->load('owners', 'saleForm', 'notes.user');
+
+    $this->sendEmail($order);
+
+    $schedule = $order->schedule_appointment
+      ? Carbon::parse($order->schedule_appointment)
+      : null;
+
+    return response()->json([
+      'order' => [
+        'id' => $order->id,
+        'status' => $order->status,
+        'schedule_appointment' => $schedule ? $schedule->format('M d, Y h:i A') : null,
+        'schedule_appointment_iso' => $schedule ? $schedule->format('Y-m-d\\TH:i') : null,
+        'owner_ids' => $order->owners->pluck('id')->values(),
+        'owners' => $order->owners->map(fn ($owner) => [
+          'id' => $owner->id,
+          'name' => $owner->name,
+        ])->values(),
+      ],
+    ]);
+  }
+
   public function assignPreContract(Request $request, Order $order)
   {
     $validated = $request->validate([
@@ -558,11 +667,13 @@ class SalesController extends Controller
         'notes' => $order->status . ' updated by ' . auth()->user()->name,
       ]);
 
-      $order->notes()->create([
-        'content' => $noteContent,
-        'type' => 'order_note',
-        'user_id' => auth()->id(),
-      ]);
+      if ($noteContent !== '') {
+        $order->notes()->create([
+          'content' => $noteContent,
+          'type' => 'order_note',
+          'user_id' => auth()->id(),
+        ]);
+      }
     });
 
     $order->load('owners');
@@ -603,14 +714,23 @@ class SalesController extends Controller
       'city' => ['nullable', 'string', 'max:255'],
       'job_state' => ['nullable', 'string', 'max:255'],
       'job_zip' => ['nullable', 'string', 'max:50'],
+      'contact_email' => ['required', 'email', 'max:255'],
+      'name_check' => ['nullable', 'boolean'],
+      'address_check' => ['nullable', 'boolean'],
+      'amount_check' => ['nullable', 'boolean'],
+      'email_check' => ['nullable', 'boolean'],
       'method_of_payment' => ['required', Rule::in(array_map(fn (MethodOfPayment $method) => $method->value, MethodOfPayment::cases()))],
       'type_of_financing' => ['nullable', Rule::in(array_map(fn (TypeOfFinancing $financing) => $financing->value, TypeOfFinancing::cases()))],
       'down_payment' => ['nullable', 'numeric', 'min:0'],
-      'attachments' => ['sometimes', 'array'],
+      'attachments' => ['required', 'array', 'min:1'],
       'attachments.*' => ['file', 'max:10240', 'mimes:pdf'],
     ]);
 
     DB::transaction(function () use ($order, $validated, $request) {
+      $newPipelineStatus = $order->is_supply
+        ? OrderStatusEnum::ORDER_MATERIALS_AND_FILE_ORGANIZATION->value
+        : OrderStatusEnum::RECTIFICATION_OF_MEASURES_AND_HOA->value;
+
       $order->name = $validated['project_name'];
       $order->project_amount = $validated['project_amount'];
       $order->job_address = isset($validated['job_address']) && $validated['job_address'] !== ''
@@ -630,9 +750,17 @@ class SalesController extends Controller
         ? trim($validated['type_of_financing'])
         : null;
       $order->down_payment = $validated['down_payment'] ?? null;
-      $order->status = OrderStatusEnum::RECTIFICATION_OF_MEASURES_AND_HOA->value;
+      $order->name_check = $request->boolean('name_check');
+      $order->address_check = $request->boolean('address_check');
+      $order->amount_check = $request->boolean('amount_check');
+      $order->email_check = $request->boolean('email_check');
+      $order->status = $newPipelineStatus;
       $order->save();
-
+      $contactEmail = trim($validated['contact_email']);
+      if ($order->client && $contactEmail !== '') {
+        $order->client->email = $contactEmail;
+        $order->client->save();
+      }
       $order->orderStatus()->create([
         'status' => OrderStatusEnum::CONTRACT_SIGNED_BY_CLIENT->value,
         'user_id' => auth()->id(),
@@ -640,9 +768,9 @@ class SalesController extends Controller
       ]);
 
       $order->orderStatus()->create([
-        'status' => OrderStatusEnum::RECTIFICATION_OF_MEASURES_AND_HOA->value,
+        'status' => $newPipelineStatus,
         'user_id' => auth()->id(),
-        'notes' => OrderStatusEnum::RECTIFICATION_OF_MEASURES_AND_HOA->value . ' created by ' . auth()->user()->name,
+        'notes' => $newPipelineStatus . ' created by ' . auth()->user()->name,
       ]);
 
       if ($request->hasFile('attachments')) {
@@ -660,7 +788,7 @@ class SalesController extends Controller
       }
     });
 
-    $order->load('owners');
+    $order->load('owners', 'client');
 
     $schedule = $order->schedule_appointment
       ? Carbon::parse($order->schedule_appointment)
@@ -686,6 +814,11 @@ class SalesController extends Controller
           'id' => $owner->id,
           'name' => $owner->name,
         ])->values(),
+        'contact_email' => $order->client?->email,
+        'name_check' => (bool) ($order->name_check ?? false),
+        'address_check' => (bool) ($order->address_check ?? false),
+        'amount_check' => (bool) ($order->amount_check ?? false),
+        'email_check' => (bool) ($order->email_check ?? false),
       ],
     ]);
   }
@@ -705,6 +838,11 @@ class SalesController extends Controller
       $noteContent = 'Lost Contract: ' . $validated['loss_reason_frontdesk'];
       if (!empty($validated['notes'])) {
         $noteContent .= ' - ' . $validated['notes'];
+        $order->notes()->create([
+          'content' => $validated['notes'],
+          'type' => 'order_note',
+          'user_id' => auth()->id(),
+        ]);
       }
 
       $order->orderStatus()->create([

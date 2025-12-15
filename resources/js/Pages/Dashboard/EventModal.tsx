@@ -18,6 +18,7 @@ import DeleteIcon from '@/Components/Icons/DeleteIcon'
 import ExportIcon from '@/Components/Icons/ExportIcon'
 import { Field } from 'formik'
 import { inspect } from 'util'
+import OrderNotesForOrder from '@/Components/OrderNotesForOrder'
 
 
 const EventModal = ({
@@ -984,6 +985,14 @@ const EventModal = ({
                     </table>
                   </div>
                 </div>
+                <fieldset className='p-3 border rounded-xl mt-3'>
+                  <legend className='text-lg font-semibold px-3'>Work Team Notes History</legend>
+                  <OrderNotesForOrder
+                    orderId={event?.id ?? null}
+                    canCreate={(event?.id ?? 0) !== 0}
+                    noteType="work_team_note"
+                  />
+                </fieldset>
                 <div className='flex flex-col gap-2'>
                   <strong>Payment List:</strong>
                   <div className='flex flex-col justify-start'>

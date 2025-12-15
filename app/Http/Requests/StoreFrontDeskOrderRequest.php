@@ -68,6 +68,10 @@ class StoreFrontDeskOrderRequest extends FormRequest
               )
             ],
             'notes' => 'nullable|string|max:1000',
+            'name_check' => ['boolean'],
+            'address_check' => ['boolean'],
+            'amount_check' => ['boolean'],
+            'email_check' => ['boolean'],
            
         ];
     }

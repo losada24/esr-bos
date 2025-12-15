@@ -26,6 +26,9 @@ export const isSupervisor = (roles: string[]): boolean => {
 export const isFrontdesk = (roles: string[]): boolean => {
   return roles.find((role) => role === ROLES.FRONTDESK) !== undefined
 }
+export const isFrontdeskAdmin = (roles: string[]): boolean => {
+  return roles.find((role) => role === ROLES.FRONTDESK_ADMIN) !== undefined
+}
 export const isServiceManager = (roles: string[]): boolean => {
   return roles.find((role) => role === ROLES.SERVICE_MANAGER) !== undefined
 }
@@ -56,6 +59,8 @@ export const getRoleName = (roles: string[]): string => {
     return 'Frontdesk'
   } else if (isPaymentCoordinator(roles)) {
     return 'Payment Coordinator'
+  } else if (isFrontdeskAdmin(roles)) {
+    return 'Frontdesk Admin'
   } else {
     return 'User'
   }
