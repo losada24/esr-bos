@@ -14,6 +14,7 @@ import InfoTooltip from '@/Components/InfoTooltip'
 import EstimateScheduleModal from './EstimateScheduleModal'
 import FollowUpModal from './FollowUpModal'
 import StandByNoteModal from './StandByNoteModal'
+import RequestRescheduleModal from './RequestRescheduleModal'
 import PreContractNoteModal from './PreContractNoteModal'
 import ContractSignedModal from './ContractSignedModal'
 import LostContractModal from './LostContractModal'
@@ -100,6 +101,86 @@ const stampTaskAsUpdated = (task: Tasks): Tasks => ({
   date_edited: formatDateForDisplay(new Date())
 })
 
+const ESTIMATE_STATUS = 'ESTIMATE & APPT SCHEDULE'
+const REQUEST_RESCHEDULE_STATUS = 'REQUEST RE-SCHEDULE'
+const FOLLOW_UP_STATUSES: string[] = ['FOLLOW UP', 'FOLLOW UP PROJECTS']
+const STAND_BY_STATUS = 'STAND BY'
+const DAY_IN_MS = 24 * 60 * 60 * 1000
+const FOLLOW_UP_STALE_THRESHOLD_MS = 45 * DAY_IN_MS
+const STAND_BY_STALE_THRESHOLD_MS = 120 * DAY_IN_MS
+const ESTIMATE_RESIDENTIAL_THRESHOLD_MS = 2 * DAY_IN_MS
+const ESTIMATE_COMMERCIAL_THRESHOLD_MS = 7 * DAY_IN_MS
+
+const getFollowUpStaleClass = (pipeline: Pipelines, task: Tasks): string | null => {
+  const pipelineId = pipeline?.id != null ? pipeline.id.toString() : ''
+  if (!FOLLOW_UP_STATUSES.includes(pipelineId)) {
+    return null
+  }
+  const iso = task.follow_up_started_at_iso
+  if (!iso) return null
+  const createdTimestamp = Date.parse(iso)
+  if (Number.isNaN(createdTimestamp)) return null
+  return (Date.now() - createdTimestamp) >= FOLLOW_UP_STALE_THRESHOLD_MS
+    ? 'bg-red-200 dark:bg-red-500/40'
+    : null
+}
+
+const getStandByStaleClass = (pipeline: Pipelines, task: Tasks): string | null => {
+  const pipelineId = pipeline?.id != null ? pipeline.id.toString() : ''
+  if (pipelineId !== STAND_BY_STATUS) {
+    return null
+  }
+  const iso = task.status_created_at_iso
+  if (!iso) return null
+  const statusTimestamp = Date.parse(iso)
+  if (Number.isNaN(statusTimestamp)) return null
+  return (Date.now() - statusTimestamp) >= STAND_BY_STALE_THRESHOLD_MS
+    ? 'bg-red-200 dark:bg-red-500/40'
+    : null
+}
+
+const getEstimateStaleClass = (pipeline: Pipelines, task: Tasks): string | null => {
+  const pipelineId = pipeline?.id != null ? pipeline.id.toString() : ''
+  if (pipelineId !== ESTIMATE_STATUS) {
+    return null
+  }
+
+  const parseIso = (value?: string | null): number | null => {
+    if (!value) return null
+    const timestamp = Date.parse(value)
+    return Number.isNaN(timestamp) ? null : timestamp
+  }
+
+  const normalizedOrderType = (task.order_type ?? '').trim().toUpperCase()
+  if (normalizedOrderType === 'RESIDENTIAL') {
+    const appointmentTimestamp = parseIso(task.schedule_appointment_iso)
+    if (appointmentTimestamp !== null) {
+      return (Date.now() - appointmentTimestamp) >= ESTIMATE_RESIDENTIAL_THRESHOLD_MS
+        ? 'bg-red-200 dark:bg-red-500/40'
+        : null
+    }
+
+    const statusTimestamp = parseIso(task.status_created_at_iso)
+    if (statusTimestamp === null) return null
+    return (Date.now() - statusTimestamp) >= ESTIMATE_RESIDENTIAL_THRESHOLD_MS
+      ? 'bg-red-200 dark:bg-red-500/40'
+      : null
+  }
+
+  if (normalizedOrderType === 'COMMERCIAL') {
+    const statusTimestamp = parseIso(task.status_created_at_iso)
+    if (statusTimestamp === null) return null
+    return (Date.now() - statusTimestamp) >= ESTIMATE_COMMERCIAL_THRESHOLD_MS
+      ? 'bg-red-200 dark:bg-red-500/40'
+      : null
+  }
+
+  return null
+}
+
+const normalizeStatusValue = (value: string): string => value.replace(/\s+/g, ' ').trim().toUpperCase()
+const matchesStatus = (value: string, target: string): boolean => normalizeStatusValue(value) === normalizeStatusValue(target)
+
 export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order_types, owners, methods_of_payment, type_of_financing }: PageProps & { data: Pipelines[], lossReasonFrontdesk: string [], sources: string[], order_types: string[], owners: OwnerOption[], methods_of_payment: string[], type_of_financing: string[] }) {
   const IS_ADMIN = isAdmin(auth.user.roles.map((role: Role) => role.name))
   const IS_ACCOUNT_MANAGER = isAccountManager(auth.user.roles.map((role: Role) => role.name))
@@ -108,8 +189,6 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
   const IS_INSTALLER = isInstaller(auth.user.roles.map((role: Role) => role.name))
   const IS_PAYMENT_COORDINATOR = isPaymentCoordinator(auth.user.roles.map((role: Role) => role.name))
   const IS_OWNER = isOwner(auth.user.roles.map((role: Role) => role.name))
-
-  const ESTIMATE_STATUS = 'ESTIMATE & APPT SCHEDULE'
 
   const [projectList, setProjectListState] = useState<Pipelines[]>(() => sortPipelinesByRecentActivity(data))
   const [showModal, setShowModal] = useState(false)
@@ -131,13 +210,18 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
   const [standBySaving, setStandBySaving] = useState(false)
   const [standByError, setStandByError] = useState<string | null>(null)
   const [pendingStandBy, setPendingStandBy] = useState<{ task: Tasks, oldStatus: string, newStatus: string } | null>(null)
+  const [requestRescheduleModalOpen, setRequestRescheduleModalOpen] = useState(false)
+  const [requestRescheduleInitialNote, setRequestRescheduleInitialNote] = useState('')
+  const [requestRescheduleSaving, setRequestRescheduleSaving] = useState(false)
+  const [requestRescheduleError, setRequestRescheduleError] = useState<string | null>(null)
+  const [pendingRequestReschedule, setPendingRequestReschedule] = useState<{ task: Tasks, oldStatus: string, newStatus: string } | null>(null)
   const [preContractModalOpen, setPreContractModalOpen] = useState(false)
   const [preContractInitialNote, setPreContractInitialNote] = useState('')
   const [preContractSaving, setPreContractSaving] = useState(false)
   const [preContractError, setPreContractError] = useState<string | null>(null)
   const [pendingPreContract, setPendingPreContract] = useState<{ task: Tasks, oldStatus: string, newStatus: string } | null>(null)
   const [contractSignedModalOpen, setContractSignedModalOpen] = useState(false)
-  const [contractSignedInitialValues, setContractSignedInitialValues] = useState<{ projectName: string, projectAmount: string, downPayment: string, jobAddress: string, city: string, jobState: string, jobZip: string, methodOfPayment: string, typeOfFinancing: string }>({ projectName: '', projectAmount: '', downPayment: '', jobAddress: '', city: '', jobState: '', jobZip: '', methodOfPayment: '', typeOfFinancing: '' })
+  const [contractSignedInitialValues, setContractSignedInitialValues] = useState<{ projectName: string, projectAmount: string, downPayment: string, jobAddress: string, city: string, jobState: string, jobZip: string, methodOfPayment: string, typeOfFinancing: string, contactEmail: string, nameCheck: boolean, addressCheck: boolean, amountCheck: boolean, emailCheck: boolean }>({ projectName: '', projectAmount: '', downPayment: '', jobAddress: '', city: '', jobState: '', jobZip: '', methodOfPayment: '', typeOfFinancing: '', contactEmail: '', nameCheck: false, addressCheck: false, amountCheck: false, emailCheck: false })
   const [contractSignedSaving, setContractSignedSaving] = useState(false)
   const [contractSignedError, setContractSignedError] = useState<string | null>(null)
   const [pendingContractSigned, setPendingContractSigned] = useState<{ task: Tasks, oldStatus: string, newStatus: string } | null>(null)
@@ -160,7 +244,6 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
     })
   }, [setProjectListState])
 
-  const FOLLOW_UP_STATUSES = ['FOLLOW UP', 'FOLLOW UP PROJECTS']
   const ownerOptions = owners ?? []
   const paymentMethods = methods_of_payment ?? []
   const financingOptions = type_of_financing ?? []
@@ -171,7 +254,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
   const restoreTaskToStatus = (task: Tasks, status: string) => {
     setProjectList(prev => prev.map(p => {
       const filtered = p.tasks.filter(t => Number(t.id) !== Number(task.id))
-      if (p.id.toString() === status) {
+      if (matchesStatus(p.id.toString(), status)) {
         return {
           ...p,
           tasks: [...filtered, task]
@@ -270,6 +353,17 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
     setPendingStandBy(null)
   }
 
+  const closeRequestRescheduleModal = (restoreTask = false) => {
+    if (restoreTask && pendingRequestReschedule) {
+      restoreTaskToStatus(pendingRequestReschedule.task, pendingRequestReschedule.oldStatus)
+    }
+    setRequestRescheduleModalOpen(false)
+    setRequestRescheduleError(null)
+    setRequestRescheduleSaving(false)
+    setRequestRescheduleInitialNote('')
+    setPendingRequestReschedule(null)
+  }
+
   const closePreContractModal = (restoreTask = false) => {
     if (restoreTask && pendingPreContract) {
       restoreTaskToStatus(pendingPreContract.task, pendingPreContract.oldStatus)
@@ -288,7 +382,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
     setContractSignedModalOpen(false)
     setContractSignedError(null)
     setContractSignedSaving(false)
-    setContractSignedInitialValues({ projectName: '', projectAmount: '', downPayment: '', jobAddress: '', city: '', jobState: '', jobZip: '', methodOfPayment: '', typeOfFinancing: '' })
+    setContractSignedInitialValues({ projectName: '', projectAmount: '', downPayment: '', jobAddress: '', city: '', jobState: '', jobZip: '', methodOfPayment: '', typeOfFinancing: '', contactEmail: '', nameCheck: false, addressCheck: false, amountCheck: false, emailCheck: false })
     setPendingContractSigned(null)
   }
 
@@ -448,6 +542,72 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
     }
   }
 
+  const handleRequestRescheduleSubmit = async (values: { note: string }) => {
+    if (!pendingRequestReschedule) return
+
+    setRequestRescheduleSaving(true)
+    setRequestRescheduleError(null)
+
+    try {
+      const response = await fetch(route('sales.assign_request_reschedule', pendingRequestReschedule.task.id), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? ''
+        },
+        body: JSON.stringify({
+          note: values.note,
+        })
+      })
+
+      const payload = await response.json().catch(() => null)
+
+      if (!response.ok) {
+        if (response.status === 422 && payload?.errors) {
+          const messages = Object.values(payload.errors).flat()
+          throw new Error(typeof messages[0] === 'string' ? messages[0] : 'Unable to update status.')
+        }
+
+        throw new Error(payload?.message ?? 'Unable to update status.')
+      }
+
+      if (!payload) {
+        throw new Error('Unexpected server response.')
+      }
+
+      const data = payload
+
+      const updatedTask: Tasks = stampTaskAsUpdated({
+        ...pendingRequestReschedule.task,
+        schedule_appointment: data.order.schedule_appointment ?? pendingRequestReschedule.task.schedule_appointment,
+        schedule_appointment_iso: data.order.schedule_appointment_iso ?? pendingRequestReschedule.task.schedule_appointment_iso,
+        owner_ids: data.order.owner_ids ?? pendingRequestReschedule.task.owner_ids,
+        owners: data.order.owners ?? pendingRequestReschedule.task.owners
+      })
+
+      setProjectList(prev => prev.map(pipeline => {
+        if (matchesStatus(pipeline.id.toString(), pendingRequestReschedule.oldStatus)) {
+          return { ...pipeline, tasks: pipeline.tasks.filter(task => Number(task.id) !== Number(updatedTask.id)) }
+        }
+
+        if (matchesStatus(pipeline.id.toString(), pendingRequestReschedule.newStatus)) {
+          const filtered = pipeline.tasks.filter(task => Number(task.id) !== Number(updatedTask.id))
+          return { ...pipeline, tasks: [...filtered, updatedTask] }
+        }
+
+        return pipeline
+      }))
+
+      closeRequestRescheduleModal(false)
+    } catch (error: any) {
+      console.error('request-reschedule submit error', error)
+      setRequestRescheduleError(error?.message ?? 'No se pudo actualizar el estado.')
+    } finally {
+      setRequestRescheduleSaving(false)
+    }
+  }
+
   const handlePreContractSubmit = async (values: { note: string }) => {
     if (!pendingPreContract) return
 
@@ -514,7 +674,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
     }
   }
 
-  const handleContractSignedSubmit = async (values: { projectName: string, projectAmount: string, downPayment: string, jobAddress: string, city: string, jobState: string, jobZip: string, methodOfPayment: string, typeOfFinancing: string, attachments: File[] }) => {
+  const handleContractSignedSubmit = async (values: { projectName: string, projectAmount: string, downPayment: string, jobAddress: string, city: string, jobState: string, jobZip: string, methodOfPayment: string, typeOfFinancing: string, contactEmail: string, attachments: File[], nameCheck: boolean, addressCheck: boolean, amountCheck: boolean, emailCheck: boolean }) => {
     if (!pendingContractSigned) return
 
     setContractSignedSaving(true)
@@ -528,6 +688,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
       const normalizedCity = values.city?.trim() ?? ''
       const normalizedState = values.jobState?.trim() ?? ''
       const normalizedZip = values.jobZip?.trim() ?? ''
+      const normalizedContactEmail = values.contactEmail.trim()
 
       const formData = new FormData()
       formData.append('project_name', values.projectName)
@@ -536,6 +697,11 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
       formData.append('city', normalizedCity)
       formData.append('job_state', normalizedState)
       formData.append('job_zip', normalizedZip)
+      formData.append('contact_email', normalizedContactEmail)
+      formData.append('name_check', values.nameCheck ? '1' : '0')
+      formData.append('address_check', values.addressCheck ? '1' : '0')
+      formData.append('amount_check', values.amountCheck ? '1' : '0')
+      formData.append('email_check', values.emailCheck ? '1' : '0')
       formData.append('method_of_payment', normalizedMethod)
       formData.append('type_of_financing', normalizedFinancing)
       formData.append('down_payment', normalizedDownPayment)
@@ -600,7 +766,12 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
         schedule_appointment: data.order.schedule_appointment ?? pendingContractSigned.task.schedule_appointment,
         schedule_appointment_iso: data.order.schedule_appointment_iso ?? pendingContractSigned.task.schedule_appointment_iso,
         owner_ids: data.order.owner_ids ?? pendingContractSigned.task.owner_ids,
-        owners: data.order.owners ?? pendingContractSigned.task.owners
+        owners: data.order.owners ?? pendingContractSigned.task.owners,
+        contact_email: data.order.contact_email ?? normalizedContactEmail,
+        name_check: data.order.name_check ?? values.nameCheck,
+        address_check: data.order.address_check ?? values.addressCheck,
+        amount_check: data.order.amount_check ?? values.amountCheck,
+        email_check: data.order.email_check ?? values.emailCheck
       })
 
       setProjectList(prev => prev.map(pipeline => {
@@ -770,14 +941,23 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
                       onEnd={(evt) => {
                         const { item, from, to } = evt
                         const movedTaskId = item.getAttribute('data-id')
-                        const oldStatus = from.closest('[data-group]')?.getAttribute('data-group') ?? ''
-                        const newStatus = to.closest('[data-group]')?.getAttribute('data-group') ?? ''
+                        const rawOldStatus = from.closest('[data-group]')?.getAttribute('data-group') ?? ''
+                        const rawNewStatus = to.closest('[data-group]')?.getAttribute('data-group') ?? ''
+                        const resolveStatusValue = (rawStatus: string): string => {
+                          const trimmed = rawStatus.trim()
+                          const pipelineMatch = projectList.find(pipeline =>
+                            matchesStatus(pipeline.id?.toString?.() ?? '', trimmed)
+                          )
+                          return pipelineMatch ? pipelineMatch.id.toString() : trimmed
+                        }
+                        const oldStatus = resolveStatusValue(rawOldStatus)
+                        const newStatus = resolveStatusValue(rawNewStatus)
 
                         if (oldStatus === newStatus) return
 
                         let movedTask!: Tasks
 
-                        if (newStatus === ESTIMATE_STATUS) {
+                        if (matchesStatus(newStatus, ESTIMATE_STATUS)) {
                           const foundTask = projectList
                             .flatMap((pipeline) => pipeline.tasks)
                             .find((t) => Number(t.id) === Number(movedTaskId))
@@ -799,7 +979,8 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
                           return
                         }
 
-                        if (FOLLOW_UP_STATUSES.includes(newStatus)) {
+                        const isFollowUpStatus = FOLLOW_UP_STATUSES.some(status => matchesStatus(newStatus, status))
+                        if (isFollowUpStatus) {
                           const foundTask = projectList
                             .flatMap((pipeline) => pipeline.tasks)
                             .find((t) => Number(t.id) === Number(movedTaskId))
@@ -819,7 +1000,33 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
                           return
                         }
 
-                        if (newStatus === 'STAND BY') {
+                        if (matchesStatus(newStatus, REQUEST_RESCHEDULE_STATUS)) {
+                          const foundTask = projectList
+                            .flatMap((pipeline) => pipeline.tasks)
+                            .find((t) => Number(t.id) === Number(movedTaskId))
+
+                          if (!foundTask) {
+                            return
+                          }
+
+                          if (!matchesStatus(oldStatus, ESTIMATE_STATUS)) {
+                            setProjectList(prev =>
+                              prev.map(pipeline => ({ ...pipeline, tasks: [...pipeline.tasks] }))
+                            )
+                            window.alert('You can only move to REQUEST RE-SCHEDULE from ESTIMATE & APPT SCHEDULE.')
+                            return
+                          }
+
+                          setProjectList(prev =>
+                            prev.map(pipeline => ({ ...pipeline, tasks: [...pipeline.tasks] }))
+                          )
+                          setRequestRescheduleInitialNote('')
+                          setPendingRequestReschedule({ task: foundTask, oldStatus, newStatus })
+                          setRequestRescheduleModalOpen(true)
+                          return
+                        }
+
+                        if (matchesStatus(newStatus, 'STAND BY')) {
                           const foundTask = projectList
                             .flatMap((pipeline) => pipeline.tasks)
                             .find((t) => Number(t.id) === Number(movedTaskId))
@@ -834,7 +1041,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
                           return
                         }
 
-                        if (newStatus === 'PRE CONTRACT APPOINTMENT') {
+                        if (matchesStatus(newStatus, 'PRE CONTRACT APPOINTMENT')) {
                           const foundTask = projectList
                             .flatMap((pipeline) => pipeline.tasks)
                             .find((t) => Number(t.id) === Number(movedTaskId))
@@ -849,7 +1056,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
                           return
                         }
 
-                        if (newStatus === 'CONTRACT SIGNED BY CLIENT') {
+                        if (matchesStatus(newStatus, 'CONTRACT SIGNED BY CLIENT')) {
                           const foundTask = projectList
                             .flatMap((pipeline) => pipeline.tasks)
                             .find((t) => Number(t.id) === Number(movedTaskId))
@@ -872,13 +1079,18 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
                             jobZip: foundTask.job_zip ?? '',
                             methodOfPayment: foundTask.method_of_payment ?? '',
                             typeOfFinancing: foundTask.type_of_financing ?? '',
+                            contactEmail: foundTask.contact_email ?? '',
+                            nameCheck: foundTask.name_check ?? false,
+                            addressCheck: foundTask.address_check ?? false,
+                            amountCheck: foundTask.amount_check ?? false,
+                            emailCheck: foundTask.email_check ?? false,
                           })
                           setPendingContractSigned({ task: foundTask, oldStatus, newStatus })
                           setContractSignedModalOpen(true)
                           return
                         }
 
-                        if (newStatus === 'LOST CONTRACT') {
+                        if (matchesStatus(newStatus, 'LOST CONTRACT')) {
                           const foundTask = projectList
                             .flatMap((pipeline) => pipeline.tasks)
                             .find((t) => Number(t.id) === Number(movedTaskId))
@@ -911,7 +1123,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
 
                         if (!movedTask) return
 
-                        if (newStatus === 'QUALIFIED') {
+                        if (matchesStatus(newStatus, 'QUALIFIED')) {
                           restoreTaskToStatus(movedTask, oldStatus)
                           setLostTask(movedTask)
                           setPreviousStatusId(oldStatus)
@@ -919,7 +1131,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
                           return
                         }
 
-                        if (newStatus === 'LOST REQUEST') {
+                        if (matchesStatus(newStatus, 'LOST REQUEST')) {
                           restoreTaskToStatus(movedTask, oldStatus)
                           setLostTask(movedTask)
                           setPreviousStatusId(oldStatus)
@@ -945,9 +1157,23 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
                       className="min-h-[1px] space-y-4 pt-2"
                     >
                       {project.tasks.map((task: any) => {
+                        const followUpAlertClass = getFollowUpStaleClass(project, task)
+                        const standByAlertClass = getStandByStaleClass(project, task)
+                        const estimateAlertClass = getEstimateStaleClass(project, task)
+                        const cardBackgroundClass = followUpAlertClass ?? standByAlertClass ?? estimateAlertClass ?? 'bg-[#f4f4f4] dark:bg-white-dark/20'
+                        const ownerNames = (task.owners ?? [])
+                          .map((owner: any) => typeof owner?.name === 'string' ? owner.name.trim() : '')
+                          .filter((name: string) => Boolean(name))
+                        if (!ownerNames.length && typeof task.created_by === 'string') {
+                          const normalizedCreator = task.created_by.trim()
+                          if (normalizedCreator) {
+                            ownerNames.push(normalizedCreator)
+                          }
+                        }
+                        const ownersDisplay = ownerNames.length ? ownerNames.join(', ') : 'No owners assigned'
                         return (
                           <div className="sortable-list " key={task.id} data-id={task.id}>
-                            <div className="shadow bg-[#f4f4f4] dark:bg-white-dark/20 p-3 pb-4 rounded-md mb-5 space-y-2 cursor-move text-xs text-slate-600">
+                            <div className={`shadow ${cardBackgroundClass} p-3 pb-4 rounded-md mb-5 space-y-2 cursor-move text-xs text-slate-600`}>
                               {task.image ? <img src="/assets/images/carousel1.jpeg" alt="images" className="h-32 w-full object-cover rounded-md" /> : ''}
                               <div className="flex items-center justify-between w-full">
                                 <p className="flex items-center gap-2 break-all text-sm font-semibold text-slate-700">
@@ -979,7 +1205,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
                                         <ul style={{ margin: 0, paddingLeft: 16, fontSize: '13px', color: '#1e293b', lineHeight: '1.6' }}>
                                           <li style={{ marginBottom: 6 }}>Phone: {task.phone ?? '—'}</li>
                                           <li style={{ marginBottom: 6 }}>Appt Date: {task.schedule_appointment ?? 'No Appt Scheduled'}</li>
-                                          <li style={{ marginBottom: 6 }}>Owners: {task.owners?.length ? task.owners.map((owner: any) => owner.name).join(', ') : 'No owners assigned'}</li>
+                                          <li style={{ marginBottom: 6 }}>Owners: {ownersDisplay}</li>
                                         </ul>
                                       </div>
                                     }
@@ -1050,6 +1276,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
         taskTitle={pendingMove?.task.title ?? ''}
         initialScheduleDate={scheduleInitialValues.scheduleDate}
         initialOwnerIds={scheduleInitialValues.ownerIds}
+        initialOwners={pendingMove?.task.owners ?? []}
         ownerOptions={ownerOptions}
         error={scheduleError}
         saving={scheduleSaving}
@@ -1079,6 +1306,16 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
         onSubmit={handleStandBySubmit}
       />
 
+      <RequestRescheduleModal
+        open={requestRescheduleModalOpen && !!pendingRequestReschedule}
+        taskTitle={pendingRequestReschedule?.task.title ?? ''}
+        initialNote={requestRescheduleInitialNote}
+        loading={requestRescheduleSaving}
+        error={requestRescheduleError}
+        onCancel={() => { closeRequestRescheduleModal(true) }}
+        onSubmit={handleRequestRescheduleSubmit}
+      />
+
       <PreContractNoteModal
         open={preContractModalOpen && !!pendingPreContract}
         taskTitle={pendingPreContract?.task.title ?? ''}
@@ -1101,6 +1338,11 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
         initialJobZip={contractSignedInitialValues.jobZip}
         initialMethodOfPayment={contractSignedInitialValues.methodOfPayment}
         initialTypeOfFinancing={contractSignedInitialValues.typeOfFinancing}
+        initialContactEmail={contractSignedInitialValues.contactEmail}
+        initialNameCheck={contractSignedInitialValues.nameCheck}
+        initialAddressCheck={contractSignedInitialValues.addressCheck}
+        initialAmountCheck={contractSignedInitialValues.amountCheck}
+        initialEmailCheck={contractSignedInitialValues.emailCheck}
         paymentMethods={paymentMethods}
         financingOptions={financingOptions}
         loading={contractSignedSaving}

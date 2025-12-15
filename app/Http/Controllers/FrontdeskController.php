@@ -95,15 +95,24 @@ $data = collect($frontdeskStatuses)->map(function ($status) use ($orders, $quali
     return [
         'id' => $status,
         'title' => $status,
-        'tasks' => $ordersByStatus->map(function ($order) {
+        'tasks' => $ordersByStatus->map(function ($order) use ($status) {
+            $statusHistoryEntry = $order->orderStatus
+                ->where('status', $status)
+                ->sortByDesc('created_at')
+                ->first();
+
+            $statusCreatedAt = optional($statusHistoryEntry)->created_at ?? $order->created_at;
+
             return [
                 'id'          => $order->id,
                 'title'       => $order->name ?? 'No Title',
                 'client_id'   => $order->client_id ?? null,
                 'date_edited' => optional($order->updated_at)->format('M d, Y h:i A'),
-                'date'        => optional($order->created_at)->format('M d, Y h:i A'),
+                'date'        => optional($statusCreatedAt)->format('M d, Y h:i A'),
+                'status_created_at_iso' => optional($statusCreatedAt)->toIso8601String(),
                 'schedule_appointment' => $order->schedule_appointment ? Carbon::parse($order->schedule_appointment)->format('M d, Y h:i A') : null,
                 'phone'       => $order->client->phone ?? null,
+                'created_by'  => $order->user->name ?? null,
                 'is_supply'   => (bool) ($order->is_supply ?? false),
                 'tags'        => ($order->tags ?? collect())->map(fn($t) => [
                     'name'  => $t->name,
@@ -243,7 +252,7 @@ $data = collect($frontdeskStatuses)->map(function ($status) use ($orders, $quali
   }
 
   public function updateStatus(Request $request, Order $order)
-{
+  {
     $order->status = $request->input('status');
 
     $order->save();
@@ -255,20 +264,76 @@ $data = collect($frontdeskStatuses)->map(function ($status) use ($orders, $quali
 
 
     return response()->json(['success' => true, 'order' => $order]);
-}
+  }
 
-  public function updateStatusLost(Request $request, Order $order)
-{     
-    //dd($request->all());
-    $order->status = $request->input('status');
-
-    $order->save();
-      $order->orderStatus()->create([
-        'status' => $request->input('status'),
-        'user_id' => auth()->user()->id,
-        'notes' => "{$request->input('status')} created by " . auth()->user()->name,
+  public function updateStatusStandBy(Request $request, Order $order)
+  {
+      $data = $request->validate([
+          'note' => ['required', 'string'],
       ]);
 
+      $status = OrderStatusEnum::NEW_CUSTOMER_REQUEST_STAND_BY->value;
+      $user = $request->user();
+
+      DB::transaction(function () use ($order, $status, $data, $user) {
+          $order->update(['status' => $status]);
+
+          $order->orderStatus()->create([
+              'status' => $status,
+              'user_id' => $user?->id,
+              'notes' => "{$status} created by " . ($user?->name ?? 'System'),
+          ]);
+
+          $order->notes()->create([
+              'content' => $data['note'],
+              'type' => 'order_note',
+              'user_id' => $user?->id,
+          ]);
+      });
+      $order->load('user'); // Relación con User
+      $this->sendEmail($order);
+      $order->refresh();
+      
+
+      return response()->json(['success' => true, 'order' => $order]);
+  }
+
+  public function updateStatusLost(Request $request, Order $order)
+  {
+    $data = $request->validate([
+      'status' => ['required', 'string'],
+      'loss_reason_frontdesk' => ['required', 'string', 'max:255'],
+      'notes' => ['nullable', 'string', 'max:2000'],
+    ]);
+
+    DB::transaction(function () use ($order, $data) {
+      $payload = [
+        'status' => $data['status'],
+        'loss_reason_frontdesk' => $data['loss_reason_frontdesk'],
+      ];
+
+      if (filled($data['notes'] ?? null)) {
+        $payload['notes'] = $data['notes'];
+      }
+
+      $order->update($payload);
+
+      if (filled($data['notes'] ?? null)) {
+        $order->notes()->create([
+          'content' => $data['notes'],
+          'type' => 'order_note',
+          'user_id' => auth()->id(),
+        ]);
+      }
+
+      $order->orderStatus()->create([
+        'status' => $data['status'],
+        'user_id' => auth()->user()->id,
+        'notes' => "{$data['status']} created by " . auth()->user()->name,
+      ]);
+    });
+
+    $order->refresh();
 
     return response()->json(['success' => true, 'order' => $order]);
 }
@@ -287,6 +352,7 @@ public function showQuantifiedModal(Order $order)
         //dd($request->all());
         $request->validate([
           'phone' => ['required', 'regex:/^\d{10}$/'],
+          'notes' => ['nullable', 'string', 'max:2000'],
         ]);
         $status = $request['status'];
         if ($request['order_type'] === OrderTypeEnum::RESIDENTIAL->value || $request['order_type'] === OrderTypeEnum::SUPPLY->value) {
@@ -296,20 +362,25 @@ public function showQuantifiedModal(Order $order)
           $status = OrderStatusEnum::COMMERCIAL_ASSIGNMENT->value;
         }
         
-        $order->update([
-        'name' => $request['name'],
-        'order_type' => $request['order_type'],
-        'job_address' => $request['job_address'],
-        'city' => $request['city'],
-        'job_state' => $request['job_state'],
-        'job_zip' => $request['job_zip'],
-        'bid_due_date' => $request['bid_due_date'],
-        'project_amount' => $request['project_amount'],
-        'description' => $request['description'],
-        'status' => $status,
-        'is_supply' => $request['is_supply'] ?? false,
+        $orderPayload = [
+          'name' => $request['name'],
+          'order_type' => $request['order_type'],
+          'job_address' => $request['job_address'],
+          'city' => $request['city'],
+          'job_state' => $request['job_state'],
+          'job_zip' => $request['job_zip'],
+          'bid_due_date' => $request['bid_due_date'],
+          'project_amount' => $request['project_amount'],
+          'description' => $request['description'],
+          'status' => $status,
+          'is_supply' => $request['is_supply'] ?? false,
+        ];
 
-    ]);
+        if ($request->filled('notes')) {
+          $orderPayload['notes'] = $request['notes'];
+        }
+
+        $order->update($orderPayload);
 
         $existingSaleForm = $order->saleForm;
         $saleFormPayload = [
@@ -361,6 +432,14 @@ public function showQuantifiedModal(Order $order)
             'user_id' => auth()->user()->id,
         ]);
     }
+          if ($request->filled('notes')) {
+            $order->notes()->create([
+              'content' => $request['notes'],
+              'type' => 'order_note',
+              'user_id' => auth()->id(),
+            ]);
+          }
+
           $order->orderStatus()->create([
             'status' => $request['status'],
             'user_id' => auth()->user()->id,
@@ -393,6 +472,30 @@ public function showQuantifiedModal(Order $order)
     $order = Order::find($id);
     $order->load('tags:id,name,color,taggable_id,taggable_type', 'client.companyContact', 'user', 'owners', 'saleForm', 'attachments.user', 'orderStatus.user');
 
+    $clientOrders = collect();
+
+    if ($order->client) {
+      $clientOrders = $order->client->orders()
+        ->where('id', '!=', $order->id)
+        ->with(['owners:id,name'])
+        ->orderByDesc('created_at')
+        ->get(['id', 'order_number', 'name', 'status', 'order_type'])
+        ->map(fn ($clientOrder) => [
+          'id' => $clientOrder->id,
+          'order_number' => $clientOrder->order_number,
+          'name' => $clientOrder->name,
+          'status' => $clientOrder->status,
+          'order_type' => $clientOrder->order_type,
+          'owners' => $clientOrder->owners
+            ->map(fn ($owner) => [
+              'id' => $owner->id,
+              'name' => $owner->name,
+            ])
+            ->values()
+            ->all(),
+        ]);
+    }
+
     if ($order->status === OrderStatusEnum::ESTIMATE_APPT_SCHEDULE->value && !$order->saleForm) {
       $order->saleForm()->create($this->buildSaleFormPayload($order, null));
       $order->load('saleForm');
@@ -420,6 +523,7 @@ public function showQuantifiedModal(Order $order)
     return Inertia::render('Frontdesk/OrderView', [
       //'orderStatuses' => $orderStatuses,
       'order' => $order,
+      'clientOrders' => $clientOrders,
        'tags' => $order->tags->map(fn($t) => [
                 'name'  => $t->name,
                 'color' => $t->color,

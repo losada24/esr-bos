@@ -13,6 +13,11 @@ interface ContractSignedFormValues {
   jobZip: string
   methodOfPayment: string
   typeOfFinancing: string
+  contactEmail: string
+  nameCheck: boolean
+  addressCheck: boolean
+  amountCheck: boolean
+  emailCheck: boolean
   attachments: File[]
 }
 
@@ -28,11 +33,16 @@ export interface ContractSignedModalProps {
   initialJobZip: string
   initialMethodOfPayment: string
   initialTypeOfFinancing: string
+  initialContactEmail: string
+  initialNameCheck: boolean
+  initialAddressCheck: boolean
+  initialAmountCheck: boolean
+  initialEmailCheck: boolean
   paymentMethods: string[]
   financingOptions: string[]
   loading?: boolean
   error?: string | null
-  onSubmit: (values: { projectName: string, projectAmount: string, downPayment: string, jobAddress: string, city: string, jobState: string, jobZip: string, methodOfPayment: string, typeOfFinancing: string, attachments: File[] }) => void | Promise<void>
+  onSubmit: (values: { projectName: string, projectAmount: string, downPayment: string, jobAddress: string, city: string, jobState: string, jobZip: string, methodOfPayment: string, typeOfFinancing: string, contactEmail: string, attachments: File[], nameCheck: boolean, addressCheck: boolean, amountCheck: boolean, emailCheck: boolean }) => void | Promise<void>
   onCancel: () => void
 }
 
@@ -48,6 +58,11 @@ export default function ContractSignedModal ({
   initialJobZip,
   initialMethodOfPayment,
   initialTypeOfFinancing,
+  initialContactEmail,
+  initialNameCheck,
+  initialAddressCheck,
+  initialAmountCheck,
+  initialEmailCheck,
   paymentMethods,
   financingOptions,
   loading = false,
@@ -59,8 +74,8 @@ export default function ContractSignedModal ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-      <div className="w-full max-w-xl rounded-2xl bg-white p-6 shadow-2xl">
-        <div className="flex items-start justify-between gap-4">
+      <div className="w-full max-w-xl rounded-2xl bg-white shadow-2xl flex flex-col max-h-[90vh]">
+        <div className="flex items-start justify-between gap-4 px-6 pt-6 pb-4 border-b border-slate-100">
           <div>
             <h3 className="text-lg font-semibold text-slate-800">Contract Signed Details</h3>
             <p className="mt-2 text-sm text-slate-600">
@@ -76,7 +91,7 @@ export default function ContractSignedModal ({
             <CloseIcon />
           </button>
         </div>
-
+        <div className="flex-1 overflow-y-auto px-6 pb-6">
         <Formik<ContractSignedFormValues>
           enableReinitialize
           initialValues={{
@@ -89,6 +104,11 @@ export default function ContractSignedModal ({
             jobZip: initialJobZip ?? '',
             methodOfPayment: initialMethodOfPayment ?? '',
             typeOfFinancing: initialTypeOfFinancing ?? '',
+            contactEmail: initialContactEmail ?? '',
+            nameCheck: initialNameCheck ?? false,
+            addressCheck: initialAddressCheck ?? false,
+            amountCheck: initialAmountCheck ?? false,
+            emailCheck: initialEmailCheck ?? false,
             attachments: [],
           }}
           validate={(values) => {
@@ -105,6 +125,13 @@ export default function ContractSignedModal ({
               issues.projectAmount = 'Project amount is required.'
             } else if (Number.isNaN(Number(values.projectAmount))) {
               issues.projectAmount = 'Enter a valid number.'
+            }
+
+            const trimmedEmail = values.contactEmail?.trim() ?? ''
+            if (!trimmedEmail) {
+              issues.contactEmail = 'Contact email is required.'
+            } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+              issues.contactEmail = 'Enter a valid email address.'
             }
 
             if (values.jobAddress && values.jobAddress.length > 255) {
@@ -135,6 +162,10 @@ export default function ContractSignedModal ({
               issues.typeOfFinancing = 'Select a financing type.'
             }
 
+            if (!values.attachments || values.attachments.length === 0) {
+              issues.attachments = 'At least one attachment is required.'
+            }
+
             return issues
           }}
           onSubmit={(values) => {
@@ -148,6 +179,11 @@ export default function ContractSignedModal ({
               jobZip: values.jobZip.trim(),
               methodOfPayment: values.methodOfPayment,
               typeOfFinancing: values.typeOfFinancing,
+              contactEmail: values.contactEmail.trim(),
+              nameCheck: values.nameCheck,
+              addressCheck: values.addressCheck,
+              amountCheck: values.amountCheck,
+              emailCheck: values.emailCheck,
               attachments: values.attachments ?? [],
             })
           }}
@@ -155,6 +191,14 @@ export default function ContractSignedModal ({
           {({ values, errors, submitCount, handleChange, handleBlur, setFieldValue }) => {
             const financingRequired = [PAYMENT_METHODS.FINANCED, PAYMENT_METHODS.CASH_AND_FINANCE]
             const shouldShowFinancing = financingRequired.includes(values.methodOfPayment)
+            const attachmentsErrorMessage = typeof errors.attachments === 'string'
+              ? errors.attachments
+              : Array.isArray(errors.attachments)
+                ? errors.attachments
+                  .map((item) => typeof item === 'string' ? item : '')
+                  .filter(Boolean)
+                  .join(', ') || undefined
+                : undefined
 
             return (
             <Form className="mt-4 space-y-4" encType="multipart/form-data">
@@ -196,6 +240,23 @@ export default function ContractSignedModal ({
                         ? <InputError message={errors.projectAmount} className="mt-2" />
                         : null}
                     </div>
+                  </div>
+
+                  <div className={submitCount ? (errors.contactEmail ? 'has-error' : 'has-success') : ''}>
+                    <label className="mb-1 block text-sm font-medium text-slate-600">Contact Email</label>
+                    <input
+                      name="contactEmail"
+                      type="email"
+                      value={values.contactEmail}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 outline-none focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                      placeholder="name@example.com"
+                      disabled={loading}
+                    />
+                    {submitCount && errors.contactEmail
+                      ? <InputError message={errors.contactEmail} className="mt-2" />
+                      : null}
                   </div>
 
                   <div className={submitCount ? (errors.jobAddress ? 'has-error' : 'has-success') : ''}>
@@ -271,7 +332,7 @@ export default function ContractSignedModal ({
               </fieldset>
 
               <fieldset className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
-                <legend className="px-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Información del pago</legend>
+                <legend className="px-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Payment Information</legend>
                 <div className="mt-3 space-y-4 md:space-y-0 md:grid md:grid-cols-2 md:gap-4">
                   <div className={submitCount ? (errors.methodOfPayment ? 'has-error' : 'has-success') : ''}>
                     <label className="mb-1 block text-sm font-medium text-slate-600" htmlFor="methodOfPayment">Project Payment Method</label>
@@ -344,7 +405,57 @@ export default function ContractSignedModal ({
                 </div>
               </fieldset>
 
-              <div>
+              <fieldset className="rounded-lg border border-slate-200 bg-white/70 p-3">
+                <legend className="px-1 text-xs font-semibold uppercase text-slate-500">Verifications</legend>
+                <div className="mt-2 grid grid-cols-2 gap-3 text-sm text-slate-600">
+                  <label className="inline-flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      name="nameCheck"
+                      checked={values.nameCheck}
+                      onChange={(event) => { setFieldValue('nameCheck', event.target.checked) }}
+                      className="form-checkbox h-4 w-4"
+                      disabled={loading}
+                    />
+                    <span>Name</span>
+                  </label>
+                  <label className="inline-flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      name="addressCheck"
+                      checked={values.addressCheck}
+                      onChange={(event) => { setFieldValue('addressCheck', event.target.checked) }}
+                      className="form-checkbox h-4 w-4"
+                      disabled={loading}
+                    />
+                    <span>Address</span>
+                  </label>
+                  <label className="inline-flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      name="amountCheck"
+                      checked={values.amountCheck}
+                      onChange={(event) => { setFieldValue('amountCheck', event.target.checked) }}
+                      className="form-checkbox h-4 w-4"
+                      disabled={loading}
+                    />
+                    <span>Amount</span>
+                  </label>
+                  <label className="inline-flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      name="emailCheck"
+                      checked={values.emailCheck}
+                      onChange={(event) => { setFieldValue('emailCheck', event.target.checked) }}
+                      className="form-checkbox h-4 w-4"
+                      disabled={loading}
+                    />
+                    <span>Email</span>
+                  </label>
+                </div>
+              </fieldset>
+
+              <div className={submitCount ? (errors.attachments ? 'has-error' : 'has-success') : ''}>
                 <label className="mb-1 block text-sm font-medium text-slate-600">Attachments</label>
                 <input
                   name="attachments"
@@ -364,6 +475,9 @@ export default function ContractSignedModal ({
                     ))}
                   </ul>
                 )}
+                {submitCount && errors.attachments
+                  ? <InputError message={attachmentsErrorMessage ?? 'Please verify the attachments.'} className="mt-2" />
+                  : null}
               </div>
 
               {error && (
@@ -393,6 +507,7 @@ export default function ContractSignedModal ({
             )}
           }
         </Formik>
+        </div>
       </div>
     </div>
   )

@@ -94,6 +94,10 @@ class Order extends Model
     'bid_due_date',
     'is_supply',
     'schedule_appointment',
+    'name_check',
+    'address_check',
+    'amount_check',
+    'email_check',
   ];
 
   protected $dates = [
@@ -132,6 +136,10 @@ class Order extends Model
       'is_send_email' => 'boolean',
       'is_new_travel_cost' => 'boolean',
       'is_supply' => 'boolean',
+      'name_check' => 'boolean',
+      'address_check' => 'boolean',
+      'amount_check' => 'boolean',
+      'email_check' => 'boolean',
     ];
   }
 

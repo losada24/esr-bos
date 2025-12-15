@@ -18,6 +18,7 @@ import BookIcon from '@/Components/Icons/BookIcon'
 import FolderIcon from '@/Components/Icons/FolderIcon'
 import ExportIcon from '@/Components/Icons/ExportIcon'
 import DeleteIcon from '@/Components/Icons/DeleteIcon'
+import ReorderIcon from '@/Components/Icons/ReorderIcon'
 import OrderNotesForOrder from '@/Components/OrderNotesForOrder'
 
 type IndexOrderProps = PageProps & {
@@ -25,9 +26,24 @@ type IndexOrderProps = PageProps & {
   order: Order
   tags: TagItem[]
   usedTags: TagItem[]
+  clientOrders?: ClientOrderSummary[]
 }
 
 type TabKey = 'home' | 'profile' | 'contact' | 'sales' | 'attachments'
+
+type ClientOrderOwner = {
+  id: number
+  name: string
+}
+
+type ClientOrderSummary = {
+  id: number
+  name: string
+  order_number?: string | null
+  status?: string | null
+  order_type?: string | null
+  owners?: ClientOrderOwner[]
+}
 
 const HIDE_DESCRIPTION_AND_JOB_STATUS = new Set([
   'NEW REQUEST',
@@ -36,10 +52,11 @@ const HIDE_DESCRIPTION_AND_JOB_STATUS = new Set([
   'LOST REQUEST'
 ])
 
-export default function ShowStatusOrder ({ auth, orderStatuses = [], tags = [], order, usedTags = [] }: IndexOrderProps) {
+export default function ShowStatusOrder ({ auth, orderStatuses = [], tags = [], order, usedTags = [], clientOrders = [] }: IndexOrderProps) {
   const safeOrderStatuses = Array.isArray(orderStatuses) ? orderStatuses : []
   const safeTags = Array.isArray(tags) ? tags : []
   const safeUsedTags = Array.isArray(usedTags) ? usedTags : []
+  const relatedClientOrders = Array.isArray(clientOrders) ? clientOrders : []
   const [tab, setTab] = useState<TabKey>('home')
   const authUserId = auth?.user?.id ?? null
 
@@ -182,7 +199,7 @@ export default function ShowStatusOrder ({ auth, orderStatuses = [], tags = [], 
   const tabs: Array<{ key: TabKey, label: string, Icon: DetailIcon }> = [
     { key: 'home', label: 'Notes', Icon: EmailIcon },
     { key: 'profile', label: 'Profile', Icon: UserIcon },
-    { key: 'contact', label: 'Contact', Icon: PhoneIcon },
+    { key: 'contact', label: 'Associated Orders', Icon: ReorderIcon },
     { key: 'sales', label: 'Sales Form', Icon: BookIcon },
     { key: 'attachments', label: 'Attachments', Icon: FolderIcon }
   ]
@@ -499,7 +516,7 @@ export default function ShowStatusOrder ({ auth, orderStatuses = [], tags = [], 
                 {tab === 'contact' && (
                   <div id="panel-contact" role="tabpanel" aria-labelledby="tab-contact" className="space-y-5 p-6 text-sm text-slate-600">
                     <p className="text-sm text-slate-500">
-                      Mantén a tu equipo sincronizado. Aquí tienes los datos de contacto clave para esta orden.
+                      Keep the team aligned by reviewing this client's contact details and associated orders in one place.
                     </p>
                     <div className="grid gap-4 sm:grid-cols-2">
                       {contactDetails.map(({ label, value, fallback, Icon }) => (
@@ -515,6 +532,70 @@ export default function ShowStatusOrder ({ auth, orderStatuses = [], tags = [], 
                           </div>
                         </div>
                       ))}
+                    </div>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-400">Other orders linked to this contact</h3>
+                        {relatedClientOrders.length > 0 && (
+                          <span className="text-[11px] font-medium text-slate-500">{relatedClientOrders.length} linked</span>
+                        )}
+                      </div>
+                      {relatedClientOrders.length > 0
+                        ? (
+                          <ul className="space-y-3">
+                            {relatedClientOrders.map((clientOrder) => {
+                              const ownerNames = Array.isArray(clientOrder.owners)
+                                ? clientOrder.owners
+                                  .map(owner => owner?.name)
+                                  .filter((name): name is string => Boolean(name))
+                                : []
+                              return (
+                                <li key={clientOrder.id} className="rounded-xl border border-slate-200/70 bg-white px-4 py-3 shadow-sm">
+                                  <div className="flex flex-col gap-2">
+                                    <div className="flex flex-wrap items-center justify-between gap-2">
+                                      <div>
+                                        <p className="text-sm font-semibold text-slate-700">
+                                          {clientOrder.name}
+                                        </p>
+                                        <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
+                                          {clientOrder.order_number && (
+                                            <span>#{clientOrder.order_number}</span>
+                                          )}
+                                          {clientOrder.order_type && (
+                                            <span>{clientOrder.order_type}</span>
+                                          )}
+                                          {ownerNames.length > 0 && (
+                                            <span className="rounded-full bg-sky-50 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-sky-600">
+                                              {ownerNames.length > 1 ? 'Owners' : 'Owner'}: {ownerNames.join(', ')}
+                                            </span>
+                                          )}
+                                        </div>
+                                      </div>
+                                      {clientOrder.status && (
+                                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-slate-600">
+                                          {clientOrder.status}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                                      <a
+                                        href={route('frontdesk.order_view', { id: clientOrder.id })}
+                                        className="font-semibold text-sky-600 hover:text-sky-700"
+                                      >
+                                        View details
+                                      </a>
+                                    </div>
+                                  </div>
+                                </li>
+                              )
+                            })}
+                          </ul>
+                          )
+                        : (
+                          <p className="rounded-xl border border-slate-200/70 bg-slate-50 px-4 py-3 text-sm text-slate-500">
+                            No hay otras órdenes asociadas a este cliente.
+                          </p>
+                          )}
                     </div>
                   </div>
                 )}

@@ -10,6 +10,7 @@ import EditIcon from '@/Components/Icons/EditIcon'
 import DeleteIcon from '@/Components/Icons/DeleteIcon'
 import LostRequestModal from './LostRequestModal'
 import QuantifiedModal from './QuantifiedModal'
+import RequestStandByModal from './RequestStandByModal'
 import EyeIcon from '@/Components/Icons/EyeIcon'
 import { tagClasses, type TagColor } from '@/Utils/tags'
 import InfoTooltip from '@/Components/InfoTooltip'
@@ -89,6 +90,42 @@ const formatDateForDisplay = (date: Date): string => {
   return `${monthLabel} ${day}, ${year} ${hourDisplay}:${minutes} ${period}`
 }
 
+const TWENTY_FOUR_HOURS_IN_MS = 24 * 60 * 60 * 1000
+const SEVENTY_TWO_HOURS_IN_MS = 72 * 60 * 60 * 1000
+
+const normalizePipelineIdentifier = (pipeline: Pick<Pipelines, 'id' | 'title'>): string => {
+  const normalizedTitle = pipeline.title?.toUpperCase() ?? ''
+  const normalizedId = (pipeline.id == null ? '' : pipeline.id.toString()).toUpperCase()
+  return normalizedTitle || normalizedId
+}
+
+const STALE_STATUS_RULES: Record<string, { threshold: number, className: string }> = {
+  'NEW REQUEST': {
+    threshold: TWENTY_FOUR_HOURS_IN_MS,
+    className: 'bg-red-200 dark:bg-red-500/40'
+  },
+  'REQUEST FOLLOW UP': {
+    threshold: SEVENTY_TWO_HOURS_IN_MS,
+    className: 'bg-red-200 dark:bg-red-500/40'
+  }
+}
+
+const getStatusTimestamp = (task: Tasks): number => {
+  const isoTimestamp = task.status_created_at_iso != null ? Date.parse(task.status_created_at_iso) : Number.NaN
+  if (!Number.isNaN(isoTimestamp)) return isoTimestamp
+  return parseDisplayDateToTimestamp(task?.date)
+}
+
+const getStaleStatusClass = (pipeline: Pick<Pipelines, 'id' | 'title'>, task: Tasks): string | null => {
+  const pipelineKey = normalizePipelineIdentifier(pipeline)
+  if (!pipelineKey) return null
+  const rule = STALE_STATUS_RULES[pipelineKey]
+  if (!rule) return null
+  const createdTimestamp = getStatusTimestamp(task)
+  if (!createdTimestamp) return null
+  return (Date.now() - createdTimestamp) >= rule.threshold ? rule.className : null
+}
+
 export default function Frontdesk ({
   auth,
   data,
@@ -123,6 +160,7 @@ export default function Frontdesk ({
   const [showModal, setShowModal] = useState(false)
   const [lostTask, setLostTask] = useState<Tasks | null>(null)
   const [showQuantifiedModal, setShowQuantifiedModal] = useState(false)
+  const [showRequestStandByModal, setShowRequestStandByModal] = useState(false)
   const [previousStatusId, setPreviousStatusId] = useState<string | null>(null)
 
   useEffect(() => {
@@ -268,11 +306,22 @@ export default function Frontdesk ({
                                   } */
 
                                   if (!movedTask) return
-                                  if (newStatus === 'QUALIFIED' || newStatus === 'LOST REQUEST') {
+                                  if (newStatus === 'QUALIFIED') {
                                     setLostTask(movedTask)
                                     setPreviousStatusId(oldStatus)
-                                    if (newStatus === 'QUALIFIED') setShowQuantifiedModal(true)
-                                    if (newStatus === 'LOST REQUEST') setShowModal(true)
+                                    setShowQuantifiedModal(true)
+                                    return
+                                  }
+                                  if (newStatus === 'LOST REQUEST') {
+                                    setLostTask(movedTask)
+                                    setPreviousStatusId(oldStatus)
+                                    setShowModal(true)
+                                    return
+                                  }
+                                  if (newStatus === 'REQUEST STAND BY') {
+                                    setLostTask(movedTask)
+                                    setPreviousStatusId(oldStatus)
+                                    setShowRequestStandByModal(true)
                                     return
                                   }
                                   const movedTaskWithUpdatedDate = {
@@ -310,11 +359,13 @@ export default function Frontdesk ({
                                 dragClass="sortable-drag"
                                 className="min-h-[1px] space-y-4  pt-2"
                                 >
-                                {project.tasks.map((task: any) => {
+                                {project.tasks.map((task: Tasks) => {
                                   console.log('tags →', task.tags)
+                                  const staleStatusClass = getStaleStatusClass(project, task)
+                                  const cardBackgroundClass = staleStatusClass ?? 'bg-[#f4f4f4] dark:bg-white-dark/20'
                                   return (
                                         <div className="sortable-list " key={task.id} data-id={task.id}>
-                                            <div className="shadow bg-[#f4f4f4] dark:bg-white-dark/20 p-3 pb-4 rounded-md space-y-2 cursor-move text-xs text-slate-600">
+                                            <div className={`shadow ${cardBackgroundClass} p-3 pb-4 rounded-md space-y-2 cursor-move text-xs text-slate-600`}>
                                                 {task.image ? <img src="/assets/images/carousel1.jpeg" alt="images" className="h-32 w-full object-cover rounded-md" /> : ''}
                                                 <div className="flex items-center justify-between w-full">
                                                   <p className="flex items-center gap-2 break-all text-sm font-semibold text-slate-700">
@@ -346,6 +397,7 @@ export default function Frontdesk ({
                                                           <ul style={{ margin: 0, paddingLeft: 16, fontSize: '13px', color: '#1e293b', lineHeight: '1.6' }}>
                                                             <li style={{ marginBottom: 6 }}>Phone: {task.phone ?? '—'}</li>
                                                             <li style={{ marginBottom: 6 }}>Appt Date: {task.schedule_appointment ?? 'No Appt Scheduled'}</li>
+                                                            <li style={{ marginBottom: 6 }}>Created By: {task.created_by ?? 'Unknown'}</li>
 
                                                           </ul>
                                                         </div>
@@ -409,7 +461,7 @@ export default function Frontdesk ({
           setShowModal(false)
           setLostTask(null)
           setPreviousStatusId(null)
-       }}
+        }}
         setProjectList={setProjectList}
         updateOrderStatus={updateOrderStatus}
         lostStatusId="LOST REQUEST"
@@ -437,6 +489,17 @@ export default function Frontdesk ({
         glass_coatings={glass_coatings ?? []}
         languages={languages ?? []}
         // errors={FormikErrors<OrderFormValues>}
+      />
+      <RequestStandByModal
+        task={lostTask}
+        showModal={showRequestStandByModal}
+        previousStatusId={previousStatusId}
+        setProjectList={setProjectList}
+        onClose={() => {
+          setShowRequestStandByModal(false)
+          setLostTask(null)
+          setPreviousStatusId(null)
+        }}
       />
     </AuthenticatedCalendarLayout>
   )

@@ -10,11 +10,17 @@ export interface EstimateScheduleFormValues {
   ownerIds: number[]
 }
 
+interface OwnerOption {
+  id: number
+  name: string
+}
+
 export interface EstimateScheduleModalProps {
   open: boolean
   taskTitle: string
   initialScheduleDate: string
   initialOwnerIds: number[]
+  initialOwners?: OwnerOption[]
   ownerOptions: Array<{ id: number, name: string }>
   error?: string | null
   saving?: boolean
@@ -32,6 +38,7 @@ export default function EstimateScheduleModal ({
   taskTitle,
   initialScheduleDate,
   initialOwnerIds,
+  initialOwners = [],
   ownerOptions,
   error,
   saving = false,
@@ -84,7 +91,13 @@ export default function EstimateScheduleModal ({
           }}
         >
           {({ values, setFieldValue, errors, touched, submitCount }) => {
-            const ownerSelectOptions = ownerOptions.map(owner => ({ value: owner.id, label: owner.name }))
+            const baseOptions = ownerOptions.map(owner => ({ value: owner.id, label: owner.name }))
+            const fallbackOptions = initialOwners
+              .filter(owner => owner?.id != null && owner?.name)
+              .map(owner => ({ value: owner.id, label: owner.name }))
+              .filter(fallback => !baseOptions.some(option => option.value === fallback.value))
+
+            const ownerSelectOptions = [...baseOptions, ...fallbackOptions]
 
             const selectedOwners = ownerSelectOptions.filter(option =>
               values.ownerIds?.includes(Number(option.value))

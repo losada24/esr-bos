@@ -30,10 +30,13 @@ class OrderProcessingController extends Controller
 
         $orders = $ordersQuery->get();
 
-        $data = collect($processingStatuses)->map(function (string $status) use ($orders, $pipelineStatusMap) {
-            $ordersByStatus = $orders->filter(function (Order $order) use ($status, $pipelineStatusMap) {
-                $pipelineStatus = $pipelineStatusMap[$order->status] ?? $order->status;
-                return $pipelineStatus === $status;
+        $determinePipelineStatus = function (Order $order) use ($pipelineStatusMap) {
+            return $this->determinePipelineStatus($order, $pipelineStatusMap);
+        };
+
+        $data = collect($processingStatuses)->map(function (string $status) use ($orders, $determinePipelineStatus) {
+            $ordersByStatus = $orders->filter(function (Order $order) use ($status, $determinePipelineStatus) {
+                return $determinePipelineStatus($order) === $status;
             });
 
             return [
@@ -81,6 +84,19 @@ class OrderProcessingController extends Controller
         return Inertia::render('OrderProcessing/Index', [
             'data' => $data,
         ]);
+    }
+
+    private function determinePipelineStatus(Order $order, array $pipelineStatusMap): string
+    {
+        if ($order->status === OrderStatusEnum::CONTRACT_SIGNED_BY_CLIENT->value) {
+            if ($order->is_supply) {
+                return OrderStatusEnum::ORDER_MATERIALS_AND_FILE_ORGANIZATION->value;
+            }
+
+            return OrderStatusEnum::RECTIFICATION_OF_MEASURES_AND_HOA->value;
+        }
+
+        return $pipelineStatusMap[$order->status] ?? $order->status;
     }
 
     /**

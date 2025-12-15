@@ -15,7 +15,11 @@ export const orderQuantifiedSchema = Yup.object({
 })
 
 export const requestSchema = Yup.object({
-  client_name: Yup.string().required('Request Name is required')
+  client_name: Yup.string().required('Request Name is required'),
+  name_check: Yup.boolean().optional(),
+  address_check: Yup.boolean().optional(),
+  amount_check: Yup.boolean().optional(),
+  email_check: Yup.boolean().optional()
   // status: Yup.string().required('Status is required'),
   // notes: Yup.string().required().max(1000, 'Notes must be less than 255 characters')
 })
@@ -72,6 +76,10 @@ export interface Order {
   schedule_appointment?: Date | null
   attachments?: Attachment[]
   method_of_payment?: string | null
+  name_check?: boolean
+  address_check?: boolean
+  amount_check?: boolean
+  email_check?: boolean
 }
 
 export type OrderFormValues = Order & {
@@ -167,7 +175,11 @@ export const orderFormObj: OrderFormValues = {
   language: '',
   door_quantity: 0,
   window_quantity: 0,
-  schedule_appointment: null
+  schedule_appointment: null,
+  name_check: false,
+  address_check: false,
+  amount_check: false,
+  email_check: false
 }
 
 export const loadOrderFormObj = (order: Order): OrderFormValues => {
@@ -229,6 +241,10 @@ export const loadOrderFormObj = (order: Order): OrderFormValues => {
     language: order.sale_form ? (order.sale_form.language ?? '') : '',
     door_quantity: order.sale_form ? order.sale_form.door_quantity : 0,
     window_quantity: order.sale_form ? order.sale_form.window_quantity : 0,
-    schedule_appointment: order.schedule_appointment ?? null
+    schedule_appointment: order.schedule_appointment ?? null,
+    name_check: order.name_check ?? false,
+    address_check: order.address_check ?? false,
+    amount_check: order.amount_check ?? false,
+    email_check: order.email_check ?? false
   }
 }
