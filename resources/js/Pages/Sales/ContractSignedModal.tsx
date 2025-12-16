@@ -105,10 +105,10 @@ export default function ContractSignedModal ({
             methodOfPayment: initialMethodOfPayment ?? '',
             typeOfFinancing: initialTypeOfFinancing ?? '',
             contactEmail: initialContactEmail ?? '',
-            nameCheck: initialNameCheck ?? false,
-            addressCheck: initialAddressCheck ?? false,
-            amountCheck: initialAmountCheck ?? false,
-            emailCheck: initialEmailCheck ?? false,
+            nameCheck: initialNameCheck ?? true,
+            addressCheck: initialAddressCheck ?? true,
+            amountCheck: initialAmountCheck ?? true,
+            emailCheck: initialEmailCheck ?? true,
             attachments: [],
           }}
           validate={(values) => {
@@ -164,6 +164,11 @@ export default function ContractSignedModal ({
 
             if (!values.attachments || values.attachments.length === 0) {
               issues.attachments = 'At least one attachment is required.'
+            }
+
+            const verifiedAll = values.nameCheck && values.addressCheck && values.amountCheck && values.emailCheck
+            if (!verifiedAll) {
+              issues.nameCheck = 'Please confirm the order details before saving.'
             }
 
             return issues
@@ -453,6 +458,9 @@ export default function ContractSignedModal ({
                     <span>Email</span>
                   </label>
                 </div>
+                {submitCount && errors.nameCheck && (
+                  <InputError message={errors.nameCheck} className="mt-2" />
+                )}
               </fieldset>
 
               <div className={submitCount ? (errors.attachments ? 'has-error' : 'has-success') : ''}>

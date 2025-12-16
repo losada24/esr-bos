@@ -67,7 +67,8 @@ const QuantifiedModal = ({
   glass_colors,
   glass_types,
   glass_coatings,
-  languages
+  languages,
+  onSuccess
   // errors
 }: {
   task: Tasks | null
@@ -85,6 +86,7 @@ const QuantifiedModal = ({
   glass_types: string[]
   glass_coatings: string[]
   languages: string[]
+  onSuccess?: (order: Order | null) => void
   // errors: FormikErrors<OrderFormValues>
 
 }) => {
@@ -261,10 +263,14 @@ const QuantifiedModal = ({
         helpers.setSubmitting(false)
         return
       }
-      await response.json()
-      setTimeout(() => {
-        router.visit(route('frontdesk.index'))
-      }, 100)
+      const data = await response.json().catch(() => null)
+      if (onSuccess) {
+        onSuccess(data?.order ?? null)
+      } else {
+        setTimeout(() => {
+          router.visit(route('frontdesk.index'))
+        }, 100)
+      }
     } catch (error) {
       console.error(error)
       helpers.setSubmitting(false)

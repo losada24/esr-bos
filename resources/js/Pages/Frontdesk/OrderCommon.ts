@@ -71,9 +71,15 @@ export interface Order {
   bid_due_date?: Date | null
   user: User
   owners?: User[]
+  owner_ids?: number[]
   is_supply: boolean
   sale_form?: SaleForm
   schedule_appointment?: Date | null
+  schedule_appointment_iso?: string | null
+  down_payment?: number | null
+  type_of_financing?: string | null
+  contact_email?: string | null
+  loss_reason_frontdesk?: string | null
   attachments?: Attachment[]
   method_of_payment?: string | null
   name_check?: boolean
@@ -176,6 +182,12 @@ export const orderFormObj: OrderFormValues = {
   door_quantity: 0,
   window_quantity: 0,
   schedule_appointment: null,
+  schedule_appointment_iso: null,
+  owner_ids: [],
+  down_payment: null,
+  type_of_financing: null,
+  contact_email: '',
+  loss_reason_frontdesk: '',
   name_check: false,
   address_check: false,
   amount_check: false,
@@ -242,6 +254,12 @@ export const loadOrderFormObj = (order: Order): OrderFormValues => {
     door_quantity: order.sale_form ? order.sale_form.door_quantity : 0,
     window_quantity: order.sale_form ? order.sale_form.window_quantity : 0,
     schedule_appointment: order.schedule_appointment ?? null,
+    schedule_appointment_iso: order.schedule_appointment_iso ?? null,
+    owner_ids: Array.isArray(order.owner_ids) ? order.owner_ids : [],
+    down_payment: order.down_payment ?? null,
+    type_of_financing: order.type_of_financing ?? null,
+    contact_email: order.contact_email ?? order.client?.email ?? '',
+    loss_reason_frontdesk: order.loss_reason_frontdesk ?? '',
     name_check: order.name_check ?? false,
     address_check: order.address_check ?? false,
     amount_check: order.amount_check ?? false,

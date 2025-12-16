@@ -15,6 +15,8 @@ use App\Enum\LostReasonfrontdeskEnum;
 use App\Enum\OrderStatusEnum;
 use App\Enum\OrderTypeEnum;
 use App\Enum\RoleEnum;
+use App\Enum\MethodOfPayment;
+use App\Enum\TypeOfFinancing;
 use App\Http\Requests\StoreFrontDeskOrderRequest;
 use App\Http\Requests\StoreQualifiedOrderRequest;
 use App\Models\Client;
@@ -519,6 +521,70 @@ public function showQuantifiedModal(Order $order)
             //dd($usedTags);
 
 
+    $ownerOptionsQuery = User::role(RoleEnum::OWNER->value)
+      ->select('id', 'name')
+      ->orderBy('name');
+
+    if ($this->isOwnerRestricted(auth()->user())) {
+      $ownerOptionsQuery->where('id', auth()->id());
+    }
+
+    $ownerOptions = $ownerOptionsQuery->get();
+
+    $lossReasonFrontdesk = [
+        LostReasonfrontdeskEnum::NO_RESPONSE_FROM_CLIENT->value,
+        LostReasonfrontdeskEnum::CLIENT_NOT_INTERESTED->value,
+        LostReasonfrontdeskEnum::BUDGET_ISSUES->value,
+        LostReasonfrontdeskEnum::OTHER_REASONS->value,
+    ];
+
+    $sources = [
+        ContactSourceEnum::TIK_TOK->value,
+        ContactSourceEnum::INSTAGRAM_FACEBOOK->value,
+        ContactSourceEnum::META->value,
+        ContactSourceEnum::DESTINO_TOLK->value,
+        ContactSourceEnum::RESOURCE_MAGAZINE->value,
+        ContactSourceEnum::BANNER_PUBLICITARIO->value,
+        ContactSourceEnum::PICHY_BOYS->value,
+        ContactSourceEnum::GOOGLE_MY_BUSINESS->value,
+    ];
+
+    $order_types = [
+      OrderTypeEnum::RESIDENTIAL->value,
+      OrderTypeEnum::COMMERCIAL->value,
+      OrderTypeEnum::SUPPLY->value,
+    ];
+    $frame_colors = [
+      FrameColorEnum::BLACK->value,
+      FrameColorEnum::WHITE->value,
+      FrameColorEnum::BRONZE->value,
+      FrameColorEnum::CLEAR_ANODIZED->value,
+      FrameColorEnum::OTHERS->value,
+    ];
+    $glass_colors = [
+      GlassColorEnum::BRONZE->value,
+      GlassColorEnum::CLEAR->value,
+      GlassColorEnum::GRAY->value,
+      GlassColorEnum::GREEN->value,
+      GlassColorEnum::OTHERS->value,
+    ];
+    $glass_types = [
+      GlassTypeEnum::LAMINATED->value,
+      GlassTypeEnum::INSULATED->value,
+      GlassTypeEnum::INSULATED_LAMINATED->value,
+    ];
+    $glass_coatings = [
+      GlassCoatingEnum::LOWE70->value,
+      GlassCoatingEnum::LOWE60->value,
+    ];
+    $languages = array_map(
+      static fn (LanguageEnum $language) => $language->value,
+      LanguageEnum::cases()
+    );
+
+    $methodsOfPayment = array_map(fn (MethodOfPayment $method) => $method->value, MethodOfPayment::cases());
+    $typeOfFinancing = array_map(fn (TypeOfFinancing $financing) => $financing->value, TypeOfFinancing::cases());
+
     // Obtener los parámetros de filtro de la solicitud (request)
     return Inertia::render('Frontdesk/OrderView', [
       //'orderStatuses' => $orderStatuses,
@@ -529,6 +595,17 @@ public function showQuantifiedModal(Order $order)
                 'color' => $t->color,
             ]),
       'usedTags' => $usedTags,
+      'ownerOptions' => $ownerOptions,
+      'lossReasonFrontdesk' => $lossReasonFrontdesk,
+      'sources' => $sources,
+      'order_types' => $order_types,
+      'methods_of_payment' => $methodsOfPayment,
+      'type_of_financing' => $typeOfFinancing,
+      'frame_colors' => $frame_colors,
+      'glass_colors' => $glass_colors,
+      'glass_types' => $glass_types,
+      'glass_coatings' => $glass_coatings,
+      'languages' => $languages,
       /*'orderStatuses' => $orderStatuses->map(function ($status) {
         return [
           ...$status->toArray(),
@@ -632,9 +709,17 @@ public function showQuantifiedModal(Order $order)
       ];
   }
 
+  private function isOwnerRestricted(?User $user): bool
+  {
+      if (!$user) {
+          return false;
+      }
 
-
-
+      return $user->hasRole(RoleEnum::OWNER->value) && !$user->hasAnyRole([
+          RoleEnum::ADMIN->value,
+          RoleEnum::ACCOUNT_MANAGER->value,
+      ]);
+  }
 }
 
   

@@ -1,7 +1,8 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
 import { Head, useForm } from '@inertiajs/react'
-import { type PageProps } from '@/types'
-import { type ChangeEvent, type FormEvent, KeyboardEvent, useRef, useState } from 'react'
+import { type PageProps, type Pipelines, type Role, type Tasks } from '@/types'
+import { type ChangeEvent, type FormEvent, KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import type { ComponentType, SVGProps } from 'react'
 import { type Attachment, type OrderStatus } from '@/types/interfaces/order'
 import TagPicker, { type TagItem } from '@/Components/TagPicker'
@@ -20,6 +21,15 @@ import ExportIcon from '@/Components/Icons/ExportIcon'
 import DeleteIcon from '@/Components/Icons/DeleteIcon'
 import ReorderIcon from '@/Components/Icons/ReorderIcon'
 import OrderNotesForOrder from '@/Components/OrderNotesForOrder'
+import { isAccountManager, isAdmin, isOwner, isOwnerAdmin } from '@/Utils/user'
+import EstimateScheduleModal from '@/Pages/Sales/EstimateScheduleModal'
+import FollowUpModal from '@/Pages/Sales/FollowUpModal'
+import StandByNoteModal from '@/Pages/Sales/StandByNoteModal'
+import RequestRescheduleModal from '@/Pages/Sales/RequestRescheduleModal'
+import PreContractNoteModal from '@/Pages/Sales/PreContractNoteModal'
+import ContractSignedModal from '@/Pages/Sales/ContractSignedModal'
+import LostContractModal from '@/Pages/Sales/LostContractModal'
+import QuantifiedModal from '@/Pages/Frontdesk/QuantifiedModal'
 
 type IndexOrderProps = PageProps & {
   orderStatuses?: OrderStatus[]
@@ -27,16 +37,27 @@ type IndexOrderProps = PageProps & {
   tags: TagItem[]
   usedTags: TagItem[]
   clientOrders?: ClientOrderSummary[]
+  ownerOptions?: ClientOrderOwner[]
+  lossReasonFrontdesk?: string[]
+  sources?: string[]
+  order_types?: string[]
+  methods_of_payment?: string[]
+  type_of_financing?: string[]
+  frame_colors?: string[]
+  glass_colors?: string[]
+  glass_types?: string[]
+  glass_coatings?: string[]
+  languages?: string[]
 }
 
 type TabKey = 'home' | 'profile' | 'contact' | 'sales' | 'attachments'
 
-type ClientOrderOwner = {
+export interface ClientOrderOwner {
   id: number
   name: string
 }
 
-type ClientOrderSummary = {
+export interface ClientOrderSummary {
   id: number
   name: string
   order_number?: string | null
@@ -52,13 +73,196 @@ const HIDE_DESCRIPTION_AND_JOB_STATUS = new Set([
   'LOST REQUEST'
 ])
 
-export default function ShowStatusOrder ({ auth, orderStatuses = [], tags = [], order, usedTags = [], clientOrders = [] }: IndexOrderProps) {
+const FRONTDESK_STATUS_OPTIONS = [
+  'NEW REQUEST',
+  'REQUEST FOLLOW UP',
+  'REQUEST STAND BY',
+  'LOST REQUEST',
+  'QUALIFIED'
+] as const
+
+const SALES_STATUS_OPTIONS = [
+  'PENDING COMMERCIAL',
+  'PENDING RESIDENTIAL',
+  'REQUEST RE-SCHEDULE',
+  'ESTIMATE & APPT SCHEDULE',
+  'FOLLOW UP',
+  'FOLLOW UP PROJECTS',
+  'STAND BY',
+  'PRE CONTRACT APPOINTMENT',
+  'CONTRACT SIGNED BY CLIENT',
+  'LOST CONTRACT'
+] as const
+
+const ORDER_PROCESSING_STATUS_OPTIONS = [
+  'RECTIFICATION OF MEASURES AND HOA',
+  'ORDER MATERIALS AND FILE ORGANIZATION',
+  'FILE REVIEW',
+  'CLOSED WON'
+] as const
+
+const REQUEST_RESCHEDULE_STATUS = 'REQUEST RE-SCHEDULE'
+const ESTIMATE_STATUS = 'ESTIMATE & APPT SCHEDULE'
+const FOLLOW_UP_STATUSES = ['FOLLOW UP', 'FOLLOW UP PROJECTS'] as const
+
+const pad = (value: number): string => value.toString().padStart(2, '0')
+
+const formatDateForInput = (date: Date): string => {
+  const year = date.getFullYear()
+  const month = pad(date.getMonth() + 1)
+  const day = pad(date.getDate())
+  const hours = pad(date.getHours())
+  const minutes = pad(date.getMinutes())
+  return `${year}-${month}-${day} ${hours}:${minutes}`
+}
+
+const normalizeScheduleValue = (value?: string | null): string => {
+  if (!value) return ''
+  const normalized = value.includes('T') ? value : value.replace(' ', 'T')
+  const date = new Date(normalized)
+  return Number.isNaN(date.getTime()) ? '' : formatDateForInput(date)
+}
+
+const formatScheduleDisplay = (value?: string | null): string | null => {
+  if (!value) return null
+  const normalized = value.includes('T') ? value : value.replace(' ', 'T')
+  const date = new Date(normalized)
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleString()
+}
+
+const toScheduleString = (value?: Date | string | null): string | null => {
+  if (!value) return null
+  if (value instanceof Date) {
+    const iso = value.toISOString()
+    return Number.isNaN(Date.parse(iso)) ? null : iso
+  }
+  const str = String(value).trim()
+  if (!str) return null
+  const parsed = new Date(str)
+  return Number.isNaN(parsed.getTime()) ? str : parsed.toISOString()
+}
+
+const normalizeStatusValue = (value: string): string => value.replace(/\s+/g, ' ').trim().toUpperCase()
+
+const matchesStatus = (value: string, target: string): boolean =>
+  normalizeStatusValue(value) === normalizeStatusValue(target)
+
+const isFrontdeskStatus = (value: string): boolean =>
+  FRONTDESK_STATUS_OPTIONS.some(status => matchesStatus(status, value))
+
+const isSalesStatus = (value: string): boolean =>
+  SALES_STATUS_OPTIONS.some(status => matchesStatus(status, value))
+
+const isOrderProcessingStatus = (value: string): boolean =>
+  ORDER_PROCESSING_STATUS_OPTIONS.some(status => matchesStatus(status, value))
+
+export default function ShowStatusOrder ({
+  auth,
+  orderStatuses = [],
+  tags = [],
+  order: initialOrder,
+  usedTags = [],
+  clientOrders = [],
+  ownerOptions = [],
+  lossReasonFrontdesk = [],
+  sources = [],
+  order_types = [],
+  methods_of_payment = [],
+  type_of_financing = [],
+  frame_colors = [],
+  glass_colors = [],
+  glass_types = [],
+  glass_coatings = [],
+  languages = []
+}: IndexOrderProps) {
+  const [order, setOrder] = useState(initialOrder)
+  const scheduleAppointmentIso = order.schedule_appointment_iso ?? toScheduleString(order.schedule_appointment ?? null)
   const safeOrderStatuses = Array.isArray(orderStatuses) ? orderStatuses : []
   const safeTags = Array.isArray(tags) ? tags : []
   const safeUsedTags = Array.isArray(usedTags) ? usedTags : []
   const relatedClientOrders = Array.isArray(clientOrders) ? clientOrders : []
+  const safeOwnerOptions = Array.isArray(ownerOptions) ? ownerOptions : []
   const [tab, setTab] = useState<TabKey>('home')
   const authUserId = auth?.user?.id ?? null
+  const roleNames = Array.isArray(auth?.user?.roles)
+    ? auth.user.roles.map((role: Role) => role.name)
+    : []
+  const canManageSales = isAdmin(roleNames) || isAccountManager(roleNames) || isOwner(roleNames) || isOwnerAdmin(roleNames)
+
+  const [scheduleModalOpen, setScheduleModalOpen] = useState(false)
+  const [scheduleInitialValues, setScheduleInitialValues] = useState<{ scheduleDate: string, ownerIds: number[] }>({
+    scheduleDate: scheduleAppointmentIso ? normalizeScheduleValue(scheduleAppointmentIso) : '',
+    ownerIds: Array.isArray(order.owners) ? order.owners.map(owner => Number(owner.id)).filter((id) => Number.isFinite(id)) : []
+  })
+  const [scheduleSaving, setScheduleSaving] = useState(false)
+  const [scheduleError, setScheduleError] = useState<string | null>(null)
+
+  const [followUpModalOpen, setFollowUpModalOpen] = useState(false)
+  const [followUpInitialValues, setFollowUpInitialValues] = useState<{ projectAmount: string, note: string, targetStatus: string }>({ projectAmount: '', note: '', targetStatus: '' })
+  const [followUpSaving, setFollowUpSaving] = useState(false)
+  const [followUpError, setFollowUpError] = useState<string | null>(null)
+
+  const [standByModalOpen, setStandByModalOpen] = useState(false)
+  const [standBySaving, setStandBySaving] = useState(false)
+  const [standByError, setStandByError] = useState<string | null>(null)
+  const [standByInitialNote, setStandByInitialNote] = useState('')
+
+  const [frontdeskStandByModalOpen, setFrontdeskStandByModalOpen] = useState(false)
+  const [frontdeskStandByNote, setFrontdeskStandByNote] = useState('')
+  const [frontdeskStandBySaving, setFrontdeskStandBySaving] = useState(false)
+  const [frontdeskStandByError, setFrontdeskStandByError] = useState<string | null>(null)
+
+  const [frontdeskLostModalOpen, setFrontdeskLostModalOpen] = useState(false)
+  const [frontdeskLostReason, setFrontdeskLostReason] = useState('')
+  const [frontdeskLostNotes, setFrontdeskLostNotes] = useState('')
+  const [frontdeskLostSaving, setFrontdeskLostSaving] = useState(false)
+  const [frontdeskLostError, setFrontdeskLostError] = useState<string | null>(null)
+
+  const [frontdeskQuantifiedModalOpen, setFrontdeskQuantifiedModalOpen] = useState(false)
+
+  const [requestRescheduleModalOpen, setRequestRescheduleModalOpen] = useState(false)
+  const [requestRescheduleSaving, setRequestRescheduleSaving] = useState(false)
+  const [requestRescheduleError, setRequestRescheduleError] = useState<string | null>(null)
+  const [requestRescheduleInitialNote, setRequestRescheduleInitialNote] = useState('')
+
+  const [preContractModalOpen, setPreContractModalOpen] = useState(false)
+  const [preContractSaving, setPreContractSaving] = useState(false)
+  const [preContractError, setPreContractError] = useState<string | null>(null)
+  const [preContractInitialNote, setPreContractInitialNote] = useState('')
+
+  const [contractSignedModalOpen, setContractSignedModalOpen] = useState(false)
+  const [contractSignedSaving, setContractSignedSaving] = useState(false)
+  const [contractSignedError, setContractSignedError] = useState<string | null>(null)
+  const [contractSignedInitialValues, setContractSignedInitialValues] = useState({
+    projectName: order.name ?? '',
+    projectAmount: order.project_amount ? String(order.project_amount) : '',
+    downPayment: order.down_payment ? String(order.down_payment) : '',
+    jobAddress: order.job_address ?? '',
+    city: order.city ?? '',
+    jobState: order.job_state ?? '',
+    jobZip: order.job_zip ?? '',
+    methodOfPayment: order.method_of_payment ?? '',
+    typeOfFinancing: order.type_of_financing ?? '',
+    contactEmail: order.client?.email ?? '',
+    nameCheck: Boolean(order.name_check),
+    addressCheck: Boolean(order.address_check),
+    amountCheck: Boolean(order.amount_check),
+    emailCheck: Boolean(order.email_check)
+  })
+
+  const [lostContractModalOpen, setLostContractModalOpen] = useState(false)
+  const [lostContractSaving, setLostContractSaving] = useState(false)
+  const [lostContractError, setLostContractError] = useState<string | null>(null)
+
+  const [pendingMove, setPendingMove] = useState<{ oldStatus: string, newStatus: string } | null>(null)
+  const [pendingFollowUp, setPendingFollowUp] = useState<{ oldStatus: string, newStatus: string } | null>(null)
+  const [pendingStandBy, setPendingStandBy] = useState<{ oldStatus: string, newStatus: string } | null>(null)
+  const [pendingRequestReschedule, setPendingRequestReschedule] = useState<{ oldStatus: string, newStatus: string } | null>(null)
+  const [pendingPreContract, setPendingPreContract] = useState<{ oldStatus: string, newStatus: string } | null>(null)
+  const [pendingContractSigned, setPendingContractSigned] = useState<{ oldStatus: string, newStatus: string } | null>(null)
+  const [pendingLostContract, setPendingLostContract] = useState<{ oldStatus: string, newStatus: string } | null>(null)
+  const [statusChangeSaving, setStatusChangeSaving] = useState(false)
+  const [statusChangeError, setStatusChangeError] = useState<string | null>(null)
 
   type DetailIcon = ComponentType<SVGProps<SVGSVGElement>>
 
@@ -81,9 +285,7 @@ export default function ShowStatusOrder ({ auth, orderStatuses = [], tags = [], 
   const primaryOwnerDisplay = ownerNames.length > 0
     ? ownerNames.join(', ')
     : (order.user?.name ?? '')
-  const scheduleAppointmentLabel = order.schedule_appointment
-    ? new Date(order.schedule_appointment).toLocaleString()
-    : null
+  const scheduleAppointmentLabel = formatScheduleDisplay(scheduleAppointmentIso)
 
   const initialAttachments = Array.isArray(order.attachments) ? order.attachments : []
   const [attachments, setAttachments] = useState<Attachment[]>(initialAttachments)
@@ -103,6 +305,811 @@ export default function ShowStatusOrder ({ auth, orderStatuses = [], tags = [], 
       })
       : null
   )
+
+  const mapStatusToPipeline = (status: string): string => {
+    if (isOrderProcessingStatus(status)) {
+      return status
+    }
+    if (matchesStatus(status, 'RECTIFICATION OF MEASURES AND HOA') || matchesStatus(status, 'ORDER MATERIALS AND FILE ORGANIZATION')) {
+      return 'CONTRACT SIGNED BY CLIENT'
+    }
+    return status
+  }
+
+  const actualStatusValue = order.status ?? ''
+  const orderInFrontdeskFlow = isFrontdeskStatus(actualStatusValue)
+  const orderInSalesFlow = isSalesStatus(actualStatusValue)
+  const pipelineStatuses = orderInFrontdeskFlow
+    ? FRONTDESK_STATUS_OPTIONS
+    : (orderInSalesFlow ? SALES_STATUS_OPTIONS : ORDER_PROCESSING_STATUS_OPTIONS)
+  const pipelineStatusValue = mapStatusToPipeline(actualStatusValue)
+  const calculatedStatusIndex = pipelineStatuses.findIndex(status => matchesStatus(status, pipelineStatusValue))
+  const fallbackStatusIndex = pipelineStatuses.length > 0
+    ? (actualStatusValue ? pipelineStatuses.length - 1 : 0)
+    : -1
+  const currentStatusIndex = calculatedStatusIndex >= 0 ? calculatedStatusIndex : fallbackStatusIndex
+  const pipelineTitle = orderInFrontdeskFlow
+    ? 'Frontdesk Pipeline'
+    : (orderInSalesFlow ? 'Sales Pipeline' : 'Order Processing Pipeline')
+  const [statusPickerAnchor, setStatusPickerAnchor] = useState<{ status: string, element: HTMLButtonElement } | null>(null)
+  const [statusPickerPosition, setStatusPickerPosition] = useState<{ left: number, top: number } | null>(null)
+  const [statusSearch, setStatusSearch] = useState('')
+  const pipelineButtonWidthClass = orderInFrontdeskFlow
+    ? 'w-[6.5rem]'
+    : (orderInSalesFlow ? 'w-[6.5rem]' : 'w-[8.5rem]')
+  const pipelineDropdownWidthClass = orderInFrontdeskFlow
+    ? 'w-64'
+    : (orderInSalesFlow ? 'w-72' : 'w-80')
+  const frontdeskQuantifiedTask = useMemo(() => ({ id: order.id } as Tasks), [order.id])
+  const noopSetProjectList = useCallback<React.Dispatch<React.SetStateAction<Pipelines[]>>>((value: React.SetStateAction<Pipelines[]>) => {}, [])
+  const noopUpdateOrderStatus = useCallback(async () => {}, [])
+
+  const closeStatusPicker = useCallback(() => {
+    setStatusPickerAnchor(null)
+    setStatusPickerPosition(null)
+    setStatusSearch('')
+  }, [])
+
+  const closeFrontdeskStandByModal = () => {
+    setFrontdeskStandByModalOpen(false)
+    setFrontdeskStandByNote('')
+    setFrontdeskStandByError(null)
+    setFrontdeskStandBySaving(false)
+  }
+
+  const closeFrontdeskLostModal = () => {
+    setFrontdeskLostModalOpen(false)
+    setFrontdeskLostReason('')
+    setFrontdeskLostNotes('')
+    setFrontdeskLostError(null)
+    setFrontdeskLostSaving(false)
+  }
+
+  const updateStatusPickerPosition = useCallback((element: HTMLButtonElement | null) => {
+    if (!element) return
+    const rect = element.getBoundingClientRect()
+    setStatusPickerPosition({
+      left: rect.left + (rect.width / 2),
+      top: rect.bottom + 8
+    })
+  }, [])
+
+  const handleSimpleStatusChange = async (targetStatus: string) => {
+    setStatusChangeSaving(true)
+    setStatusChangeError(null)
+    closeStatusPicker()
+    try {
+      const response = await fetch(route('frontdesk.updateStatus', { order: order.id }), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? ''
+        },
+        body: JSON.stringify({ status: targetStatus })
+      })
+
+      const payload = await response.json().catch(() => null)
+
+      if (!response.ok || !payload?.order) {
+        const message = payload?.message ?? 'Unable to update status.'
+        throw new Error(message)
+      }
+
+      setOrder((prev) => ({
+        ...prev,
+        status: targetStatus
+      }))
+    } catch (error: any) {
+      console.error('status change error', error)
+      setStatusChangeError(error?.message ?? 'Unable to update status.')
+    } finally {
+      setStatusChangeSaving(false)
+    }
+  }
+
+  const handleFrontdeskStandBySubmit = async () => {
+    if (!frontdeskStandByNote.trim()) {
+      setFrontdeskStandByError('Note is required.')
+      return
+    }
+    setFrontdeskStandBySaving(true)
+    setFrontdeskStandByError(null)
+    try {
+      const response = await fetch(route('frontdesk.updateStatusStandBy', { order: order.id }), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? ''
+        },
+        body: JSON.stringify({ note: frontdeskStandByNote })
+      })
+
+      const payload = await response.json().catch(() => null)
+
+      if (!response.ok || !payload?.order) {
+        const message = payload?.message ?? 'Unable to update status.'
+        throw new Error(message)
+      }
+
+      setOrder(prev => ({
+        ...prev,
+        ...payload.order
+      }))
+      closeFrontdeskStandByModal()
+    } catch (error: any) {
+      console.error('frontdesk stand-by error', error)
+      setFrontdeskStandByError(error?.message ?? 'Unable to update status.')
+    } finally {
+      setFrontdeskStandBySaving(false)
+    }
+  }
+
+  const handleFrontdeskLostSubmit = async () => {
+    if (!frontdeskLostReason.trim()) {
+      setFrontdeskLostError('Loss reason is required.')
+      return
+    }
+    setFrontdeskLostSaving(true)
+    setFrontdeskLostError(null)
+    try {
+      const response = await fetch(route('frontdesk.updateStatusLost', { order: order.id }), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? ''
+        },
+        body: JSON.stringify({
+          status: 'LOST REQUEST',
+          loss_reason_frontdesk: frontdeskLostReason,
+          notes: frontdeskLostNotes || null
+        })
+      })
+
+      const payload = await response.json().catch(() => null)
+
+      if (!response.ok || !payload?.order) {
+        const message = payload?.message ?? 'Unable to update status.'
+        throw new Error(message)
+      }
+
+      setOrder(prev => ({
+        ...prev,
+        ...payload.order
+      }))
+      closeFrontdeskLostModal()
+    } catch (error: any) {
+      console.error('frontdesk lost error', error)
+      setFrontdeskLostError(error?.message ?? 'Unable to update status.')
+    } finally {
+      setFrontdeskLostSaving(false)
+    }
+  }
+
+  const handleStatusSelection = (targetStatus: string) => {
+    const normalizedTarget = normalizeStatusValue(targetStatus)
+    const normalizedCurrent = normalizeStatusValue(pipelineStatusValue)
+
+    closeStatusPicker()
+
+    if (normalizedTarget === normalizedCurrent) return
+
+    setStatusChangeError(null)
+
+    if (orderInFrontdeskFlow && matchesStatus(targetStatus, 'REQUEST STAND BY')) {
+      closeStatusPicker()
+      setFrontdeskStandByNote('')
+      setFrontdeskStandByError(null)
+      setFrontdeskStandByModalOpen(true)
+      return
+    }
+
+    if (orderInFrontdeskFlow && matchesStatus(targetStatus, 'LOST REQUEST')) {
+      closeStatusPicker()
+      setFrontdeskLostReason('')
+      setFrontdeskLostNotes('')
+      setFrontdeskLostError(null)
+      setFrontdeskLostModalOpen(true)
+      return
+    }
+
+    if (orderInFrontdeskFlow && matchesStatus(targetStatus, 'QUALIFIED')) {
+      closeStatusPicker()
+      setFrontdeskQuantifiedModalOpen(true)
+      return
+    }
+
+    if (isFrontdeskStatus(targetStatus)) {
+      handleSimpleStatusChange(targetStatus)
+      return
+    }
+
+    if (matchesStatus(targetStatus, ESTIMATE_STATUS)) {
+      setPendingMove({ oldStatus: actualStatusValue, newStatus: targetStatus })
+      setScheduleInitialValues({
+        scheduleDate: scheduleAppointmentIso ? normalizeScheduleValue(scheduleAppointmentIso) : '',
+        ownerIds: Array.isArray(order.owners) ? order.owners.map(owner => Number(owner.id)).filter((id) => Number.isFinite(id)) : []
+      })
+      setScheduleModalOpen(true)
+      return
+    }
+
+    if (FOLLOW_UP_STATUSES.some(status => matchesStatus(status, targetStatus))) {
+      setPendingFollowUp({ oldStatus: actualStatusValue, newStatus: targetStatus })
+      setFollowUpInitialValues({
+        projectAmount: order.project_amount ? String(order.project_amount) : '',
+        note: '',
+        targetStatus
+      })
+      setFollowUpModalOpen(true)
+      return
+    }
+
+    if (matchesStatus(targetStatus, REQUEST_RESCHEDULE_STATUS)) {
+      if (!matchesStatus(actualStatusValue, ESTIMATE_STATUS)) {
+      setStatusChangeError('Orders can only move to REQUEST RE-SCHEDULE from ESTIMATE & APPT SCHEDULE.')
+      return
+    }
+      setPendingRequestReschedule({ oldStatus: actualStatusValue, newStatus: targetStatus })
+      setRequestRescheduleInitialNote('')
+      setRequestRescheduleModalOpen(true)
+      return
+    }
+
+    if (matchesStatus(targetStatus, 'STAND BY')) {
+      setPendingStandBy({ oldStatus: actualStatusValue, newStatus: targetStatus })
+      setStandByInitialNote('')
+      setStandByModalOpen(true)
+      return
+    }
+
+    if (matchesStatus(targetStatus, 'PRE CONTRACT APPOINTMENT')) {
+      setPendingPreContract({ oldStatus: actualStatusValue, newStatus: targetStatus })
+      setPreContractInitialNote('')
+      setPreContractModalOpen(true)
+      return
+    }
+
+    if (matchesStatus(targetStatus, 'CONTRACT SIGNED BY CLIENT')) {
+      setPendingContractSigned({ oldStatus: actualStatusValue, newStatus: targetStatus })
+      setContractSignedInitialValues((prev) => ({
+        ...prev,
+        projectName: order.name ?? prev.projectName,
+        projectAmount: order.project_amount ? String(order.project_amount) : prev.projectAmount,
+        downPayment: order.down_payment ? String(order.down_payment) : prev.downPayment,
+        jobAddress: order.job_address ?? prev.jobAddress,
+        city: order.city ?? prev.city,
+        jobState: order.job_state ?? prev.jobState,
+        jobZip: order.job_zip ?? prev.jobZip,
+        methodOfPayment: order.method_of_payment ?? prev.methodOfPayment,
+        typeOfFinancing: order.type_of_financing ?? prev.typeOfFinancing,
+        contactEmail: order.client?.email ?? prev.contactEmail,
+        nameCheck: Boolean(order.name_check),
+        addressCheck: Boolean(order.address_check),
+        amountCheck: Boolean(order.amount_check),
+        emailCheck: Boolean(order.email_check)
+      }))
+      setContractSignedModalOpen(true)
+      return
+    }
+
+    if (matchesStatus(targetStatus, 'LOST CONTRACT')) {
+      setPendingLostContract({ oldStatus: actualStatusValue, newStatus: targetStatus })
+      setLostContractModalOpen(true)
+      return
+    }
+
+    handleSimpleStatusChange(targetStatus)
+  }
+
+  useEffect(() => {
+    const anchorElement = statusPickerAnchor?.element
+    if (!anchorElement) return
+
+    const handlePositionChange = () => {
+      if (!document.body.contains(anchorElement)) {
+        closeStatusPicker()
+        return
+      }
+      updateStatusPickerPosition(anchorElement)
+    }
+
+    handlePositionChange()
+
+    const handleScroll = () => { handlePositionChange() }
+    const handleResize = () => { handlePositionChange() }
+
+    document.addEventListener('scroll', handleScroll, true)
+    window.addEventListener('resize', handleResize)
+
+    return () => {
+      document.removeEventListener('scroll', handleScroll, true)
+      window.removeEventListener('resize', handleResize)
+    }
+  }, [statusPickerAnchor?.element, closeStatusPicker, updateStatusPickerPosition])
+
+  const closeScheduleModal = () => {
+    setScheduleModalOpen(false)
+    setScheduleError(null)
+    setScheduleSaving(false)
+    setPendingMove(null)
+  }
+
+  const handleScheduleSubmit = async (values: { scheduleDate: string, ownerIds: number[] }) => {
+    if (!pendingMove) return
+    setScheduleSaving(true)
+    setScheduleError(null)
+
+    try {
+      const response = await fetch(route('sales.assign_estimate', order.id), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? ''
+        },
+        body: JSON.stringify({
+          schedule_appointment: values.scheduleDate || null,
+          owner_ids: values.ownerIds
+        }),
+      })
+
+      if (!response.ok) {
+        if (response.status === 422) {
+          const data = await response.json()
+          const messages = Object.values(data.errors ?? {}).flat()
+          setScheduleError(typeof messages[0] === 'string' ? messages[0] : 'Revisa los datos ingresados.')
+          return
+        }
+        throw new Error('No se pudo guardar la asignación.')
+      }
+
+      const data = await response.json()
+
+      setOrder(prev => ({
+        ...prev,
+        status: pendingMove.newStatus,
+        schedule_appointment: data.order.schedule_appointment ?? prev.schedule_appointment,
+        schedule_appointment_iso: data.order.schedule_appointment_iso ?? prev.schedule_appointment_iso,
+        owner_ids: data.order.owner_ids ?? prev.owner_ids,
+        owners: data.order.owners ?? prev.owners
+      }))
+
+      closeScheduleModal()
+    } catch (error: any) {
+      console.error('assign-estimate error', error)
+      setScheduleError(error?.message ?? 'No se pudo guardar la asignación.')
+    } finally {
+      setScheduleSaving(false)
+    }
+  }
+
+  const closeFollowUpModal = () => {
+    setFollowUpModalOpen(false)
+    setFollowUpError(null)
+    setFollowUpSaving(false)
+    setFollowUpInitialValues({ projectAmount: '', note: '', targetStatus: '' })
+    setPendingFollowUp(null)
+  }
+
+  const handleFollowUpSubmit = async (values: { projectAmount: string, note: string, attachments: File[] }) => {
+    if (!pendingFollowUp) return
+
+    setFollowUpSaving(true)
+    setFollowUpError(null)
+
+    try {
+      const formData = new FormData()
+      formData.append('status', pendingFollowUp.newStatus)
+      formData.append('project_amount', values.projectAmount)
+      formData.append('note', values.note)
+
+      values.attachments?.forEach((file) => {
+        formData.append('attachments[]', file)
+      })
+
+      const response = await fetch(route('sales.assign_follow_up', order.id), {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? ''
+        },
+        body: formData
+      })
+
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null)
+        if (response.status === 422 && payload?.errors) {
+          const messages = Object.values(payload.errors).flat()
+          throw new Error(typeof messages[0] === 'string' ? messages[0] : 'Unable to update status.')
+        }
+        throw new Error(payload?.message ?? 'Unable to update status.')
+      }
+
+      const payload = await response.json()
+      const data = payload.order
+      const projectAmountValue = data.project_amount ?? values.projectAmount
+      const normalizedProjectAmount = Number(
+        typeof projectAmountValue === 'string'
+          ? projectAmountValue.replace(/,/g, '')
+          : projectAmountValue
+      )
+
+      setOrder(prev => ({
+        ...prev,
+        status: pendingFollowUp.newStatus,
+        schedule_appointment: data.schedule_appointment ?? prev.schedule_appointment,
+        schedule_appointment_iso: data.schedule_appointment_iso ?? prev.schedule_appointment_iso,
+        owner_ids: data.owner_ids ?? prev.owner_ids,
+        owners: data.owners ?? prev.owners,
+        project_amount: Number.isFinite(normalizedProjectAmount) ? normalizedProjectAmount : prev.project_amount
+      }))
+
+      closeFollowUpModal()
+    } catch (error: any) {
+      console.error('follow-up submit error', error)
+      setFollowUpError(error?.message ?? 'No se pudo actualizar el estado.')
+    } finally {
+      setFollowUpSaving(false)
+    }
+  }
+
+  const closeStandByModal = () => {
+    setStandByModalOpen(false)
+    setStandByError(null)
+    setStandBySaving(false)
+    setStandByInitialNote('')
+    setPendingStandBy(null)
+  }
+
+  const handleStandBySubmit = async (values: { note: string }) => {
+    if (!pendingStandBy) return
+
+    setStandBySaving(true)
+    setStandByError(null)
+
+    try {
+      const response = await fetch(route('sales.assign_stand_by', order.id), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? ''
+        },
+        body: JSON.stringify({
+          note: values.note,
+        })
+      })
+
+      const payload = await response.json().catch(() => null)
+
+      if (!response.ok) {
+        if (response.status === 422 && payload?.errors) {
+          const messages = Object.values(payload.errors).flat()
+          throw new Error(typeof messages[0] === 'string' ? messages[0] : 'Unable to update status.')
+        }
+
+        throw new Error(payload?.message ?? 'Unable to update status.')
+      }
+
+      if (!payload) {
+        throw new Error('Unexpected server response.')
+      }
+
+      const data = payload.order
+
+      setOrder(prev => ({
+        ...prev,
+        status: pendingStandBy.newStatus,
+        schedule_appointment: data.schedule_appointment ?? prev.schedule_appointment,
+        schedule_appointment_iso: data.schedule_appointment_iso ?? prev.schedule_appointment_iso,
+        owner_ids: data.owner_ids ?? prev.owner_ids,
+        owners: data.owners ?? prev.owners
+      }))
+
+      closeStandByModal()
+    } catch (error: any) {
+      console.error('stand-by submit error', error)
+      setStandByError(error?.message ?? 'No se pudo actualizar el estado.')
+    } finally {
+      setStandBySaving(false)
+    }
+  }
+
+  const closeRequestRescheduleModal = () => {
+    setRequestRescheduleModalOpen(false)
+    setRequestRescheduleError(null)
+    setRequestRescheduleSaving(false)
+    setRequestRescheduleInitialNote('')
+    setPendingRequestReschedule(null)
+  }
+
+  const handleRequestRescheduleSubmit = async (values: { note: string }) => {
+    if (!pendingRequestReschedule) return
+
+    setRequestRescheduleSaving(true)
+    setRequestRescheduleError(null)
+
+    try {
+      const response = await fetch(route('sales.assign_request_reschedule', order.id), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? ''
+        },
+        body: JSON.stringify({
+          note: values.note
+        })
+      })
+
+      const payload = await response.json().catch(() => null)
+
+      if (!response.ok) {
+        if (response.status === 422 && payload?.errors) {
+          const messages = Object.values(payload.errors).flat()
+          throw new Error(typeof messages[0] === 'string' ? messages[0] : 'Unable to update status.')
+        }
+
+        throw new Error(payload?.message ?? 'Unable to update status.')
+      }
+
+      if (!payload) {
+        throw new Error('Unexpected server response.')
+      }
+
+      const data = payload.order
+
+      setOrder(prev => ({
+        ...prev,
+        status: pendingRequestReschedule.newStatus,
+        schedule_appointment: data.schedule_appointment ?? prev.schedule_appointment,
+        schedule_appointment_iso: data.schedule_appointment_iso ?? prev.schedule_appointment_iso,
+        owner_ids: data.owner_ids ?? prev.owner_ids,
+        owners: data.owners ?? prev.owners
+      }))
+
+      closeRequestRescheduleModal()
+    } catch (error: any) {
+      console.error('request-reschedule submit error', error)
+      setRequestRescheduleError(error?.message ?? 'No se pudo actualizar el estado.')
+    } finally {
+      setRequestRescheduleSaving(false)
+    }
+  }
+
+  const closePreContractModal = () => {
+    setPreContractModalOpen(false)
+    setPreContractError(null)
+    setPreContractSaving(false)
+    setPreContractInitialNote('')
+    setPendingPreContract(null)
+  }
+
+  const handlePreContractSubmit = async (values: { note: string }) => {
+    if (!pendingPreContract) return
+
+    setPreContractSaving(true)
+    setPreContractError(null)
+
+    try {
+      const response = await fetch(route('sales.assign_pre_contract', order.id), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? ''
+        },
+        body: JSON.stringify({
+          note: values.note
+        })
+      })
+
+      const payload = await response.json().catch(() => null)
+
+      if (!response.ok) {
+        if (response.status === 422 && payload?.errors) {
+          const messages = Object.values(payload.errors).flat()
+          throw new Error(typeof messages[0] === 'string' ? messages[0] : 'Unable to update status.')
+        }
+
+        throw new Error(payload?.message ?? 'Unable to update status.')
+      }
+
+      if (!payload) {
+        throw new Error('Unexpected server response.')
+      }
+
+      const data = payload.order
+
+      setOrder(prev => ({
+        ...prev,
+        status: pendingPreContract.newStatus,
+        schedule_appointment: data.schedule_appointment ?? prev.schedule_appointment,
+        schedule_appointment_iso: data.schedule_appointment_iso ?? prev.schedule_appointment_iso,
+        owner_ids: data.owner_ids ?? prev.owner_ids,
+        owners: data.owners ?? prev.owners
+      }))
+
+      closePreContractModal()
+    } catch (error: any) {
+      console.error('pre-contract submit error', error)
+      setPreContractError(error?.message ?? 'No se pudo actualizar el estado.')
+    } finally {
+      setPreContractSaving(false)
+    }
+  }
+
+  const closeContractSignedModal = () => {
+    setContractSignedModalOpen(false)
+    setContractSignedError(null)
+    setContractSignedSaving(false)
+    setPendingContractSigned(null)
+  }
+
+  const handleContractSignedSubmit = async (values: any) => {
+    if (!pendingContractSigned) return
+
+    setContractSignedSaving(true)
+    setContractSignedError(null)
+
+    try {
+      const formData = new FormData()
+      const fieldMap: Record<string, string> = {
+        projectName: 'project_name',
+        projectAmount: 'project_amount',
+        downPayment: 'down_payment',
+        jobAddress: 'job_address',
+        city: 'city',
+        jobState: 'job_state',
+        jobZip: 'job_zip',
+        methodOfPayment: 'method_of_payment',
+        typeOfFinancing: 'type_of_financing',
+        contactEmail: 'contact_email',
+        nameCheck: 'name_check',
+        addressCheck: 'address_check',
+        amountCheck: 'amount_check',
+        emailCheck: 'email_check'
+      }
+
+      const booleanFields = new Set(['nameCheck', 'addressCheck', 'amountCheck', 'emailCheck'])
+      Object.entries(values).forEach(([key, value]) => {
+        if (key === 'attachments' && Array.isArray(value)) {
+          value.forEach((file: File) => {
+            formData.append('attachments[]', file)
+          })
+        } else {
+          const payloadKey = fieldMap[key] ?? key
+          if (booleanFields.has(key)) {
+            formData.append(payloadKey, value ? '1' : '0')
+          } else {
+            formData.append(payloadKey, value != null ? String(value) : '')
+          }
+        }
+      })
+
+      const response = await fetch(route('sales.assign_contract_signed', order.id), {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? ''
+        },
+        body: formData
+      })
+
+      const payload = await response.json().catch(() => null)
+
+      if (!response.ok) {
+        if (response.status === 422 && payload?.errors) {
+          const messages = Object.values(payload.errors).flat()
+          throw new Error(typeof messages[0] === 'string' ? messages[0] : 'Unable to update status.')
+        }
+
+        throw new Error(payload?.message ?? 'Unable to update status.')
+      }
+
+      if (!payload) {
+        throw new Error('Unexpected server response.')
+      }
+
+      const data = payload.order
+
+      setOrder(prev => ({
+        ...prev,
+        ...data,
+        name: data.name ?? prev.name,
+        status: data.status ?? prev.status,
+        schedule_appointment: data.schedule_appointment ?? prev.schedule_appointment,
+        schedule_appointment_iso: data.schedule_appointment_iso ?? prev.schedule_appointment_iso,
+        owner_ids: data.owner_ids ?? prev.owner_ids,
+        owners: data.owners ?? prev.owners,
+        project_amount: data.project_amount ?? prev.project_amount,
+        down_payment: data.down_payment ?? prev.down_payment,
+        job_address: data.job_address ?? prev.job_address,
+        city: data.city ?? prev.city,
+        job_state: data.job_state ?? prev.job_state,
+        job_zip: data.job_zip ?? prev.job_zip,
+        method_of_payment: data.method_of_payment ?? prev.method_of_payment,
+        type_of_financing: data.type_of_financing ?? prev.type_of_financing,
+        contact_email: data.contact_email ?? prev.contact_email,
+        name_check: data.name_check ?? prev.name_check,
+        address_check: data.address_check ?? prev.address_check,
+        amount_check: data.amount_check ?? prev.amount_check,
+        email_check: data.email_check ?? prev.email_check,
+        client: prev.client
+          ? { ...prev.client, email: data.contact_email ?? prev.client.email }
+          : prev.client
+      }))
+
+      closeContractSignedModal()
+    } catch (error: any) {
+      console.error('contract-signed submit error', error)
+      setContractSignedError(error?.message ?? 'No se pudo actualizar el estado.')
+    } finally {
+      setContractSignedSaving(false)
+    }
+  }
+
+  const closeLostContractModal = () => {
+    setLostContractModalOpen(false)
+    setLostContractError(null)
+    setLostContractSaving(false)
+    setPendingLostContract(null)
+  }
+
+  const handleLostContractSubmit = async (values: { lossReason: string, notes: string }) => {
+    if (!pendingLostContract) return
+
+    setLostContractSaving(true)
+    setLostContractError(null)
+
+    try {
+      const response = await fetch(route('sales.assign_lost_contract', order.id), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? ''
+        },
+        body: JSON.stringify({
+          loss_reason_frontdesk: values.lossReason,
+          notes: values.notes ?? null
+        })
+      })
+
+      const payload = await response.json().catch(() => null)
+
+      if (!response.ok) {
+        if (response.status === 422 && payload?.errors) {
+          const messages = Object.values(payload.errors).flat()
+          throw new Error(typeof messages[0] === 'string' ? messages[0] : 'Unable to update status.')
+        }
+
+        throw new Error(payload?.message ?? 'Unable to update status.')
+      }
+
+      if (!payload) {
+        throw new Error('Unexpected server response.')
+      }
+
+      const data = payload.order
+
+      setOrder(prev => ({
+        ...prev,
+        status: data.status ?? prev.status,
+        loss_reason_frontdesk: data.loss_reason_frontdesk ?? prev.loss_reason_frontdesk
+      }))
+
+      closeLostContractModal()
+    } catch (error: any) {
+      console.error('lost-contract submit error', error)
+      setLostContractError(error?.message ?? 'No se pudo actualizar el estado.')
+    } finally {
+      setLostContractSaving(false)
+    }
+  }
 
   const handleFileSelection = (event: ChangeEvent<HTMLInputElement>) => {
     setUploadError(null)
@@ -234,6 +1241,19 @@ export default function ShowStatusOrder ({ auth, orderStatuses = [], tags = [], 
     // ruta PATCH para actualizar solo tags del pedido
     patch(route('frontdesk.tags_update', order.id), { preserveScroll: true })
   }
+  useEffect(() => {
+    const handleDocumentClick = (event: MouseEvent) => {
+      if (!(event.target instanceof HTMLElement)) return
+      if (!event.target.closest('[data-sales-status-picker]')) {
+        closeStatusPicker()
+      }
+    }
+    document.addEventListener('click', handleDocumentClick)
+    return () => {
+      document.removeEventListener('click', handleDocumentClick)
+    }
+  }, [closeStatusPicker])
+
   return (
     <AuthenticatedLayout
       auth={auth}
@@ -297,6 +1317,110 @@ export default function ShowStatusOrder ({ auth, orderStatuses = [], tags = [], 
             </div>
           </div>
 
+          {canManageSales && (
+            <div className="panel space-y-4" data-sales-status-picker>
+              <div>
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">{pipelineTitle}</h2>
+                <p className="text-xs text-slate-500">Click a stage to move the order and complete the required workflow.</p>
+              </div>
+
+              {statusChangeError && (
+                <p className="text-sm text-rose-600">{statusChangeError}</p>
+              )}
+
+              <div className="overflow-x-visible">
+                <div className="flex items-center gap-2">
+                  {pipelineStatuses.map((status, index) => {
+                    const isCompleted = currentStatusIndex > index
+                    const isCurrent = currentStatusIndex === index
+                    const isOpen = statusPickerAnchor?.status === status
+                    return (
+                      <div key={status} className="relative flex items-center gap-2">
+                        <button
+                          type="button"
+                          className={[
+                            `flex min-h-[2.35rem] ${pipelineButtonWidthClass} shrink-0 items-center justify-center gap-1.5 rounded-full border px-2 text-center text-[10px] font-semibold leading-tight transition focus:outline-none whitespace-normal`,
+                            isCurrent
+                              ? 'border-sky-500 bg-sky-500 text-white shadow'
+                              : (isCompleted
+                                  ? 'border-emerald-400 bg-emerald-50 text-emerald-600'
+                                  : 'border-slate-200 bg-white text-slate-500')
+                          ].join(' ')}
+                          onClick={(event) => {
+                            event.stopPropagation()
+                            if (statusChangeSaving) return
+                            const button = event.currentTarget as HTMLButtonElement
+                            if (statusPickerAnchor?.status === status) {
+                              closeStatusPicker()
+                              return
+                            }
+                            setStatusPickerAnchor({ status, element: button })
+                            updateStatusPickerPosition(button)
+                          }}
+                          disabled={statusChangeSaving}
+                          title={status}
+                        >
+                          {isCompleted && <span>✓</span>}
+                          <span>{status}</span>
+                          <span className="text-xs">▾</span>
+                        </button>
+                        {isOpen && statusPickerAnchor && statusPickerPosition && createPortal(
+                          <div
+                            className={`z-[9999] ${pipelineDropdownWidthClass} rounded-2xl border border-slate-200 bg-white shadow-2xl`}
+                            style={{
+                              position: 'fixed',
+                              left: statusPickerPosition.left,
+                              top: statusPickerPosition.top,
+                              transform: 'translateX(-50%)'
+                            }}
+                            onClick={(event) => { event.stopPropagation() }}
+                          >
+                            <div className="border-b border-slate-100 px-3 py-2">
+                              <input
+                                type="text"
+                                value={statusSearch}
+                                onChange={(event) => { setStatusSearch(event.target.value) }}
+                                placeholder="Search"
+                                className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-700 outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
+                              />
+                            </div>
+                            <div className="max-h-60 overflow-y-auto p-1">
+                              {pipelineStatuses
+                                .filter(option => option.toLowerCase().includes(statusSearch.toLowerCase()))
+                                .map(option => (
+                                  <button
+                                    key={option}
+                                    type="button"
+                                    className={[
+                                      'flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm',
+                                      matchesStatus(option, pipelineStatusValue)
+                                        ? 'bg-sky-50 text-sky-700'
+                                        : 'text-slate-600 hover:bg-slate-50'
+                                    ].join(' ')}
+                                    onClick={(event) => {
+                                      event.stopPropagation()
+                                      handleStatusSelection(option)
+                                    }}
+                                  >
+                                    <span>{option}</span>
+                                    {matchesStatus(option, pipelineStatusValue) && <span className="text-xs">Current</span>}
+                                  </button>
+                                ))}
+                            </div>
+                          </div>,
+                          document.body
+                        )}
+                        {index < pipelineStatuses.length - 1 && (
+                          <div className={`h-0.5 w-7 shrink-0 ${currentStatusIndex > index ? 'bg-sky-400' : 'bg-slate-200'}`} />
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
             <aside className="space-y-6">
               <div className="panel space-y-4">
@@ -320,7 +1444,7 @@ export default function ShowStatusOrder ({ auth, orderStatuses = [], tags = [], 
                       </div>
                     </div>
                   ))}
-                </div>
+              </div>
 
               {order.order_type?.toLowerCase() === 'commercial' && companyContacts.length > 0 && (
                   <div className="mt-4 space-y-3 rounded-xl border border-slate-200/80 bg-slate-50 p-3 shadow-sm">
@@ -346,6 +1470,8 @@ export default function ShowStatusOrder ({ auth, orderStatuses = [], tags = [], 
                   </div>
                 )}
               </div>
+
+              {/* Sales timeline component will render elsewhere */}
 
               <form onSubmit={submit} className="panel space-y-4">
                 <div className="flex items-center justify-between">
@@ -757,6 +1883,244 @@ export default function ShowStatusOrder ({ auth, orderStatuses = [], tags = [], 
           </div>
         </div>
       </div>
+      <EstimateScheduleModal
+        open={scheduleModalOpen && !!pendingMove}
+        taskTitle={order.name ?? ''}
+        initialScheduleDate={scheduleInitialValues.scheduleDate}
+        initialOwnerIds={scheduleInitialValues.ownerIds}
+        ownerOptions={safeOwnerOptions}
+        error={scheduleError}
+        saving={scheduleSaving}
+        onClose={closeScheduleModal}
+        onSubmit={handleScheduleSubmit}
+      />
+
+      <FollowUpModal
+        open={followUpModalOpen && !!pendingFollowUp}
+        taskTitle={order.name ?? ''}
+        targetStatus={followUpInitialValues.targetStatus}
+        initialProjectAmount={followUpInitialValues.projectAmount}
+        initialNote={followUpInitialValues.note}
+        loading={followUpSaving}
+        error={followUpError}
+        onCancel={closeFollowUpModal}
+        onSubmit={handleFollowUpSubmit}
+      />
+
+      <StandByNoteModal
+        open={standByModalOpen && !!pendingStandBy}
+        taskTitle={order.name ?? ''}
+        initialNote={standByInitialNote}
+        loading={standBySaving}
+        error={standByError}
+        onCancel={closeStandByModal}
+        onSubmit={handleStandBySubmit}
+      />
+
+      <RequestRescheduleModal
+        open={requestRescheduleModalOpen && !!pendingRequestReschedule}
+        taskTitle={order.name ?? ''}
+        initialNote={requestRescheduleInitialNote}
+        loading={requestRescheduleSaving}
+        error={requestRescheduleError}
+        onCancel={closeRequestRescheduleModal}
+        onSubmit={handleRequestRescheduleSubmit}
+      />
+
+      <PreContractNoteModal
+        open={preContractModalOpen && !!pendingPreContract}
+        taskTitle={order.name ?? ''}
+        initialNote={preContractInitialNote}
+        loading={preContractSaving}
+        error={preContractError}
+        onCancel={closePreContractModal}
+        onSubmit={handlePreContractSubmit}
+      />
+
+      <ContractSignedModal
+        open={contractSignedModalOpen && !!pendingContractSigned}
+        taskTitle={order.name ?? ''}
+        initialProjectName={contractSignedInitialValues.projectName}
+        initialProjectAmount={contractSignedInitialValues.projectAmount}
+        initialDownPayment={contractSignedInitialValues.downPayment}
+        initialJobAddress={contractSignedInitialValues.jobAddress}
+        initialCity={contractSignedInitialValues.city}
+        initialJobState={contractSignedInitialValues.jobState}
+        initialJobZip={contractSignedInitialValues.jobZip}
+        initialMethodOfPayment={contractSignedInitialValues.methodOfPayment}
+        initialTypeOfFinancing={contractSignedInitialValues.typeOfFinancing}
+        initialContactEmail={contractSignedInitialValues.contactEmail}
+        initialNameCheck={contractSignedInitialValues.nameCheck}
+        initialAddressCheck={contractSignedInitialValues.addressCheck}
+        initialAmountCheck={contractSignedInitialValues.amountCheck}
+        initialEmailCheck={contractSignedInitialValues.emailCheck}
+        paymentMethods={methods_of_payment ?? []}
+        financingOptions={type_of_financing ?? []}
+        loading={contractSignedSaving}
+        error={contractSignedError}
+        onCancel={closeContractSignedModal}
+        onSubmit={handleContractSignedSubmit}
+      />
+
+      <LostContractModal
+        open={lostContractModalOpen && !!pendingLostContract}
+        lossReasons={lossReasonFrontdesk ?? []}
+        loading={lostContractSaving}
+        error={lostContractError}
+        onCancel={closeLostContractModal}
+        onSubmit={handleLostContractSubmit}
+      />
+
+      {frontdeskStandByModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-slate-800">Request Stand By</h3>
+              <button
+                type="button"
+                className="rounded-full p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+                onClick={closeFrontdeskStandByModal}
+              >
+                <span className="sr-only">Close</span>
+                ×
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-600" htmlFor="frontdesk-standby-note">
+                  Note <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  id="frontdesk-standby-note"
+                  className="form-textarea w-full resize-none placeholder:text-slate-400"
+                  rows={4}
+                  value={frontdeskStandByNote}
+                  onChange={(event) => {
+                    setFrontdeskStandByNote(event.target.value)
+                    if (frontdeskStandByError) setFrontdeskStandByError(null)
+                  }}
+                  placeholder="Describe why the order is going to Request Stand By"
+                />
+                {frontdeskStandByError && <p className="mt-2 text-sm text-rose-600">{frontdeskStandByError}</p>}
+              </div>
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={closeFrontdeskStandByModal}
+                  className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+                  disabled={frontdeskStandBySaving}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleFrontdeskStandBySubmit}
+                  className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-sky-700 disabled:cursor-not-allowed disabled:bg-sky-400"
+                  disabled={frontdeskStandBySaving}
+                >
+                  {frontdeskStandBySaving ? 'Saving...' : 'Save Note'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {frontdeskLostModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-slate-800">Mark as Lost Request</h3>
+              <button
+                type="button"
+                className="rounded-full p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+                onClick={closeFrontdeskLostModal}
+              >
+                <span className="sr-only">Close</span>
+                ×
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-600" htmlFor="frontdesk-lost-reason">
+                  Loss Reason <span className="text-red-500">*</span>
+                </label>
+                <select
+                  id="frontdesk-lost-reason"
+                  className="form-select w-full"
+                  value={frontdeskLostReason}
+                  onChange={(event) => {
+                    setFrontdeskLostReason(event.target.value)
+                    if (frontdeskLostError) setFrontdeskLostError(null)
+                  }}
+                >
+                  <option value="">Select a reason</option>
+                  {lossReasonFrontdesk?.map((reason) => (
+                    <option key={reason} value={reason}>{reason}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-600" htmlFor="frontdesk-lost-notes">
+                  Notes (optional)
+                </label>
+                <textarea
+                  id="frontdesk-lost-notes"
+                  className="form-textarea w-full resize-none placeholder:text-slate-400"
+                  rows={4}
+                  value={frontdeskLostNotes}
+                  onChange={(event) => { setFrontdeskLostNotes(event.target.value) }}
+                  placeholder="Additional details about why the request was lost"
+                />
+                {frontdeskLostError && <p className="mt-2 text-sm text-rose-600">{frontdeskLostError}</p>}
+              </div>
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={closeFrontdeskLostModal}
+                  className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+                  disabled={frontdeskLostSaving}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleFrontdeskLostSubmit}
+                  className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-sky-700 disabled:cursor-not-allowed disabled:bg-sky-400"
+                  disabled={frontdeskLostSaving}
+                >
+                  {frontdeskLostSaving ? 'Saving...' : 'Save'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      <QuantifiedModal
+        showModal={frontdeskQuantifiedModalOpen}
+        onClose={() => { setFrontdeskQuantifiedModalOpen(false) }}
+        task={frontdeskQuantifiedTask}
+        setProjectList={noopSetProjectList}
+        updateOrderStatus={noopUpdateOrderStatus}
+        lostStatusId="QUALIFIED"
+        lossReasonFrontdesk={lossReasonFrontdesk ?? []}
+        sources={sources ?? []}
+        previousStatusId={null}
+        order_types={order_types ?? []}
+        frame_colors={frame_colors ?? []}
+        glass_colors={glass_colors ?? []}
+        glass_types={glass_types ?? []}
+        glass_coatings={glass_coatings ?? []}
+        languages={languages ?? []}
+        onSuccess={(updatedOrder) => {
+          if (updatedOrder) {
+            setOrder(prev => ({
+              ...prev,
+              ...updatedOrder
+            }))
+          }
+          setFrontdeskQuantifiedModalOpen(false)
+        }}
+      />
     </AuthenticatedLayout>
   )
 }
