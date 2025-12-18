@@ -344,7 +344,7 @@ Route::middleware('auth')->group(function () {
       ->name('biweekly.show-pdf-biweekly-payment-resumen');
       
      Route::get('/download/{id}', [DownloadController::class, 'secureDownload'])
-      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value .'|'. RoleEnum::SERVICE_MANAGER->value . '|' . RoleEnum::SUPERVISOR->value.'|' . RoleEnum::INSTALLER->value] )
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value .'|'. RoleEnum::SERVICE_MANAGER->value . '|' . RoleEnum::SUPERVISOR->value.'|' . RoleEnum::INSTALLER->value.'|' . RoleEnum::OWNER->value .'|' . RoleEnum::OWNER_ADMIN->value] )
       ->name('download.file');
 
       Route::get('/download/image-download/{id}', [DownloadController::class, 'imageDownload'])
@@ -400,6 +400,14 @@ Route::middleware('auth')->group(function () {
       Route::get('/frontdesk/order_view/{id}', [FrontdeskController::class, 'orderView'])
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::OWNER->value  ])
       ->name('frontdesk.order_view');
+
+      /* Route::put('/frontdesk/orders/{order}/contact', [FrontdeskController::class, 'updateOrderContact'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::OWNER->value  ])
+      ->name('frontdesk.orders.update-contact');
+
+      Route::put('/frontdesk/orders/{order}/qualified', [FrontdeskController::class, 'updateQualifiedOrder'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::OWNER->value  ])
+      ->name('frontdesk.orders.update-qualified');*/
 
       Route::patch('/frontdesk/tags_update/{order}', [FrontdeskController::class, 'tagsUpdate'])
     ->name('frontdesk.tags_update');
