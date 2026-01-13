@@ -1,13 +1,16 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
-import { Head, useForm } from '@inertiajs/react'
-import { type PageProps, type Pipelines, type Role, type Tasks } from '@/types'
-import { type ChangeEvent, type FormEvent, KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Head, router, useForm } from '@inertiajs/react'
+import { type PageProps, type Pipelines, type Role, type Tasks, type User, type CompanyContact as CompanyContactType } from '@/types'
+import { type ChangeEvent, type FormEvent, type KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { ComponentType, SVGProps } from 'react'
-import { type Attachment, type OrderStatus } from '@/types/interfaces/order'
+import { type Attachment, type OrderStatus, type Source } from '@/types/interfaces/order'
+import { type FormikErrors, type FormikHelpers } from 'formik'
 import TagPicker, { type TagItem } from '@/Components/TagPicker'
 import UserIcon from '@/Components/Icons/UserIcon'
-import { type Order } from './OrderCommon'
+import { type Client } from '@/Pages/Client/ClientCommon'
+import OrderEditModal from './OrderEditModal'
+import { getValueIdNotNull, loadOrderFormObj, type Order, type OrderFormValues } from './OrderCommon'
 import LocationIcon from '@/Components/Icons/LocationIcon'
 import PhoneIcon from '@/Components/Icons/PhoneIcon'
 import EmailIcon from '@/Components/Icons/EmailIcon'
@@ -21,6 +24,7 @@ import ExportIcon from '@/Components/Icons/ExportIcon'
 import DeleteIcon from '@/Components/Icons/DeleteIcon'
 import ReorderIcon from '@/Components/Icons/ReorderIcon'
 import OrderNotesForOrder from '@/Components/OrderNotesForOrder'
+import EditIcon from '@/Components/Icons/EditIcon'
 import { isAccountManager, isAdmin, isOwner, isOwnerAdmin } from '@/Utils/user'
 import EstimateScheduleModal from '@/Pages/Sales/EstimateScheduleModal'
 import FollowUpModal from '@/Pages/Sales/FollowUpModal'
@@ -30,6 +34,8 @@ import PreContractNoteModal from '@/Pages/Sales/PreContractNoteModal'
 import ContractSignedModal from '@/Pages/Sales/ContractSignedModal'
 import LostContractModal from '@/Pages/Sales/LostContractModal'
 import QuantifiedModal from '@/Pages/Frontdesk/QuantifiedModal'
+import { ContactEditModal, type ContactFormValues } from '@/Pages/Frontdesk/ContactEditModals'
+import RequestEditModal, { type RequestFormValues, type RequestFormErrors } from '@/Pages/Frontdesk/RequestEditModal'
 
 type IndexOrderProps = PageProps & {
   orderStatuses?: OrderStatus[]
@@ -40,6 +46,7 @@ type IndexOrderProps = PageProps & {
   ownerOptions?: ClientOrderOwner[]
   lossReasonFrontdesk?: string[]
   sources?: string[]
+  qualifiedSources?: Source[]
   order_types?: string[]
   methods_of_payment?: string[]
   type_of_financing?: string[]
@@ -48,6 +55,10 @@ type IndexOrderProps = PageProps & {
   glass_types?: string[]
   glass_coatings?: string[]
   languages?: string[]
+  clients?: Client[]
+  companies?: CompanyContactType[]
+  sourcesClients?: string[]
+  status?: string[]
 }
 
 type TabKey = 'home' | 'profile' | 'contact' | 'sales' | 'attachments'
@@ -142,9 +153,9 @@ const toScheduleString = (value?: Date | string | null): string | null => {
   return Number.isNaN(parsed.getTime()) ? str : parsed.toISOString()
 }
 
-const normalizeStatusValue = (value: string): string => value.replace(/\s+/g, ' ').trim().toUpperCase()
+const normalizeStatusValue = (value: string | number): string => String(value).replace(/\s+/g, ' ').trim().toUpperCase()
 
-const matchesStatus = (value: string, target: string): boolean =>
+const matchesStatus = (value: string | number, target: string | number): boolean =>
   normalizeStatusValue(value) === normalizeStatusValue(target)
 
 const isFrontdeskStatus = (value: string): boolean =>
@@ -156,6 +167,21 @@ const isSalesStatus = (value: string): boolean =>
 const isOrderProcessingStatus = (value: string): boolean =>
   ORDER_PROCESSING_STATUS_OPTIONS.some(status => matchesStatus(status, value))
 
+const mergeOptionWithCurrent = (options: readonly string[] | null | undefined, current?: string | null): string[] => {
+  const base = Array.isArray(options) ? Array.from(options) : []
+  const merged = typeof current === 'string' && current.length > 0
+    ? [current, ...base]
+    : base
+  return merged.filter((value, index) => merged.indexOf(value) === index)
+}
+
+const normalizeBoolean = (value: any): boolean => {
+  if (typeof value === 'boolean') return value
+  if (typeof value === 'number') return value === 1
+  if (typeof value === 'string') return value === '1' || value.toLowerCase() === 'true'
+  return false
+}
+
 export default function ShowStatusOrder ({
   auth,
   orderStatuses = [],
@@ -166,6 +192,7 @@ export default function ShowStatusOrder ({
   ownerOptions = [],
   lossReasonFrontdesk = [],
   sources = [],
+  qualifiedSources = [],
   order_types = [],
   methods_of_payment = [],
   type_of_financing = [],
@@ -173,15 +200,29 @@ export default function ShowStatusOrder ({
   glass_colors = [],
   glass_types = [],
   glass_coatings = [],
-  languages = []
+  languages = [],
+  clients = [],
+  companies = [],
+  sourcesClients = [],
+  status: statusOptions = []
 }: IndexOrderProps) {
   const [order, setOrder] = useState(initialOrder)
+  const [orderEditModalOpen, setOrderEditModalOpen] = useState(false)
+  const [orderEditError, setOrderEditError] = useState<string | null>(null)
+  const [orderFormInitialValues, setOrderFormInitialValues] = useState<OrderFormValues>(() => loadOrderFormObj(initialOrder))
   const scheduleAppointmentIso = order.schedule_appointment_iso ?? toScheduleString(order.schedule_appointment ?? null)
   const safeOrderStatuses = Array.isArray(orderStatuses) ? orderStatuses : []
   const safeTags = Array.isArray(tags) ? tags : []
   const safeUsedTags = Array.isArray(usedTags) ? usedTags : []
   const relatedClientOrders = Array.isArray(clientOrders) ? clientOrders : []
   const safeOwnerOptions = Array.isArray(ownerOptions) ? ownerOptions : []
+  const modalOwnerOptions = safeOwnerOptions as unknown as User[]
+  const safeClients = Array.isArray(clients) ? clients : []
+  const safeCompanies = Array.isArray(companies) ? companies : []
+  const safeSourcesClients = Array.isArray(sourcesClients) ? sourcesClients : []
+  const safeQualifiedSources = Array.isArray(qualifiedSources) ? qualifiedSources : []
+  const safeStatusOptions = Array.isArray(statusOptions) ? statusOptions : []
+  const toNull = (value: any) => (value === 0 || value === '0' || value === '' || value === undefined || value === null ? null : value)
   const [tab, setTab] = useState<TabKey>('home')
   const authUserId = auth?.user?.id ?? null
   const roleNames = Array.isArray(auth?.user?.roles)
@@ -263,8 +304,256 @@ export default function ShowStatusOrder ({
   const [pendingLostContract, setPendingLostContract] = useState<{ oldStatus: string, newStatus: string } | null>(null)
   const [statusChangeSaving, setStatusChangeSaving] = useState(false)
   const [statusChangeError, setStatusChangeError] = useState<string | null>(null)
+  const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? ''
+  const [contactModalOpen, setContactModalOpen] = useState(false)
+  const [requestModalOpen, setRequestModalOpen] = useState(false)
+  const clientIsContact = normalizeBoolean(order.client?.is_contact)
+  const [contactFormValues, setContactFormValues] = useState<ContactFormValues>({
+    client_name: initialOrder.client?.name ?? '',
+    email: initialOrder.client?.email ?? '',
+    secondary_email: initialOrder.client?.secondary_email ?? '',
+    phone: initialOrder.client?.phone ?? '',
+    other_phone: initialOrder.client?.other_phone ?? '',
+    source: initialOrder.client?.source ?? '',
+    vip_clients: normalizeBoolean(initialOrder.client?.vip_clients),
+    vip_notes: initialOrder.client?.vip_notes ?? ''
+  })
+  const [requestFormValues, setRequestFormValues] = useState<RequestFormValues>({
+    client_name: initialOrder.client?.name ?? initialOrder.name ?? '',
+    phone: initialOrder.client?.phone ?? '',
+    status: initialOrder.status ?? (FRONTDESK_STATUS_OPTIONS[0] ?? ''),
+    source: initialOrder.client?.source ?? (sources?.[0] ?? ''),
+    notes: initialOrder.notes ?? ''
+  })
+  const [contactFormErrors, setContactFormErrors] = useState<Record<string, string[]>>({})
+  const [requestFormErrors, setRequestFormErrors] = useState<RequestFormErrors>({})
+  const [contactSubmitError, setContactSubmitError] = useState<string | null>(null)
+  const [requestSubmitError, setRequestSubmitError] = useState<string | null>(null)
+  const [contactSaving, setContactSaving] = useState(false)
+  const [requestSaving, setRequestSaving] = useState(false)
+  const canEditContact = clientIsContact
+
+  const contactSourceOptions = useMemo(
+    () => mergeOptionWithCurrent(sources, contactFormValues.source),
+    [sources, contactFormValues.source]
+  )
+  const requestSourceOptions = useMemo(
+    () => mergeOptionWithCurrent(sources, requestFormValues.source),
+    [sources, requestFormValues.source]
+  )
+  const requestStatusOptions = useMemo(
+    () => mergeOptionWithCurrent(FRONTDESK_STATUS_OPTIONS, requestFormValues.status),
+    [requestFormValues.status]
+  )
 
   type DetailIcon = ComponentType<SVGProps<SVGSVGElement>>
+
+  const openContactModal = () => {
+    if (!canEditContact) return
+    setContactFormValues({
+      client_name: order.client?.name ?? '',
+      email: order.client?.email ?? '',
+      secondary_email: order.client?.secondary_email ?? '',
+      phone: order.client?.phone ?? '',
+      other_phone: order.client?.other_phone ?? '',
+      source: order.client?.source ?? '',
+      vip_clients: normalizeBoolean(order.client?.vip_clients),
+      vip_notes: order.client?.vip_notes ?? ''
+    })
+    setContactFormErrors({})
+    setContactSubmitError(null)
+    setContactModalOpen(true)
+  }
+
+  const openRequestModal = () => {
+    setRequestFormValues({
+      client_name: order.client?.name ?? order.name ?? '',
+      phone: order.client?.phone ?? '',
+      status: order.status ?? (FRONTDESK_STATUS_OPTIONS[0] ?? ''),
+      source: order.client?.source ?? (sources[0] ?? ''),
+      notes: order.notes ?? ''
+    })
+    setRequestFormErrors({})
+    setRequestSubmitError(null)
+    setRequestModalOpen(true)
+  }
+
+  const handleRequestFieldChange = (field: keyof RequestFormValues, value: RequestFormValues[keyof RequestFormValues]) => {
+    setRequestFormValues(prev => ({
+      ...prev,
+      [field]: value
+    }) as RequestFormValues)
+  }
+
+  const handleContactSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    if (contactSaving) return
+    setContactSubmitError(null)
+    setContactFormErrors({})
+    setContactSaving(true)
+    try {
+      const response = await fetch(route('frontdesk.orders.update-contact', { order: order.id }), {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          'X-CSRF-TOKEN': csrfToken,
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({
+          mode: 'contact',
+          ...contactFormValues
+        })
+      })
+      const responseData = await response.json().catch(() => null)
+      if (!response.ok) {
+        if (responseData?.errors) {
+          setContactFormErrors(responseData.errors)
+        }
+        setContactSubmitError(responseData?.message ?? 'Unable to update contact information.')
+        return
+      }
+      if (responseData?.order) {
+        setOrder(responseData.order)
+      }
+      setContactModalOpen(false)
+    } catch (error) {
+      console.error('contact update error', error)
+      setContactSubmitError('Unable to update contact information.')
+    } finally {
+      setContactSaving(false)
+    }
+  }
+
+  const handleRequestSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    if (requestSaving) return
+    setRequestSubmitError(null)
+    setRequestFormErrors({})
+    setRequestSaving(true)
+    try {
+      const response = await fetch(route('frontdesk.orders.update-contact', { order: order.id }), {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          'X-CSRF-TOKEN': csrfToken,
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({
+          mode: 'frontdesk',
+          ...requestFormValues
+        })
+      })
+      const responseData = await response.json().catch(() => null)
+      if (!response.ok) {
+        if (responseData?.errors) {
+          setRequestFormErrors(responseData.errors as RequestFormErrors)
+        }
+        setRequestSubmitError(responseData?.message ?? 'Unable to update request information.')
+        return
+      }
+      if (responseData?.order) {
+        setOrder(responseData.order)
+      }
+      setRequestModalOpen(false)
+    } catch (error) {
+      console.error('request update error', error)
+      setRequestSubmitError('Unable to update request information.')
+    } finally {
+      setRequestSaving(false)
+    }
+  }
+
+  const openOrderEditModal = () => {
+    setOrderEditError(null)
+    setOrderEditModalOpen(true)
+  }
+
+  const handleOrderEditSubmit = async (values: OrderFormValues, helpers: FormikHelpers<OrderFormValues>) => {
+    setOrderEditError(null)
+    const currentStatusValue = typeof order.status === 'string'
+      ? order.status
+      : getValueIdNotNull(order.status)
+    try {
+      const normalizedStatus = typeof values.status === 'string'
+        ? values.status
+        : getValueIdNotNull(values.status)
+
+      const payload: Record<string, any> = {
+        ...values,
+        associate_company_contact_id_1: toNull(values.associate_company_contact_id_1),
+        associate_company_contact_id_2: toNull(values.associate_company_contact_id_2),
+        associate_client_id_1: toNull(values.associate_client_id_1),
+        associate_client_id_2: toNull(values.associate_client_id_2),
+        source: typeof values.source === 'string' ? values.source : getValueIdNotNull(values.source)
+      }
+
+      if (normalizedStatus && (!currentStatusValue || !matchesStatus(normalizedStatus, currentStatusValue))) {
+        payload.status = normalizedStatus
+      }
+
+      const response = await fetch(route('frontdesk.orders.update-qualified', { order: order.id }), {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          'X-CSRF-TOKEN': csrfToken
+        },
+        body: JSON.stringify(payload)
+      })
+
+      if (response.status === 422) {
+        const data = await response.json().catch(() => null)
+        const formattedErrors: FormikErrors<OrderFormValues> = {}
+        Object.entries(data?.errors ?? {}).forEach(([field, messages]) => {
+          if (Array.isArray(messages) && messages.length > 0) {
+            formattedErrors[field as keyof OrderFormValues] = messages[0]
+          }
+        })
+        helpers.setErrors(formattedErrors)
+        setOrderEditError(data?.message ?? 'Please fix the highlighted fields.')
+        return
+      }
+
+      if (!response.ok) {
+        throw new Error('Failed to update order. Please try again later.')
+      }
+
+      const data = await response.json().catch(() => null)
+      const updatedOrder: Order | undefined = data?.order
+      if (!updatedOrder) {
+        throw new Error('Unexpected server response.')
+      }
+
+      setOrder(updatedOrder)
+      setOrderEditModalOpen(false)
+
+      setContactFormValues({
+        client_name: updatedOrder.client?.name ?? '',
+        email: updatedOrder.client?.email ?? '',
+        secondary_email: updatedOrder.client?.secondary_email ?? '',
+        phone: updatedOrder.client?.phone ?? '',
+        other_phone: updatedOrder.client?.other_phone ?? '',
+        source: updatedOrder.client?.source ?? '',
+        vip_clients: normalizeBoolean(updatedOrder.client?.vip_clients),
+        vip_notes: updatedOrder.client?.vip_notes ?? ''
+      })
+
+      setRequestFormValues(prev => ({
+        ...prev,
+        client_name: updatedOrder.client?.name ?? updatedOrder.name ?? prev.client_name,
+        phone: updatedOrder.client?.phone ?? prev.phone,
+        status: updatedOrder.status ?? prev.status,
+        source: updatedOrder.client?.source ?? prev.source,
+        notes: updatedOrder.notes ?? prev.notes
+      }))
+    } catch (error) {
+      setOrderEditError(error instanceof Error ? error.message : 'Unable to update order.')
+    } finally {
+      helpers.setSubmitting(false)
+    }
+  }
 
   const contactDetails: Array<{ label: string, value?: string | null, fallback: string, Icon: DetailIcon }> = [
     { label: 'Contact Name', value: order.client?.name, fallback: 'No contact assigned', Icon: UserIcon },
@@ -305,6 +594,31 @@ export default function ShowStatusOrder ({
       })
       : null
   )
+  const [activityRefreshKey, setActivityRefreshKey] = useState(0)
+
+  useEffect(() => {
+    setOrder(initialOrder)
+    setOrderFormInitialValues(loadOrderFormObj(initialOrder))
+    const nextScheduleIso = initialOrder.schedule_appointment_iso ?? toScheduleString(initialOrder.schedule_appointment ?? null)
+    setScheduleInitialValues({
+      scheduleDate: nextScheduleIso ? normalizeScheduleValue(nextScheduleIso) : '',
+      ownerIds: Array.isArray(initialOrder.owners)
+        ? initialOrder.owners
+          .map(owner => Number(owner.id))
+          .filter(id => Number.isFinite(id))
+        : []
+    })
+    setAttachments(Array.isArray(initialOrder.attachments) ? initialOrder.attachments : [])
+  }, [initialOrder])
+
+  const refreshOrderActivity = useCallback(() => {
+    setActivityRefreshKey(prev => prev + 1)
+    router.reload({
+      only: ['order'],
+      preserveScroll: true,
+      preserveState: true
+    })
+  }, [])
 
   const mapStatusToPipeline = (status: string): string => {
     if (isOrderProcessingStatus(status)) {
@@ -400,6 +714,7 @@ export default function ShowStatusOrder ({
         ...prev,
         status: targetStatus
       }))
+      refreshOrderActivity()
     } catch (error: any) {
       console.error('status change error', error)
       setStatusChangeError(error?.message ?? 'Unable to update status.')
@@ -437,6 +752,7 @@ export default function ShowStatusOrder ({
         ...prev,
         ...payload.order
       }))
+      refreshOrderActivity()
       closeFrontdeskStandByModal()
     } catch (error: any) {
       console.error('frontdesk stand-by error', error)
@@ -479,6 +795,7 @@ export default function ShowStatusOrder ({
         ...prev,
         ...payload.order
       }))
+      refreshOrderActivity()
       closeFrontdeskLostModal()
     } catch (error: any) {
       console.error('frontdesk lost error', error)
@@ -677,6 +994,7 @@ export default function ShowStatusOrder ({
         owners: data.order.owners ?? prev.owners
       }))
 
+      refreshOrderActivity()
       closeScheduleModal()
     } catch (error: any) {
       console.error('assign-estimate error', error)
@@ -747,6 +1065,7 @@ export default function ShowStatusOrder ({
         project_amount: Number.isFinite(normalizedProjectAmount) ? normalizedProjectAmount : prev.project_amount
       }))
 
+      refreshOrderActivity()
       closeFollowUpModal()
     } catch (error: any) {
       console.error('follow-up submit error', error)
@@ -809,6 +1128,7 @@ export default function ShowStatusOrder ({
         owners: data.owners ?? prev.owners
       }))
 
+      refreshOrderActivity()
       closeStandByModal()
     } catch (error: any) {
       console.error('stand-by submit error', error)
@@ -871,6 +1191,7 @@ export default function ShowStatusOrder ({
         owners: data.owners ?? prev.owners
       }))
 
+      refreshOrderActivity()
       closeRequestRescheduleModal()
     } catch (error: any) {
       console.error('request-reschedule submit error', error)
@@ -933,6 +1254,7 @@ export default function ShowStatusOrder ({
         owners: data.owners ?? prev.owners
       }))
 
+      refreshOrderActivity()
       closePreContractModal()
     } catch (error: any) {
       console.error('pre-contract submit error', error)
@@ -1043,6 +1365,7 @@ export default function ShowStatusOrder ({
           : prev.client
       }))
 
+      refreshOrderActivity()
       closeContractSignedModal()
     } catch (error: any) {
       console.error('contract-signed submit error', error)
@@ -1102,6 +1425,7 @@ export default function ShowStatusOrder ({
         loss_reason_frontdesk: data.loss_reason_frontdesk ?? prev.loss_reason_frontdesk
       }))
 
+      refreshOrderActivity()
       closeLostContractModal()
     } catch (error: any) {
       console.error('lost-contract submit error', error)
@@ -1236,6 +1560,10 @@ export default function ShowStatusOrder ({
   const selectedTagCount = data.tags?.length ?? 0
   const statusCount = safeOrderStatuses.length
 
+  useEffect(() => {
+    setOrderFormInitialValues(loadOrderFormObj(order))
+  }, [order])
+
   function submit (e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     // ruta PATCH para actualizar solo tags del pedido
@@ -1270,9 +1598,29 @@ export default function ShowStatusOrder ({
               </span>
               <div className="space-y-2">
                 <div className="space-y-1">
-                  <h1 className="text-xl font-semibold text-slate-800">
-                    {order.name}
-                  </h1>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <h1 className="text-xl font-semibold text-slate-800">
+                      {order.name}
+                    </h1>
+                    {!canEditContact && (
+                      <button
+                        type="button"
+                        onClick={openRequestModal}
+                        className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-500 transition hover:border-sky-400 hover:text-sky-600"
+                      >
+                        Edit Request
+                      </button>
+                    )}
+                    {canEditContact && (
+                      <button
+                        type="button"
+                        onClick={openOrderEditModal}
+                        className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-500 transition hover:border-sky-400 hover:text-sky-600"
+                      >
+                        Edit Order
+                      </button>
+                    )}
+                  </div>
                   <div className="flex flex-wrap items-center gap-2 text-sm text-slate-500">
                     {order.order_type && (
                       <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-600">
@@ -1424,8 +1772,21 @@ export default function ShowStatusOrder ({
           <div className="grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
             <aside className="space-y-6">
               <div className="panel space-y-4">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-3">
                   <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">Related Contact</h2>
+                  <div className="flex items-center gap-3">
+                    {canEditContact && (
+                      <button
+                        type="button"
+                        onClick={openContactModal}
+                        className="rounded-full p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+                        title="Edit contact"
+                      >
+                        <span className="sr-only">Edit contact</span>
+                        <EditIcon className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <div className="space-y-3">
                   {contactDetails.map(({ label, value, fallback, Icon }) => (
@@ -1444,6 +1805,12 @@ export default function ShowStatusOrder ({
                       </div>
                     </div>
                   ))}
+                </div>
+                {!canEditContact && (
+                  <p className="text-xs text-slate-400">
+                    Contact details can only be edited once the client is confirmed, but you can still update the request information.
+                  </p>
+                )}
               </div>
 
               {order.order_type?.toLowerCase() === 'commercial' && companyContacts.length > 0 && (
@@ -1469,7 +1836,6 @@ export default function ShowStatusOrder ({
                     </div>
                   </div>
                 )}
-              </div>
 
               {/* Sales timeline component will render elsewhere */}
 
@@ -1596,7 +1962,7 @@ export default function ShowStatusOrder ({
               <div className="flex-1 overflow-hidden rounded-xl border border-slate-200/70 bg-white">
                 {tab === 'home' && (
                   <div id="panel-home" role="tabpanel" aria-labelledby="tab-home" className="h-full">
-                    <OrderNotesForOrder orderId={order.id} canCreate />
+                    <OrderNotesForOrder orderId={order.id} canCreate refreshKey={activityRefreshKey} />
                   </div>
                 )}
 
@@ -1880,9 +2246,62 @@ export default function ShowStatusOrder ({
                 )}
               </div>
             </section>
-          </div>
-        </div>
       </div>
+    </div>
+  </div>
+      <OrderEditModal
+        open={orderEditModalOpen}
+        initialValues={orderFormInitialValues}
+        onClose={() => { setOrderEditModalOpen(false) }}
+        onSubmit={handleOrderEditSubmit}
+        clients={safeClients}
+        owners={modalOwnerOptions}
+        status={safeStatusOptions}
+        sources={safeQualifiedSources}
+        order_types={order_types ?? []}
+        companies={safeCompanies}
+        sourcesClients={safeSourcesClients}
+        frame_colors={frame_colors ?? []}
+        glass_colors={glass_colors ?? []}
+        glass_types={glass_types ?? []}
+        glass_coatings={glass_coatings ?? []}
+        languages={languages ?? []}
+        attachments={Array.isArray(order.attachments) ? order.attachments : []}
+        errorMessage={orderEditError}
+      />
+
+      <ContactEditModal
+        open={contactModalOpen}
+        saving={contactSaving}
+        canEditRequest={!canEditContact}
+        values={contactFormValues}
+        errors={contactFormErrors}
+        sourceOptions={contactSourceOptions}
+        errorMessage={contactSubmitError}
+        onClose={() => { setContactModalOpen(false) }}
+        onEditRequest={openRequestModal}
+        onChange={(field, value) => {
+          setContactFormValues(prev => ({
+            ...prev,
+            [field]: value
+          }) as ContactFormValues)
+        }}
+        onSubmit={handleContactSubmit}
+      />
+
+      <RequestEditModal
+        open={requestModalOpen}
+        saving={requestSaving}
+        values={requestFormValues}
+        errors={requestFormErrors}
+        statusOptions={requestStatusOptions}
+        sourceOptions={requestSourceOptions}
+        errorMessage={requestSubmitError}
+        onClose={() => { setRequestModalOpen(false) }}
+        onChange={handleRequestFieldChange}
+        onSubmit={handleRequestSubmit}
+      />
+
       <EstimateScheduleModal
         open={scheduleModalOpen && !!pendingMove}
         taskTitle={order.name ?? ''}
@@ -2117,6 +2536,7 @@ export default function ShowStatusOrder ({
               ...prev,
               ...updatedOrder
             }))
+            refreshOrderActivity()
           }
           setFrontdeskQuantifiedModalOpen(false)
         }}

@@ -9,6 +9,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  position: relative;
 }
 
 
@@ -91,6 +92,19 @@ body {
 
 .customer-summary__item--left {
   text-align: left;
+}
+
+.vip-badge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 6px 14px;
+  background: #b91c1c;
+  color: #fff;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  border: 2px solid #7f1d1d;
 }
 
 .customer-summary__item--name,

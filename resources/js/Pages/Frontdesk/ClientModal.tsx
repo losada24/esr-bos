@@ -1,14 +1,26 @@
-import React, { useState } from 'react'
+import { type ChangeEvent, type ReactNode } from 'react'
 import Modal from '@/Components/Modal'
 import CloseIcon from '@/Components/Icons/CloseIcon'
 import { type Client } from '@/Pages/Client/ClientCommon'
 import { Field, Form, Formik, type FormikHelpers } from 'formik'
 import InputError from '@/Components/InputError'
-import PrimaryButton from '@/Components/PrimaryButton'
-/// import { clientSchema } from './CompanyContactCommon'
 import { SOURCES } from '@/Utils/constants'
 import { clientSchema } from '../CompanyContact/CompanyContactCommon'
-import { on } from 'events'
+
+const SectionField = ({
+  label,
+  htmlFor,
+  children
+}: {
+  label: string
+  htmlFor: string
+  children: ReactNode
+}) => (
+  <label htmlFor={htmlFor} className="space-y-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+    <span>{label}</span>
+    <div>{children}</div>
+  </label>
+)
 
 const ClientModal = ({
   showModal,
@@ -38,12 +50,6 @@ const ClientModal = ({
     referral_id: 0
   }
 
-  // const handleSubmit = async (values: any /*, helpers: FormikHelpers<Client> */) => {
-  // if (addClient) {
-  // addClient(values)
-  // }
-  // onClose(false)
-  // }
   const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? ''
   const handleSubmit = async (
     values: Client,
@@ -70,7 +76,6 @@ const ClientModal = ({
         return
       }
       const data = await response.json()
-      console.log(data)
       if (data.client) {
         onConfirm(data.client)
         onClose()
@@ -87,169 +92,199 @@ const ClientModal = ({
       closeable={true}
       onClose={() => { onClose(false) }}
     >
+      <div className="mx-auto w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-xl">
         <div className="flex items-center justify-between bg-[#fbfbfb] px-5 py-3 dark:bg-[#121c2c]">
-          <div className="text-lg font-bold">Add Client</div>
-          <button type="button" className="text-white-dark hover:text-dark" onClick={() => { onClose(false) }}>
+          <h3 className="text-lg font-semibold text-slate-800 dark:text-white">Add Client</h3>
+          <button
+            type="button"
+            className="text-slate-400 transition hover:text-slate-600"
+            onClick={() => { onClose(false) }}
+          >
             <CloseIcon />
+            <span className="sr-only">Close</span>
           </button>
         </div>
-        <div className='p-5'>
-          <div className="h-[550px] overflow-y-scroll">
+        <div className="p-5">
+          <div className="max-h-[70vh] overflow-y-auto pr-1">
             <Formik<Client>
-                initialValues={initialValues}
-                validationSchema={clientSchema}
-                onSubmit={handleSubmit}
-              >
-                {({ errors, submitCount, setFieldValue, values }) => (
-                  <Form>
-                    <div className='grid gap-4 grid-cols-3'>
-                        <div className={submitCount ? (errors.name) ? 'has-error' : 'has-success' : ''}>
-                          <label htmlFor="name">Name</label>
-                          <Field
-                            id="name"
-                            name="name"
-                            className="form-input"
-                            autoComplete="name"
-                            placeholder='Name'
-                          />
-                          {(submitCount && errors.name) ? <InputError message={errors.name} className="mt-2" /> : ''}
-                        </div>
-                        <div className={`mb-3 ${submitCount ? (errors.email) ? 'has-error' : 'has-success' : ''}`}>
-                          <label htmlFor="email">Email</label>
-                          <Field
-                            id="email"
-                            name="email"
-                            type="email"
-                            className="form-input"
-                            autoComplete={false}
-                            placeholder='Email'
-                          />
-                          {(submitCount && errors.email) ? <InputError message={errors.email} className="mt-2" /> : ''}
-                        </div>
-                         <div className={`mb-3 ${submitCount ? (errors.secondary_email) ? 'has-error' : 'has-success' : ''}`}>
-                          <label htmlFor="secondary_email">Secondary Email</label>
-                          <Field
-                            id="secondary_email"
-                            name="secondary_email"
-                            type="email"
-                            className="form-input"
-                            autoComplete={false}
-                            placeholder='Secondary Email'
-                          />
-                          {(submitCount && errors.secondary_email) ? <InputError message={errors.secondary_email} className="mt-2" /> : ''}
-                        </div>
-                        <div className={submitCount ? (errors.phone) ? 'has-error' : 'has-success' : ''}>
-                          <label htmlFor="phone">Phone</label>
-                          <Field
-                            id="phone"
-                            name="phone"
-                            className="form-input"
-                            autoComplete={false}
-                            placeholder='Phone'
-                          />
-                          {(submitCount && errors.phone) ? <InputError message={errors.phone} className="mt-2" /> : ''}
-                        </div>
-                         <div className={`mb-3 ${submitCount ? (errors.other_phone) ? 'has-error' : 'has-success' : ''}`}>
-                          <label htmlFor="email">Other Phone</label>
-                          <Field
-                            id="other_phone"
-                            name="other_phone"
-                            className="form-input"
-                            autoComplete={false}
-                            placeholder='Other Phone'
-                          />
-                          {(submitCount && errors.other_phone) ? <InputError message={errors.other_phone} className="mt-2" /> : ''}
-                        </div>
-                     <div className={submitCount ? (errors.source) ? 'has-error' : 'has-success' : ''}>
-                      <label htmlFor="source">Source</label>
-                      <Field
-                        id="source"
-                        name="source"
-                        className="form-select"
-                        autoComplete="source"
-                        placeholder='Source'
-                        as="select"
-                        onChange={(e: { target: { value: string } }) => {
-                          setFieldValue('source', e.target.value)
-                        }}
-                      >
-                        <option value="">Source</option>
-                        {sourcesClients.map((source, index) => (
-                          <option key={index} value={source}>{source}</option>
-                        ))}
-                      </Field>
-                      {(submitCount && errors.source) ? <InputError message={errors.source} className="mt-2" /> : ''}
-                      </div>
-                        {(values.source === SOURCES.EXTERNAL_REFERAL || values.source === SOURCES.INTERNAL_REFERAL) && (
-                                <>
-                                <div className={submitCount ? (errors.refer_name) ? 'has-error' : 'has-success' : ''}>
-                                  <label htmlFor="refer_name">Refer Name</label>
-                                  <Field
-                                    id="refer_name"
-                                    name="refer_name"
-                                    className="form-input"
-                                    autoComplete={false}
-                                    placeholder='Refer Name'
-                                  />
-                                  {(submitCount && errors.refer_name) ? <InputError message={errors.refer_name} className="mt-2" /> : ''}
-                                </div>
-                                <div className={submitCount ? (errors.refer_phone) ? 'has-error' : 'has-success' : ''}>
-                                  <label htmlFor="refer_phone">Refer Phone</label>
-                                  <Field
-                                    id="refer_phone"
-                                    name="refer_phone"
-                                    className="form-input"
-                                    autoComplete={false}
-                                    placeholder='Refer Phone'
-                                  />
-                                  {(submitCount && errors.refer_phone) ? <InputError message={errors.refer_phone} className="mt-2" /> : ''}
-                                </div>
-                                </>
-                        )}
-
-                      <div className='flex mt-8'>
-                      <Field
-                        id="vip_clients"
-                        name="vip_clients"
-                        className="form-checkbox"
-                        type='checkbox'
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                          setFieldValue('vip_clients', e.target.checked)
-                          if (!e.target.checked) {
-                            setFieldValue('vip_notes', ' ')
-                          }
-                        }}
-                      />
-                      <label htmlFor="vip_clients" className='font-bold inline-flex'>VIP</label>
+              initialValues={initialValues}
+              validationSchema={clientSchema}
+              onSubmit={handleSubmit}
+            >
+              {({ errors, submitCount, setFieldValue, values, isSubmitting }) => (
+                <Form className="space-y-5">
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div>
+                      <SectionField label="Name" htmlFor="name">
+                        <Field
+                          id="name"
+                          name="name"
+                          className="form-input"
+                          autoComplete="name"
+                          placeholder="Name"
+                        />
+                      </SectionField>
+                      <InputError message={submitCount && errors.name ? errors.name : null} className="mt-1" />
                     </div>
-                        {Number(values.vip_clients) === 1 && (
-                          <div className='col-span-3'>
-                            <label htmlFor="vip_notes">Vip Notes</label>
+                    <div>
+                      <SectionField label="Email" htmlFor="email">
+                        <Field
+                          id="email"
+                          name="email"
+                          type="email"
+                          className="form-input"
+                          autoComplete="off"
+                          placeholder="Email"
+                        />
+                      </SectionField>
+                      <InputError message={submitCount && errors.email ? errors.email : null} className="mt-1" />
+                    </div>
+                    <div>
+                      <SectionField label="Secondary Email" htmlFor="secondary_email">
+                        <Field
+                          id="secondary_email"
+                          name="secondary_email"
+                          type="email"
+                          className="form-input"
+                          autoComplete="off"
+                          placeholder="Secondary Email"
+                        />
+                      </SectionField>
+                      <InputError message={submitCount && errors.secondary_email ? errors.secondary_email : null} className="mt-1" />
+                    </div>
+                    <div>
+                      <SectionField label="Phone" htmlFor="phone">
+                        <Field
+                          id="phone"
+                          name="phone"
+                          className="form-input"
+                          autoComplete="off"
+                          placeholder="Phone"
+                        />
+                      </SectionField>
+                      <InputError message={submitCount && errors.phone ? errors.phone : null} className="mt-1" />
+                    </div>
+                    <div>
+                      <SectionField label="Other Phone" htmlFor="other_phone">
+                        <Field
+                          id="other_phone"
+                          name="other_phone"
+                          className="form-input"
+                          autoComplete="off"
+                          placeholder="Other Phone"
+                        />
+                      </SectionField>
+                      <InputError message={submitCount && errors.other_phone ? errors.other_phone : null} className="mt-1" />
+                    </div>
+                    <div className="md:col-span-2">
+                      <SectionField label="Source" htmlFor="source">
+                        <Field
+                          id="source"
+                          name="source"
+                          as="select"
+                          className="form-select"
+                          autoComplete="off"
+                          onChange={(event: ChangeEvent<HTMLSelectElement>) => {
+                            setFieldValue('source', event.target.value)
+                          }}
+                        >
+                          <option value="">Select source</option>
+                          {sourcesClients.map((source, index) => (
+                            <option key={index} value={source}>{source}</option>
+                          ))}
+                        </Field>
+                      </SectionField>
+                      <InputError message={submitCount && errors.source ? errors.source : null} className="mt-1" />
+                    </div>
+
+                    {(values.source === SOURCES.EXTERNAL_REFERAL || values.source === SOURCES.INTERNAL_REFERAL) && (
+                      <>
+                        <div>
+                          <SectionField label="Refer Name" htmlFor="refer_name">
                             <Field
-                              id="vip_notes"
-                              name="vip_notes"
-                              component="textarea"
-                              rows="3"
-                              className="form-textarea resize-none placeholder:text-white-dark"
-                              placeholder='Notes'
+                              id="refer_name"
+                              name="refer_name"
+                              className="form-input"
+                              autoComplete="off"
+                              placeholder="Refer Name"
                             />
-                          </div>
-                        )}
+                          </SectionField>
+                          <InputError message={submitCount && errors.refer_name ? errors.refer_name : null} className="mt-1" />
+                        </div>
+                        <div>
+                          <SectionField label="Refer Phone" htmlFor="refer_phone">
+                            <Field
+                              id="refer_phone"
+                              name="refer_phone"
+                              className="form-input"
+                              autoComplete="off"
+                              placeholder="Refer Phone"
+                            />
+                          </SectionField>
+                          <InputError message={submitCount && errors.refer_phone ? errors.refer_phone : null} className="mt-1" />
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                  <div className="space-y-3 rounded-xl bg-slate-50 p-4">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-semibold text-slate-700">VIP Client</p>
+                      <label className="inline-flex items-center gap-2 text-sm font-medium text-slate-600">
+                        <Field
+                          id="vip_clients"
+                          name="vip_clients"
+                          type="checkbox"
+                          className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+                          onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                            setFieldValue('vip_clients', event.target.checked)
+                            if (!event.target.checked) {
+                              setFieldValue('vip_notes', '')
+                            }
+                          }}
+                        />
+                        Enable
+                      </label>
+                    </div>
+                    <InputError message={submitCount && errors.vip_clients ? errors.vip_clients : null} className="mt-1" />
+                    {values.vip_clients && (
+                      <div>
+                        <label htmlFor="vip_notes" className="text-xs font-semibold uppercase tracking-wide text-slate-500">VIP Notes</label>
+                        <Field
+                          id="vip_notes"
+                          name="vip_notes"
+                          as="textarea"
+                          rows={3}
+                          className="form-textarea mt-2 resize-none placeholder:text-slate-400"
+                          placeholder="Notes"
+                        />
+                        <InputError message={submitCount && errors.vip_notes ? errors.vip_notes : null} className="mt-1" />
                       </div>
-                      <div className="flex items-center justify-between mt-4">
-                        <button className='btn btn-danger uppercase' onClick={ (e) => {
-                          e.preventDefault()
-                          onClose(false)
-                        }}>Cancel</button>
-                        <PrimaryButton className="btn btn-primary" type='submit'>
-                          Add Client
-                        </PrimaryButton>
-                      </div>
-                  </Form>
-                )}
+                    )}
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
+                    <button
+                      type="button"
+                      onClick={() => { onClose(false) }}
+                      className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="rounded-lg bg-sky-600 px-5 py-2 text-sm font-semibold text-white shadow hover:bg-sky-700 disabled:cursor-not-allowed disabled:bg-sky-400"
+                      disabled={isSubmitting}
+                    >
+                      Add Client
+                    </button>
+                  </div>
+                </Form>
+              )}
             </Formik>
           </div>
         </div>
+      </div>
     </Modal>
   )
 }

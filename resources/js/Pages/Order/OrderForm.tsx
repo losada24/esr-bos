@@ -1174,7 +1174,7 @@ const OrderForm = ({
             </div>
             ) }
             <div className='col-span-4'>
-              <label htmlFor="notes">Notes</label>
+              <label htmlFor="notes">Installer Notes</label>
               <Field
                 id="notes"
                 name="notes"

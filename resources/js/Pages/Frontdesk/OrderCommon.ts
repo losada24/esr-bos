@@ -255,7 +255,9 @@ export const loadOrderFormObj = (order: Order): OrderFormValues => {
     window_quantity: order.sale_form ? order.sale_form.window_quantity : 0,
     schedule_appointment: order.schedule_appointment ?? null,
     schedule_appointment_iso: order.schedule_appointment_iso ?? null,
-    owner_ids: Array.isArray(order.owner_ids) ? order.owner_ids : [],
+    owner_ids: Array.isArray(order.owner_ids) && order.owner_ids.length > 0
+      ? order.owner_ids
+      : (Array.isArray(order.owners) ? order.owners.map(owner => owner?.id).filter((id): id is number => typeof id === 'number') : []),
     down_payment: order.down_payment ?? null,
     type_of_financing: order.type_of_financing ?? null,
     contact_email: order.contact_email ?? order.client?.email ?? '',

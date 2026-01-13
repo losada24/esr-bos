@@ -30,6 +30,7 @@ export interface Client {
   company_contact_id?: number
   company_contact?: CompanyContact[]
   tags?: TagItem[]
+  is_contact?: boolean
 }
 
 export type ClientFormType = Client & {

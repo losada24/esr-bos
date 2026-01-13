@@ -80,7 +80,13 @@ const OrderQualifiedForm = ({
   glass_colors,
   glass_types,
   glass_coatings,
-  languages
+  languages,
+  onCancel,
+  submitLabel,
+  showClientField = true,
+  showNotesField = true,
+  useModalLayout = false,
+  showOwnerField = false
 }: {
   submitCount: number
   errors: FormikErrors<OrderFormValues>
@@ -100,6 +106,12 @@ const OrderQualifiedForm = ({
   glass_types: string[]
   glass_coatings: string[]
   languages: string[]
+  onCancel?: () => void
+  submitLabel?: string
+  showClientField?: boolean
+  showNotesField?: boolean
+  useModalLayout?: boolean
+  showOwnerField?: boolean
 }) => {
   const jobAddressInputRef = useRef<HTMLInputElement | null>(null)
   const autocompleteInstanceRef = useRef<google.maps.places.Autocomplete | null>(null)
@@ -184,6 +196,9 @@ const OrderQualifiedForm = ({
   const selectedAssociateClient2 = values.associate_client_id_2
     ? clientsOptions.find(o => o.value === values.associate_client_id_2) ?? null
     : null
+  const ownerOptions = Array.isArray(owners) ? owners.map(owner => ({ value: owner.id, label: owner.name })) : []
+  const ownerIds = Array.isArray(values.owner_ids) ? values.owner_ids : []
+  const selectedOwners = ownerOptions.filter(option => ownerIds.includes(option.value))
 
   /* const selectedClient = values.client_id
     ? {
@@ -314,7 +329,26 @@ const selectedSourceClients: SingleValue<OptionType> = {
   console.log('frame_colors ->', frame_colors)
   return (
     <>
-      <Form className='space-y-5'>
+      {useModalLayout && (
+        <style>{`
+          .modal-order-form label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: #64748b;
+            margin-bottom: 0.25rem;
+          }
+          .modal-order-form legend {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #0f172a;
+          }
+        `}
+        </style>
+      )}
+      <Form className={`space-y-5 ${useModalLayout ? 'modal-order-form text-slate-700' : ''}`}>
         <fieldset className='p-3 border rounded-xl'>
           <legend className='text-lg font-semibold px-3'>Order Information</legend>
           <div className='grid gap-4 grid-cols-4'>
@@ -415,43 +449,45 @@ const selectedSourceClients: SingleValue<OptionType> = {
                 />
                 {(submitCount && errors.job_zip) ? <InputError message={errors.job_zip} className="mt-2" /> : ''}
               </div>
-                <div className={submitCount ? (errors.client_id ? 'has-error' : 'has-success') : ''}>
-                    <label htmlFor="client_id">Contact Name</label>
-                    <div className="flex items-center">
-                      <div className="flex-grow">
-                        <Select
-                          id="client_id"
-                          inputId="client_id"
-                          name="client_id"
-                          placeholder="Client"
-                          value={selectedClient}
-                          isMulti={false}
-                         onChange={(option) => {
-                           const clientId = (option as any)?.value ?? null
-                           setFieldValue('client_id', clientId)
-                           if (clientId == null) {
-                             setFieldValue('company_contact_id', null)
-                             return
-                           }
-                           const c = clientsList.find(x => Number(x.id) === clientId)
-                           const companyId = c?.company_contact_id != null ? Number(c.company_contact_id) : null
-                           setFieldValue('company_contact_id', companyId)
-                         }}
-                          options={clientsOptions}
-                          styles={{ control: (base) => ({ ...base, minHeight: '40px' }) }}
-                        />
+                {showClientField && (
+                  <div className={submitCount ? (errors.client_id ? 'has-error' : 'has-success') : ''}>
+                      <label htmlFor="client_id">Contact Name</label>
+                      <div className="flex items-center">
+                        <div className="flex-grow">
+                          <Select
+                            id="client_id"
+                            inputId="client_id"
+                            name="client_id"
+                            placeholder="Client"
+                            value={selectedClient}
+                            isMulti={false}
+                           onChange={(option) => {
+                             const clientId = (option as any)?.value ?? null
+                             setFieldValue('client_id', clientId)
+                             if (clientId == null) {
+                               setFieldValue('company_contact_id', null)
+                               return
+                             }
+                             const c = clientsList.find(x => Number(x.id) === clientId)
+                             const companyId = c?.company_contact_id != null ? Number(c.company_contact_id) : null
+                             setFieldValue('company_contact_id', companyId)
+                           }}
+                            options={clientsOptions}
+                            styles={{ control: (base) => ({ ...base, minHeight: '40px' }) }}
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          title="Create Client"
+                          onClick={() => { setModalTargetClientField('client_id'); setShowClientModal(true) }}
+                          className="bg-[#2c7df6] w-[44px] h-[40px] flex justify-center items-center ltr:rounded-r-md rtl:rounded-l-md border ltr:border-l-0 rtl:border-r-0 border-[#e0e6ed] dark:border-[#17263c] dark:bg-[#1b2e4b]"
+                        >
+                          <PlusIcon className="text-[#fff]" />
+                        </button>
                       </div>
-                      <button
-                        type="button"
-                        title="Create Client"
-                        onClick={() => { setModalTargetClientField('client_id'); setShowClientModal(true) }}
-                        className="bg-[#2c7df6] w-[44px] h-[40px] flex justify-center items-center ltr:rounded-r-md rtl:rounded-l-md border ltr:border-l-0 rtl:border-r-0 border-[#e0e6ed] dark:border-[#17263c] dark:bg-[#1b2e4b]"
-                      >
-                        <PlusIcon className="text-[#fff]" />
-                      </button>
+                      {(submitCount && errors.client_id) ? <InputError message={errors.client_id} className="mt-2" /> : null}
                     </div>
-                    {(submitCount && errors.client_id) ? <InputError message={errors.client_id} className="mt-2" /> : null}
-                  </div>
+                )}
                   <div className={submitCount ? (errors.schedule_appointment) ? 'has-error' : 'has-success' : ''}>
                            <label htmlFor="schedule_appointment">Appointment Date</label>
                            <Flatpickr
@@ -706,7 +742,7 @@ const selectedSourceClients: SingleValue<OptionType> = {
               />
               {(submitCount && errors.status) ? <InputError message={errors.status} className="mt-2" /> : ''}
             </div> */}
-             <div className='flex mt-8'>
+                 <div className='flex mt-8'>
                 <Field
                   id="is_supply"
                   name="is_supply"
@@ -729,19 +765,41 @@ const selectedSourceClients: SingleValue<OptionType> = {
                 placeholder='Description'
               />
             </div> */}
+            {showNotesField && (
             <div className={`col-span-4 ${submitCount ? (errors.notes) ? 'has-error' : 'has-success' : ''}`}>
               <label htmlFor="notes"> Notes</label>
               <Field
                 id="notes"
-                name="notes"
-                component="textarea"
-                rows="3"
-                className="form-textarea resize-none placeholder:text-white-dark"
-                placeholder='Notes'
-              />
-              {(submitCount && errors.notes) ? <InputError message={errors.notes} className="mt-2" /> : ''}
+                  name="notes"
+                  component="textarea"
+                  rows="3"
+                  className="form-textarea resize-none placeholder:text-white-dark"
+                  placeholder='Notes'
+                />
+                {(submitCount && errors.notes) ? <InputError message={errors.notes} className="mt-2" /> : ''}
+              </div>
+            )}
             </div>
-            </div>
+            {showOwnerField && (
+              <div className="col-span-4 md:col-span-2 mt-4 md:mt-0">
+                <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Owners</label>
+                <div className="mt-2 rounded-lg border border-slate-200 p-1">
+                  <Select
+                    isMulti
+                    className="owners-select"
+                    placeholder="Select owners"
+                    value={selectedOwners}
+                    onChange={(selection) => {
+                      const values = Array.isArray(selection) ? selection.map(option => (option as any)?.value) : []
+                      setFieldValue('owner_ids', values)
+                    }}
+                    options={ownerOptions}
+                    styles={{ control: (base) => ({ ...base, minHeight: '40px', border: 'none', boxShadow: 'none' }) }}
+                  />
+                </div>
+                {(submitCount && errors.owner_ids) ? <InputError message={(errors.owner_ids as any) ?? null} className="mt-2" /> : null}
+              </div>
+            )}
         </fieldset>
         <fieldset className='p-3 border rounded-xl'>
         <legend className='text-lg font-semibold px-3'>Sales Information</legend>
@@ -1061,12 +1119,42 @@ const selectedSourceClients: SingleValue<OptionType> = {
         </fieldset>
         </div>
         </fieldset>
-        <div className="flex items-center justify-between mt-4">
-          <Link className='btn btn-danger uppercase' href={route('frontdesk.index')}>Cancel</Link>
-          <PrimaryButton className="btn btn-primary" type='submit'>
-            {isCreate ? 'Create' : 'Save'}
-          </PrimaryButton>
-        </div>
+        {useModalLayout ? (
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
+            <button
+              type="button"
+              onClick={() => { if (onCancel) onCancel() }}
+              className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="rounded-lg bg-sky-600 px-5 py-2 text-sm font-semibold text-white shadow hover:bg-sky-700 disabled:cursor-not-allowed disabled:bg-sky-400"
+            >
+              {submitLabel ?? (isCreate ? 'Create' : 'Save')}
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center justify-between mt-4">
+            {onCancel
+              ? (
+                <button
+                  type="button"
+                  className="btn btn-danger uppercase"
+                  onClick={onCancel}
+                >
+                  Cancel
+                </button>
+                )
+              : (
+                <Link className='btn btn-danger uppercase' href={route('frontdesk.index')}>Cancel</Link>
+                )}
+            <PrimaryButton className="btn btn-primary" type='submit'>
+              {submitLabel ?? (isCreate ? 'Create' : 'Save')}
+            </PrimaryButton>
+          </div>
+        )}
         <CompanyModal
           showModal={showCompanyModal}
           onClose={() => { setShowCompanyModal(false); setModalTargetField(null) }}

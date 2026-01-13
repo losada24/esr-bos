@@ -41,6 +41,7 @@ interface OrderNotesForOrderProps {
   orderId?: number | string | null
   canCreate?: boolean
   noteType?: string
+  refreshKey?: number
 }
 
 // ===== UI utils =====
@@ -67,7 +68,7 @@ const normalize = (n: NoteDTO): UiNote => ({
   can: n.can ?? null
 })
 
-export default function OrderNotesForOrder({ orderId, canCreate = true, noteType }: OrderNotesForOrderProps) {
+export default function OrderNotesForOrder({ orderId, canCreate = true, noteType, refreshKey = 0 }: OrderNotesForOrderProps) {
   const [notes, setNotes] = useState<UiNote[] | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -122,7 +123,7 @@ export default function OrderNotesForOrder({ orderId, canCreate = true, noteType
     return () => {
       alive = false
     }
-  }, [resolvedOrderId])
+  }, [resolvedOrderId, refreshKey])
 
   // CREATE
   const onSave = async (e?: React.MouseEvent | React.FormEvent) => {

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Actions\CreateOrderPipeline;
 use App\Actions\CreateQualifiedOrder;
+use App\Actions\UpdateQualifiedOrder;
 use App\Enum\ContactSourceEnum;
 use App\Enum\FrameColorEnum;
 use App\Enum\FrontdeskStatusEnum;
@@ -19,6 +20,7 @@ use App\Enum\MethodOfPayment;
 use App\Enum\TypeOfFinancing;
 use App\Http\Requests\StoreFrontDeskOrderRequest;
 use App\Http\Requests\StoreQualifiedOrderRequest;
+use App\Http\Requests\UpdateQualifiedOrderRequest;
 use App\Models\Client;
 use App\Models\CompanyContact;
 use Illuminate\Http\Request;
@@ -34,6 +36,7 @@ use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Traits\OrderEmails;
+use Illuminate\Validation\Rule;
 
 class FrontdeskController extends Controller
 {   
@@ -51,19 +54,24 @@ class FrontdeskController extends Controller
     ];
     $lossReasonFrontdesk = [
         LostReasonfrontdeskEnum::NO_RESPONSE_FROM_CLIENT->value,
-        LostReasonfrontdeskEnum::CLIENT_NOT_INTERESTED->value,
-        LostReasonfrontdeskEnum::BUDGET_ISSUES->value,
+        LostReasonfrontdeskEnum::DEALER->value,
+        LostReasonfrontdeskEnum::FAKE->value,
+        LostReasonfrontdeskEnum::WORK->value,
+        LostReasonfrontdeskEnum::STOCK->value,
         LostReasonfrontdeskEnum::OTHER_REASONS->value,
     ];
     $sources = [
-        ContactSourceEnum::TIK_TOK->value,
-        ContactSourceEnum::INSTAGRAM_FACEBOOK->value,
-        ContactSourceEnum::META->value,
-        ContactSourceEnum::DESTINO_TOLK->value,
-        ContactSourceEnum::RESOURCE_MAGAZINE->value,
-        ContactSourceEnum::BANNER_PUBLICITARIO->value,
-        ContactSourceEnum::PICHY_BOYS->value,
-        ContactSourceEnum::GOOGLE_MY_BUSINESS->value,
+            ContactSourceEnum::TIK_TOK->value,
+            ContactSourceEnum::INSTAGRAM_FACEBOOK->value,
+            ContactSourceEnum::EXTERNAL_REFERAL->value,
+            ContactSourceEnum::INTERNAL_REFERAL->value,
+            ContactSourceEnum::SIGNS->value,
+            ContactSourceEnum::WALK_IN->value,
+            ContactSourceEnum::ESW_REFER->value,
+            ContactSourceEnum::ESR_REFER->value,
+            ContactSourceEnum::YOUTUBE->value,
+            ContactSourceEnum::NEW_ORDER ->value,
+            ContactSourceEnum::GOOGLE_ADS->value,
     ];
 
     $order_types = [
@@ -172,13 +180,16 @@ $data = collect($frontdeskStatuses)->map(function ($status) use ($orders, $quali
       ],
       'sources' => [
        ContactSourceEnum::TIK_TOK->value,
-        ContactSourceEnum::INSTAGRAM_FACEBOOK->value,
-        ContactSourceEnum::META->value,
-        ContactSourceEnum::DESTINO_TOLK->value,
-        ContactSourceEnum::RESOURCE_MAGAZINE->value,
-        ContactSourceEnum::BANNER_PUBLICITARIO->value,
-        ContactSourceEnum::PICHY_BOYS->value,
-        ContactSourceEnum::GOOGLE_MY_BUSINESS->value,
+            ContactSourceEnum::INSTAGRAM_FACEBOOK->value,
+            ContactSourceEnum::EXTERNAL_REFERAL->value,
+            ContactSourceEnum::INTERNAL_REFERAL->value,
+            ContactSourceEnum::SIGNS->value,
+            ContactSourceEnum::WALK_IN->value,
+            ContactSourceEnum::ESW_REFER->value,
+            ContactSourceEnum::ESR_REFER->value,
+            ContactSourceEnum::YOUTUBE->value,
+            ContactSourceEnum::NEW_ORDER ->value,
+            ContactSourceEnum::GOOGLE_ADS->value,
       ],
        
       
@@ -199,16 +210,17 @@ $data = collect($frontdeskStatuses)->map(function ($status) use ($orders, $quali
       ],
       'sources' => Source::all(),
       'sourcesClients' => [
-            ContactSourceEnum::TIK_TOK->value,
+             ContactSourceEnum::TIK_TOK->value,
             ContactSourceEnum::INSTAGRAM_FACEBOOK->value,
-            ContactSourceEnum::META->value,
-            ContactSourceEnum::DESTINO_TOLK->value,
-            ContactSourceEnum::RESOURCE_MAGAZINE->value,
-            ContactSourceEnum::BANNER_PUBLICITARIO->value,
             ContactSourceEnum::EXTERNAL_REFERAL->value,
             ContactSourceEnum::INTERNAL_REFERAL->value,
-            ContactSourceEnum::GOOGLE_MY_BUSINESS->value,
-            ContactSourceEnum::PICHY_BOYS->value,
+            ContactSourceEnum::SIGNS->value,
+            ContactSourceEnum::WALK_IN->value,
+            ContactSourceEnum::ESW_REFER->value,
+            ContactSourceEnum::ESR_REFER->value,
+            ContactSourceEnum::YOUTUBE->value,
+            ContactSourceEnum::NEW_ORDER ->value,
+            ContactSourceEnum::GOOGLE_ADS->value,
           ],
       'frame_colors' => [
         FrameColorEnum::BLACK->value,
@@ -364,6 +376,8 @@ public function showQuantifiedModal(Order $order)
           $status = OrderStatusEnum::COMMERCIAL_ASSIGNMENT->value;
         }
         
+        $scheduleAppointment = $request->input('schedule_appointment');
+
         $orderPayload = [
           'name' => $request['name'],
           'order_type' => $request['order_type'],
@@ -374,6 +388,9 @@ public function showQuantifiedModal(Order $order)
           'bid_due_date' => $request['bid_due_date'],
           'project_amount' => $request['project_amount'],
           'description' => $request['description'],
+          'schedule_appointment' => $scheduleAppointment
+            ? Carbon::parse($scheduleAppointment)
+            : null,
           'status' => $status,
           'is_supply' => $request['is_supply'] ?? false,
         ];
@@ -533,20 +550,25 @@ public function showQuantifiedModal(Order $order)
 
     $lossReasonFrontdesk = [
         LostReasonfrontdeskEnum::NO_RESPONSE_FROM_CLIENT->value,
-        LostReasonfrontdeskEnum::CLIENT_NOT_INTERESTED->value,
-        LostReasonfrontdeskEnum::BUDGET_ISSUES->value,
+        LostReasonfrontdeskEnum::DEALER->value,
+        LostReasonfrontdeskEnum::FAKE->value,
+        LostReasonfrontdeskEnum::WORK->value,
+        LostReasonfrontdeskEnum::STOCK->value,
         LostReasonfrontdeskEnum::OTHER_REASONS->value,
     ];
 
     $sources = [
-        ContactSourceEnum::TIK_TOK->value,
-        ContactSourceEnum::INSTAGRAM_FACEBOOK->value,
-        ContactSourceEnum::META->value,
-        ContactSourceEnum::DESTINO_TOLK->value,
-        ContactSourceEnum::RESOURCE_MAGAZINE->value,
-        ContactSourceEnum::BANNER_PUBLICITARIO->value,
-        ContactSourceEnum::PICHY_BOYS->value,
-        ContactSourceEnum::GOOGLE_MY_BUSINESS->value,
+         ContactSourceEnum::TIK_TOK->value,
+            ContactSourceEnum::INSTAGRAM_FACEBOOK->value,
+            ContactSourceEnum::EXTERNAL_REFERAL->value,
+            ContactSourceEnum::INTERNAL_REFERAL->value,
+            ContactSourceEnum::SIGNS->value,
+            ContactSourceEnum::WALK_IN->value,
+            ContactSourceEnum::ESW_REFER->value,
+            ContactSourceEnum::ESR_REFER->value,
+            ContactSourceEnum::YOUTUBE->value,
+            ContactSourceEnum::NEW_ORDER ->value,
+            ContactSourceEnum::GOOGLE_ADS->value,
     ];
 
     $order_types = [
@@ -585,6 +607,37 @@ public function showQuantifiedModal(Order $order)
     $methodsOfPayment = array_map(fn (MethodOfPayment $method) => $method->value, MethodOfPayment::cases());
     $typeOfFinancing = array_map(fn (TypeOfFinancing $financing) => $financing->value, TypeOfFinancing::cases());
 
+    $clients = Client::with(['companyContact'])
+      ->select('id', 'name', 'phone', 'email', 'other_phone', 'secondary_email', 'source', 'vip_clients', 'vip_notes', 'company_contact_id')
+      ->orderBy('name')
+      ->get();
+
+    $companies = CompanyContact::select('id', 'name')->orderBy('name')->get();
+
+    $qualifiedSources = Source::select('id', 'name')->orderBy('name')->get();
+
+    $sourcesClients = [
+        ContactSourceEnum::TIK_TOK->value,
+            ContactSourceEnum::INSTAGRAM_FACEBOOK->value,
+            ContactSourceEnum::EXTERNAL_REFERAL->value,
+            ContactSourceEnum::INTERNAL_REFERAL->value,
+            ContactSourceEnum::SIGNS->value,
+            ContactSourceEnum::WALK_IN->value,
+            ContactSourceEnum::ESW_REFER->value,
+            ContactSourceEnum::ESR_REFER->value,
+            ContactSourceEnum::YOUTUBE->value,
+            ContactSourceEnum::NEW_ORDER ->value,
+            ContactSourceEnum::GOOGLE_ADS->value,
+    ];
+
+    $statusOptions = [
+        OrderStatusEnum::NEW_CUSTOMER_REQUEST->value,
+        OrderStatusEnum::NEW_CUSTOMER_REQUEST_FOLLOW_UP->value,
+        OrderStatusEnum::NEW_CUSTOMER_REQUEST_STAND_BY->value,
+        OrderStatusEnum::LOST_CUSTOMER_REQUEST->value,
+        OrderStatusEnum::QUALIFIED->value,
+    ];
+
     // Obtener los parámetros de filtro de la solicitud (request)
     return Inertia::render('Frontdesk/OrderView', [
       //'orderStatuses' => $orderStatuses,
@@ -598,6 +651,11 @@ public function showQuantifiedModal(Order $order)
       'ownerOptions' => $ownerOptions,
       'lossReasonFrontdesk' => $lossReasonFrontdesk,
       'sources' => $sources,
+      'qualifiedSources' => $qualifiedSources,
+      'clients' => $clients,
+      'companies' => $companies,
+      'sourcesClients' => $sourcesClients,
+      'status' => $statusOptions,
       'order_types' => $order_types,
       'methods_of_payment' => $methodsOfPayment,
       'type_of_financing' => $typeOfFinancing,
@@ -616,6 +674,142 @@ public function showQuantifiedModal(Order $order)
       }),*/
 
 
+    ]);
+  }
+
+  public function updateQualifiedOrder(
+    UpdateQualifiedOrderRequest $request,
+    UpdateQualifiedOrder $updateQualifiedOrder,
+    Order $order
+  ) {
+    $updatedOrder = $updateQualifiedOrder->handle($request, $order);
+
+    return response()->json([
+      'success' => true,
+      'order' => $updatedOrder,
+    ]);
+  }
+
+  public function updateOrderContact(Request $request, Order $order)
+  {
+    $mode = $request->input('mode');
+    $frontdeskStatuses = [
+      OrderStatusEnum::NEW_CUSTOMER_REQUEST->value,
+      OrderStatusEnum::NEW_CUSTOMER_REQUEST_FOLLOW_UP->value,
+      OrderStatusEnum::NEW_CUSTOMER_REQUEST_STAND_BY->value,
+      OrderStatusEnum::LOST_CUSTOMER_REQUEST->value,
+      OrderStatusEnum::QUALIFIED->value,
+    ];
+    $sources = [
+            ContactSourceEnum::TIK_TOK->value,
+            ContactSourceEnum::INSTAGRAM_FACEBOOK->value,
+            ContactSourceEnum::EXTERNAL_REFERAL->value,
+            ContactSourceEnum::INTERNAL_REFERAL->value,
+            ContactSourceEnum::SIGNS->value,
+            ContactSourceEnum::WALK_IN->value,
+            ContactSourceEnum::ESW_REFER->value,
+            ContactSourceEnum::ESR_REFER->value,
+            ContactSourceEnum::YOUTUBE->value,
+            ContactSourceEnum::NEW_ORDER ->value,
+            ContactSourceEnum::GOOGLE_ADS->value,
+    ];
+
+    $rules = [
+      'mode' => ['required', 'string', Rule::in(['contact', 'frontdesk'])],
+      'client_name' => ['required', 'string', 'max:255'],
+      'email' => ['nullable', 'email', 'max:255'],
+      'secondary_email' => ['nullable', 'email', 'max:255'],
+      'other_phone' => ['nullable', 'string', 'max:50'],
+      'notes' => ['nullable', 'string', 'max:1000'],
+      'vip_clients' => ['nullable', 'boolean'],
+      'vip_notes' => ['nullable', 'string', 'max:1000'],
+    ];
+
+    if ($mode === 'frontdesk') {
+      $rules = array_merge($rules, [
+        'phone' => ['required', 'regex:/^\\d{10}$/'],
+        'status' => ['required', 'string', Rule::in($frontdeskStatuses)],
+        'source' => ['required', 'string', Rule::in($sources)],
+      ]);
+    } else {
+      $rules = array_merge($rules, [
+        'phone' => ['nullable', 'string', 'max:50'],
+        'status' => ['nullable', 'string', Rule::in($frontdeskStatuses)],
+        'source' => ['nullable', 'string', Rule::in($sources)],
+      ]);
+    }
+
+    $data = $request->validate($rules);
+
+    DB::transaction(function () use ($data, $order, $request) {
+      $client = $order->client;
+
+      if ($client) {
+        $clientPayload = [
+          'name' => $data['client_name'],
+        ];
+
+        if (array_key_exists('phone', $data) && $data['phone'] !== null) {
+          $clientPayload['phone'] = $data['phone'];
+        }
+
+        if (array_key_exists('email', $data)) {
+          $clientPayload['email'] = $data['email'];
+        }
+
+        if (array_key_exists('secondary_email', $data)) {
+          $clientPayload['secondary_email'] = $data['secondary_email'];
+        }
+
+        if (array_key_exists('other_phone', $data)) {
+          $clientPayload['other_phone'] = $data['other_phone'];
+        }
+
+        if (array_key_exists('source', $data) && $data['source']) {
+          $clientPayload['source'] = $data['source'];
+        }
+        if (array_key_exists('vip_clients', $data)) {
+          $clientPayload['vip_clients'] = (bool) $data['vip_clients'];
+        }
+        if (array_key_exists('vip_notes', $data)) {
+          $clientPayload['vip_notes'] = $data['vip_notes'];
+        }
+
+        $client->update($clientPayload);
+      }
+
+      $statusChanged = false;
+      $orderPayload = [
+        'name' => $data['client_name'],
+      ];
+
+      if (array_key_exists('notes', $data)) {
+        $orderPayload['notes'] = $data['notes'];
+      }
+
+      if (!empty($data['status'])) {
+        $statusChanged = !empty($order->status)
+          ? strcasecmp($order->status, $data['status']) !== 0
+          : true;
+        $orderPayload['status'] = $data['status'];
+      }
+
+      $order->update($orderPayload);
+
+      if ($statusChanged) {
+        $order->orderStatus()->create([
+          'status' => $data['status'],
+          'user_id' => $request->user()?->id,
+          'notes' => "{$data['status']} updated via frontdesk edit by " . ($request->user()->name ?? 'System'),
+        ]);
+      }
+    });
+
+    $order->refresh()->load('tags:id,name,color,taggable_id,taggable_type', 'client.companyContact', 'user', 'owners', 'saleForm', 'attachments.user', 'orderStatus.user');
+
+    return response()->json([
+      'success' => true,
+      'order' => $order,
     ]);
   }
 
