@@ -224,7 +224,10 @@ const QuantifiedModal = ({
           if (!response.ok) throw new Error('Error al obtener los datos de la orden')
           const data: Order = await response.json()
           const loadedForm = loadOrderFormObj(data)
-          setOrderFormData(loadedForm)
+          setOrderFormData({
+            ...loadedForm,
+            notes: ''
+          })
         } catch (error) {
           console.error('Error cargando la orden:', error)
         }
@@ -541,6 +544,31 @@ const QuantifiedModal = ({
                       placeholder="ZIP Code"
                     />
                     {(submitCount && errors.job_zip) ? <InputError message={errors.job_zip} className="mt-2" /> : ''}
+                  </div>
+                  <div className={submitCount ? (errors.schedule_appointment) ? 'has-error' : 'has-success' : ''}>
+                    <label htmlFor="schedule_appointment">Appointment Date</label>
+                    <Flatpickr
+                      options={{
+                        enableTime: true,
+                        dateFormat: 'Y-m-d H:i'
+                      }}
+                      name="schedule_appointment"
+                      className="form-input"
+                      value={values.schedule_appointment ?? ''}
+                      onChange={([date]) => {
+                        if (!date) return
+                        const year = date.getFullYear()
+                        const month = String(date.getMonth() + 1).padStart(2, '0')
+                        const day = String(date.getDate()).padStart(2, '0')
+                        const hours = String(date.getHours()).padStart(2, '0')
+                        const minutes = String(date.getMinutes()).padStart(2, '0')
+                        const formattedDate = `${year}-${month}-${day} ${hours}:${minutes}`
+                        setFieldValue('schedule_appointment', formattedDate)
+                      }}
+                    />
+                    {(submitCount && typeof errors.schedule_appointment === 'string')
+                      ? <InputError message={errors.schedule_appointment} className="mt-2" />
+                      : ''}
                   </div>
                    <div className='flex mt-0'>
                       <Field

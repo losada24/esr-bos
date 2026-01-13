@@ -820,7 +820,7 @@ const EventModal = ({
               />
             </div>
             <div className='col-span-4 mt-4'>
-              <label htmlFor="notes"><strong>Notes </strong></label>
+              <label htmlFor="notes"><strong>Installer Notes </strong></label>
               <textarea
                 id="notes"
                 name="notes"

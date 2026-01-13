@@ -49,6 +49,9 @@
     ];*/
 @endphp
   <div class="page sale-form">
+    @if($clientModel?->vip_clients)
+      <div class="vip-badge">VIP</div>
+    @endif
     <table class="header-table">
       <tr>
         <td class="logo-cell">

@@ -44,19 +44,24 @@ class SalesController extends Controller
     $visibleStatuses = $salesStatuses;
     $lossReasonFrontdesk = [
         LostReasonfrontdeskEnum::NO_RESPONSE_FROM_CLIENT->value,
-        LostReasonfrontdeskEnum::CLIENT_NOT_INTERESTED->value,
-        LostReasonfrontdeskEnum::BUDGET_ISSUES->value,
+        LostReasonfrontdeskEnum::DEALER->value,
+        LostReasonfrontdeskEnum::FAKE->value,
+        LostReasonfrontdeskEnum::WORK->value,
+        LostReasonfrontdeskEnum::STOCK->value,
         LostReasonfrontdeskEnum::OTHER_REASONS->value,
     ];
     $sources = [
-        ContactSourceEnum::TIK_TOK->value,
-        ContactSourceEnum::INSTAGRAM_FACEBOOK->value,
-        ContactSourceEnum::META->value,
-        ContactSourceEnum::DESTINO_TOLK->value,
-        ContactSourceEnum::RESOURCE_MAGAZINE->value,
-        ContactSourceEnum::BANNER_PUBLICITARIO->value,
-        ContactSourceEnum::PICHY_BOYS->value,
-        ContactSourceEnum::GOOGLE_MY_BUSINESS->value,
+            ContactSourceEnum::TIK_TOK->value,
+            ContactSourceEnum::INSTAGRAM_FACEBOOK->value,
+            ContactSourceEnum::EXTERNAL_REFERAL->value,
+            ContactSourceEnum::INTERNAL_REFERAL->value,
+            ContactSourceEnum::SIGNS->value,
+            ContactSourceEnum::WALK_IN->value,
+            ContactSourceEnum::ESW_REFER->value,
+            ContactSourceEnum::ESR_REFER->value,
+            ContactSourceEnum::YOUTUBE->value,
+            ContactSourceEnum::NEW_ORDER ->value,
+            ContactSourceEnum::GOOGLE_ADS->value,
     ];
 
     $order_types = [

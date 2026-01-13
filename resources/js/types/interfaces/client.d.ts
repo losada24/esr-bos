@@ -26,6 +26,7 @@ export interface Client {
   referral_id?: number
   company_contact_id?: number
   company_contact?: CompanyContact
+  is_contact?: boolean
 }
 
 export interface ClientAddress {
