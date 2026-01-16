@@ -7,20 +7,27 @@ use App\Enum\RoleEnum;
 use App\Models\Order;
 use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Illuminate\Http\JsonResponse;
 use Inertia\Response;
 
 class OrderProcessingController extends Controller
 {
+    private const ORDER_PROCESSING_PAGE_SIZE = 20;
+
     public function index(): Response
     {
         $user = auth()->user();
         $processingStatuses = $this->processingStatuses();
+        $paginatedStatuses = $this->paginatedProcessingStatuses();
         $pipelineStatusMap = $this->statusPipelineMap();
         $queryStatuses = array_keys($pipelineStatusMap);
+        $nonPaginatedQueryStatuses = array_values(array_diff($queryStatuses, $paginatedStatuses));
 
-        $ordersQuery = Order::with(['client.companyContact', 'owners', 'user', 'tags'])
-            ->whereIn('status', $queryStatuses);
+        $ordersQuery = Order::with($this->orderProcessingRelations())
+            ->whereIn('status', $nonPaginatedQueryStatuses);
 
         if ($this->isOwnerRestricted($user)) {
             $ordersQuery->whereHas('owners', function ($query) use ($user) {
@@ -34,7 +41,24 @@ class OrderProcessingController extends Controller
             return $this->determinePipelineStatus($order, $pipelineStatusMap);
         };
 
-        $data = collect($processingStatuses)->map(function (string $status) use ($orders, $determinePipelineStatus) {
+        $data = collect($processingStatuses)->map(function (string $status) use ($orders, $determinePipelineStatus, $paginatedStatuses, $user) {
+            if (in_array($status, $paginatedStatuses, true)) {
+                $closedWonQuery = $this->closedWonOrdersQuery($user);
+                $total = (clone $closedWonQuery)->count();
+                $closedWonOrders = $closedWonQuery
+                    ->with($this->orderProcessingRelations())
+                    ->orderByDesc('updated_at')
+                    ->limit(self::ORDER_PROCESSING_PAGE_SIZE)
+                    ->get();
+
+                return [
+                    'id' => $status,
+                    'title' => $status,
+                    'total_tasks' => $total,
+                    'tasks' => $closedWonOrders->map(fn (Order $order) => $this->mapOrderToTask($order))->values(),
+                ];
+            }
+
             $ordersByStatus = $orders->filter(function (Order $order) use ($status, $determinePipelineStatus) {
                 return $determinePipelineStatus($order) === $status;
             });
@@ -42,47 +66,55 @@ class OrderProcessingController extends Controller
             return [
                 'id' => $status,
                 'title' => $status,
-                'tasks' => $ordersByStatus->map(function (Order $order) {
-                    return [
-                        'id' => $order->id,
-                        'title' => $order->name ?? 'No Title',
-                        'client_id' => $order->client_id,
-                        'date_edited' => optional($order->updated_at)->format('M d, Y h:i A'),
-                        'date' => optional($order->created_at)->format('M d, Y h:i A'),
-                        'schedule_appointment' => $order->schedule_appointment
-                            ? Carbon::parse($order->schedule_appointment)->format('M d, Y h:i A')
-                            : null,
-                        'schedule_appointment_iso' => $order->schedule_appointment
-                            ? Carbon::parse($order->schedule_appointment)->format('Y-m-d\TH:i')
-                            : null,
-                        'phone' => $order->client->phone ?? null,
-                        'is_supply' => (bool) ($order->is_supply ?? false),
-                        'project_amount' => $order->project_amount ? (float) $order->project_amount : null,
-                        'down_payment' => $order->down_payment ? (float) $order->down_payment : null,
-                        'job_address' => $order->job_address,
-                        'city' => $order->city,
-                        'job_state' => $order->job_state,
-                        'job_zip' => $order->job_zip,
-                        'method_of_payment' => $order->method_of_payment,
-                        'type_of_financing' => $order->type_of_financing,
-                        'owner_ids' => $order->owners->pluck('id')->values(),
-                        'owners' => $order->owners->map(fn ($owner) => [
-                            'id' => $owner->id,
-                            'name' => $owner->name,
-                        ])->values(),
-                        'tags' => ($order->tags ?? collect())->map(function ($tag) {
-                            return [
-                                'name' => $tag->name,
-                                'color' => $tag->color,
-                            ];
-                        })->values(),
-                    ];
-                })->values(),
+                'total_tasks' => $ordersByStatus->count(),
+                'tasks' => $ordersByStatus->map(fn (Order $order) => $this->mapOrderToTask($order))->values(),
             ];
         });
 
         return Inertia::render('OrderProcessing/Index', [
             'data' => $data,
+        ]);
+    }
+
+    public function tasks(Request $request): JsonResponse
+    {
+        $user = auth()->user();
+        $status = (string) $request->query('status', '');
+        $page = max(1, (int) $request->query('page', 1));
+        $perPage = (int) $request->query('per_page', self::ORDER_PROCESSING_PAGE_SIZE);
+        $perPage = max(1, min(100, $perPage));
+
+        if (!in_array($status, $this->processingStatuses(), true)) {
+            return response()->json([
+                'message' => 'Invalid status.'
+            ], 422);
+        }
+
+        if (!in_array($status, $this->paginatedProcessingStatuses(), true)) {
+            return response()->json([
+                'message' => 'Invalid status.'
+            ], 422);
+        }
+
+        $ordersQuery = $this->closedWonOrdersQuery($user);
+        $total = (clone $ordersQuery)->count();
+        $orders = $ordersQuery
+            ->with($this->orderProcessingRelations())
+            ->orderByDesc('updated_at')
+            ->forPage($page, $perPage)
+            ->get();
+
+        $tasks = $orders->map(fn (Order $order) => $this->mapOrderToTask($order))->values();
+        $hasMore = ($page * $perPage) < $total;
+
+        return response()->json([
+            'status' => $status,
+            'tasks' => $tasks,
+            'total' => $total,
+            'page' => $page,
+            'per_page' => $perPage,
+            'has_more' => $hasMore,
+            'next_page' => $hasMore ? $page + 1 : null,
         ]);
     }
 
@@ -97,6 +129,13 @@ class OrderProcessingController extends Controller
         }
 
         return $pipelineStatusMap[$order->status] ?? $order->status;
+    }
+
+    private function paginatedProcessingStatuses(): array
+    {
+        return [
+            OrderStatusEnum::CLOSED_WON->value,
+        ];
     }
 
     /**
@@ -138,5 +177,66 @@ class OrderProcessingController extends Controller
             RoleEnum::ADMIN->value,
             RoleEnum::ACCOUNT_MANAGER->value,
         ]);
+    }
+
+    private function closedWonOrdersQuery(?User $user): Builder
+    {
+        $query = Order::query()->where('status', OrderStatusEnum::CLOSED_WON->value);
+
+        if ($this->isOwnerRestricted($user)) {
+            $query->whereHas('owners', function ($query) use ($user) {
+                $query->where('users.id', $user->id);
+            });
+        }
+
+        return $query;
+    }
+
+    private function orderProcessingRelations(): array
+    {
+        return [
+            'client.companyContact',
+            'owners',
+            'user',
+            'tags',
+        ];
+    }
+
+    private function mapOrderToTask(Order $order): array
+    {
+        return [
+            'id' => $order->id,
+            'title' => $order->name ?? 'No Title',
+            'client_id' => $order->client_id,
+            'date_edited' => optional($order->updated_at)->format('M d, Y h:i A'),
+            'date' => optional($order->created_at)->format('M d, Y h:i A'),
+            'schedule_appointment' => $order->schedule_appointment
+                ? Carbon::parse($order->schedule_appointment)->format('M d, Y h:i A')
+                : null,
+            'schedule_appointment_iso' => $order->schedule_appointment
+                ? Carbon::parse($order->schedule_appointment)->format('Y-m-d\TH:i')
+                : null,
+            'phone' => $order->client->phone ?? null,
+            'is_supply' => (bool) ($order->is_supply ?? false),
+            'project_amount' => $order->project_amount ? (float) $order->project_amount : null,
+            'down_payment' => $order->down_payment ? (float) $order->down_payment : null,
+            'job_address' => $order->job_address,
+            'city' => $order->city,
+            'job_state' => $order->job_state,
+            'job_zip' => $order->job_zip,
+            'method_of_payment' => $order->method_of_payment,
+            'type_of_financing' => $order->type_of_financing,
+            'owner_ids' => $order->owners->pluck('id')->values(),
+            'owners' => $order->owners->map(fn ($owner) => [
+                'id' => $owner->id,
+                'name' => $owner->name,
+            ])->values(),
+            'tags' => ($order->tags ?? collect())->map(function ($tag) {
+                return [
+                    'name' => $tag->name,
+                    'color' => $tag->color,
+                ];
+            })->values(),
+        ];
     }
 }

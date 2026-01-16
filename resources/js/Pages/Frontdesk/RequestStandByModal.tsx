@@ -39,7 +39,8 @@ const RequestStandByModal = ({
           if (pipeline.id.toString() === previousStatusId) {
             const exists = pipeline.tasks.some(t => t.id === task.id)
             if (!exists) {
-              return { ...pipeline, tasks: [...pipeline.tasks, task] }
+              const nextTotal = (pipeline.total_tasks ?? pipeline.tasks.length) + 1
+              return { ...pipeline, tasks: [...pipeline.tasks, task], total_tasks: nextTotal }
             }
           }
           return pipeline

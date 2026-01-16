@@ -32,26 +32,83 @@ use App\Models\Source;
 use App\Models\Tag;
 use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Traits\OrderEmails;
+use App\Traits\Snapshot;
 use Illuminate\Validation\Rule;
 
 class FrontdeskController extends Controller
 {   
-    use OrderEmails;
+    use OrderEmails, Snapshot;
+    private const FRONTDESK_PAGE_SIZE = 20;
+
+    private function frontdeskStatuses(): array
+    {
+        return [
+            OrderStatusEnum::NEW_CUSTOMER_REQUEST->value,
+            OrderStatusEnum::NEW_CUSTOMER_REQUEST_FOLLOW_UP->value,
+            OrderStatusEnum::NEW_CUSTOMER_REQUEST_STAND_BY->value,
+            OrderStatusEnum::LOST_CUSTOMER_REQUEST->value,
+            OrderStatusEnum::QUALIFIED->value,
+        ];
+    }
+
+    private function paginatedFrontdeskStatuses(): array
+    {
+        return [
+            OrderStatusEnum::LOST_CUSTOMER_REQUEST->value,
+            OrderStatusEnum::QUALIFIED->value,
+        ];
+    }
+
+    private function frontdeskOrderQuery(string $status): Builder
+    {
+        if ($status === OrderStatusEnum::QUALIFIED->value) {
+            return Order::query()
+                ->whereHas('orderStatus', function ($query) use ($status) {
+                    $query->where('status', $status);
+                });
+        }
+
+        return Order::query()->where('status', $status);
+    }
+
+    private function mapFrontdeskOrderToTask(Order $order, string $status): array
+    {
+        $statusHistoryEntry = $order->orderStatus
+            ->where('status', $status)
+            ->sortByDesc('created_at')
+            ->first();
+
+        $statusCreatedAt = optional($statusHistoryEntry)->created_at ?? $order->created_at;
+
+        return [
+            'id'          => $order->id,
+            'title'       => $order->name ?? 'No Title',
+            'client_id'   => $order->client_id ?? null,
+            'date_edited' => optional($order->updated_at)->format('M d, Y h:i A'),
+            'date'        => optional($statusCreatedAt)->format('M d, Y h:i A'),
+            'status_created_at_iso' => optional($statusCreatedAt)->toIso8601String(),
+            'schedule_appointment' => $order->schedule_appointment ? Carbon::parse($order->schedule_appointment)->format('M d, Y h:i A') : null,
+            'phone'       => $order->client->phone ?? null,
+            'created_by'  => $order->user->name ?? null,
+            'is_supply'   => (bool) ($order->is_supply ?? false),
+            'tags'        => ($order->tags ?? collect())->map(fn($t) => [
+                'name'  => $t->name,
+                'color' => $t->color,
+            ])->values(),
+        ];
+    }
+
     public function index()
     {
       
       // Definir los estados del Frontdesk (como strings usando el enum)
-    $frontdeskStatuses = [
-        OrderStatusEnum::NEW_CUSTOMER_REQUEST->value,
-        OrderStatusEnum::NEW_CUSTOMER_REQUEST_FOLLOW_UP->value,
-        OrderStatusEnum::NEW_CUSTOMER_REQUEST_STAND_BY->value,
-        OrderStatusEnum::LOST_CUSTOMER_REQUEST->value,
-        OrderStatusEnum::QUALIFIED->value,
-    ];
+    $frontdeskStatuses = $this->frontdeskStatuses();
+    $paginatedStatuses = $this->paginatedFrontdeskStatuses();
     $lossReasonFrontdesk = [
         LostReasonfrontdeskEnum::NO_RESPONSE_FROM_CLIENT->value,
         LostReasonfrontdeskEnum::DEALER->value,
@@ -80,58 +137,32 @@ class FrontdeskController extends Controller
       //OrderTypeEnum::SUPPLY->value,
     ];
 
-   
+    $data = collect($frontdeskStatuses)->map(function ($status) use ($paginatedStatuses) {
+        $ordersQuery = $this->frontdeskOrderQuery($status);
 
-   $orders = Order::with(['client','user','orderStatus','tags:id,name,color,taggable_id,taggable_type'])
-    ->whereIn('status', $frontdeskStatuses)
-    ->get()
-    ->groupBy('status');
+        if (in_array($status, $paginatedStatuses, true)) {
+            $total = (clone $ordersQuery)->count();
+            $orders = $ordersQuery
+                ->with(['client','user','orderStatus','tags:id,name,color,taggable_id,taggable_type'])
+                ->orderByDesc('updated_at')
+                ->limit(self::FRONTDESK_PAGE_SIZE)
+                ->get();
+        } else {
+            $orders = $ordersQuery
+                ->with(['client','user','orderStatus','tags:id,name,color,taggable_id,taggable_type'])
+                ->get();
+            $total = $orders->count();
+        }
 
-$qualifiedOrderIds = OrderStatus::where('status', OrderStatusEnum::QUALIFIED->value)
-    ->whereHas('order')
-    ->pluck('order_id')
-    ->unique()
-    ->values();
-
-$qualifiedOrders = Order::with(['client','user','orderStatus','tags:id,name,color,taggable_id,taggable_type'])
-    ->whereIn('id', $qualifiedOrderIds)
-    ->get();
-
-$data = collect($frontdeskStatuses)->map(function ($status) use ($orders, $qualifiedOrders) {
-    $ordersByStatus = $status === OrderStatusEnum::QUALIFIED->value
-        ? $qualifiedOrders
-        : ($orders[$status] ?? collect());
-
-    return [
-        'id' => $status,
-        'title' => $status,
-        'tasks' => $ordersByStatus->map(function ($order) use ($status) {
-            $statusHistoryEntry = $order->orderStatus
-                ->where('status', $status)
-                ->sortByDesc('created_at')
-                ->first();
-
-            $statusCreatedAt = optional($statusHistoryEntry)->created_at ?? $order->created_at;
-
-            return [
-                'id'          => $order->id,
-                'title'       => $order->name ?? 'No Title',
-                'client_id'   => $order->client_id ?? null,
-                'date_edited' => optional($order->updated_at)->format('M d, Y h:i A'),
-                'date'        => optional($statusCreatedAt)->format('M d, Y h:i A'),
-                'status_created_at_iso' => optional($statusCreatedAt)->toIso8601String(),
-                'schedule_appointment' => $order->schedule_appointment ? Carbon::parse($order->schedule_appointment)->format('M d, Y h:i A') : null,
-                'phone'       => $order->client->phone ?? null,
-                'created_by'  => $order->user->name ?? null,
-                'is_supply'   => (bool) ($order->is_supply ?? false),
-                'tags'        => ($order->tags ?? collect())->map(fn($t) => [
-                    'name'  => $t->name,
-                    'color' => $t->color,
-                ])->values(),
-            ];
-        })->values(),
-    ];
-});
+        return [
+            'id' => $status,
+            'title' => $status,
+            'total_tasks' => $total,
+            'tasks' => $orders->map(function ($order) use ($status) {
+                return $this->mapFrontdeskOrderToTask($order, $status);
+            })->values(),
+        ];
+    });
       return Inertia::render('Frontdesk/Index', [
         'data' => $data,
         'lossReasonFrontdesk' => $lossReasonFrontdesk,
@@ -164,6 +195,45 @@ $data = collect($frontdeskStatuses)->map(function ($status) use ($orders, $quali
           static fn (LanguageEnum $language) => $language->value,
           LanguageEnum::cases()
         ),
+      ]);
+    }
+
+    public function tasks(Request $request)
+    {
+      $status = (string) $request->query('status', '');
+      $page = max(1, (int) $request->query('page', 1));
+      $perPage = (int) $request->query('per_page', self::FRONTDESK_PAGE_SIZE);
+      $perPage = max(1, min(100, $perPage));
+
+      $frontdeskStatuses = $this->frontdeskStatuses();
+      if (!in_array($status, $frontdeskStatuses, true)) {
+        return response()->json([
+          'message' => 'Invalid status.'
+        ], 422);
+      }
+
+      $ordersQuery = $this->frontdeskOrderQuery($status);
+      $total = (clone $ordersQuery)->count();
+      $orders = $ordersQuery
+        ->with(['client','user','orderStatus','tags:id,name,color,taggable_id,taggable_type'])
+        ->orderByDesc('updated_at')
+        ->forPage($page, $perPage)
+        ->get();
+
+      $tasks = $orders->map(function ($order) use ($status) {
+        return $this->mapFrontdeskOrderToTask($order, $status);
+      })->values();
+
+      $hasMore = ($page * $perPage) < $total;
+
+      return response()->json([
+        'status' => $status,
+        'tasks' => $tasks,
+        'total' => $total,
+        'page' => $page,
+        'per_page' => $perPage,
+        'has_more' => $hasMore,
+        'next_page' => $hasMore ? $page + 1 : null,
       ]);
     }
     public function create()
@@ -290,18 +360,18 @@ $data = collect($frontdeskStatuses)->map(function ($status) use ($orders, $quali
       $user = $request->user();
 
       DB::transaction(function () use ($order, $status, $data, $user) {
+          $order->notes()->create([
+              'content' => $data['note'],
+              'type' => 'order_note',
+              'user_id' => $user?->id,
+          ]);
+
           $order->update(['status' => $status]);
 
           $order->orderStatus()->create([
               'status' => $status,
               'user_id' => $user?->id,
               'notes' => "{$status} created by " . ($user?->name ?? 'System'),
-          ]);
-
-          $order->notes()->create([
-              'content' => $data['note'],
-              'type' => 'order_note',
-              'user_id' => $user?->id,
           ]);
       });
       $order->load('user'); // Relación con User
@@ -330,8 +400,6 @@ $data = collect($frontdeskStatuses)->map(function ($status) use ($orders, $quali
         $payload['notes'] = $data['notes'];
       }
 
-      $order->update($payload);
-
       if (filled($data['notes'] ?? null)) {
         $order->notes()->create([
           'content' => $data['notes'],
@@ -339,6 +407,8 @@ $data = collect($frontdeskStatuses)->map(function ($status) use ($orders, $quali
           'user_id' => auth()->id(),
         ]);
       }
+
+      $order->update($payload);
 
       $order->orderStatus()->create([
         'status' => $data['status'],
@@ -399,8 +469,6 @@ public function showQuantifiedModal(Order $order)
           $orderPayload['notes'] = $request['notes'];
         }
 
-        $order->update($orderPayload);
-
         $existingSaleForm = $order->saleForm;
         $saleFormPayload = [
           'sale' => $request->boolean('sale'),
@@ -458,6 +526,8 @@ public function showQuantifiedModal(Order $order)
               'user_id' => auth()->id(),
             ]);
           }
+
+          $order->update($orderPayload);
 
           $order->orderStatus()->create([
             'status' => $request['status'],
@@ -522,6 +592,23 @@ public function showQuantifiedModal(Order $order)
     $orderStatuses = OrderStatus::where('order_id', $id)
       ->with(['order', 'user'])
       ->get();
+
+    $orderSnapshots = $order->snapshots()
+      ->with(['user:id,name'])
+      ->orderBy('created_at')
+      ->get()
+      ->map(function ($snapshot) {
+        return [
+          'id' => $snapshot->id,
+          'status' => $snapshot->status,
+          'created_at' => optional($snapshot->created_at)->toISOString(),
+          'user' => $snapshot->user ? [
+            'id' => $snapshot->user->id,
+            'name' => $snapshot->user->name,
+          ] : null,
+          'snapshot_data' => $snapshot->snapshot_data,
+        ];
+      });
 
         $usedTags = Tag::select('name', 'color', DB::raw('COUNT(*) AS count'))
             ->where('type', 'order')     // o ->where('taggable_type', Order::class)
@@ -642,6 +729,7 @@ public function showQuantifiedModal(Order $order)
     return Inertia::render('Frontdesk/OrderView', [
       //'orderStatuses' => $orderStatuses,
       'order' => $order,
+      'snapshots' => $orderSnapshots,
       'clientOrders' => $clientOrders,
        'tags' => $order->tags->map(fn($t) => [
                 'name'  => $t->name,
@@ -741,7 +829,11 @@ public function showQuantifiedModal(Order $order)
 
     $data = $request->validate($rules);
 
-    DB::transaction(function () use ($data, $order, $request) {
+    $clientChanged = false;
+    $orderChanged = false;
+    $noteCreated = false;
+
+    DB::transaction(function () use ($data, $order, $request, &$clientChanged, &$orderChanged, &$noteCreated) {
       $client = $order->client;
 
       if ($client) {
@@ -775,7 +867,11 @@ public function showQuantifiedModal(Order $order)
           $clientPayload['vip_notes'] = $data['vip_notes'];
         }
 
-        $client->update($clientPayload);
+        $client->fill($clientPayload);
+        $clientChanged = $client->isDirty();
+        if ($clientChanged) {
+          $client->save();
+        }
       }
 
       $statusChanged = false;
@@ -783,8 +879,13 @@ public function showQuantifiedModal(Order $order)
         'name' => $data['client_name'],
       ];
 
-      if (array_key_exists('notes', $data)) {
-        $orderPayload['notes'] = $data['notes'];
+      if (filled($data['notes'] ?? null)) {
+        $order->notes()->create([
+          'content' => $data['notes'],
+          'type' => 'order_note',
+          'user_id' => $request->user()?->id,
+        ]);
+        $noteCreated = true;
       }
 
       if (!empty($data['status'])) {
@@ -794,7 +895,11 @@ public function showQuantifiedModal(Order $order)
         $orderPayload['status'] = $data['status'];
       }
 
-      $order->update($orderPayload);
+      $order->fill($orderPayload);
+      $orderChanged = $order->isDirty();
+      if ($orderChanged) {
+        $order->save();
+      }
 
       if ($statusChanged) {
         $order->orderStatus()->create([
@@ -806,6 +911,9 @@ public function showQuantifiedModal(Order $order)
     });
 
     $order->refresh()->load('tags:id,name,color,taggable_id,taggable_type', 'client.companyContact', 'user', 'owners', 'saleForm', 'attachments.user', 'orderStatus.user');
+    if (($clientChanged || $noteCreated) && ! $orderChanged) {
+      $this->createSnapshot($order);
+    }
 
     return response()->json([
       'success' => true,
@@ -855,6 +963,7 @@ public function showQuantifiedModal(Order $order)
       DB::transaction(function () use ($order, $uniqueTags) {
           $this->replaceTags($order, $uniqueTags, 'order');
       });
+      $this->createSnapshot($order->fresh());
 
       return back()->with('success', 'Tags actualizados.');
   }

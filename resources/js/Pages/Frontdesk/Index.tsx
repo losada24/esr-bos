@@ -77,6 +77,25 @@ const sortPipelinesByRecentActivity = (pipelines: Pipelines[] = []): Pipelines[]
   }))
 }
 
+const INFINITE_SCROLL_STATUSES = new Set(['LOST REQUEST', 'QUALIFIED'])
+const TASKS_PAGE_SIZE = 20
+const SCROLL_THRESHOLD_PX = 120
+type StatusPaginationState = { nextPage: number, loading: boolean }
+
+const buildPaginationState = (pipelines: Pipelines[] = []): Record<string, StatusPaginationState> => {
+  return pipelines.reduce<Record<string, StatusPaginationState>>((acc, pipeline) => {
+    if (!INFINITE_SCROLL_STATUSES.has(pipeline.title)) return acc
+    const key = pipeline.id == null ? (pipeline.title ?? '') : pipeline.id.toString()
+    if (!key) return acc
+    const loadedPages = pipeline.tasks.length ? Math.ceil(pipeline.tasks.length / TASKS_PAGE_SIZE) : 0
+    acc[key] = {
+      nextPage: loadedPages + 1,
+      loading: false
+    }
+    return acc
+  }, {})
+}
+
 const formatDateForDisplay = (date: Date): string => {
   const monthLabel = MONTH_LABELS[date.getMonth()] ?? MONTH_LABELS[0]
   const day = date.getDate().toString().padStart(2, '0')
@@ -162,9 +181,12 @@ export default function Frontdesk ({
   const [showQuantifiedModal, setShowQuantifiedModal] = useState(false)
   const [showRequestStandByModal, setShowRequestStandByModal] = useState(false)
   const [previousStatusId, setPreviousStatusId] = useState<string | null>(null)
+  const [statusPagination, setStatusPagination] = useState<Record<string, StatusPaginationState>>(() => buildPaginationState(data))
 
   useEffect(() => {
-    setProjectListState(sortPipelinesByRecentActivity(data))
+    const sorted = sortPipelinesByRecentActivity(data)
+    setProjectListState(sorted)
+    setStatusPagination(buildPaginationState(sorted))
   }, [data])
 
   const setProjectList = useCallback<Dispatch<SetStateAction<Pipelines[]>>>((value) => {
@@ -196,6 +218,75 @@ export default function Frontdesk ({
     }
     return await response.json()
   }
+
+  const loadMoreTasks = useCallback(async (statusKey: string, nextPage: number) => {
+    setStatusPagination(prev => ({
+      ...prev,
+      [statusKey]: {
+        nextPage,
+        loading: true
+      }
+    }))
+
+    try {
+      const response = await fetch(route('frontdesk.tasks', { status: statusKey, page: nextPage, per_page: TASKS_PAGE_SIZE }), {
+        headers: { Accept: 'application/json' }
+      })
+
+      if (!response.ok) {
+        throw new Error('Error loading tasks')
+      }
+
+      const payload = await response.json()
+      const incomingTasks = Array.isArray(payload?.tasks) ? payload.tasks as Tasks[] : []
+      const totalTasks = typeof payload?.total === 'number' ? payload.total : null
+
+      if (incomingTasks.length) {
+        setProjectList(prev =>
+          prev.map(p => {
+            const pipelineKey = p.id == null ? (p.title ?? '') : p.id.toString()
+            if (pipelineKey !== statusKey) return p
+            const existingIds = new Set(p.tasks.map(task => task.id))
+            const mergedTasks = [...p.tasks]
+            incomingTasks.forEach(task => {
+              if (!existingIds.has(task.id)) {
+                mergedTasks.push(task)
+              }
+            })
+            return {
+              ...p,
+              tasks: mergedTasks,
+              ...(totalTasks != null ? { total_tasks: totalTasks } : {})
+            }
+          })
+        )
+      } else if (totalTasks != null) {
+        setProjectList(prev =>
+          prev.map(p => {
+            const pipelineKey = p.id == null ? (p.title ?? '') : p.id.toString()
+            return pipelineKey === statusKey ? { ...p, total_tasks: totalTasks } : p
+          })
+        )
+      }
+
+      setStatusPagination(prev => ({
+        ...prev,
+        [statusKey]: {
+          nextPage: nextPage + 1,
+          loading: false
+        }
+      }))
+    } catch (error) {
+      console.error('❌ Error al cargar mas tareas:', error)
+      setStatusPagination(prev => ({
+        ...prev,
+        [statusKey]: {
+          nextPage,
+          loading: false
+        }
+      }))
+    }
+  }, [setProjectList, setStatusPagination])
 
   /* const loadEvents = (date: Date) => {
     const year = date.getFullYear()
@@ -231,8 +322,14 @@ export default function Frontdesk ({
       <Head title="Frontdesk" />
       <div className="w-full h-[calc(100vh-140px)]">
           <div className="overflow-x-auto  overflow-y-hidden h-full">
-              <div className="flex gap-4 min-w-max h-full">
+                <div className="flex gap-4 min-w-max h-full">
                   {projectList.map((project: any) => {
+                    const statusKey = project.id?.toString() ?? project.title ?? ''
+                    const totalTasks = project.total_tasks ?? project.tasks.length
+                    const isInfiniteStatus = INFINITE_SCROLL_STATUSES.has(project.title)
+                    const hasMoreTasks = isInfiniteStatus && project.tasks.length < totalTasks
+                    const pagination = statusPagination[statusKey]
+
                     return (
                       <div key={project.id} className="panel w-80 min-w-[20rem] flex-none flex flex-col h-full overflow-y-auto overflow-x-hidden" data-group={project.id}>
                         <div className="sticky top-0 z-20 bg-white dark:bg-[#0b1220] pt-3 pb-2 shadow-sm">
@@ -242,13 +339,24 @@ export default function Frontdesk ({
                             </h4>
                             <div className="flex flex-col items-end gap-1 text-[11px] font-semibold text-slate-600 dark:text-white shrink-0">
                               <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide shadow-sm dark:border-white-dark/30 dark:bg-white-dark/10">
-                                <span className="text-[11px]">{project.tasks.length}</span>
-                                <span>{project.tasks.length === 1 ? 'Order' : 'Orders'}</span>
+                                <span className="text-[11px]">{totalTasks}</span>
+                                <span>{totalTasks === 1 ? 'Order' : 'Orders'}</span>
                               </span>
                             </div>
                           </div>
                         </div>
-                        <div className="flex-1 overflow-y-auto pr-2 pt-2">
+                        <div
+                          className="flex-1 overflow-y-auto pr-2 pt-2"
+                          onScroll={(event) => {
+                            if (!isInfiniteStatus || !statusKey) return
+                            if (!hasMoreTasks) return
+                            if (pagination?.loading) return
+                            const target = event.currentTarget
+                            if (target.scrollHeight - target.scrollTop - target.clientHeight > SCROLL_THRESHOLD_PX) return
+                            const nextPage = pagination?.nextPage ?? Math.floor(project.tasks.length / TASKS_PAGE_SIZE) + 1
+                            loadMoreTasks(statusKey, nextPage)
+                          }}
+                        >
                           <ReactSortable<Tasks>
                                 list={project.tasks}
                                 setList={() => {}} // Desactivado para manejarlo manualmente
@@ -286,14 +394,18 @@ export default function Frontdesk ({
                                   setProjectList(prev =>
                                     prev.map(p => {
                                       if (p.id.toString() === oldStatus) {
+                                        let removed = false
                                         const remaining = p.tasks.filter(t => {
                                           if (Number(t.id) === movedTaskId) {
                                             movedTask = t
+                                            removed = true
                                             return false
                                           }
                                           return true
                                         })
-                                        return { ...p, tasks: remaining }
+                                        if (!removed) return p
+                                        const nextTotal = Math.max(0, (p.total_tasks ?? p.tasks.length) - 1)
+                                        return { ...p, tasks: remaining, total_tasks: nextTotal }
                                       }
                                       return p
                                     })
@@ -331,7 +443,12 @@ export default function Frontdesk ({
                                   setProjectList(prev =>
                                     prev.map(p =>
                                       p.id.toString() === newStatus
-                                        ? { ...p, tasks: [...p.tasks, movedTaskWithUpdatedDate] }
+                                        ? (() => {
+                                            const exists = p.tasks.some(t => Number(t.id) === movedTaskId)
+                                            if (exists) return p
+                                            const nextTotal = (p.total_tasks ?? p.tasks.length) + 1
+                                            return { ...p, tasks: [...p.tasks, movedTaskWithUpdatedDate], total_tasks: nextTotal }
+                                          })()
                                         : p
                                     )
                                   )
@@ -345,10 +462,15 @@ export default function Frontdesk ({
                                       setProjectList(prev =>
                                         prev.map(p => {
                                           if (p.id.toString() === newStatus) {
-                                            return { ...p, tasks: p.tasks.filter(t => Number(t.id) !== movedTaskId) }
+                                            const remaining = p.tasks.filter(t => Number(t.id) !== movedTaskId)
+                                            const nextTotal = Math.max(0, (p.total_tasks ?? p.tasks.length) - 1)
+                                            return { ...p, tasks: remaining, total_tasks: nextTotal }
                                           }
                                           if (p.id.toString() === oldStatus) {
-                                            return { ...p, tasks: [...p.tasks, movedTask] }
+                                            const exists = p.tasks.some(t => Number(t.id) === movedTaskId)
+                                            if (exists) return p
+                                            const nextTotal = (p.total_tasks ?? p.tasks.length) + 1
+                                            return { ...p, tasks: [...p.tasks, movedTask], total_tasks: nextTotal }
                                           }
                                           return p
                                         })

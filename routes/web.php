@@ -235,13 +235,23 @@ Route::middleware('auth')->group(function () {
       Route::resource('frontdesk', FrontdeskController::class)->except(['show'])
         ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value ]);
 
+      Route::get('/frontdesk/tasks', [FrontdeskController::class, 'tasks'])
+        ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value ])
+        ->name('frontdesk.tasks');
+
       Route::get('sales/calendar', [SalesController::class, 'calendar'])->name('sales.calendar');
       Route::get('sales/calendar/events/{year}/{month}', [SalesController::class, 'calendarEvents'])->name('sales.calendar.events');
+      Route::get('/sales/tasks', [SalesController::class, 'tasks'])
+        ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::OWNER->value ])
+        ->name('sales.tasks');
       Route::resource('sales', SalesController::class)
     ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::OWNER->value ]);
       Route::get('order-processing', [OrderProcessingController::class, 'index'])
         ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::OWNER->value ])
         ->name('order-processing.index');
+      Route::get('order-processing/tasks', [OrderProcessingController::class, 'tasks'])
+        ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::OWNER->value ])
+        ->name('order-processing.tasks');
 
       Route::get('/frontdesk/orders/{order}/sale-form', [FrontdeskController::class, 'saleFormPdf'])
         ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::OWNER->value  ])

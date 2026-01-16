@@ -110,6 +110,24 @@ const FOLLOW_UP_STALE_THRESHOLD_MS = 45 * DAY_IN_MS
 const STAND_BY_STALE_THRESHOLD_MS = 120 * DAY_IN_MS
 const ESTIMATE_RESIDENTIAL_THRESHOLD_MS = 2 * DAY_IN_MS
 const ESTIMATE_COMMERCIAL_THRESHOLD_MS = 7 * DAY_IN_MS
+const INFINITE_SCROLL_STATUSES = new Set(['CONTRACT SIGNED BY CLIENT', 'LOST CONTRACT'])
+const TASKS_PAGE_SIZE = 20
+const SCROLL_THRESHOLD_PX = 120
+type StatusPaginationState = { nextPage: number, loading: boolean }
+
+const buildPaginationState = (pipelines: Pipelines[] = []): Record<string, StatusPaginationState> => {
+  return pipelines.reduce<Record<string, StatusPaginationState>>((acc, pipeline) => {
+    if (!INFINITE_SCROLL_STATUSES.has(pipeline.title)) return acc
+    const key = pipeline.id == null ? (pipeline.title ?? '') : pipeline.id.toString()
+    if (!key) return acc
+    const loadedPages = pipeline.tasks.length ? Math.ceil(pipeline.tasks.length / TASKS_PAGE_SIZE) : 0
+    acc[key] = {
+      nextPage: loadedPages + 1,
+      loading: false
+    }
+    return acc
+  }, {})
+}
 
 const getFollowUpStaleClass = (pipeline: Pipelines, task: Tasks): string | null => {
   const pipelineId = pipeline?.id != null ? pipeline.id.toString() : ''
@@ -229,9 +247,12 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
   const [lostContractSaving, setLostContractSaving] = useState(false)
   const [lostContractError, setLostContractError] = useState<string | null>(null)
   const [pendingLostContract, setPendingLostContract] = useState<{ task: Tasks, oldStatus: string, newStatus: string } | null>(null)
+  const [statusPagination, setStatusPagination] = useState<Record<string, StatusPaginationState>>(() => buildPaginationState(data))
 
   useEffect(() => {
-    setProjectListState(sortPipelinesByRecentActivity(data))
+    const sorted = sortPipelinesByRecentActivity(data)
+    setProjectListState(sorted)
+    setStatusPagination(buildPaginationState(sorted))
   }, [data])
 
   const setProjectList = useCallback<Dispatch<SetStateAction<Pipelines[]>>>((value) => {
@@ -253,16 +274,113 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
 
   const restoreTaskToStatus = (task: Tasks, status: string) => {
     setProjectList(prev => prev.map(p => {
+      const pipelineId = p.id?.toString?.() ?? ''
+      const isTarget = matchesStatus(pipelineId, status)
+      const hadTask = p.tasks.some(t => Number(t.id) === Number(task.id))
       const filtered = p.tasks.filter(t => Number(t.id) !== Number(task.id))
-      if (matchesStatus(p.id.toString(), status)) {
-        return {
-          ...p,
-          tasks: [...filtered, task]
-        }
+      const baseTotal = p.total_tasks ?? p.tasks.length
+      let nextTotal = baseTotal
+      if (hadTask && !isTarget) {
+        nextTotal = Math.max(0, nextTotal - 1)
       }
-      return { ...p, tasks: filtered }
+      if (isTarget && !hadTask) {
+        nextTotal += 1
+      }
+      if (isTarget) {
+        const tasks = [...filtered, task]
+        return nextTotal === baseTotal ? { ...p, tasks } : { ...p, tasks, total_tasks: nextTotal }
+      }
+      return nextTotal === baseTotal ? { ...p, tasks: filtered } : { ...p, tasks: filtered, total_tasks: nextTotal }
     }))
   }
+
+  const applyTaskMove = (task: Tasks, newStatus: string) => {
+    setProjectList(prev => prev.map(pipeline => {
+      const pipelineId = pipeline.id?.toString?.() ?? ''
+      const isNew = matchesStatus(pipelineId, newStatus)
+      const hadTask = pipeline.tasks.some(t => Number(t.id) === Number(task.id))
+      const filtered = pipeline.tasks.filter(t => Number(t.id) !== Number(task.id))
+      const tasks = isNew ? [...filtered, task] : filtered
+      const baseTotal = pipeline.total_tasks ?? pipeline.tasks.length
+      let nextTotal = baseTotal
+      if (hadTask && !isNew) {
+        nextTotal = Math.max(0, nextTotal - 1)
+      }
+      if (!hadTask && isNew) {
+        nextTotal += 1
+      }
+      return nextTotal === baseTotal ? { ...pipeline, tasks } : { ...pipeline, tasks, total_tasks: nextTotal }
+    }))
+  }
+
+  const loadMoreTasks = useCallback(async (statusKey: string, nextPage: number) => {
+    setStatusPagination(prev => ({
+      ...prev,
+      [statusKey]: {
+        nextPage,
+        loading: true
+      }
+    }))
+
+    try {
+      const response = await fetch(route('sales.tasks', { status: statusKey, page: nextPage, per_page: TASKS_PAGE_SIZE }), {
+        headers: { Accept: 'application/json' }
+      })
+
+      if (!response.ok) {
+        throw new Error('Error loading tasks')
+      }
+
+      const payload = await response.json()
+      const incomingTasks = Array.isArray(payload?.tasks) ? payload.tasks as Tasks[] : []
+      const totalTasks = typeof payload?.total === 'number' ? payload.total : null
+
+      if (incomingTasks.length) {
+        setProjectList(prev =>
+          prev.map(p => {
+            const pipelineKey = p.id == null ? (p.title ?? '') : p.id.toString()
+            if (!matchesStatus(pipelineKey, statusKey)) return p
+            const existingIds = new Set(p.tasks.map(task => task.id))
+            const mergedTasks = [...p.tasks]
+            incomingTasks.forEach(task => {
+              if (!existingIds.has(task.id)) {
+                mergedTasks.push(task)
+              }
+            })
+            return {
+              ...p,
+              tasks: mergedTasks,
+              ...(totalTasks != null ? { total_tasks: totalTasks } : {})
+            }
+          })
+        )
+      } else if (totalTasks != null) {
+        setProjectList(prev =>
+          prev.map(p => {
+            const pipelineKey = p.id == null ? (p.title ?? '') : p.id.toString()
+            return matchesStatus(pipelineKey, statusKey) ? { ...p, total_tasks: totalTasks } : p
+          })
+        )
+      }
+
+      setStatusPagination(prev => ({
+        ...prev,
+        [statusKey]: {
+          nextPage: nextPage + 1,
+          loading: false
+        }
+      }))
+    } catch (error) {
+      console.error('❌ Error al cargar mas tareas:', error)
+      setStatusPagination(prev => ({
+        ...prev,
+        [statusKey]: {
+          nextPage,
+          loading: false
+        }
+      }))
+    }
+  }, [setProjectList, setStatusPagination])
 
   const closeScheduleModal = (restoreTask = false) => {
     if (restoreTask && pendingMove) {
@@ -312,15 +430,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
         owners: data.order.owners
       })
 
-      setProjectList(prev =>
-        prev.map(pipeline => {
-          const filtered = pipeline.tasks.filter(task => Number(task.id) !== Number(updatedTask.id))
-          if (pipeline.id.toString() === pendingMove.newStatus) {
-            return { ...pipeline, tasks: [...filtered, updatedTask] }
-          }
-          return { ...pipeline, tasks: filtered }
-        })
-      )
+      applyTaskMove(updatedTask, pendingMove.newStatus)
 
       closeScheduleModal()
     } catch (error: any) {
@@ -454,18 +564,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
         project_amount: Number.isFinite(normalizedProjectAmount) ? normalizedProjectAmount : 0
       })
 
-      setProjectList(prev => prev.map(pipeline => {
-        if (pipeline.id.toString() === pendingFollowUp.oldStatus) {
-          return { ...pipeline, tasks: pipeline.tasks.filter(task => Number(task.id) !== Number(updatedTask.id)) }
-        }
-
-        if (pipeline.id.toString() === pendingFollowUp.newStatus) {
-          const filtered = pipeline.tasks.filter(task => Number(task.id) !== Number(updatedTask.id))
-          return { ...pipeline, tasks: [...filtered, updatedTask] }
-        }
-
-        return pipeline
-      }))
+      applyTaskMove(updatedTask, pendingFollowUp.newStatus)
 
       closeFollowUpModal(false)
     } catch (error: any) {
@@ -520,18 +619,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
         owners: data.order.owners ?? pendingStandBy.task.owners
       })
 
-      setProjectList(prev => prev.map(pipeline => {
-        if (pipeline.id.toString() === pendingStandBy.oldStatus) {
-          return { ...pipeline, tasks: pipeline.tasks.filter(task => Number(task.id) !== Number(updatedTask.id)) }
-        }
-
-        if (pipeline.id.toString() === pendingStandBy.newStatus) {
-          const filtered = pipeline.tasks.filter(task => Number(task.id) !== Number(updatedTask.id))
-          return { ...pipeline, tasks: [...filtered, updatedTask] }
-        }
-
-        return pipeline
-      }))
+      applyTaskMove(updatedTask, pendingStandBy.newStatus)
 
       closeStandByModal(false)
     } catch (error: any) {
@@ -586,18 +674,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
         owners: data.order.owners ?? pendingRequestReschedule.task.owners
       })
 
-      setProjectList(prev => prev.map(pipeline => {
-        if (matchesStatus(pipeline.id.toString(), pendingRequestReschedule.oldStatus)) {
-          return { ...pipeline, tasks: pipeline.tasks.filter(task => Number(task.id) !== Number(updatedTask.id)) }
-        }
-
-        if (matchesStatus(pipeline.id.toString(), pendingRequestReschedule.newStatus)) {
-          const filtered = pipeline.tasks.filter(task => Number(task.id) !== Number(updatedTask.id))
-          return { ...pipeline, tasks: [...filtered, updatedTask] }
-        }
-
-        return pipeline
-      }))
+      applyTaskMove(updatedTask, pendingRequestReschedule.newStatus)
 
       closeRequestRescheduleModal(false)
     } catch (error: any) {
@@ -652,18 +729,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
         owners: data.order.owners ?? pendingPreContract.task.owners
       })
 
-      setProjectList(prev => prev.map(pipeline => {
-        if (pipeline.id.toString() === pendingPreContract.oldStatus) {
-          return { ...pipeline, tasks: pipeline.tasks.filter(task => Number(task.id) !== Number(updatedTask.id)) }
-        }
-
-        if (pipeline.id.toString() === pendingPreContract.newStatus) {
-          const filtered = pipeline.tasks.filter(task => Number(task.id) !== Number(updatedTask.id))
-          return { ...pipeline, tasks: [...filtered, updatedTask] }
-        }
-
-        return pipeline
-      }))
+      applyTaskMove(updatedTask, pendingPreContract.newStatus)
 
       closePreContractModal(false)
     } catch (error: any) {
@@ -774,18 +840,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
         email_check: data.order.email_check ?? values.emailCheck
       })
 
-      setProjectList(prev => prev.map(pipeline => {
-        if (pipeline.id.toString() === pendingContractSigned.oldStatus) {
-          return { ...pipeline, tasks: pipeline.tasks.filter(task => Number(task.id) !== Number(updatedTask.id)) }
-        }
-
-        if (pipeline.id.toString() === pendingContractSigned.newStatus) {
-          const filtered = pipeline.tasks.filter(task => Number(task.id) !== Number(updatedTask.id))
-          return { ...pipeline, tasks: [...filtered, updatedTask] }
-        }
-
-        return pipeline
-      }))
+      applyTaskMove(updatedTask, pendingContractSigned.newStatus)
 
       closeContractSignedModal(false)
     } catch (error: any) {
@@ -835,18 +890,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
         ...pendingLostContract.task
       })
 
-      setProjectList(prev => prev.map(pipeline => {
-        if (pipeline.id.toString() === pendingLostContract.oldStatus) {
-          return { ...pipeline, tasks: pipeline.tasks.filter(task => Number(task.id) !== Number(updatedTask.id)) }
-        }
-
-        if (pipeline.id.toString() === pendingLostContract.newStatus) {
-          const filtered = pipeline.tasks.filter(task => Number(task.id) !== Number(updatedTask.id))
-          return { ...pipeline, tasks: [...filtered, updatedTask] }
-        }
-
-        return pipeline
-      }))
+      applyTaskMove(updatedTask, pendingLostContract.newStatus)
 
       closeLostContractModal(false)
     } catch (error: any) {
@@ -903,6 +947,11 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
         <div className="overflow-x-auto overflow-y-hidden h-full">
           <div className="flex gap-4 min-w-max h-full">
             {projectList.map((project: any) => {
+              const statusKey = project.id?.toString() ?? project.title ?? ''
+              const totalTasks = project.total_tasks ?? project.tasks.length
+              const isInfiniteStatus = INFINITE_SCROLL_STATUSES.has(project.title)
+              const hasMoreTasks = isInfiniteStatus && project.tasks.length < totalTasks
+              const pagination = statusPagination[statusKey]
               const totalProjectAmount = project.tasks.reduce((sum: number, task: Tasks) => {
                 const raw = task.project_amount ?? 0
                 const sanitized = typeof raw === 'string' ? raw.replace(/,/g, '') : raw
@@ -922,8 +971,8 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
                       </h4>
                       <div className="flex flex-col items-end gap-1 text-[11px] font-semibold text-slate-600 dark:text-white">
                         <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide shadow-sm dark:border-white-dark/30 dark:bg-white-dark/10">
-                          <span className="text-[11px]">{project.tasks.length}</span>
-                          <span>{project.tasks.length === 1 ? 'Order' : 'Orders'}</span>
+                          <span className="text-[11px]">{totalTasks}</span>
+                          <span>{totalTasks === 1 ? 'Order' : 'Orders'}</span>
                         </span>
                         <span className="inline-flex items-center gap-1 rounded-md bg-gradient-to-r from-sky-500/10 to-sky-600/10 px-2.5 py-0.5 text-[10px] font-semibold text-sky-700 dark:text-sky-200">
                           <span>Total</span>
@@ -932,7 +981,18 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
                       </div>
                     </div>
                   </div>
-                  <div className="flex-1 overflow-y-auto pr-2 pt-2">
+                  <div
+                    className="flex-1 overflow-y-auto pr-2 pt-2"
+                    onScroll={(event) => {
+                      if (!isInfiniteStatus || !statusKey) return
+                      if (!hasMoreTasks) return
+                      if (pagination?.loading) return
+                      const target = event.currentTarget
+                      if (target.scrollHeight - target.scrollTop - target.clientHeight > SCROLL_THRESHOLD_PX) return
+                      const nextPage = pagination?.nextPage ?? Math.floor(project.tasks.length / TASKS_PAGE_SIZE) + 1
+                      loadMoreTasks(statusKey, nextPage)
+                    }}
+                  >
                     <ReactSortable<Tasks>
                       list={project.tasks}
                       setList={() => {}} // Desactivado para manejarlo manualmente
@@ -1107,14 +1167,18 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
                         setProjectList((prev) => {
                           const updatedList = prev.map((pipeline) => {
                             if (pipeline.id.toString() === oldStatus) {
+                              let removed = false
                               const newTasks = pipeline.tasks.filter((t) => {
                                 if (Number(t.id) === Number(movedTaskId)) {
                                   movedTask = t
+                                  removed = true
                                   return false
                                 }
                                 return true
                               })
-                              return { ...pipeline, tasks: newTasks }
+                              if (!removed) return pipeline
+                              const nextTotal = Math.max(0, (pipeline.total_tasks ?? pipeline.tasks.length) - 1)
+                              return { ...pipeline, tasks: newTasks, total_tasks: nextTotal }
                             }
                             return pipeline
                           })
@@ -1139,16 +1203,8 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
                           return
                         }
 
-                        setProjectList(prev =>
-                          prev.map(pipeline => {
-                            const filtered = pipeline.tasks.filter(task => Number(task.id) !== Number(movedTask.id))
-                            if (pipeline.id.toString() === newStatus) {
-                              const stampedTask = stampTaskAsUpdated(movedTask)
-                              return { ...pipeline, tasks: [...filtered, stampedTask] }
-                            }
-                            return { ...pipeline, tasks: filtered }
-                          })
-                        )
+                        const stampedTask = stampTaskAsUpdated(movedTask)
+                        applyTaskMove(stampedTask, newStatus)
 
                         // TODO: update status for other columns when backend endpoint is ready
                       }}
