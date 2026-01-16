@@ -25,6 +25,9 @@ import DeleteIcon from '@/Components/Icons/DeleteIcon'
 import ReorderIcon from '@/Components/Icons/ReorderIcon'
 import OrderNotesForOrder from '@/Components/OrderNotesForOrder'
 import EditIcon from '@/Components/Icons/EditIcon'
+import MessageIcon from '@/Components/Icons/MessageIcon'
+import StarIcon from '@/Components/Icons/StarIcon'
+import PlusIcon from '@/Components/Icons/PlusIcon'
 import { isAccountManager, isAdmin, isOwner, isOwnerAdmin } from '@/Utils/user'
 import EstimateScheduleModal from '@/Pages/Sales/EstimateScheduleModal'
 import FollowUpModal from '@/Pages/Sales/FollowUpModal'
@@ -39,6 +42,7 @@ import RequestEditModal, { type RequestFormValues, type RequestFormErrors } from
 
 type IndexOrderProps = PageProps & {
   orderStatuses?: OrderStatus[]
+  snapshots?: OrderSnapshot[]
   order: Order
   tags: TagItem[]
   usedTags: TagItem[]
@@ -75,6 +79,46 @@ export interface ClientOrderSummary {
   status?: string | null
   order_type?: string | null
   owners?: ClientOrderOwner[]
+}
+
+type SnapshotActor = {
+  id?: number | string | null
+  name?: string | null
+  email?: string | null
+}
+
+type SnapshotUser = {
+  id?: number | string | null
+  name?: string | null
+}
+
+type SnapshotData = {
+  actor?: SnapshotActor | null
+  event_type?: string | null
+  notes?: Array<Record<string, any>>
+  tags?: Array<Record<string, any>>
+  attachments?: Array<Record<string, any>>
+  client?: Record<string, any> | null
+  [key: string]: any
+}
+
+type OrderSnapshot = {
+  id: number | string
+  status?: string | null
+  created_at?: string | null
+  user?: SnapshotUser | null
+  snapshot_data?: SnapshotData | null
+}
+
+type TimelineItem = {
+  id: string
+  createdAt: Date
+  timeLabel: string
+  dateLabel: string
+  title: string
+  description?: string
+  icon: ComponentType
+  iconTone: 'neutral' | 'info' | 'success' | 'warning'
 }
 
 const HIDE_DESCRIPTION_AND_JOB_STATUS = new Set([
@@ -182,9 +226,139 @@ const normalizeBoolean = (value: any): boolean => {
   return false
 }
 
+const formatTimelineDate = (value: Date): string =>
+  value
+    .toLocaleDateString(undefined, { month: 'short', day: '2-digit', year: 'numeric' })
+    .toUpperCase()
+
+const formatTimelineTime = (value: Date): string =>
+  value.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }).toUpperCase()
+
+const normalizeSnapshotArray = (value: any): Array<Record<string, any>> =>
+  Array.isArray(value) ? value : []
+
+const normalizeSnapshotData = (value: any): SnapshotData => {
+  if (!value) return {}
+  if (typeof value === 'string') {
+    try {
+      return JSON.parse(value) as SnapshotData
+    } catch {
+      return {}
+    }
+  }
+  return value as SnapshotData
+}
+
+const snapshotKeyOf = (item: Record<string, any>): string | null => {
+  if (item?.id !== undefined && item?.id !== null) return String(item.id)
+  if (item?.name) return String(item.name)
+  if (item?.filename) return String(item.filename)
+  return null
+}
+
+const ownerDisplayName = (owner: Record<string, any>): string => {
+  if (owner?.name) return String(owner.name)
+  if (owner?.email) return String(owner.email)
+  return 'Unknown'
+}
+
+const diffAddedItems = (current: Array<Record<string, any>>, previous: Array<Record<string, any>>): Array<Record<string, any>> => {
+  const previousKeys = new Set(previous.map(snapshotKeyOf).filter(Boolean) as string[])
+  return current.filter((item) => {
+    const key = snapshotKeyOf(item)
+    return key !== null && !previousKeys.has(key)
+  })
+}
+
+const FIELD_LABELS: Record<string, string> = {
+  status: 'Status',
+  schedule_appointment: 'Schedule appointment',
+  order_type: 'Order type',
+  method_of_payment: 'Method of payment',
+  project_amount: 'Project amount',
+  down_payment: 'Down payment',
+  eta_date: 'ETA date'
+}
+
+const CLIENT_FIELD_LABELS: Record<string, string> = {
+  source: 'Source',
+  name: 'Client name',
+  email: 'Email',
+  phone: 'Phone',
+  secondary_email: 'Secondary email',
+  other_phone: 'Other phone',
+  vip_clients: 'VIP',
+  vip_notes: 'VIP notes'
+}
+
+const formatFieldLabel = (key: string): string => FIELD_LABELS[key] ?? key.replace(/_/g, ' ')
+
+const trimValue = (value: any, max = 60): string => {
+  if (value === null || value === undefined) return '—'
+  const stringValue = String(value)
+  if (stringValue.length <= max) return stringValue
+  return `${stringValue.slice(0, max).trim()}…`
+}
+
+const isPrimitive = (value: any): boolean =>
+  value === null || ['string', 'number', 'boolean'].includes(typeof value)
+
+const diffPrimitiveFields = (current: SnapshotData, previous: SnapshotData | null) => {
+  if (!previous) return []
+  const ignored = new Set([
+    'notes',
+    'tags',
+    'attachments',
+    'owners',
+    'status',
+    'sale_form',
+    'saleForm',
+    'client',
+    'user',
+    'owners',
+    'orderStatus',
+    'order_status',
+    'installation_teams',
+    'order_products',
+    'orderProducts',
+    'orderColors',
+    'actor',
+    'event_type',
+    'created_at',
+    'updated_at',
+    'deleted_at'
+  ])
+
+  return Object.keys(current)
+    .filter((key) => !ignored.has(key))
+    .map((key) => ({
+      key,
+      label: formatFieldLabel(key),
+      from: previous[key],
+      to: current[key]
+    }))
+    .filter(({ from, to }) => isPrimitive(from) && isPrimitive(to) && from !== to)
+}
+
+const diffClientFields = (current: SnapshotData, previous: SnapshotData | null) => {
+  if (!previous) return []
+  const currentClient = current.client ?? null
+  const previousClient = previous.client ?? null
+  if (!currentClient || !previousClient) return []
+  return Object.entries(CLIENT_FIELD_LABELS)
+    .map(([key, label]) => ({
+      key: `client.${key}`,
+      label,
+      from: previousClient?.[key],
+      to: currentClient?.[key]
+    }))
+    .filter(({ from, to }) => isPrimitive(from) && isPrimitive(to) && from !== to)
+}
+
 export default function ShowStatusOrder ({
   auth,
   orderStatuses = [],
+  snapshots = [],
   tags = [],
   order: initialOrder,
   usedTags = [],
@@ -212,6 +386,7 @@ export default function ShowStatusOrder ({
   const [orderFormInitialValues, setOrderFormInitialValues] = useState<OrderFormValues>(() => loadOrderFormObj(initialOrder))
   const scheduleAppointmentIso = order.schedule_appointment_iso ?? toScheduleString(order.schedule_appointment ?? null)
   const safeOrderStatuses = Array.isArray(orderStatuses) ? orderStatuses : []
+  const safeSnapshots = Array.isArray(snapshots) ? snapshots : []
   const safeTags = Array.isArray(tags) ? tags : []
   const safeUsedTags = Array.isArray(usedTags) ? usedTags : []
   const relatedClientOrders = Array.isArray(clientOrders) ? clientOrders : []
@@ -1529,7 +1704,7 @@ export default function ShowStatusOrder ({
 
   const tabs: Array<{ key: TabKey, label: string, Icon: DetailIcon }> = [
     { key: 'home', label: 'Notes', Icon: EmailIcon },
-    { key: 'profile', label: 'Profile', Icon: UserIcon },
+    { key: 'profile', label: 'Timeline', Icon: UserIcon },
     { key: 'contact', label: 'Associated Orders', Icon: ReorderIcon },
     { key: 'sales', label: 'Sales Form', Icon: BookIcon },
     { key: 'attachments', label: 'Attachments', Icon: FolderIcon }
@@ -1559,6 +1734,198 @@ export default function ShowStatusOrder ({
     : false
   const selectedTagCount = data.tags?.length ?? 0
   const statusCount = safeOrderStatuses.length
+  const timelineItems = useMemo(() => {
+    if (safeSnapshots.length === 0) return []
+    const sortedSnapshots = [...safeSnapshots]
+      .filter((snapshot) => snapshot?.snapshot_data)
+      .sort((a, b) => {
+        const aTime = a.created_at ? new Date(a.created_at).getTime() : 0
+        const bTime = b.created_at ? new Date(b.created_at).getTime() : 0
+        return aTime - bTime
+      })
+
+    const items: TimelineItem[] = []
+
+    sortedSnapshots.forEach((snapshot, index) => {
+      const data = normalizeSnapshotData(snapshot.snapshot_data)
+      if (snapshot.status) {
+        data.status = snapshot.status
+      }
+
+      const previousSnapshot = index > 0 ? sortedSnapshots[index - 1] : null
+      const previousData = previousSnapshot ? normalizeSnapshotData(previousSnapshot.snapshot_data) : null
+      if (previousSnapshot?.status && previousData) {
+        previousData.status = previousSnapshot.status
+      }
+      const createdAt = snapshot.created_at ? new Date(snapshot.created_at) : new Date()
+      const actorName = data.actor?.name ?? snapshot.user?.name ?? 'System'
+
+      if (!previousData) {
+        items.push({
+          id: `snapshot-${snapshot.id}-created`,
+          createdAt,
+          timeLabel: formatTimelineTime(createdAt),
+          dateLabel: formatTimelineDate(createdAt),
+          title: `Request created by ${actorName}`,
+          description: data.name ? String(data.name) : undefined,
+          icon: BookIcon,
+          iconTone: 'success'
+        })
+        return
+      }
+
+      const notesAdded = diffAddedItems(
+        normalizeSnapshotArray(data.notes),
+        normalizeSnapshotArray(previousData.notes)
+      )
+      const tagsAdded = diffAddedItems(
+        normalizeSnapshotArray(data.tags),
+        normalizeSnapshotArray(previousData.tags)
+      )
+      const attachmentsAdded = diffAddedItems(
+        normalizeSnapshotArray(data.attachments),
+        normalizeSnapshotArray(previousData.attachments)
+      )
+      const ownersAdded = diffAddedItems(
+        normalizeSnapshotArray(data.owners),
+        normalizeSnapshotArray(previousData.owners)
+      )
+      const ownersRemoved = diffAddedItems(
+        normalizeSnapshotArray(previousData.owners),
+        normalizeSnapshotArray(data.owners)
+      )
+
+      const previousStatus = previousData.status
+      const currentStatus = data.status
+      if (currentStatus !== undefined && previousStatus !== undefined && currentStatus !== previousStatus) {
+        items.push({
+          id: `snapshot-${snapshot.id}-status`,
+          createdAt,
+          timeLabel: formatTimelineTime(createdAt),
+          dateLabel: formatTimelineDate(createdAt),
+          title: `Status updated by ${actorName}`,
+          description: `${trimValue(previousStatus)} → ${trimValue(currentStatus)}`,
+          icon: EditIcon,
+          iconTone: 'neutral'
+        })
+      }
+
+      notesAdded.forEach((note, noteIndex) => {
+        items.push({
+          id: `snapshot-${snapshot.id}-note-${snapshotKeyOf(note) ?? noteIndex}`,
+          createdAt,
+          timeLabel: formatTimelineTime(createdAt),
+          dateLabel: formatTimelineDate(createdAt),
+          title: `Note added by ${actorName}`,
+          description: note?.content ? trimValue(note.content) : undefined,
+          icon: MessageIcon,
+          iconTone: 'info'
+        })
+      })
+
+      tagsAdded.forEach((tag, tagIndex) => {
+        items.push({
+          id: `snapshot-${snapshot.id}-tag-${snapshotKeyOf(tag) ?? tagIndex}`,
+          createdAt,
+          timeLabel: formatTimelineTime(createdAt),
+          dateLabel: formatTimelineDate(createdAt),
+          title: `Tag added by ${actorName}`,
+          description: tag?.name ? String(tag.name) : undefined,
+          icon: StarIcon,
+          iconTone: 'warning'
+        })
+      })
+
+      attachmentsAdded.forEach((attachment, attachmentIndex) => {
+        items.push({
+          id: `snapshot-${snapshot.id}-attachment-${snapshotKeyOf(attachment) ?? attachmentIndex}`,
+          createdAt,
+          timeLabel: formatTimelineTime(createdAt),
+          dateLabel: formatTimelineDate(createdAt),
+          title: `Attachment added by ${actorName}`,
+          description: attachment?.filename ? String(attachment.filename) : undefined,
+          icon: FolderIcon,
+          iconTone: 'neutral'
+        })
+      })
+
+      if (ownersAdded.length > 0 || ownersRemoved.length > 0) {
+        const addedNames = ownersAdded.map(ownerDisplayName).join(', ')
+        const removedNames = ownersRemoved.map(ownerDisplayName).join(', ')
+        let description = ''
+        if (addedNames && removedNames) {
+          description = `Added: ${addedNames} · Removed: ${removedNames}`
+        } else if (addedNames) {
+          description = `Added: ${addedNames}`
+        } else if (removedNames) {
+          description = `Removed: ${removedNames}`
+        }
+
+        items.push({
+          id: `snapshot-${snapshot.id}-owners`,
+          createdAt,
+          timeLabel: formatTimelineTime(createdAt),
+          dateLabel: formatTimelineDate(createdAt),
+          title: `Owner updated by ${actorName}`,
+          description,
+          icon: UserIcon,
+          iconTone: 'info'
+        })
+      }
+
+      const primitiveChanges = diffPrimitiveFields(data, previousData)
+      const clientChanges = diffClientFields(data, previousData)
+      const allChanges = [...primitiveChanges, ...clientChanges]
+
+      if (allChanges.length > 0) {
+        const title = allChanges.length === 1
+          ? `${allChanges[0].label} updated by ${actorName}`
+          : `${allChanges.length} fields updated by ${actorName}`
+
+        const description = allChanges.length === 1
+          ? `${trimValue(allChanges[0].from)} → ${trimValue(allChanges[0].to)}`
+          : allChanges
+            .slice(0, 4)
+            .map((change) => change.label)
+            .join(', ')
+
+        items.push({
+          id: `snapshot-${snapshot.id}-update`,
+          createdAt,
+          timeLabel: formatTimelineTime(createdAt),
+          dateLabel: formatTimelineDate(createdAt),
+          title,
+          description,
+          icon: EditIcon,
+          iconTone: 'neutral'
+        })
+      }
+    })
+
+    return items.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+  }, [safeSnapshots])
+
+  const timelineGroups = useMemo(() => {
+    const groups = new Map<string, TimelineItem[]>()
+    timelineItems.forEach((item) => {
+      if (!groups.has(item.dateLabel)) {
+        groups.set(item.dateLabel, [])
+      }
+      groups.get(item.dateLabel)?.push(item)
+    })
+
+    return Array.from(groups.entries()).map(([dateLabel, items]) => ({
+      dateLabel,
+      items
+    }))
+  }, [timelineItems])
+
+  const timelineToneClasses: Record<TimelineItem['iconTone'], string> = {
+    neutral: 'border-slate-200 text-slate-500',
+    info: 'border-sky-200 text-sky-500',
+    success: 'border-emerald-200 text-emerald-500',
+    warning: 'border-amber-200 text-amber-500'
+  }
 
   useEffect(() => {
     setOrderFormInitialValues(loadOrderFormObj(order))
@@ -1968,19 +2335,49 @@ export default function ShowStatusOrder ({
 
                 {tab === 'profile' && (
                   <div id="panel-profile" role="tabpanel" aria-labelledby="tab-profile" className="space-y-6 p-6 text-sm text-slate-600">
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <div className="rounded-xl border border-slate-200/70 bg-slate-50 px-4 py-3">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Current Status</p>
-                        <p className="mt-1 text-sm font-medium text-slate-700">{order.status ?? 'No status'}</p>
-                      </div>
-                      <div className="rounded-xl border border-slate-200/70 bg-slate-50 px-4 py-3">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Order Type</p>
-                        <p className="mt-1 text-sm font-medium text-slate-700">{order.order_type ?? '—'}</p>
-                      </div>
-                      <div className="rounded-xl border border-slate-200/70 bg-slate-50 px-4 py-3">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Method of Payment</p>
-                        <p className="mt-1 text-sm font-medium text-slate-700">{order.method_of_payment ?? '—'}</p>
-                      </div>
+                    <div>
+                      <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-400">History</h3>
+                      {timelineGroups.length > 0
+                        ? (
+                          <div className="mt-4 space-y-6">
+                            {timelineGroups.map((group) => (
+                              <div key={group.dateLabel} className="space-y-4">
+                                <div className="flex items-center gap-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                                  <span>{group.dateLabel}</span>
+                                </div>
+                                <div className="space-y-4">
+                                  {group.items.map((item, index) => {
+                                    const Icon = item.icon
+                                    const isLast = index === group.items.length - 1
+                                    return (
+                                      <div key={item.id} className="relative flex gap-4 pb-5">
+                                        <div className="w-20 text-right text-[11px] font-medium text-slate-400">{item.timeLabel}</div>
+                                        <div className="relative flex flex-col items-center">
+                                          <span className={`relative z-10 flex h-9 w-9 items-center justify-center rounded-full border bg-white shadow-sm ${timelineToneClasses[item.iconTone]}`}>
+                                            <Icon />
+                                          </span>
+                                          {!isLast && (
+                                            <span className="absolute left-1/2 top-9 h-full w-px -translate-x-1/2 bg-slate-200" />
+                                          )}
+                                        </div>
+                                        <div className="flex-1 space-y-1">
+                                          <p className="text-sm font-semibold text-slate-700">{item.title}</p>
+                                          {item.description && (
+                                            <p className="text-xs text-slate-500">{item.description}</p>
+                                          )}
+                                        </div>
+                                      </div>
+                                    )
+                                  })}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          )
+                        : (
+                          <p className="mt-3 text-sm text-slate-400">No history recorded for this order.</p>
+                          )}
                     </div>
 
                     <div>

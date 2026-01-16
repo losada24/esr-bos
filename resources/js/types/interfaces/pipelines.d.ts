@@ -38,5 +38,6 @@ export interface Pipelines {
   id: number
   title: string
   client_id: number
+  total_tasks?: number
   tasks: Tasks[]
 }

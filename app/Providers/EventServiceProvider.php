@@ -21,7 +21,8 @@ class EventServiceProvider extends ServiceProvider
             SendEmailVerificationNotification::class,
         ],
         OrderCreated::class => [
-            \App\Listeners\CreateOrderExtraFields::class
+            \App\Listeners\CreateOrderExtraFields::class,
+             \App\Listeners\CreateOrderSnapshot::class
         ],
         PaymentCreated::class => [
             \App\Listeners\InstallationPaymentExecuted::class

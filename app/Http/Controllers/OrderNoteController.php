@@ -4,11 +4,14 @@
 
     use App\Models\Note;
     use App\Models\Order;
+    use App\Traits\Snapshot;
     use Illuminate\Http\Request;
     use Illuminate\Http\Response;
 
 class OrderNoteController extends Controller
 {
+    use Snapshot;
+
     // GET /order/{order}/notes
     public function index(Order $order)
     {
@@ -46,6 +49,8 @@ class OrderNoteController extends Controller
             'type'    => $data['type'] ?? 'order_note',
             'user_id' => $request->user()->id,
         ]);
+
+        $this->createSnapshot($order->fresh());
 
         $note->load('user:id,name');
 

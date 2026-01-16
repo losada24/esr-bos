@@ -81,7 +81,8 @@ const LostRequestModal = ({
           if (pipeline.id.toString() === previousStatusId) {
             const taskExists = pipeline.tasks.some(t => t.id === lostTask.id)
             if (!taskExists) {
-              return { ...pipeline, tasks: [...pipeline.tasks, lostTask] }
+              const nextTotal = (pipeline.total_tasks ?? pipeline.tasks.length) + 1
+              return { ...pipeline, tasks: [...pipeline.tasks, lostTask], total_tasks: nextTotal }
             }
           }
           return pipeline

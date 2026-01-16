@@ -18,6 +18,7 @@ use App\Models\InstallationTeam;
 use App\Models\Order;
 use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -28,6 +29,7 @@ use Illuminate\Http\JsonResponse;
 class SalesController extends Controller
 {
     use OrderEmails;
+    private const SALES_PAGE_SIZE = 20;
 
     public function index()
     {
@@ -35,13 +37,8 @@ class SalesController extends Controller
 
     $salesStatuses = $this->salesStatuses();
     $ownerVisibleStatuses = $this->ownerVisibleSalesStatuses();
-    $pipelineStatuses = [
-        OrderStatusEnum::RECTIFICATION_OF_MEASURES_AND_HOA->value,
-        OrderStatusEnum::ORDER_MATERIALS_AND_FILE_ORGANIZATION->value,
-    ];
-    $queryStatuses = array_unique(array_merge($salesStatuses, $pipelineStatuses));
-
     $visibleStatuses = $salesStatuses;
+    $paginatedStatuses = $this->paginatedSalesStatuses();
     $lossReasonFrontdesk = [
         LostReasonfrontdeskEnum::NO_RESPONSE_FROM_CLIENT->value,
         LostReasonfrontdeskEnum::DEALER->value,
@@ -69,89 +66,34 @@ class SalesController extends Controller
       OrderTypeEnum::COMMERCIAL->value,
       OrderTypeEnum::SUPPLY->value,
     ];
-
-   
-
-    // Obtener órdenes con esos estados y sus relaciones necesarias
-    $ordersQuery = Order::with('client.companyContact', 'user', 'owners', 'orderStatus')
-        ->whereIn('status', $queryStatuses);
-
     if ($this->isOwnerRestricted($user)) {
         $visibleStatuses = $ownerVisibleStatuses;
-
-        $ordersQuery->whereHas('owners', function ($query) use ($user) {
-            $query->where('users.id', $user->id);
-        });
     }
 
-    $orders = $ordersQuery->get();
-
-    $ordersWithBoardStatus = $orders->map(function (Order $order) {
-        $order->board_status = $this->determineSalesBoardStatus($order);
-        return $order;
-    })->filter(fn (Order $order) => $order->board_status !== null);
-
     // Armar el arreglo que espera el componente React
-    $data = collect($visibleStatuses)->map(function ($status) use ($ordersWithBoardStatus) {
-        $ordersByStatus = $ordersWithBoardStatus->filter(fn (Order $order) => $order->board_status === $status);
+    $data = collect($visibleStatuses)->map(function ($status) use ($user, $paginatedStatuses) {
+        $ordersQuery = $this->salesOrdersForStatusQuery($status, $user);
+
+        if (in_array($status, $paginatedStatuses, true)) {
+            $total = (clone $ordersQuery)->count();
+            $orders = $ordersQuery
+                ->with($this->salesOrderRelations())
+                ->orderByDesc('updated_at')
+                ->limit(self::SALES_PAGE_SIZE)
+                ->get();
+        } else {
+            $orders = $ordersQuery
+                ->with($this->salesOrderRelations())
+                ->get();
+            $total = $orders->count();
+        }
 
         return [
             'id' => $status, // puedes usar el valor del estado como id
             'title' => $status,
-            'tasks' => $ordersByStatus->map(function ($order) use ($status) {
-               $statusHistoryEntry = $order->orderStatus
-                   ->where('status', $status)
-                   ->sortByDesc('created_at')
-                   ->first();
-               $statusCreatedAt = optional($statusHistoryEntry)->created_at ?? $order->created_at;
-               $followUpStartedAt = optional(
-                   $order->orderStatus
-                       ->where('status', OrderStatusEnum::FOLLOW_UP->value)
-                       ->sortBy('created_at')
-                       ->first()
-               )->created_at;
-               return [
-                    'id' => $order->id,
-                    'title' => $order->name ?? 'No Title',
-                    'client_id' => $order->client_id ?? null,
-                    //'description' => $order->notes ?? '',
-                    'date_edited' => optional($order->updated_at)->format('M d, Y h:i A'),
-                    'date' => optional($order->created_at)->format('M d, Y h:i A'),
-                    'status_created_at_iso' => optional($statusCreatedAt)->toIso8601String(),
-                    'follow_up_started_at_iso' => optional($followUpStartedAt)->toIso8601String(),
-                    //'names' => $order->user->name ?? 'No Name',
-                    //'precio' => $order->price ?? 0,
-                    'schedule_appointment' => $order->schedule_appointment ? Carbon::parse($order->schedule_appointment)->format('M d, Y h:i A') : null,
-                    'schedule_appointment_iso' => $order->schedule_appointment ? Carbon::parse($order->schedule_appointment)->format('Y-m-d\TH:i') : null,
-                    'phone'=> $order->client->phone ?? null,
-                    'contact_email' => $order->client->email ?? null,
-                    'created_by' => $order->user->name ?? null,
-                    'is_supply' => (bool) ($order->is_supply ?? false),
-                    'name_check' => (bool) ($order->name_check ?? false),
-                    'address_check' => (bool) ($order->address_check ?? false),
-                    'amount_check' => (bool) ($order->amount_check ?? false),
-                    'email_check' => (bool) ($order->email_check ?? false),
-                    'project_amount' => $order->project_amount ? (float) $order->project_amount : 0,
-                    'down_payment' => $order->down_payment ? (float) $order->down_payment : null,
-                    'job_address' => $order->job_address ?? null,
-                    'city' => $order->city ?? null,
-                    'job_state' => $order->job_state ?? null,
-                    'job_zip' => $order->job_zip ?? null,
-                    'method_of_payment' => $order->method_of_payment ?? null,
-                    'type_of_financing' => $order->type_of_financing ?? null,
-                    'owner_ids' => $order->owners->pluck('id')->values(),
-                    'owners' => $order->owners->map(fn ($owner) => [
-                      'id' => $owner->id,
-                      'name' => $owner->name,
-                    ])->values(),
-                    'order_type' => $order->order_type,
-                    'tags'       => ($order->tags ?? collect())->map(function ($t) {
-                    return [
-                        'name'  => $t->name,
-                        'color' => $t->color,
-                    ];
-                })->values(),
-                ];
+            'total_tasks' => $total,
+            'tasks' => $orders->map(function ($order) use ($status) {
+                return $this->mapSalesOrderToTask($order, $status);
             })->values(),
         ];
     });
@@ -173,6 +115,169 @@ class SalesController extends Controller
       'methods_of_payment' => array_map(fn (MethodOfPayment $method) => $method->value, MethodOfPayment::cases()),
       'type_of_financing' => array_map(fn (TypeOfFinancing $financing) => $financing->value, TypeOfFinancing::cases()),
     ]);
+  }
+
+  public function tasks(Request $request): JsonResponse
+  {
+    $user = auth()->user();
+    $status = (string) $request->query('status', '');
+    $page = max(1, (int) $request->query('page', 1));
+    $perPage = (int) $request->query('per_page', self::SALES_PAGE_SIZE);
+    $perPage = max(1, min(100, $perPage));
+
+    $allowedStatuses = $this->salesStatuses();
+    if ($this->isOwnerRestricted($user)) {
+      $allowedStatuses = $this->ownerVisibleSalesStatuses();
+    }
+
+    if (!in_array($status, $allowedStatuses, true)) {
+      return response()->json([
+        'message' => 'Invalid status.'
+      ], 422);
+    }
+
+    if (!in_array($status, $this->paginatedSalesStatuses(), true)) {
+      return response()->json([
+        'message' => 'Invalid status.'
+      ], 422);
+    }
+
+    $ordersQuery = $this->salesOrdersForStatusQuery($status, $user);
+    $total = (clone $ordersQuery)->count();
+    $orders = $ordersQuery
+      ->with($this->salesOrderRelations())
+      ->orderByDesc('updated_at')
+      ->forPage($page, $perPage)
+      ->get();
+
+    $tasks = $orders->map(function (Order $order) use ($status) {
+      return $this->mapSalesOrderToTask($order, $status);
+    })->values();
+
+    $hasMore = ($page * $perPage) < $total;
+
+    return response()->json([
+      'status' => $status,
+      'tasks' => $tasks,
+      'total' => $total,
+      'page' => $page,
+      'per_page' => $perPage,
+      'has_more' => $hasMore,
+      'next_page' => $hasMore ? $page + 1 : null,
+    ]);
+  }
+
+  private function salesPipelineStatuses(): array
+  {
+    return [
+      OrderStatusEnum::RECTIFICATION_OF_MEASURES_AND_HOA->value,
+      OrderStatusEnum::ORDER_MATERIALS_AND_FILE_ORGANIZATION->value,
+    ];
+  }
+
+  private function paginatedSalesStatuses(): array
+  {
+    return [
+      OrderStatusEnum::CONTRACT_SIGNED_BY_CLIENT->value,
+      OrderStatusEnum::LOST_CONTRACT->value,
+    ];
+  }
+
+  private function salesOrderRelations(): array
+  {
+    return [
+      'client.companyContact',
+      'user',
+      'owners',
+      'orderStatus',
+      'tags:id,name,color,taggable_id,taggable_type',
+    ];
+  }
+
+  private function salesOrdersForStatusQuery(string $status, ?User $user): Builder
+  {
+    $query = Order::query();
+
+    if ($status === OrderStatusEnum::CONTRACT_SIGNED_BY_CLIENT->value) {
+      $pipelineStatuses = $this->salesPipelineStatuses();
+      $query->where(function ($query) use ($status, $pipelineStatuses) {
+        $query->where('status', $status)
+          ->orWhere(function ($query) use ($status, $pipelineStatuses) {
+            $query->whereIn('status', $pipelineStatuses)
+              ->whereHas('orderStatus', function ($query) use ($status) {
+                $query->where('status', $status);
+              });
+          });
+      });
+    } else {
+      $query->where('status', $status);
+    }
+
+    if ($this->isOwnerRestricted($user)) {
+      $query->whereHas('owners', function ($query) use ($user) {
+        $query->where('users.id', $user->id);
+      });
+    }
+
+    return $query;
+  }
+
+  private function mapSalesOrderToTask(Order $order, string $status): array
+  {
+    $statusHistoryEntry = $order->orderStatus
+      ->where('status', $status)
+      ->sortByDesc('created_at')
+      ->first();
+    $statusCreatedAt = optional($statusHistoryEntry)->created_at ?? $order->created_at;
+    $followUpStartedAt = optional(
+      $order->orderStatus
+        ->where('status', OrderStatusEnum::FOLLOW_UP->value)
+        ->sortBy('created_at')
+        ->first()
+    )->created_at;
+
+    return [
+      'id' => $order->id,
+      'title' => $order->name ?? 'No Title',
+      'client_id' => $order->client_id ?? null,
+      //'description' => $order->notes ?? '',
+      'date_edited' => optional($order->updated_at)->format('M d, Y h:i A'),
+      'date' => optional($order->created_at)->format('M d, Y h:i A'),
+      'status_created_at_iso' => optional($statusCreatedAt)->toIso8601String(),
+      'follow_up_started_at_iso' => optional($followUpStartedAt)->toIso8601String(),
+      //'names' => $order->user->name ?? 'No Name',
+      //'precio' => $order->price ?? 0,
+      'schedule_appointment' => $order->schedule_appointment ? Carbon::parse($order->schedule_appointment)->format('M d, Y h:i A') : null,
+      'schedule_appointment_iso' => $order->schedule_appointment ? Carbon::parse($order->schedule_appointment)->format('Y-m-d\TH:i') : null,
+      'phone'=> $order->client->phone ?? null,
+      'contact_email' => $order->client->email ?? null,
+      'created_by' => $order->user->name ?? null,
+      'is_supply' => (bool) ($order->is_supply ?? false),
+      'name_check' => (bool) ($order->name_check ?? false),
+      'address_check' => (bool) ($order->address_check ?? false),
+      'amount_check' => (bool) ($order->amount_check ?? false),
+      'email_check' => (bool) ($order->email_check ?? false),
+      'project_amount' => $order->project_amount ? (float) $order->project_amount : 0,
+      'down_payment' => $order->down_payment ? (float) $order->down_payment : null,
+      'job_address' => $order->job_address ?? null,
+      'city' => $order->city ?? null,
+      'job_state' => $order->job_state ?? null,
+      'job_zip' => $order->job_zip ?? null,
+      'method_of_payment' => $order->method_of_payment ?? null,
+      'type_of_financing' => $order->type_of_financing ?? null,
+      'owner_ids' => $order->owners->pluck('id')->values(),
+      'owners' => $order->owners->map(fn ($owner) => [
+        'id' => $owner->id,
+        'name' => $owner->name,
+      ])->values(),
+      'order_type' => $order->order_type,
+      'tags'       => ($order->tags ?? collect())->map(function ($t) {
+        return [
+          'name'  => $t->name,
+          'color' => $t->color,
+        ];
+      })->values(),
+    ];
   }
   private function determineSalesBoardStatus(Order $order): ?string
   {

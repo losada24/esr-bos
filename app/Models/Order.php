@@ -425,6 +425,10 @@ class Order extends Model
     {
         return $this->hasOne(SaleForm::class, 'order_id', 'id');
     }
+     public function snapshots(): HasMany
+    {
+        return $this->hasMany(OrderSnapshot::class);
+    }
 
   public function getGrandTotalPrice()
   {
