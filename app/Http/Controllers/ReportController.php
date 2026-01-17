@@ -657,6 +657,38 @@ class ReportController extends Controller
     ]);
 }
 
+  public function orderStatusSummary(Request $request)
+  {
+    $startDate = Carbon::parse($request->start_date)->startOfDay();
+    $endDate = Carbon::parse($request->end_date)->endOfDay();
+
+    $statuses = [
+      OrderStatusEnum::PLANNED->value,
+      OrderStatusEnum::CONFIRMED->value,
+      OrderStatusEnum::COMPLETE->value,
+    ];
+
+    $statusSummary = collect($statuses)->map(function ($status) use ($startDate, $endDate) {
+      $count = Order::where('status', $status)
+        ->whereHas('orderStatus', function ($query) use ($status, $startDate, $endDate) {
+          $query->where('status', $status)
+            ->whereBetween('created_at', [$startDate, $endDate]);
+        })
+        ->count();
+
+      return [
+        'status' => $status,
+        'count' => $count,
+      ];
+    });
+
+    return Inertia::render('Report/OrderStatusSummary', [
+      'statusSummary' => $statusSummary,
+      'startDate' => $startDate->toDateString(),
+      'endDate' => $endDate->toDateString(),
+    ]);
+  }
+
 
 public function dropPayment($id)
 {

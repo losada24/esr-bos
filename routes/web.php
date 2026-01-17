@@ -15,6 +15,7 @@ use App\Http\Controllers\FrontdeskController;
 use App\Http\Controllers\InstallationTeamController;
 use App\Http\Controllers\OrderNoteController;
 use App\Http\Controllers\OrderProcessingController;
+use App\Http\Controllers\PaymentScheduleController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SalesController;
 use App\Http\Controllers\SourceController;
@@ -281,6 +282,10 @@ Route::middleware('auth')->group(function () {
         ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value])
         ->name('sales.assign_contract_signed');
 
+      /*Route::patch('/payment-installments/{installment}', [PaymentScheduleController::class, 'updateInstallment'])
+        ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::OWNER->value])
+        ->name('payment_installments.update');*/
+
       Route::post('/sales/{order}/assign-lost-contract', [SalesController::class, 'assignLostContract'])
         ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value ])
         ->name('sales.assign_lost_contract');
@@ -377,6 +382,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/report/product-summary', [ReportController::class, 'productSummary'])
     ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::SERVICE_MANAGER->value] )
     ->name('report.product-summary');
+
+    Route::get('/report/order-status-summary', [ReportController::class, 'orderStatusSummary'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::SERVICE_MANAGER->value] )
+    ->name('report.order-status-summary');
 
     Route::post('/frontdesk/{order}/update-status', [FrontdeskController::class, 'updateStatus'])
      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::SERVICE_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value]  )
