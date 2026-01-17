@@ -254,6 +254,14 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                               </div>
                                           </NavLink>
                                       </li>
+                                      <li className="menu nav-item">
+                                          <NavLink href={route('report.order-status-summary')} active={route().current('report.order-status-summary')} className="group">
+                                              <div className="flex items-center">
+                                                  <ReferralIcon/>
+                                                  <SidebarLinkLabel>Order Status Summary</SidebarLinkLabel>
+                                              </div>
+                                          </NavLink>
+                                      </li>
                                 </>
                               )}
                             {(IS_ADMIN || IS_ACCOUNT_MANAGER) && (
