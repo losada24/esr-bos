@@ -669,11 +669,8 @@ class ReportController extends Controller
     ];
 
     $statusSummary = collect($statuses)->map(function ($status) use ($startDate, $endDate) {
-      $count = Order::where('status', $status)
-        ->whereHas('orderStatus', function ($query) use ($status, $startDate, $endDate) {
-          $query->where('status', $status)
-            ->whereBetween('created_at', [$startDate, $endDate]);
-        })
+      $count = OrderStatus::where('status', $status)
+        ->whereBetween('created_at', [$startDate, $endDate])
         ->count();
 
       return [
