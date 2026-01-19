@@ -262,6 +262,22 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                               </div>
                                           </NavLink>
                                       </li>
+                                      <li className="menu nav-item">
+                                          <NavLink href={route('report.installer-confirmed-summary')} active={route().current('report.installer-confirmed-summary')} className="group">
+                                              <div className="flex items-center">
+                                                  <ReferralIcon/>
+                                                  <SidebarLinkLabel>Installer Confirmed Orders</SidebarLinkLabel>
+                                              </div>
+                                          </NavLink>
+                                      </li>
+                                      <li className="menu nav-item">
+                                          <NavLink href={route('report.supervisor-assigned-summary')} active={route().current('report.supervisor-assigned-summary')} className="group">
+                                              <div className="flex items-center">
+                                                  <ReferralIcon/>
+                                                  <SidebarLinkLabel>Supervisor Assigned Orders</SidebarLinkLabel>
+                                              </div>
+                                          </NavLink>
+                                      </li>
                                 </>
                               )}
                             {(IS_ADMIN || IS_ACCOUNT_MANAGER) && (

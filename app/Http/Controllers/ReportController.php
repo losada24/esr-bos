@@ -686,6 +686,113 @@ class ReportController extends Controller
     ]);
   }
 
+  public function installerConfirmedSummary(Request $request)
+  {
+    $startDate = $request->start_date
+      ? Carbon::parse($request->start_date)->startOfDay()
+      : Carbon::now()->startOfMonth();
+    $endDate = $request->end_date
+      ? Carbon::parse($request->end_date)->endOfDay()
+      : Carbon::now()->endOfMonth();
+
+    $orderProductsTotals = OrderProduct::query()
+      ->select('order_id', DB::raw('SUM(total_price + extra_work_price) as products_total'))
+      ->whereNull('deleted_at')
+      ->groupBy('order_id');
+
+    $firstInstallationTeam = DB::table('installation_teams_orders')
+      ->select('order_id', DB::raw('MIN(id) as first_installation_team_order_id'))
+      ->whereNull('deleted_at')
+      ->groupBy('order_id');
+
+    $amountExpression = 'COALESCE(order_products_totals.products_total, 0)'
+      . ' + COALESCE(orders.additional_travel_costs, 0)'
+      . ' + COALESCE(CASE WHEN orders.is_new_travel_cost = 1 THEN orders.new_travel_cost ELSE travel_costs.price END, 0)';
+
+    $summary = OrderStatus::query()
+      ->leftJoinSub($firstInstallationTeam, 'first_installation_team', function ($join) {
+        $join->on('first_installation_team.order_id', '=', 'order_status.order_id');
+      })
+      ->leftJoin('installation_teams_orders as first_installation_team_order', 'first_installation_team_order.id', '=', 'first_installation_team.first_installation_team_order_id')
+      ->leftJoin('installation_teams', 'installation_teams.id', '=', 'first_installation_team_order.installation_team_id')
+      ->leftJoin('users', 'users.id', '=', 'installation_teams.user_id')
+      ->leftJoin('orders', 'orders.id', '=', 'order_status.order_id')
+      ->leftJoin('travel_costs', 'travel_costs.id', '=', 'orders.travel_cost_id')
+      ->leftJoinSub($orderProductsTotals, 'order_products_totals', function ($join) {
+        $join->on('order_products_totals.order_id', '=', 'orders.id');
+      })
+      ->where('order_status.status', OrderStatusEnum::CONFIRMED->value)
+      ->whereBetween('order_status.created_at', [$startDate, $endDate])
+      ->select(
+        'installation_teams.id',
+        'installation_teams.company_name',
+        'users.name as installer_name',
+        DB::raw('COUNT(order_status.id) as confirmed_orders'),
+        DB::raw('SUM(' . $amountExpression . ') as assigned_amount')
+      )
+      ->groupBy('installation_teams.id', 'installation_teams.company_name', 'users.name')
+      ->orderBy('users.name')
+      ->get();
+
+    $totalConfirmed = OrderStatus::where('status', OrderStatusEnum::CONFIRMED->value)
+      ->whereBetween('created_at', [$startDate, $endDate])
+      ->count();
+
+    $totalAssigned = OrderStatus::query()
+      ->join('orders', 'orders.id', '=', 'order_status.order_id')
+      ->leftJoin('travel_costs', 'travel_costs.id', '=', 'orders.travel_cost_id')
+      ->leftJoinSub($orderProductsTotals, 'order_products_totals', function ($join) {
+        $join->on('order_products_totals.order_id', '=', 'orders.id');
+      })
+      ->where('order_status.status', OrderStatusEnum::CONFIRMED->value)
+      ->whereBetween('order_status.created_at', [$startDate, $endDate])
+      ->select(DB::raw('SUM(' . $amountExpression . ') as total_assigned'))
+      ->value('total_assigned') ?? 0;
+
+    return Inertia::render('Report/InstallerConfirmedSummary', [
+      'summary' => $summary,
+      'totalConfirmed' => $totalConfirmed,
+      'totalAssigned' => $totalAssigned,
+      'startDate' => $startDate->toDateString(),
+      'endDate' => $endDate->toDateString(),
+    ]);
+  }
+
+  public function supervisorAssignedSummary(Request $request)
+  {
+    $startDate = $request->start_date
+      ? Carbon::parse($request->start_date)->startOfDay()
+      : Carbon::now()->startOfMonth();
+    $endDate = $request->end_date
+      ? Carbon::parse($request->end_date)->endOfDay()
+      : Carbon::now()->endOfMonth();
+
+    $summary = OrderStatus::query()
+      ->leftJoin('orders', 'orders.id', '=', 'order_status.order_id')
+      ->leftJoin('users', 'users.id', '=', 'orders.supervisor_id')
+      ->where('order_status.status', OrderStatusEnum::CONFIRMED->value)
+      ->whereBetween('order_status.created_at', [$startDate, $endDate])
+      ->select(
+        'orders.supervisor_id',
+        'users.name as supervisor_name',
+        DB::raw('COUNT(order_status.id) as confirmed_orders')
+      )
+      ->groupBy('orders.supervisor_id', 'users.name')
+      ->orderBy('users.name')
+      ->get();
+
+    $totalConfirmed = OrderStatus::where('status', OrderStatusEnum::CONFIRMED->value)
+      ->whereBetween('created_at', [$startDate, $endDate])
+      ->count();
+
+    return Inertia::render('Report/SupervisorAssignedSummary', [
+      'summary' => $summary,
+      'totalConfirmed' => $totalConfirmed,
+      'startDate' => $startDate->toDateString(),
+      'endDate' => $endDate->toDateString(),
+    ]);
+  }
+
 
 public function dropPayment($id)
 {
