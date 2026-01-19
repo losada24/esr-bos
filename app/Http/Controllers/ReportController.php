@@ -668,7 +668,33 @@ class ReportController extends Controller
       OrderStatusEnum::COMPLETE->value,
     ];
 
-    $statusSummary = collect($statuses)->map(function ($status) use ($startDate, $endDate) {
+    $confirmedOrders = OrderStatus::query()
+      ->select('order_id')
+      ->where('status', OrderStatusEnum::CONFIRMED->value)
+      ->whereBetween('created_at', [$startDate, $endDate])
+      ->distinct();
+
+    $completedOrders = OrderStatus::query()
+      ->select('order_id')
+      ->where('status', OrderStatusEnum::COMPLETE->value)
+      ->whereBetween('created_at', [$startDate, $endDate])
+      ->distinct();
+
+    $confirmedCompletedCount = DB::query()
+      ->fromSub($confirmedOrders, 'confirmed')
+      ->joinSub($completedOrders, 'completed', function ($join) {
+        $join->on('completed.order_id', '=', 'confirmed.order_id');
+      })
+      ->count();
+
+    $statusSummary = collect($statuses)->map(function ($status) use ($startDate, $endDate, $confirmedCompletedCount) {
+      if ($status === OrderStatusEnum::COMPLETE->value) {
+        return [
+          'status' => $status,
+          'count' => $confirmedCompletedCount,
+        ];
+      }
+
       $count = OrderStatus::where('status', $status)
         ->whereBetween('created_at', [$startDate, $endDate])
         ->count();
@@ -795,7 +821,6 @@ class ReportController extends Controller
         'orders.supervisor_id',
         'users.name as supervisor_name',
         DB::raw('COUNT(confirmed_orders.order_id) as confirmed_orders'),
-        DB::raw('COUNT(completed_orders.order_id) as completed_orders'),
         DB::raw('SUM(CASE WHEN confirmed_orders.order_id IS NOT NULL AND completed_orders.order_id IS NOT NULL THEN 1 ELSE 0 END) as confirmed_completed_orders')
       )
       ->groupBy('orders.supervisor_id', 'users.name')
@@ -803,8 +828,6 @@ class ReportController extends Controller
       ->get();
 
     $totalConfirmed = (clone $confirmedOrders)->count();
-
-    $totalCompleted = (clone $completedOrders)->count();
 
     $totalConfirmedCompleted = DB::query()
       ->fromSub($confirmedOrders, 'confirmed')
@@ -816,7 +839,6 @@ class ReportController extends Controller
     return Inertia::render('Report/SupervisorAssignedSummary', [
       'summary' => $summary,
       'totalConfirmed' => $totalConfirmed,
-      'totalCompleted' => $totalCompleted,
       'totalConfirmedCompleted' => $totalConfirmedCompleted,
       'startDate' => $startDate->toDateString(),
       'endDate' => $endDate->toDateString(),
