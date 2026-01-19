@@ -10,20 +10,18 @@ interface SupervisorSummaryItem {
   supervisor_id: number | null
   supervisor_name: string | null
   confirmed_orders: number
-  completed_orders: number
   confirmed_completed_orders: number
 }
 
 type SupervisorAssignedSummaryProps = PageProps & {
   summary: SupervisorSummaryItem[]
   totalConfirmed: number
-  totalCompleted: number
   totalConfirmedCompleted: number
   startDate: string
   endDate: string
 }
 
-export default function SupervisorAssignedSummary({ summary, totalConfirmed, totalCompleted, totalConfirmedCompleted, startDate, endDate, auth }: SupervisorAssignedSummaryProps) {
+export default function SupervisorAssignedSummary({ summary, totalConfirmed, totalConfirmedCompleted, startDate, endDate, auth }: SupervisorAssignedSummaryProps) {
   return (
     <AuthenticatedLayout
       auth={auth}
@@ -87,9 +85,6 @@ export default function SupervisorAssignedSummary({ summary, totalConfirmed, tot
         Total Confirmed Orders: {totalConfirmed}
       </div>
       <div className="mt-2 text-left font-semibold text-gray-700">
-        Total Completed Orders: {totalCompleted}
-      </div>
-      <div className="mt-2 text-left font-semibold text-gray-700">
         Total Confirmed & Completed: {totalConfirmedCompleted}
       </div>
 
@@ -98,7 +93,6 @@ export default function SupervisorAssignedSummary({ summary, totalConfirmed, tot
           <tr>
             <th className="p-2 border">Supervisor</th>
             <th className="p-2 border">Confirmed Orders</th>
-            <th className="p-2 border">Completed Orders</th>
             <th className="p-2 border">Confirmed & Completed</th>
           </tr>
         </thead>
@@ -109,7 +103,6 @@ export default function SupervisorAssignedSummary({ summary, totalConfirmed, tot
               <tr key={item.supervisor_id ?? 'unassigned'} className={isUnassigned ? 'bg-gray-100' : ''}>
                 <td className="p-2 border">{item.supervisor_name || 'PICKUP OR DELIVERY ONLY'}</td>
                 <td className="p-2 border">{item.confirmed_orders}</td>
-                <td className="p-2 border">{item.completed_orders}</td>
                 <td className="p-2 border">{item.confirmed_completed_orders}</td>
               </tr>
             )
