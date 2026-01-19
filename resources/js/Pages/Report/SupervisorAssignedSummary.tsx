@@ -10,16 +10,18 @@ interface SupervisorSummaryItem {
   supervisor_id: number | null
   supervisor_name: string | null
   confirmed_orders: number
+  completed_orders: number
 }
 
 type SupervisorAssignedSummaryProps = PageProps & {
   summary: SupervisorSummaryItem[]
   totalConfirmed: number
+  totalCompleted: number
   startDate: string
   endDate: string
 }
 
-export default function SupervisorAssignedSummary({ summary, totalConfirmed, startDate, endDate, auth }: SupervisorAssignedSummaryProps) {
+export default function SupervisorAssignedSummary({ summary, totalConfirmed, totalCompleted, startDate, endDate, auth }: SupervisorAssignedSummaryProps) {
   return (
     <AuthenticatedLayout
       auth={auth}
@@ -82,12 +84,16 @@ export default function SupervisorAssignedSummary({ summary, totalConfirmed, sta
       <div className="mt-4 text-left font-semibold text-gray-700">
         Total Confirmed Orders: {totalConfirmed}
       </div>
+      <div className="mt-2 text-left font-semibold text-gray-700">
+        Total Completed Orders: {totalCompleted}
+      </div>
 
       <table className="w-full border border-gray-300 mt-4">
         <thead className="bg-gray-100">
           <tr>
             <th className="p-2 border">Supervisor</th>
             <th className="p-2 border">Confirmed Orders</th>
+            <th className="p-2 border">Completed Orders</th>
           </tr>
         </thead>
         <tbody>
@@ -97,6 +103,7 @@ export default function SupervisorAssignedSummary({ summary, totalConfirmed, sta
               <tr key={item.supervisor_id ?? 'unassigned'} className={isUnassigned ? 'bg-gray-100' : ''}>
                 <td className="p-2 border">{item.supervisor_name || 'PICKUP OR DELIVERY ONLY'}</td>
                 <td className="p-2 border">{item.confirmed_orders}</td>
+                <td className="p-2 border">{item.completed_orders}</td>
               </tr>
             )
           })}

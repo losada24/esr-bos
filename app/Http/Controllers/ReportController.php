@@ -770,12 +770,16 @@ class ReportController extends Controller
     $summary = OrderStatus::query()
       ->leftJoin('orders', 'orders.id', '=', 'order_status.order_id')
       ->leftJoin('users', 'users.id', '=', 'orders.supervisor_id')
-      ->where('order_status.status', OrderStatusEnum::CONFIRMED->value)
       ->whereBetween('order_status.created_at', [$startDate, $endDate])
+      ->whereIn('order_status.status', [
+        OrderStatusEnum::CONFIRMED->value,
+        OrderStatusEnum::COMPLETE->value,
+      ])
       ->select(
         'orders.supervisor_id',
         'users.name as supervisor_name',
-        DB::raw('COUNT(order_status.id) as confirmed_orders')
+        DB::raw('SUM(CASE WHEN order_status.status = "' . OrderStatusEnum::CONFIRMED->value . '" THEN 1 ELSE 0 END) as confirmed_orders'),
+        DB::raw('SUM(CASE WHEN order_status.status = "' . OrderStatusEnum::COMPLETE->value . '" THEN 1 ELSE 0 END) as completed_orders')
       )
       ->groupBy('orders.supervisor_id', 'users.name')
       ->orderBy('users.name')
@@ -785,9 +789,14 @@ class ReportController extends Controller
       ->whereBetween('created_at', [$startDate, $endDate])
       ->count();
 
+    $totalCompleted = OrderStatus::where('status', OrderStatusEnum::COMPLETE->value)
+      ->whereBetween('created_at', [$startDate, $endDate])
+      ->count();
+
     return Inertia::render('Report/SupervisorAssignedSummary', [
       'summary' => $summary,
       'totalConfirmed' => $totalConfirmed,
+      'totalCompleted' => $totalCompleted,
       'startDate' => $startDate->toDateString(),
       'endDate' => $endDate->toDateString(),
     ]);
