@@ -100,14 +100,17 @@ export default function InstallerConfirmedSummary({ summary, totalConfirmed, tot
           </tr>
         </thead>
         <tbody>
-          {summary.map((item) => (
-            <tr key={item.id ?? 'unassigned'}>
-              <td className="p-2 border">{item.installer_name || 'Unassigned'}</td>
-              <td className="p-2 border">{item.company_name || '—'}</td>
-              <td className="p-2 border">{item.confirmed_orders}</td>
-              <td className="p-2 border">{formatPrice(Number(item.assigned_amount || 0))}</td>
-            </tr>
-          ))}
+          {summary.map((item) => {
+            const isUnassigned = !item.installer_name
+            return (
+              <tr key={item.id ?? 'unassigned'} className={isUnassigned ? 'bg-gray-100' : ''}>
+                <td className="p-2 border">{item.installer_name || 'PICKUP OR DELIVERY ONLY'}</td>
+                <td className="p-2 border">{item.company_name || '—'}</td>
+                <td className="p-2 border">{item.confirmed_orders}</td>
+                <td className="p-2 border">{formatPrice(Number(item.assigned_amount || 0))}</td>
+              </tr>
+            )
+          })}
         </tbody>
       </table>
     </AuthenticatedLayout>

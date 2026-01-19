@@ -91,12 +91,15 @@ export default function SupervisorAssignedSummary({ summary, totalConfirmed, sta
           </tr>
         </thead>
         <tbody>
-          {summary.map((item) => (
-            <tr key={item.supervisor_id ?? 'unassigned'}>
-              <td className="p-2 border">{item.supervisor_name || 'Unassigned'}</td>
-              <td className="p-2 border">{item.confirmed_orders}</td>
-            </tr>
-          ))}
+          {summary.map((item) => {
+            const isUnassigned = !item.supervisor_name
+            return (
+              <tr key={item.supervisor_id ?? 'unassigned'} className={isUnassigned ? 'bg-gray-100' : ''}>
+                <td className="p-2 border">{item.supervisor_name || 'PICKUP OR DELIVERY ONLY'}</td>
+                <td className="p-2 border">{item.confirmed_orders}</td>
+              </tr>
+            )
+          })}
         </tbody>
       </table>
     </AuthenticatedLayout>
