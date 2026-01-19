@@ -767,36 +767,57 @@ class ReportController extends Controller
       ? Carbon::parse($request->end_date)->endOfDay()
       : Carbon::now()->endOfMonth();
 
-    $summary = OrderStatus::query()
-      ->leftJoin('orders', 'orders.id', '=', 'order_status.order_id')
+    $confirmedOrders = OrderStatus::query()
+      ->select('order_id')
+      ->where('status', OrderStatusEnum::CONFIRMED->value)
+      ->whereBetween('created_at', [$startDate, $endDate])
+      ->distinct();
+
+    $completedOrders = OrderStatus::query()
+      ->select('order_id')
+      ->where('status', OrderStatusEnum::COMPLETE->value)
+      ->whereBetween('created_at', [$startDate, $endDate])
+      ->distinct();
+
+    $summary = Order::query()
       ->leftJoin('users', 'users.id', '=', 'orders.supervisor_id')
-      ->whereBetween('order_status.created_at', [$startDate, $endDate])
-      ->whereIn('order_status.status', [
-        OrderStatusEnum::CONFIRMED->value,
-        OrderStatusEnum::COMPLETE->value,
-      ])
+      ->leftJoinSub($confirmedOrders, 'confirmed_orders', function ($join) {
+        $join->on('confirmed_orders.order_id', '=', 'orders.id');
+      })
+      ->leftJoinSub($completedOrders, 'completed_orders', function ($join) {
+        $join->on('completed_orders.order_id', '=', 'orders.id');
+      })
+      ->where(function ($query) {
+        $query->whereNotNull('confirmed_orders.order_id')
+          ->orWhereNotNull('completed_orders.order_id');
+      })
       ->select(
         'orders.supervisor_id',
         'users.name as supervisor_name',
-        DB::raw('SUM(CASE WHEN order_status.status = "' . OrderStatusEnum::CONFIRMED->value . '" THEN 1 ELSE 0 END) as confirmed_orders'),
-        DB::raw('SUM(CASE WHEN order_status.status = "' . OrderStatusEnum::COMPLETE->value . '" THEN 1 ELSE 0 END) as completed_orders')
+        DB::raw('COUNT(confirmed_orders.order_id) as confirmed_orders'),
+        DB::raw('COUNT(completed_orders.order_id) as completed_orders'),
+        DB::raw('SUM(CASE WHEN confirmed_orders.order_id IS NOT NULL AND completed_orders.order_id IS NOT NULL THEN 1 ELSE 0 END) as confirmed_completed_orders')
       )
       ->groupBy('orders.supervisor_id', 'users.name')
       ->orderBy('users.name')
       ->get();
 
-    $totalConfirmed = OrderStatus::where('status', OrderStatusEnum::CONFIRMED->value)
-      ->whereBetween('created_at', [$startDate, $endDate])
-      ->count();
+    $totalConfirmed = (clone $confirmedOrders)->count();
 
-    $totalCompleted = OrderStatus::where('status', OrderStatusEnum::COMPLETE->value)
-      ->whereBetween('created_at', [$startDate, $endDate])
+    $totalCompleted = (clone $completedOrders)->count();
+
+    $totalConfirmedCompleted = DB::query()
+      ->fromSub($confirmedOrders, 'confirmed')
+      ->joinSub($completedOrders, 'completed', function ($join) {
+        $join->on('completed.order_id', '=', 'confirmed.order_id');
+      })
       ->count();
 
     return Inertia::render('Report/SupervisorAssignedSummary', [
       'summary' => $summary,
       'totalConfirmed' => $totalConfirmed,
       'totalCompleted' => $totalCompleted,
+      'totalConfirmedCompleted' => $totalConfirmedCompleted,
       'startDate' => $startDate->toDateString(),
       'endDate' => $endDate->toDateString(),
     ]);
