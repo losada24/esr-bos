@@ -387,6 +387,14 @@ Route::middleware('auth')->group(function () {
     ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::SERVICE_MANAGER->value] )
     ->name('report.order-status-summary');
 
+    Route::get('/report/installer-confirmed-summary', [ReportController::class, 'installerConfirmedSummary'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::SERVICE_MANAGER->value] )
+    ->name('report.installer-confirmed-summary');
+
+    Route::get('/report/supervisor-assigned-summary', [ReportController::class, 'supervisorAssignedSummary'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::SERVICE_MANAGER->value] )
+    ->name('report.supervisor-assigned-summary');
+
     Route::post('/frontdesk/{order}/update-status', [FrontdeskController::class, 'updateStatus'])
      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::SERVICE_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value]  )
     ->name('frontdesk.updateStatus');
