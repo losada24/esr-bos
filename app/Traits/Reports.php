@@ -87,7 +87,7 @@ trait Reports
       ->where('supervisor_id', $id)
       ->whereDate('installation_date', '<=', Carbon::today())
       ->where('status', '!=', OrderStatusEnum::PLANNED->value)
-      ->where('service', '!=', ServiceEnum::SERVICE->value) 
+      //->where('service', '!=', ServiceEnum::SERVICE->value) 
       ->orderBy('created_at', 'desc')
       ->get();
    

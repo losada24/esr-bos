@@ -13,8 +13,10 @@ use App\Enum\PaymentStatusEnum;
 use App\Enum\RoleEnum;
 use App\Enum\SupervisorPaymentStatusEnum;
 use App\Exports\InstallerExport;
+use App\Exports\InstallerConfirmedSummaryExport;
 use App\Exports\SupervisorExport;
 use App\Exports\SupervisorExportPayment;
+use App\Exports\SupervisorAssignedSummaryExport;
 use App\Http\Requests\StoreInstallerPaymentRequest;
 use App\Http\Resources\InstallationTeamCollection;
 use App\Jobs\SendGmailEmail;
@@ -714,6 +716,66 @@ class ReportController extends Controller
 
   public function installerConfirmedSummary(Request $request)
   {
+    [$startDate, $endDate] = $this->resolveSummaryDateRange($request);
+    $data = $this->buildInstallerConfirmedSummaryData($startDate, $endDate);
+
+    return Inertia::render('Report/InstallerConfirmedSummary', $data);
+  }
+
+  public function supervisorAssignedSummary(Request $request)
+  {
+    [$startDate, $endDate] = $this->resolveSummaryDateRange($request);
+    $data = $this->buildSupervisorAssignedSummaryData($startDate, $endDate);
+
+    return Inertia::render('Report/SupervisorAssignedSummary', $data);
+  }
+
+  public function installerConfirmedSummaryPdf(Request $request)
+  {
+    [$startDate, $endDate] = $this->resolveSummaryDateRange($request);
+    $data = $this->buildInstallerConfirmedSummaryData($startDate, $endDate);
+    $pdf = Pdf::loadView('pdf.installer-confirmed-summary', $data)->setPaper('A4', 'landscape');
+    $pdfName = 'installer-confirmed-summary.pdf';
+
+    return $pdf->stream($pdfName);
+  }
+
+  public function installerConfirmedSummaryExcel(Request $request)
+  {
+    [$startDate, $endDate] = $this->resolveSummaryDateRange($request);
+    $data = $this->buildInstallerConfirmedSummaryData($startDate, $endDate);
+
+    return Excel::download(
+      new InstallerConfirmedSummaryExport($data),
+      'Installer Confirmed Summary.xlsx',
+      \Maatwebsite\Excel\Excel::XLSX
+    );
+  }
+
+  public function supervisorAssignedSummaryPdf(Request $request)
+  {
+    [$startDate, $endDate] = $this->resolveSummaryDateRange($request);
+    $data = $this->buildSupervisorAssignedSummaryData($startDate, $endDate);
+    $pdf = Pdf::loadView('pdf.supervisor-assigned-summary', $data)->setPaper('A4', 'landscape');
+    $pdfName = 'supervisor-assigned-summary.pdf';
+
+    return $pdf->stream($pdfName);
+  }
+
+  public function supervisorAssignedSummaryExcel(Request $request)
+  {
+    [$startDate, $endDate] = $this->resolveSummaryDateRange($request);
+    $data = $this->buildSupervisorAssignedSummaryData($startDate, $endDate);
+
+    return Excel::download(
+      new SupervisorAssignedSummaryExport($data),
+      'Supervisor Assigned Summary.xlsx',
+      \Maatwebsite\Excel\Excel::XLSX
+    );
+  }
+
+  private function resolveSummaryDateRange(Request $request): array
+  {
     $startDate = $request->start_date
       ? Carbon::parse($request->start_date)->startOfDay()
       : Carbon::now()->startOfMonth();
@@ -721,6 +783,11 @@ class ReportController extends Controller
       ? Carbon::parse($request->end_date)->endOfDay()
       : Carbon::now()->endOfMonth();
 
+    return [$startDate, $endDate];
+  }
+
+  private function buildInstallerConfirmedSummaryData(Carbon $startDate, Carbon $endDate): array
+  {
     $orderProductsTotals = OrderProduct::query()
       ->select('order_id', DB::raw('SUM(total_price + extra_work_price) as products_total'))
       ->whereNull('deleted_at')
@@ -775,24 +842,17 @@ class ReportController extends Controller
       ->select(DB::raw('SUM(' . $amountExpression . ') as total_assigned'))
       ->value('total_assigned') ?? 0;
 
-    return Inertia::render('Report/InstallerConfirmedSummary', [
+    return [
       'summary' => $summary,
       'totalConfirmed' => $totalConfirmed,
       'totalAssigned' => $totalAssigned,
       'startDate' => $startDate->toDateString(),
       'endDate' => $endDate->toDateString(),
-    ]);
+    ];
   }
 
-  public function supervisorAssignedSummary(Request $request)
+  private function buildSupervisorAssignedSummaryData(Carbon $startDate, Carbon $endDate): array
   {
-    $startDate = $request->start_date
-      ? Carbon::parse($request->start_date)->startOfDay()
-      : Carbon::now()->startOfMonth();
-    $endDate = $request->end_date
-      ? Carbon::parse($request->end_date)->endOfDay()
-      : Carbon::now()->endOfMonth();
-
     $confirmedOrders = OrderStatus::query()
       ->select('order_id')
       ->where('status', OrderStatusEnum::CONFIRMED->value)
@@ -836,13 +896,13 @@ class ReportController extends Controller
       })
       ->count();
 
-    return Inertia::render('Report/SupervisorAssignedSummary', [
+    return [
       'summary' => $summary,
       'totalConfirmed' => $totalConfirmed,
       'totalConfirmedCompleted' => $totalConfirmedCompleted,
       'startDate' => $startDate->toDateString(),
       'endDate' => $endDate->toDateString(),
-    ]);
+    ];
   }
 
 
