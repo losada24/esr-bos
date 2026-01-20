@@ -22,6 +22,8 @@ type SupervisorAssignedSummaryProps = PageProps & {
 }
 
 export default function SupervisorAssignedSummary({ summary, totalConfirmed, totalConfirmedCompleted, startDate, endDate, auth }: SupervisorAssignedSummaryProps) {
+  const exportQuery = `?start_date=${startDate || ''}&end_date=${endDate || ''}`
+
   return (
     <AuthenticatedLayout
       auth={auth}
@@ -80,6 +82,25 @@ export default function SupervisorAssignedSummary({ summary, totalConfirmed, tot
           </Form>
         )}
       </Formik>
+
+      <div className="mb-4 flex gap-2">
+        <a
+          className="btn btn-primary"
+          href={route('report.supervisor-assigned-summary-pdf') + exportQuery}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          View PDF
+        </a>
+        <a
+          className="btn btn-secondary"
+          href={route('report.supervisor-assigned-summary-excel') + exportQuery}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Export Excel
+        </a>
+      </div>
 
       <div className="mt-4 text-left font-semibold text-gray-700">
         Total Confirmed Orders: {totalConfirmed}

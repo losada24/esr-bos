@@ -391,9 +391,25 @@ Route::middleware('auth')->group(function () {
     ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::SERVICE_MANAGER->value] )
     ->name('report.installer-confirmed-summary');
 
+    Route::get('/report/installer-confirmed-summary/pdf', [ReportController::class, 'installerConfirmedSummaryPdf'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::SERVICE_MANAGER->value] )
+    ->name('report.installer-confirmed-summary-pdf');
+
+    Route::get('/report/installer-confirmed-summary/excel', [ReportController::class, 'installerConfirmedSummaryExcel'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::SERVICE_MANAGER->value] )
+    ->name('report.installer-confirmed-summary-excel');
+
     Route::get('/report/supervisor-assigned-summary', [ReportController::class, 'supervisorAssignedSummary'])
     ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::SERVICE_MANAGER->value] )
     ->name('report.supervisor-assigned-summary');
+
+    Route::get('/report/supervisor-assigned-summary/pdf', [ReportController::class, 'supervisorAssignedSummaryPdf'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::SERVICE_MANAGER->value] )
+    ->name('report.supervisor-assigned-summary-pdf');
+
+    Route::get('/report/supervisor-assigned-summary/excel', [ReportController::class, 'supervisorAssignedSummaryExcel'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::SERVICE_MANAGER->value] )
+    ->name('report.supervisor-assigned-summary-excel');
 
     Route::post('/frontdesk/{order}/update-status', [FrontdeskController::class, 'updateStatus'])
      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::SERVICE_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value]  )

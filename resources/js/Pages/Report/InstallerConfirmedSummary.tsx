@@ -24,6 +24,8 @@ type InstallerConfirmedSummaryProps = PageProps & {
 }
 
 export default function InstallerConfirmedSummary({ summary, totalConfirmed, totalAssigned, startDate, endDate, auth }: InstallerConfirmedSummaryProps) {
+  const exportQuery = `?start_date=${startDate || ''}&end_date=${endDate || ''}`
+
   return (
     <AuthenticatedLayout
       auth={auth}
@@ -83,6 +85,25 @@ export default function InstallerConfirmedSummary({ summary, totalConfirmed, tot
         )}
       </Formik>
 
+      <div className="mb-4 flex gap-2">
+        <a
+          className="btn btn-primary"
+          href={route('report.installer-confirmed-summary-pdf') + exportQuery}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          View PDF
+        </a>
+        <a
+          className="btn btn-secondary"
+          href={route('report.installer-confirmed-summary-excel') + exportQuery}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Export Excel
+        </a>
+      </div>
+
       <div className="mt-4 text-left font-semibold text-gray-700">
         Total Confirmed Orders: {totalConfirmed}
       </div>
@@ -105,7 +126,7 @@ export default function InstallerConfirmedSummary({ summary, totalConfirmed, tot
             return (
               <tr key={item.id ?? 'unassigned'} className={isUnassigned ? 'bg-gray-100' : ''}>
                 <td className="p-2 border">{item.installer_name || 'PICKUP OR DELIVERY ONLY'}</td>
-                <td className="p-2 border">{item.company_name || '—'}</td>
+                <td className="p-2 border">{item.company_name || '-'}</td>
                 <td className="p-2 border">{item.confirmed_orders}</td>
                 <td className="p-2 border">{formatPrice(Number(item.assigned_amount || 0))}</td>
               </tr>

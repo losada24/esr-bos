@@ -207,7 +207,9 @@ class DashboardController extends Controller
       ];
 
       $services = [
-        ServiceEnum::INSTALLATION_ONLY->value
+        ServiceEnum::INSTALLATION_ONLY->value,
+        //ServiceEnum::INSTALLATION->value,
+        ServiceEnum::SERVICE->value,
       ];
     }
 
