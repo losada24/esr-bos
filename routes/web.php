@@ -388,15 +388,15 @@ Route::middleware('auth')->group(function () {
     ->name('report.order-status-summary');
 
     Route::get('/report/daily-order-status-summary', [ReportController::class, 'dailyOrderStatusSummary'])
-    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::FRONTDESK_ADMIN->value] )
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::FRONTDESK_ADMIN->value . '|'. RoleEnum::OWNER_ADMIN->value] )
     ->name('report.daily-order-status-summary');
 
     Route::get('/report/daily-order-status-summary/pdf', [ReportController::class, 'dailyOrderStatusSummaryPdf'])
-    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::FRONTDESK_ADMIN->value] )
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::FRONTDESK_ADMIN->value . '|'. RoleEnum::OWNER_ADMIN->value] )
     ->name('report.daily-order-status-summary-pdf');
 
     Route::get('/report/daily-order-status-summary/excel', [ReportController::class, 'dailyOrderStatusSummaryExcel'])
-    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::FRONTDESK_ADMIN->value] )
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::FRONTDESK_ADMIN->value . '|'. RoleEnum::OWNER_ADMIN->value] )
     ->name('report.daily-order-status-summary-excel');
 
     Route::get('/report/installer-confirmed-summary', [ReportController::class, 'installerConfirmedSummary'])
