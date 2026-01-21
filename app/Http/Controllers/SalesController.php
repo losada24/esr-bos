@@ -411,15 +411,13 @@ class SalesController extends Controller
 
   private function ownerVisibleSalesStatuses(): array
   {
-    return [
-      OrderStatusEnum::ESTIMATE_APPT_SCHEDULE->value,
-      OrderStatusEnum::FOLLOW_UP->value,
-      OrderStatusEnum::FOLLOW_UP_PROJECTS->value,
-      OrderStatusEnum::STAND_BY->value,
-      OrderStatusEnum::PRE_CONTRACT_APPOINTMENT->value,
-      OrderStatusEnum::CONTRACT_SIGNED_BY_CLIENT->value,
-      OrderStatusEnum::LOST_CONTRACT->value,
-    ];
+    return array_values(array_filter(
+      $this->salesStatuses(),
+      fn (string $status) => !in_array($status, [
+        OrderStatusEnum::COMMERCIAL_ASSIGNMENT->value,
+        OrderStatusEnum::PENDING_ASSIGNMENT->value,
+      ], true)
+    ));
   }
 
   private function isOwnerRestricted(?User $user): bool
