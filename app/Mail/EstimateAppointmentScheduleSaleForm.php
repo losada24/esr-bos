@@ -69,9 +69,10 @@ class EstimateAppointmentScheduleSaleForm extends Mailable implements ShouldQueu
 
         Storage::disk('public')->makeDirectory('tmp');
 
-        Pdf::loadView('pdf.sale-form', [
+        $pdf = Pdf::loadView('pdf.sale-form', [
             'order' => $this->order,
-        ])->save(Storage::disk('public')->path($tempPath));
+        ]);
+        Storage::disk('public')->put($tempPath, $pdf->output());
 
         $this->tempAttachmentPath = $tempPath;
 
