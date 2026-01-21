@@ -14,6 +14,7 @@ use App\Enum\RoleEnum;
 use App\Enum\SupervisorPaymentStatusEnum;
 use App\Exports\InstallerExport;
 use App\Exports\InstallerConfirmedSummaryExport;
+use App\Exports\DailyOrderStatusSummaryExport;
 use App\Exports\SupervisorExport;
 use App\Exports\SupervisorExportPayment;
 use App\Exports\SupervisorAssignedSummaryExport;
@@ -714,6 +715,41 @@ class ReportController extends Controller
     ]);
   }
 
+  public function dailyOrderStatusSummary(Request $request)
+  {
+    [$startDate, $endDate] = $this->resolveDailyOrderStatusSummaryDateRange($request);
+    $data = $this->buildDailyOrderStatusSummaryData($startDate, $endDate);
+
+    return Inertia::render('Report/DailyOrderStatusSummary', [
+      'dailySummary' => $data['dailySummary'],
+      'totals' => $data['totals'],
+      'startDate' => $data['startDate'],
+      'endDate' => $data['endDate'],
+    ]);
+  }
+
+  public function dailyOrderStatusSummaryPdf(Request $request)
+  {
+    [$startDate, $endDate] = $this->resolveDailyOrderStatusSummaryDateRange($request);
+    $data = $this->buildDailyOrderStatusSummaryData($startDate, $endDate);
+    $pdf = Pdf::loadView('pdf.daily-order-status-summary', $data)->setPaper('A4', 'landscape');
+    $pdfName = 'daily-order-status-summary.pdf';
+
+    return $pdf->stream($pdfName);
+  }
+
+  public function dailyOrderStatusSummaryExcel(Request $request)
+  {
+    [$startDate, $endDate] = $this->resolveDailyOrderStatusSummaryDateRange($request);
+    $data = $this->buildDailyOrderStatusSummaryData($startDate, $endDate);
+
+    return Excel::download(
+      new DailyOrderStatusSummaryExport($data),
+      'Daily Order Status Summary.xlsx',
+      \Maatwebsite\Excel\Excel::XLSX
+    );
+  }
+
   public function installerConfirmedSummary(Request $request)
   {
     [$startDate, $endDate] = $this->resolveSummaryDateRange($request);
@@ -784,6 +820,134 @@ class ReportController extends Controller
       : Carbon::now()->endOfMonth();
 
     return [$startDate, $endDate];
+  }
+
+  private function resolveDailyOrderStatusSummaryDateRange(Request $request): array
+  {
+    $startDate = $request->start_date
+      ? Carbon::parse($request->start_date)->startOfDay()
+      : Carbon::today()->startOfDay();
+    $endDate = $request->end_date
+      ? Carbon::parse($request->end_date)->endOfDay()
+      : Carbon::today()->endOfDay();
+
+    return [$startDate, $endDate];
+  }
+
+  private function buildDailyOrderStatusSummaryData(Carbon $startDate, Carbon $endDate): array
+  {
+    $cohort = OrderStatus::query()
+      ->selectRaw('DATE(created_at) as summary_date, order_id')
+      ->whereIn('status', [
+        OrderStatusEnum::NEW_CUSTOMER_REQUEST->value,
+        OrderStatusEnum::QUALIFIED->value,
+      ])
+      ->whereBetween('created_at', [$startDate, $endDate])
+      ->distinct();
+
+    $cohortCounts = DB::query()
+      ->fromSub($cohort, 'cohort')
+      ->selectRaw('summary_date, COUNT(DISTINCT order_id) as total')
+      ->groupBy('summary_date')
+      ->orderBy('summary_date')
+      ->get()
+      ->keyBy('summary_date');
+
+    $statusCounts = OrderStatus::query()
+      ->selectRaw('DATE(created_at) as summary_date, status, COUNT(DISTINCT order_id) as total')
+      ->whereIn('status', [
+        OrderStatusEnum::NEW_CUSTOMER_REQUEST->value,
+        OrderStatusEnum::QUALIFIED->value,
+      ])
+      ->whereBetween('created_at', [$startDate, $endDate])
+      ->groupBy('summary_date', 'status')
+      ->orderBy('summary_date')
+      ->get();
+
+    $estimateBase = OrderStatus::query()
+      ->selectRaw('DATE(created_at) as summary_date, order_id')
+      ->where('status', OrderStatusEnum::ESTIMATE_APPT_SCHEDULE->value)
+      ->whereBetween('created_at', [$startDate, $endDate])
+      ->distinct();
+
+    $estimateCounts = DB::query()
+      ->fromSub($estimateBase, 'estimate')
+      ->joinSub($cohort, 'cohort', function ($join) {
+        $join->on('cohort.order_id', '=', 'estimate.order_id');
+        $join->on('cohort.summary_date', '=', 'estimate.summary_date');
+      })
+      ->selectRaw('estimate.summary_date as summary_date, COUNT(DISTINCT estimate.order_id) as total')
+      ->groupBy('estimate.summary_date')
+      ->orderBy('estimate.summary_date')
+      ->get()
+      ->keyBy('summary_date');
+
+    $daily = [];
+    $current = $startDate->copy()->startOfDay();
+
+    while ($current->lte($endDate)) {
+      $dateKey = $current->toDateString();
+      $daily[$dateKey] = [
+        'date' => $dateKey,
+        'new_request' => 0,
+        'qualified' => 0,
+        'estimate_appt_schedule' => 0,
+        'total' => 0,
+      ];
+      $current->addDay();
+    }
+
+    foreach ($statusCounts as $row) {
+      $dateKey = $row->summary_date;
+
+      if (!isset($daily[$dateKey])) {
+        continue;
+      }
+
+      if ($row->status === OrderStatusEnum::NEW_CUSTOMER_REQUEST->value) {
+        $daily[$dateKey]['new_request'] = (int) $row->total;
+      } elseif ($row->status === OrderStatusEnum::QUALIFIED->value) {
+        $daily[$dateKey]['qualified'] = (int) $row->total;
+      }
+    }
+
+    foreach ($cohortCounts as $dateKey => $row) {
+      if (!isset($daily[$dateKey])) {
+        continue;
+      }
+
+      $daily[$dateKey]['total'] = (int) $row->total;
+    }
+
+    foreach ($estimateCounts as $dateKey => $row) {
+      if (!isset($daily[$dateKey])) {
+        continue;
+      }
+
+      $daily[$dateKey]['estimate_appt_schedule'] = (int) $row->total;
+    }
+
+    $dailySummary = collect($daily)->values()->map(function ($row) {
+      return [
+        'date' => $row['date'],
+        'new_request_qualified' => $row['total'],
+        'qualified' => $row['qualified'],
+        'estimate_appt_schedule' => $row['estimate_appt_schedule'],
+      ];
+    });
+
+    $totals = [
+      'total' => $dailySummary->sum('new_request_qualified'),
+      'qualified' => $dailySummary->sum('qualified'),
+      'estimate_appt_schedule' => $dailySummary->sum('estimate_appt_schedule'),
+    ];
+
+    return [
+      'dailySummary' => $dailySummary,
+      'totals' => $totals,
+      'startDate' => $startDate->toDateString(),
+      'endDate' => $endDate->toDateString(),
+    ];
   }
 
   private function buildInstallerConfirmedSummaryData(Carbon $startDate, Carbon $endDate): array
