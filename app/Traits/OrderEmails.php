@@ -66,7 +66,7 @@ trait OrderEmails {
             'eduardo@reylosglass.com',
             'reinier@reylosglass.com',
             'christian@reylosglass.com',
-            'info@reylosglasss.com',
+            'info@reylosglass.com',
           ]);
           $ownerEmails = array_values(array_unique(array_filter($ownerEmails)));
 
