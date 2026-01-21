@@ -396,6 +396,11 @@ class Order extends Model
     return $this->hasOne(PaymentExtraField::class, 'order_id', 'id');
   }
 
+  public function paymentSchedule(): HasOne
+  {
+    return $this->hasOne(PaymentSchedule::class);
+  }
+
   public function permit(): HasOne
   {
     return $this->hasOne(Permit::class);
@@ -419,6 +424,11 @@ class Order extends Model
   public function notes(): MorphMany
   {
     return $this->morphMany(Note::class, 'noteable');
+  }
+
+  public function orderNotes(): MorphMany
+  {
+    return $this->notes();
   }
 
     public function saleForm()

@@ -29,7 +29,7 @@ class EstimateAppointmentScheduleSaleForm extends Mailable implements ShouldQueu
             'saleForm',
             'client.companyContact',
             'owners',
-            'notes.user',
+            'orderNotes.user',
         ]);
     }
 
@@ -45,11 +45,13 @@ class EstimateAppointmentScheduleSaleForm extends Mailable implements ShouldQueu
     public function content(): Content
     {
         $this->ensureRelationsLoaded();
+        $orderNotes = $this->order->orderNotes->sortBy('created_at');
 
         return new Content(
             view: 'emails.estimate-appointment-schedule',
             with: [
                 'order' => $this->order,
+                'orderNotes' => $orderNotes,
             ],
         );
     }

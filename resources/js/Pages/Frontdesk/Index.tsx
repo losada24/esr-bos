@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { Dispatch, SetStateAction } from 'react'
-import { Head, Link } from '@inertiajs/react'
+import { Head, Link, router } from '@inertiajs/react'
 import { ReactSortable } from 'react-sortablejs'
 import { type Role, type PageProps, type Pipelines, type Tasks } from '@/types'
 import AuthenticatedCalendarLayout from '@/Layouts/AuthenticatedCalendarLayout'
 import { isAccountManager, isAdmin, isServiceManager, isSupervisor, isInstaller, isPaymentCoordinator, isOwner } from '@/Utils/user'
 
-import EditIcon from '@/Components/Icons/EditIcon'
 import DeleteIcon from '@/Components/Icons/DeleteIcon'
 import LostRequestModal from './LostRequestModal'
 import QuantifiedModal from './QuantifiedModal'
@@ -217,6 +216,11 @@ export default function Frontdesk ({
       throw new Error(errorData.message || 'Error updating status')
     }
     return await response.json()
+  }
+
+  const destroyOrder = (orderId: number) => {
+    if (!confirm('Are you sure you want to delete this Order?')) return
+    router.delete(route('order.destroy', orderId), { preserveScroll: true })
   }
 
   const loadMoreTasks = useCallback(async (statusKey: string, nextPage: number) => {
@@ -504,11 +508,16 @@ export default function Frontdesk ({
                                                   <EyeIcon />
                                                 </Link>
                                                     <button
-                                                      onClick={() => ' '}
+                                                      onClick={(event) => {
+                                                        event.preventDefault()
+                                                        event.stopPropagation()
+                                                        destroyOrder(task.id)
+                                                      }}
                                                       type="button"
-                                                      className="flex items-center gap-1 hover:text-info"
+                                                      title="Delete Order"
+                                                      className="flex items-center gap-1 hover:text-danger"
                                                     >
-                                                      <EditIcon />
+                                                      <DeleteIcon />
                                                     </button>
                                                     <InfoTooltip
                                                       side="left"

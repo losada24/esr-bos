@@ -3,7 +3,7 @@
         ? \Carbon\Carbon::parse($order->schedule_appointment)->format('m/d/Y h:i A')
         : null;
 
-    $orderNotes = $order->notes()
+    $orderNotes = $orderNotes ?? $order->notes()
         ->with('user')
         ->orderBy('created_at')
         ->get();

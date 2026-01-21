@@ -282,9 +282,9 @@ Route::middleware('auth')->group(function () {
         ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value])
         ->name('sales.assign_contract_signed');
 
-      /*Route::patch('/payment-installments/{installment}', [PaymentScheduleController::class, 'updateInstallment'])
+      Route::patch('/payment-installments/{installment}', [PaymentScheduleController::class, 'updateInstallment'])
         ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::OWNER->value])
-        ->name('payment_installments.update');*/
+        ->name('payment_installments.update');
 
       Route::post('/sales/{order}/assign-lost-contract', [SalesController::class, 'assignLostContract'])
         ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value ])

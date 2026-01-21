@@ -3,6 +3,16 @@ import CloseIcon from '@/Components/Icons/CloseIcon'
 import { Formik, Form } from 'formik'
 import { PAYMENT_METHODS } from '@/Utils/constants'
 
+interface CustomScheduleItem {
+  label: string
+  amount: string
+}
+
+interface ScheduleTemplateItem {
+  label: string
+  percentage: number
+}
+
 interface ContractSignedFormValues {
   projectName: string
   projectAmount: string
@@ -19,6 +29,30 @@ interface ContractSignedFormValues {
   amountCheck: boolean
   emailCheck: boolean
   attachments: File[]
+  paymentScheduleType: string
+  customSchedule: CustomScheduleItem[]
+}
+
+type CustomSchedulePayload = { label: string, amount: number }
+
+type ContractSignedSubmitValues = {
+  projectName: string
+  projectAmount: string
+  downPayment: string
+  jobAddress: string
+  city: string
+  jobState: string
+  jobZip: string
+  methodOfPayment: string
+  typeOfFinancing: string
+  contactEmail: string
+  attachments: File[]
+  nameCheck: boolean
+  addressCheck: boolean
+  amountCheck: boolean
+  emailCheck: boolean
+  paymentScheduleType: string
+  customSchedule: CustomSchedulePayload[]
 }
 
 export interface ContractSignedModalProps {
@@ -38,11 +72,14 @@ export interface ContractSignedModalProps {
   initialAddressCheck: boolean
   initialAmountCheck: boolean
   initialEmailCheck: boolean
+  initialPaymentScheduleType?: string
+  initialCustomSchedule?: CustomScheduleItem[]
   paymentMethods: string[]
   financingOptions: string[]
+  paymentScheduleTemplates: Record<string, ScheduleTemplateItem[]>
   loading?: boolean
   error?: string | null
-  onSubmit: (values: { projectName: string, projectAmount: string, downPayment: string, jobAddress: string, city: string, jobState: string, jobZip: string, methodOfPayment: string, typeOfFinancing: string, contactEmail: string, attachments: File[], nameCheck: boolean, addressCheck: boolean, amountCheck: boolean, emailCheck: boolean }) => void | Promise<void>
+  onSubmit: (values: ContractSignedSubmitValues) => void | Promise<void>
   onCancel: () => void
 }
 
@@ -63,14 +100,29 @@ export default function ContractSignedModal ({
   initialAddressCheck,
   initialAmountCheck,
   initialEmailCheck,
+  initialPaymentScheduleType,
+  initialCustomSchedule,
   paymentMethods,
   financingOptions,
+  paymentScheduleTemplates,
   loading = false,
   error,
   onSubmit,
   onCancel
 }: ContractSignedModalProps) {
   if (!open) return null
+
+  const CUSTOM_SCHEDULE_TYPE = 'CUSTOMIZED'
+  const buildCustomSchedule = (items?: CustomScheduleItem[]) => {
+    const normalized = Array.isArray(items) ? items.map((item) => ({
+      label: item.label ?? '',
+      amount: item.amount != null ? String(item.amount) : ''
+    })) : []
+    while (normalized.length < 4) {
+      normalized.push({ label: '', amount: '' })
+    }
+    return normalized.slice(0, 4)
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
@@ -110,6 +162,8 @@ export default function ContractSignedModal ({
             amountCheck: initialAmountCheck ?? true,
             emailCheck: initialEmailCheck ?? true,
             attachments: [],
+            paymentScheduleType: initialPaymentScheduleType ?? '',
+            customSchedule: buildCustomSchedule(initialCustomSchedule),
           }}
           validate={(values) => {
             const issues: Partial<Record<keyof ContractSignedFormValues, string>> = {}
@@ -162,6 +216,50 @@ export default function ContractSignedModal ({
               issues.typeOfFinancing = 'Select a financing type.'
             }
 
+            if (!values.paymentScheduleType) {
+              issues.paymentScheduleType = 'Select a payment schedule.'
+            }
+
+            if (values.paymentScheduleType === CUSTOM_SCHEDULE_TYPE) {
+              const customItems = values.customSchedule
+                .map((item) => {
+                  const labelValue = String(item.label ?? '').trim()
+                  const amountValue = String(item.amount ?? '').trim()
+                  return { label: labelValue, amount: amountValue }
+                })
+                .filter((item) => item.label !== '' || item.amount !== '')
+
+              if (customItems.length === 0) {
+                issues.customSchedule = 'Add at least one custom payment.'
+              } else {
+                let total = 0
+                for (const item of customItems) {
+                  if (!item.label) {
+                    issues.customSchedule = 'Each custom payment needs a label.'
+                    break
+                  }
+                  const normalizedAmount = item.amount.replace(/,/g, '')
+                  if (normalizedAmount === '' || Number.isNaN(Number(normalizedAmount))) {
+                    issues.customSchedule = 'Each custom payment needs a valid amount.'
+                    break
+                  }
+                  const amountValue = Number(normalizedAmount)
+                  if (amountValue <= 0) {
+                    issues.customSchedule = 'Amounts must be greater than 0.'
+                    break
+                  }
+                  total += amountValue
+                }
+
+                const projectAmountValue = Number(String(values.projectAmount ?? '').replace(/,/g, ''))
+                if (!issues.customSchedule && Number.isFinite(projectAmountValue) && projectAmountValue > 0) {
+                  if (Math.abs(total - projectAmountValue) > 0.01) {
+                    issues.customSchedule = 'Custom payments must total the project amount.'
+                  }
+                }
+              }
+            }
+
             if (!values.attachments || values.attachments.length === 0) {
               issues.attachments = 'At least one attachment is required.'
             }
@@ -174,6 +272,15 @@ export default function ContractSignedModal ({
             return issues
           }}
           onSubmit={(values) => {
+            const customSchedule = values.paymentScheduleType === CUSTOM_SCHEDULE_TYPE
+              ? values.customSchedule
+                .map((item) => ({
+                  label: String(item.label ?? '').trim(),
+                  amount: Number(String(item.amount ?? '').replace(/,/g, ''))
+                }))
+                .filter((item) => item.label !== '' && Number.isFinite(item.amount))
+              : []
+
             onSubmit({
               projectName: values.projectName.trim(),
               projectAmount: values.projectAmount,
@@ -190,6 +297,8 @@ export default function ContractSignedModal ({
               amountCheck: values.amountCheck,
               emailCheck: values.emailCheck,
               attachments: values.attachments ?? [],
+              paymentScheduleType: values.paymentScheduleType,
+              customSchedule,
             })
           }}
         >
@@ -204,6 +313,49 @@ export default function ContractSignedModal ({
                   .filter(Boolean)
                   .join(', ') || undefined
                 : undefined
+            const scheduleTemplates = paymentScheduleTemplates ?? {}
+            const scheduleOptions = Object.keys(scheduleTemplates)
+            const isCustomSchedule = values.paymentScheduleType === CUSTOM_SCHEDULE_TYPE
+            const projectAmountValue = Number((values.projectAmount ?? '').toString().replace(/,/g, ''))
+            const hasProjectAmount = Number.isFinite(projectAmountValue) && projectAmountValue > 0
+            const formatCurrency = (value: number) =>
+              new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value)
+
+            const buildPreviewItems = (items: Array<{ label: string, percentage: number }>) => {
+              if (!items.length) return []
+              if (!hasProjectAmount) {
+                return items.map((item) => ({ ...item, amount: null }))
+              }
+              let runningTotal = 0
+              return items.map((item, index) => {
+                const amount = index === items.length - 1
+                  ? Math.round((projectAmountValue - runningTotal) * 100) / 100
+                  : Math.round((projectAmountValue * (item.percentage / 100)) * 100) / 100
+                runningTotal += amount
+                return { ...item, amount }
+              })
+            }
+
+            const selectedTemplateItems = scheduleTemplates[values.paymentScheduleType] ?? []
+            const customScheduleItems = values.customSchedule
+              .map((item) => ({
+                label: String(item.label ?? '').trim(),
+                amount: Number(String(item.amount ?? '').replace(/,/g, ''))
+              }))
+              .filter((item) => item.label !== '' && Number.isFinite(item.amount))
+            const customScheduleTotal = values.customSchedule.reduce((total, item) => {
+              const value = Number(String(item.amount ?? '').replace(/,/g, ''))
+              return Number.isFinite(value) ? total + value : total
+            }, 0)
+            const previewItems = isCustomSchedule
+              ? customScheduleItems.map((item) => ({
+                label: item.label,
+                percentage: hasProjectAmount
+                  ? Math.round(((item.amount / projectAmountValue) * 100) * 100) / 100
+                  : null,
+                amount: Number.isFinite(item.amount) ? item.amount : null
+              }))
+              : buildPreviewItems(selectedTemplateItems)
 
             return (
             <Form className="mt-4 space-y-4" encType="multipart/form-data">
@@ -405,6 +557,94 @@ export default function ContractSignedModal ({
                       {submitCount && errors.typeOfFinancing
                         ? <InputError message={errors.typeOfFinancing} className="mt-2" />
                         : null}
+                    </div>
+                  )}
+                </div>
+                <div className="mt-4 space-y-4">
+                  <div className={submitCount ? (errors.paymentScheduleType ? 'has-error' : 'has-success') : ''}>
+                    <label className="mb-1 block text-sm font-medium text-slate-600" htmlFor="paymentScheduleType">Payment Schedule</label>
+                    <select
+                      id="paymentScheduleType"
+                      name="paymentScheduleType"
+                      value={values.paymentScheduleType}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      className="form-select w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                      disabled={loading}
+                    >
+                      <option value="">Select a payment schedule</option>
+                      {scheduleOptions.map((schedule) => (
+                        <option key={schedule} value={schedule}>{schedule}</option>
+                      ))}
+                    </select>
+                    {submitCount && errors.paymentScheduleType
+                      ? <InputError message={errors.paymentScheduleType} className="mt-2" />
+                      : null}
+                  </div>
+
+                  {isCustomSchedule && (
+                    <div className="space-y-3 rounded-lg border border-slate-200 bg-white p-3">
+                      <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-slate-400">
+                        <span>Custom schedule</span>
+                        <span>
+                          Total: {formatCurrency(customScheduleTotal)}
+                          {hasProjectAmount ? ` / ${formatCurrency(projectAmountValue)}` : ''}
+                        </span>
+                      </div>
+                      {values.customSchedule.map((item, index) => (
+                        <div key={`custom-schedule-${index}`} className="grid gap-3 md:grid-cols-3">
+                          <div className="md:col-span-2">
+                            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Label</label>
+                            <input
+                              name={`customSchedule[${index}].label`}
+                              type="text"
+                              value={item.label}
+                              onChange={handleChange}
+                              onBlur={handleBlur}
+                              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                              placeholder={`Payment ${index + 1}`}
+                              disabled={loading}
+                            />
+                          </div>
+                          <div>
+                            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Amount</label>
+                            <input
+                              name={`customSchedule[${index}].amount`}
+                              type="number"
+                              step="0.01"
+                              value={item.amount}
+                              onChange={handleChange}
+                              onBlur={handleBlur}
+                              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                              placeholder="0.00"
+                              disabled={loading}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                      {submitCount && errors.customSchedule && typeof errors.customSchedule === 'string'
+                        ? <InputError message={errors.customSchedule} className="mt-2" />
+                        : null}
+                    </div>
+                  )}
+
+                  {values.paymentScheduleType && previewItems.length > 0 && (
+                    <div className="rounded-lg border border-slate-200 bg-white p-3">
+                      <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-slate-400">
+                        <span>Schedule preview</span>
+                        <span>{hasProjectAmount ? formatCurrency(projectAmountValue) : 'Enter project amount'}</span>
+                      </div>
+                      <div className="mt-3 space-y-2 text-sm text-slate-600">
+                        {previewItems.map((item, index) => (
+                          <div key={`${item.label}-${index}`} className="flex items-center justify-between gap-3">
+                            <span className="font-medium text-slate-700">{item.label}</span>
+                            <span>{item.percentage != null ? `${item.percentage}%` : '--'}</span>
+                            <span className="text-slate-500">
+                              {item.amount != null ? formatCurrency(item.amount) : '--'}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
