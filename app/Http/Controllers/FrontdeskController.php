@@ -835,8 +835,9 @@ public function showQuantifiedModal(Order $order)
     $orderChanged = false;
     $noteCreated = false;
 
-    DB::transaction(function () use ($data, $order, $request, &$clientChanged, &$orderChanged, &$noteCreated) {
+    DB::transaction(function () use ($data, $order, $request, $mode, &$clientChanged, &$orderChanged, &$noteCreated) {
       $client = $order->client;
+      $previousClientName = $client?->name;
 
       if ($client) {
         $clientPayload = [
@@ -877,9 +878,14 @@ public function showQuantifiedModal(Order $order)
       }
 
       $statusChanged = false;
-      $orderPayload = [
-        'name' => $data['client_name'],
-      ];
+      $orderPayload = [];
+      if ($mode === 'frontdesk') {
+        $currentOrderName = trim((string) ($order->name ?? ''));
+        $previousClientName = trim((string) ($previousClientName ?? ''));
+        if ($currentOrderName !== '' && $previousClientName !== '' && strcasecmp($currentOrderName, $previousClientName) === 0) {
+          $orderPayload['name'] = $data['client_name'];
+        }
+      }
 
       if (filled($data['notes'] ?? null)) {
         $order->notes()->create([
