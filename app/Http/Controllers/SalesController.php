@@ -9,6 +9,7 @@ use App\Enum\LostReasonfrontdeskEnum;
 use App\Enum\OrderStatusEnum;
 use App\Enum\OrderTypeEnum;
 use App\Enum\MethodOfPayment;
+use App\Enum\PaymentScheduleTypeEnum;
 use App\Enum\TypeOfFinancing;
 use App\Enum\RoleEnum;
 use App\Http\Requests\StoreFrontDeskOrderRequest;
@@ -16,15 +17,19 @@ use App\Models\Client;
 use Illuminate\Http\Request;
 use App\Models\InstallationTeam;
 use App\Models\Order;
+use App\Models\PaymentSchedule;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use App\Traits\OrderEmails;
 use Illuminate\Http\JsonResponse;
+use App\Support\PaymentScheduleCalculator;
+use App\Support\PaymentScheduleTemplates;
 
 class SalesController extends Controller
 {
@@ -114,6 +119,7 @@ class SalesController extends Controller
       'owners' => $ownerOptions->get(),
       'methods_of_payment' => array_map(fn (MethodOfPayment $method) => $method->value, MethodOfPayment::cases()),
       'type_of_financing' => array_map(fn (TypeOfFinancing $financing) => $financing->value, TypeOfFinancing::cases()),
+      'payment_schedule_templates' => PaymentScheduleTemplates::templates(),
     ]);
   }
 
@@ -817,7 +823,7 @@ class SalesController extends Controller
       $request->merge(['down_payment' => null]);
     }
 
-    $validated = $request->validate([
+    $rules = [
       'project_name' => ['required', 'string', 'max:255'],
       'project_amount' => ['required', 'numeric', 'min:1'],
       'job_address' => ['nullable', 'string'],
@@ -832,9 +838,38 @@ class SalesController extends Controller
       'method_of_payment' => ['required', Rule::in(array_map(fn (MethodOfPayment $method) => $method->value, MethodOfPayment::cases()))],
       'type_of_financing' => ['nullable', Rule::in(array_map(fn (TypeOfFinancing $financing) => $financing->value, TypeOfFinancing::cases()))],
       'down_payment' => ['nullable', 'numeric', 'min:0'],
+      'payment_schedule_type' => ['required', Rule::in(PaymentScheduleTemplates::types())],
+      'custom_schedule' => ['nullable', 'array', 'max:4'],
+      'custom_schedule.*.label' => ['required', 'string', 'max:255'],
+      'custom_schedule.*.amount' => ['required', 'numeric', 'min:0.01'],
       'attachments' => ['required', 'array', 'min:1'],
       'attachments.*' => ['file', 'max:10240', 'mimes:pdf'],
-    ]);
+    ];
+
+    $validator = Validator::make($request->all(), $rules);
+    $validator->after(function ($validator) use ($request) {
+      $scheduleType = (string) $request->input('payment_schedule_type');
+      $customSchedule = $request->input('custom_schedule', []);
+
+      if ($scheduleType === PaymentScheduleTypeEnum::CUSTOMIZED->value) {
+        if (!is_array($customSchedule) || count($customSchedule) === 0) {
+          $validator->errors()->add('custom_schedule', 'Add at least one custom payment.');
+          return;
+        }
+
+        $total = 0.0;
+        foreach ($customSchedule as $item) {
+          $total += (float) ($item['amount'] ?? 0);
+        }
+
+        $projectAmount = (float) $request->input('project_amount', 0);
+        if (abs($total - $projectAmount) > 0.01) {
+          $validator->errors()->add('custom_schedule', 'Custom payments must total the project amount.');
+        }
+      }
+    });
+
+    $validated = $validator->validate();
 
     DB::transaction(function () use ($order, $validated, $request) {
       $newPipelineStatus = $order->is_supply
@@ -896,9 +931,60 @@ class SalesController extends Controller
           ]);
         }
       }
+
+      $scheduleType = $validated['payment_schedule_type'];
+      $customSchedule = $validated['custom_schedule'] ?? [];
+      $totalAmount = (float) $order->project_amount;
+
+      if ($scheduleType === PaymentScheduleTypeEnum::CUSTOMIZED->value) {
+        $installments = [];
+        $runningPercent = 0.0;
+        $count = count($customSchedule);
+        foreach ($customSchedule as $index => $item) {
+          $amount = round((float) ($item['amount'] ?? 0), 2);
+          $percentage = $totalAmount > 0
+            ? round(($amount / $totalAmount) * 100, 2)
+            : 0;
+
+          if ($index === $count - 1 && $totalAmount > 0) {
+            $percentage = round(100 - $runningPercent, 2);
+          }
+
+          $runningPercent += $percentage;
+
+          $installments[] = [
+            'label' => trim((string) ($item['label'] ?? '')),
+            'percentage' => $percentage,
+            'amount' => $amount,
+          ];
+        }
+      } else {
+        $scheduleItems = PaymentScheduleTemplates::itemsFor($scheduleType);
+        $installments = PaymentScheduleCalculator::withAmounts($scheduleItems, $totalAmount);
+      }
+
+      $paymentSchedule = PaymentSchedule::updateOrCreate(
+        ['order_id' => $order->id],
+        [
+          'schedule_type' => $scheduleType,
+          'total_amount' => $totalAmount,
+        ]
+      );
+
+      $paymentSchedule->installments()->delete();
+
+      foreach ($installments as $index => $installment) {
+        $paymentSchedule->installments()->create([
+          'position' => $index + 1,
+          'label' => $installment['label'],
+          'percentage' => $installment['percentage'],
+          'amount' => $installment['amount'],
+          'status' => 'PENDING',
+        ]);
+      }
     });
 
-    $order->load('owners', 'client');
+    $order->load('owners', 'client', 'paymentSchedule.installments.paidBy');
 
     $schedule = $order->schedule_appointment
       ? Carbon::parse($order->schedule_appointment)
@@ -929,6 +1015,26 @@ class SalesController extends Controller
         'address_check' => (bool) ($order->address_check ?? false),
         'amount_check' => (bool) ($order->amount_check ?? false),
         'email_check' => (bool) ($order->email_check ?? false),
+        'payment_schedule' => $order->paymentSchedule
+          ? [
+            'id' => $order->paymentSchedule->id,
+            'schedule_type' => $order->paymentSchedule->schedule_type,
+            'total_amount' => $order->paymentSchedule->total_amount,
+            'installments' => $order->paymentSchedule->installments->map(fn ($installment) => [
+              'id' => $installment->id,
+              'label' => $installment->label,
+              'percentage' => $installment->percentage,
+              'amount' => $installment->amount,
+              'due_date' => $installment->due_date?->format('Y-m-d'),
+              'status' => $installment->status,
+              'paid_at' => $installment->paid_at?->toISOString(),
+              'position' => $installment->position,
+              'paid_by' => $installment->paidBy
+                ? ['id' => $installment->paidBy->id, 'name' => $installment->paidBy->name]
+                : null,
+            ])->values(),
+          ]
+          : null,
       ],
     ]);
   }

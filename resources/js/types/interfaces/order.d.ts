@@ -68,6 +68,7 @@ export interface Order {
   pending_collect?: Date
   payment_extra_fields?: PaymentExtraFields
   installation_payment?: InstallationPayment[]
+  payment_schedule?: PaymentSchedule | null
   pre_inspection?: boolean
   inspection?: boolean
   walk_trough?: boolean
@@ -281,6 +282,25 @@ export interface InstallationPayment {
   responsible_extra_work: string
   notes: string
 
+}
+
+export interface PaymentInstallment {
+  id: number
+  label: string
+  percentage: number
+  amount: number
+  due_date?: string | null
+  status: string
+  paid_at?: string | null
+  paid_by?: { id: number, name: string } | null
+  position?: number | null
+}
+
+export interface PaymentSchedule {
+  id: number
+  schedule_type: string
+  total_amount: number
+  installments?: PaymentInstallment[]
 }
 
 export interface BiweeklyInstaller {

@@ -62,6 +62,13 @@ trait OrderEmails {
           foreach ($order->owners as $owner) {
             $ownerEmails[] = $owner->email;
           }
+          $ownerEmails = array_merge($ownerEmails, [
+            'eduardo@reylosglass.com',
+            'reinier@reylosglass.com',
+            'christian@reylosglass.com',
+            'info@reylosglasss.com',
+          ]);
+          $ownerEmails = array_values(array_unique(array_filter($ownerEmails)));
 
         foreach ($ownerEmails as $email) {
           $mailable = new EstimateAppointmentScheduleSaleForm($order);

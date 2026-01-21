@@ -21,6 +21,9 @@ import LostContractModal from './LostContractModal'
 
 export interface OwnerOption { id: number, name: string }
 
+type PaymentScheduleTemplateItem = { label: string, percentage: number }
+type PaymentScheduleTemplates = Record<string, PaymentScheduleTemplateItem[]>
+
 const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const
 
 const MONTH_INDEX: Record<string, number> = MONTH_LABELS.reduce((acc, label, index) => {
@@ -113,6 +116,7 @@ const ESTIMATE_COMMERCIAL_THRESHOLD_MS = 7 * DAY_IN_MS
 const INFINITE_SCROLL_STATUSES = new Set(['CONTRACT SIGNED BY CLIENT', 'LOST CONTRACT'])
 const TASKS_PAGE_SIZE = 20
 const SCROLL_THRESHOLD_PX = 120
+const CUSTOM_SCHEDULE_TYPE = 'CUSTOMIZED'
 type StatusPaginationState = { nextPage: number, loading: boolean }
 
 const buildPaginationState = (pipelines: Pipelines[] = []): Record<string, StatusPaginationState> => {
@@ -128,6 +132,9 @@ const buildPaginationState = (pipelines: Pipelines[] = []): Record<string, Statu
     return acc
   }, {})
 }
+
+const buildEmptyCustomSchedule = () =>
+  Array.from({ length: 4 }, () => ({ label: '', amount: '' }))
 
 const getFollowUpStaleClass = (pipeline: Pipelines, task: Tasks): string | null => {
   const pipelineId = pipeline?.id != null ? pipeline.id.toString() : ''
@@ -199,7 +206,7 @@ const getEstimateStaleClass = (pipeline: Pipelines, task: Tasks): string | null 
 const normalizeStatusValue = (value: string): string => value.replace(/\s+/g, ' ').trim().toUpperCase()
 const matchesStatus = (value: string, target: string): boolean => normalizeStatusValue(value) === normalizeStatusValue(target)
 
-export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order_types, owners, methods_of_payment, type_of_financing }: PageProps & { data: Pipelines[], lossReasonFrontdesk: string [], sources: string[], order_types: string[], owners: OwnerOption[], methods_of_payment: string[], type_of_financing: string[] }) {
+export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order_types, owners, methods_of_payment, type_of_financing, payment_schedule_templates }: PageProps & { data: Pipelines[], lossReasonFrontdesk: string [], sources: string[], order_types: string[], owners: OwnerOption[], methods_of_payment: string[], type_of_financing: string[], payment_schedule_templates: PaymentScheduleTemplates }) {
   const IS_ADMIN = isAdmin(auth.user.roles.map((role: Role) => role.name))
   const IS_ACCOUNT_MANAGER = isAccountManager(auth.user.roles.map((role: Role) => role.name))
   const IS_SUPERVISOR = isSupervisor(auth.user.roles.map((role: Role) => role.name))
@@ -239,7 +246,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
   const [preContractError, setPreContractError] = useState<string | null>(null)
   const [pendingPreContract, setPendingPreContract] = useState<{ task: Tasks, oldStatus: string, newStatus: string } | null>(null)
   const [contractSignedModalOpen, setContractSignedModalOpen] = useState(false)
-  const [contractSignedInitialValues, setContractSignedInitialValues] = useState<{ projectName: string, projectAmount: string, downPayment: string, jobAddress: string, city: string, jobState: string, jobZip: string, methodOfPayment: string, typeOfFinancing: string, contactEmail: string, nameCheck: boolean, addressCheck: boolean, amountCheck: boolean, emailCheck: boolean }>({ projectName: '', projectAmount: '', downPayment: '', jobAddress: '', city: '', jobState: '', jobZip: '', methodOfPayment: '', typeOfFinancing: '', contactEmail: '', nameCheck: false, addressCheck: false, amountCheck: false, emailCheck: false })
+  const [contractSignedInitialValues, setContractSignedInitialValues] = useState<{ projectName: string, projectAmount: string, downPayment: string, jobAddress: string, city: string, jobState: string, jobZip: string, methodOfPayment: string, typeOfFinancing: string, contactEmail: string, nameCheck: boolean, addressCheck: boolean, amountCheck: boolean, emailCheck: boolean, paymentScheduleType: string, customSchedule: Array<{ label: string, amount: string }> }>({ projectName: '', projectAmount: '', downPayment: '', jobAddress: '', city: '', jobState: '', jobZip: '', methodOfPayment: '', typeOfFinancing: '', contactEmail: '', nameCheck: false, addressCheck: false, amountCheck: false, emailCheck: false, paymentScheduleType: '', customSchedule: buildEmptyCustomSchedule() })
   const [contractSignedSaving, setContractSignedSaving] = useState(false)
   const [contractSignedError, setContractSignedError] = useState<string | null>(null)
   const [pendingContractSigned, setPendingContractSigned] = useState<{ task: Tasks, oldStatus: string, newStatus: string } | null>(null)
@@ -492,7 +499,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
     setContractSignedModalOpen(false)
     setContractSignedError(null)
     setContractSignedSaving(false)
-    setContractSignedInitialValues({ projectName: '', projectAmount: '', downPayment: '', jobAddress: '', city: '', jobState: '', jobZip: '', methodOfPayment: '', typeOfFinancing: '', contactEmail: '', nameCheck: false, addressCheck: false, amountCheck: false, emailCheck: false })
+    setContractSignedInitialValues({ projectName: '', projectAmount: '', downPayment: '', jobAddress: '', city: '', jobState: '', jobZip: '', methodOfPayment: '', typeOfFinancing: '', contactEmail: '', nameCheck: false, addressCheck: false, amountCheck: false, emailCheck: false, paymentScheduleType: '', customSchedule: buildEmptyCustomSchedule() })
     setPendingContractSigned(null)
   }
 
@@ -740,7 +747,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
     }
   }
 
-  const handleContractSignedSubmit = async (values: { projectName: string, projectAmount: string, downPayment: string, jobAddress: string, city: string, jobState: string, jobZip: string, methodOfPayment: string, typeOfFinancing: string, contactEmail: string, attachments: File[], nameCheck: boolean, addressCheck: boolean, amountCheck: boolean, emailCheck: boolean }) => {
+  const handleContractSignedSubmit = async (values: { projectName: string, projectAmount: string, downPayment: string, jobAddress: string, city: string, jobState: string, jobZip: string, methodOfPayment: string, typeOfFinancing: string, contactEmail: string, attachments: File[], nameCheck: boolean, addressCheck: boolean, amountCheck: boolean, emailCheck: boolean, paymentScheduleType: string, customSchedule: Array<{ label: string, amount: number }> }) => {
     if (!pendingContractSigned) return
 
     setContractSignedSaving(true)
@@ -771,6 +778,14 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
       formData.append('method_of_payment', normalizedMethod)
       formData.append('type_of_financing', normalizedFinancing)
       formData.append('down_payment', normalizedDownPayment)
+      formData.append('payment_schedule_type', values.paymentScheduleType)
+
+      if (values.paymentScheduleType === CUSTOM_SCHEDULE_TYPE) {
+        values.customSchedule.forEach((item, index) => {
+          formData.append(`custom_schedule[${index}][label]`, item.label)
+          formData.append(`custom_schedule[${index}][amount]`, item.amount.toString())
+        })
+      }
 
       values.attachments?.forEach((file) => {
         formData.append('attachments[]', file)
@@ -1144,6 +1159,8 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
                             addressCheck: foundTask.address_check ?? false,
                             amountCheck: foundTask.amount_check ?? false,
                             emailCheck: foundTask.email_check ?? false,
+                            paymentScheduleType: '',
+                            customSchedule: buildEmptyCustomSchedule(),
                           })
                           setPendingContractSigned({ task: foundTask, oldStatus, newStatus })
                           setContractSignedModalOpen(true)
@@ -1399,8 +1416,11 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
         initialAddressCheck={contractSignedInitialValues.addressCheck}
         initialAmountCheck={contractSignedInitialValues.amountCheck}
         initialEmailCheck={contractSignedInitialValues.emailCheck}
+        initialPaymentScheduleType={contractSignedInitialValues.paymentScheduleType}
+        initialCustomSchedule={contractSignedInitialValues.customSchedule}
         paymentMethods={paymentMethods}
         financingOptions={financingOptions}
+        paymentScheduleTemplates={payment_schedule_templates ?? {}}
         loading={contractSignedSaving}
         error={contractSignedError}
         onCancel={() => { closeContractSignedModal(true) }}

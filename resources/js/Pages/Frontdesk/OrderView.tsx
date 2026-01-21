@@ -20,6 +20,7 @@ import DotsIcon from '@/Components/Icons/DotsIcon'
 import CalendarIcon from '@/Components/Icons/CalendarIcon'
 import BookIcon from '@/Components/Icons/BookIcon'
 import FolderIcon from '@/Components/Icons/FolderIcon'
+import MoneyBagIcon from '@/Components/Icons/MoneyBagIcon'
 import ExportIcon from '@/Components/Icons/ExportIcon'
 import DeleteIcon from '@/Components/Icons/DeleteIcon'
 import ReorderIcon from '@/Components/Icons/ReorderIcon'
@@ -54,6 +55,7 @@ type IndexOrderProps = PageProps & {
   order_types?: string[]
   methods_of_payment?: string[]
   type_of_financing?: string[]
+  payment_schedule_templates?: PaymentScheduleTemplates
   frame_colors?: string[]
   glass_colors?: string[]
   glass_types?: string[]
@@ -65,7 +67,10 @@ type IndexOrderProps = PageProps & {
   status?: string[]
 }
 
-type TabKey = 'home' | 'profile' | 'contact' | 'sales' | 'attachments'
+type PaymentScheduleTemplateItem = { label: string, percentage: number }
+type PaymentScheduleTemplates = Record<string, PaymentScheduleTemplateItem[]>
+
+type TabKey = 'home' | 'profile' | 'contact' | 'sales' | 'attachments' | 'payments'
 
 export interface ClientOrderOwner {
   id: number
@@ -135,6 +140,22 @@ const FRONTDESK_STATUS_OPTIONS = [
   'LOST REQUEST',
   'QUALIFIED'
 ] as const
+
+const CUSTOM_SCHEDULE_TYPE = 'CUSTOMIZED'
+const buildCustomSchedule = (items?: Array<{ label?: string | null, amount?: number | string | null }>) => {
+  const normalized = Array.isArray(items)
+    ? items.map((item) => ({
+      label: item?.label ?? '',
+      amount: item?.amount != null ? String(item.amount) : ''
+    }))
+    : []
+
+  while (normalized.length < 4) {
+    normalized.push({ label: '', amount: '' })
+  }
+
+  return normalized.slice(0, 4)
+}
 
 const SALES_STATUS_OPTIONS = [
   'PENDING COMMERCIAL',
@@ -370,6 +391,7 @@ export default function ShowStatusOrder ({
   order_types = [],
   methods_of_payment = [],
   type_of_financing = [],
+  payment_schedule_templates = {},
   frame_colors = [],
   glass_colors = [],
   glass_types = [],
@@ -449,6 +471,10 @@ export default function ShowStatusOrder ({
   const [contractSignedModalOpen, setContractSignedModalOpen] = useState(false)
   const [contractSignedSaving, setContractSignedSaving] = useState(false)
   const [contractSignedError, setContractSignedError] = useState<string | null>(null)
+  const initialScheduleType = initialOrder.payment_schedule?.schedule_type ?? ''
+  const initialCustomSchedule = initialScheduleType === CUSTOM_SCHEDULE_TYPE
+    ? buildCustomSchedule(initialOrder.payment_schedule?.installments)
+    : buildCustomSchedule()
   const [contractSignedInitialValues, setContractSignedInitialValues] = useState({
     projectName: order.name ?? '',
     projectAmount: order.project_amount ? String(order.project_amount) : '',
@@ -463,8 +489,13 @@ export default function ShowStatusOrder ({
     nameCheck: Boolean(order.name_check),
     addressCheck: Boolean(order.address_check),
     amountCheck: Boolean(order.amount_check),
-    emailCheck: Boolean(order.email_check)
+    emailCheck: Boolean(order.email_check),
+    paymentScheduleType: initialScheduleType,
+    customSchedule: initialCustomSchedule
   })
+  const [paymentEdits, setPaymentEdits] = useState<Record<number, { status: string, dueDate: string }>>({})
+  const [paymentSavingId, setPaymentSavingId] = useState<number | null>(null)
+  const [paymentError, setPaymentError] = useState<string | null>(null)
 
   const [lostContractModalOpen, setLostContractModalOpen] = useState(false)
   const [lostContractSaving, setLostContractSaving] = useState(false)
@@ -1081,7 +1112,11 @@ export default function ShowStatusOrder ({
         nameCheck: Boolean(order.name_check),
         addressCheck: Boolean(order.address_check),
         amountCheck: Boolean(order.amount_check),
-        emailCheck: Boolean(order.email_check)
+        emailCheck: Boolean(order.email_check),
+        paymentScheduleType: order.payment_schedule?.schedule_type ?? prev.paymentScheduleType,
+        customSchedule: order.payment_schedule?.schedule_type === CUSTOM_SCHEDULE_TYPE
+          ? buildCustomSchedule(order.payment_schedule?.installments)
+          : buildCustomSchedule()
       }))
       setContractSignedModalOpen(true)
       return
@@ -1465,6 +1500,7 @@ export default function ShowStatusOrder ({
         methodOfPayment: 'method_of_payment',
         typeOfFinancing: 'type_of_financing',
         contactEmail: 'contact_email',
+        paymentScheduleType: 'payment_schedule_type',
         nameCheck: 'name_check',
         addressCheck: 'address_check',
         amountCheck: 'amount_check',
@@ -1477,6 +1513,8 @@ export default function ShowStatusOrder ({
           value.forEach((file: File) => {
             formData.append('attachments[]', file)
           })
+        } else if (key === 'customSchedule') {
+          return
         } else {
           const payloadKey = fieldMap[key] ?? key
           if (booleanFields.has(key)) {
@@ -1486,6 +1524,13 @@ export default function ShowStatusOrder ({
           }
         }
       })
+
+      if (values.paymentScheduleType === CUSTOM_SCHEDULE_TYPE && Array.isArray(values.customSchedule)) {
+        values.customSchedule.forEach((item: { label: string, amount: number }, index: number) => {
+          formData.append(`custom_schedule[${index}][label]`, item.label)
+          formData.append(`custom_schedule[${index}][amount]`, item.amount.toString())
+        })
+      }
 
       const response = await fetch(route('sales.assign_contract_signed', order.id), {
         method: 'POST',
@@ -1547,6 +1592,85 @@ export default function ShowStatusOrder ({
       setContractSignedError(error?.message ?? 'No se pudo actualizar el estado.')
     } finally {
       setContractSignedSaving(false)
+    }
+  }
+
+  const handleInstallmentFieldChange = (installmentId: number, field: 'status' | 'dueDate', value: string) => {
+    setPaymentEdits(prev => ({
+      ...prev,
+      [installmentId]: {
+        ...(prev[installmentId] ?? {}),
+        [field]: value
+      }
+    }))
+  }
+
+  const handleInstallmentSave = async (installmentId: number, defaultStatus: string, defaultDueDate: string | null) => {
+    setPaymentSavingId(installmentId)
+    setPaymentError(null)
+
+    try {
+      const editValues = paymentEdits[installmentId] ?? {}
+      const status = editValues.status ?? defaultStatus ?? 'PENDING'
+      const dueDate = editValues.dueDate ?? (defaultDueDate ?? '')
+
+      const response = await fetch(route('payment_installments.update', installmentId), {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          'X-CSRF-TOKEN': csrfToken
+        },
+        body: JSON.stringify({
+          status,
+          due_date: dueDate || null
+        })
+      })
+
+      const payload = await response.json().catch(() => null)
+
+      if (!response.ok) {
+        if (response.status === 422 && payload?.errors) {
+          const messages = Object.values(payload.errors).flat()
+          throw new Error(typeof messages[0] === 'string' ? messages[0] : 'Unable to update installment.')
+        }
+
+        throw new Error(payload?.message ?? 'Unable to update installment.')
+      }
+
+      if (!payload) {
+        throw new Error('Unexpected server response.')
+      }
+
+      const updated = payload.installment
+
+      setOrder(prev => {
+        const schedule = prev.payment_schedule
+        if (!schedule || !Array.isArray(schedule.installments)) return prev
+        const updatedInstallments = schedule.installments.map((item) =>
+          item.id === updated.id ? { ...item, ...updated } : item
+        )
+        return {
+          ...prev,
+          payment_schedule: {
+            ...schedule,
+            installments: updatedInstallments
+          }
+        }
+      })
+
+      setPaymentEdits(prev => ({
+        ...prev,
+        [installmentId]: {
+          status: updated.status ?? status,
+          dueDate: updated.due_date ?? dueDate
+        }
+      }))
+    } catch (error: any) {
+      console.error('payment installment update error', error)
+      setPaymentError(error?.message ?? 'No se pudo actualizar el pago.')
+    } finally {
+      setPaymentSavingId(prev => (prev === installmentId ? null : prev))
     }
   }
 
@@ -1707,6 +1831,7 @@ export default function ShowStatusOrder ({
     { key: 'profile', label: 'Timeline', Icon: UserIcon },
     { key: 'contact', label: 'Associated Orders', Icon: ReorderIcon },
     { key: 'sales', label: 'Sales Form', Icon: BookIcon },
+    { key: 'payments', label: 'Payments', Icon: MoneyBagIcon },
     { key: 'attachments', label: 'Attachments', Icon: FolderIcon }
   ]
 
@@ -1715,6 +1840,25 @@ export default function ShowStatusOrder ({
   const formattedProjectAmount = showProjectAmount
     ? `$${projectAmountNumber.toLocaleString()}`
     : null
+  const paymentSchedule = order.payment_schedule ?? null
+  const paymentInstallments = Array.isArray(paymentSchedule?.installments)
+    ? paymentSchedule?.installments ?? []
+    : []
+  const paymentTotalAmount = Number(paymentSchedule?.total_amount ?? 0)
+  const paymentPaidAmount = paymentInstallments.reduce((total, installment) => {
+    const amountValue = Number(installment.amount ?? 0)
+    return installment.status === 'PAID' && Number.isFinite(amountValue)
+      ? total + amountValue
+      : total
+  }, 0)
+  const paymentRemainingAmount = Math.max(0, paymentTotalAmount - paymentPaidAmount)
+  const formatScheduleCurrency = (value: number) =>
+    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value)
+  const formatPaidAt = (value?: string | null) => {
+    if (!value) return '-'
+    const parsed = new Date(value)
+    return Number.isNaN(parsed.getTime()) ? value : parsed.toLocaleString()
+  }
 
   const onKeyDown = (e: KeyboardEvent<HTMLUListElement>) => {
     const idx = tabs.findIndex((t) => t.key === tab)
@@ -2524,6 +2668,135 @@ export default function ShowStatusOrder ({
                   </div>
                 )}
 
+                {tab === 'payments' && (
+                  <div id="panel-payments" role="tabpanel" aria-labelledby="tab-payments" className="space-y-5 p-6 text-sm text-slate-600">
+                    {paymentSchedule
+                      ? (
+                        <div className="space-y-4">
+                          <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                            <div className="flex flex-wrap items-center justify-between gap-3">
+                              <div>
+                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Schedule Type</p>
+                                <p className="text-sm font-semibold text-slate-700">{paymentSchedule.schedule_type}</p>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Total</p>
+                                <p className="text-sm font-semibold text-slate-700">
+                                  {formatScheduleCurrency(Number(paymentSchedule.total_amount ?? 0))}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="grid gap-3 md:grid-cols-3">
+                            <div className="rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3">
+                              <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600">Paid</p>
+                              <p className="text-sm font-semibold text-emerald-700">
+                                {formatScheduleCurrency(paymentPaidAmount)}
+                              </p>
+                            </div>
+                            <div className="rounded-xl border border-amber-100 bg-amber-50 px-4 py-3">
+                              <p className="text-xs font-semibold uppercase tracking-wide text-amber-600">Remaining</p>
+                              <p className="text-sm font-semibold text-amber-700">
+                                {formatScheduleCurrency(paymentRemainingAmount)}
+                              </p>
+                            </div>
+                            <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+                              <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Total</p>
+                              <p className="text-sm font-semibold text-slate-700">
+                                {formatScheduleCurrency(paymentTotalAmount)}
+                              </p>
+                            </div>
+                          </div>
+
+                          {paymentError && (
+                            <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-600">
+                              {paymentError}
+                            </div>
+                          )}
+
+                          {paymentInstallments.length > 0
+                            ? (
+                              <div className="overflow-x-auto rounded-xl border border-slate-200">
+                                <table className="min-w-full text-left text-sm text-slate-600">
+                                  <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                                    <tr>
+                                      <th className="px-4 py-3">Payment</th>
+                                      <th className="px-4 py-3">%</th>
+                                      <th className="px-4 py-3">Amount</th>
+                                      <th className="px-4 py-3">Due date</th>
+                                      <th className="px-4 py-3">Status</th>
+                                      <th className="px-4 py-3">Paid at</th>
+                                      <th className="px-4 py-3">Paid by</th>
+                                      <th className="px-4 py-3 text-right">Action</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-slate-100">
+                                    {paymentInstallments.map((installment) => {
+                                      const statusValue = paymentEdits[installment.id]?.status ?? installment.status ?? 'PENDING'
+                                      const dueDateValue = paymentEdits[installment.id]?.dueDate ?? installment.due_date ?? ''
+                                      const saving = paymentSavingId === installment.id
+                                      return (
+                                        <tr key={installment.id} className="bg-white">
+                                          <td className="px-4 py-3 font-medium text-slate-700">{installment.label}</td>
+                                          <td className="px-4 py-3">{Number(installment.percentage ?? 0).toFixed(2)}%</td>
+                                          <td className="px-4 py-3">{formatScheduleCurrency(Number(installment.amount ?? 0))}</td>
+                                          <td className="px-4 py-3">
+                                            <input
+                                              type="date"
+                                              value={dueDateValue}
+                                              onChange={(event) => { handleInstallmentFieldChange(installment.id, 'dueDate', event.target.value) }}
+                                              className="w-full rounded-lg border border-slate-200 px-2 py-1 text-sm text-slate-700 focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
+                                            />
+                                          </td>
+                                          <td className="px-4 py-3">
+                                            <select
+                                              value={statusValue}
+                                              onChange={(event) => { handleInstallmentFieldChange(installment.id, 'status', event.target.value) }}
+                                              className="w-full rounded-lg border border-slate-200 px-2 py-1 text-sm text-slate-700 focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
+                                            >
+                                              <option value="PENDING">PENDING</option>
+                                              <option value="PAID">PAID</option>
+                                            </select>
+                                          </td>
+                                          <td className="px-4 py-3 text-xs text-slate-500">
+                                            {formatPaidAt(installment.paid_at)}
+                                          </td>
+                                          <td className="px-4 py-3">
+                                            <span className="text-xs text-slate-500">
+                                              {installment.paid_by?.name ?? '-'}
+                                            </span>
+                                          </td>
+                                          <td className="px-4 py-3 text-right">
+                                            <button
+                                              type="button"
+                                              onClick={() => { handleInstallmentSave(installment.id, statusValue, installment.due_date ?? null) }}
+                                              className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:border-sky-400 hover:text-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                              disabled={saving}
+                                            >
+                                              {saving ? 'Saving...' : 'Save'}
+                                            </button>
+                                          </td>
+                                        </tr>
+                                      )
+                                    })}
+                                  </tbody>
+                                </table>
+                              </div>
+                              )
+                            : (
+                              <p className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
+                                No payment installments recorded for this order.
+                              </p>
+                              )}
+                        </div>
+                        )
+                      : (
+                        <p className="text-sm text-slate-400">No payment schedule has been created for this order.</p>
+                        )}
+                  </div>
+                )}
+
                 {tab === 'attachments' && (
                   <div id="panel-attachments" role="tabpanel" aria-labelledby="tab-attachments" className="space-y-5 p-6 text-sm text-slate-600">
                     <form onSubmit={handleAttachmentUpload} className="space-y-3 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4">
@@ -2770,8 +3043,11 @@ export default function ShowStatusOrder ({
         initialAddressCheck={contractSignedInitialValues.addressCheck}
         initialAmountCheck={contractSignedInitialValues.amountCheck}
         initialEmailCheck={contractSignedInitialValues.emailCheck}
+        initialPaymentScheduleType={contractSignedInitialValues.paymentScheduleType}
+        initialCustomSchedule={contractSignedInitialValues.customSchedule}
         paymentMethods={methods_of_payment ?? []}
         financingOptions={type_of_financing ?? []}
+        paymentScheduleTemplates={payment_schedule_templates ?? {}}
         loading={contractSignedSaving}
         error={contractSignedError}
         onCancel={closeContractSignedModal}

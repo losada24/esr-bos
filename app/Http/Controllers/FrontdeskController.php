@@ -38,6 +38,7 @@ use Inertia\Inertia;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Traits\OrderEmails;
 use App\Traits\Snapshot;
+use App\Support\PaymentScheduleTemplates;
 use Illuminate\Validation\Rule;
 
 class FrontdeskController extends Controller
@@ -559,7 +560,7 @@ public function showQuantifiedModal(Order $order)
   { // Obtener las órdenes por supervisor
 
     $order = Order::find($id);
-    $order->load('tags:id,name,color,taggable_id,taggable_type', 'client.companyContact', 'user', 'owners', 'saleForm', 'attachments.user', 'orderStatus.user');
+    $order->load('tags:id,name,color,taggable_id,taggable_type', 'client.companyContact', 'user', 'owners', 'saleForm', 'attachments.user', 'orderStatus.user', 'paymentSchedule.installments.paidBy');
 
     $clientOrders = collect();
 
@@ -747,6 +748,7 @@ public function showQuantifiedModal(Order $order)
       'order_types' => $order_types,
       'methods_of_payment' => $methodsOfPayment,
       'type_of_financing' => $typeOfFinancing,
+      'payment_schedule_templates' => PaymentScheduleTemplates::templates(),
       'frame_colors' => $frame_colors,
       'glass_colors' => $glass_colors,
       'glass_types' => $glass_types,
