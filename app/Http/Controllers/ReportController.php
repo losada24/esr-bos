@@ -865,9 +865,11 @@ class ReportController extends Controller
       ->get();
 
     $estimateBase = OrderStatus::query()
-      ->selectRaw('DATE(created_at) as summary_date, order_id')
-      ->where('status', OrderStatusEnum::ESTIMATE_APPT_SCHEDULE->value)
-      ->whereBetween('created_at', [$startDate, $endDate])
+      ->join('orders', 'orders.id', '=', 'order_status.order_id')
+      ->selectRaw('DATE(order_status.created_at) as summary_date, order_status.order_id')
+      ->where('order_status.status', OrderStatusEnum::ESTIMATE_APPT_SCHEDULE->value)
+      ->whereNotNull('orders.schedule_appointment')
+      ->whereBetween('order_status.created_at', [$startDate, $endDate])
       ->distinct();
 
     $estimateCounts = DB::query()
