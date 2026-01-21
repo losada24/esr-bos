@@ -1234,16 +1234,13 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
                         const standByAlertClass = getStandByStaleClass(project, task)
                         const estimateAlertClass = getEstimateStaleClass(project, task)
                         const cardBackgroundClass = followUpAlertClass ?? standByAlertClass ?? estimateAlertClass ?? 'bg-[#f4f4f4] dark:bg-white-dark/20'
+                        const createdByName = typeof task.created_by === 'string' ? task.created_by.trim() : ''
+                        const createdByDisplay = createdByName || 'Unknown'
                         const ownerNames = (task.owners ?? [])
                           .map((owner: any) => typeof owner?.name === 'string' ? owner.name.trim() : '')
                           .filter((name: string) => Boolean(name))
-                        if (!ownerNames.length && typeof task.created_by === 'string') {
-                          const normalizedCreator = task.created_by.trim()
-                          if (normalizedCreator) {
-                            ownerNames.push(normalizedCreator)
-                          }
-                        }
                         const ownersDisplay = ownerNames.length ? ownerNames.join(', ') : 'No owners assigned'
+                        const ownersLabel = ownerNames.length === 1 ? 'Owner' : 'Owners'
                         return (
                           <div className="sortable-list " key={task.id} data-id={task.id}>
                             <div className={`shadow ${cardBackgroundClass} p-3 pb-4 rounded-md mb-5 space-y-2 cursor-move text-xs text-slate-600`}>
@@ -1308,6 +1305,19 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
                               {task.date_edited !== task.date && (
                                 <p className="break-all">{task.date_edited}</p>
                               )}
+                              <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
+                                {ownerNames.length > 0 ? (
+                                  <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-2.5 py-0.5 text-amber-900 ring-1 ring-amber-300/80 shadow-sm">
+                                    <span className="text-[10px] uppercase tracking-wide text-amber-700">{ownersLabel}</span>
+                                    <span className="font-semibold">{ownersDisplay}</span>
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1.5 rounded-full bg-sky-100 px-2.5 py-0.5 text-sky-900 ring-1 ring-sky-300/80 shadow-sm">
+                                    <span className="text-[10px] uppercase tracking-wide text-sky-700">Created by</span>
+                                    <span className="font-semibold">{createdByDisplay}</span>
+                                  </span>
+                                )}
+                              </div>
                             {(task.project_amount !== undefined && task.project_amount !== null)
                               ? (
                                 <div className="mt-1 flex items-center justify-between gap-2">
