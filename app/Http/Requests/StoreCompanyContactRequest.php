@@ -30,7 +30,8 @@ class StoreCompanyContactRequest extends FormRequest
         return [
             'name' => 'required|string|max:255',
             'email' => 'nullable|email',
-            'phone' => 'required|max:20',
+            //'phone' => 'required|max:20',
+             'phone' => 'nullable|max:20',
             'website' => 'nullable|url|max:255',
             'billing_street' => 'nullable|string|max:255',
             'billing_city' => 'nullable|string|max:100',

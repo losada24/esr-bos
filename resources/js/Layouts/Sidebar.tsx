@@ -75,7 +75,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                     <PerfectScrollbar className="h-[calc(100vh-80px)] relative">
                       <ul className="relative font-semibold space-y-0.5 p-4 py-0">
 
-                          {(IS_ADMIN || IS_FRONTDESK || IS_OWNER_ADMIN) && (
+                          {(IS_ADMIN || IS_FRONTDESK || IS_OWNER_ADMIN || IS_FRONTDESK_ADMIN) && (
                               <>
                               <h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">
                                 <svg className="w-4 h-5 flex-none hidden" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
@@ -121,7 +121,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                               </>
                           )}
 
-                           {(IS_ADMIN || IS_OWNER || IS_OWNER_ADMIN) && (
+                           {(IS_ADMIN || IS_OWNER || IS_OWNER_ADMIN || IS_FRONTDESK_ADMIN) && (
                             <>
                             <h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">
                                 <svg className="w-4 h-5 flex-none hidden" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
@@ -182,7 +182,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                 </svg>
                                 <span>Operations</span>
                             </h2>
-                            {(IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER || IS_PAYMENT_COORDINATOR || IS_OWNER_ADMIN) && (
+                            {(IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER || IS_PAYMENT_COORDINATOR || IS_OWNER_ADMIN ) && (
                             <>
                              <li className="menu nav-item">
                                 <NavLink href={route('dashboard')} active={route().current('dashboard')} className="group">
@@ -211,7 +211,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
 
                            </>
                             )}
-                             {(IS_SUPERVISOR || IS_OWNER) && (
+                             {(IS_SUPERVISOR || IS_OWNER || IS_FRONTDESK_ADMIN) && (
                               <>
                                <li className="menu nav-item">
                                 <NavLink href={route('dashboard')} active={route().current('dashboard')} className="group">
@@ -221,14 +221,16 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                     </div>
                                 </NavLink>
                               </li>
-                              <li className="menu nav-item">
-                                    <NavLink href={route('report.show-supervisor-report', { id: auth.user.id })} active={route().current('report.show-supervisor-report')} className="group">
-                                        <div className="flex items-center">
-                                            <ReferralIcon/>
-                                            <SidebarLinkLabel>My Orders</SidebarLinkLabel>
-                                        </div>
-                                    </NavLink>
-                              </li>
+                              {(IS_SUPERVISOR || IS_OWNER) && (
+                                <li className="menu nav-item">
+                                      <NavLink href={route('report.show-supervisor-report', { id: auth.user.id })} active={route().current('report.show-supervisor-report')} className="group">
+                                          <div className="flex items-center">
+                                              <ReferralIcon/>
+                                              <SidebarLinkLabel>My Orders</SidebarLinkLabel>
+                                          </div>
+                                      </NavLink>
+                                </li>
+                              )}
                               </>
                              ) }
                               {CAN_VIEW_REPORTS && (
