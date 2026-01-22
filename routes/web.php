@@ -378,6 +378,10 @@ Route::middleware('auth')->group(function () {
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value .'|'. RoleEnum::SERVICE_MANAGER->value] )
       ->name('biweekly.uncollected-customer-payments-report');
 
+      Route::get('/biweekly/uncollected-customer-payments-report-excel/{biweeklyId}', [BiweeklyController::class, 'exportUncollectedCustomerPaymentsReport'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value .'|'. RoleEnum::SERVICE_MANAGER->value] )
+      ->name('biweekly.uncollected-customer-payments-report-excel');
+
 
     Route::get('/report/product-summary', [ReportController::class, 'productSummary'])
     ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::SERVICE_MANAGER->value] )

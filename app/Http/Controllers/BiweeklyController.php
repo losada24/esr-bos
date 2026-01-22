@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Actions\CreateBiweekly;
 use App\Actions\UpdateBiweekly;
 use App\Exports\PaymentBiweeklyExport;
+use App\Exports\UncollectedCustomerPaymentsExport;
 use App\Models\Biweekly;
 use App\Models\HistoryPendingPayment;
 use App\Models\InstallationPayment;
@@ -232,6 +233,18 @@ class BiweeklyController extends Controller
                     return $pdf->stream($pdfName);
           }
 
+  public function exportUncollectedCustomerPaymentsReport($biweeklyId)
+  {
+    $biweekly = Biweekly::findOrFail($biweeklyId);
+    $biweeklyTitle = Carbon::parse($biweekly->start_biweekly_period)->locale('en')->isoFormat('MMMM D') . ' to ' . Carbon::parse($biweekly->end_biweekly_period)->locale('en')->isoFormat('MMMM D');
+    $fileTitle = trim(preg_replace('/[^A-Za-z0-9]+/', '-', $biweeklyTitle), '-');
+
+    return Excel::download(
+      new UncollectedCustomerPaymentsExport($biweeklyId),
+      'Uncollected-Payments-Report-' . $fileTitle . '.xlsx',
+      \Maatwebsite\Excel\Excel::XLSX
+    );
+  }
 
 
         }
