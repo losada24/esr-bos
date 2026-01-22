@@ -29,7 +29,7 @@ import EditIcon from '@/Components/Icons/EditIcon'
 import MessageIcon from '@/Components/Icons/MessageIcon'
 import StarIcon from '@/Components/Icons/StarIcon'
 import PlusIcon from '@/Components/Icons/PlusIcon'
-import { isAccountManager, isAdmin, isOwner, isOwnerAdmin } from '@/Utils/user'
+import { isAccountManager, isAdmin, isFrontdeskAdmin, isOwner, isOwnerAdmin } from '@/Utils/user'
 import EstimateScheduleModal from '@/Pages/Sales/EstimateScheduleModal'
 import FollowUpModal from '@/Pages/Sales/FollowUpModal'
 import StandByNoteModal from '@/Pages/Sales/StandByNoteModal'
@@ -425,7 +425,7 @@ export default function ShowStatusOrder ({
   const roleNames = Array.isArray(auth?.user?.roles)
     ? auth.user.roles.map((role: Role) => role.name)
     : []
-  const canManageSales = isAdmin(roleNames) || isAccountManager(roleNames) || isOwner(roleNames) || isOwnerAdmin(roleNames)
+  const canManageSales = isAdmin(roleNames) || isAccountManager(roleNames) || isOwner(roleNames) || isOwnerAdmin(roleNames) || isFrontdeskAdmin(roleNames)
 
   const [scheduleModalOpen, setScheduleModalOpen] = useState(false)
   const [scheduleInitialValues, setScheduleInitialValues] = useState<{ scheduleDate: string, ownerIds: number[] }>({
