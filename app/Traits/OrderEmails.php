@@ -63,10 +63,7 @@ trait OrderEmails {
             $ownerEmails[] = $owner->email;
           }
           $ownerEmails = array_merge($ownerEmails, [
-            'eduardo@reylosglass.com',
-            'reinier@reylosglass.com',
             'christian@reylosglass.com',
-            'info@reylosglass.com',
           ]);
           $ownerEmails = array_values(array_unique(array_filter($ownerEmails)));
 
