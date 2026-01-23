@@ -150,11 +150,11 @@ const buildCustomSchedule = (items?: Array<{ label?: string | null, amount?: num
     }))
     : []
 
-  while (normalized.length < 4) {
+  while (normalized.length < 6) {
     normalized.push({ label: '', amount: '' })
   }
 
-  return normalized.slice(0, 4)
+  return normalized.slice(0, 6)
 }
 
 const SALES_STATUS_OPTIONS = [

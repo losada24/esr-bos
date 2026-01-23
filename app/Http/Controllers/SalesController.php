@@ -64,6 +64,7 @@ class SalesController extends Controller
             ContactSourceEnum::YOUTUBE->value,
             ContactSourceEnum::NEW_ORDER ->value,
             ContactSourceEnum::GOOGLE_ADS->value,
+            ContactSourceEnum::SAME_AS_ORDER->value,
     ];
 
     $order_types = [
@@ -461,14 +462,18 @@ class SalesController extends Controller
         OrderStatusEnum::QUALIFIED->value,
       ],
       'sources' => [
-       ContactSourceEnum::TIK_TOK->value,
-        ContactSourceEnum::INSTAGRAM_FACEBOOK->value,
-        ContactSourceEnum::META->value,
-        ContactSourceEnum::DESTINO_TOLK->value,
-        ContactSourceEnum::RESOURCE_MAGAZINE->value,
-        ContactSourceEnum::BANNER_PUBLICITARIO->value,
-        ContactSourceEnum::PICHY_BOYS->value,
-        ContactSourceEnum::GOOGLE_MY_BUSINESS->value,
+         ContactSourceEnum::TIK_TOK->value,
+            ContactSourceEnum::INSTAGRAM_FACEBOOK->value,
+            ContactSourceEnum::EXTERNAL_REFERAL->value,
+            ContactSourceEnum::INTERNAL_REFERAL->value,
+            ContactSourceEnum::SIGNS->value,
+            ContactSourceEnum::WALK_IN->value,
+            ContactSourceEnum::ESW_REFER->value,
+            ContactSourceEnum::ESR_REFER->value,
+            ContactSourceEnum::YOUTUBE->value,
+            ContactSourceEnum::NEW_ORDER ->value,
+            ContactSourceEnum::GOOGLE_ADS->value,
+            ContactSourceEnum::SAME_AS_ORDER->value,
       ],
     ]);
   }
@@ -837,7 +842,7 @@ class SalesController extends Controller
       'type_of_financing' => ['nullable', Rule::in(array_map(fn (TypeOfFinancing $financing) => $financing->value, TypeOfFinancing::cases()))],
       'down_payment' => ['nullable', 'numeric', 'min:0'],
       'payment_schedule_type' => ['required', Rule::in(PaymentScheduleTemplates::types())],
-      'custom_schedule' => ['nullable', 'array', 'max:4'],
+      'custom_schedule' => ['nullable', 'array', 'max:6'],
       'custom_schedule.*.label' => ['required', 'string', 'max:255'],
       'custom_schedule.*.amount' => ['required', 'numeric', 'min:0.01'],
       'attachments' => ['required', 'array', 'min:1'],

@@ -134,7 +134,7 @@ const buildPaginationState = (pipelines: Pipelines[] = []): Record<string, Statu
 }
 
 const buildEmptyCustomSchedule = () =>
-  Array.from({ length: 4 }, () => ({ label: '', amount: '' }))
+  Array.from({ length: 6 }, () => ({ label: '', amount: '' }))
 
 const getFollowUpStaleClass = (pipeline: Pipelines, task: Tasks): string | null => {
   const pipelineId = pipeline?.id != null ? pipeline.id.toString() : ''
@@ -948,14 +948,14 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
     <AuthenticatedCalendarLayout
       auth={auth}
       printPanel={false}
-      actions={
-            <Link
-              className="btn btn-primary"
-              href={route('frontdesk.create')}
-            >
-              <span>Create Request</span>
-            </Link>
-          }
+      actions={!IS_OWNER ? (
+        <Link
+          className="btn btn-primary"
+          href={route('frontdesk.create')}
+        >
+          <span>Create Request</span>
+        </Link>
+      ) : null}
     >
       <Head title="Sales" />
       <div className="w-full h-[calc(100vh-140px)]">
