@@ -118,10 +118,10 @@ export default function ContractSignedModal ({
       label: item.label ?? '',
       amount: item.amount != null ? String(item.amount) : ''
     })) : []
-    while (normalized.length < 4) {
+    while (normalized.length < 6) {
       normalized.push({ label: '', amount: '' })
     }
-    return normalized.slice(0, 4)
+    return normalized.slice(0, 6)
   }
 
   return (
@@ -170,6 +170,7 @@ export default function ContractSignedModal ({
 
             const requiresFinancing = [PAYMENT_METHODS.FINANCED, PAYMENT_METHODS.CASH_AND_FINANCE]
               .includes(values.methodOfPayment)
+            const requiresSchedule = values.methodOfPayment === PAYMENT_METHODS.CASH
 
             if (!values.projectName || values.projectName.trim() === '') {
               issues.projectName = 'Project name is required.'
@@ -208,7 +209,7 @@ export default function ContractSignedModal ({
               issues.methodOfPayment = 'Select a payment method.'
             }
 
-            if (values.downPayment && Number.isNaN(Number(values.downPayment))) {
+            if (values.methodOfPayment === PAYMENT_METHODS.CASH_AND_FINANCE && values.downPayment && Number.isNaN(Number(values.downPayment))) {
               issues.downPayment = 'Enter a valid number.'
             }
 
@@ -216,11 +217,11 @@ export default function ContractSignedModal ({
               issues.typeOfFinancing = 'Select a financing type.'
             }
 
-            if (!values.paymentScheduleType) {
+            if (requiresSchedule && !values.paymentScheduleType) {
               issues.paymentScheduleType = 'Select a payment schedule.'
             }
 
-            if (values.paymentScheduleType === CUSTOM_SCHEDULE_TYPE) {
+            if (requiresSchedule && values.paymentScheduleType === CUSTOM_SCHEDULE_TYPE) {
               const customItems = values.customSchedule
                 .map((item) => {
                   const labelValue = String(item.label ?? '').trim()
@@ -303,8 +304,12 @@ export default function ContractSignedModal ({
           }}
         >
           {({ values, errors, submitCount, handleChange, handleBlur, setFieldValue }) => {
-            const financingRequired = [PAYMENT_METHODS.FINANCED, PAYMENT_METHODS.CASH_AND_FINANCE]
-            const shouldShowFinancing = financingRequired.includes(values.methodOfPayment)
+            const isCash = values.methodOfPayment === PAYMENT_METHODS.CASH
+            const isCashAndFinance = values.methodOfPayment === PAYMENT_METHODS.CASH_AND_FINANCE
+            const isFinanced = values.methodOfPayment === PAYMENT_METHODS.FINANCED
+            const shouldShowFinancing = isFinanced || isCashAndFinance
+            const shouldShowDownPayment = isCashAndFinance
+            const shouldShowPaymentSchedule = isCash
             const attachmentsErrorMessage = typeof errors.attachments === 'string'
               ? errors.attachments
               : Array.isArray(errors.attachments)
@@ -347,6 +352,12 @@ export default function ContractSignedModal ({
               const value = Number(String(item.amount ?? '').replace(/,/g, ''))
               return Number.isFinite(value) ? total + value : total
             }, 0)
+            const customTotalMatches = hasProjectAmount && Math.abs(customScheduleTotal - projectAmountValue) <= 0.01
+            const customTotalClass = hasProjectAmount
+              ? customTotalMatches
+                ? 'text-emerald-600'
+                : 'text-rose-600'
+              : 'text-slate-400'
             const previewItems = isCustomSchedule
               ? customScheduleItems.map((item) => ({
                 label: item.label,
@@ -500,8 +511,18 @@ export default function ContractSignedModal ({
                       onChange={(event) => {
                         handleChange(event)
                         const value = event.target.value
-                        if (!financingRequired.includes(value)) {
+                        const isCashValue = value === PAYMENT_METHODS.CASH
+                        const isCashAndFinanceValue = value === PAYMENT_METHODS.CASH_AND_FINANCE
+                        const isFinancedValue = value === PAYMENT_METHODS.FINANCED
+                        if (!isFinancedValue && !isCashAndFinanceValue) {
                           setFieldValue('typeOfFinancing', '')
+                        }
+                        if (!isCashAndFinanceValue) {
+                          setFieldValue('downPayment', '')
+                        }
+                        if (!isCashValue) {
+                          setFieldValue('paymentScheduleType', '')
+                          setFieldValue('customSchedule', buildCustomSchedule())
                         }
                       }}
                       onBlur={handleBlur}
@@ -518,24 +539,26 @@ export default function ContractSignedModal ({
                       : null}
                   </div>
 
-                  <div className={submitCount ? (errors.downPayment ? 'has-error' : 'has-success') : ''}>
-                    <label className="mb-1 block text-sm font-medium text-slate-600" htmlFor="downPayment">Down Payment</label>
-                    <input
-                      id="downPayment"
-                      name="downPayment"
-                      type="number"
-                      step="0.01"
-                      value={values.downPayment}
-                      onChange={handleChange}
-                      onBlur={handleBlur}
-                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
-                      placeholder="Enter down payment"
-                      disabled={loading}
-                    />
-                    {submitCount && errors.downPayment
-                      ? <InputError message={errors.downPayment} className="mt-2" />
-                      : null}
-                  </div>
+                  {shouldShowDownPayment && (
+                    <div className={submitCount ? (errors.downPayment ? 'has-error' : 'has-success') : ''}>
+                      <label className="mb-1 block text-sm font-medium text-slate-600" htmlFor="downPayment">Down Payment</label>
+                      <input
+                        id="downPayment"
+                        name="downPayment"
+                        type="number"
+                        step="0.01"
+                        value={values.downPayment}
+                        onChange={handleChange}
+                        onBlur={handleBlur}
+                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                        placeholder="Enter down payment"
+                        disabled={loading}
+                      />
+                      {submitCount && errors.downPayment
+                        ? <InputError message={errors.downPayment} className="mt-2" />
+                        : null}
+                    </div>
+                  )}
 
                   {shouldShowFinancing && (
                     <div className={submitCount ? (errors.typeOfFinancing ? 'has-error' : 'has-success') : ''}>
@@ -560,94 +583,96 @@ export default function ContractSignedModal ({
                     </div>
                   )}
                 </div>
-                <div className="mt-4 space-y-4">
-                  <div className={submitCount ? (errors.paymentScheduleType ? 'has-error' : 'has-success') : ''}>
-                    <label className="mb-1 block text-sm font-medium text-slate-600" htmlFor="paymentScheduleType">Payment Schedule</label>
-                    <select
-                      id="paymentScheduleType"
-                      name="paymentScheduleType"
-                      value={values.paymentScheduleType}
-                      onChange={handleChange}
-                      onBlur={handleBlur}
-                      className="form-select w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
-                      disabled={loading}
-                    >
-                      <option value="">Select a payment schedule</option>
-                      {scheduleOptions.map((schedule) => (
-                        <option key={schedule} value={schedule}>{schedule}</option>
-                      ))}
-                    </select>
-                    {submitCount && errors.paymentScheduleType
-                      ? <InputError message={errors.paymentScheduleType} className="mt-2" />
-                      : null}
-                  </div>
-
-                  {isCustomSchedule && (
-                    <div className="space-y-3 rounded-lg border border-slate-200 bg-white p-3">
-                      <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-slate-400">
-                        <span>Custom schedule</span>
-                        <span>
-                          Total: {formatCurrency(customScheduleTotal)}
-                          {hasProjectAmount ? ` / ${formatCurrency(projectAmountValue)}` : ''}
-                        </span>
-                      </div>
-                      {values.customSchedule.map((item, index) => (
-                        <div key={`custom-schedule-${index}`} className="grid gap-3 md:grid-cols-3">
-                          <div className="md:col-span-2">
-                            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Label</label>
-                            <input
-                              name={`customSchedule[${index}].label`}
-                              type="text"
-                              value={item.label}
-                              onChange={handleChange}
-                              onBlur={handleBlur}
-                              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
-                              placeholder={`Payment ${index + 1}`}
-                              disabled={loading}
-                            />
-                          </div>
-                          <div>
-                            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Amount</label>
-                            <input
-                              name={`customSchedule[${index}].amount`}
-                              type="number"
-                              step="0.01"
-                              value={item.amount}
-                              onChange={handleChange}
-                              onBlur={handleBlur}
-                              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
-                              placeholder="0.00"
-                              disabled={loading}
-                            />
-                          </div>
-                        </div>
-                      ))}
-                      {submitCount && errors.customSchedule && typeof errors.customSchedule === 'string'
-                        ? <InputError message={errors.customSchedule} className="mt-2" />
+                {shouldShowPaymentSchedule && (
+                  <div className="mt-4 space-y-4">
+                    <div className={submitCount ? (errors.paymentScheduleType ? 'has-error' : 'has-success') : ''}>
+                      <label className="mb-1 block text-sm font-medium text-slate-600" htmlFor="paymentScheduleType">Payment Schedule</label>
+                      <select
+                        id="paymentScheduleType"
+                        name="paymentScheduleType"
+                        value={values.paymentScheduleType}
+                        onChange={handleChange}
+                        onBlur={handleBlur}
+                        className="form-select w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                        disabled={loading}
+                      >
+                        <option value="">Select a payment schedule</option>
+                        {scheduleOptions.map((schedule) => (
+                          <option key={schedule} value={schedule}>{schedule}</option>
+                        ))}
+                      </select>
+                      {submitCount && errors.paymentScheduleType
+                        ? <InputError message={errors.paymentScheduleType} className="mt-2" />
                         : null}
                     </div>
-                  )}
 
-                  {values.paymentScheduleType && previewItems.length > 0 && (
-                    <div className="rounded-lg border border-slate-200 bg-white p-3">
-                      <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-slate-400">
-                        <span>Schedule preview</span>
-                        <span>{hasProjectAmount ? formatCurrency(projectAmountValue) : 'Enter project amount'}</span>
-                      </div>
-                      <div className="mt-3 space-y-2 text-sm text-slate-600">
-                        {previewItems.map((item, index) => (
-                          <div key={`${item.label}-${index}`} className="flex items-center justify-between gap-3">
-                            <span className="font-medium text-slate-700">{item.label}</span>
-                            <span>{item.percentage != null ? `${item.percentage}%` : '--'}</span>
-                            <span className="text-slate-500">
-                              {item.amount != null ? formatCurrency(item.amount) : '--'}
-                            </span>
+                    {isCustomSchedule && (
+                      <div className="space-y-3 rounded-lg border border-slate-200 bg-white p-3">
+                        <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-slate-400">
+                          <span>Custom schedule</span>
+                          <span className={customTotalClass}>
+                            Total: {formatCurrency(customScheduleTotal)}
+                            {hasProjectAmount ? ` / ${formatCurrency(projectAmountValue)}` : ''}
+                          </span>
+                        </div>
+                        {values.customSchedule.map((item, index) => (
+                          <div key={`custom-schedule-${index}`} className="grid gap-3 md:grid-cols-3">
+                            <div className="md:col-span-2">
+                              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Label</label>
+                              <input
+                                name={`customSchedule[${index}].label`}
+                                type="text"
+                                value={item.label}
+                                onChange={handleChange}
+                                onBlur={handleBlur}
+                                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                                placeholder={`Payment ${index + 1}`}
+                                disabled={loading}
+                              />
+                            </div>
+                            <div>
+                              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Amount</label>
+                              <input
+                                name={`customSchedule[${index}].amount`}
+                                type="number"
+                                step="0.01"
+                                value={item.amount}
+                                onChange={handleChange}
+                                onBlur={handleBlur}
+                                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                                placeholder="0.00"
+                                disabled={loading}
+                              />
+                            </div>
                           </div>
                         ))}
+                        {submitCount && errors.customSchedule && typeof errors.customSchedule === 'string'
+                          ? <InputError message={errors.customSchedule} className="mt-2" />
+                          : null}
                       </div>
-                    </div>
-                  )}
-                </div>
+                    )}
+
+                    {values.paymentScheduleType && previewItems.length > 0 && (
+                      <div className="rounded-lg border border-slate-200 bg-white p-3">
+                        <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-slate-400">
+                          <span>Schedule preview</span>
+                          <span>{hasProjectAmount ? formatCurrency(projectAmountValue) : 'Enter project amount'}</span>
+                        </div>
+                        <div className="mt-3 space-y-2 text-sm text-slate-600">
+                          {previewItems.map((item, index) => (
+                            <div key={`${item.label}-${index}`} className="flex items-center justify-between gap-3">
+                              <span className="font-medium text-slate-700">{item.label}</span>
+                              <span>{item.percentage != null ? `${item.percentage}%` : '--'}</span>
+                              <span className="text-slate-500">
+                                {item.amount != null ? formatCurrency(item.amount) : '--'}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </fieldset>
 
               <fieldset className="rounded-lg border border-slate-200 bg-white/70 p-3">
@@ -698,7 +723,7 @@ export default function ContractSignedModal ({
                     <span>Email</span>
                   </label>
                 </div>
-                {submitCount && errors.nameCheck && (
+                {submitCount > 0 && errors.nameCheck && (
                   <InputError message={errors.nameCheck} className="mt-2" />
                 )}
               </fieldset>

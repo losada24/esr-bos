@@ -130,6 +130,7 @@ class FrontdeskController extends Controller
             ContactSourceEnum::YOUTUBE->value,
             ContactSourceEnum::NEW_ORDER ->value,
             ContactSourceEnum::GOOGLE_ADS->value,
+            ContactSourceEnum::SAME_AS_ORDER->value,
     ];
 
     $order_types = [
@@ -261,6 +262,7 @@ class FrontdeskController extends Controller
             ContactSourceEnum::YOUTUBE->value,
             ContactSourceEnum::NEW_ORDER ->value,
             ContactSourceEnum::GOOGLE_ADS->value,
+            ContactSourceEnum::SAME_AS_ORDER->value,
       ],
        
       
@@ -292,7 +294,7 @@ class FrontdeskController extends Controller
             ContactSourceEnum::YOUTUBE->value,
             ContactSourceEnum::NEW_ORDER ->value,
             ContactSourceEnum::GOOGLE_ADS->value,
-          ],
+            ContactSourceEnum::SAME_AS_ORDER->value,
       'frame_colors' => [
         FrameColorEnum::BLACK->value,
         FrameColorEnum::WHITE->value,
@@ -657,12 +659,13 @@ public function showQuantifiedModal(Order $order)
             ContactSourceEnum::YOUTUBE->value,
             ContactSourceEnum::NEW_ORDER ->value,
             ContactSourceEnum::GOOGLE_ADS->value,
+            ContactSourceEnum::SAME_AS_ORDER->value,
     ];
 
     $order_types = [
       OrderTypeEnum::RESIDENTIAL->value,
       OrderTypeEnum::COMMERCIAL->value,
-      OrderTypeEnum::SUPPLY->value,
+      //OrderTypeEnum::SUPPLY->value,
     ];
     $frame_colors = [
       FrameColorEnum::BLACK->value,
@@ -716,6 +719,7 @@ public function showQuantifiedModal(Order $order)
             ContactSourceEnum::YOUTUBE->value,
             ContactSourceEnum::NEW_ORDER ->value,
             ContactSourceEnum::GOOGLE_ADS->value,
+            ContactSourceEnum::SAME_AS_ORDER->value,
     ];
 
     $statusOptions = [
@@ -802,6 +806,7 @@ public function showQuantifiedModal(Order $order)
             ContactSourceEnum::YOUTUBE->value,
             ContactSourceEnum::NEW_ORDER ->value,
             ContactSourceEnum::GOOGLE_ADS->value,
+            ContactSourceEnum::SAME_AS_ORDER->value,
     ];
 
     $rules = [
