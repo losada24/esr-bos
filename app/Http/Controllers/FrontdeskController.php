@@ -341,6 +341,10 @@ class FrontdeskController extends Controller
 
   public function updateStatus(Request $request, Order $order)
   {
+    if (!$this->ownerCanAccessOrder($request->user(), $order)) {
+      return response()->json(['message' => 'You are not authorized to update this order.'], 403);
+    }
+
     $order->status = $request->input('status');
 
     $order->save();
@@ -562,7 +566,10 @@ public function showQuantifiedModal(Order $order)
     public function orderView($id)
   { // Obtener las órdenes por supervisor
 
-    $order = Order::find($id);
+    $order = Order::findOrFail($id);
+    if (!$this->ownerCanAccessOrder(auth()->user(), $order)) {
+      abort(403, 'You are not authorized to access this order.');
+    }
     $order->load('tags:id,name,color,taggable_id,taggable_type', 'client.companyContact', 'user', 'owners', 'saleForm', 'attachments.user', 'orderStatus.user', 'paymentSchedule.installments.paidBy');
 
     $clientOrders = collect();
@@ -1036,6 +1043,17 @@ public function showQuantifiedModal(Order $order)
           RoleEnum::ADMIN->value,
           RoleEnum::ACCOUNT_MANAGER->value,
       ]);
+  }
+
+  private function ownerCanAccessOrder(?User $user, Order $order): bool
+  {
+      if (!$this->isOwnerRestricted($user)) {
+          return true;
+      }
+
+      return $order->owners()
+          ->where('users.id', $user->id)
+          ->exists();
   }
 }
 

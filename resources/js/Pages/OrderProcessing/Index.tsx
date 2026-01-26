@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Dispatch, SetStateAction } from 'react'
 import { Head, Link } from '@inertiajs/react'
 import { ReactSortable } from 'react-sortablejs'
@@ -71,6 +71,13 @@ const sortPipelinesByRecentActivity = (pipelines: Pipelines[] = []): Pipelines[]
   }))
 }
 
+const clonePipelines = (pipelines: Pipelines[] = []): Pipelines[] => {
+  return pipelines.map(pipeline => ({
+    ...pipeline,
+    tasks: (pipeline.tasks ?? []).map(task => ({ ...task }))
+  }))
+}
+
 const INFINITE_SCROLL_STATUSES = new Set(['CLOSED WON'])
 const TASKS_PAGE_SIZE = 20
 const SCROLL_THRESHOLD_PX = 120
@@ -111,6 +118,8 @@ const stampTaskAsUpdated = (task: Tasks): Tasks => ({
 const OrderProcessing = ({ auth, data }: PageProps & { data: Pipelines[] }) => {
   const [pipelines, setPipelinesState] = useState<Pipelines[]>(() => sortPipelinesByRecentActivity(data))
   const [statusPagination, setStatusPagination] = useState<Record<string, StatusPaginationState>>(() => buildPaginationState(data))
+  const dragSnapshotRef = useRef<Pipelines[] | null>(null)
+  const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? ''
 
   useEffect(() => {
     const sorted = sortPipelinesByRecentActivity(data)
@@ -149,6 +158,24 @@ const OrderProcessing = ({ auth, data }: PageProps & { data: Pipelines[] }) => {
 
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value)
+
+  const updateOrderStatus = async (orderId: number, status: string) => {
+    const response = await fetch(route('frontdesk.updateStatus', { order: orderId }), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        'X-CSRF-TOKEN': csrfToken
+      },
+      body: JSON.stringify({ status })
+    })
+
+    const payload = await response.json().catch(() => null)
+
+    if (!response.ok || !payload?.order) {
+      throw new Error(payload?.message ?? 'Unable to update status.')
+    }
+  }
 
   const loadMoreTasks = useCallback(async (statusKey: string, nextPage: number) => {
     setStatusPagination(prev => ({
@@ -278,96 +305,145 @@ const OrderProcessing = ({ auth, data }: PageProps & { data: Pipelines[] }) => {
                       setList={(newState) => updatePipelineTasks(pipeline.id, newState as Tasks[])}
                       group="order-processing"
                       animation={200}
+                      onStart={() => {
+                        dragSnapshotRef.current = clonePipelines(pipelines)
+                      }}
+                      onEnd={(evt) => {
+                        const run = async () => {
+                          const { item, from, to } = evt
+                          const movedTaskId = item.getAttribute('data-id')
+                          const oldStatus = from.closest('[data-group]')?.getAttribute('data-group')?.trim() ?? ''
+                          const newStatus = to.closest('[data-group]')?.getAttribute('data-group')?.trim() ?? ''
+
+                          if (!movedTaskId || !oldStatus || !newStatus || oldStatus === newStatus) {
+                            dragSnapshotRef.current = null
+                            return
+                          }
+
+                          const orderId = Number(movedTaskId)
+                          if (!Number.isFinite(orderId)) {
+                            dragSnapshotRef.current = null
+                            return
+                          }
+
+                          try {
+                            await updateOrderStatus(orderId, newStatus)
+                          } catch (error) {
+                            console.error('❌ Error al actualizar estado:', error)
+                            if (dragSnapshotRef.current) {
+                              setPipelines(dragSnapshotRef.current)
+                            }
+                          } finally {
+                            dragSnapshotRef.current = null
+                          }
+                        }
+
+                        void run()
+                      }}
                       ghostClass="sortable-ghost"
                       dragClass="sortable-drag"
                       className="min-h-[1px] space-y-4 pt-2"
                     >
-                      {pipeline.tasks.map((task) => (
-                        <div className="sortable-list" key={task.id} data-id={task.id}>
-                            <div className="shadow bg-[#f4f4f4] dark:bg-white-dark/20 p-3 pb-4 rounded-md mb-5 space-y-2 cursor-move text-xs text-slate-600">
-                              <div className="flex items-center justify-between w-full">
-                                <p className="flex items-center gap-2 break-all text-sm font-semibold text-slate-700 dark:text-white">
-                                  {task.title}
-                                </p>
-                            <div className="flex items-center gap-2 text-[11px]">
-                                <Link
-                                  href={route('frontdesk.order_view', task.id)}
-                                  title='Order View'
-                                  className='flex items-center gap-1 hover:text-success'
-                                >
-                                  <EyeIcon />
-                                </Link>
-                                <button
-                                  onClick={() => {}}
-                                  type="button"
-                                  className="flex items-center gap-1 hover:text-info"
-                                >
-                                  <EditIcon />
-                                </button>
-                                <InfoTooltip
-                                  side="left"
-                                  width={220}
-                                  content={
-                                    <div>
-                                      <div style={{ fontWeight: 700, marginBottom: 6, fontSize: '15px', color: '#0f172a' }}>Information</div>
-                                      <ul style={{ margin: 0, paddingLeft: 16, fontSize: '13px', color: '#1e293b', lineHeight: '1.6' }}>
-                                        <li style={{ marginBottom: 6 }}>Phone: {task.phone ?? '—'}</li>
-                                        <li style={{ marginBottom: 6 }}>Appt Date: {task.schedule_appointment ?? 'No Appt Scheduled'}</li>
-                                        <li style={{ marginBottom: 6 }}>Owners: {task.owners?.length ? task.owners.map((owner: any) => owner.name).join(', ') : 'No owners assigned'}</li>
-                                      </ul>
-                                    </div>
-                                  }
-                                />
-                              </div>
-                            </div>
-                            <div className="flex gap-2 items-center flex-wrap">
-                              {task.tags?.length
-                                ? (
-                                    task.tags.map((tag, index) => (
-                                  <span
-                                    key={`${task.id}-tag-${index}`}
-                                    className={tagClasses((tag.color as TagColor) || 'gray')}
-                                    title={tag.name}
+                      {pipeline.tasks.map((task) => {
+                        const ownerNames = (task.owners ?? [])
+                          .map((owner: any) => typeof owner?.name === 'string' ? owner.name.trim() : '')
+                          .filter((name: string) => Boolean(name))
+                        const ownersDisplay = ownerNames.length ? ownerNames.join(', ') : 'No owners assigned'
+                        const ownersLabel = ownerNames.length === 1 ? 'Owner' : 'Owners'
+
+                        return (
+                          <div className="sortable-list" key={task.id} data-id={task.id}>
+                              <div className="shadow bg-[#f4f4f4] dark:bg-white-dark/20 p-3 pb-4 rounded-md mb-5 space-y-2 cursor-move text-xs text-slate-600">
+                                <div className="flex items-center justify-between w-full">
+                                  <p className="flex items-center gap-2 break-all text-sm font-semibold text-slate-700 dark:text-white">
+                                    {task.title}
+                                  </p>
+                              <div className="flex items-center gap-2 text-[11px]">
+                                  <Link
+                                    href={route('frontdesk.order_view', task.id)}
+                                    title='Order View'
+                                    className='flex items-center gap-1 hover:text-success'
                                   >
-                                    <span className="truncate">{tag.name}</span>
+                                    <EyeIcon />
+                                  </Link>
+                                  <button
+                                    onClick={() => {}}
+                                    type="button"
+                                    className="flex items-center gap-1 hover:text-info"
+                                  >
+                                    <EditIcon />
+                                  </button>
+                                  <InfoTooltip
+                                    side="left"
+                                    width={220}
+                                    content={
+                                      <div>
+                                        <div style={{ fontWeight: 700, marginBottom: 6, fontSize: '15px', color: '#0f172a' }}>Information</div>
+                                        <ul style={{ margin: 0, paddingLeft: 16, fontSize: '13px', color: '#1e293b', lineHeight: '1.6' }}>
+                                          <li style={{ marginBottom: 6 }}>Phone: {task.phone ?? '—'}</li>
+                                          <li style={{ marginBottom: 6 }}>Appt Date: {task.schedule_appointment ?? 'No Appt Scheduled'}</li>
+                                          <li style={{ marginBottom: 6 }}>Owners: {ownersDisplay}</li>
+                                        </ul>
+                                      </div>
+                                    }
+                                  />
+                                </div>
+                              </div>
+                              <div className="flex gap-2 items-center flex-wrap">
+                                {task.tags?.length
+                                  ? (
+                                      task.tags.map((tag, index) => (
+                                    <span
+                                      key={`${task.id}-tag-${index}`}
+                                      className={tagClasses((tag.color as TagColor) || 'gray')}
+                                      title={tag.name}
+                                    >
+                                      <span className="truncate">{tag.name}</span>
+                                    </span>
+                                      ))
+                                    )
+                                  : (
+                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium ring-1 bg-slate-100 text-slate-600 ring-slate-200">
+                                    No Tags
                                   </span>
-                                    ))
+                                    )}
+                              </div>
+                              <p className="break-all">{task.date}</p>
+                              {task.date_edited !== task.date && (
+                                <p className="break-all">{task.date_edited}</p>
+                              )}
+                              <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
+                                <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-2.5 py-0.5 text-amber-900 ring-1 ring-amber-300/80 shadow-sm">
+                                  <span className="text-[10px] uppercase tracking-wide text-amber-700">{ownersLabel}</span>
+                                  <span className="font-semibold">{ownersDisplay}</span>
+                                </span>
+                              </div>
+                              {(task.project_amount !== undefined && task.project_amount !== null)
+                                ? (
+                                  <div className="mt-1 flex items-center justify-between gap-2">
+                                    <p className="break-all font-semibold text-slate-700">
+                                      {formatCurrency(Number(task.project_amount))}
+                                    </p>
+                                    {task.is_supply && (
+                                      <span className="text-xs font-bold uppercase tracking-wide text-sky-600">
+                                        SUPPLY
+                                      </span>
+                                    )}
+                                  </div>
                                   )
                                 : (
-                                <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium ring-1 bg-slate-100 text-slate-600 ring-slate-200">
-                                  No Tags
-                                </span>
+                                  task.is_supply && (
+                                    <div className="mt-1 flex justify-end">
+                                      <span className="text-xs font-bold uppercase tracking-wide text-sky-600">
+                                        SUPPLY
+                                      </span>
+                                    </div>
+                                  )
                                   )}
                             </div>
-                            <p className="break-all">{task.date}</p>
-                            {task.date_edited !== task.date && (
-                              <p className="break-all">{task.date_edited}</p>
-                            )}
-                            {(task.project_amount !== undefined && task.project_amount !== null)
-                              ? (
-                                <div className="mt-1 flex items-center justify-between gap-2">
-                                  <p className="break-all font-semibold text-slate-700">
-                                    {formatCurrency(Number(task.project_amount))}
-                                  </p>
-                                  {task.is_supply && (
-                                    <span className="text-xs font-bold uppercase tracking-wide text-sky-600">
-                                      SUPPLY
-                                    </span>
-                                  )}
-                                </div>
-                                )
-                              : (
-                                task.is_supply && (
-                                  <div className="mt-1 flex justify-end">
-                                    <span className="text-xs font-bold uppercase tracking-wide text-sky-600">
-                                      SUPPLY
-                                    </span>
-                                  </div>
-                                )
-                                )}
                           </div>
-                        </div>
-                      ))}
+                        )
+                      })}
                     </ReactSortable>
                   </div>
                 </div>

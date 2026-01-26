@@ -35,11 +35,38 @@ const ClientModal = ({
     referral_id: 0
   }
 
-  const handleSubmit = async (values: any /*, helpers: FormikHelpers<Client> */) => {
-    if (addClient) {
-      addClient(values)
+  const handleSubmit = async (values: any, helpers: FormikHelpers<Client>) => {
+    const phone = (values.phone ?? '').trim()
+
+    helpers.setSubmitting(true)
+
+    try {
+      const response = await fetch(route('client.phone_exists', { phone }), {
+        headers: {
+          Accept: 'application/json'
+        }
+      })
+
+      if (!response.ok) {
+        helpers.setFieldError('phone', 'No se pudo validar el telefono.')
+        return
+      }
+
+      const data = await response.json()
+      if (data?.exists) {
+        helpers.setFieldError('phone', 'El telefono ya existe.')
+        return
+      }
+
+      if (addClient) {
+        addClient(values)
+      }
+      onClose(false)
+    } catch (error) {
+      helpers.setFieldError('phone', 'No se pudo validar el telefono.')
+    } finally {
+      helpers.setSubmitting(false)
     }
-    onClose(false)
   }
 
   return (
