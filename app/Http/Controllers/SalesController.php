@@ -12,6 +12,7 @@ use App\Enum\MethodOfPayment;
 use App\Enum\PaymentScheduleTypeEnum;
 use App\Enum\TypeOfFinancing;
 use App\Enum\RoleEnum;
+use App\Enum\StatusUserEnum;
 use App\Http\Requests\StoreFrontDeskOrderRequest;
 use App\Models\Client;
 use Illuminate\Http\Request;
@@ -19,6 +20,7 @@ use App\Models\InstallationTeam;
 use App\Models\Order;
 use App\Models\PaymentSchedule;
 use App\Models\User;
+use App\Models\Tag;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
@@ -30,15 +32,26 @@ use App\Traits\OrderEmails;
 use Illuminate\Http\JsonResponse;
 use App\Support\PaymentScheduleCalculator;
 use App\Support\PaymentScheduleTemplates;
+use App\Support\OrderBoardFilter;
 
 class SalesController extends Controller
 {
     use OrderEmails;
     private const SALES_PAGE_SIZE = 20;
 
-    public function index()
+    public function index(Request $request)
     {
         $user = auth()->user();
+        $filters = $request->only(['filter_field', 'filter_value', 'filter_value_secondary', 'filter_op', 'filter_value_min', 'filter_value_max']);
+        $filters['filters'] = $request->input('filters', []);
+        $filters['filter_match'] = $request->input('filter_match', 'and');
+        if (is_string($filters['filters'])) {
+            $decoded = json_decode($filters['filters'], true);
+            $filters['filters'] = is_array($decoded) ? $decoded : [];
+        }
+        $filterRows = is_array($filters['filters']) ? $filters['filters'] : [];
+        $filterMatch = (string) ($filters['filter_match'] ?? 'and');
+        $hasMultiFilters = count($filterRows) > 0;
 
     $salesStatuses = $this->salesStatuses();
     $ownerVisibleStatuses = $this->ownerVisibleSalesStatuses();
@@ -77,8 +90,11 @@ class SalesController extends Controller
     }
 
     // Armar el arreglo que espera el componente React
-    $data = collect($visibleStatuses)->map(function ($status) use ($user, $paginatedStatuses) {
+    $data = collect($visibleStatuses)->map(function ($status) use ($user, $paginatedStatuses, $filters, $filterRows, $filterMatch, $hasMultiFilters) {
         $ordersQuery = $this->salesOrdersForStatusQuery($status, $user);
+        $ordersQuery = $hasMultiFilters
+            ? OrderBoardFilter::applyMultiple($ordersQuery, $filterRows, $filterMatch)
+            : OrderBoardFilter::apply($ordersQuery, $filters);
 
         if (in_array($status, $paginatedStatuses, true)) {
             $total = (clone $ordersQuery)->count();
@@ -112,12 +128,35 @@ class SalesController extends Controller
           $ownerOptions->where('id', $user->id);
       }
 
+      $supervisors = User::role(RoleEnum::SUPERVISOR->value)
+          ->select('id', 'name')
+          ->where('status', StatusUserEnum::ACTIVE->value)
+          ->orderBy('name')
+          ->get();
+
+      $tags = Tag::query()
+          ->where('taggable_type', Order::class)
+          ->select('id', 'name')
+          ->orderBy('name')
+          ->get();
+
+      $createdByUsers = User::query()
+          ->select('id', 'name')
+          ->where('status', StatusUserEnum::ACTIVE->value)
+          ->orderBy('name')
+          ->get();
+
     return Inertia::render('Sales/Index', [
       'data' => $data,
       'lossReasonFrontdesk' => $lossReasonFrontdesk,
       'sources' => $sources,
       'order_types' => $order_types,
+      'statuses' => $visibleStatuses,
       'owners' => $ownerOptions->get(),
+      'supervisors' => $supervisors,
+      'created_by_users' => $createdByUsers,
+      'tags' => $tags,
+      'filters' => $filters,
       'methods_of_payment' => array_map(fn (MethodOfPayment $method) => $method->value, MethodOfPayment::cases()),
       'type_of_financing' => array_map(fn (TypeOfFinancing $financing) => $financing->value, TypeOfFinancing::cases()),
       'payment_schedule_templates' => PaymentScheduleTemplates::templates(),
@@ -149,7 +188,20 @@ class SalesController extends Controller
       ], 422);
     }
 
+    $filters = $request->only(['filter_field', 'filter_value', 'filter_value_secondary', 'filter_op', 'filter_value_min', 'filter_value_max']);
+    $filters['filters'] = $request->input('filters', []);
+    $filters['filter_match'] = $request->input('filter_match', 'and');
+    if (is_string($filters['filters'])) {
+        $decoded = json_decode($filters['filters'], true);
+        $filters['filters'] = is_array($decoded) ? $decoded : [];
+    }
+    $filterRows = is_array($filters['filters']) ? $filters['filters'] : [];
+    $filterMatch = (string) ($filters['filter_match'] ?? 'and');
+    $hasMultiFilters = count($filterRows) > 0;
     $ordersQuery = $this->salesOrdersForStatusQuery($status, $user);
+    $ordersQuery = $hasMultiFilters
+        ? OrderBoardFilter::applyMultiple($ordersQuery, $filterRows, $filterMatch)
+        : OrderBoardFilter::apply($ordersQuery, $filters);
     $total = (clone $ordersQuery)->count();
     $orders = $ordersQuery
       ->with($this->salesOrderRelations())

@@ -15,7 +15,6 @@ import {
 } from '@/types'
 import Select, { type SingleValue } from 'react-select'
 import DeleteIcon from '@/Components/Icons/DeleteIcon'
-import { capitalizeWords } from '@/Utils/string'
 import { type OrderFormValues } from './OrderCommon'
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
@@ -121,8 +120,7 @@ const OrderForm = ({
                 autoComplete="client_name"
                 placeholder='Client Name'
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                  const formattedValue = capitalizeWords(e.target.value)
-                  setFieldValue('client_name', formattedValue)
+                  setFieldValue('client_name', e.target.value)
                 }}
               />
               {(submitCount && errors.client_name) ? <InputError message={errors.client_name} className="mt-2" /> : ''}
