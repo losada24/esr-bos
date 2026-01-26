@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { Dispatch, SetStateAction } from 'react'
-import { Head, Link } from '@inertiajs/react'
+import { Head, Link, router } from '@inertiajs/react'
+import type { RequestPayload } from '@inertiajs/core'
 import { ReactSortable } from 'react-sortablejs'
 import { type Role, type PageProps, type Pipelines, type Tasks } from '@/types'
 import AuthenticatedCalendarLayout from '@/Layouts/AuthenticatedCalendarLayout'
@@ -11,6 +12,7 @@ import { tagClasses, type TagColor } from '@/Utils/tags'
 import { PAYMENT_METHODS } from '@/Utils/constants'
 import EyeIcon from '@/Components/Icons/EyeIcon'
 import InfoTooltip from '@/Components/InfoTooltip'
+import OrderBoardFilter, { type BoardFilters, type FilterFieldConfig } from '@/Components/OrderBoardFilter'
 import EstimateScheduleModal from './EstimateScheduleModal'
 import FollowUpModal from './FollowUpModal'
 import StandByNoteModal from './StandByNoteModal'
@@ -20,6 +22,8 @@ import ContractSignedModal from './ContractSignedModal'
 import LostContractModal from './LostContractModal'
 
 export interface OwnerOption { id: number, name: string }
+type IdOption = { id: number, name: string }
+type TagOption = { id: number, name: string | null }
 
 type PaymentScheduleTemplateItem = { label: string, percentage: number }
 type PaymentScheduleTemplates = Record<string, PaymentScheduleTemplateItem[]>
@@ -118,6 +122,24 @@ const TASKS_PAGE_SIZE = 20
 const SCROLL_THRESHOLD_PX = 120
 const CUSTOM_SCHEDULE_TYPE = 'CUSTOMIZED'
 type StatusPaginationState = { nextPage: number, loading: boolean }
+const buildFilterQuery = (filters?: BoardFilters): Record<string, unknown> => {
+  if (!filters) return {}
+  if (Array.isArray(filters.filters) && filters.filters.length) {
+    return {
+      filter_match: filters.filter_match ?? 'and',
+      filters: JSON.stringify(filters.filters)
+    }
+  }
+
+  const params: Record<string, string> = {}
+  if (filters.filter_field) params.filter_field = filters.filter_field
+  if (filters.filter_value != null && `${filters.filter_value}`.trim() !== '') params.filter_value = `${filters.filter_value}`
+  if (filters.filter_value_secondary != null && `${filters.filter_value_secondary}`.trim() !== '') params.filter_value_secondary = `${filters.filter_value_secondary}`
+  if (filters.filter_op) params.filter_op = filters.filter_op
+  if (filters.filter_value_min != null && `${filters.filter_value_min}`.trim() !== '') params.filter_value_min = `${filters.filter_value_min}`
+  if (filters.filter_value_max != null && `${filters.filter_value_max}`.trim() !== '') params.filter_value_max = `${filters.filter_value_max}`
+  return params
+}
 
 const buildPaginationState = (pipelines: Pipelines[] = []): Record<string, StatusPaginationState> => {
   return pipelines.reduce<Record<string, StatusPaginationState>>((acc, pipeline) => {
@@ -206,7 +228,7 @@ const getEstimateStaleClass = (pipeline: Pipelines, task: Tasks): string | null 
 const normalizeStatusValue = (value: string): string => value.replace(/\s+/g, ' ').trim().toUpperCase()
 const matchesStatus = (value: string, target: string): boolean => normalizeStatusValue(value) === normalizeStatusValue(target)
 
-export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order_types, owners, methods_of_payment, type_of_financing, payment_schedule_templates }: PageProps & { data: Pipelines[], lossReasonFrontdesk: string [], sources: string[], order_types: string[], owners: OwnerOption[], methods_of_payment: string[], type_of_financing: string[], payment_schedule_templates: PaymentScheduleTemplates }) {
+export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order_types, statuses, owners, supervisors, created_by_users, tags, filters, methods_of_payment, type_of_financing, payment_schedule_templates }: PageProps & { data: Pipelines[], lossReasonFrontdesk: string [], sources: string[], order_types: string[], statuses: string[], owners: OwnerOption[], supervisors: IdOption[], created_by_users: IdOption[], tags: TagOption[], filters: BoardFilters, methods_of_payment: string[], type_of_financing: string[], payment_schedule_templates: PaymentScheduleTemplates }) {
   const IS_ADMIN = isAdmin(auth.user.roles.map((role: Role) => role.name))
   const IS_ACCOUNT_MANAGER = isAccountManager(auth.user.roles.map((role: Role) => role.name))
   const IS_SUPERVISOR = isSupervisor(auth.user.roles.map((role: Role) => role.name))
@@ -255,6 +277,40 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
   const [lostContractError, setLostContractError] = useState<string | null>(null)
   const [pendingLostContract, setPendingLostContract] = useState<{ task: Tasks, oldStatus: string, newStatus: string } | null>(null)
   const [statusPagination, setStatusPagination] = useState<Record<string, StatusPaginationState>>(() => buildPaginationState(data))
+  const [isFilterOpen, setIsFilterOpen] = useState(false)
+  const appliedFilters = filters ?? {}
+  const filterQueryParams = buildFilterQuery(appliedFilters)
+
+  const filterFields = useMemo<FilterFieldConfig[]>(() => ([
+    { value: 'name', label: 'Order Name', type: 'text', placeholder: 'Order name or job address' },
+    {
+      value: 'name_and_job_address',
+      label: 'Order Name + Job Address',
+      type: 'dual_text',
+      primaryLabel: 'Order Name',
+      secondaryLabel: 'Job Address',
+      placeholder: 'Order name',
+      secondaryPlaceholder: 'Job address'
+    },
+    { value: 'job_address', label: 'Job Address', type: 'text' },
+    { value: 'job_city', label: 'Job City', type: 'text' },
+    { value: 'status', label: 'Status', type: 'select', options: statuses.map((status) => ({ label: status, value: status })) },
+    { value: 'city', label: 'City', type: 'text' },
+    { value: 'job_state', label: 'Job State', type: 'text' },
+    { value: 'job_zip', label: 'Job Zip', type: 'text' },
+    { value: 'order_type', label: 'Order Type', type: 'select', options: order_types.map((type) => ({ label: type, value: type })) },
+    { value: 'is_supply', label: 'Is Supply', type: 'select', options: [{ label: 'Yes', value: '1' }, { label: 'No', value: '0' }] },
+    { value: 'owner', label: 'Owner', type: 'select', options: owners.map((owner) => ({ label: owner.name, value: owner.id.toString() })) },
+    { value: 'source', label: 'Source', type: 'select', options: sources.map((source) => ({ label: source, value: source })) },
+    { value: 'company_name', label: 'Company Name', type: 'text' },
+    { value: 'client_name', label: 'Client Name', type: 'text' },
+    { value: 'phone', label: 'Phone', type: 'text' },
+    { value: 'tag', label: 'Tag', type: 'select', options: tags.filter((tag) => Boolean(tag.name)).map((tag) => ({ label: tag.name ?? '', value: tag.id.toString() })) },
+    { value: 'supervisor', label: 'Supervisor', type: 'select', options: supervisors.map((supervisor) => ({ label: supervisor.name, value: supervisor.id.toString() })) },
+    { value: 'created_by', label: 'Created By', type: 'select', options: created_by_users.map((user) => ({ label: user.name, value: user.id.toString() })) },
+    { value: 'created_time', label: 'Created Time', type: 'date' },
+    { value: 'project_amount', label: 'Project Amount', type: 'amount' }
+  ]), [statuses, order_types, owners, sources, tags, supervisors, created_by_users])
 
   useEffect(() => {
     const sorted = sortPipelinesByRecentActivity(data)
@@ -330,7 +386,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
     }))
 
     try {
-      const response = await fetch(route('sales.tasks', { status: statusKey, page: nextPage, per_page: TASKS_PAGE_SIZE }), {
+      const response = await fetch(route('sales.tasks', { status: statusKey, page: nextPage, per_page: TASKS_PAGE_SIZE, ...filterQueryParams }), {
         headers: { Accept: 'application/json' }
       })
 
@@ -387,7 +443,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
         }
       }))
     }
-  }, [setProjectList, setStatusPagination])
+  }, [setProjectList, setStatusPagination, filterQueryParams])
 
   const closeScheduleModal = (restoreTask = false) => {
     if (restoreTask && pendingMove) {
@@ -948,16 +1004,65 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
     <AuthenticatedCalendarLayout
       auth={auth}
       printPanel={false}
-      actions={!IS_OWNER ? (
-        <Link
-          className="btn btn-primary"
-          href={route('frontdesk.create')}
-        >
-          <span>Create Request</span>
-        </Link>
-      ) : null}
+      actions={
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            className="btn btn-outline-primary"
+            onClick={() => { setIsFilterOpen(true) }}
+          >
+            Filter
+          </button>
+          {!IS_OWNER ? (
+            <Link
+              className="btn btn-primary"
+              href={route('frontdesk.create')}
+            >
+              <span>Create Request</span>
+            </Link>
+          ) : null}
+        </div>
+      }
     >
       <Head title="Sales" />
+      {isFilterOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/40"
+          onClick={() => { setIsFilterOpen(false) }}
+        />
+      )}
+      <div
+        className={`fixed right-0 top-0 z-50 h-full w-[380px] max-w-[90vw] transform bg-white shadow-2xl transition-transform duration-200 dark:bg-[#0b1220] ${isFilterOpen ? 'translate-x-0' : 'translate-x-full'}`}
+      >
+        <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3 dark:border-white-dark/10">
+          <div className="text-sm font-semibold text-slate-700 dark:text-white">Filters</div>
+          <button
+            type="button"
+            className="btn btn-outline-primary"
+            onClick={() => { setIsFilterOpen(false) }}
+          >
+            Close
+          </button>
+        </div>
+        <div className="h-[calc(100%-60px)] overflow-y-auto p-4">
+          <OrderBoardFilter
+            fields={filterFields}
+            initialFilters={appliedFilters}
+          onApply={(params) => {
+            const payload: RequestPayload = {
+              ...params,
+              ...(Array.isArray(params.filters) ? { filters: JSON.stringify(params.filters) } : {})
+            }
+            router.get(route('sales.index'), payload, { replace: true, preserveState: true })
+            setIsFilterOpen(false)
+          }}
+            onReset={() => {
+              router.get(route('sales.index'), {}, { replace: true, preserveState: false })
+              setIsFilterOpen(false)
+            }}
+          />
+        </div>
+      </div>
       <div className="w-full h-[calc(100vh-140px)]">
         <div className="overflow-x-auto overflow-y-hidden h-full">
           <div className="flex gap-4 min-w-max h-full">

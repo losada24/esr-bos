@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { Dispatch, SetStateAction } from 'react'
 import { Head, Link, router } from '@inertiajs/react'
+import type { RequestPayload } from '@inertiajs/core'
 import { ReactSortable } from 'react-sortablejs'
 import { type Role, type PageProps, type Pipelines, type Tasks } from '@/types'
 import AuthenticatedCalendarLayout from '@/Layouts/AuthenticatedCalendarLayout'
@@ -13,6 +14,7 @@ import RequestStandByModal from './RequestStandByModal'
 import EyeIcon from '@/Components/Icons/EyeIcon'
 import { tagClasses, type TagColor } from '@/Utils/tags'
 import InfoTooltip from '@/Components/InfoTooltip'
+import OrderBoardFilter, { type BoardFilters, type FilterFieldConfig } from '@/Components/OrderBoardFilter'
 
 const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const
 
@@ -80,6 +82,27 @@ const INFINITE_SCROLL_STATUSES = new Set(['LOST REQUEST', 'QUALIFIED'])
 const TASKS_PAGE_SIZE = 20
 const SCROLL_THRESHOLD_PX = 120
 type StatusPaginationState = { nextPage: number, loading: boolean }
+type IdOption = { id: number, name: string }
+type TagOption = { id: number, name: string | null }
+
+const buildFilterQuery = (filters?: BoardFilters): Record<string, unknown> => {
+  if (!filters) return {}
+  if (Array.isArray(filters.filters) && filters.filters.length) {
+    return {
+      filter_match: filters.filter_match ?? 'and',
+      filters: JSON.stringify(filters.filters)
+    }
+  }
+
+  const params: Record<string, string> = {}
+  if (filters.filter_field) params.filter_field = filters.filter_field
+  if (filters.filter_value != null && `${filters.filter_value}`.trim() !== '') params.filter_value = `${filters.filter_value}`
+  if (filters.filter_value_secondary != null && `${filters.filter_value_secondary}`.trim() !== '') params.filter_value_secondary = `${filters.filter_value_secondary}`
+  if (filters.filter_op) params.filter_op = filters.filter_op
+  if (filters.filter_value_min != null && `${filters.filter_value_min}`.trim() !== '') params.filter_value_min = `${filters.filter_value_min}`
+  if (filters.filter_value_max != null && `${filters.filter_value_max}`.trim() !== '') params.filter_value_max = `${filters.filter_value_max}`
+  return params
+}
 
 const buildPaginationState = (pipelines: Pipelines[] = []): Record<string, StatusPaginationState> => {
   return pipelines.reduce<Record<string, StatusPaginationState>>((acc, pipeline) => {
@@ -150,6 +173,12 @@ export default function Frontdesk ({
   lossReasonFrontdesk,
   sources,
   order_types,
+  statuses,
+  owners,
+  supervisors,
+  created_by_users,
+  tags,
+  filters,
   frame_colors,
   glass_colors,
   glass_types,
@@ -160,6 +189,12 @@ export default function Frontdesk ({
   lossReasonFrontdesk: string[]
   sources: string[]
   order_types: string[]
+  statuses: string[]
+  owners: IdOption[]
+  supervisors: IdOption[]
+  created_by_users: IdOption[]
+  tags: TagOption[]
+  filters: BoardFilters
   frame_colors: string[]
   glass_colors: string[]
   glass_types: string[]
@@ -181,6 +216,40 @@ export default function Frontdesk ({
   const [showRequestStandByModal, setShowRequestStandByModal] = useState(false)
   const [previousStatusId, setPreviousStatusId] = useState<string | null>(null)
   const [statusPagination, setStatusPagination] = useState<Record<string, StatusPaginationState>>(() => buildPaginationState(data))
+  const [isFilterOpen, setIsFilterOpen] = useState(false)
+  const appliedFilters = filters ?? {}
+  const filterQueryParams = buildFilterQuery(appliedFilters)
+
+  const filterFields = useMemo<FilterFieldConfig[]>(() => ([
+    { value: 'name', label: 'Order Name', type: 'text', placeholder: 'Order name or job address' },
+    {
+      value: 'name_and_job_address',
+      label: 'Order Name + Job Address',
+      type: 'dual_text',
+      primaryLabel: 'Order Name',
+      secondaryLabel: 'Job Address',
+      placeholder: 'Order name',
+      secondaryPlaceholder: 'Job address'
+    },
+    { value: 'job_address', label: 'Job Address', type: 'text' },
+    { value: 'job_city', label: 'Job City', type: 'text' },
+    { value: 'status', label: 'Status', type: 'select', options: statuses.map((status) => ({ label: status, value: status })) },
+    { value: 'city', label: 'City', type: 'text' },
+    { value: 'job_state', label: 'Job State', type: 'text' },
+    { value: 'job_zip', label: 'Job Zip', type: 'text' },
+    { value: 'order_type', label: 'Order Type', type: 'select', options: order_types.map((type) => ({ label: type, value: type })) },
+    { value: 'is_supply', label: 'Is Supply', type: 'select', options: [{ label: 'Yes', value: '1' }, { label: 'No', value: '0' }] },
+    { value: 'owner', label: 'Owner', type: 'select', options: owners.map((owner) => ({ label: owner.name, value: owner.id.toString() })) },
+    { value: 'source', label: 'Source', type: 'select', options: sources.map((source) => ({ label: source, value: source })) },
+    { value: 'company_name', label: 'Company Name', type: 'text' },
+    { value: 'client_name', label: 'Client Name', type: 'text' },
+    { value: 'phone', label: 'Phone', type: 'text' },
+    { value: 'tag', label: 'Tag', type: 'select', options: tags.filter((tag) => Boolean(tag.name)).map((tag) => ({ label: tag.name ?? '', value: tag.id.toString() })) },
+    { value: 'supervisor', label: 'Supervisor', type: 'select', options: supervisors.map((supervisor) => ({ label: supervisor.name, value: supervisor.id.toString() })) },
+    { value: 'created_by', label: 'Created By', type: 'select', options: created_by_users.map((user) => ({ label: user.name, value: user.id.toString() })) },
+    { value: 'created_time', label: 'Created Time', type: 'date' },
+    { value: 'project_amount', label: 'Project Amount', type: 'amount' }
+  ]), [statuses, order_types, owners, sources, tags, supervisors, created_by_users])
 
   useEffect(() => {
     const sorted = sortPipelinesByRecentActivity(data)
@@ -233,7 +302,7 @@ export default function Frontdesk ({
     }))
 
     try {
-      const response = await fetch(route('frontdesk.tasks', { status: statusKey, page: nextPage, per_page: TASKS_PAGE_SIZE }), {
+      const response = await fetch(route('frontdesk.tasks', { status: statusKey, page: nextPage, per_page: TASKS_PAGE_SIZE, ...filterQueryParams }), {
         headers: { Accept: 'application/json' }
       })
 
@@ -290,7 +359,7 @@ export default function Frontdesk ({
         }
       }))
     }
-  }, [setProjectList, setStatusPagination])
+  }, [setProjectList, setStatusPagination, filterQueryParams])
 
   /* const loadEvents = (date: Date) => {
     const year = date.getFullYear()
@@ -306,24 +375,68 @@ export default function Frontdesk ({
       auth={auth}
       printPanel={false}
       actions={
-         <div className="flex gap-2">
-            <Link
-              className="btn btn-primary"
-              href={route('frontdesk.create')}
-            >
-              <span>Create Request</span>
-            </Link>
-
-            <Link
-              className="btn btn-primary"
-              href={route('frontdesk.create-qualified')}
-            >
-              <span>Create Order</span>
-            </Link>
-            </div>
-          }
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            className="btn btn-outline-primary"
+            onClick={() => { setIsFilterOpen(true) }}
+          >
+            Filter
+          </button>
+          <Link
+            className="btn btn-primary"
+            href={route('frontdesk.create')}
+          >
+            <span>Create Request</span>
+          </Link>
+          <Link
+            className="btn btn-primary"
+            href={route('frontdesk.create-qualified')}
+          >
+            <span>Create Order</span>
+          </Link>
+        </div>
+      }
     >
       <Head title="Frontdesk" />
+      {isFilterOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/40"
+          onClick={() => { setIsFilterOpen(false) }}
+        />
+      )}
+      <div
+        className={`fixed right-0 top-0 z-50 h-full w-[380px] max-w-[90vw] transform bg-white shadow-2xl transition-transform duration-200 dark:bg-[#0b1220] ${isFilterOpen ? 'translate-x-0' : 'translate-x-full'}`}
+      >
+        <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3 dark:border-white-dark/10">
+          <div className="text-sm font-semibold text-slate-700 dark:text-white">Filters</div>
+          <button
+            type="button"
+            className="btn btn-outline-primary"
+            onClick={() => { setIsFilterOpen(false) }}
+          >
+            Close
+          </button>
+        </div>
+        <div className="h-[calc(100%-60px)] overflow-y-auto p-4">
+          <OrderBoardFilter
+            fields={filterFields}
+            initialFilters={appliedFilters}
+          onApply={(params) => {
+            const payload: RequestPayload = {
+              ...params,
+              ...(Array.isArray(params.filters) ? { filters: JSON.stringify(params.filters) } : {})
+            }
+            router.get(route('frontdesk.index'), payload, { replace: true, preserveState: true })
+            setIsFilterOpen(false)
+          }}
+            onReset={() => {
+              router.get(route('frontdesk.index'), {}, { replace: true, preserveState: false })
+              setIsFilterOpen(false)
+            }}
+          />
+        </div>
+      </div>
       <div className="w-full h-[calc(100vh-140px)]">
           <div className="overflow-x-auto  overflow-y-hidden h-full">
                 <div className="flex gap-4 min-w-max h-full">

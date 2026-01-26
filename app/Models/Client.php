@@ -52,7 +52,7 @@ class Client extends Model
     public function scopeFilter($query, array $filters)
     {
         $query->when($filters['text'] ?? null, function ($query, $search) {
-          $query->where(DB::raw("CONCAT(name, ' ', email, ' ', phone)"), 'like', '%'.$search.'%');
+          $query->where(DB::raw("CONCAT_WS(' ', name, email, phone)"), 'like', '%'.$search.'%');
         });
     }
 

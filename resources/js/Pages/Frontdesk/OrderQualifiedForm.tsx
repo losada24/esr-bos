@@ -15,7 +15,6 @@ import {
 } from '@/types'
 import Select, { type SingleValue } from 'react-select'
 import DeleteIcon from '@/Components/Icons/DeleteIcon'
-import { capitalizeWords } from '@/Utils/string'
 import { type OrderFormValues } from './OrderCommon'
 import PlusIcon from '@/Components/Icons/PlusIcon'
 import { ORDER_TYPES } from '@/Utils/constants'
@@ -959,7 +958,7 @@ const selectedSourceClients: SingleValue<OptionType> = {
               <option value="">Select Language</option>
               {languages.map((language) => (
                 <option key={language} value={language}>
-                  {capitalizeWords(language)}
+                  {language}
                 </option>
               ))}
             </Field>

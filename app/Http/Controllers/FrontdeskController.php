@@ -18,6 +18,7 @@ use App\Enum\OrderTypeEnum;
 use App\Enum\RoleEnum;
 use App\Enum\MethodOfPayment;
 use App\Enum\TypeOfFinancing;
+use App\Enum\StatusUserEnum;
 use App\Http\Requests\StoreFrontDeskOrderRequest;
 use App\Http\Requests\StoreQualifiedOrderRequest;
 use App\Http\Requests\UpdateQualifiedOrderRequest;
@@ -39,6 +40,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use App\Traits\OrderEmails;
 use App\Traits\Snapshot;
 use App\Support\PaymentScheduleTemplates;
+use App\Support\OrderBoardFilter;
 use Illuminate\Validation\Rule;
 
 class FrontdeskController extends Controller
@@ -104,9 +106,18 @@ class FrontdeskController extends Controller
         ];
     }
 
-    public function index()
+    public function index(Request $request)
     {
-      
+      $filters = $request->only(['filter_field', 'filter_value', 'filter_value_secondary', 'filter_op', 'filter_value_min', 'filter_value_max']);
+      $filters['filters'] = $request->input('filters', []);
+      $filters['filter_match'] = $request->input('filter_match', 'and');
+      if (is_string($filters['filters'])) {
+        $decoded = json_decode($filters['filters'], true);
+        $filters['filters'] = is_array($decoded) ? $decoded : [];
+      }
+      $filterRows = is_array($filters['filters']) ? $filters['filters'] : [];
+      $filterMatch = (string) ($filters['filter_match'] ?? 'and');
+      $hasMultiFilters = count($filterRows) > 0;
       // Definir los estados del Frontdesk (como strings usando el enum)
     $frontdeskStatuses = $this->frontdeskStatuses();
     $paginatedStatuses = $this->paginatedFrontdeskStatuses();
@@ -139,8 +150,11 @@ class FrontdeskController extends Controller
       //OrderTypeEnum::SUPPLY->value,
     ];
 
-    $data = collect($frontdeskStatuses)->map(function ($status) use ($paginatedStatuses) {
+    $data = collect($frontdeskStatuses)->map(function ($status) use ($paginatedStatuses, $filters, $filterRows, $filterMatch, $hasMultiFilters) {
         $ordersQuery = $this->frontdeskOrderQuery($status);
+        $ordersQuery = $hasMultiFilters
+            ? OrderBoardFilter::applyMultiple($ordersQuery, $filterRows, $filterMatch)
+            : OrderBoardFilter::apply($ordersQuery, $filters);
 
         if (in_array($status, $paginatedStatuses, true)) {
             $total = (clone $ordersQuery)->count();
@@ -165,11 +179,41 @@ class FrontdeskController extends Controller
             })->values(),
         ];
     });
+      $owners = User::role(RoleEnum::OWNER->value)
+        ->select('id', 'name')
+        ->where('status', StatusUserEnum::ACTIVE->value)
+        ->orderBy('name')
+        ->get();
+
+      $supervisors = User::role(RoleEnum::SUPERVISOR->value)
+        ->select('id', 'name')
+        ->where('status', StatusUserEnum::ACTIVE->value)
+        ->orderBy('name')
+        ->get();
+
+      $createdByUsers = User::query()
+        ->select('id', 'name')
+        ->where('status', StatusUserEnum::ACTIVE->value)
+        ->orderBy('name')
+        ->get();
+
+      $tags = Tag::query()
+        ->where('taggable_type', Order::class)
+        ->select('id', 'name')
+        ->orderBy('name')
+        ->get();
+
       return Inertia::render('Frontdesk/Index', [
         'data' => $data,
         'lossReasonFrontdesk' => $lossReasonFrontdesk,
         'sources' => $sources,
         'order_types' => $order_types,
+        'owners' => $owners,
+        'supervisors' => $supervisors,
+        'created_by_users' => $createdByUsers,
+        'tags' => $tags,
+        'statuses' => $frontdeskStatuses,
+        'filters' => $filters,
         'frame_colors' => [
           FrameColorEnum::BLACK->value,
           FrameColorEnum::WHITE->value,
@@ -214,7 +258,20 @@ class FrontdeskController extends Controller
         ], 422);
       }
 
+      $filters = $request->only(['filter_field', 'filter_value', 'filter_value_secondary', 'filter_op', 'filter_value_min', 'filter_value_max']);
+      $filters['filters'] = $request->input('filters', []);
+      $filters['filter_match'] = $request->input('filter_match', 'and');
+      if (is_string($filters['filters'])) {
+        $decoded = json_decode($filters['filters'], true);
+        $filters['filters'] = is_array($decoded) ? $decoded : [];
+      }
+      $filterRows = is_array($filters['filters']) ? $filters['filters'] : [];
+      $filterMatch = (string) ($filters['filter_match'] ?? 'and');
+      $hasMultiFilters = count($filterRows) > 0;
       $ordersQuery = $this->frontdeskOrderQuery($status);
+      $ordersQuery = $hasMultiFilters
+        ? OrderBoardFilter::applyMultiple($ordersQuery, $filterRows, $filterMatch)
+        : OrderBoardFilter::apply($ordersQuery, $filters);
       $total = (clone $ordersQuery)->count();
       $orders = $ordersQuery
         ->with(['client','user','orderStatus','tags:id,name,color,taggable_id,taggable_type'])
