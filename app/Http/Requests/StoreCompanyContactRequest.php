@@ -39,6 +39,13 @@ class StoreCompanyContactRequest extends FormRequest
             'billing_code' => 'nullable|numeric',
             'bid_due_date' =>'nullable|date_format:Y-m-d',
             'from_modal' => 'sometimes|boolean',
+            'clients' => 'sometimes|array',
+            'clients.*.phone' => [
+                'required',
+                'max:20',
+                'distinct',
+                Rule::unique('clients', 'phone'),
+            ],
         ];
     }
 }

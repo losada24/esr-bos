@@ -12,6 +12,17 @@ class VerifyCsrfToken extends Middleware
      * @var array<int, string>
      */
     protected $except = [
-        'dashboard/update_events/*'
+        'dashboard/update_events/*',
+        'frontdesk/*/update-status',
+        'frontdesk/*/update-status-standby',
+        'frontdesk/*/update-status-lost',
+        'frontdesk/orders/*/qualified',
+        'sales/*/assign-estimate',
+        'sales/*/assign-follow-up',
+        'sales/*/assign-stand-by',
+        'sales/*/assign-request-reschedule',
+        'sales/*/assign-pre-contract',
+        'sales/*/assign-contract-signed',
+        'sales/*/assign-lost-contract'
     ];
 }

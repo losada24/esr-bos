@@ -40,7 +40,8 @@ class StoreFrontDeskOrderRequest extends FormRequest
             //'phone' => 'required|string|max:255',
             'phone' => [
               'required',
-              'regex:/^\d{10}$/'
+              'regex:/^\d{10}$/',
+              'unique:clients,phone,' . ($this->client_id ?? 'null') . ',id'
             ],
             'status' =>  [
             'required',

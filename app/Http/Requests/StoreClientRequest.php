@@ -32,7 +32,8 @@ class StoreClientRequest extends FormRequest
             'email' => 'nullable|email',
             'phone' => [
               'required',
-              'regex:/^\d{10}$/'
+              'regex:/^\d{10}$/',
+              'unique:clients,phone,' . ($this->client_id ?? 'null') . ',id'
             ],
             'address' => 'nullable|string|max:500',
             'appointment_date' => 'nullable|date',

@@ -430,6 +430,8 @@ class SalesController extends Controller
     return $user->hasRole(RoleEnum::OWNER->value) && !$user->hasAnyRole([
       RoleEnum::ADMIN->value,
       RoleEnum::ACCOUNT_MANAGER->value,
+      RoleEnum::OWNER_ADMIN->value,
+      RoleEnum::FRONTDESK_ADMIN->value,
     ]);
   }
 
@@ -592,7 +594,9 @@ class SalesController extends Controller
           'attachments.*' => ['file', 'max:10240', 'mimes:pdf'],
         ]);
 
-        DB::transaction(function () use ($order, $validated, $request) {
+        $noteContent = trim((string) ($validated['note'] ?? ''));
+
+        DB::transaction(function () use ($order, $validated, $request, $noteContent) {
           $order->project_amount = $validated['project_amount'];
           $order->status = $validated['status'];
           $order->save();
@@ -603,11 +607,13 @@ class SalesController extends Controller
             'notes' => $order->status . ' updated by ' . auth()->user()->name,
           ]);
 
-          $order->notes()->create([
-            'content' => $validated['note'],
-            'type' => 'order_note',
-            'user_id' => auth()->id(),
-          ]);
+          if ($noteContent !== '') {
+            $order->notes()->create([
+              'content' => $noteContent,
+              'type' => 'order_note',
+              'user_id' => auth()->id(),
+            ]);
+          }
 
           if ($request->hasFile('attachments')) {
             foreach ($request->file('attachments') as $file) {

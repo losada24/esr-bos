@@ -181,6 +181,23 @@ class ClientController extends Controller
         );
     }
 
+    public function phoneExists(Request $request)
+    {
+        $data = $request->validate([
+            'phone' => ['required', 'string', 'max:20'],
+            'ignore_id' => ['nullable', 'integer', 'min:1'],
+        ]);
+
+        $query = Client::query()->where('phone', $data['phone']);
+        if (!empty($data['ignore_id'])) {
+            $query->where('id', '!=', (int) $data['ignore_id']);
+        }
+
+        return response()->json([
+            'exists' => $query->exists(),
+        ]);
+    }
+
     public function document($id)
     {
         $clientAddress = ClientAddress::with(['client', 'client.user'])->find($id);

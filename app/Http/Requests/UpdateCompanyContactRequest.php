@@ -27,6 +27,8 @@ class UpdateCompanyContactRequest extends FormRequest
      */
     public function rules()
     {
+        $clients = $this->input('clients', []);
+
         return [
             'name' => 'required|string|max:255',
             'email' => 'nullable|email',
@@ -37,6 +39,28 @@ class UpdateCompanyContactRequest extends FormRequest
             'billing_state' => 'nullable|string|max:100',
             'billing_code' => 'nullable|numeric',
             'bid_due_date' =>'nullable|date_format:Y-m-d',
+            'clients' => 'sometimes|array',
+            'clients.*.phone' => [
+                'required',
+                'max:20',
+                'distinct',
+                Rule::forEach(function ($value, $attribute) use ($clients) {
+                    $parts = explode('.', $attribute);
+                    $index = $parts[1] ?? null;
+                    $clientId = null;
+
+                    if ($index !== null && isset($clients[$index]['id'])) {
+                        $clientId = (int) $clients[$index]['id'];
+                    }
+
+                    $rule = Rule::unique('clients', 'phone');
+                    if ($clientId > 0) {
+                        $rule->ignore($clientId);
+                    }
+
+                    return [$rule];
+                }),
+            ],
         ];
     }
 }
