@@ -29,7 +29,7 @@ import EditIcon from '@/Components/Icons/EditIcon'
 import MessageIcon from '@/Components/Icons/MessageIcon'
 import StarIcon from '@/Components/Icons/StarIcon'
 import PlusIcon from '@/Components/Icons/PlusIcon'
-import { isAccountManager, isAdmin, isFrontdeskAdmin, isOwner, isOwnerAdmin } from '@/Utils/user'
+import { isAccountManager, isAdmin, isFrontdeskAdmin, isFrontdeskEsr, isOwner, isOwnerAdmin } from '@/Utils/user'
 import EstimateScheduleModal from '@/Pages/Sales/EstimateScheduleModal'
 import FollowUpModal from '@/Pages/Sales/FollowUpModal'
 import StandByNoteModal from '@/Pages/Sales/StandByNoteModal'
@@ -139,6 +139,11 @@ const FRONTDESK_STATUS_OPTIONS = [
   'REQUEST STAND BY',
   'LOST REQUEST',
   'QUALIFIED'
+] as const
+const FRONTDESK_SALES_DROPDOWN_EXTRA_STATUSES = [
+  'NEW REQUEST',
+  'REQUEST FOLLOW UP',
+  'REQUEST STAND BY'
 ] as const
 
 const CUSTOM_SCHEDULE_TYPE = 'CUSTOMIZED'
@@ -412,6 +417,7 @@ export default function ShowStatusOrder ({
   const safeTags = Array.isArray(tags) ? tags : []
   const safeUsedTags = Array.isArray(usedTags) ? usedTags : []
   const relatedClientOrders = Array.isArray(clientOrders) ? clientOrders : []
+  const associatedOrdersCount = relatedClientOrders.length
   const safeOwnerOptions = Array.isArray(ownerOptions) ? ownerOptions : []
   const modalOwnerOptions = safeOwnerOptions as unknown as User[]
   const safeClients = Array.isArray(clients) ? clients : []
@@ -426,6 +432,7 @@ export default function ShowStatusOrder ({
     ? auth.user.roles.map((role: Role) => role.name)
     : []
   const canManageSales = isAdmin(roleNames) || isAccountManager(roleNames) || isOwner(roleNames) || isOwnerAdmin(roleNames) || isFrontdeskAdmin(roleNames)
+  const isFrontdeskEsrRole = isFrontdeskEsr(roleNames)
 
   const [scheduleModalOpen, setScheduleModalOpen] = useState(false)
   const [scheduleInitialValues, setScheduleInitialValues] = useState<{ scheduleDate: string, ownerIds: number[] }>({
@@ -508,8 +515,13 @@ export default function ShowStatusOrder ({
   const [pendingPreContract, setPendingPreContract] = useState<{ oldStatus: string, newStatus: string } | null>(null)
   const [pendingContractSigned, setPendingContractSigned] = useState<{ oldStatus: string, newStatus: string } | null>(null)
   const [pendingLostContract, setPendingLostContract] = useState<{ oldStatus: string, newStatus: string } | null>(null)
+  const [pendingOrderProcessingMove, setPendingOrderProcessingMove] = useState<{ oldStatus: string, newStatus: string } | null>(null)
   const [statusChangeSaving, setStatusChangeSaving] = useState(false)
   const [statusChangeError, setStatusChangeError] = useState<string | null>(null)
+  const [orderProcessingModalOpen, setOrderProcessingModalOpen] = useState(false)
+  const [orderProcessingNote, setOrderProcessingNote] = useState('')
+  const [orderProcessingAttachments, setOrderProcessingAttachments] = useState<File[]>([])
+  const [orderProcessingError, setOrderProcessingError] = useState<string | null>(null)
   const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? ''
   const [contactModalOpen, setContactModalOpen] = useState(false)
   const [requestModalOpen, setRequestModalOpen] = useState(false)
@@ -839,9 +851,27 @@ export default function ShowStatusOrder ({
   const actualStatusValue = order.status ?? ''
   const orderInFrontdeskFlow = isFrontdeskStatus(actualStatusValue)
   const orderInSalesFlow = isSalesStatus(actualStatusValue)
+  const isAdminOrOwnerAdmin = isAdmin(roleNames) || isOwnerAdmin(roleNames)
   const pipelineStatuses = orderInFrontdeskFlow
     ? FRONTDESK_STATUS_OPTIONS
     : (orderInSalesFlow ? SALES_STATUS_OPTIONS : ORDER_PROCESSING_STATUS_OPTIONS)
+  const pipelineDropdownStatuses = useMemo(() => {
+    const base = Array.from(pipelineStatuses) as string[]
+
+    if (orderInSalesFlow && isAdminOrOwnerAdmin) {
+      for (const extraStatus of FRONTDESK_SALES_DROPDOWN_EXTRA_STATUSES) {
+        if (!base.some((statusOption) => matchesStatus(statusOption, extraStatus))) {
+          base.push(extraStatus)
+        }
+      }
+    }
+
+    if (actualStatusValue && !base.some((statusOption) => matchesStatus(statusOption, actualStatusValue))) {
+      base.unshift(actualStatusValue)
+    }
+
+    return base
+  }, [actualStatusValue, isAdminOrOwnerAdmin, orderInSalesFlow, pipelineStatuses])
   const pipelineStatusValue = mapStatusToPipeline(actualStatusValue)
   const calculatedStatusIndex = pipelineStatuses.findIndex(status => matchesStatus(status, pipelineStatusValue))
   const fallbackStatusIndex = pipelineStatuses.length > 0
@@ -870,6 +900,14 @@ export default function ShowStatusOrder ({
     setStatusSearch('')
   }, [])
 
+  const closeOrderProcessingModal = useCallback(() => {
+    setOrderProcessingModalOpen(false)
+    setPendingOrderProcessingMove(null)
+    setOrderProcessingNote('')
+    setOrderProcessingAttachments([])
+    setOrderProcessingError(null)
+  }, [])
+
   const closeFrontdeskStandByModal = () => {
     setFrontdeskStandByModalOpen(false)
     setFrontdeskStandByNote('')
@@ -894,20 +932,51 @@ export default function ShowStatusOrder ({
     })
   }, [])
 
-  const handleSimpleStatusChange = async (targetStatus: string) => {
+  type SimpleStatusChangeOptions = {
+    note?: string
+    attachments?: File[]
+    onError?: (message: string) => void
+  }
+
+  const handleSimpleStatusChange = async (targetStatus: string, options?: SimpleStatusChangeOptions): Promise<boolean> => {
     setStatusChangeSaving(true)
     setStatusChangeError(null)
     closeStatusPicker()
+
+    let errorMessage = 'Unable to update status.'
     try {
-      const response = await fetch(route('frontdesk.updateStatus', { order: order.id }), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? ''
-        },
-        body: JSON.stringify({ status: targetStatus })
-      })
+      const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? ''
+      const noteContent = options?.note?.trim() ?? ''
+      const attachments = options?.attachments ?? []
+
+      const response = options
+        ? await fetch(route('frontdesk.updateStatus', { order: order.id }), {
+          method: 'POST',
+          headers: {
+            Accept: 'application/json',
+            'X-CSRF-TOKEN': csrf
+          },
+          body: (() => {
+            const formData = new FormData()
+            formData.append('status', targetStatus)
+            if (noteContent !== '') {
+              formData.append('note', noteContent)
+            }
+            attachments.forEach((file) => {
+              formData.append('attachments[]', file)
+            })
+            return formData
+          })()
+        })
+        : await fetch(route('frontdesk.updateStatus', { order: order.id }), {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+            'X-CSRF-TOKEN': csrf
+          },
+          body: JSON.stringify({ status: targetStatus })
+        })
 
       const payload = await response.json().catch(() => null)
 
@@ -921,11 +990,32 @@ export default function ShowStatusOrder ({
         status: targetStatus
       }))
       refreshOrderActivity()
+      return true
     } catch (error: any) {
       console.error('status change error', error)
-      setStatusChangeError(error?.message ?? 'Unable to update status.')
+      errorMessage = error?.message ?? errorMessage
+      setStatusChangeError(errorMessage)
+      options?.onError?.(errorMessage)
+      return false
     } finally {
       setStatusChangeSaving(false)
+    }
+  }
+
+  const handleOrderProcessingSubmit = async () => {
+    if (!pendingOrderProcessingMove) return
+
+    setOrderProcessingError(null)
+    setStatusChangeError(null)
+
+    const success = await handleSimpleStatusChange(pendingOrderProcessingMove.newStatus, {
+      note: orderProcessingNote,
+      attachments: orderProcessingAttachments,
+      onError: (message) => { setOrderProcessingError(message) }
+    })
+
+    if (success) {
+      closeOrderProcessingModal()
     }
   }
 
@@ -1125,6 +1215,15 @@ export default function ShowStatusOrder ({
     if (matchesStatus(targetStatus, 'LOST CONTRACT')) {
       setPendingLostContract({ oldStatus: actualStatusValue, newStatus: targetStatus })
       setLostContractModalOpen(true)
+      return
+    }
+
+    if (!orderInFrontdeskFlow && !orderInSalesFlow) {
+      setPendingOrderProcessingMove({ oldStatus: actualStatusValue, newStatus: targetStatus })
+      setOrderProcessingNote('')
+      setOrderProcessingAttachments([])
+      setOrderProcessingError(null)
+      setOrderProcessingModalOpen(true)
       return
     }
 
@@ -1826,7 +1925,7 @@ export default function ShowStatusOrder ({
     }
   }
 
-  const tabs: Array<{ key: TabKey, label: string, Icon: DetailIcon }> = [
+  const tabsBase: Array<{ key: TabKey, label: string, Icon: DetailIcon }> = [
     { key: 'home', label: 'Notes', Icon: EmailIcon },
     { key: 'profile', label: 'Timeline', Icon: UserIcon },
     { key: 'contact', label: 'Associated Orders', Icon: ReorderIcon },
@@ -1834,6 +1933,9 @@ export default function ShowStatusOrder ({
     { key: 'payments', label: 'Payments', Icon: MoneyBagIcon },
     { key: 'attachments', label: 'Attachments', Icon: FolderIcon }
   ]
+  const tabs = isFrontdeskEsrRole
+    ? tabsBase.filter((tab) => tab.key !== 'payments')
+    : tabsBase
 
   const projectAmountNumber = Number(order.project_amount ?? 0)
   const showProjectAmount = Number.isFinite(projectAmountNumber) && projectAmountNumber > 1
@@ -2122,7 +2224,7 @@ export default function ShowStatusOrder ({
                         Edit Request
                       </button>
                     )}
-                    {canEditContact && (
+                    {canEditContact && !isFrontdeskEsrRole && (
                       <button
                         type="button"
                         onClick={openOrderEditModal}
@@ -2244,7 +2346,7 @@ export default function ShowStatusOrder ({
                               />
                             </div>
                             <div className="max-h-60 overflow-y-auto p-1">
-                              {pipelineStatuses
+                              {pipelineDropdownStatuses
                                 .filter(option => option.toLowerCase().includes(statusSearch.toLowerCase()))
                                 .map(option => (
                                   <button
@@ -2286,7 +2388,7 @@ export default function ShowStatusOrder ({
                 <div className="flex items-center justify-between gap-3">
                   <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">Related Contact</h2>
                   <div className="flex items-center gap-3">
-                    {canEditContact && (
+                    {canEditContact && !isFrontdeskEsrRole && (
                       <button
                         type="button"
                         onClick={openContactModal}
@@ -2350,41 +2452,43 @@ export default function ShowStatusOrder ({
 
               {/* Sales timeline component will render elsewhere */}
 
-              <form onSubmit={submit} className="panel space-y-4">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">Tags</h2>
-                  <span className="text-xs text-slate-400">{selectedTagCount} selected</span>
-                </div>
-                <TagPicker
-                  value={data.tags}
-                  onChange={(t) => { setData('tags', t) }}
-                  placeholder="Agregar tag"
-                  suggestions={safeUsedTags}
-                />
-                <div className="flex justify-end">
-                  <button
-                    type="submit"
-                    disabled={processing}
-                    className="btn btn-sm btn-primary disabled:opacity-60"
-                  >
-                    {processing
-                      ? (
-                        <svg viewBox="0 0 24 24" className="h-4 w-4 animate-spin" fill="none">
-                          <circle cx="12" cy="12" r="9" stroke="currentColor" strokeOpacity="0.2" strokeWidth="3" />
-                          <path d="M21 12a9 9 0 0 1-9 9" stroke="currentColor" strokeWidth="3" />
-                        </svg>
-                        )
-                      : (
-                        <span className="flex items-center gap-2">
-                          Guardar
-                          <svg viewBox="0 0 20 20" className="h-4 w-4" fill="currentColor" aria-hidden="true">
-                            <path d="M8.5 13.5 4.9 10l1.2-1.2 2.4 2.3 5-5L15.7 7l-6 6.5z" />
+              {!isFrontdeskEsrRole && (
+                <form onSubmit={submit} className="panel space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">Tags</h2>
+                    <span className="text-xs text-slate-400">{selectedTagCount} selected</span>
+                  </div>
+                  <TagPicker
+                    value={data.tags}
+                    onChange={(t) => { setData('tags', t) }}
+                    placeholder="Agregar tag"
+                    suggestions={safeUsedTags}
+                  />
+                  <div className="flex justify-end">
+                    <button
+                      type="submit"
+                      disabled={processing}
+                      className="btn btn-sm btn-primary disabled:opacity-60"
+                    >
+                      {processing
+                        ? (
+                          <svg viewBox="0 0 24 24" className="h-4 w-4 animate-spin" fill="none">
+                            <circle cx="12" cy="12" r="9" stroke="currentColor" strokeOpacity="0.2" strokeWidth="3" />
+                            <path d="M21 12a9 9 0 0 1-9 9" stroke="currentColor" strokeWidth="3" />
                           </svg>
-                        </span>
-                      )}
-                  </button>
-                </div>
-              </form>
+                          )
+                        : (
+                          <span className="flex items-center gap-2">
+                            Guardar
+                            <svg viewBox="0 0 20 20" className="h-4 w-4" fill="currentColor" aria-hidden="true">
+                              <path d="M8.5 13.5 4.9 10l1.2-1.2 2.4 2.3 5-5L15.7 7l-6 6.5z" />
+                            </svg>
+                          </span>
+                        )}
+                    </button>
+                  </div>
+                </form>
+              )}
 
               {!shouldHideDescriptionAndJobInfo && (
                 <div className="panel space-y-3">
@@ -2447,6 +2551,9 @@ export default function ShowStatusOrder ({
               >
                 {tabs.map(({ key, label, Icon }) => {
                   const active = tab === key
+                  const displayLabel = key === 'contact'
+                    ? `${label} (${associatedOrdersCount})`
+                    : label
                   return (
                     <li key={key}>
                       <button
@@ -2463,7 +2570,7 @@ export default function ShowStatusOrder ({
                         onClick={() => { setTab(key) }}
                       >
                         <Icon className="h-4 w-4" aria-hidden="true" />
-                        {label}
+                        {displayLabel}
                       </button>
                     </li>
                   )
@@ -3062,6 +3169,94 @@ export default function ShowStatusOrder ({
         onCancel={closeLostContractModal}
         onSubmit={handleLostContractSubmit}
       />
+
+      {orderProcessingModalOpen && pendingOrderProcessingMove && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div key={pendingOrderProcessingMove.newStatus} className="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-2xl">
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-slate-800">Order Processing Update</h3>
+                <p className="text-xs text-slate-500">
+                  {pendingOrderProcessingMove.oldStatus || 'Current status'} → {pendingOrderProcessingMove.newStatus}
+                </p>
+              </div>
+              <button
+                type="button"
+                className="rounded-full p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+                onClick={closeOrderProcessingModal}
+                disabled={statusChangeSaving}
+              >
+                <span className="sr-only">Close</span>
+                ×
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-600" htmlFor="order-processing-note">
+                  Note
+                </label>
+                <textarea
+                  id="order-processing-note"
+                  className="form-textarea w-full resize-none placeholder:text-slate-400"
+                  rows={4}
+                  value={orderProcessingNote}
+                  onChange={(event) => {
+                    setOrderProcessingNote(event.target.value)
+                    if (orderProcessingError) setOrderProcessingError(null)
+                  }}
+                  placeholder="Add context for this status change (optional)"
+                  disabled={statusChangeSaving}
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-600" htmlFor="order-processing-attachments">
+                  Attachments
+                </label>
+                <input
+                  id="order-processing-attachments"
+                  type="file"
+                  className="form-input w-full"
+                  multiple
+                  onChange={(event) => {
+                    const files = Array.from(event.target.files ?? [])
+                    setOrderProcessingAttachments(files)
+                    if (orderProcessingError) setOrderProcessingError(null)
+                  }}
+                  disabled={statusChangeSaving}
+                />
+                {orderProcessingAttachments.length > 0 && (
+                  <ul className="mt-2 space-y-1 text-xs text-slate-500">
+                    {orderProcessingAttachments.map((file) => (
+                      <li key={`${file.name}-${file.lastModified}`}>{file.name}</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              {(orderProcessingError || statusChangeError) && (
+                <p className="text-sm text-rose-600">{orderProcessingError ?? statusChangeError}</p>
+              )}
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={closeOrderProcessingModal}
+                  className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+                  disabled={statusChangeSaving}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleOrderProcessingSubmit}
+                  className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-sky-700 disabled:cursor-not-allowed disabled:bg-sky-400"
+                  disabled={statusChangeSaving}
+                >
+                  {statusChangeSaving ? 'Saving...' : 'Save'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {frontdeskStandByModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">

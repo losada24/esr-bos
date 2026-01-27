@@ -41,6 +41,7 @@ use App\Traits\OrderEmails;
 use App\Traits\Snapshot;
 use App\Support\PaymentScheduleTemplates;
 use App\Support\OrderBoardFilter;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class FrontdeskController extends Controller
@@ -402,15 +403,48 @@ class FrontdeskController extends Controller
       return response()->json(['message' => 'You are not authorized to update this order.'], 403);
     }
 
-    $order->status = $request->input('status');
+    $validated = $request->validate([
+      'status' => ['required', 'string'],
+      'note' => ['nullable', 'string', 'max:4000'],
+      'attachments' => ['nullable', 'array'],
+      'attachments.*' => ['file', 'max:10240'],
+    ]);
 
-    $order->save();
+    $noteContent = trim((string) ($validated['note'] ?? ''));
+    $status = $validated['status'];
+
+    DB::transaction(function () use ($order, $request, $status, $noteContent) {
+      $order->status = $status;
+      $order->save();
+
       $order->orderStatus()->create([
-        'status' => $request->input('status'),
-        'user_id' => auth()->user()->id,
-        'notes' => "{$request->input('status')} created by " . auth()->user()->name,
+        'status' => $status,
+        'user_id' => auth()->id(),
+        'notes' => "{$status} created by " . auth()->user()->name,
       ]);
 
+      if ($noteContent !== '') {
+        $order->notes()->create([
+          'content' => $noteContent,
+          'type' => 'order_note',
+          'user_id' => auth()->id(),
+        ]);
+      }
+
+      if ($request->hasFile('attachments')) {
+        foreach ($request->file('attachments') as $file) {
+          $fileName = time() . '_' . Str::replace(' ', '_', $file->getClientOriginalName());
+          $filePath = $file->storeAs('order_files', $fileName, 'public');
+
+          $order->attachments()->create([
+            'filename' => $file->getClientOriginalName(),
+            'file_path' => $filePath,
+            'file_type' => 'order_files',
+            'user_id' => auth()->id(),
+          ]);
+        }
+      }
+    });
 
     return response()->json(['success' => true, 'order' => $order]);
   }

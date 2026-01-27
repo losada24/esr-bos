@@ -2,9 +2,10 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
 import { Head, Link, router } from '@inertiajs/react'
 import EditIcon from '@/Components/Icons/EditIcon'
 import DeleteIcon from '@/Components/Icons/DeleteIcon'
-import { type PageProps, type CompanyContact, type PaginatorLink } from '@/types'
+import { type PageProps, type CompanyContact, type PaginatorLink, type Role } from '@/types'
 import Pagination from '@/Components/Pagination'
 import ClientFilter from './ClientFilter'
+import { isFrontdeskEsr } from '@/Utils/user'
 
 type IndexClientProps = PageProps & {
   company_contacts: {
@@ -16,6 +17,11 @@ type IndexClientProps = PageProps & {
  
 export default function Index ({ auth, company_contacts }: IndexClientProps) {
   console.log(company_contacts)
+  const roleNames = Array.isArray(auth?.user?.roles)
+    ? auth.user.roles.map((role: Role) => role.name)
+    : []
+  const canManageCompanies = !isFrontdeskEsr(roleNames)
+
   const destroy = (id: number) => {
     if (confirm('Are you sure you want to delete this Company?')) {
       router.delete(route('company_contact.destroy', id))
@@ -27,12 +33,16 @@ export default function Index ({ auth, company_contacts }: IndexClientProps) {
           auth={auth}
           pageTitle='Company'
           actions={
-            <Link
-              className="btn btn-primary"
-              href={route('company_contact.create')}
-            >
-              <span>Create Company</span>
-            </Link>
+            canManageCompanies
+              ? (
+                <Link
+                  className="btn btn-primary"
+                  href={route('company_contact.create')}
+                >
+                  <span>Create Company</span>
+                </Link>
+                )
+              : null
           }
       >
         <Head title="Companies" />
@@ -47,7 +57,7 @@ export default function Index ({ auth, company_contacts }: IndexClientProps) {
                 <th className="px-6 pt-5 pb-4">Phone</th>
                 <th className="px-6 pt-5 pb-4">Website</th>
                 <th className="px-6 pt-5 pb-4">Clients</th>
-                <th className="px-6 pt-5 pb-4 w-14">Actions</th>
+                {canManageCompanies && <th className="px-6 pt-5 pb-4 w-14">Actions</th>}
               </tr>
             </thead>
             <tbody>
@@ -80,8 +90,9 @@ export default function Index ({ auth, company_contacts }: IndexClientProps) {
                         )
                       })}
                     </td>
-                    <td className="border-t flex items-center px-6 py-4">
-                    <Link
+                    {canManageCompanies && (
+                      <td className="border-t flex items-center px-6 py-4">
+                        <Link
                           href={route('company_contact.edit', id)}
                         >
                           <EditIcon />
@@ -91,7 +102,8 @@ export default function Index ({ auth, company_contacts }: IndexClientProps) {
                         >
                           <DeleteIcon />
                         </button>
-                    </td>
+                      </td>
+                    )}
                   </tr>
                 )
               })}

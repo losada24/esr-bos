@@ -5,7 +5,7 @@ import type { RequestPayload } from '@inertiajs/core'
 import { ReactSortable } from 'react-sortablejs'
 import { type Role, type PageProps, type Pipelines, type Tasks } from '@/types'
 import AuthenticatedCalendarLayout from '@/Layouts/AuthenticatedCalendarLayout'
-import { isAccountManager, isAdmin, isServiceManager, isSupervisor, isInstaller, isPaymentCoordinator, isOwner } from '@/Utils/user'
+import { isAccountManager, isAdmin, isServiceManager, isSupervisor, isInstaller, isPaymentCoordinator, isOwner, isFrontdeskEsr } from '@/Utils/user'
 
 import DeleteIcon from '@/Components/Icons/DeleteIcon'
 import LostRequestModal from './LostRequestModal'
@@ -208,6 +208,8 @@ export default function Frontdesk ({
   const IS_INSTALLER = isInstaller(auth.user.roles.map((role: Role) => role.name))
   const IS_PAYMENT_COORDINATOR = isPaymentCoordinator(auth.user.roles.map((role: Role) => role.name))
   const IS_OWNER = isOwner(auth.user.roles.map((role: Role) => role.name))
+  const IS_FRONTDESK_ESR = isFrontdeskEsr(auth.user.roles.map((role: Role) => role.name))
+  const canDeleteTasks = !IS_FRONTDESK_ESR
 
   const [projectList, setProjectListState] = useState<Pipelines[]>(() => sortPipelinesByRecentActivity(data))
   const [showModal, setShowModal] = useState(false)
@@ -627,18 +629,20 @@ export default function Frontdesk ({
                                                 >
                                                   <EyeIcon />
                                                 </Link>
-                                                    <button
-                                                      onClick={(event) => {
-                                                        event.preventDefault()
-                                                        event.stopPropagation()
-                                                        destroyOrder(task.id)
-                                                      }}
-                                                      type="button"
-                                                      title="Delete Order"
-                                                      className="flex items-center gap-1 hover:text-danger"
-                                                    >
-                                                      <DeleteIcon />
-                                                    </button>
+                                                    {canDeleteTasks && (
+                                                      <button
+                                                        onClick={(event) => {
+                                                          event.preventDefault()
+                                                          event.stopPropagation()
+                                                          destroyOrder(task.id)
+                                                        }}
+                                                        type="button"
+                                                        title="Delete Order"
+                                                        className="flex items-center gap-1 hover:text-danger"
+                                                      >
+                                                        <DeleteIcon />
+                                                      </button>
+                                                    )}
                                                     <InfoTooltip
                                                       side="left"
                                                       width={220}
