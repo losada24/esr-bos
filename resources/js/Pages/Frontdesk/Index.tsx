@@ -385,18 +385,22 @@ export default function Frontdesk ({
           >
             Filter
           </button>
-          <Link
-            className="btn btn-primary"
-            href={route('frontdesk.create')}
-          >
-            <span>Create Request</span>
-          </Link>
-          <Link
-            className="btn btn-primary"
-            href={route('frontdesk.create-qualified')}
-          >
-            <span>Create Order</span>
-          </Link>
+          {!IS_FRONTDESK_ESR && (
+            <Link
+              className="btn btn-primary"
+              href={route('frontdesk.create')}
+            >
+              <span>Create Request</span>
+            </Link>
+          )}
+          {!IS_FRONTDESK_ESR && (
+            <Link
+              className="btn btn-primary"
+              href={route('frontdesk.create-qualified')}
+            >
+              <span>Create Order</span>
+            </Link>
+          )}
         </div>
       }
     >
