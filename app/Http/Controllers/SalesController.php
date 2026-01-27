@@ -899,7 +899,11 @@ class SalesController extends Controller
       'method_of_payment' => ['required', Rule::in(array_map(fn (MethodOfPayment $method) => $method->value, MethodOfPayment::cases()))],
       'type_of_financing' => ['nullable', Rule::in(array_map(fn (TypeOfFinancing $financing) => $financing->value, TypeOfFinancing::cases()))],
       'down_payment' => ['nullable', 'numeric', 'min:0'],
-      'payment_schedule_type' => ['required', Rule::in(PaymentScheduleTemplates::types())],
+      'payment_schedule_type' => [
+        'nullable',
+        Rule::requiredIf($request->input('method_of_payment') === MethodOfPayment::CASH->value),
+        Rule::in(PaymentScheduleTemplates::types()),
+      ],
       'custom_schedule' => ['nullable', 'array', 'max:6'],
       'custom_schedule.*.label' => ['required', 'string', 'max:255'],
       'custom_schedule.*.amount' => ['required', 'numeric', 'min:0.01'],
@@ -910,9 +914,10 @@ class SalesController extends Controller
     $validator = Validator::make($request->all(), $rules);
     $validator->after(function ($validator) use ($request) {
       $scheduleType = (string) $request->input('payment_schedule_type');
+      $requiresSchedule = $request->input('method_of_payment') === MethodOfPayment::CASH->value;
       $customSchedule = $request->input('custom_schedule', []);
 
-      if ($scheduleType === PaymentScheduleTypeEnum::CUSTOMIZED->value) {
+      if ($requiresSchedule && $scheduleType === PaymentScheduleTypeEnum::CUSTOMIZED->value) {
         if (!is_array($customSchedule) || count($customSchedule) === 0) {
           $validator->errors()->add('custom_schedule', 'Add at least one custom payment.');
           return;
@@ -993,11 +998,18 @@ class SalesController extends Controller
         }
       }
 
-      $scheduleType = $validated['payment_schedule_type'];
+      $scheduleType = $validated['payment_schedule_type'] ?? null;
       $customSchedule = $validated['custom_schedule'] ?? [];
       $totalAmount = (float) $order->project_amount;
+      $requiresSchedule = $validated['method_of_payment'] === MethodOfPayment::CASH->value;
 
-      if ($scheduleType === PaymentScheduleTypeEnum::CUSTOMIZED->value) {
+      if (!$requiresSchedule || !$scheduleType) {
+        $existingSchedule = $order->paymentSchedule()->first();
+        if ($existingSchedule) {
+          $existingSchedule->installments()->delete();
+          $existingSchedule->delete();
+        }
+      } elseif ($scheduleType === PaymentScheduleTypeEnum::CUSTOMIZED->value) {
         $installments = [];
         $runningPercent = 0.0;
         $count = count($customSchedule);
@@ -1019,29 +1031,49 @@ class SalesController extends Controller
             'amount' => $amount,
           ];
         }
+
+        $paymentSchedule = PaymentSchedule::updateOrCreate(
+          ['order_id' => $order->id],
+          [
+            'schedule_type' => $scheduleType,
+            'total_amount' => $totalAmount,
+          ]
+        );
+
+        $paymentSchedule->installments()->delete();
+
+        foreach ($installments as $index => $installment) {
+          $paymentSchedule->installments()->create([
+            'position' => $index + 1,
+            'label' => $installment['label'],
+            'percentage' => $installment['percentage'],
+            'amount' => $installment['amount'],
+            'status' => 'PENDING',
+          ]);
+        }
       } else {
         $scheduleItems = PaymentScheduleTemplates::itemsFor($scheduleType);
         $installments = PaymentScheduleCalculator::withAmounts($scheduleItems, $totalAmount);
-      }
 
-      $paymentSchedule = PaymentSchedule::updateOrCreate(
-        ['order_id' => $order->id],
-        [
-          'schedule_type' => $scheduleType,
-          'total_amount' => $totalAmount,
-        ]
-      );
+        $paymentSchedule = PaymentSchedule::updateOrCreate(
+          ['order_id' => $order->id],
+          [
+            'schedule_type' => $scheduleType,
+            'total_amount' => $totalAmount,
+          ]
+        );
 
-      $paymentSchedule->installments()->delete();
+        $paymentSchedule->installments()->delete();
 
-      foreach ($installments as $index => $installment) {
-        $paymentSchedule->installments()->create([
-          'position' => $index + 1,
-          'label' => $installment['label'],
-          'percentage' => $installment['percentage'],
-          'amount' => $installment['amount'],
-          'status' => 'PENDING',
-        ]);
+        foreach ($installments as $index => $installment) {
+          $paymentSchedule->installments()->create([
+            'position' => $index + 1,
+            'label' => $installment['label'],
+            'percentage' => $installment['percentage'],
+            'amount' => $installment['amount'],
+            'status' => 'PENDING',
+          ]);
+        }
       }
     });
 
