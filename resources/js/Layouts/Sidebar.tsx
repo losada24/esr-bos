@@ -7,7 +7,7 @@ import ReferralIcon from '@/Components/Icons/ReferralIcon'
 import SidebarLinkLabel from '@/Components/SidebarLinkLabel'
 import DashboardIcon from '@/Components/Icons/DashboardIcon'
 import CompanyIcon from '@/Components/Icons/CompanyIcon'
-import { isAdmin, isAccountManager, isFrontdesk, isFrontdeskAdmin, isOwner, isSupervisor, isServiceManager, isInstaller, isPaymentCoordinator, isOwnerAdmin } from '@/Utils/user'
+import { isAdmin, isAccountManager, isFrontdesk, isFrontdeskAdmin, isOwner, isSupervisor, isServiceManager, isInstaller, isPaymentCoordinator, isOwnerAdmin, isFrontdeskEsr } from '@/Utils/user'
 import { type Role, type Auth } from '@/types'
 import WindowsIcon from '@/Components/Icons/WindowsIcon'
 import PrintIcon from '@/Components/Icons/PrintIcon'
@@ -33,6 +33,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
   const IS_INSTALLER = isInstaller(auth.user.roles.map((role: Role) => role.name))
   const IS_PAYMENT_COORDINATOR = isPaymentCoordinator(auth.user.roles.map((role: Role) => role.name))
   const IS_OWNER_ADMIN = isOwnerAdmin(auth.user.roles.map((role: Role) => role.name))
+  const IS_FRONTDESK_ESR = isFrontdeskEsr(auth.user.roles.map((role: Role) => role.name))
   const CAN_VIEW_REPORT_SUPERVISOR = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SUPERVISOR || IS_SERVICE_MANAGER
   const CAN_VIEW_REPORT_INSTALLER = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_INSTALLER || IS_SERVICE_MANAGER || IS_PAYMENT_COORDINATOR
   const CAN_VIEW_BIWEEKLY = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_PAYMENT_COORDINATOR
@@ -75,7 +76,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                     <PerfectScrollbar className="h-[calc(100vh-80px)] relative">
                       <ul className="relative font-semibold space-y-0.5 p-4 py-0">
 
-                          {(IS_ADMIN || IS_FRONTDESK || IS_OWNER_ADMIN || IS_FRONTDESK_ADMIN) && (
+                          {(IS_ADMIN || IS_FRONTDESK || IS_OWNER_ADMIN || IS_FRONTDESK_ADMIN || IS_FRONTDESK_ESR) && (
                               <>
                               <h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">
                                 <svg className="w-4 h-5 flex-none hidden" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">

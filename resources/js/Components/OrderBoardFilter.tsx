@@ -94,6 +94,10 @@ const normalizeMatch = (value?: string): 'and' | 'or' => {
   return 'and'
 }
 
+const getDefaultFieldValue = (fields: FilterFieldConfig[]): string => {
+  return fields.some((field) => field.value === 'phone') ? 'phone' : ''
+}
+
 const buildRow = (fields: FilterFieldConfig[], payload?: Partial<FilterRowPayload>): FilterRow => {
   const fieldValue = payload?.field ?? ''
   const config = fields.find((field) => field.value === fieldValue)
@@ -126,7 +130,7 @@ const buildInitialRows = (fields: FilterFieldConfig[], initialFilters?: BoardFil
     ]
   }
 
-  return [buildRow(fields)]
+  return [buildRow(fields, { field: getDefaultFieldValue(fields) })]
 }
 
 export default function OrderBoardFilter ({
