@@ -793,6 +793,7 @@ export default function ShowStatusOrder ({
     ? ownerNames.join(', ')
     : (order.user?.name ?? '')
   const scheduleAppointmentLabel = formatScheduleDisplay(scheduleAppointmentIso)
+  const lossReasonFrontdeskValue = order.loss_reason_frontdesk?.trim()
 
   const initialAttachments = Array.isArray(order.attachments) ? order.attachments : []
   const [attachments, setAttachments] = useState<Attachment[]>(initialAttachments)
@@ -849,6 +850,7 @@ export default function ShowStatusOrder ({
   }
 
   const actualStatusValue = order.status ?? ''
+  const isLostRequest = matchesStatus(actualStatusValue, 'LOST REQUEST')
   const orderInFrontdeskFlow = isFrontdeskStatus(actualStatusValue)
   const orderInSalesFlow = isSalesStatus(actualStatusValue)
   const isAdminOrOwnerAdmin = isAdmin(roleNames) || isOwnerAdmin(roleNames)
@@ -2488,6 +2490,15 @@ export default function ShowStatusOrder ({
                     </button>
                   </div>
                 </form>
+              )}
+
+              {isLostRequest && (
+                <div className="panel space-y-3">
+                  <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">Loss Reason</h2>
+                  {lossReasonFrontdeskValue
+                    ? <p className="text-sm leading-relaxed text-slate-600">{lossReasonFrontdeskValue}</p>
+                    : <p className="text-sm text-slate-400">No loss reason recorded.</p>}
+                </div>
               )}
 
               {!shouldHideDescriptionAndJobInfo && (
