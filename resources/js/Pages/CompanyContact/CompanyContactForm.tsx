@@ -118,23 +118,25 @@ const CompanyContactForm = ({ submitCount, errors, isCreate, setFieldValue, valu
           />
           </div>
           {(submitCount && errors.billing_code) ? <InputError message={errors.billing_code} className="mt-2" /> : ''}
+          {/*
           <div className={submitCount ? (errors.bid_due_date) ? 'has-error' : 'has-success' : ''}>
-                <label htmlFor="bid_due_date">Bid Due Date</label>
-                <Flatpickr
-                  options={{
-                    mode: 'single',
-                    dateFormat: 'Y-m-d',
-                    position: 'auto right'
-                  }}
-                  name="bid_due_date"
-                  value={values.bid_due_date ?? ''}
-                  className="form-input"
-                  onChange={([date]) => {
-                    setFieldValue('bid_due_date', date.toISOString().slice(0, 10))
-                  }}
-                />
-                {(submitCount && errors.bid_due_date) ? <InputError message={errors.bid_due_date.toString()} className="mt-2" /> : ''}
+            <label htmlFor="bid_due_date">Bid Due Date</label>
+            <Flatpickr
+              options={{
+                mode: 'single',
+                dateFormat: 'Y-m-d',
+                position: 'auto right'
+              }}
+              name="bid_due_date"
+              value={values.bid_due_date ?? ''}
+              className="form-input"
+              onChange={([date]) => {
+                setFieldValue('bid_due_date', date.toISOString().slice(0, 10))
+              }}
+            />
+            {(submitCount && errors.bid_due_date) ? <InputError message={errors.bid_due_date.toString()} className="mt-2" /> : ''}
           </div>
+          */}
       </div>
       <div className='flex flex-col'>
         <div className='flex justify-end p-3'>

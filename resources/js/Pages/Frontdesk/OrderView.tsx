@@ -2564,7 +2564,7 @@ export default function ShowStatusOrder ({
                   const active = tab === key
                   const displayLabel = key === 'contact'
                     ? `${label} (${associatedOrdersCount})`
-                    : label
+                    : (key === 'attachments' ? `${label} (${attachments.length})` : label)
                   return (
                     <li key={key}>
                       <button
