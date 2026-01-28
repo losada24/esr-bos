@@ -17,6 +17,8 @@ class VerifyCsrfToken extends Middleware
         'frontdesk/*/update-status-standby',
         'frontdesk/*/update-status-lost',
         'frontdesk/orders/*/qualified',
+        'order/*/notes',
+        'order/*/notes/*',
         'sales/*/assign-estimate',
         'sales/*/assign-follow-up',
         'sales/*/assign-stand-by',
