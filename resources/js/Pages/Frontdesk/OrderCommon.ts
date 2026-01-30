@@ -25,12 +25,25 @@ export const requestSchema = Yup.object({
 })
 
 export const orderQualifiedSchema = Yup.object({
-  // name: Yup.string().required('Request Name is required'),
-  // status: Yup.string().required('Status is required'),
-  // client_id: Yup.number().required('Client is required'),
-  // order_type: Yup.string().required('Order Type is required')
-
-  // notes: Yup.string().required().max(1000, 'Notes must be less than 255 characters')
+  order_type: Yup.string().required('Order Type is required'),
+  company_source_id: Yup.number()
+    .nullable()
+    .when('order_type', {
+      is: (value: string) => value === 'COMMERCIAL',
+      then: (schema) => schema.required('Source is required')
+    }),
+  associate_source_id_1: Yup.number()
+    .nullable()
+    .when('associate_company_contact_id_1', {
+      is: (value: number | null) => Boolean(value),
+      then: (schema) => schema.required('Source is required')
+    }),
+  associate_source_id_2: Yup.number()
+    .nullable()
+    .when('associate_company_contact_id_2', {
+      is: (value: number | null) => Boolean(value),
+      then: (schema) => schema.required('Source is required')
+    })
 })
 
 export const getValueIdNotNull = (formField: any) => {
@@ -121,8 +134,11 @@ export type OrderFormValues = Order & {
   // refer_phone?: string
   // referral_id?: number
   company_contact_id?: number
+  company_source_id: number | null
   associate_company_contact_id_1: number | null
   associate_company_contact_id_2: number | null
+  associate_source_id_1: number | null
+  associate_source_id_2: number | null
   company_contact?: CompanyContact[]
   sale: boolean
   installation: boolean
@@ -166,8 +182,11 @@ export const orderFormObj: OrderFormValues = {
   vip_clients: false,
   vip_notes: '',
   company_contact_id: 0,
+  company_source_id: null,
   associate_company_contact_id_1: null,
   associate_company_contact_id_2: null,
+  associate_source_id_1: null,
+  associate_source_id_2: null,
   company_contact: [],
   job_address: '',
   job_city: '',
@@ -219,6 +238,23 @@ export const loadOrderFormObj = (order: Order): OrderFormValues => {
   const companyContacts = rawCompanyContact
     ? (Array.isArray(rawCompanyContact) ? rawCompanyContact : [rawCompanyContact])
     : []
+  const orderCompanyContacts = Array.isArray((order as any).order_company_contacts)
+    ? (order as any).order_company_contacts
+    : Array.isArray((order as any).orderCompanyContacts)
+      ? (order as any).orderCompanyContacts
+      : []
+  const sortedCompanyContacts = [...orderCompanyContacts].sort((a: any, b: any) => {
+    const selectedDiff = Number(Boolean(b?.is_selected)) - Number(Boolean(a?.is_selected))
+    if (selectedDiff !== 0) return selectedDiff
+    return Number(a?.id ?? 0) - Number(b?.id ?? 0)
+  })
+  const [primaryCompany, assocCompany1, assocCompany2] = sortedCompanyContacts
+  const getCompanyId = (item?: any) =>
+    item?.company_contact_id ?? item?.company_contact?.id ?? item?.companyContact?.id ?? null
+  const getClientId = (item?: any) =>
+    item?.client_id ?? item?.client?.id ?? null
+  const getSourceId = (item?: any) =>
+    item?.source_id ?? item?.source?.id ?? null
 
   return {
     id: order.id,
@@ -226,9 +262,9 @@ export const loadOrderFormObj = (order: Order): OrderFormValues => {
     phone: order.client?.phone ?? '',
     name: order.name,
     source: order.client?.source ?? '',
-    client_id: order.client_id,
-    associate_client_id_1: order.associate_client_id_1 ?? null,
-    associate_client_id_2: order.associate_client_id_2 ?? null,
+    client_id: getClientId(primaryCompany) ?? order.client_id,
+    associate_client_id_1: getClientId(assocCompany1) ?? order.associate_client_id_1 ?? null,
+    associate_client_id_2: getClientId(assocCompany2) ?? order.associate_client_id_2 ?? null,
     project_amount: order.project_amount,
     status: order.status,
     notes: order.notes ?? '',
@@ -237,9 +273,12 @@ export const loadOrderFormObj = (order: Order): OrderFormValues => {
     secondary_email: order.client?.secondary_email ?? '',
     vip_clients: order.client?.vip_clients ?? false,
     vip_notes: order.client?.vip_notes ?? '',
-    company_contact_id: order.client?.company_contact_id ?? 0,
-    associate_company_contact_id_1: order.client?.company_contact_id ?? null,
-    associate_company_contact_id_2: order.client?.company_contact_id ?? null,
+    company_contact_id: getCompanyId(primaryCompany) ?? order.client?.company_contact_id ?? 0,
+    company_source_id: getSourceId(primaryCompany),
+    associate_company_contact_id_1: getCompanyId(assocCompany1),
+    associate_company_contact_id_2: getCompanyId(assocCompany2),
+    associate_source_id_1: getSourceId(assocCompany1),
+    associate_source_id_2: getSourceId(assocCompany2),
     company_contact: companyContacts,
     job_address: order.job_address ?? '',
     job_city: order.job_city ?? '',

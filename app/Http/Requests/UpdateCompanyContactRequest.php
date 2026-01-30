@@ -29,10 +29,10 @@ class UpdateCompanyContactRequest extends FormRequest
     {
         $clients = $this->input('clients', []);
 
-        return [
+        $rules = [
             'name' => 'required|string|max:255',
             'email' => 'nullable|email',
-            'phone' => 'required|max:20',
+            'phone' => 'nullable|max:20',
             'website' => 'nullable|url|max:255',
             'billing_street' => 'nullable|string|max:255',
             'billing_city' => 'nullable|string|max:100',
@@ -40,27 +40,22 @@ class UpdateCompanyContactRequest extends FormRequest
             'billing_code' => 'nullable|numeric',
             'bid_due_date' =>'nullable|date_format:Y-m-d',
             'clients' => 'sometimes|array',
-            'clients.*.phone' => [
+        ];
+
+        foreach ($clients as $index => $client) {
+            $clientId = isset($client['id']) ? (int) $client['id'] : null;
+            $uniqueRule = Rule::unique('clients', 'phone');
+            if (!empty($clientId)) {
+                $uniqueRule->ignore($clientId);
+            }
+            $rules["clients.$index.phone"] = [
                 'required',
                 'max:20',
                 'distinct',
-                Rule::forEach(function ($value, $attribute) use ($clients) {
-                    $parts = explode('.', $attribute);
-                    $index = $parts[1] ?? null;
-                    $clientId = null;
+                $uniqueRule,
+            ];
+        }
 
-                    if ($index !== null && isset($clients[$index]['id'])) {
-                        $clientId = (int) $clients[$index]['id'];
-                    }
-
-                    $rule = Rule::unique('clients', 'phone');
-                    if ($clientId > 0) {
-                        $rule->ignore($clientId);
-                    }
-
-                    return [$rule];
-                }),
-            ],
-        ];
+        return $rules;
     }
 }

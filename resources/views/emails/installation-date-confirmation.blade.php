@@ -16,7 +16,7 @@
       @endif
       <p><span style="font-weight: bold;">Order Number:</span> {{ $order->order_number }}</p>
       <p><span style="font-weight: bold;">Order Name:</span> {{ $order->name }}</p>
-      <p><span style="font-weight: bold;">Client Phone:</span> {{ $order->client->phone }}</p>
+      <p><span style="font-weight: bold;">Client Phone:</span> {{ optional($order->client)->phone ?? '' }}</p>
       <p><span style="font-weight: bold;">Job Address:</span> {{ 
                         ($order->job_address ?? '') .
                         (!empty($order->city) ? ', ' . $order->city : '') .

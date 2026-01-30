@@ -1,5 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
-import { Head, router, useForm } from '@inertiajs/react'
+import { Head, Link, router, useForm } from '@inertiajs/react'
 import { type PageProps, type Pipelines, type Role, type Tasks, type User, type CompanyContact as CompanyContactType } from '@/types'
 import { type ChangeEvent, type FormEvent, type KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
@@ -40,6 +40,7 @@ import LostContractModal from '@/Pages/Sales/LostContractModal'
 import QuantifiedModal from '@/Pages/Frontdesk/QuantifiedModal'
 import { ContactEditModal, type ContactFormValues } from '@/Pages/Frontdesk/ContactEditModals'
 import RequestEditModal, { type RequestFormValues, type RequestFormErrors } from '@/Pages/Frontdesk/RequestEditModal'
+import CompanyQuickEditModal from '@/Pages/Frontdesk/CompanyQuickEditModal'
 
 type IndexOrderProps = PageProps & {
   orderStatuses?: OrderStatus[]
@@ -421,6 +422,7 @@ export default function ShowStatusOrder ({
   const safeOwnerOptions = Array.isArray(ownerOptions) ? ownerOptions : []
   const modalOwnerOptions = safeOwnerOptions as unknown as User[]
   const safeClients = Array.isArray(clients) ? clients : []
+  const [clientsList, setClientsList] = useState<Client[]>(safeClients)
   const safeCompanies = Array.isArray(companies) ? companies : []
   const safeSourcesClients = Array.isArray(sourcesClients) ? sourcesClients : []
   const safeQualifiedSources = Array.isArray(qualifiedSources) ? qualifiedSources : []
@@ -493,6 +495,7 @@ export default function ShowStatusOrder ({
     methodOfPayment: order.method_of_payment ?? '',
     typeOfFinancing: order.type_of_financing ?? '',
     contactEmail: order.client?.email ?? '',
+    orderCompanyContactId: null as number | null,
     nameCheck: Boolean(order.name_check),
     addressCheck: Boolean(order.address_check),
     amountCheck: Boolean(order.amount_check),
@@ -523,7 +526,10 @@ export default function ShowStatusOrder ({
   const [orderProcessingAttachments, setOrderProcessingAttachments] = useState<File[]>([])
   const [orderProcessingError, setOrderProcessingError] = useState<string | null>(null)
   const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? ''
+  const [companyEditModalOpen, setCompanyEditModalOpen] = useState(false)
+  const [companyEditTarget, setCompanyEditTarget] = useState<CompanyContactType | null>(null)
   const [contactModalOpen, setContactModalOpen] = useState(false)
+  const [contactModalTargetClientId, setContactModalTargetClientId] = useState<number | null>(null)
   const [requestModalOpen, setRequestModalOpen] = useState(false)
   const clientIsContact = normalizeBoolean(order.client?.is_contact)
   const [contactFormValues, setContactFormValues] = useState<ContactFormValues>({
@@ -583,6 +589,53 @@ export default function ShowStatusOrder ({
     setContactModalOpen(true)
   }
 
+  const openCommercialContactModal = (client?: Client | null) => {
+    if (!client) return
+    setContactFormValues({
+      client_name: client.name ?? '',
+      email: client.email ?? '',
+      secondary_email: client.secondary_email ?? '',
+      phone: client.phone ?? '',
+      other_phone: client.other_phone ?? '',
+      source: client.source ?? '',
+      vip_clients: normalizeBoolean(client.vip_clients),
+      vip_notes: client.vip_notes ?? ''
+    })
+    setContactFormErrors({})
+    setContactSubmitError(null)
+    setContactModalTargetClientId(client.id)
+    setContactModalOpen(true)
+  }
+
+  const openCompanyEditModal = (company?: CompanyContactType | null) => {
+    if (!company) return
+    setCompanyEditTarget(company)
+    setCompanyEditModalOpen(true)
+  }
+
+  const handleCompanyUpdated = (company: CompanyContactType) => {
+    setOrder(prev => {
+      const next = { ...prev } as any
+      if (Array.isArray(next.order_company_contacts)) {
+        next.order_company_contacts = next.order_company_contacts.map((item: any) => {
+          const itemCompanyId = item?.company_contact?.id ?? item?.companyContact?.id ?? item?.company_contact_id
+          if (Number(itemCompanyId) !== Number(company.id)) return item
+          const updatedCompany = { ...(item.company_contact ?? item.companyContact ?? {}), ...company }
+          return { ...item, company_contact: updatedCompany, companyContact: updatedCompany }
+        })
+      }
+      if (Array.isArray(next.orderCompanyContacts)) {
+        next.orderCompanyContacts = next.orderCompanyContacts.map((item: any) => {
+          const itemCompanyId = item?.company_contact?.id ?? item?.companyContact?.id ?? item?.company_contact_id
+          if (Number(itemCompanyId) !== Number(company.id)) return item
+          const updatedCompany = { ...(item.company_contact ?? item.companyContact ?? {}), ...company }
+          return { ...item, company_contact: updatedCompany, companyContact: updatedCompany }
+        })
+      }
+      return next
+    })
+  }
+
   const openRequestModal = () => {
     setRequestFormValues({
       client_name: order.client?.name ?? order.name ?? '',
@@ -620,7 +673,8 @@ export default function ShowStatusOrder ({
         },
         body: JSON.stringify({
           mode: 'contact',
-          ...contactFormValues
+          ...contactFormValues,
+          client_id: contactModalTargetClientId ?? undefined
         })
       })
       const responseData = await response.json().catch(() => null)
@@ -635,6 +689,7 @@ export default function ShowStatusOrder ({
         setOrder(responseData.order)
       }
       setContactModalOpen(false)
+      setContactModalTargetClientId(null)
     } catch (error) {
       console.error('contact update error', error)
       setContactSubmitError('Unable to update contact information.')
@@ -704,6 +759,9 @@ export default function ShowStatusOrder ({
         associate_company_contact_id_2: toNull(values.associate_company_contact_id_2),
         associate_client_id_1: toNull(values.associate_client_id_1),
         associate_client_id_2: toNull(values.associate_client_id_2),
+        company_source_id: toNull(values.company_source_id),
+        associate_source_id_1: toNull(values.associate_source_id_1),
+        associate_source_id_2: toNull(values.associate_source_id_2),
         source: typeof values.source === 'string' ? values.source : getValueIdNotNull(values.source)
       }
 
@@ -745,6 +803,22 @@ export default function ShowStatusOrder ({
       }
 
       setOrder(updatedOrder)
+      if (Array.isArray((updatedOrder as any).order_company_contacts)) {
+        setClientsList(prev => {
+          const next = [...prev]
+          for (const item of (updatedOrder as any).order_company_contacts) {
+            const clientId = item?.client?.id ?? item?.client_id
+            if (!clientId) continue
+            const companyId = item?.company_contact_id ?? item?.company_contact?.id ?? item?.companyContact?.id ?? null
+            const idx = next.findIndex(c => Number(c.id) === Number(clientId))
+            if (idx >= 0) {
+              next[idx] = { ...next[idx], company_contact_id: companyId ?? next[idx].company_contact_id }
+            }
+          }
+          return next
+        })
+      }
+      setOrderFormInitialValues(loadOrderFormObj(updatedOrder))
       setOrderEditModalOpen(false)
 
       setContactFormValues({
@@ -786,6 +860,25 @@ export default function ShowStatusOrder ({
   const companyContacts = rawCompany
     ? (Array.isArray(rawCompany) ? rawCompany : [rawCompany])
     : []
+  const orderCompanyContacts = Array.isArray((order as any).order_company_contacts)
+    ? (order as any).order_company_contacts
+    : Array.isArray((order as any).orderCompanyContacts)
+      ? (order as any).orderCompanyContacts
+      : []
+  const sortedOrderCompanyContacts = [...orderCompanyContacts].sort((a, b) => {
+    const selectedDiff = Number(Boolean(b?.is_selected)) - Number(Boolean(a?.is_selected))
+    if (selectedDiff !== 0) return selectedDiff
+    const nameA = String(a?.company_contact?.name ?? '').toLowerCase()
+    const nameB = String(b?.company_contact?.name ?? '').toLowerCase()
+    return nameA.localeCompare(nameB)
+  })
+  const commercialCompanyOptions = sortedOrderCompanyContacts.map((item: any) => ({
+    id: item.id,
+    label: [item.company_contact?.name ?? item.companyContact?.name ?? 'Company', item.client?.name ? `- ${item.client?.name}` : ''].join(' ').trim(),
+    client_email: item.client?.email ?? null
+  }))
+  const selectedCommercialCompanyId = sortedOrderCompanyContacts.find((item: any) => item.is_selected)?.id
+    ?? (sortedOrderCompanyContacts.length === 1 ? sortedOrderCompanyContacts[0]?.id : null)
   const ownerNames = Array.isArray(order.owners)
     ? order.owners.map((owner: any) => owner?.name).filter(Boolean)
     : []
@@ -1201,6 +1294,7 @@ export default function ShowStatusOrder ({
         methodOfPayment: order.method_of_payment ?? prev.methodOfPayment,
         typeOfFinancing: order.type_of_financing ?? prev.typeOfFinancing,
         contactEmail: order.client?.email ?? prev.contactEmail,
+        orderCompanyContactId: selectedCommercialCompanyId ?? prev.orderCompanyContactId ?? null,
         nameCheck: Boolean(order.name_check),
         addressCheck: Boolean(order.address_check),
         amountCheck: Boolean(order.amount_check),
@@ -1605,7 +1699,8 @@ export default function ShowStatusOrder ({
         nameCheck: 'name_check',
         addressCheck: 'address_check',
         amountCheck: 'amount_check',
-        emailCheck: 'email_check'
+        emailCheck: 'email_check',
+        orderCompanyContactId: 'order_company_contact_id'
       }
 
       const booleanFields = new Set(['nameCheck', 'addressCheck', 'amountCheck', 'emailCheck'])
@@ -1615,6 +1710,8 @@ export default function ShowStatusOrder ({
             formData.append('attachments[]', file)
           })
         } else if (key === 'customSchedule') {
+          return
+        } else if (key === 'orderCompanyContactId' && !value) {
           return
         } else {
           const payloadKey = fieldMap[key] ?? key
@@ -1683,7 +1780,8 @@ export default function ShowStatusOrder ({
         email_check: data.email_check ?? prev.email_check,
         client: prev.client
           ? { ...prev.client, email: data.contact_email ?? prev.client.email }
-          : prev.client
+          : prev.client,
+        order_company_contacts: data.order_company_contacts ?? (prev as any).order_company_contacts
       }))
 
       refreshOrderActivity()
@@ -2386,71 +2484,158 @@ export default function ShowStatusOrder ({
 
           <div className="grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
             <aside className="space-y-6">
-              <div className="panel space-y-4">
-                <div className="flex items-center justify-between gap-3">
-                  <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">Related Contact</h2>
-                  <div className="flex items-center gap-3">
-                    {canEditContact && !isFrontdeskEsrRole && (
-                      <button
-                        type="button"
-                        onClick={openContactModal}
-                        className="rounded-full p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
-                        title="Edit contact"
+              {order.order_type?.toLowerCase() !== 'commercial' && (
+                <div className="panel space-y-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">Related Contact</h2>
+                    <div className="flex items-center gap-3">
+                      {canEditContact && !isFrontdeskEsrRole && (
+                        <button
+                          type="button"
+                          onClick={openContactModal}
+                          className="rounded-full p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+                          title="Edit contact"
+                        >
+                          <span className="sr-only">Edit contact</span>
+                          <EditIcon className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    {contactDetails.map(({ label, value, fallback, Icon }) => (
+                      <div
+                        key={label}
+                        className="flex items-center gap-3 rounded-xl border border-slate-200/80 bg-slate-50 px-3 py-3 shadow-sm"
                       >
-                        <span className="sr-only">Edit contact</span>
-                        <EditIcon className="h-4 w-4" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  {contactDetails.map(({ label, value, fallback, Icon }) => (
-                    <div
-                      key={label}
-                      className="flex items-center gap-3 rounded-xl border border-slate-200/80 bg-slate-50 px-3 py-3 shadow-sm"
-                    >
-                      <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white text-sky-500 shadow-sm">
-                        <Icon className="h-4 w-4" />
-                      </span>
-                      <div className="flex-1 text-sm">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{label}</p>
-                        <p className="font-medium text-slate-700">
-                          {value ?? <span className="text-slate-400">{fallback}</span>}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                {!canEditContact && (
-                  <p className="text-xs text-slate-400">
-                    Contact details can only be edited once the client is confirmed, but you can still update the request information.
-                  </p>
-                )}
-              </div>
-
-              {order.order_type?.toLowerCase() === 'commercial' && companyContacts.length > 0 && (
-                  <div className="mt-4 space-y-3 rounded-xl border border-slate-200/80 bg-slate-50 p-3 shadow-sm">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-400">Related Company</h3>
-                      <span className="text-[10px] font-medium text-slate-400">{companyContacts.length} linked</span>
-                    </div>
-                    <div className="space-y-3">
-                      {companyContacts.map((company, index) => (
-                        <div key={company.id ?? index} className="space-y-2 rounded-lg bg-white/70 p-3 shadow">
-                          <p className="text-sm font-semibold text-slate-700">{company.name}</p>
-                          {company.bid_due_date && (
-                            <div className="flex items-center justify-between rounded-md bg-slate-100 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                              <span>Bid Due Date</span>
-                              <span className="text-slate-700 normal-case">
-                                {new Date(company.bid_due_date).toLocaleDateString()}
-                              </span>
-                            </div>
-                          )}
+                        <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white text-sky-500 shadow-sm">
+                          <Icon className="h-4 w-4" />
+                        </span>
+                        <div className="flex-1 text-sm">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{label}</p>
+                          <p className="font-medium text-slate-700">
+                            {value ?? <span className="text-slate-400">{fallback}</span>}
+                          </p>
                         </div>
-                      ))}
-                    </div>
+                      </div>
+                    ))}
                   </div>
-                )}
+                  {!canEditContact && (
+                    <p className="text-xs text-slate-400">
+                      Contact details can only be edited once the client is confirmed, but you can still update the request information.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {order.order_type?.toLowerCase() === 'commercial' && sortedOrderCompanyContacts.length > 0 && (
+                <div className="mt-4 space-y-3 rounded-xl border border-slate-200/80 bg-slate-50 p-3 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-400">Commercial Companies</h3>
+                    <span className="text-[10px] font-medium text-slate-400">{sortedOrderCompanyContacts.length} linked</span>
+                  </div>
+                  <div className="space-y-3">
+                    {sortedOrderCompanyContacts.map((item: any, index: number) => {
+                      const isSelected = Boolean(item.is_selected)
+                      return (
+                      <div
+                        key={item.id ?? index}
+                        className={`rounded-xl border p-4 shadow-sm ${isSelected ? 'border-emerald-300/80 bg-emerald-50/70' : 'border-slate-200/70 bg-white'}`}
+                      >
+                        <div className="space-y-2">
+                          <div className="min-w-0">
+                            <div className="flex items-start gap-2">
+                              <p className="truncate text-base font-semibold text-slate-800">
+                                {item.company_contact?.name ?? item.companyContact?.name ?? 'Company'}
+                              </p>
+                              {(item.company_contact?.id || item.companyContact?.id) && (
+                                <button
+                                  type="button"
+                                  onClick={() => { openCompanyEditModal(item.company_contact ?? item.companyContact) }}
+                                  className="mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+                                  title="Edit company"
+                                  aria-label="Edit company"
+                                >
+                                  <EditIcon className="h-3 w-3" />
+                                </button>
+                              )}
+                            </div>
+                            <p className="text-xs text-slate-500">
+                              Company
+                              {isSelected && <span className="ml-2 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-700">Selected</span>}
+                            </p>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-2" />
+                        </div>
+
+                        <div className="mt-3 space-y-3 text-xs text-slate-500">
+                          <div className="rounded-lg bg-slate-50 px-3 py-2">
+                            <div className="flex items-center gap-2">
+                              <span className="uppercase tracking-wide text-slate-400">Contact</span>
+                              {item.client?.id && (
+                                <Link
+                                  href="#"
+                                  onClick={(event) => {
+                                    event.preventDefault()
+                                    openCommercialContactModal(item.client)
+                                  }}
+                                  className="inline-flex h-5 w-5 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+                                  title="Edit contact"
+                                  aria-label="Edit contact"
+                                >
+                                  <EditIcon className="h-3 w-3" />
+                                </Link>
+                              )}
+                            </div>
+                            <div className="mt-0.5 font-medium text-slate-700">
+                              {item.client?.name ?? 'Unassigned'}
+                            </div>
+                            <div className="mt-1 text-slate-500">
+                              Phone:{' '}
+                              <span className="font-medium text-slate-600">{item.client?.phone ?? '—'}</span>
+                            </div>
+                          </div>
+                          <div className="rounded-lg bg-slate-50 px-3 py-2">
+                            <span className="uppercase tracking-wide text-slate-400">Email</span>
+                            <div className="mt-0.5 break-all font-medium text-slate-700">
+                              {item.client?.email ?? '—'}
+                            </div>
+                          </div>
+                          <div className="rounded-lg bg-slate-100 px-3 py-2">
+                            <span className="uppercase tracking-wide text-slate-400">Source</span>
+                            <div className="mt-0.5 font-medium text-slate-700">{item.source?.name ?? '—'}</div>
+                          </div>
+                        </div>
+                      </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {order.order_type?.toLowerCase() !== 'commercial' && companyContacts.length > 0 && (
+                <div className="mt-4 space-y-3 rounded-xl border border-slate-200/80 bg-slate-50 p-3 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-400">Related Company</h3>
+                    <span className="text-[10px] font-medium text-slate-400">{companyContacts.length} linked</span>
+                  </div>
+                  <div className="space-y-3">
+                    {companyContacts.map((company, index) => (
+                      <div key={company.id ?? index} className="space-y-2 rounded-lg bg-white/70 p-3 shadow">
+                        <p className="text-sm font-semibold text-slate-700">{company.name}</p>
+                        {company.bid_due_date && (
+                          <div className="flex items-center justify-between rounded-md bg-slate-100 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                            <span>Bid Due Date</span>
+                            <span className="text-slate-700 normal-case">
+                              {new Date(company.bid_due_date).toLocaleDateString()}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Sales timeline component will render elsewhere */}
 
@@ -2728,18 +2913,34 @@ export default function ShowStatusOrder ({
                                         </span>
                                       )}
                                     </div>
-                                    <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-                                      <a
-                                        href={route('frontdesk.order_view', { id: clientOrder.id })}
-                                        className="font-semibold text-sky-600 hover:text-sky-700"
-                                      >
-                                        View details
-                                      </a>
-                                    </div>
+                                  <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                                    <a
+                                      href={route('frontdesk.order_view', { id: clientOrder.id })}
+                                      className="font-semibold text-sky-600 hover:text-sky-700"
+                                    >
+                                      View details
+                                    </a>
                                   </div>
-                                </li>
-                              )
-                            })}
+                                  {clientOrder.order_type?.toLowerCase() === 'commercial' && Array.isArray((clientOrder as any).order_company_contacts) && (clientOrder as any).order_company_contacts.length > 0 && (
+                                    <div className="mt-3 space-y-2">
+                                      <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Companies</p>
+                                      <div className="flex flex-wrap gap-2">
+                                        {(clientOrder as any).order_company_contacts.map((item: any) => (
+                                          <span
+                                            key={item.id}
+                                            className={`rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-wide ${item.is_selected ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}
+                                          >
+                                            {item.company_name ?? 'Company'}
+                                            {item.client_name ? ` · ${item.client_name}` : ''}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              </li>
+                            )
+                          })}
                           </ul>
                           )
                         : (
@@ -3042,7 +3243,7 @@ export default function ShowStatusOrder ({
         initialValues={orderFormInitialValues}
         onClose={() => { setOrderEditModalOpen(false) }}
         onSubmit={handleOrderEditSubmit}
-        clients={safeClients}
+        clients={clientsList}
         owners={modalOwnerOptions}
         status={safeStatusOptions}
         sources={safeQualifiedSources}
@@ -3058,6 +3259,13 @@ export default function ShowStatusOrder ({
         errorMessage={orderEditError}
       />
 
+      <CompanyQuickEditModal
+        open={companyEditModalOpen}
+        company={companyEditTarget}
+        onClose={() => { setCompanyEditModalOpen(false); setCompanyEditTarget(null) }}
+        onUpdated={handleCompanyUpdated}
+      />
+
       <ContactEditModal
         open={contactModalOpen}
         saving={contactSaving}
@@ -3066,7 +3274,7 @@ export default function ShowStatusOrder ({
         errors={contactFormErrors}
         sourceOptions={contactSourceOptions}
         errorMessage={contactSubmitError}
-        onClose={() => { setContactModalOpen(false) }}
+        onClose={() => { setContactModalOpen(false); setContactModalTargetClientId(null) }}
         onEditRequest={openRequestModal}
         onChange={(field, value) => {
           setContactFormValues(prev => ({
@@ -3157,6 +3365,9 @@ export default function ShowStatusOrder ({
         initialMethodOfPayment={contractSignedInitialValues.methodOfPayment}
         initialTypeOfFinancing={contractSignedInitialValues.typeOfFinancing}
         initialContactEmail={contractSignedInitialValues.contactEmail}
+        initialOrderCompanyContactId={contractSignedInitialValues.orderCompanyContactId}
+        orderType={order.order_type}
+        companyOptions={commercialCompanyOptions}
         initialNameCheck={contractSignedInitialValues.nameCheck}
         initialAddressCheck={contractSignedInitialValues.addressCheck}
         initialAmountCheck={contractSignedInitialValues.amountCheck}

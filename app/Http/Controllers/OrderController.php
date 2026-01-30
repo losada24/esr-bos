@@ -614,9 +614,11 @@ class OrderController extends Controller
     $newEstimate->walk_trough = false;
     $newEstimate->project_amount= 0;
 
-    $client = $estimate->client->replicate();
-    $client->push(); // Guardar el nuevo cliente duplicado
-    $newEstimate->client_id = $client->id; // Asignar el nuevo cliente a la orden duplicada
+    if ($estimate->client) {
+      $client = $estimate->client->replicate();
+      $client->push(); // Guardar el nuevo cliente duplicado
+      $newEstimate->client_id = $client->id; // Asignar el nuevo cliente a la orden duplicada
+    }
     $newEstimate->push(); // Guardar la nueva orden duplicada
 
     // Duplicar los OrderProducts asociados

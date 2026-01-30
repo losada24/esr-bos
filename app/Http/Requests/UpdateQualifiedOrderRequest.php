@@ -38,7 +38,7 @@ class UpdateQualifiedOrderRequest extends FormRequest
         return [
            // 'client_id' => 'nullable|integer|exists:clients,id',
             'name' => 'required|string|max:255',
-            //'client_id' => 'required|integer|exists:clients,id',
+            'client_id' => ['nullable', 'required_if:order_type,COMMERCIAL', 'integer', 'exists:clients,id'],
             // 'last_name' => 'required|string|max:255',
             'order_type' => [
             'required',
@@ -62,14 +62,17 @@ class UpdateQualifiedOrderRequest extends FormRequest
             'notes' => 'nullable|string|max:1000',
            
             // Solo obligatoria en COMMERCIAL
-            //'company_contact_id' => [  'nullable','required_if:order_type,COMMERCIAL', 'integer', 'exists:company_contacts,id'],
+            'company_contact_id' => [  'nullable','required_if:order_type,COMMERCIAL', 'integer', 'exists:company_contacts,id'],
+            'company_source_id' => ['nullable', 'required_if:order_type,COMMERCIAL', 'integer', 'exists:sources,id'],
             // Company asociadas (opcionales)
-           // 'associate_company_contact_id_1' => ['nullable','integer','exists:company_contacts,id'],
+            'associate_company_contact_id_1' => ['nullable','integer','exists:company_contacts,id'],
             'associate_company_contact_id_2' => ['nullable','integer','exists:company_contacts,id'],
 
             // Client asociado requerido si hay company asociada
-            //'associate_client_id_1' => ['nullable','integer','exists:clients,id','required_with:associate_company_contact_id_1'],
-            //'associate_client_id_2' => ['nullable','integer','exists:clients,id','required_with:associate_company_contact_id_2'],  
+            'associate_client_id_1' => ['nullable','integer','exists:clients,id','required_with:associate_company_contact_id_1'],
+            'associate_client_id_2' => ['nullable','integer','exists:clients,id','required_with:associate_company_contact_id_2'],  
+            'associate_source_id_1' => ['nullable','integer','exists:sources,id','required_with:associate_company_contact_id_1'],
+            'associate_source_id_2' => ['nullable','integer','exists:sources,id','required_with:associate_company_contact_id_2'],
             'hoa' => ['nullable', 'boolean'],
             'language' => [
               'nullable',

@@ -1,5 +1,5 @@
 <div>
-    <p>Good day, <strong>{{ $order->client->name ?? 'Valued Customer' }}</strong>:</p>
+    <p>Good day, <strong>{{ optional($order->client)->name ?? 'Valued Customer' }}</strong>:</p>
     @if($order->status === \App\Enum\OrderStatusEnum::RESCHEDULE->value)
         <p>Your installation for {{$order->name}} was rescheduled for {{ \Carbon\Carbon::parse($order->installation_date)->format('m-d-Y') }}.</p>
     @else
@@ -8,7 +8,7 @@ In the case of sliding glass doors, the product comes with the lock.</p>
     @endif
     <p>Please do not reply to this email. This mailbox is not monitored. If you have any questions or need further assistance, please contact us at 786 732 0362 Ext 104: <a href="mailto:{{$order->user->email}}">{{$order->user->email}}</a>.</p>
     <hr/>
-    <p>Buen día, <strong>{{ $order->client->name ?? 'Estimado Cliente' }}</strong>:</p>
+    <p>Buen día, <strong>{{ optional($order->client)->name ?? 'Estimado Cliente' }}</strong>:</p>
     @if($order->status === \App\Enum\OrderStatusEnum::RESCHEDULE->value)
         <p>La instalación de su orden {{$order->name}} fue reprogramada para: {{ \Carbon\Carbon::parse($order->installation_date)->format('m-d-Y') }}.</p>
     @else

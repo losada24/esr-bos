@@ -82,6 +82,8 @@ export default function Create ({ auth, contact_type, sources, companies }: Page
                 contact_type={contact_type}
                 companies={companiesList}
                 sources={sources}
+                showContactType={false}
+                showCompanyField={false}
                 // tags={tags}
               />
             )}

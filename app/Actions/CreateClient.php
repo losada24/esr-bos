@@ -2,12 +2,14 @@
 namespace App\Actions;
 
 use App\Enum\ContactSourceEnum;
+use App\Enum\OrderTypeEnum;
 use App\Models\Client;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\ClientAddress;
 use App\Models\Referral;
 use App\Traits\Bigin;
+use Illuminate\Validation\ValidationException;
 
 class CreateClient {
 
@@ -17,7 +19,27 @@ class CreateClient {
     
     return DB::transaction(function() use ($request) {
 
-      $existingClient = Client::where('phone', $request->phone)->first();
+      $phone = is_string($request->phone) ? trim($request->phone) : null;
+      $email = is_string($request->email) ? trim($request->email) : null;
+      $forceCreate = $request->boolean('force_create');
+      $isCommercial = $request->input('order_type') === OrderTypeEnum::COMMERCIAL->value;
+      $fromModal = $request->boolean('from_modal');
+
+      $existingClient = null;
+      if (!empty($phone)) {
+        $existingClient = Client::where('phone', $phone)->first();
+      } elseif (!empty($email)) {
+        $existingClient = Client::where('email', $email)->first();
+        if ($existingClient && $fromModal && $isCommercial && !$forceCreate) {
+          throw ValidationException::withMessages([
+            'email' => ['This email is already associated with a client.'],
+            'email_exists' => ['1'],
+          ]);
+        }
+        if ($existingClient && $forceCreate) {
+          $existingClient = null;
+        }
+      }
         //dd($request);
       if( !$existingClient )
       {   $referral = null;

@@ -33,5 +33,9 @@ class Source extends Model
         });
     }
 
+    public function orderCompanyContacts(): HasMany
+    {
+        return $this->hasMany(OrderCompanyContact::class);
+    }
 
 }

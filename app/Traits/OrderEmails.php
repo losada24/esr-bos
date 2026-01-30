@@ -28,8 +28,11 @@ trait OrderEmails {
       foreach ($order->owners as $owner) {
         $users[] = $owner->email;
       }
-      if($order->do_not_send_email != 1){
-        $users[] = $order->client->email;
+      if ($order->do_not_send_email != 1) {
+        $clientEmail = optional($order->client)->email;
+        if (!empty($clientEmail)) {
+          $users[] = $clientEmail;
+        }
       }
       $accountings = User::role([RoleEnum::ACCOUNTING->value])->get();
      
@@ -104,8 +107,11 @@ trait OrderEmails {
     }
     else if ($order->status === OrderStatusEnum::DELIVERY_CONFIRMED->value) {
       $users = [];
-      if($order->do_not_send_email != 1){
-        $users[] = $order->client->email;
+      if ($order->do_not_send_email != 1) {
+        $clientEmail = optional($order->client)->email;
+        if (!empty($clientEmail)) {
+          $users[] = $clientEmail;
+        }
       }
      
       $accountManager = User::role([RoleEnum::ACCOUNT_MANAGER->value])->get();
@@ -127,8 +133,11 @@ trait OrderEmails {
           SendGmailEmail::dispatch($owner, $installationDateConfirmation)->onQueue('emails');
         }
 
-        if($order->do_not_send_email != 1){
-          $users[] = $order->client->email;
+        if ($order->do_not_send_email != 1) {
+          $clientEmail = optional($order->client)->email;
+          if (!empty($clientEmail)) {
+            $users[] = $clientEmail;
+          }
         }
         
         foreach ($users as $user) {
@@ -164,8 +173,11 @@ trait OrderEmails {
         }
       } else if ($order->service === ServiceEnum::DELIVERY->value || $order->service === ServiceEnum::PICKUP->value) {
         $users = [];
-        if($order->do_not_send_email != 1){
-          $users[] = $order->client->email;
+        if ($order->do_not_send_email != 1) {
+          $clientEmail = optional($order->client)->email;
+          if (!empty($clientEmail)) {
+            $users[] = $clientEmail;
+          }
         }
         
         $users = array_merge($users,$order->owners->pluck('email')->toArray());

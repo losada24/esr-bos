@@ -416,6 +416,18 @@ class Order extends Model
     return $this->hasMany(OrderClientTemps::class);
   }
 
+  public function orderCompanyContacts(): HasMany
+  {
+    return $this->hasMany(OrderCompanyContact::class);
+  }
+
+  public function companyContacts(): BelongsToMany
+  {
+    return $this->belongsToMany(CompanyContact::class, 'order_company_contacts')
+      ->withPivot(['client_id', 'source_id', 'is_selected', 'selected_at'])
+      ->withTimestamps();
+  }
+
   public function tags(): MorphMany
   {
     return $this->morphMany(Tag::class, 'taggable');

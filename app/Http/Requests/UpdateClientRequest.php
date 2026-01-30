@@ -34,13 +34,14 @@ class UpdateClientRequest extends FormRequest
            //'phone' => 'required|max:20',
             'phone' => [
               'required',
-              'regex:/^\d{10}$/'
+              'regex:/^\d{10}$/',
+              Rule::unique('clients', 'phone')->ignore($this->id)
             ],
             'address' => 'nullable|string|max:500',
             'vip_clients' => 'boolean',
             'vip_notes' => 'nullable|string|max:1000',
             'contact_type' => [
-              'required',
+              'nullable',
               'string',
               Rule::in(
                 ContactTypeEnum::RESIDENTIAL_CONTACT->value,

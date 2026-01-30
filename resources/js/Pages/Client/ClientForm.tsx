@@ -18,7 +18,7 @@ import TagPicker, { type TagItem } from '@/Components/TagPicker'
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
 
-const ClientForm = ({ submitCount, errors, isCreate, setFieldValue, values, contact_type, sources, companies }: {
+const ClientForm = ({ submitCount, errors, isCreate, setFieldValue, values, contact_type, sources, companies, showContactType = true, showCompanyField = true }: {
   submitCount: number
   errors: FormikErrors<ClientFormType>
   setFieldValue: (field: string, value: any, shouldValidate?: boolean) => void
@@ -27,6 +27,8 @@ const ClientForm = ({ submitCount, errors, isCreate, setFieldValue, values, cont
   contact_type: string[]
   sources: string[]
   companies: CompanyContact[]
+  showContactType?: boolean
+  showCompanyField?: boolean
   // tags: TagItem[]
 }) => {
   const inputRef = useRef<google.maps.places.SearchBox | null>(null)
@@ -78,29 +80,31 @@ const ClientForm = ({ submitCount, errors, isCreate, setFieldValue, values, cont
     console.log(values),
     <Form className='space-y-5'>
       <div className='grid gap-4 grid-cols-3'>
-      <div className={submitCount ? (errors.contact_type) ? 'has-error' : 'has-success' : ''}>
-        <label htmlFor="contact_type">Contact Type</label>
-        <Field
-          id="contact_type"
-          name="contact_type"
-          className="form-select"
-          autoComplete="contact_type"
-          placeholder='Contact Type'
-          as="select"
-          onChange={(e: { target: { value: string } }) => {
-            setFieldValue('contact_type', e.target.value)
-            setFieldValue('cost_delivery', 0)
-            setFieldValue('type_of_financing', '')
-            setFieldValue('company_contact_id', 0)
-          }}
-        >
-          <option value="">Contact Type</option>
-          {contact_type.map((contact_type, index) => (
-            <option key={index} value={contact_type}>{contact_type}</option>
-          ))}
-        </Field>
-        {(submitCount && errors.contact_type) ? <InputError message={errors.contact_type} className="mt-2" /> : ''}
+      {showContactType && (
+        <div className={submitCount ? (errors.contact_type) ? 'has-error' : 'has-success' : ''}>
+          <label htmlFor="contact_type">Contact Type</label>
+          <Field
+            id="contact_type"
+            name="contact_type"
+            className="form-select"
+            autoComplete="contact_type"
+            placeholder='Contact Type'
+            as="select"
+            onChange={(e: { target: { value: string } }) => {
+              setFieldValue('contact_type', e.target.value)
+              setFieldValue('cost_delivery', 0)
+              setFieldValue('type_of_financing', '')
+              setFieldValue('company_contact_id', 0)
+            }}
+          >
+            <option value="">Contact Type</option>
+            {contact_type.map((contact_type, index) => (
+              <option key={index} value={contact_type}>{contact_type}</option>
+            ))}
+          </Field>
+          {(submitCount && errors.contact_type) ? <InputError message={errors.contact_type} className="mt-2" /> : ''}
         </div>
+      )}
         <div className={submitCount ? (errors.name) ? 'has-error' : 'has-success' : ''}>
           <label htmlFor="name">Name</label>
           <Field
@@ -209,7 +213,7 @@ const ClientForm = ({ submitCount, errors, isCreate, setFieldValue, values, cont
         </div>
         </>
         )}
-       {(values.contact_type === CONTACT_TYPES.COMMERCIAL_CONTACT) && (
+       {showCompanyField && (values.contact_type === CONTACT_TYPES.COMMERCIAL_CONTACT) && (
          <div className={submitCount ? (errors.company_contact_id) ? 'has-error' : 'has-success' : ''}>
               <label htmlFor="status">Company</label>
               <div className="flex items-center">

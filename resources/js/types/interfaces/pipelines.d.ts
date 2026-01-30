@@ -27,6 +27,14 @@ export interface Tasks {
   method_of_payment?: string | null
   type_of_financing?: string | null
   order_type?: string | null
+  order_company_contacts?: Array<{
+    id: number
+    company_name?: string | null
+    client_id?: number | null
+    client_name?: string | null
+    client_email?: string | null
+    is_selected?: boolean
+  }>
   owner_ids?: number[]
   owners?: Array<{ id: number, name: string }>
   // status?: string

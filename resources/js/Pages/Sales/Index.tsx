@@ -268,7 +268,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
   const [preContractError, setPreContractError] = useState<string | null>(null)
   const [pendingPreContract, setPendingPreContract] = useState<{ task: Tasks, oldStatus: string, newStatus: string } | null>(null)
   const [contractSignedModalOpen, setContractSignedModalOpen] = useState(false)
-  const [contractSignedInitialValues, setContractSignedInitialValues] = useState<{ projectName: string, projectAmount: string, downPayment: string, jobAddress: string, city: string, jobState: string, jobZip: string, methodOfPayment: string, typeOfFinancing: string, contactEmail: string, nameCheck: boolean, addressCheck: boolean, amountCheck: boolean, emailCheck: boolean, paymentScheduleType: string, customSchedule: Array<{ label: string, amount: string }> }>({ projectName: '', projectAmount: '', downPayment: '', jobAddress: '', city: '', jobState: '', jobZip: '', methodOfPayment: '', typeOfFinancing: '', contactEmail: '', nameCheck: false, addressCheck: false, amountCheck: false, emailCheck: false, paymentScheduleType: '', customSchedule: buildEmptyCustomSchedule() })
+  const [contractSignedInitialValues, setContractSignedInitialValues] = useState<{ projectName: string, projectAmount: string, downPayment: string, jobAddress: string, city: string, jobState: string, jobZip: string, methodOfPayment: string, typeOfFinancing: string, contactEmail: string, orderCompanyContactId: number | null, nameCheck: boolean, addressCheck: boolean, amountCheck: boolean, emailCheck: boolean, paymentScheduleType: string, customSchedule: Array<{ label: string, amount: string }> }>({ projectName: '', projectAmount: '', downPayment: '', jobAddress: '', city: '', jobState: '', jobZip: '', methodOfPayment: '', typeOfFinancing: '', contactEmail: '', orderCompanyContactId: null, nameCheck: false, addressCheck: false, amountCheck: false, emailCheck: false, paymentScheduleType: '', customSchedule: buildEmptyCustomSchedule() })
   const [contractSignedSaving, setContractSignedSaving] = useState(false)
   const [contractSignedError, setContractSignedError] = useState<string | null>(null)
   const [pendingContractSigned, setPendingContractSigned] = useState<{ task: Tasks, oldStatus: string, newStatus: string } | null>(null)
@@ -555,7 +555,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
     setContractSignedModalOpen(false)
     setContractSignedError(null)
     setContractSignedSaving(false)
-    setContractSignedInitialValues({ projectName: '', projectAmount: '', downPayment: '', jobAddress: '', city: '', jobState: '', jobZip: '', methodOfPayment: '', typeOfFinancing: '', contactEmail: '', nameCheck: false, addressCheck: false, amountCheck: false, emailCheck: false, paymentScheduleType: '', customSchedule: buildEmptyCustomSchedule() })
+    setContractSignedInitialValues({ projectName: '', projectAmount: '', downPayment: '', jobAddress: '', city: '', jobState: '', jobZip: '', methodOfPayment: '', typeOfFinancing: '', contactEmail: '', orderCompanyContactId: null, nameCheck: false, addressCheck: false, amountCheck: false, emailCheck: false, paymentScheduleType: '', customSchedule: buildEmptyCustomSchedule() })
     setPendingContractSigned(null)
   }
 
@@ -803,7 +803,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
     }
   }
 
-  const handleContractSignedSubmit = async (values: { projectName: string, projectAmount: string, downPayment: string, jobAddress: string, city: string, jobState: string, jobZip: string, methodOfPayment: string, typeOfFinancing: string, contactEmail: string, attachments: File[], nameCheck: boolean, addressCheck: boolean, amountCheck: boolean, emailCheck: boolean, paymentScheduleType: string, customSchedule: Array<{ label: string, amount: number }> }) => {
+  const handleContractSignedSubmit = async (values: { projectName: string, projectAmount: string, downPayment: string, jobAddress: string, city: string, jobState: string, jobZip: string, methodOfPayment: string, typeOfFinancing: string, contactEmail: string, orderCompanyContactId?: number | null, attachments: File[], nameCheck: boolean, addressCheck: boolean, amountCheck: boolean, emailCheck: boolean, paymentScheduleType: string, customSchedule: Array<{ label: string, amount: number }> }) => {
     if (!pendingContractSigned) return
 
     setContractSignedSaving(true)
@@ -835,6 +835,9 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
       formData.append('type_of_financing', normalizedFinancing)
       formData.append('down_payment', normalizedDownPayment)
       formData.append('payment_schedule_type', values.paymentScheduleType)
+      if (values.orderCompanyContactId) {
+        formData.append('order_company_contact_id', String(values.orderCompanyContactId))
+      }
 
       if (values.paymentScheduleType === CUSTOM_SCHEDULE_TYPE) {
         values.customSchedule.forEach((item, index) => {
@@ -1245,6 +1248,12 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
                             return
                           }
 
+                          const taskCompanyContacts = Array.isArray(foundTask.order_company_contacts)
+                            ? foundTask.order_company_contacts
+                            : []
+                          const selectedCompanyId = taskCompanyContacts.find((item) => item.is_selected)?.id
+                            ?? (taskCompanyContacts.length === 1 ? taskCompanyContacts[0]?.id : null)
+
                           setContractSignedInitialValues({
                             projectName: foundTask.title ?? '',
                             projectAmount: foundTask.project_amount !== undefined && foundTask.project_amount !== null
@@ -1260,6 +1269,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
                             methodOfPayment: foundTask.method_of_payment ?? '',
                             typeOfFinancing: foundTask.type_of_financing ?? '',
                             contactEmail: foundTask.contact_email ?? '',
+                            orderCompanyContactId: selectedCompanyId ?? null,
                             nameCheck: foundTask.name_check ?? false,
                             addressCheck: foundTask.address_check ?? false,
                             amountCheck: foundTask.amount_check ?? false,
@@ -1527,6 +1537,13 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
         initialMethodOfPayment={contractSignedInitialValues.methodOfPayment}
         initialTypeOfFinancing={contractSignedInitialValues.typeOfFinancing}
         initialContactEmail={contractSignedInitialValues.contactEmail}
+        initialOrderCompanyContactId={contractSignedInitialValues.orderCompanyContactId}
+        orderType={pendingContractSigned?.task.order_type ?? null}
+        companyOptions={(pendingContractSigned?.task.order_company_contacts ?? []).map((item) => ({
+          id: item.id,
+          label: [item.company_name ?? 'Company', item.client_name ? `- ${item.client_name}` : ''].join(' ').trim(),
+          client_email: item.client_email ?? null
+        }))}
         initialNameCheck={contractSignedInitialValues.nameCheck}
         initialAddressCheck={contractSignedInitialValues.addressCheck}
         initialAmountCheck={contractSignedInitialValues.amountCheck}
