@@ -60,6 +60,7 @@ class UpdateQualifiedOrderRequest extends FormRequest
               )
             ],*/
             'notes' => 'nullable|string|max:1000',
+            'project_amount' => ['nullable', 'numeric', 'min:0'],
            
             // Solo obligatoria en COMMERCIAL
             'company_contact_id' => [  'nullable','required_if:order_type,COMMERCIAL', 'integer', 'exists:company_contacts,id'],

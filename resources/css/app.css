@@ -574,6 +574,22 @@ hover:text-primary hover:before:!bg-primary ltr:before:mr-2 rtl:before:ml-2 dark
     @apply !bg-transparent;
 }
 
+/* hide native scrollbar tint for horizontal pipelines */
+.pipeline-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(148, 163, 184, 0.2) transparent;
+}
+.pipeline-scroll::-webkit-scrollbar {
+    height: 8px;
+}
+.pipeline-scroll::-webkit-scrollbar-track {
+    background: transparent;
+}
+.pipeline-scroll::-webkit-scrollbar-thumb {
+    background-color: rgba(148, 163, 184, 0.2);
+    border-radius: 9999px;
+}
+
 /* swal2 */
 .swal2-container .swal2-close {
     @apply text-white hover:text-dark-light focus:shadow-none;
