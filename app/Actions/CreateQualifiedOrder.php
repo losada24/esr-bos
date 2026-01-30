@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\DB;
 use App\Enum\ServiceEnum;
 use App\Enum\SupervisorPaymentStatusEnum;
 use App\Models\Order;
+use App\Models\OrderCompanyContact;
 use App\Models\OrderClientTemps;
 use App\Models\OrderProduct;
 use App\Models\SupervisorComissionOrder;
@@ -31,7 +32,6 @@ class CreateQualifiedOrder
       /*$client = Client::create([
         'name' => $request->client_name,
         'phone' => $request->phone,
-        'source' => $request->source,
         'user_id' => auth()->user()->id,
       ]);*/
       $status = OrderStatusEnum::QUALIFIED->value;
@@ -42,8 +42,36 @@ class CreateQualifiedOrder
           $status = OrderStatusEnum::COMMERCIAL_ASSIGNMENT->value;
         }
   
+      $primarySourceId = (int) $request->input('company_source_id', 0);
+      $associateSourceId1 = (int) $request->input('associate_source_id_1', 0);
+      $associateSourceId2 = (int) $request->input('associate_source_id_2', 0);
+      $companyClientPairs = [];
+      $addPair = function (?int $companyId, ?int $clientId, ?int $sourceId) use (&$companyClientPairs) {
+        if (!$companyId || !$clientId || !$sourceId) {
+          return;
+        }
+        $companyClientPairs[] = [
+          'company_contact_id' => $companyId,
+          'client_id' => $clientId,
+          'source_id' => $sourceId,
+        ];
+      };
+
+      if ($request->order_type === OrderTypeEnum::COMMERCIAL->value) {
+        $addPair((int) $request->company_contact_id, (int) $request->client_id, $primarySourceId);
+        $addPair((int) $request->associate_company_contact_id_1, (int) $request->associate_client_id_1, $associateSourceId1);
+        $addPair((int) $request->associate_company_contact_id_2, (int) $request->associate_client_id_2, $associateSourceId2);
+      }
+
+      $orderClientId = $request->client_id;
+      if ($request->order_type === OrderTypeEnum::COMMERCIAL->value) {
+        $orderClientId = count($companyClientPairs) === 1
+          ? (int) $companyClientPairs[0]['client_id']
+          : null;
+      }
+
       $order = Order::create([
-        'client_id' => $request->client_id,
+        'client_id' => $orderClientId,
         'user_id' => auth()->user()->id,
         'order_type' => $request->order_type,
         'name' => $request->name,
@@ -54,7 +82,6 @@ class CreateQualifiedOrder
         'description' => $request->description,
         'notes' => $request->notes,
         'status' => $status,
-        'source' => $request->source ? $request->source : '',
         'bid_due_date' => $request->bid_due_date ? $request->bid_due_date : null,
         'is_supply' => $request->is_supply ? $request->is_supply : false,
         'schedule_appointment' => $request->schedule_appointment ? $request->schedule_appointment : null,
@@ -184,10 +211,15 @@ class CreateQualifiedOrder
                   ]);
               }*/
                   // Helper para imponer: un cliente solo puede tener UNA compañía
-            $applyCompanyToClient = function (?int $clientId, ?int $companyId, string $fieldForError) {
+            $applyCompanyToClient = function (?int $clientId, ?int $companyId, string $fieldForError, bool $force = false) {
                 if (!$clientId || !$companyId) return; // 0/null → ignorar
                 $client = Client::find($clientId);
                 if (!$client) return;
+
+                if ($force) {
+                    $client->update(['company_contact_id' => $companyId]);
+                    return;
+                }
 
                 // Si no tenía compañía, se fija ahora
                 if (empty($client->company_contact_id)) {
@@ -207,18 +239,33 @@ class CreateQualifiedOrder
             $applyCompanyToClient(
                 (int)$request->client_id,
                 (int)$request->company_contact_id,
-                'company_contact_id'
+                'company_contact_id',
+                true
             );
             $applyCompanyToClient(
                 (int)$request->associate_client_id_1,
                 (int)$request->associate_company_contact_id_1,
-                'associate_company_contact_id_1'
+                'associate_company_contact_id_1',
+                true
             );
             $applyCompanyToClient(
                 (int)$request->associate_client_id_2,
                 (int)$request->associate_company_contact_id_2,
-                'associate_company_contact_id_2'
+                'associate_company_contact_id_2',
+                true
             );
+
+            $hasSingleCompany = count($companyClientPairs) === 1;
+            foreach ($companyClientPairs as $pair) {
+                OrderCompanyContact::create([
+                    'order_id' => $order->id,
+                    'company_contact_id' => $pair['company_contact_id'],
+                    'client_id' => $pair['client_id'],
+                    'source_id' => $pair['source_id'],
+                    'is_selected' => $hasSingleCompany,
+                    'selected_at' => $hasSingleCompany ? now() : null,
+                ]);
+            }
 
             // Guarda SOLO los asociados en order_clients_temps (como ya haces)
             if ((int)$request->associate_client_id_1 > 0) {

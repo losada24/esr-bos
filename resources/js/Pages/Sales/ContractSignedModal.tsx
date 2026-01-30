@@ -24,6 +24,7 @@ interface ContractSignedFormValues {
   methodOfPayment: string
   typeOfFinancing: string
   contactEmail: string
+  orderCompanyContactId: string
   nameCheck: boolean
   addressCheck: boolean
   amountCheck: boolean
@@ -46,6 +47,7 @@ type ContractSignedSubmitValues = {
   methodOfPayment: string
   typeOfFinancing: string
   contactEmail: string
+  orderCompanyContactId?: number | null
   attachments: File[]
   nameCheck: boolean
   addressCheck: boolean
@@ -72,6 +74,9 @@ export interface ContractSignedModalProps {
   initialAddressCheck: boolean
   initialAmountCheck: boolean
   initialEmailCheck: boolean
+  orderType?: string | null
+  companyOptions?: Array<{ id: number, label: string, client_email?: string | null }>
+  initialOrderCompanyContactId?: number | null
   initialPaymentScheduleType?: string
   initialCustomSchedule?: CustomScheduleItem[]
   paymentMethods: string[]
@@ -100,6 +105,9 @@ export default function ContractSignedModal ({
   initialAddressCheck,
   initialAmountCheck,
   initialEmailCheck,
+  orderType,
+  companyOptions = [],
+  initialOrderCompanyContactId = null,
   initialPaymentScheduleType,
   initialCustomSchedule,
   paymentMethods,
@@ -123,6 +131,9 @@ export default function ContractSignedModal ({
     }
     return normalized.slice(0, 6)
   }
+
+  const isCommercial = orderType?.toLowerCase() === 'commercial'
+  const requiresCompanySelection = isCommercial && companyOptions.length > 1
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
@@ -157,6 +168,7 @@ export default function ContractSignedModal ({
             methodOfPayment: initialMethodOfPayment ?? '',
             typeOfFinancing: initialTypeOfFinancing ?? '',
             contactEmail: initialContactEmail ?? '',
+            orderCompanyContactId: initialOrderCompanyContactId ? String(initialOrderCompanyContactId) : (companyOptions.length === 1 ? String(companyOptions[0].id) : ''),
             nameCheck: initialNameCheck ?? true,
             addressCheck: initialAddressCheck ?? true,
             amountCheck: initialAmountCheck ?? true,
@@ -265,6 +277,10 @@ export default function ContractSignedModal ({
               issues.attachments = 'At least one attachment is required.'
             }
 
+            if (requiresCompanySelection && !values.orderCompanyContactId) {
+              issues.orderCompanyContactId = 'Select the company for this contract.'
+            }
+
             const verifiedAll = values.nameCheck && values.addressCheck && values.amountCheck && values.emailCheck
             if (!verifiedAll) {
               issues.nameCheck = 'Please confirm the order details before saving.'
@@ -293,6 +309,7 @@ export default function ContractSignedModal ({
               methodOfPayment: values.methodOfPayment,
               typeOfFinancing: values.typeOfFinancing,
               contactEmail: values.contactEmail.trim(),
+              orderCompanyContactId: values.orderCompanyContactId ? Number(values.orderCompanyContactId) : null,
               nameCheck: values.nameCheck,
               addressCheck: values.addressCheck,
               amountCheck: values.amountCheck,
@@ -368,11 +385,41 @@ export default function ContractSignedModal ({
               }))
               : buildPreviewItems(selectedTemplateItems)
 
+            const selectedCompanyOption = companyOptions.find((option) => String(option.id) === String(values.orderCompanyContactId))
+            const selectedEmail = selectedCompanyOption?.client_email ?? ''
+
             return (
             <Form className="mt-4 space-y-4" encType="multipart/form-data">
               <fieldset className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
                 <legend className="px-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Review the contract information</legend>
                 <div className="mt-3 space-y-4">
+                  {requiresCompanySelection && (
+                    <div className={submitCount ? (errors.orderCompanyContactId ? 'has-error' : 'has-success') : ''}>
+                      <label className="mb-1 block text-sm font-medium text-slate-600">Select Company</label>
+                      <select
+                        name="orderCompanyContactId"
+                        value={values.orderCompanyContactId}
+                        onChange={(event) => {
+                          handleChange(event)
+                          const nextId = event.target.value
+                          const nextOption = companyOptions.find((option) => String(option.id) === String(nextId))
+                          const nextEmail = nextOption?.client_email ?? ''
+                          setFieldValue('contactEmail', nextEmail)
+                        }}
+                        onBlur={handleBlur}
+                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 outline-none focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                        disabled={loading}
+                      >
+                        <option value="">Select company</option>
+                        {companyOptions.map((option) => (
+                          <option key={option.id} value={option.id}>{option.label}</option>
+                        ))}
+                      </select>
+                      {submitCount && errors.orderCompanyContactId
+                        ? <InputError message={errors.orderCompanyContactId as string} className="mt-2" />
+                        : null}
+                    </div>
+                  )}
                   <div className={submitCount ? (errors.projectName ? 'has-error' : 'has-success') : ''}>
                     <label className="mb-1 block text-sm font-medium text-slate-600">Project Name</label>
                     <input
@@ -415,7 +462,7 @@ export default function ContractSignedModal ({
                     <input
                       name="contactEmail"
                       type="email"
-                      value={values.contactEmail}
+                      value={values.contactEmail || selectedEmail}
                       onChange={handleChange}
                       onBlur={handleBlur}
                       className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 outline-none focus:border-sky-400 focus:ring-4 focus:ring-sky-100"

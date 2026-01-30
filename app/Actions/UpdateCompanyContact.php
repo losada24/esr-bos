@@ -44,19 +44,19 @@ class UpdateCompanyContact {
 
     $companyContact->update($companytData);
 
-     $clientIdsFromRequest = collect($request->clients)
-            ->pluck('id')
-            ->filter()
-            ->map(fn($id) => (int) $id)
-            ->toArray();
+    if ($request->has('clients') && is_array($request->input('clients'))) {
+        $clientIdsFromRequest = collect($request->input('clients', []))
+                ->pluck('id')
+                ->filter()
+                ->map(fn($id) => (int) $id)
+                ->toArray();
 
-    Client::where('company_contact_id', $companyContact->id)
-      ->whereNotIn('id', $clientIdsFromRequest)
-      ->update(['company_contact_id' => null]);
+        Client::where('company_contact_id', $companyContact->id)
+          ->whereNotIn('id', $clientIdsFromRequest)
+          ->update(['company_contact_id' => null]);
 
         // 4. Recorrer los clientes del request
-           //dd($request->clients);
-        foreach ($request->clients as $clientData) {
+        foreach ($request->input('clients', []) as $clientData) {
        
             $clientData['company_contact_id'] = $companyContact->id;
             $clientData['user_id'] = auth()->id(); // por si querés registrar al usuario
@@ -100,6 +100,7 @@ class UpdateCompanyContact {
                 //dd( $client);
             }
         }
+    }
 
 });
      

@@ -8,10 +8,10 @@
 </p>
 
 <p>
-    <strong>Client:</strong> {{ $order->client->name ?? 'Not specified' }}<br>
-    <strong>VIP Client:</strong> {{ ($order->client->vip_clients ?? false) ? 'Yes' : 'No' }}<br>
-    @if(($order->client->vip_notes ?? '') !== '')
-         <strong>VIP Notes:</strong> {{ $order->client->vip_notes }}<br>
+    <strong>Client:</strong> {{ optional($order->client)->name ?? 'Not specified' }}<br>
+    <strong>VIP Client:</strong> {{ (optional($order->client)->vip_clients ?? false) ? 'Yes' : 'No' }}<br>
+    @if((optional($order->client)->vip_notes ?? '') !== '')
+         <strong>VIP Notes:</strong> {{ optional($order->client)->vip_notes }}<br>
     @endif
     <strong>Order Name:</strong> {{ $order->name ?? 'Not specified' }}<br>
     <strong>Order Number:</strong> {{ $order->order_number ?? 'Not assigned' }}

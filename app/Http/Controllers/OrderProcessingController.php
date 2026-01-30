@@ -216,7 +216,7 @@ class OrderProcessingController extends Controller
             'schedule_appointment_iso' => $order->schedule_appointment
                 ? Carbon::parse($order->schedule_appointment)->format('Y-m-d\TH:i')
                 : null,
-            'phone' => $order->client->phone ?? null,
+            'phone' => optional($order->client)->phone,
             'is_supply' => (bool) ($order->is_supply ?? false),
             'project_amount' => $order->project_amount ? (float) $order->project_amount : null,
             'down_payment' => $order->down_payment ? (float) $order->down_payment : null,

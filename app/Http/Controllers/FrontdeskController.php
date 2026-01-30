@@ -97,7 +97,7 @@ class FrontdeskController extends Controller
             'date'        => optional($statusCreatedAt)->format('M d, Y h:i A'),
             'status_created_at_iso' => optional($statusCreatedAt)->toIso8601String(),
             'schedule_appointment' => $order->schedule_appointment ? Carbon::parse($order->schedule_appointment)->format('M d, Y h:i A') : null,
-            'phone'       => $order->client->phone ?? null,
+            'phone'       => optional($order->client)->phone,
             'created_by'  => $order->user->name ?? null,
             'is_supply'   => (bool) ($order->is_supply ?? false),
             'tags'        => ($order->tags ?? collect())->map(fn($t) => [
@@ -661,14 +661,26 @@ public function showQuantifiedModal(Order $order)
     if (!$this->ownerCanAccessOrder(auth()->user(), $order)) {
       abort(403, 'You are not authorized to access this order.');
     }
-    $order->load('tags:id,name,color,taggable_id,taggable_type', 'client.companyContact', 'user', 'owners', 'saleForm', 'attachments.user', 'orderStatus.user', 'paymentSchedule.installments.paidBy');
+    $order->load(
+      'tags:id,name,color,taggable_id,taggable_type',
+      'client.companyContact',
+      'user',
+      'owners',
+      'saleForm',
+      'attachments.user',
+      'orderStatus.user',
+      'paymentSchedule.installments.paidBy',
+      'orderCompanyContacts.companyContact',
+      'orderCompanyContacts.client',
+      'orderCompanyContacts.source'
+    );
 
     $clientOrders = collect();
 
     if ($order->client) {
       $clientOrders = $order->client->orders()
         ->where('id', '!=', $order->id)
-        ->with(['owners:id,name'])
+        ->with(['owners:id,name', 'orderCompanyContacts.companyContact', 'orderCompanyContacts.client'])
         ->orderByDesc('created_at')
         ->get(['id', 'order_number', 'name', 'status', 'order_type'])
         ->map(fn ($clientOrder) => [
@@ -681,6 +693,15 @@ public function showQuantifiedModal(Order $order)
             ->map(fn ($owner) => [
               'id' => $owner->id,
               'name' => $owner->name,
+            ])
+            ->values()
+            ->all(),
+          'order_company_contacts' => $clientOrder->orderCompanyContacts
+            ->map(fn ($item) => [
+              'id' => $item->id,
+              'company_name' => $item->companyContact?->name,
+              'client_name' => $item->client?->name,
+              'is_selected' => (bool) ($item->is_selected ?? false),
             ])
             ->values()
             ->all(),
@@ -919,20 +940,31 @@ public function showQuantifiedModal(Order $order)
       'vip_notes' => ['nullable', 'string', 'max:1000'],
     ];
 
+    $targetClientId = (int) ($request->input('client_id') ?? $order->client_id ?? 0);
     if ($mode === 'frontdesk') {
       $rules = array_merge($rules, [
-        'phone' => ['required', 'regex:/^\\d{10}$/'],
+        'phone' => [
+          'required',
+          'regex:/^\\d{10}$/',
+          Rule::unique('clients', 'phone')->ignore($targetClientId),
+        ],
         'status' => ['required', 'string', Rule::in($frontdeskStatuses)],
         'source' => ['required', 'string', Rule::in($sources)],
       ]);
     } else {
       $rules = array_merge($rules, [
-        'phone' => ['nullable', 'string', 'max:50'],
+        'phone' => [
+          'nullable',
+          'string',
+          'max:50',
+          Rule::unique('clients', 'phone')->ignore($targetClientId),
+        ],
         'status' => ['nullable', 'string', Rule::in($frontdeskStatuses)],
         'source' => ['nullable', 'string', Rule::in($sources)],
       ]);
     }
 
+    $rules['client_id'] = ['nullable', 'integer', 'exists:clients,id'];
     $data = $request->validate($rules);
 
     $clientChanged = false;
@@ -940,7 +972,15 @@ public function showQuantifiedModal(Order $order)
     $noteCreated = false;
 
     DB::transaction(function () use ($data, $order, $request, $mode, &$clientChanged, &$orderChanged, &$noteCreated) {
-      $client = $order->client;
+      $targetClientId = isset($data['client_id']) ? (int) $data['client_id'] : (int) ($order->client_id ?? 0);
+      $client = $targetClientId ? Client::find($targetClientId) : null;
+      if ($targetClientId) {
+        $belongsToOrder = $order->client_id === $targetClientId
+          || $order->orderCompanyContacts()->where('client_id', $targetClientId)->exists();
+        if (! $belongsToOrder) {
+          abort(403, 'You are not authorized to edit this contact.');
+        }
+      }
       $previousClientName = $client?->name;
 
       if ($client) {
@@ -1022,7 +1062,18 @@ public function showQuantifiedModal(Order $order)
       }
     });
 
-    $order->refresh()->load('tags:id,name,color,taggable_id,taggable_type', 'client.companyContact', 'user', 'owners', 'saleForm', 'attachments.user', 'orderStatus.user');
+    $order->refresh()->load(
+      'tags:id,name,color,taggable_id,taggable_type',
+      'client.companyContact',
+      'user',
+      'owners',
+      'saleForm',
+      'attachments.user',
+      'orderStatus.user',
+      'orderCompanyContacts.companyContact',
+      'orderCompanyContacts.client',
+      'orderCompanyContacts.source'
+    );
     if (($clientChanged || $noteCreated) && ! $orderChanged) {
       $this->createSnapshot($order);
     }

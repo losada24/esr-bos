@@ -125,6 +125,9 @@ class CompanyContactController extends Controller
     public function update(UpdateCompanyContactRequest $UpdateCompanyContactRequest, UpdateCompanyContact $updateCompanyContact, CompanyContact $companyContact)
     {
         $updateCompanyContact->handle($UpdateCompanyContactRequest, $companyContact);
+        if ($UpdateCompanyContactRequest->boolean('from_modal')) {
+            return response()->json(['company' => $companyContact->fresh()]);
+        }
         return redirect()->route('company_contact.index')
           ->with('success', 'Company updated successfully.');
     }

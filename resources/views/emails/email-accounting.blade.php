@@ -4,7 +4,7 @@
     <p>Good day,</p>
     <p>I hope this email finds you well. I am writing to provide you with the details of a recent order for your records.</p>
     <p style="font-weight: bold;">Order summary</p>
-    <p><span style="font-weight: bold;">Client Name:</span> {{ $order->client->name }}</p>
+    <p><span style="font-weight: bold;">Client Name:</span> {{ optional($order->client)->name ?? 'Not specified' }}</p>
     <p><span style="font-weight: bold;">Order Number:</span> {{ $order->order_number }}</p>
     <p><span style="font-weight: bold;">Order Name:</span> {{ $order->name }}</p>
     <p><span style="font-weight: bold;">Job Address:</span> {{ 

@@ -6,6 +6,7 @@ use App\Enum\OrderTypeEnum;
 use App\Http\Requests\UpdateQualifiedOrderRequest;
 use App\Models\Client;
 use App\Models\Order;
+use App\Models\OrderCompanyContact;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -37,6 +38,37 @@ class UpdateQualifiedOrder
                 $payload['status'] = $incomingStatus;
                 $statusChanged = !empty($incomingStatus) &&
                     strcasecmp((string) $order->status, (string) $incomingStatus) !== 0;
+            }
+
+            $companyClientPairs = [];
+            $addPair = function (?int $companyId, ?int $clientId, ?int $sourceId) use (&$companyClientPairs) {
+                if (!$companyId && !$clientId && !$sourceId) {
+                    return;
+                }
+                if (!$companyId || !$clientId || !$sourceId) {
+                    return;
+                }
+                $companyClientPairs[] = [
+                    'company_contact_id' => $companyId,
+                    'client_id' => $clientId,
+                    'source_id' => $sourceId,
+                ];
+            };
+
+            if ($request->order_type === OrderTypeEnum::COMMERCIAL->value) {
+                $addPair((int) $request->company_contact_id, (int) $request->client_id, (int) $request->company_source_id);
+                $addPair((int) $request->associate_company_contact_id_1, (int) $request->associate_client_id_1, (int) $request->associate_source_id_1);
+                $addPair((int) $request->associate_company_contact_id_2, (int) $request->associate_client_id_2, (int) $request->associate_source_id_2);
+            }
+
+            if ($request->order_type === OrderTypeEnum::COMMERCIAL->value) {
+                $selectedClientId = null;
+                if ($order->client_id && collect($companyClientPairs)->contains(fn ($pair) => (int) $pair['client_id'] === (int) $order->client_id)) {
+                    $selectedClientId = (int) $order->client_id;
+                } elseif (count($companyClientPairs) === 1) {
+                    $selectedClientId = (int) $companyClientPairs[0]['client_id'];
+                }
+                $payload['client_id'] = $selectedClientId;
             }
 
             $order->fill($payload);
@@ -106,11 +138,33 @@ class UpdateQualifiedOrder
             }
 
             if ($request->order_type === OrderTypeEnum::COMMERCIAL->value) {
-                $this->applyCompanyToClient(
-                    (int) $request->client_id,
-                    (int) $request->company_contact_id,
-                    'company_contact_id'
-                );
+                foreach ($companyClientPairs as $pair) {
+                    $this->applyCompanyToClient(
+                        (int) $pair['client_id'],
+                        (int) $pair['company_contact_id'],
+                        'company_contact_id',
+                        true
+                    );
+                }
+                OrderCompanyContact::withTrashed()
+                    ->where('order_id', $order->id)
+                    ->forceDelete();
+                $selectedClientId = $order->client_id ? (int) $order->client_id : null;
+                foreach ($companyClientPairs as $pair) {
+                    $isSelected = $selectedClientId && (int) $pair['client_id'] === (int) $selectedClientId;
+                    OrderCompanyContact::create([
+                        'order_id' => $order->id,
+                        'company_contact_id' => $pair['company_contact_id'],
+                        'client_id' => $pair['client_id'],
+                        'source_id' => $pair['source_id'],
+                        'is_selected' => $isSelected,
+                        'selected_at' => $isSelected ? now() : null,
+                    ]);
+                }
+            } else {
+                OrderCompanyContact::withTrashed()
+                    ->where('order_id', $order->id)
+                    ->forceDelete();
             }
 
             if ($request->filled('owner_ids')) {
@@ -133,12 +187,15 @@ class UpdateQualifiedOrder
                 'owners',
                 'saleForm',
                 'attachments.user',
-                'orderStatus.user'
+                'orderStatus.user',
+                'orderCompanyContacts.companyContact',
+                'orderCompanyContacts.client',
+                'orderCompanyContacts.source'
             );
         });
     }
 
-    protected function applyCompanyToClient(?int $clientId, ?int $companyId, string $fieldForError): void
+    protected function applyCompanyToClient(?int $clientId, ?int $companyId, string $fieldForError, bool $force = false): void
     {
         if (!$clientId || !$companyId) {
             return;
@@ -146,6 +203,11 @@ class UpdateQualifiedOrder
 
         $client = Client::find($clientId);
         if (!$client) {
+            return;
+        }
+
+        if ($force) {
+            $client->update(['company_contact_id' => $companyId]);
             return;
         }
 

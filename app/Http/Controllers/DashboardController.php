@@ -305,7 +305,7 @@ class DashboardController extends Controller
         return $item->total . $shortName;
       })->join(', ');
 
-      $isVip = $order->client->vip_clients ?? false;
+      $isVip = optional($order->client)->vip_clients ?? false;
       $serviceLabel = $isVip ? 'VIP' : '';
 
       if ($order->service === ServiceEnum::DELIVERY->value || $order->service === ServiceEnum::PICKUP->value) {

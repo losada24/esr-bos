@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Facades\DB;
 
 class CompanyContact extends Model
@@ -58,6 +59,18 @@ class CompanyContact extends Model
 
     public function clientAddress(): HasMany {
       return $this->hasMany(ClientAddress::class);
+    }
+
+    public function orderCompanyContacts(): HasMany
+    {
+      return $this->hasMany(OrderCompanyContact::class);
+    }
+
+    public function orders(): BelongsToMany
+    {
+      return $this->belongsToMany(Order::class, 'order_company_contacts')
+        ->withPivot(['client_id', 'source_id', 'is_selected', 'selected_at'])
+        ->withTimestamps();
     }
 
 }

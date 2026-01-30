@@ -63,6 +63,7 @@ class StoreQualifiedOrderRequest extends FormRequest
            
             // Solo obligatoria en COMMERCIAL
             'company_contact_id' => [  'nullable','required_if:order_type,COMMERCIAL', 'integer', 'exists:company_contacts,id'],
+            'company_source_id' => ['nullable', 'required_if:order_type,COMMERCIAL', 'integer', 'exists:sources,id'],
             // Company asociadas (opcionales)
             'associate_company_contact_id_1' => ['nullable','integer','exists:company_contacts,id'],
             'associate_company_contact_id_2' => ['nullable','integer','exists:company_contacts,id'],
@@ -70,6 +71,8 @@ class StoreQualifiedOrderRequest extends FormRequest
             // Client asociado requerido si hay company asociada
             'associate_client_id_1' => ['nullable','integer','exists:clients,id','required_with:associate_company_contact_id_1'],
             'associate_client_id_2' => ['nullable','integer','exists:clients,id','required_with:associate_company_contact_id_2'],  
+            'associate_source_id_1' => ['nullable', 'integer', 'exists:sources,id', 'required_with:associate_company_contact_id_1'],
+            'associate_source_id_2' => ['nullable', 'integer', 'exists:sources,id', 'required_with:associate_company_contact_id_2'],
             'hoa' => ['nullable', 'boolean'],
             'language' => [
               'nullable',

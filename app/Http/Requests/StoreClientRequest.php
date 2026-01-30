@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Enum\ContactSourceEnum;
 use App\Enum\ContactTypeEnum;
+use App\Enum\OrderTypeEnum;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use App\Enum\States;
@@ -31,9 +32,10 @@ class StoreClientRequest extends FormRequest
             'name' => 'required|string|max:255',
             'email' => 'nullable|email',
             'phone' => [
-              'required',
+              Rule::requiredIf(fn () => $this->input('order_type') !== OrderTypeEnum::COMMERCIAL->value),
+              'nullable',
               'regex:/^\d{10}$/',
-              'unique:clients,phone,' . ($this->client_id ?? 'null') . ',id'
+              Rule::unique('clients', 'phone')->ignore($this->client_id)
             ],
             'address' => 'nullable|string|max:500',
             'appointment_date' => 'nullable|date',
@@ -70,6 +72,7 @@ class StoreClientRequest extends FormRequest
             'secondary_email' => 'nullable|email|max:255',
             //'source' => 'nullable|string|max:255',
             'from_modal' => 'sometimes|boolean',
+            'force_create' => 'sometimes|boolean',
         ];
     }
 }

@@ -4,7 +4,7 @@ import CloseIcon from '@/Components/Icons/CloseIcon'
 import { type Client } from '@/Pages/Client/ClientCommon'
 import { Field, Form, Formik, type FormikHelpers } from 'formik'
 import InputError from '@/Components/InputError'
-import { SOURCES } from '@/Utils/constants'
+import { SOURCES, ORDER_TYPES } from '@/Utils/constants'
 import { clientSchema } from '../CompanyContact/CompanyContactCommon'
 
 const SectionField = ({
@@ -27,14 +27,17 @@ const ClientModal = ({
   onClose,
   //addClient,
   sourcesClients,
-  onConfirm
+  onConfirm,
+  orderType
 }: {
   showModal: boolean
   onClose: CallableFunction
   onConfirm: (client: Client) => void
   sourcesClients: string[]
+  orderType?: string
 }) => {
-  const initialValues: Client = {
+  type ClientFormValues = Client & { order_type?: string }
+  const initialValues: ClientFormValues = {
     id: 0,
     name: '',
     email: '',
@@ -47,13 +50,15 @@ const ClientModal = ({
     vip_notes: '',
     refer_name: '',
     refer_phone: '',
-    referral_id: 0
+    referral_id: 0,
+    order_type: orderType ?? ''
   }
 
   const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? ''
-  const handleSubmit = async (
-    values: Client,
-    helpers: FormikHelpers<Client>
+  const submitClient = async (
+    values: ClientFormValues,
+    helpers: FormikHelpers<ClientFormValues>,
+    forceCreate = false
   ) => {
     try {
       const response = await fetch(route('client.store'), {
@@ -66,16 +71,29 @@ const ClientModal = ({
         },
         body: JSON.stringify({
           ...values,
-          from_modal: true
+          from_modal: true,
+          force_create: forceCreate
         })
       })
+      const data = await response.json()
       if (!response.ok) {
-        const errorData = await response.json()
-        helpers.setErrors(errorData.errors || {})
+        if (
+          !forceCreate &&
+          values.order_type === ORDER_TYPES.COMMERCIAL &&
+          data?.errors?.email_exists
+        ) {
+          const confirmCreate = window.confirm(
+            'This email is already associated with a client. Do you want to create a new client anyway?'
+          )
+          if (confirmCreate) {
+            await submitClient(values, helpers, true)
+            return
+          }
+        }
+        helpers.setErrors(data.errors || {})
         helpers.setSubmitting(false)
         return
       }
-      const data = await response.json()
       if (data.client) {
         onConfirm(data.client)
         onClose()
@@ -84,6 +102,12 @@ const ClientModal = ({
       console.error(error)
       helpers.setSubmitting(false)
     }
+  }
+  const handleSubmit = async (
+    values: ClientFormValues,
+    helpers: FormikHelpers<ClientFormValues>
+  ) => {
+    await submitClient(values, helpers)
   }
 
   return (
@@ -106,7 +130,7 @@ const ClientModal = ({
         </div>
         <div className="p-5">
           <div className="max-h-[70vh] overflow-y-auto pr-1">
-            <Formik<Client>
+            <Formik<ClientFormValues>
               initialValues={initialValues}
               validationSchema={clientSchema}
               onSubmit={handleSubmit}

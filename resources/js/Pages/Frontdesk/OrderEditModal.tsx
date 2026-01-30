@@ -49,6 +49,7 @@ export default function OrderEditModal ({
   errorMessage
 }: OrderEditModalProps) {
   const hasInitialOwners = Array.isArray(initialValues.owner_ids) && initialValues.owner_ids.length > 0
+  const shouldShowOwnerField = hasInitialOwners || initialValues.order_type === 'RESIDENTIAL'
   return (
     <Formik<OrderFormValues>
       initialValues={initialValues}
@@ -104,10 +105,10 @@ export default function OrderEditModal ({
                 attachments={attachments}
                 onCancel={() => { if (!isSubmitting) onClose() }}
                 submitLabel={isSubmitting ? 'Saving…' : 'Save Changes'}
-                showClientField={false}
+                showClientField
                 showNotesField={false}
                 useModalLayout
-                showOwnerField={hasInitialOwners}
+                showOwnerField={shouldShowOwnerField}
               />
             </div>
           </div>
