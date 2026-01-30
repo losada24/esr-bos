@@ -391,6 +391,8 @@ const OrderQualifiedForm = ({
     value: values.status ?? '',
     label: status.find((status) => status === values.status) ?? ''
   }
+  const projectAmountNumber = Number(values.project_amount ?? 0)
+  const showProjectAmountField = !isCreate && Number.isFinite(projectAmountNumber) && projectAmountNumber > 0
   console.log('frame_colors ->', frame_colors)
   return (
     <>
@@ -463,6 +465,22 @@ const OrderQualifiedForm = ({
                 />
                 {(submitCount && errors.name) ? <InputError message={errors.name} className="mt-2" /> : ''}
               </div>
+              {showProjectAmountField && (
+                <div className={submitCount ? (errors.project_amount) ? 'has-error' : 'has-success' : ''}>
+                  <label htmlFor="project_amount">Project Amount</label>
+                  <Field
+                    id="project_amount"
+                    name="project_amount"
+                    className="form-input text-right"
+                    autoComplete="project_amount"
+                    placeholder="Project Amount"
+                    type="number"
+                  />
+                  {(submitCount && errors.project_amount)
+                    ? <InputError message={errors.project_amount} className="mt-2" />
+                    : null}
+                </div>
+              )}
               <div className={submitCount ? (errors.job_address ? 'has-error' : 'has-success') : ''}>
                   <label htmlFor="job_address"> Job Address</label>
                     <Field

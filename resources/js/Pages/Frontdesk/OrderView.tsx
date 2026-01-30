@@ -755,6 +755,7 @@ export default function ShowStatusOrder ({
 
       const payload: Record<string, any> = {
         ...values,
+        company_contact_id: toNull(values.company_contact_id),
         associate_company_contact_id_1: toNull(values.associate_company_contact_id_1),
         associate_company_contact_id_2: toNull(values.associate_company_contact_id_2),
         associate_client_id_1: toNull(values.associate_client_id_1),
@@ -2389,8 +2390,9 @@ export default function ShowStatusOrder ({
                 <p className="text-sm text-rose-600">{statusChangeError}</p>
               )}
 
-              <div className="overflow-x-visible">
-                <div className="flex items-center gap-2">
+              <div className="relative">
+                <div className="pipeline-scroll overflow-x-auto pb-2">
+                  <div className="flex min-w-max items-center gap-2">
                   {pipelineStatuses.map((status, index) => {
                     const isCompleted = currentStatusIndex > index
                     const isCurrent = currentStatusIndex === index
@@ -2477,7 +2479,10 @@ export default function ShowStatusOrder ({
                       </div>
                     )
                   })}
+                  </div>
                 </div>
+                <div className="pointer-events-none absolute inset-y-0 left-0 w-6 bg-gradient-to-r from-white/90 via-white/50 to-transparent" />
+                <div className="pointer-events-none absolute inset-y-0 right-0 w-6 bg-gradient-to-l from-white/90 via-white/50 to-transparent" />
               </div>
             </div>
           )}

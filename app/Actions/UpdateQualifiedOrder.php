@@ -31,6 +31,10 @@ class UpdateQualifiedOrder
                 'is_supply' => (bool) $request->is_supply,
                 'schedule_appointment' => $request->schedule_appointment ?: null,
             ];
+            $projectAmount = $request->input('project_amount');
+            $payload['project_amount'] = ($projectAmount !== null && $projectAmount !== '')
+                ? (float) $projectAmount
+                : null;
 
             $statusChanged = false;
             if ($request->filled('status')) {
