@@ -8,6 +8,7 @@ import { tagClasses, type TagColor } from '@/Utils/tags'
 import EyeIcon from '@/Components/Icons/EyeIcon'
 import EditIcon from '@/Components/Icons/EditIcon'
 import InfoTooltip from '@/Components/InfoTooltip'
+import OrderGlobalSearch from '@/Components/OrderGlobalSearch'
 
 const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const
 
@@ -247,7 +248,11 @@ const OrderProcessing = ({ auth, data }: PageProps & { data: Pipelines[] }) => {
   }, [setPipelines, setStatusPagination])
 
   return (
-    <AuthenticatedCalendarLayout auth={auth} printPanel={false}>
+    <AuthenticatedCalendarLayout
+      auth={auth}
+      printPanel={false}
+      leftActions={<OrderGlobalSearch origin="order_processing" className="w-full max-w-[420px]" />}
+    >
       <Head title="Order Processing" />
       <div className="w-full h-[calc(100vh-140px)]">
         <div className="h-full overflow-x-auto overflow-y-hidden">
