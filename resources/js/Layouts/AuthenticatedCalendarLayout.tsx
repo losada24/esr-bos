@@ -10,9 +10,10 @@ export default function AuthenticatedCalendarLayout ({
   auth,
   children,
   actions,
+  leftActions,
   pageTitle,
   printPanel = true
-}: PropsWithChildren<{ auth: Auth, printPanel?: boolean, actions?: ReactNode, pageTitle?: string }>) {
+}: PropsWithChildren<{ auth: Auth, printPanel?: boolean, actions?: ReactNode, leftActions?: ReactNode, pageTitle?: string }>) {
   const [themeState, toggleSidebar] = useStore((state: ThemeState) => [
     state.themeState,
     state.toggleSidebar
@@ -40,7 +41,9 @@ export default function AuthenticatedCalendarLayout ({
                     <div className={`${printPanel ? 'panel' : ''} p-3 bg-white`}>
                       <div className="flex flex-row items-center justify-between mb-5">
                         <div className="sm:mb-0 mb-4">
-                          {pageTitle !== null && <div className="text-lg font-semibold ltr:sm:text-left rtl:sm:text-right text-center">{pageTitle}</div>}
+                          {leftActions ?? (pageTitle !== null && (
+                            <div className="text-lg font-semibold ltr:sm:text-left rtl:sm:text-right text-center">{pageTitle}</div>
+                          ))}
                         </div>
                         {actions}
                       </div>

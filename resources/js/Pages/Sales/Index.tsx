@@ -13,6 +13,7 @@ import { PAYMENT_METHODS } from '@/Utils/constants'
 import EyeIcon from '@/Components/Icons/EyeIcon'
 import InfoTooltip from '@/Components/InfoTooltip'
 import OrderBoardFilter, { type BoardFilters, type FilterFieldConfig } from '@/Components/OrderBoardFilter'
+import OrderGlobalSearch from '@/Components/OrderGlobalSearch'
 import EstimateScheduleModal from './EstimateScheduleModal'
 import FollowUpModal from './FollowUpModal'
 import StandByNoteModal from './StandByNoteModal'
@@ -1007,6 +1008,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
     <AuthenticatedCalendarLayout
       auth={auth}
       printPanel={false}
+      leftActions={<OrderGlobalSearch origin="sales" className="w-full max-w-[420px]" />}
       actions={
         <div className="flex flex-wrap items-center gap-2">
           <button

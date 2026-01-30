@@ -15,6 +15,7 @@ import EyeIcon from '@/Components/Icons/EyeIcon'
 import { tagClasses, type TagColor } from '@/Utils/tags'
 import InfoTooltip from '@/Components/InfoTooltip'
 import OrderBoardFilter, { type BoardFilters, type FilterFieldConfig } from '@/Components/OrderBoardFilter'
+import OrderGlobalSearch from '@/Components/OrderGlobalSearch'
 
 const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const
 
@@ -376,6 +377,7 @@ export default function Frontdesk ({
     <AuthenticatedCalendarLayout
       auth={auth}
       printPanel={false}
+      leftActions={<OrderGlobalSearch origin="frontdesk" className="w-full max-w-[420px]" />}
       actions={
         <div className="flex flex-wrap items-center gap-2">
           <button
