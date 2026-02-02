@@ -21,4 +21,7 @@ return [
   'google_mail_api_client_secret' => env('GOOGLE_MAIL_API_CLIENT_SECRET'),
   'google_mail_refresh_token' => env('GOOGLE_MAIL_REFRESH_TOKEN'),
   'admin_emails_payment' => env('ADMIN_EMAILS_PAYMENT'),
+  'mobile_app_store_url' => env('MOBILE_APP_STORE_URL', ''),
+  'mobile_play_store_url' => env('MOBILE_PLAY_STORE_URL', ''),
+  'mobile_onboarding_enabled' => env('MOBILE_ONBOARDING_ENABLED', false),
 ];

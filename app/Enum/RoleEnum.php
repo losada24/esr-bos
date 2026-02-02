@@ -17,4 +17,5 @@ enum RoleEnum: string
     case OWNER_ADMIN = 'owner_admin';
     case FRONTDESK_ADMIN = 'frontdesk_admin';
     case FRONTDESK_ESR = 'frontdesk_esr';
+    case CUSTOMER = 'customer';
 }

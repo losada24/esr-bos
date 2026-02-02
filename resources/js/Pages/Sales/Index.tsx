@@ -29,6 +29,27 @@ type TagOption = { id: number, name: string | null }
 type PaymentScheduleTemplateItem = { label: string, percentage: number }
 type PaymentScheduleTemplates = Record<string, PaymentScheduleTemplateItem[]>
 
+type ContractSignedSubmitValues = {
+  projectName: string
+  projectAmount: string
+  downPayment: string
+  jobAddress: string
+  city: string
+  jobState: string
+  jobZip: string
+  methodOfPayment: string
+  typeOfFinancing: string
+  contactEmail: string
+  orderCompanyContactId?: number | null
+  attachments: File[]
+  nameCheck: boolean
+  addressCheck: boolean
+  amountCheck: boolean
+  emailCheck: boolean
+  paymentScheduleType: string
+  customSchedule: Array<{ label: string, amount: number }>
+}
+
 const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const
 
 const MONTH_INDEX: Record<string, number> = MONTH_LABELS.reduce((acc, label, index) => {
@@ -272,6 +293,8 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
   const [contractSignedInitialValues, setContractSignedInitialValues] = useState<{ projectName: string, projectAmount: string, downPayment: string, jobAddress: string, city: string, jobState: string, jobZip: string, methodOfPayment: string, typeOfFinancing: string, contactEmail: string, orderCompanyContactId: number | null, nameCheck: boolean, addressCheck: boolean, amountCheck: boolean, emailCheck: boolean, paymentScheduleType: string, customSchedule: Array<{ label: string, amount: string }> }>({ projectName: '', projectAmount: '', downPayment: '', jobAddress: '', city: '', jobState: '', jobZip: '', methodOfPayment: '', typeOfFinancing: '', contactEmail: '', orderCompanyContactId: null, nameCheck: false, addressCheck: false, amountCheck: false, emailCheck: false, paymentScheduleType: '', customSchedule: buildEmptyCustomSchedule() })
   const [contractSignedSaving, setContractSignedSaving] = useState(false)
   const [contractSignedError, setContractSignedError] = useState<string | null>(null)
+  const [contractSignedConfirmation, setContractSignedConfirmation] = useState<null | { message: string, userEmail?: string, userRoles?: string[] }>(null)
+  const [contractSignedPendingValues, setContractSignedPendingValues] = useState<ContractSignedSubmitValues | null>(null)
   const [pendingContractSigned, setPendingContractSigned] = useState<{ task: Tasks, oldStatus: string, newStatus: string } | null>(null)
   const [lostContractModalOpen, setLostContractModalOpen] = useState(false)
   const [lostContractSaving, setLostContractSaving] = useState(false)
@@ -555,6 +578,8 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
     }
     setContractSignedModalOpen(false)
     setContractSignedError(null)
+    setContractSignedConfirmation(null)
+    setContractSignedPendingValues(null)
     setContractSignedSaving(false)
     setContractSignedInitialValues({ projectName: '', projectAmount: '', downPayment: '', jobAddress: '', city: '', jobState: '', jobZip: '', methodOfPayment: '', typeOfFinancing: '', contactEmail: '', orderCompanyContactId: null, nameCheck: false, addressCheck: false, amountCheck: false, emailCheck: false, paymentScheduleType: '', customSchedule: buildEmptyCustomSchedule() })
     setPendingContractSigned(null)
@@ -804,11 +829,15 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
     }
   }
 
-  const handleContractSignedSubmit = async (values: { projectName: string, projectAmount: string, downPayment: string, jobAddress: string, city: string, jobState: string, jobZip: string, methodOfPayment: string, typeOfFinancing: string, contactEmail: string, orderCompanyContactId?: number | null, attachments: File[], nameCheck: boolean, addressCheck: boolean, amountCheck: boolean, emailCheck: boolean, paymentScheduleType: string, customSchedule: Array<{ label: string, amount: number }> }) => {
+  const handleContractSignedSubmit = async (values: ContractSignedSubmitValues, confirmCustomerRole = false) => {
     if (!pendingContractSigned) return
 
     setContractSignedSaving(true)
     setContractSignedError(null)
+    if (!confirmCustomerRole) {
+      setContractSignedConfirmation(null)
+      setContractSignedPendingValues(null)
+    }
 
     try {
       const normalizedMethod = values.methodOfPayment.trim()
@@ -847,6 +876,10 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
         })
       }
 
+      if (confirmCustomerRole) {
+        formData.append('confirm_customer_role', '1')
+      }
+
       values.attachments?.forEach((file) => {
         formData.append('attachments[]', file)
       })
@@ -863,6 +896,16 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
       const payload = await response.json().catch(() => null)
 
       if (!response.ok) {
+        if (response.status === 409 && payload?.requires_confirmation) {
+          setContractSignedConfirmation({
+            message: payload?.message ?? 'This email already belongs to another user. Convert it to customer?',
+            userEmail: payload?.user_email ?? normalizedContactEmail,
+            userRoles: Array.isArray(payload?.user_roles) ? payload.user_roles : []
+          })
+          setContractSignedPendingValues(values)
+          return
+        }
+
         if (response.status === 422 && payload?.errors) {
           const messages = Object.values(payload.errors).flat()
           throw new Error(typeof messages[0] === 'string' ? messages[0] : 'Unable to update status.')
@@ -1557,6 +1600,16 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
         paymentScheduleTemplates={payment_schedule_templates ?? {}}
         loading={contractSignedSaving}
         error={contractSignedError}
+        confirmation={contractSignedConfirmation}
+        onConfirmCustomerRole={() => {
+          if (contractSignedPendingValues) {
+            handleContractSignedSubmit(contractSignedPendingValues, true)
+          }
+        }}
+        onDismissConfirmation={() => {
+          setContractSignedConfirmation(null)
+          setContractSignedPendingValues(null)
+        }}
         onCancel={() => { closeContractSignedModal(true) }}
         onSubmit={handleContractSignedSubmit}
       />

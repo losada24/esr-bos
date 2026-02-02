@@ -24,6 +24,9 @@ class EventServiceProvider extends ServiceProvider
             \App\Listeners\CreateOrderExtraFields::class,
              \App\Listeners\CreateOrderSnapshot::class
         ],
+        \App\Events\OrderStatusChanged::class => [
+            \App\Listeners\HandleContractSignedByClient::class,
+        ],
         PaymentCreated::class => [
             \App\Listeners\InstallationPaymentExecuted::class
         ],
