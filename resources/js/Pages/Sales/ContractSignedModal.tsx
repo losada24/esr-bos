@@ -34,6 +34,12 @@ interface ContractSignedFormValues {
   customSchedule: CustomScheduleItem[]
 }
 
+interface ContractSignedConfirmation {
+  message: string
+  userEmail?: string
+  userRoles?: string[]
+}
+
 type CustomSchedulePayload = { label: string, amount: number }
 
 type ContractSignedSubmitValues = {
@@ -84,6 +90,9 @@ export interface ContractSignedModalProps {
   paymentScheduleTemplates: Record<string, ScheduleTemplateItem[]>
   loading?: boolean
   error?: string | null
+  confirmation?: ContractSignedConfirmation | null
+  onConfirmCustomerRole?: () => void
+  onDismissConfirmation?: () => void
   onSubmit: (values: ContractSignedSubmitValues) => void | Promise<void>
   onCancel: () => void
 }
@@ -115,6 +124,9 @@ export default function ContractSignedModal ({
   paymentScheduleTemplates,
   loading = false,
   error,
+  confirmation,
+  onConfirmCustomerRole,
+  onDismissConfirmation,
   onSubmit,
   onCancel
 }: ContractSignedModalProps) {
@@ -155,6 +167,36 @@ export default function ContractSignedModal ({
           </button>
         </div>
         <div className="flex-1 overflow-y-auto px-6 pb-6">
+        {confirmation && (
+          <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+            <p className="font-semibold">Attention required</p>
+            <p className="mt-1">{confirmation.message}</p>
+            {confirmation.userEmail && (
+              <p className="mt-2"><strong>Email:</strong> {confirmation.userEmail}</p>
+            )}
+            {confirmation.userRoles && confirmation.userRoles.length > 0 && (
+              <p className="mt-1"><strong>Roles:</strong> {confirmation.userRoles.join(', ')}</p>
+            )}
+            <div className="mt-4 flex flex-wrap gap-3">
+              <button
+                type="button"
+                className="rounded-lg border border-amber-300 px-4 py-2 text-amber-900 transition hover:bg-amber-100"
+                onClick={onDismissConfirmation}
+                disabled={loading}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="rounded-lg bg-amber-600 px-4 py-2 text-white transition hover:bg-amber-700"
+                onClick={onConfirmCustomerRole}
+                disabled={loading}
+              >
+                Convert to customer and send email
+              </button>
+            </div>
+          </div>
+        )}
         <Formik<ContractSignedFormValues>
           enableReinitialize
           initialValues={{

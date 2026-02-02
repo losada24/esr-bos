@@ -20,6 +20,7 @@ class Client extends Model
       'phone',
       'email',
       'user_id',
+      'mobile_user_id',
       'vip_clients',
       'vip_notes',
       'contact_type',
@@ -59,6 +60,10 @@ class Client extends Model
 
     public function user(): BelongsTo {
       return $this->belongsTo(User::class);
+    }
+
+    public function mobileUser(): BelongsTo {
+      return $this->belongsTo(User::class, 'mobile_user_id');
     }
 
     public function companyContact(): BelongsTo {

@@ -5,6 +5,7 @@ namespace App\Actions;
 use App\Enum\OrderStatusEnum;
 use App\Enum\ServiceEnum;
 use App\Enum\SupervisorPaymentStatusEnum;
+use App\Events\OrderStatusChanged;
 use App\Models\Client;
 use App\Models\Order;
 use App\Models\OrderProduct;
@@ -260,6 +261,10 @@ class UpdateOrder
           'complete_date' => $request->complete_date,
           'material_received_date' => $request->material_received_date,
         ]);
+
+        if ($status === OrderStatusEnum::CONTRACT_SIGNED_BY_CLIENT->value) {
+          event(new OrderStatusChanged($order, $status));
+        }
         
         $this->sendEmail($order);
         $order->update([
@@ -382,6 +387,10 @@ class UpdateOrder
         'complete_date' => $request->complete_date,
         'material_received_date' => $request->material_received_date,
       ]);
+
+      if ($request->status === OrderStatusEnum::CONTRACT_SIGNED_BY_CLIENT->value) {
+        event(new OrderStatusChanged($order, $request->status));
+      }
 
       $this->sendEmail($order);
       //$this->whatsapp($order);

@@ -81,6 +81,11 @@ class User extends Authenticatable
         return $this->hasMany(Client::class);
     }
 
+    public function mobileClients()
+    {
+        return $this->hasMany(Client::class, 'mobile_user_id');
+    }
+
     public function isCreatedByLoggedUser() {
         return $this->created_by == auth()->user()->id;
     }
