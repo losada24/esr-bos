@@ -42,6 +42,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
   const CAN_VIEW_INSTALLER_CONFIRMED = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER
   const CAN_VIEW_SUPERVISOR_ASSIGNED = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER
   const CAN_VIEW_DAILY_ORDER_STATUS = IS_ADMIN || IS_FRONTDESK_ADMIN || IS_OWNER_ADMIN
+  const CAN_VIEW_MARKETING_REPORT = IS_ADMIN || IS_FRONTDESK_ADMIN || IS_OWNER_ADMIN
   const CAN_VIEW_REPORTS = CAN_VIEW_REPORT_SUPERVISOR
     || CAN_VIEW_REPORT_INSTALLER
     || CAN_VIEW_BIWEEKLY
@@ -50,6 +51,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
     || CAN_VIEW_INSTALLER_CONFIRMED
     || CAN_VIEW_SUPERVISOR_ASSIGNED
     || CAN_VIEW_DAILY_ORDER_STATUS
+    || CAN_VIEW_MARKETING_REPORT
 
   return (
         <div className={`${themeState.semidark ? 'dark' : ''}`}>
@@ -298,6 +300,16 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                         <div className="flex items-center">
                                           <ReferralIcon/>
                                           <SidebarLinkLabel>Daily Order Status</SidebarLinkLabel>
+                                        </div>
+                                      </NavLink>
+                                    </li>
+                                  )}
+                                  {CAN_VIEW_MARKETING_REPORT && (
+                                    <li className="menu nav-item">
+                                      <NavLink href={route('report.marketing')} active={route().current('report.marketing')} className="group">
+                                        <div className="flex items-center">
+                                          <ReferralIcon/>
+                                          <SidebarLinkLabel>Marketing Report</SidebarLinkLabel>
                                         </div>
                                       </NavLink>
                                     </li>

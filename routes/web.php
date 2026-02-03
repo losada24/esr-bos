@@ -419,6 +419,18 @@ Route::middleware('auth')->group(function () {
     ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::FRONTDESK_ADMIN->value . '|'. RoleEnum::OWNER_ADMIN->value] )
     ->name('report.daily-order-status-summary-excel');
 
+    Route::get('/report/marketing', [ReportController::class, 'marketingReport'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::FRONTDESK_ADMIN->value . '|'. RoleEnum::OWNER_ADMIN->value] )
+    ->name('report.marketing');
+
+    Route::get('/report/marketing/pdf', [ReportController::class, 'marketingReportPdf'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::FRONTDESK_ADMIN->value . '|'. RoleEnum::OWNER_ADMIN->value] )
+    ->name('report.marketing-pdf');
+
+    Route::get('/report/marketing/excel', [ReportController::class, 'marketingReportExcel'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::FRONTDESK_ADMIN->value . '|'. RoleEnum::OWNER_ADMIN->value] )
+    ->name('report.marketing-excel');
+
     Route::get('/report/installer-confirmed-summary', [ReportController::class, 'installerConfirmedSummary'])
     ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::SERVICE_MANAGER->value] )
     ->name('report.installer-confirmed-summary');
