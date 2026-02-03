@@ -558,6 +558,14 @@ public function showQuantifiedModal(Order $order)
         $request->validate([
           'phone' => ['required', 'regex:/^\d{10}$/'],
           'notes' => ['nullable', 'string', 'max:2000'],
+          'language' => [
+            'required',
+            'string',
+            Rule::in(array_map(
+              static fn (LanguageEnum $language) => $language->value,
+              LanguageEnum::cases()
+            ))
+          ],
         ]);
         $status = $request['status'];
         if ($request['order_type'] === OrderTypeEnum::RESIDENTIAL->value || $request['order_type'] === OrderTypeEnum::SUPPLY->value) {

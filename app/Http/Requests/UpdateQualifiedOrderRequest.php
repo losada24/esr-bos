@@ -76,7 +76,7 @@ class UpdateQualifiedOrderRequest extends FormRequest
             'associate_source_id_2' => ['nullable','integer','exists:sources,id','required_with:associate_company_contact_id_2'],
             'hoa' => ['nullable', 'boolean'],
             'language' => [
-              'nullable',
+              'required',
               'string',
               Rule::in(array_map(
                 static fn (LanguageEnum $language) => $language->value,

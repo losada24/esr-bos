@@ -9,7 +9,8 @@ export const orderSchema = Yup.object({
   // notes: Yup.string().required().max(1000, 'Notes must be less than 255 characters')
 })
 export const orderQuantifiedSchema = Yup.object({
-  order_type: Yup.string().required('Order Type is required')
+  order_type: Yup.string().required('Order Type is required'),
+  language: Yup.string().required('Language is required')
   // status: Yup.string().required('Status is required'),
   // notes: Yup.string().required().max(1000, 'Notes must be less than 255 characters')
 })
@@ -26,6 +27,7 @@ export const requestSchema = Yup.object({
 
 export const orderQualifiedSchema = Yup.object({
   order_type: Yup.string().required('Order Type is required'),
+  language: Yup.string().required('Language is required'),
   company_source_id: Yup.number()
     .nullable()
     .when('order_type', {
