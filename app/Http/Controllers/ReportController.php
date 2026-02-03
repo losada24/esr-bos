@@ -8,6 +8,8 @@ use App\Actions\UpdatePaymentInstaller;
 use App\Enum\HistoryPaymentEnum;
 use App\Enum\InstallerPaymentStatusEnum;
 use App\Enum\MethodOfPayment;
+use App\Enum\ContactSourceEnum;
+use App\Enum\LostReasonfrontdeskEnum;
 use App\Enum\OrderStatusEnum;
 use App\Enum\PaymentStatusEnum;
 use App\Enum\RoleEnum;
@@ -15,6 +17,7 @@ use App\Enum\SupervisorPaymentStatusEnum;
 use App\Exports\InstallerExport;
 use App\Exports\InstallerConfirmedSummaryExport;
 use App\Exports\DailyOrderStatusSummaryExport;
+use App\Exports\MarketingReportExport;
 use App\Exports\SupervisorExport;
 use App\Exports\SupervisorExportPayment;
 use App\Exports\SupervisorAssignedSummaryExport;
@@ -25,6 +28,7 @@ use App\Mail\InstallationPaidEmail;
 use App\Mail\InstallationPayment as MailInstallationPayment;
 use App\Mail\InstallationPaymentEmail;
 use App\Models\Biweekly;
+use App\Models\Client;
 use App\Models\HistoryPendingPayment;
 use App\Models\InstallationPayment;
 use App\Models\InstallationTeam;
@@ -750,6 +754,36 @@ class ReportController extends Controller
     );
   }
 
+  public function marketingReport(Request $request)
+  {
+    [$startDate, $endDate] = $this->resolveSummaryDateRange($request);
+    $data = $this->buildMarketingReportData($startDate, $endDate);
+
+    return Inertia::render('Report/MarketingReport', $data);
+  }
+
+  public function marketingReportPdf(Request $request)
+  {
+    [$startDate, $endDate] = $this->resolveSummaryDateRange($request);
+    $data = $this->buildMarketingReportData($startDate, $endDate);
+    $pdf = Pdf::loadView('pdf.marketing-report', $data)->setPaper('A4', 'landscape');
+    $pdfName = 'marketing-report.pdf';
+
+    return $pdf->stream($pdfName);
+  }
+
+  public function marketingReportExcel(Request $request)
+  {
+    [$startDate, $endDate] = $this->resolveSummaryDateRange($request);
+    $data = $this->buildMarketingReportData($startDate, $endDate);
+
+    return Excel::download(
+      new MarketingReportExport($data),
+      'Marketing Report.xlsx',
+      \Maatwebsite\Excel\Excel::XLSX
+    );
+  }
+
   public function installerConfirmedSummary(Request $request)
   {
     [$startDate, $endDate] = $this->resolveSummaryDateRange($request);
@@ -947,6 +981,267 @@ class ReportController extends Controller
     return [
       'dailySummary' => $dailySummary,
       'totals' => $totals,
+      'startDate' => $startDate->toDateString(),
+      'endDate' => $endDate->toDateString(),
+    ];
+  }
+
+  private function buildMarketingReportData(Carbon $startDate, Carbon $endDate): array
+  {
+    $sources = [
+      ContactSourceEnum::GOOGLE_ADS->value,
+      ContactSourceEnum::INSTAGRAM_FACEBOOK->value,
+      'GOOGLE_ADS',
+      'INSTAGRAM_FACEBOOK',
+    ];
+    $sources = array_values(array_unique($sources));
+
+    $sourceGroups = [
+      ContactSourceEnum::INSTAGRAM_FACEBOOK->value => [
+        ContactSourceEnum::INSTAGRAM_FACEBOOK->value,
+        'INSTAGRAM_FACEBOOK',
+      ],
+      ContactSourceEnum::GOOGLE_ADS->value => [
+        ContactSourceEnum::GOOGLE_ADS->value,
+        'GOOGLE_ADS',
+      ],
+    ];
+
+    $lossReasons = [
+      LostReasonfrontdeskEnum::DEALER->value,
+      LostReasonfrontdeskEnum::STOCK->value,
+    ];
+
+    $totalClientsInRange = Client::query()
+      ->whereBetween('created_at', [$startDate, $endDate])
+      ->whereIn('source', $sources)
+      ->count();
+
+    $qualifiedStatus = DB::table('order_status')
+      ->select(
+        'order_id',
+        DB::raw('MIN(created_at) as first_qualified_at'),
+        DB::raw('MAX(created_at) as last_qualified_at')
+      )
+      ->where('status', OrderStatusEnum::QUALIFIED->value)
+      ->groupBy('order_id');
+
+    $qualifiedOrdersBase = DB::table('orders')
+      ->leftJoinSub($qualifiedStatus, 'qualified_status', function ($join) {
+        $join->on('qualified_status.order_id', '=', 'orders.id');
+      })
+      ->whereNull('orders.deleted_at')
+      ->where(function ($query) {
+        $query->whereNotNull('qualified_status.order_id')
+          ->orWhere('orders.status', OrderStatusEnum::QUALIFIED->value);
+      })
+      ->select(
+        'orders.id as order_id',
+        DB::raw('COALESCE(qualified_status.first_qualified_at, orders.created_at) as first_qualified_at'),
+        DB::raw('COALESCE(qualified_status.last_qualified_at, orders.created_at) as last_qualified_at')
+      );
+
+    $qualifiedDirect = DB::table('orders')
+      ->joinSub($qualifiedOrdersBase, 'qualified_orders', function ($join) {
+        $join->on('qualified_orders.order_id', '=', 'orders.id');
+      })
+      ->whereNotNull('orders.client_id')
+      ->select(
+        'orders.client_id',
+        'qualified_orders.order_id',
+        'qualified_orders.first_qualified_at',
+        'qualified_orders.last_qualified_at'
+      );
+
+    $qualifiedViaContact = DB::table('order_company_contacts as occ')
+      ->joinSub($qualifiedOrdersBase, 'qualified_orders', function ($join) {
+        $join->on('qualified_orders.order_id', '=', 'occ.order_id');
+      })
+      ->whereNull('occ.deleted_at')
+      ->whereNotNull('occ.client_id')
+      ->select(
+        'occ.client_id',
+        'qualified_orders.order_id',
+        'qualified_orders.first_qualified_at',
+        'qualified_orders.last_qualified_at'
+      );
+
+    $qualifiedClientOrders = $qualifiedDirect->union($qualifiedViaContact);
+
+    $qualifiedClientsBySource = [];
+    foreach ($sourceGroups as $label => $groupSources) {
+      $qualifiedClientsBySource[$label] = DB::query()
+        ->fromSub($qualifiedClientOrders, 'qualified_client_orders')
+        ->join('clients', 'clients.id', '=', 'qualified_client_orders.client_id')
+        ->whereBetween('clients.created_at', [$startDate, $endDate])
+        ->whereIn('clients.source', $groupSources)
+        ->distinct('qualified_client_orders.client_id')
+        ->count('qualified_client_orders.client_id');
+    }
+
+    $qualifiedByClient = DB::query()
+      ->fromSub($qualifiedClientOrders, 'qualified_client_orders')
+      ->select(
+        'client_id',
+        DB::raw('COUNT(DISTINCT order_id) as qualified_orders_count'),
+        DB::raw('MIN(first_qualified_at) as first_qualified_at'),
+        DB::raw('MAX(last_qualified_at) as last_qualified_at')
+      )
+      ->groupBy('client_id');
+
+    $qualifiedClients = Client::query()
+      ->joinSub($qualifiedByClient, 'qualified_clients', function ($join) {
+        $join->on('qualified_clients.client_id', '=', 'clients.id');
+      })
+      ->whereBetween('clients.created_at', [$startDate, $endDate])
+      ->whereIn('clients.source', $sources)
+      ->orderBy('clients.created_at')
+      ->get([
+        'clients.id',
+        'clients.name',
+        'clients.phone',
+        'clients.email',
+        'clients.source',
+        'clients.created_at',
+        'qualified_clients.qualified_orders_count',
+        'qualified_clients.first_qualified_at',
+        'qualified_clients.last_qualified_at',
+      ])
+      ->map(function ($row) {
+        return [
+          'id' => $row->id,
+          'name' => $row->name,
+          'phone' => $row->phone,
+          'email' => $row->email,
+          'source' => $row->source,
+          'created_at' => $row->created_at ? Carbon::parse($row->created_at)->toDateString() : null,
+          'qualified_orders_count' => (int) $row->qualified_orders_count,
+          'first_qualified_at' => $row->first_qualified_at ? Carbon::parse($row->first_qualified_at)->toDateString() : null,
+          'last_qualified_at' => $row->last_qualified_at ? Carbon::parse($row->last_qualified_at)->toDateString() : null,
+        ];
+      })
+      ->values();
+
+    $lostOrdersBase = DB::table('orders')
+      ->whereNull('orders.deleted_at')
+      ->where('orders.status', OrderStatusEnum::LOST_CUSTOMER_REQUEST->value)
+      ->whereIn('orders.loss_reason_frontdesk', $lossReasons)
+      ->select(
+        'orders.id as order_id',
+        'orders.created_at',
+        'orders.loss_reason_frontdesk'
+      );
+
+    $lostDirect = DB::table('orders')
+      ->joinSub($lostOrdersBase, 'lost_orders', function ($join) {
+        $join->on('lost_orders.order_id', '=', 'orders.id');
+      })
+      ->whereNotNull('orders.client_id')
+      ->select(
+        'orders.client_id',
+        'lost_orders.order_id',
+        'lost_orders.created_at',
+        'lost_orders.loss_reason_frontdesk'
+      );
+
+    $lostViaContact = DB::table('order_company_contacts as occ')
+      ->joinSub($lostOrdersBase, 'lost_orders', function ($join) {
+        $join->on('lost_orders.order_id', '=', 'occ.order_id');
+      })
+      ->whereNull('occ.deleted_at')
+      ->whereNotNull('occ.client_id')
+      ->select(
+        'occ.client_id',
+        'lost_orders.order_id',
+        'lost_orders.created_at',
+        'lost_orders.loss_reason_frontdesk'
+      );
+
+    $lostClientOrders = $lostDirect->union($lostViaContact);
+
+    $lostClientsByReason = DB::query()
+      ->fromSub($lostClientOrders, 'lost_client_orders')
+      ->join('clients', 'clients.id', '=', 'lost_client_orders.client_id')
+      ->whereBetween('clients.created_at', [$startDate, $endDate])
+      ->whereIn('clients.source', $sources)
+      ->whereIn('lost_client_orders.loss_reason_frontdesk', $lossReasons)
+      ->select('lost_client_orders.loss_reason_frontdesk', DB::raw('COUNT(DISTINCT lost_client_orders.client_id) as total'))
+      ->groupBy('lost_client_orders.loss_reason_frontdesk')
+      ->get()
+      ->pluck('total', 'loss_reason_frontdesk')
+      ->all();
+
+    foreach ($lossReasons as $reason) {
+      if (!array_key_exists($reason, $lostClientsByReason)) {
+        $lostClientsByReason[$reason] = 0;
+      }
+    }
+
+    $lostByClient = DB::query()
+      ->fromSub($lostClientOrders, 'lost_client_orders')
+      ->select(
+        'client_id',
+        DB::raw('COUNT(DISTINCT order_id) as lost_orders_count'),
+        DB::raw('MIN(created_at) as first_lost_order_at'),
+        DB::raw('MAX(created_at) as last_lost_order_at'),
+        DB::raw('GROUP_CONCAT(DISTINCT loss_reason_frontdesk) as loss_reasons')
+      )
+      ->groupBy('client_id');
+
+    $lostClients = Client::query()
+      ->joinSub($lostByClient, 'lost_clients', function ($join) {
+        $join->on('lost_clients.client_id', '=', 'clients.id');
+      })
+      ->whereBetween('clients.created_at', [$startDate, $endDate])
+      ->whereIn('clients.source', $sources)
+      ->orderBy('clients.created_at')
+      ->get([
+        'clients.id',
+        'clients.name',
+        'clients.phone',
+        'clients.email',
+        'clients.source',
+        'clients.created_at',
+        'lost_clients.lost_orders_count',
+        'lost_clients.loss_reasons',
+        'lost_clients.first_lost_order_at',
+        'lost_clients.last_lost_order_at',
+      ])
+      ->map(function ($row) {
+        return [
+          'id' => $row->id,
+          'name' => $row->name,
+          'phone' => $row->phone,
+          'email' => $row->email,
+          'source' => $row->source,
+          'created_at' => $row->created_at ? Carbon::parse($row->created_at)->toDateString() : null,
+          'lost_orders_count' => (int) $row->lost_orders_count,
+          'loss_reasons' => $row->loss_reasons,
+          'first_lost_order_at' => $row->first_lost_order_at ? Carbon::parse($row->first_lost_order_at)->toDateString() : null,
+          'last_lost_order_at' => $row->last_lost_order_at ? Carbon::parse($row->last_lost_order_at)->toDateString() : null,
+        ];
+      })
+      ->values();
+
+    return [
+      'qualifiedClients' => $qualifiedClients,
+      'lostClients' => $lostClients,
+      'totals' => [
+        'total_clients' => $totalClientsInRange,
+        'qualified_clients' => $qualifiedClients->count(),
+        'lost_clients' => $lostClients->count(),
+        'qualified_orders' => $qualifiedClients->sum('qualified_orders_count'),
+        'lost_orders' => $lostClients->sum('lost_orders_count'),
+        'grand_total_clients' => $qualifiedClients->count() + $lostClients->count(),
+        'qualified_clients_by_source' => $qualifiedClientsBySource,
+        'lost_clients_by_reason' => $lostClientsByReason,
+      ],
+      'filters' => [
+        'sources' => $sources,
+        'qualified_status' => OrderStatusEnum::QUALIFIED->value,
+        'lost_status' => OrderStatusEnum::LOST_CUSTOMER_REQUEST->value,
+        'loss_reasons' => $lossReasons,
+      ],
       'startDate' => $startDate->toDateString(),
       'endDate' => $endDate->toDateString(),
     ];
