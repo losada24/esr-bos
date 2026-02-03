@@ -199,6 +199,7 @@ class OrderProcessingController extends Controller
             'owners',
             'user',
             'tags',
+            'orderCompanyContacts.companyContact',
         ];
     }
 
@@ -217,6 +218,7 @@ class OrderProcessingController extends Controller
                 ? Carbon::parse($order->schedule_appointment)->format('Y-m-d\TH:i')
                 : null,
             'phone' => optional($order->client)->phone,
+            'created_by' => $order->user->name ?? null,
             'is_supply' => (bool) ($order->is_supply ?? false),
             'project_amount' => $order->project_amount ? (float) $order->project_amount : null,
             'down_payment' => $order->down_payment ? (float) $order->down_payment : null,
@@ -231,6 +233,8 @@ class OrderProcessingController extends Controller
                 'id' => $owner->id,
                 'name' => $owner->name,
             ])->values(),
+            'order_type' => $order->order_type,
+            'bid_due_date' => $this->resolveBidDueDate($order),
             'tags' => ($order->tags ?? collect())->map(function ($tag) {
                 return [
                     'name' => $tag->name,
@@ -238,5 +242,20 @@ class OrderProcessingController extends Controller
                 ];
             })->values(),
         ];
+    }
+
+    private function resolveBidDueDate(Order $order): ?string
+    {
+        $selectedContact = $order->orderCompanyContacts
+            ->firstWhere('is_selected', true)
+            ?? ($order->orderCompanyContacts->count() === 1 ? $order->orderCompanyContacts->first() : null);
+
+        $bidDueDate = $selectedContact?->companyContact?->bid_due_date ?? $order->bid_due_date;
+
+        if ($bidDueDate instanceof \DateTimeInterface) {
+            return $bidDueDate->format('Y-m-d');
+        }
+
+        return $bidDueDate ? Carbon::parse($bidDueDate)->format('Y-m-d') : null;
     }
 }

@@ -111,6 +111,27 @@ const formatDateForDisplay = (date: Date): string => {
   return `${monthLabel} ${day}, ${year} ${hourDisplay}:${minutes} ${period}`
 }
 
+const formatBidDueDate = (value?: string | null): string | null => {
+  if (!value) return null
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString()
+}
+
+const parseBidDueDate = (value?: string | null): Date | null => {
+  if (!value) return null
+  const normalized = /^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T00:00:00` : value
+  const date = new Date(normalized)
+  return Number.isNaN(date.getTime()) ? null : date
+}
+
+const isBidDuePast = (value?: string | null): boolean => {
+  const date = parseBidDueDate(value)
+  if (!date) return false
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  return date.getTime() < today.getTime()
+}
+
 const stampTaskAsUpdated = (task: Tasks): Tasks => ({
   ...task,
   date_edited: formatDateForDisplay(new Date())
@@ -350,11 +371,21 @@ const OrderProcessing = ({ auth, data }: PageProps & { data: Pipelines[] }) => {
                       className="min-h-[1px] space-y-4 pt-2"
                     >
                       {pipeline.tasks.map((task) => {
+                        const createdByName = typeof task.created_by === 'string' ? task.created_by.trim() : ''
+                        const createdByDisplay = createdByName || 'Unknown'
                         const ownerNames = (task.owners ?? [])
                           .map((owner: any) => typeof owner?.name === 'string' ? owner.name.trim() : '')
                           .filter((name: string) => Boolean(name))
                         const ownersDisplay = ownerNames.length ? ownerNames.join(', ') : 'No owners assigned'
                         const ownersLabel = ownerNames.length === 1 ? 'Owner' : 'Owners'
+                        const isCommercialOrder = task.order_type?.toLowerCase() === 'commercial'
+                        const bidDueDateLabel = formatBidDueDate(task.bid_due_date)
+                        const bidDuePast = isBidDuePast(task.bid_due_date)
+                        const showBidDueDate = Boolean(isCommercialOrder && bidDueDateLabel)
+                        const bidDueBadgeClass = bidDuePast
+                          ? 'bg-rose-100 text-rose-800 ring-rose-200'
+                          : 'bg-emerald-100 text-emerald-800 ring-emerald-200'
+                        const bidDueLabelClass = bidDuePast ? 'text-rose-600' : 'text-emerald-600'
 
                         return (
                           <div className="sortable-list" key={task.id} data-id={task.id}>
@@ -418,10 +449,33 @@ const OrderProcessing = ({ auth, data }: PageProps & { data: Pipelines[] }) => {
                                 <p className="break-all">{task.date_edited}</p>
                               )}
                               <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
-                                <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-2.5 py-0.5 text-amber-900 ring-1 ring-amber-300/80 shadow-sm">
-                                  <span className="text-[10px] uppercase tracking-wide text-amber-700">{ownersLabel}</span>
-                                  <span className="font-semibold">{ownersDisplay}</span>
-                                </span>
+                                {ownerNames.length > 0 ? (
+                                  <>
+                                    <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-2.5 py-0.5 text-amber-900 ring-1 ring-amber-300/80 shadow-sm">
+                                      <span className="text-[10px] uppercase tracking-wide text-amber-700">{ownersLabel}</span>
+                                      <span className="font-semibold">{ownersDisplay}</span>
+                                    </span>
+                                    {showBidDueDate && (
+                                      <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 ring-1 shadow-sm ${bidDueBadgeClass}`}>
+                                        <span className={`text-[10px] uppercase tracking-wide ${bidDueLabelClass}`}>Bid Due</span>
+                                        <span className="font-semibold">{bidDueDateLabel}</span>
+                                      </span>
+                                    )}
+                                  </>
+                                ) : (
+                                  <>
+                                    <span className="inline-flex items-center gap-1.5 rounded-full bg-sky-100 px-2.5 py-0.5 text-sky-900 ring-1 ring-sky-300/80 shadow-sm">
+                                      <span className="text-[10px] uppercase tracking-wide text-sky-700">Created by</span>
+                                      <span className="font-semibold">{createdByDisplay}</span>
+                                    </span>
+                                    {showBidDueDate && (
+                                      <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 ring-1 shadow-sm ${bidDueBadgeClass}`}>
+                                        <span className={`text-[10px] uppercase tracking-wide ${bidDueLabelClass}`}>Bid Due</span>
+                                        <span className="font-semibold">{bidDueDateLabel}</span>
+                                      </span>
+                                    )}
+                                  </>
+                                )}
                               </div>
                               {(task.project_amount !== undefined && task.project_amount !== null)
                                 ? (

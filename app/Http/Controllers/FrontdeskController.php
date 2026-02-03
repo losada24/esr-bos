@@ -100,11 +100,33 @@ class FrontdeskController extends Controller
             'phone'       => optional($order->client)->phone,
             'created_by'  => $order->user->name ?? null,
             'is_supply'   => (bool) ($order->is_supply ?? false),
+            'owner_ids'   => $order->owners->pluck('id')->values(),
+            'owners'      => $order->owners->map(fn ($owner) => [
+                'id' => $owner->id,
+                'name' => $owner->name,
+            ])->values(),
+            'order_type'  => $order->order_type,
+            'bid_due_date' => $this->resolveBidDueDate($order),
             'tags'        => ($order->tags ?? collect())->map(fn($t) => [
                 'name'  => $t->name,
                 'color' => $t->color,
             ])->values(),
         ];
+    }
+
+    private function resolveBidDueDate(Order $order): ?string
+    {
+        $selectedContact = $order->orderCompanyContacts
+            ->firstWhere('is_selected', true)
+            ?? ($order->orderCompanyContacts->count() === 1 ? $order->orderCompanyContacts->first() : null);
+
+        $bidDueDate = $selectedContact?->companyContact?->bid_due_date ?? $order->bid_due_date;
+
+        if ($bidDueDate instanceof \DateTimeInterface) {
+            return $bidDueDate->format('Y-m-d');
+        }
+
+        return $bidDueDate ? Carbon::parse($bidDueDate)->format('Y-m-d') : null;
     }
 
     public function index(Request $request)
@@ -160,13 +182,13 @@ class FrontdeskController extends Controller
         if (in_array($status, $paginatedStatuses, true)) {
             $total = (clone $ordersQuery)->count();
             $orders = $ordersQuery
-                ->with(['client','user','orderStatus','tags:id,name,color,taggable_id,taggable_type'])
+                ->with(['client','user','orderStatus','owners','orderCompanyContacts.companyContact','tags:id,name,color,taggable_id,taggable_type'])
                 ->orderByDesc('updated_at')
                 ->limit(self::FRONTDESK_PAGE_SIZE)
                 ->get();
         } else {
             $orders = $ordersQuery
-                ->with(['client','user','orderStatus','tags:id,name,color,taggable_id,taggable_type'])
+                ->with(['client','user','orderStatus','owners','orderCompanyContacts.companyContact','tags:id,name,color,taggable_id,taggable_type'])
                 ->get();
             $total = $orders->count();
         }
@@ -275,7 +297,7 @@ class FrontdeskController extends Controller
         : OrderBoardFilter::apply($ordersQuery, $filters);
       $total = (clone $ordersQuery)->count();
       $orders = $ordersQuery
-        ->with(['client','user','orderStatus','tags:id,name,color,taggable_id,taggable_type'])
+        ->with(['client','user','orderStatus','owners','orderCompanyContacts.companyContact','tags:id,name,color,taggable_id,taggable_type'])
         ->orderByDesc('updated_at')
         ->forPage($page, $perPage)
         ->get();

@@ -212,6 +212,12 @@ const formatScheduleDisplay = (value?: string | null): string | null => {
   return Number.isNaN(date.getTime()) ? value : date.toLocaleString()
 }
 
+const formatDateOnly = (value?: string | Date | null): string | null => {
+  if (!value) return null
+  const date = value instanceof Date ? value : new Date(value)
+  return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleDateString()
+}
+
 const toScheduleString = (value?: Date | string | null): string | null => {
   if (!value) return null
   if (value instanceof Date) {
@@ -886,6 +892,17 @@ export default function ShowStatusOrder ({
   const primaryOwnerDisplay = ownerNames.length > 0
     ? ownerNames.join(', ')
     : (order.user?.name ?? '')
+  const isCommercialOrder = order.order_type?.toLowerCase() === 'commercial'
+  const selectedCommercialCompany = isCommercialOrder
+    ? sortedOrderCompanyContacts.find((item: any) => item?.is_selected)
+      ?? (sortedOrderCompanyContacts.length === 1 ? sortedOrderCompanyContacts[0] : null)
+    : null
+  const commercialBidDueDateLabel = formatDateOnly(
+    selectedCommercialCompany?.company_contact?.bid_due_date
+      ?? selectedCommercialCompany?.companyContact?.bid_due_date
+      ?? order.bid_due_date
+      ?? null
+  )
   const scheduleAppointmentLabel = formatScheduleDisplay(scheduleAppointmentIso)
   const lossReasonFrontdeskValue = order.loss_reason_frontdesk?.trim()
 
@@ -2348,6 +2365,12 @@ export default function ShowStatusOrder ({
                       <span className="inline-flex items-center gap-2 rounded-full bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
                         <UserIcon className="h-4 w-4 text-slate-400" />
                         {primaryOwnerDisplay}
+                      </span>
+                    )}
+                    {isCommercialOrder && commercialBidDueDateLabel && (
+                      <span className="inline-flex items-center gap-2 rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-700 ring-1 ring-rose-200">
+                        <span className="text-[10px] uppercase tracking-wide text-rose-600">Bid Due Date</span>
+                        <span className="normal-case text-rose-800">{commercialBidDueDateLabel}</span>
                       </span>
                     )}
                     {scheduleAppointmentLabel && (
