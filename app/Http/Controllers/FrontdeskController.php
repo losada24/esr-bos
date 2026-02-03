@@ -1184,6 +1184,7 @@ public function showQuantifiedModal(Order $order)
       return $user->hasRole(RoleEnum::OWNER->value) && !$user->hasAnyRole([
           RoleEnum::ADMIN->value,
           RoleEnum::ACCOUNT_MANAGER->value,
+          RoleEnum::FRONTDESK_ADMIN->value,
       ]);
   }
 
