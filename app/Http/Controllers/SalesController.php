@@ -335,6 +335,7 @@ class SalesController extends Controller
         'name' => $owner->name,
       ])->values(),
       'order_type' => $order->order_type,
+      'bid_due_date' => $this->resolveBidDueDate($order),
       'order_company_contacts' => $order->orderCompanyContacts->map(fn ($item) => [
         'id' => $item->id,
         'company_name' => $item->companyContact?->name,
@@ -350,6 +351,21 @@ class SalesController extends Controller
         ];
       })->values(),
     ];
+  }
+
+  private function resolveBidDueDate(Order $order): ?string
+  {
+    $selectedContact = $order->orderCompanyContacts
+      ->firstWhere('is_selected', true)
+      ?? ($order->orderCompanyContacts->count() === 1 ? $order->orderCompanyContacts->first() : null);
+
+    $bidDueDate = $selectedContact?->companyContact?->bid_due_date ?? $order->bid_due_date;
+
+    if ($bidDueDate instanceof \DateTimeInterface) {
+      return $bidDueDate->format('Y-m-d');
+    }
+
+    return $bidDueDate ? Carbon::parse($bidDueDate)->format('Y-m-d') : null;
   }
   private function determineSalesBoardStatus(Order $order): ?string
   {
