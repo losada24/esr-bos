@@ -730,3 +730,20 @@ pre.hljs {
 .wide-column {
   min-width: 150px !important;
 }
+
+/* Sales calendar schedule view: avoid clipping event details */
+.sales-calendar .mbsc-schedule-event-inner {
+  padding: 0.25rem 0.35rem;
+}
+
+.sales-calendar .sales-calendar-event-title,
+.sales-calendar .sales-calendar-event-detail {
+  display: block;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.sales-calendar-week .mbsc-schedule-header,
+.sales-calendar-week .mbsc-schedule-grid {
+  min-width: 1400px;
+}

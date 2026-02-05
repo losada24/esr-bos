@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Head, router } from '@inertiajs/react'
+import { Head } from '@inertiajs/react'
 import '@mobiscroll/react/dist/css/mobiscroll.min.css'
 import { Eventcalendar, getJson, setOptions } from '@mobiscroll/react'
 import type { MbscEventcalendarView, MbscCalendarEventData } from '@mobiscroll/react'
 import AuthenticatedCalendarLayout from '@/Layouts/AuthenticatedCalendarLayout'
 import { type PageProps } from '@/types'
+import CalendarEventModal from './CalendarEventModal'
 
 setOptions({
   theme: 'ios',
@@ -16,27 +17,35 @@ interface LegendItem {
   label: string
 }
 
+interface OwnerOption {
+  id: number
+  name: string
+}
+
 interface SalesCalendarProps extends PageProps {
-  statuses: string[]
+  owners: OwnerOption[]
   legend: LegendItem[]
 }
 
-export default function SalesCalendar ({ auth, statuses, legend }: SalesCalendarProps) {
+export default function SalesCalendar ({ auth, owners, legend }: SalesCalendarProps) {
   const [events, setEvents] = useState<any[]>([])
   const [currentDate, setCurrentDate] = useState<Date>(new Date())
-  const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [ownerFilter, setOwnerFilter] = useState<string>('all')
   const [eventsPerDay, setEventsPerDay] = useState<number | 'all'>(10)
   const [viewMode, setViewMode] = useState<'month' | 'week' | 'day'>('month')
+  const [legendExpanded, setLegendExpanded] = useState(false)
+  const [selectedEvent, setSelectedEvent] = useState<Record<string, any> | null>(null)
+  const [showEventModal, setShowEventModal] = useState(false)
 
   const loadEvents = useCallback((date: Date) => {
     const year = date.getFullYear()
     const month = date.getMonth() + 1
-    const getEventsRoute = route('sales.calendar.events', { year, month, status: statusFilter })
+    const getEventsRoute = route('sales.calendar.events', { year, month, owner: ownerFilter })
 
     getJson(getEventsRoute, (data) => {
       setEvents(Array.isArray(data) ? data : [])
     }, 'json')
-  }, [statusFilter])
+  }, [ownerFilter])
 
   useEffect(() => {
     loadEvents(currentDate)
@@ -52,11 +61,17 @@ export default function SalesCalendar ({ auth, statuses, legend }: SalesCalendar
       }
     }
 
-    return {
-      schedule: {
-        type: viewMode
-      }
+    const scheduleConfig: any = {
+      type: viewMode
     }
+
+    if (viewMode === 'week') {
+      scheduleConfig.eventHeight = 'variable'
+    }
+
+    return {
+      schedule: scheduleConfig
+    } as MbscEventcalendarView
   }, [eventsPerDay, viewMode])
 
   const handlePageChange = useCallback((event: any) => {
@@ -64,9 +79,10 @@ export default function SalesCalendar ({ auth, statuses, legend }: SalesCalendar
   }, [])
 
   const handleEventClick = useCallback((args: any) => {
-    const orderId = args?.event?.order_id
-    if (!orderId) return
-    router.visit(route('order.show', orderId))
+    const eventData = args?.event ?? null
+    if (!eventData) return
+    setSelectedEvent(eventData)
+    setShowEventModal(true)
   }, [])
 
   const renderEventLabelContent = useCallback((eventData: MbscCalendarEventData) => {
@@ -89,23 +105,34 @@ export default function SalesCalendar ({ auth, statuses, legend }: SalesCalendar
     const originalEvent = (eventData.original as Record<string, any>) ?? {}
     const orderName: string = originalEvent.order_name ?? eventData.title ?? ''
     const appointmentTime: string = originalEvent.appointment_time ?? ''
+    const clientName: string = originalEvent.client_name ?? ''
+    const city: string = originalEvent.city ?? ''
     const ownerNames: string = originalEvent.owner_names ?? ''
-    const detailLine = [appointmentTime, ownerNames].filter(Boolean).join(' • ')
+    const ownerLabel = ownerNames.includes(',') ? 'Owners' : 'Owner'
+    const isWeekView = viewMode === 'week'
+    const titleLine = isWeekView ? [orderName, city].filter(Boolean).join(' • ') : orderName
+    const detailLine = [
+      appointmentTime,
+      ownerNames ? `${ownerLabel}: ${ownerNames}` : '',
+      clientName ? `Client: ${clientName}` : '',
+      !isWeekView && city ? `City: ${city}` : ''
+    ].filter(Boolean).join(' • ')
+    const titleText = [orderName, city, appointmentTime, ownerNames && `${ownerLabel}: ${ownerNames}`, clientName && `Client: ${clientName}`].filter(Boolean).join(' • ')
 
     return (
-      <div className="flex flex-col gap-[2px] leading-tight">
-        <span className="text-sm font-semibold">{orderName}</span>
+      <div className="sales-calendar-event flex min-w-0 flex-col gap-[2px] leading-tight" title={titleText}>
+        <span className="sales-calendar-event-title text-[11px] font-semibold">{titleLine}</span>
         {detailLine && (
-          <span className="text-xs text-gray-700 dark:text-gray-200">{detailLine}</span>
+          <span className="sales-calendar-event-detail text-[10px] text-gray-700 dark:text-gray-200">{detailLine}</span>
         )}
       </div>
     )
-  }, [])
+  }, [viewMode])
 
   return (
     <AuthenticatedCalendarLayout auth={auth}>
       <Head title="Sales Calendar" />
-      <div className="w-full h-[90vh] flex flex-col overflow-y-auto">
+      <div className={`sales-calendar w-full h-[90vh] flex flex-col overflow-y-auto ${viewMode === 'week' ? 'sales-calendar-week' : ''}`}>
         <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
           <div className="flex flex-wrap items-center gap-4">
             <label className="flex items-center gap-2">
@@ -123,17 +150,17 @@ export default function SalesCalendar ({ auth, statuses, legend }: SalesCalendar
               </select>
             </label>
             <label className="flex items-center gap-2">
-              <span>Status:</span>
+              <span>Owner:</span>
               <select
-                className="form-select min-w-[180px]"
-                value={statusFilter}
+                className="form-select min-w-[200px]"
+                value={ownerFilter}
                 onChange={(e) => {
-                  setStatusFilter(e.target.value)
+                  setOwnerFilter(e.target.value)
                 }}
               >
                 <option value="all">All</option>
-                {statuses.map((status) => (
-                  <option key={status} value={status}>{status}</option>
+                {owners.map((owner) => (
+                  <option key={owner.id} value={owner.id}>{owner.name}</option>
                 ))}
               </select>
             </label>
@@ -156,13 +183,27 @@ export default function SalesCalendar ({ auth, statuses, legend }: SalesCalendar
               </label>
             )}
           </div>
-          <div className="flex flex-wrap gap-3">
-            {legend.map((item) => (
-              <div key={item.label} className="flex items-center gap-2 text-xs">
-                <span className="block w-4 h-4 rounded-sm border" style={{ backgroundColor: item.color }}></span>
-                <span>{item.label}</span>
+          <div className="flex flex-col items-start gap-2">
+            <button
+              type="button"
+              className="rounded-md border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+              onClick={() => { setLegendExpanded((prev) => !prev) }}
+            >
+              {legendExpanded ? 'Hide Legend' : 'Legend'}
+            </button>
+            {legendExpanded && (
+              <div className="sales-calendar-legend flex flex-wrap gap-2 max-h-40 overflow-y-auto">
+                {legend.map((item) => (
+                  <div
+                    key={item.label}
+                    className="flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3 py-1 text-xs text-gray-700 shadow-sm"
+                  >
+                    <span className="block h-3 w-3 rounded-full border" style={{ backgroundColor: item.color }}></span>
+                    <span className="truncate max-w-[160px]">{item.label}</span>
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
           </div>
         </div>
         <Eventcalendar
@@ -177,6 +218,14 @@ export default function SalesCalendar ({ auth, statuses, legend }: SalesCalendar
           onEventClick={handleEventClick}
           renderLabelContent={renderEventLabelContent}
           renderScheduleEventContent={renderScheduleEventContent}
+        />
+        <CalendarEventModal
+          show={showEventModal}
+          event={selectedEvent}
+          onClose={() => {
+            setShowEventModal(false)
+            setSelectedEvent(null)
+          }}
         />
       </div>
     </AuthenticatedCalendarLayout>
