@@ -892,6 +892,7 @@ export default function ShowStatusOrder ({
   const primaryOwnerDisplay = ownerNames.length > 0
     ? ownerNames.join(', ')
     : (order.user?.name ?? '')
+  const isVipClient = Boolean(order.client?.vip_clients)
   const isCommercialOrder = order.order_type?.toLowerCase() === 'commercial'
   const selectedCommercialCompany = isCommercialOrder
     ? sortedOrderCompanyContacts.find((item: any) => item?.is_selected)
@@ -2333,6 +2334,11 @@ export default function ShowStatusOrder ({
                     <h1 className="text-xl font-semibold text-slate-800">
                       {order.name}
                     </h1>
+                    {isVipClient && (
+                      <span className="inline-flex items-center rounded-full bg-rose-100 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-rose-700 ring-1 ring-rose-200 dark:bg-rose-500/20 dark:text-rose-200 dark:ring-rose-400/40">
+                        VIP
+                      </span>
+                    )}
                     {!canEditContact && (
                       <button
                         type="button"

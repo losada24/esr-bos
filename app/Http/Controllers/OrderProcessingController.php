@@ -218,6 +218,7 @@ class OrderProcessingController extends Controller
                 ? Carbon::parse($order->schedule_appointment)->format('Y-m-d\TH:i')
                 : null,
             'phone' => optional($order->client)->phone,
+            'vip_clients' => (bool) (optional($order->client)->vip_clients ?? false),
             'created_by' => $order->user->name ?? null,
             'is_supply' => (bool) ($order->is_supply ?? false),
             'project_amount' => $order->project_amount ? (float) $order->project_amount : null,

@@ -98,6 +98,7 @@ class FrontdeskController extends Controller
             'status_created_at_iso' => optional($statusCreatedAt)->toIso8601String(),
             'schedule_appointment' => $order->schedule_appointment ? Carbon::parse($order->schedule_appointment)->format('M d, Y h:i A') : null,
             'phone'       => optional($order->client)->phone,
+            'vip_clients' => (bool) (optional($order->client)->vip_clients ?? false),
             'created_by'  => $order->user->name ?? null,
             'is_supply'   => (bool) ($order->is_supply ?? false),
             'owner_ids'   => $order->owners->pluck('id')->values(),

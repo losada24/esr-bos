@@ -1430,6 +1430,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
                           ? 'bg-rose-100 text-rose-800 ring-rose-200'
                           : 'bg-emerald-100 text-emerald-800 ring-emerald-200'
                         const bidDueLabelClass = bidDuePast ? 'text-rose-600' : 'text-emerald-600'
+                        const isVipClient = Boolean(task.vip_clients)
                         return (
                           <div className="sortable-list " key={task.id} data-id={task.id}>
                             <div className={`shadow ${cardBackgroundClass} p-3 pb-4 rounded-md mb-5 space-y-2 cursor-move text-xs text-slate-600`}>
@@ -1437,6 +1438,11 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
                               <div className="flex items-center justify-between w-full">
                                 <p className="flex items-center gap-2 break-all text-sm font-semibold text-slate-700">
                                   {task.title}
+                                  {isVipClient && (
+                                    <span className="inline-flex items-center rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-rose-700 ring-1 ring-rose-200 dark:bg-rose-500/20 dark:text-rose-200 dark:ring-rose-400/40">
+                                      VIP
+                                    </span>
+                                  )}
                                 </p>
 
                                 {/* Botones a la derecha */}
