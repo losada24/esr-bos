@@ -26,6 +26,7 @@ use App\Models\OrderCompanyContact;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -393,18 +394,20 @@ class SalesController extends Controller
   {
     $user = auth()->user();
 
-    $statuses = $this->salesStatuses();
-    if ($this->isOwnerRestricted($user)) {
-      $statuses = $this->ownerVisibleSalesStatuses();
-    }
+    $activeOwners = $this->ownerListForCalendar($user);
+    $allOwners = $this->ownerListForCalendarAll($user);
+    $ownerColors = $this->ownerColorMapFromList($activeOwners);
 
-    $legend = collect($statuses)->map(fn ($status) => [
-      'label' => $status,
-      'color' => $this->salesStatusColor($status),
+    $legend = $activeOwners->map(fn ($owner) => [
+      'label' => $owner->name,
+      'color' => $ownerColors[$owner->id] ?? '#6b7280',
     ])->values();
 
     return Inertia::render('Sales/Calendar', [
-      'statuses' => $statuses,
+      'owners' => $allOwners->map(fn ($owner) => [
+        'id' => $owner->id,
+        'name' => $owner->name,
+      ])->values(),
       'legend' => $legend,
     ]);
   }
@@ -412,7 +415,7 @@ class SalesController extends Controller
   public function calendarEvents(Request $request, int $year, int $month): JsonResponse
   {
     $user = auth()->user();
-    $statusFilter = $request->query('status');
+    $ownerFilter = $request->query('owner');
 
     $allowedStatuses = $this->salesStatuses();
     if ($this->isOwnerRestricted($user)) {
@@ -422,16 +425,19 @@ class SalesController extends Controller
     $start = Carbon::createFromDate($year, $month, 1)->startOfMonth()->subWeek();
     $end = Carbon::createFromDate($year, $month, 1)->endOfMonth()->addWeek();
 
-    $ordersQuery = Order::with(['client', 'owners'])
+    $ordersQuery = Order::with(['client', 'owners', 'user', 'orderCompanyContacts.companyContact'])
       ->whereNotNull('schedule_appointment')
       ->whereBetween('schedule_appointment', [$start, $end])
       ->whereIn('status', $allowedStatuses);
 
-    if (!empty($statusFilter) && $statusFilter !== 'all') {
-      if (!in_array($statusFilter, $allowedStatuses, true)) {
+    if (!empty($ownerFilter) && $ownerFilter !== 'all') {
+      $allowedOwnerIds = $this->ownerListForCalendarAll($user)->pluck('id')->map(fn ($id) => (string) $id)->values();
+      if (!$allowedOwnerIds->contains((string) $ownerFilter)) {
         return response()->json([]);
       }
-      $ordersQuery->where('status', $statusFilter);
+      $ordersQuery->whereHas('owners', function ($query) use ($ownerFilter) {
+        $query->where('users.id', $ownerFilter);
+      });
     }
 
     if ($this->isOwnerRestricted($user)) {
@@ -440,12 +446,20 @@ class SalesController extends Controller
       });
     }
 
-    $events = $ordersQuery->get()->map(function (Order $order) {
+    $ownerColors = $this->ownerColorMapFromList($this->ownerListForCalendar($user));
+
+    $events = $ordersQuery->get()->map(function (Order $order) use ($ownerColors) {
       $start = Carbon::parse($order->schedule_appointment);
       $end = (clone $start)->addHour();
 
-      $clientName = optional($order->client)->name ?? 'Client';
+      $client = $order->client;
+      $clientName = $client?->name ?? 'Client';
       $owners = $order->owners->pluck('name')->filter();
+      $sellerName = $order->user?->name ?? '';
+      $selectedCompanyContact = $order->orderCompanyContacts
+        ->firstWhere('is_selected', true)
+        ?? $order->orderCompanyContacts->first();
+      $companyName = $selectedCompanyContact?->companyContact?->name ?? '';
       $primaryLine = ($order->name ?? 'Order');
       $secondaryLine = $start->format('h:i A') . ($owners->isNotEmpty() ? ' (' . $owners->implode(', ') . ')' : '');
       $tooltipParts = [
@@ -457,18 +471,30 @@ class SalesController extends Controller
       }
       $tooltip = implode(' | ', $tooltipParts);
 
+      $ownerColor = $this->colorForOwners($order->owners, $ownerColors);
+
       return [
         'order_id' => $order->id,
         'title' => $primaryLine,
         'tooltip' => $tooltip,
         'start' => $start->format('Y-m-d\TH:i'),
         'end' => $end->format('Y-m-d\TH:i'),
-        'color' => $this->salesStatusColor($order->status),
+        'color' => $ownerColor ?? $this->salesStatusColor($order->status),
         'type_of_event' => $order->status,
         'text' => $order->name ?? 'Order',
         'order_name' => $order->name ?? 'Order',
+        'appointment_date' => $start->format('M d, Y'),
         'appointment_time' => $start->format('h:i A'),
         'owner_names' => $owners->implode(', '),
+        'seller_name' => $sellerName,
+        'client_name' => $clientName,
+        'client_phone' => $client?->phone ?? '',
+        'client_email' => $client?->email ?? '',
+        'order_type' => $order->order_type ?? '',
+        'is_supply' => (bool) ($order->is_supply ?? false),
+        'vip_client' => (bool) ($client?->vip_clients ?? false),
+        'company_name' => $companyName,
+        'city' => $order->city ?? '',
         'secondary_label' => $secondaryLine,
       ];
     });
@@ -531,6 +557,127 @@ class SalesController extends Controller
       OrderStatusEnum::CONTRACT_SIGNED_BY_CLIENT->value => '#14b8a6',
       OrderStatusEnum::LOST_CONTRACT->value => '#ef4444',
     ][$status] ?? '#6b7280';
+  }
+
+  private function ownerListForCalendar(?User $user): Collection
+  {
+    $ownerQuery = User::role(RoleEnum::OWNER->value)
+      ->select('id', 'name')
+      ->where('status', StatusUserEnum::ACTIVE->value)
+      ->orderBy('name');
+
+    if ($this->isOwnerRestricted($user)) {
+      $ownerQuery->where('id', $user->id);
+    }
+
+    return $ownerQuery->get();
+  }
+
+  private function ownerListForCalendarAll(?User $user): Collection
+  {
+    $ownerQuery = User::role(RoleEnum::OWNER->value)
+      ->select('id', 'name', 'status')
+      ->orderBy('name');
+
+    if ($this->isOwnerRestricted($user)) {
+      $ownerQuery->where('id', $user->id);
+    }
+
+    return $ownerQuery->get();
+  }
+
+  private function ownerColorMapFromList(Collection $owners): array
+  {
+    $colors = [];
+
+    foreach ($owners as $owner) {
+      $colors[$owner->id] = $this->ownerColorFromId((int) $owner->id);
+    }
+
+    return $colors;
+  }
+
+  private function colorForOwners(Collection $owners, array $colorMap): ?string
+  {
+    $activeOwners = $owners->filter(fn ($owner) => $owner?->status === StatusUserEnum::ACTIVE->value);
+
+    if ($activeOwners->isEmpty()) {
+      return '#ffffff';
+    }
+
+    $primaryOwnerId = (int) ($activeOwners->sortBy('id')->first()?->id ?? 0);
+
+    return $colorMap[$primaryOwnerId] ?? '#ffffff';
+  }
+
+  private function ownerColorFromId(int $ownerId): string
+  {
+    if ($ownerId <= 0) {
+      return '#6b7280';
+    }
+
+    $palette = [
+      '#1f77b4', // blue
+      '#ff7f0e', // orange
+      '#2ca02c', // green
+      '#d62728', // red
+      '#9467bd', // purple
+      '#8c564b', // brown
+      '#e377c2', // pink
+      '#17becf', // cyan
+      '#bcbd22', // olive
+      '#4e79a7', // steel blue
+      '#f28e2b', // orange
+      '#59a14f', // green
+      '#e15759', // red
+      '#76b7b2', // teal
+      '#edc948', // yellow
+      '#b07aa1', // lavender
+      '#ff9da7', // salmon
+      '#9c755f', // brown
+      '#2f4b7c', // deep blue
+      '#f95d6a', // pink red
+      '#3b8bba', // bright blue
+      '#00a6d6', // blue cyan
+      '#ef476f', // magenta red
+      '#06d6a0', // mint
+      '#118ab2', // blue
+      '#ffd166', // gold
+      '#8338ec', // violet
+      '#fb5607', // orange
+      '#3a86ff', // vivid blue
+      '#2a9d8f', // green teal
+    ];
+
+    $index = $ownerId % count($palette);
+    $cycle = intdiv($ownerId, count($palette));
+    $color = $palette[$index];
+
+    if ($cycle > 0) {
+      $adjust = ($cycle % 2 === 0) ? -18 : 18;
+      return $this->adjustHexColor($color, $adjust);
+    }
+
+    return $color;
+  }
+
+  private function adjustHexColor(string $hex, int $percent): string
+  {
+    $hex = ltrim($hex, '#');
+    if (strlen($hex) === 3) {
+      $hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
+    }
+
+    $r = hexdec(substr($hex, 0, 2));
+    $g = hexdec(substr($hex, 2, 2));
+    $b = hexdec(substr($hex, 4, 2));
+
+    $delta = (int) round(255 * ($percent / 100));
+    $r = max(0, min(255, $r + $delta));
+    $g = max(0, min(255, $g + $delta));
+    $b = max(0, min(255, $b + $delta));
+
+    return sprintf('#%02x%02x%02x', $r, $g, $b);
   }
 
   public function create()
