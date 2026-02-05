@@ -314,6 +314,7 @@ class SalesController extends Controller
       'schedule_appointment' => $order->schedule_appointment ? Carbon::parse($order->schedule_appointment)->format('M d, Y h:i A') : null,
       'schedule_appointment_iso' => $order->schedule_appointment ? Carbon::parse($order->schedule_appointment)->format('Y-m-d\TH:i') : null,
       'phone'=> optional($order->client)->phone,
+      'vip_clients' => (bool) (optional($order->client)->vip_clients ?? false),
       'contact_email' => optional($order->client)->email,
       'created_by' => $order->user->name ?? null,
       'is_supply' => (bool) ($order->is_supply ?? false),

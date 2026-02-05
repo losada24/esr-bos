@@ -28,6 +28,7 @@ export interface Tasks {
   type_of_financing?: string | null
   order_type?: string | null
   bid_due_date?: string | null
+  vip_clients?: boolean
   order_company_contacts?: Array<{
     id: number
     company_name?: string | null
