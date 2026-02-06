@@ -60,6 +60,7 @@ class CompanyContactController extends Controller
             ContactSourceEnum::NEW_ORDER ->value,
             ContactSourceEnum::GOOGLE_ADS->value,
             ContactSourceEnum::SAME_AS_ORDER->value,
+            ContactSourceEnum::DIRECT_CALL->value,
           ],
         ] );
     }
@@ -109,6 +110,7 @@ class CompanyContactController extends Controller
             ContactSourceEnum::PICHY_BOYS->value,
             ContactSourceEnum::GOOGLE_ADS->value,
             ContactSourceEnum::SAME_AS_ORDER->value,
+            ContactSourceEnum::DIRECT_CALL->value,
           ],
           'companyContact' => $companyContact,
           'clientslist' => $companyContact->clients,
@@ -124,7 +126,12 @@ class CompanyContactController extends Controller
      */
     public function update(UpdateCompanyContactRequest $UpdateCompanyContactRequest, UpdateCompanyContact $updateCompanyContact, CompanyContact $companyContact)
     {
-        $updateCompanyContact->handle($UpdateCompanyContactRequest, $companyContact);
+        $result = $updateCompanyContact->handle($UpdateCompanyContactRequest, $companyContact);
+        if (is_array($result) && !empty($result['error'])) {
+            return redirect()
+                ->back()
+                ->with('error', $result['error']);
+        }
         if ($UpdateCompanyContactRequest->boolean('from_modal')) {
             return response()->json(['company' => $companyContact->fresh()]);
         }

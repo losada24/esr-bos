@@ -81,6 +81,7 @@ class SalesController extends Controller
             ContactSourceEnum::NEW_ORDER ->value,
             ContactSourceEnum::GOOGLE_ADS->value,
             ContactSourceEnum::SAME_AS_ORDER->value,
+            ContactSourceEnum::DIRECT_CALL->value,
     ];
 
     $order_types = [
@@ -705,6 +706,7 @@ class SalesController extends Controller
             ContactSourceEnum::NEW_ORDER ->value,
             ContactSourceEnum::GOOGLE_ADS->value,
             ContactSourceEnum::SAME_AS_ORDER->value,
+            ContactSourceEnum::DIRECT_CALL->value,
       ],
     ]);
   }

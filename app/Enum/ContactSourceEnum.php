@@ -22,6 +22,7 @@ enum ContactSourceEnum: string
     case YOUTUBE = 'YOUTUBE';
     case NEW_ORDER = 'NEW ORDER';
     case SAME_AS_ORDER = 'SAME AS ORDER';
+    case DIRECT_CALL = 'DIRECT CALL';
 
     
     
