@@ -166,6 +166,7 @@ class FrontdeskController extends Controller
             ContactSourceEnum::NEW_ORDER ->value,
             ContactSourceEnum::GOOGLE_ADS->value,
             ContactSourceEnum::SAME_AS_ORDER->value,
+            ContactSourceEnum::DIRECT_CALL->value,
     ];
 
     $order_types = [
@@ -344,6 +345,7 @@ class FrontdeskController extends Controller
             ContactSourceEnum::NEW_ORDER ->value,
             ContactSourceEnum::GOOGLE_ADS->value,
             ContactSourceEnum::SAME_AS_ORDER->value,
+            ContactSourceEnum::DIRECT_CALL->value,
       ],
        
       
@@ -376,6 +378,7 @@ class FrontdeskController extends Controller
           ContactSourceEnum::NEW_ORDER ->value,
           ContactSourceEnum::GOOGLE_ADS->value,
           ContactSourceEnum::SAME_AS_ORDER->value,
+          ContactSourceEnum::DIRECT_CALL->value,
       ],
       'frame_colors' => [
         FrameColorEnum::BLACK->value,
@@ -811,6 +814,7 @@ public function showQuantifiedModal(Order $order)
             ContactSourceEnum::NEW_ORDER ->value,
             ContactSourceEnum::GOOGLE_ADS->value,
             ContactSourceEnum::SAME_AS_ORDER->value,
+            ContactSourceEnum::DIRECT_CALL->value,
     ];
 
     $order_types = [
@@ -871,6 +875,7 @@ public function showQuantifiedModal(Order $order)
             ContactSourceEnum::NEW_ORDER ->value,
             ContactSourceEnum::GOOGLE_ADS->value,
             ContactSourceEnum::SAME_AS_ORDER->value,
+            ContactSourceEnum::DIRECT_CALL->value,
     ];
 
     $statusOptions = [
@@ -958,6 +963,7 @@ public function showQuantifiedModal(Order $order)
             ContactSourceEnum::NEW_ORDER ->value,
             ContactSourceEnum::GOOGLE_ADS->value,
             ContactSourceEnum::SAME_AS_ORDER->value,
+            ContactSourceEnum::DIRECT_CALL->value,
     ];
 
     $rules = [

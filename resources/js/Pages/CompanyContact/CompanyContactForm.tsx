@@ -10,6 +10,7 @@ import 'flatpickr/dist/flatpickr.css'
 import { type CompanyContact } from './CompanyContactCommon'
 import ClientModal from './ClientModal'
 import { type Client } from '@/Pages/Client/ClientCommon'
+import DeleteIcon from '@/Components/Icons/DeleteIcon'
 
 const CompanyContactForm = ({ submitCount, errors, isCreate, setFieldValue, values, clients, setClients, sources }: {
   submitCount: number
@@ -25,6 +26,14 @@ const CompanyContactForm = ({ submitCount, errors, isCreate, setFieldValue, valu
 
   const addClient = (client: Client) => {
     setClients([...clients, client])
+  }
+  const removeClient = (client: Client, index: number) => {
+    if (client.id) {
+      setClients(clients.filter((item) => item.id !== client.id))
+      return
+    }
+
+    setClients(clients.filter((_, itemIndex) => itemIndex !== index))
   }
   return (
     <Form className='space-y-5'>
@@ -149,6 +158,7 @@ const CompanyContactForm = ({ submitCount, errors, isCreate, setFieldValue, valu
                 <th className='px-4 py-2'>Client Name</th>
                 <th className='px-4 py-2'>Email</th>
                 <th className='px-4 py-2'>Phone</th>
+                <th className='px-4 py-2 text-right'>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -157,11 +167,22 @@ const CompanyContactForm = ({ submitCount, errors, isCreate, setFieldValue, valu
                   <td className='border px-4 py-2'>{client.name}</td>
                   <td className='border px-4 py-2'>{client.email}</td>
                   <td className='border px-4 py-2'>{client.phone}</td>
+                  <td className='border px-4 py-2 text-right'>
+                    <button
+                      type="button"
+                      className="text-white-dark hover:text-danger"
+                      aria-label={`Remove ${client.name}`}
+                      title={`Remove ${client.name}`}
+                      onClick={() => { removeClient(client, index) }}
+                    >
+                      <DeleteIcon />
+                    </button>
+                  </td>
                 </tr>
               ))}
               {clients.length === 0 && (
                 <tr>
-                  <td className='border px-4 py-2' colSpan={3}>No clients added yet.</td>
+                  <td className='border px-4 py-2' colSpan={4}>No clients added yet.</td>
                 </tr>
               )}
             </tbody>

@@ -15,6 +15,37 @@ class UpdateCompanyContact {
 
   public function handle(Request $request, CompanyContact $companyContact) {
 
+    if ($request->has('clients') && is_array($request->input('clients'))) {
+        $clientIdsFromRequest = collect($request->input('clients', []))
+                ->pluck('id')
+                ->filter()
+                ->map(fn($id) => (int) $id)
+                ->toArray();
+
+        $removedClientsQuery = Client::where('company_contact_id', $companyContact->id);
+        if (!empty($clientIdsFromRequest)) {
+            $removedClientsQuery->whereNotIn('id', $clientIdsFromRequest);
+        }
+
+        $removedClients = $removedClientsQuery->get();
+
+        foreach ($removedClients as $client) {
+            $order = $client->orders()->select('id', 'name', 'order_number')->first();
+
+            if (!$order) {
+                $commercialLink = $client->orderCompanyContacts()->with(['order:id,name,order_number'])->first();
+                $order = $commercialLink?->order;
+            }
+
+            if ($order) {
+                $orderLabel = $order->name ?: ($order->order_number ? "Order #{$order->order_number}" : "Order {$order->id}");
+                return [
+                    'error' => "The client {$client->name} cannot be unlinked because they are associated with order {$orderLabel}."
+                ];
+            }
+        }
+    }
+
     DB::transaction(function() use ($request, $companyContact) {
 
       if( !$companyContact )
@@ -51,9 +82,12 @@ class UpdateCompanyContact {
                 ->map(fn($id) => (int) $id)
                 ->toArray();
 
-        Client::where('company_contact_id', $companyContact->id)
-          ->whereNotIn('id', $clientIdsFromRequest)
-          ->update(['company_contact_id' => null]);
+        $removedClientsQuery = Client::where('company_contact_id', $companyContact->id);
+        if (!empty($clientIdsFromRequest)) {
+            $removedClientsQuery->whereNotIn('id', $clientIdsFromRequest);
+        }
+
+        $removedClientsQuery->update(['company_contact_id' => null]);
 
         // 4. Recorrer los clientes del request
         foreach ($request->input('clients', []) as $clientData) {
