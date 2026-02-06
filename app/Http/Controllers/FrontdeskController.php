@@ -432,22 +432,35 @@ class FrontdeskController extends Controller
     $validated = $request->validate([
       'status' => ['required', 'string'],
       'note' => ['nullable', 'string', 'max:4000'],
+      'invoice_number' => ['nullable', 'string', 'max:255'],
       'attachments' => ['nullable', 'array'],
       'attachments.*' => ['file', 'max:10240'],
     ]);
 
     $noteContent = trim((string) ($validated['note'] ?? ''));
+    $invoiceNumber = trim((string) ($validated['invoice_number'] ?? ''));
     $status = $validated['status'];
+    $finalStatus = $status === OrderStatusEnum::CLOSED_WON->value
+      ? OrderStatusEnum::ACCOUNT_RECEIPT->value
+      : $status;
+    $historyStatuses = $status === OrderStatusEnum::CLOSED_WON->value
+      ? [$status, $finalStatus]
+      : [$status];
 
-    DB::transaction(function () use ($order, $request, $status, $noteContent) {
-      $order->status = $status;
+    DB::transaction(function () use ($order, $request, $finalStatus, $historyStatuses, $noteContent, $invoiceNumber, $status) {
+      $order->status = $finalStatus;
+      if ($invoiceNumber !== '' && $status === OrderStatusEnum::REVIEW->value) {
+        $order->invoice_number = $invoiceNumber;
+      }
       $order->save();
 
-      $order->orderStatus()->create([
-        'status' => $status,
-        'user_id' => auth()->id(),
-        'notes' => "{$status} created by " . auth()->user()->name,
-      ]);
+      foreach ($historyStatuses as $historyStatus) {
+        $order->orderStatus()->create([
+          'status' => $historyStatus,
+          'user_id' => auth()->id(),
+          'notes' => "{$historyStatus} created by " . auth()->user()->name,
+        ]);
+      }
 
       if ($noteContent !== '') {
         $order->notes()->create([

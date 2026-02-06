@@ -121,6 +121,7 @@ export interface Order {
   amount_check?: boolean
   email_check?: boolean
   payment_schedule?: PaymentSchedule | null
+  invoice_number?: string | null
 }
 
 export type OrderFormValues = Order & {

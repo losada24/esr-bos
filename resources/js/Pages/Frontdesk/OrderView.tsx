@@ -29,7 +29,7 @@ import EditIcon from '@/Components/Icons/EditIcon'
 import MessageIcon from '@/Components/Icons/MessageIcon'
 import StarIcon from '@/Components/Icons/StarIcon'
 import PlusIcon from '@/Components/Icons/PlusIcon'
-import { isAccountManager, isAdmin, isFrontdeskAdmin, isFrontdeskEsr, isOwner, isOwnerAdmin } from '@/Utils/user'
+import { isAccountManager, isAccounting, isAdmin, isFrontdeskAdmin, isFrontdeskEsr, isOwner, isOwnerAdmin } from '@/Utils/user'
 import EstimateScheduleModal from '@/Pages/Sales/EstimateScheduleModal'
 import FollowUpModal from '@/Pages/Sales/FollowUpModal'
 import StandByNoteModal from '@/Pages/Sales/StandByNoteModal'
@@ -183,6 +183,24 @@ const ORDER_PROCESSING_STATUS_OPTIONS = [
   'CLOSED WON'
 ] as const
 
+const ORDER_STORAGE_STATUS_OPTIONS = [
+  'ACCOUNT RECEIPT',
+  'REVIEW',
+  'PLANNED',
+  'MATERIALS RECEIVED',
+  'CONFIRMED',
+  'EXECUTION',
+  'ON HOLD',
+  'SUPERVISION',
+  'INSPECTION',
+  'FINISH',
+  'FINAL INSPECTION',
+  'PENDING COLLECT',
+  'COMPLETE'
+] as const
+
+const ORDER_STORAGE_TRANSITION_STATUSES = ['ACCOUNT RECEIPT', 'REVIEW'] as const
+
 const REQUEST_RESCHEDULE_STATUS = 'REQUEST RE-SCHEDULE'
 const ESTIMATE_STATUS = 'ESTIMATE & APPT SCHEDULE'
 const FOLLOW_UP_STATUSES = ['FOLLOW UP', 'FOLLOW UP PROJECTS'] as const
@@ -243,6 +261,12 @@ const isSalesStatus = (value: string): boolean =>
 
 const isOrderProcessingStatus = (value: string): boolean =>
   ORDER_PROCESSING_STATUS_OPTIONS.some(status => matchesStatus(status, value))
+
+const isOrderStorageStatus = (value: string): boolean =>
+  ORDER_STORAGE_STATUS_OPTIONS.some(status => matchesStatus(status, value))
+
+const isOrderStorageTransitionStatus = (value: string): boolean =>
+  ORDER_STORAGE_TRANSITION_STATUSES.some(status => matchesStatus(status, value))
 
 const mergeOptionWithCurrent = (options: readonly string[] | null | undefined, current?: string | null): string[] => {
   const base = Array.isArray(options) ? Array.from(options) : []
@@ -439,7 +463,8 @@ export default function ShowStatusOrder ({
   const roleNames = Array.isArray(auth?.user?.roles)
     ? auth.user.roles.map((role: Role) => role.name)
     : []
-  const canManageSales = isAdmin(roleNames) || isAccountManager(roleNames) || isOwner(roleNames) || isOwnerAdmin(roleNames) || isFrontdeskAdmin(roleNames)
+  const canViewPipeline = isAdmin(roleNames) || isAccountManager(roleNames) || isOwner(roleNames) || isOwnerAdmin(roleNames) || isFrontdeskAdmin(roleNames) || isAccounting(roleNames)
+  const canEditPipeline = isAdmin(roleNames) || isAccountManager(roleNames) || isOwner(roleNames) || isOwnerAdmin(roleNames) || isFrontdeskAdmin(roleNames) || isAccounting(roleNames)
   const isFrontdeskEsrRole = isFrontdeskEsr(roleNames)
 
   const [scheduleModalOpen, setScheduleModalOpen] = useState(false)
@@ -529,6 +554,7 @@ export default function ShowStatusOrder ({
   const [statusChangeError, setStatusChangeError] = useState<string | null>(null)
   const [orderProcessingModalOpen, setOrderProcessingModalOpen] = useState(false)
   const [orderProcessingNote, setOrderProcessingNote] = useState('')
+  const [orderProcessingInvoiceNumber, setOrderProcessingInvoiceNumber] = useState('')
   const [orderProcessingAttachments, setOrderProcessingAttachments] = useState<File[]>([])
   const [orderProcessingError, setOrderProcessingError] = useState<string | null>(null)
   const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? ''
@@ -965,12 +991,20 @@ export default function ShowStatusOrder ({
   const isLostRequest = matchesStatus(actualStatusValue, 'LOST REQUEST')
   const orderInFrontdeskFlow = isFrontdeskStatus(actualStatusValue)
   const orderInSalesFlow = isSalesStatus(actualStatusValue)
+  const orderInOrderStorageFlow = isOrderStorageStatus(actualStatusValue)
+  const orderStorageTransitionsEnabled = orderInOrderStorageFlow && isOrderStorageTransitionStatus(actualStatusValue)
   const isAdminOrOwnerAdmin = isAdmin(roleNames) || isOwnerAdmin(roleNames)
   const pipelineStatuses = orderInFrontdeskFlow
     ? FRONTDESK_STATUS_OPTIONS
-    : (orderInSalesFlow ? SALES_STATUS_OPTIONS : ORDER_PROCESSING_STATUS_OPTIONS)
+    : (orderInSalesFlow ? SALES_STATUS_OPTIONS : (orderInOrderStorageFlow ? ORDER_STORAGE_STATUS_OPTIONS : ORDER_PROCESSING_STATUS_OPTIONS))
   const pipelineDropdownStatuses = useMemo(() => {
-    const base = Array.from(pipelineStatuses) as string[]
+    let base = Array.from(pipelineStatuses) as string[]
+
+    if (orderInOrderStorageFlow) {
+      base = orderStorageTransitionsEnabled
+        ? Array.from(ORDER_STORAGE_TRANSITION_STATUSES)
+        : (actualStatusValue ? [actualStatusValue] : [])
+    }
 
     if (orderInSalesFlow && isAdminOrOwnerAdmin) {
       for (const extraStatus of FRONTDESK_SALES_DROPDOWN_EXTRA_STATUSES) {
@@ -985,7 +1019,7 @@ export default function ShowStatusOrder ({
     }
 
     return base
-  }, [actualStatusValue, isAdminOrOwnerAdmin, orderInSalesFlow, pipelineStatuses])
+  }, [actualStatusValue, isAdminOrOwnerAdmin, orderInSalesFlow, orderInOrderStorageFlow, orderStorageTransitionsEnabled, pipelineStatuses])
   const pipelineStatusValue = mapStatusToPipeline(actualStatusValue)
   const calculatedStatusIndex = pipelineStatuses.findIndex(status => matchesStatus(status, pipelineStatusValue))
   const fallbackStatusIndex = pipelineStatuses.length > 0
@@ -994,7 +1028,10 @@ export default function ShowStatusOrder ({
   const currentStatusIndex = calculatedStatusIndex >= 0 ? calculatedStatusIndex : fallbackStatusIndex
   const pipelineTitle = orderInFrontdeskFlow
     ? 'Frontdesk Pipeline'
-    : (orderInSalesFlow ? 'Sales Pipeline' : 'Order Processing Pipeline')
+    : (orderInSalesFlow ? 'Sales Pipeline' : (orderInOrderStorageFlow ? 'Order Storage Pipeline' : 'Order Processing Pipeline'))
+  const pipelineHint = canEditPipeline
+    ? 'Click a stage to move the order and complete the required workflow.'
+    : 'View the workflow stages for this order.'
   const [statusPickerAnchor, setStatusPickerAnchor] = useState<{ status: string, element: HTMLButtonElement } | null>(null)
   const [statusPickerPosition, setStatusPickerPosition] = useState<{ left: number, top: number } | null>(null)
   const [statusSearch, setStatusSearch] = useState('')
@@ -1018,6 +1055,7 @@ export default function ShowStatusOrder ({
     setOrderProcessingModalOpen(false)
     setPendingOrderProcessingMove(null)
     setOrderProcessingNote('')
+    setOrderProcessingInvoiceNumber('')
     setOrderProcessingAttachments([])
     setOrderProcessingError(null)
   }, [])
@@ -1049,6 +1087,7 @@ export default function ShowStatusOrder ({
   type SimpleStatusChangeOptions = {
     note?: string
     attachments?: File[]
+    invoice_number?: string
     onError?: (message: string) => void
   }
 
@@ -1061,6 +1100,7 @@ export default function ShowStatusOrder ({
     try {
       const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? ''
       const noteContent = options?.note?.trim() ?? ''
+      const invoiceNumber = options?.invoice_number?.trim() ?? ''
       const attachments = options?.attachments ?? []
 
       const response = options
@@ -1076,6 +1116,9 @@ export default function ShowStatusOrder ({
             if (noteContent !== '') {
               formData.append('note', noteContent)
             }
+            if (invoiceNumber !== '') {
+              formData.append('invoice_number', invoiceNumber)
+            }
             attachments.forEach((file) => {
               formData.append('attachments[]', file)
             })
@@ -1089,7 +1132,7 @@ export default function ShowStatusOrder ({
             Accept: 'application/json',
             'X-CSRF-TOKEN': csrf
           },
-          body: JSON.stringify({ status: targetStatus })
+          body: JSON.stringify({ status: targetStatus, ...(invoiceNumber !== '' ? { invoice_number: invoiceNumber } : {}) })
         })
 
       const payload = await response.json().catch(() => null)
@@ -1122,9 +1165,12 @@ export default function ShowStatusOrder ({
     setOrderProcessingError(null)
     setStatusChangeError(null)
 
+    const shouldSendInvoice = matchesStatus(pendingOrderProcessingMove.newStatus, 'REVIEW')
+
     const success = await handleSimpleStatusChange(pendingOrderProcessingMove.newStatus, {
       note: orderProcessingNote,
       attachments: orderProcessingAttachments,
+      ...(shouldSendInvoice ? { invoice_number: orderProcessingInvoiceNumber } : {}),
       onError: (message) => { setOrderProcessingError(message) }
     })
 
@@ -1224,6 +1270,13 @@ export default function ShowStatusOrder ({
     if (normalizedTarget === normalizedCurrent) return
 
     setStatusChangeError(null)
+
+    if (orderInOrderStorageFlow) {
+      if (!isOrderStorageTransitionStatus(actualStatusValue) || !isOrderStorageTransitionStatus(targetStatus)) {
+        setStatusChangeError('Only ACCOUNT RECEIPT and REVIEW can be updated from this workflow.')
+        return
+      }
+    }
 
     if (orderInFrontdeskFlow && matchesStatus(targetStatus, 'REQUEST STAND BY')) {
       closeStatusPicker()
@@ -1336,6 +1389,7 @@ export default function ShowStatusOrder ({
     if (!orderInFrontdeskFlow && !orderInSalesFlow) {
       setPendingOrderProcessingMove({ oldStatus: actualStatusValue, newStatus: targetStatus })
       setOrderProcessingNote('')
+      setOrderProcessingInvoiceNumber(order.invoice_number ?? '')
       setOrderProcessingAttachments([])
       setOrderProcessingError(null)
       setOrderProcessingModalOpen(true)
@@ -2408,11 +2462,11 @@ export default function ShowStatusOrder ({
             </div>
           </div>
 
-          {canManageSales && (
+          {canViewPipeline && (
             <div className="panel space-y-4" data-sales-status-picker>
               <div>
                 <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">{pipelineTitle}</h2>
-                <p className="text-xs text-slate-500">Click a stage to move the order and complete the required workflow.</p>
+                <p className="text-xs text-slate-500">{pipelineHint}</p>
               </div>
 
               {statusChangeError && (
@@ -2426,6 +2480,9 @@ export default function ShowStatusOrder ({
                     const isCompleted = currentStatusIndex > index
                     const isCurrent = currentStatusIndex === index
                     const isOpen = statusPickerAnchor?.status === status
+                    const canOpenDropdown = canEditPipeline && (!orderInOrderStorageFlow
+                      || (orderStorageTransitionsEnabled && isOrderStorageTransitionStatus(status))
+                    )
                     return (
                       <div key={status} className="relative flex items-center gap-2">
                         <button
@@ -2441,6 +2498,7 @@ export default function ShowStatusOrder ({
                           onClick={(event) => {
                             event.stopPropagation()
                             if (statusChangeSaving) return
+                            if (!canOpenDropdown) return
                             const button = event.currentTarget as HTMLButtonElement
                             if (statusPickerAnchor?.status === status) {
                               closeStatusPicker()
@@ -2449,12 +2507,12 @@ export default function ShowStatusOrder ({
                             setStatusPickerAnchor({ status, element: button })
                             updateStatusPickerPosition(button)
                           }}
-                          disabled={statusChangeSaving}
+                          disabled={statusChangeSaving || !canOpenDropdown}
                           title={status}
                         >
                           {isCompleted && <span>✓</span>}
                           <span>{status}</span>
-                          <span className="text-xs">▾</span>
+                          {canOpenDropdown && <span className="text-xs">▾</span>}
                         </button>
                         {isOpen && statusPickerAnchor && statusPickerPosition && createPortal(
                           <div
@@ -3431,7 +3489,9 @@ export default function ShowStatusOrder ({
           <div key={pendingOrderProcessingMove.newStatus} className="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-2xl">
             <div className="mb-4 flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-slate-800">Order Processing Update</h3>
+                <h3 className="text-lg font-semibold text-slate-800">
+                  {isOrderStorageStatus(pendingOrderProcessingMove.newStatus) ? 'Order Storage Update' : 'Order Processing Update'}
+                </h3>
                 <p className="text-xs text-slate-500">
                   {pendingOrderProcessingMove.oldStatus || 'Current status'} → {pendingOrderProcessingMove.newStatus}
                 </p>
@@ -3464,6 +3524,22 @@ export default function ShowStatusOrder ({
                   disabled={statusChangeSaving}
                 />
               </div>
+              {matchesStatus(pendingOrderProcessingMove.newStatus, 'REVIEW') && (
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-slate-600" htmlFor="order-processing-invoice-number">
+                    Invoice Number
+                  </label>
+                  <input
+                    id="order-processing-invoice-number"
+                    type="text"
+                    className="form-input w-full placeholder:text-slate-400"
+                    value={orderProcessingInvoiceNumber}
+                    onChange={(event) => { setOrderProcessingInvoiceNumber(event.target.value) }}
+                    placeholder="Add invoice number (optional)"
+                    disabled={statusChangeSaving}
+                  />
+                </div>
+              )}
               <div>
                 <label className="mb-1 block text-sm font-medium text-slate-600" htmlFor="order-processing-attachments">
                   Attachments

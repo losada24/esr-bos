@@ -6,7 +6,8 @@ const MODULE_OPTIONS = [
   { value: 'all', label: 'All' },
   { value: 'frontdesk', label: 'Frontdesk' },
   { value: 'sales', label: 'Sales' },
-  { value: 'order_processing', label: 'Order Processing' }
+  { value: 'order_processing', label: 'Order Processing' },
+  { value: 'order_storage', label: 'Order Storage' }
 ] as const
 
 type ModuleValue = typeof MODULE_OPTIONS[number]['value']
