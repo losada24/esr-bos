@@ -148,6 +148,21 @@ class OrderSearchController extends Controller
                 OrderStatusEnum::FILE_REVIEW->value,
                 OrderStatusEnum::CLOSED_WON->value,
             ],
+            'order_storage' => [
+                OrderStatusEnum::ACCOUNT_RECEIPT->value,
+                OrderStatusEnum::REVIEW->value,
+                OrderStatusEnum::PLANNED->value,
+                OrderStatusEnum::MATERIALS_RECEIVED->value,
+                OrderStatusEnum::CONFIRMED->value,
+                OrderStatusEnum::EXECUTION->value,
+                OrderStatusEnum::ON_HOLD->value,
+                OrderStatusEnum::SUPERVISION->value,
+                OrderStatusEnum::INSPECTION->value,
+                OrderStatusEnum::FINISH->value,
+                OrderStatusEnum::FINAL_INSPECTION->value,
+                OrderStatusEnum::FINAL_COLLECT->value,
+                OrderStatusEnum::COMPLETE->value,
+            ],
         ];
     }
 

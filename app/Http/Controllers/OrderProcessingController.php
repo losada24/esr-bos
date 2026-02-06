@@ -181,7 +181,12 @@ class OrderProcessingController extends Controller
 
     private function closedWonOrdersQuery(?User $user): Builder
     {
-        $query = Order::query()->where('status', OrderStatusEnum::CLOSED_WON->value);
+        $query = Order::query()->where(function (Builder $query) {
+            $query->where('status', OrderStatusEnum::CLOSED_WON->value)
+                ->orWhereHas('orderStatus', function (Builder $statusQuery) {
+                    $statusQuery->where('status', OrderStatusEnum::CLOSED_WON->value);
+                });
+        });
 
         if ($this->isOwnerRestricted($user)) {
             $query->whereHas('owners', function ($query) use ($user) {

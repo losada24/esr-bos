@@ -190,6 +190,7 @@ export const THEME_CONFIG: ThemeConfig = {
 export const ROLES = {
   ADMIN: 'admin',
   ACCOUNT_MANAGER: 'account_manager',
+  ACCOUNTING: 'accounting',
   INSTALLER: 'installer',
   SUPERVISOR: 'supervisor',
   OWNER: 'owner',

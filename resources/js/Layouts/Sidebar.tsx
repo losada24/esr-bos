@@ -7,7 +7,7 @@ import ReferralIcon from '@/Components/Icons/ReferralIcon'
 import SidebarLinkLabel from '@/Components/SidebarLinkLabel'
 import DashboardIcon from '@/Components/Icons/DashboardIcon'
 import CompanyIcon from '@/Components/Icons/CompanyIcon'
-import { isAdmin, isAccountManager, isFrontdesk, isFrontdeskAdmin, isOwner, isSupervisor, isServiceManager, isInstaller, isPaymentCoordinator, isOwnerAdmin, isFrontdeskEsr } from '@/Utils/user'
+import { isAdmin, isAccountManager, isAccounting, isFrontdesk, isFrontdeskAdmin, isOwner, isSupervisor, isServiceManager, isInstaller, isPaymentCoordinator, isOwnerAdmin, isFrontdeskEsr } from '@/Utils/user'
 import { type Role, type Auth } from '@/types'
 import WindowsIcon from '@/Components/Icons/WindowsIcon'
 import PrintIcon from '@/Components/Icons/PrintIcon'
@@ -25,6 +25,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
 
   const IS_ADMIN = isAdmin(auth.user.roles.map((role: Role) => role.name))
   const IS_ACCOUNT_MANAGER = isAccountManager(auth.user.roles.map((role: Role) => role.name))
+  const IS_ACCOUNTING = isAccounting(auth.user.roles.map((role: Role) => role.name))
   const IS_FRONTDESK = isFrontdesk(auth.user.roles.map((role: Role) => role.name))
   const IS_FRONTDESK_ADMIN = isFrontdeskAdmin(auth.user.roles.map((role: Role) => role.name))
   const IS_OWNER = isOwner(auth.user.roles.map((role: Role) => role.name))
@@ -43,6 +44,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
   const CAN_VIEW_SUPERVISOR_ASSIGNED = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER
   const CAN_VIEW_DAILY_ORDER_STATUS = IS_ADMIN || IS_FRONTDESK_ADMIN || IS_OWNER_ADMIN
   const CAN_VIEW_MARKETING_REPORT = IS_ADMIN || IS_FRONTDESK_ADMIN || IS_OWNER_ADMIN
+  const CAN_VIEW_ORDER_STORAGE = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_ACCOUNTING
   const CAN_VIEW_REPORTS = CAN_VIEW_REPORT_SUPERVISOR
     || CAN_VIEW_REPORT_INSTALLER
     || CAN_VIEW_BIWEEKLY
@@ -169,7 +171,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                             </li>
                             </>
                            )}
-                           {(IS_ADMIN) && (
+                           {CAN_VIEW_ORDER_STORAGE && (
                                <>
                              <h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">
                                 <svg className="w-4 h-5 flex-none hidden" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
@@ -177,6 +179,14 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                 </svg>
                                 <span>Order Storage</span>
                             </h2>
+                            <li className="menu nav-item">
+                              <NavLink href={route('order-storage.index')} active={route().current('order-storage.index')} className="group">
+                                <div className="flex items-center">
+                                  <CodeIcon />
+                                  <SidebarLinkLabel>Order Storage Pipeline</SidebarLinkLabel>
+                                </div>
+                              </NavLink>
+                            </li>
                                </>
                            )}
                            <h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">

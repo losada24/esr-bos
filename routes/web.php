@@ -15,6 +15,7 @@ use App\Http\Controllers\FrontdeskController;
 use App\Http\Controllers\InstallationTeamController;
 use App\Http\Controllers\OrderNoteController;
 use App\Http\Controllers\OrderProcessingController;
+use App\Http\Controllers\OrderStorageController;
 use App\Http\Controllers\OrderSearchController;
 use App\Http\Controllers\PaymentScheduleController;
 use App\Http\Controllers\ReportController;
@@ -112,7 +113,7 @@ Route::middleware('auth')->group(function () {
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value .'|'. RoleEnum::SERVICE_MANAGER->value .'|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::FRONTDESK_ADMIN->value] );
 
     Route::get('orders/search', [OrderSearchController::class, 'index'])
-      ->middleware(["role:" . RoleEnum::ADMIN->value . '|' . RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::OWNER_ADMIN->value . '|' . RoleEnum::OWNER->value . '|' . RoleEnum::FRONTDESK_ADMIN->value . '|' . RoleEnum::FRONTDESK_ESR->value])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|' . RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::ACCOUNTING->value . '|' . RoleEnum::OWNER_ADMIN->value . '|' . RoleEnum::OWNER->value . '|' . RoleEnum::FRONTDESK_ADMIN->value . '|' . RoleEnum::FRONTDESK_ESR->value])
       ->name('order.search');
 
     Route::get('order/get_delivery_and_installation_date/{payment_factory_date}/{type_of_housing}/{county_id}/{service}/{hasPermit}', [OrderController::class, 'getDeliveryAndInstallationDate'])
@@ -269,6 +270,12 @@ Route::middleware('auth')->group(function () {
       Route::get('order-processing/tasks', [OrderProcessingController::class, 'tasks'])
         ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::OWNER->value . '|'. RoleEnum::FRONTDESK_ADMIN->value])
         ->name('order-processing.tasks');
+      Route::get('order-storage', [OrderStorageController::class, 'index'])
+        ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::ACCOUNTING->value])
+        ->name('order-storage.index');
+      Route::get('order-storage/tasks', [OrderStorageController::class, 'tasks'])
+        ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::ACCOUNTING->value])
+        ->name('order-storage.tasks');
 
       Route::get('/frontdesk/orders/{order}/sale-form', [FrontdeskController::class, 'saleFormPdf'])
         ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::OWNER->value. '|'. RoleEnum::FRONTDESK_ADMIN->value  ])
@@ -456,7 +463,7 @@ Route::middleware('auth')->group(function () {
     ->name('report.supervisor-assigned-summary-excel');
 
     Route::post('/frontdesk/{order}/update-status', [FrontdeskController::class, 'updateStatus'])
-     ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::SERVICE_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value. '|'. RoleEnum::OWNER->value . '|'. RoleEnum::FRONTDESK_ADMIN->value]  )
+     ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::ACCOUNTING->value . '|'. RoleEnum::SERVICE_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value. '|'. RoleEnum::OWNER->value . '|'. RoleEnum::FRONTDESK_ADMIN->value]  )
     ->name('frontdesk.updateStatus');
 
     Route::post('/frontdesk/{order}/update-status-standby', [FrontdeskController::class, 'updateStatusStandBy'])
@@ -485,7 +492,7 @@ Route::middleware('auth')->group(function () {
 
     
       Route::get('/frontdesk/order_view/{id}', [FrontdeskController::class, 'orderView'])
-      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::OWNER->value . '|'. RoleEnum::FRONTDESK_ADMIN->value. '|'. RoleEnum::FRONTDESK_ESR->value ])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::ACCOUNTING->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::OWNER->value . '|'. RoleEnum::FRONTDESK_ADMIN->value. '|'. RoleEnum::FRONTDESK_ESR->value ])
       ->name('frontdesk.order_view');
 
        Route::put('/frontdesk/orders/{order}/contact', [FrontdeskController::class, 'updateOrderContact'])
