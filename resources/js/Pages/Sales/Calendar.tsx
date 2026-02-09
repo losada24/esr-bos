@@ -107,23 +107,64 @@ export default function SalesCalendar ({ auth, owners, legend }: SalesCalendarPr
     const appointmentTime: string = originalEvent.appointment_time ?? ''
     const clientName: string = originalEvent.client_name ?? ''
     const city: string = originalEvent.city ?? ''
+    const jobAddress: string = originalEvent.job_address ?? ''
+    const jobCity: string = originalEvent.job_city ?? ''
+    const jobState: string = originalEvent.job_state ?? ''
+    const jobZip: string = originalEvent.job_zip ?? ''
     const ownerNames: string = originalEvent.owner_names ?? ''
     const ownerLabel = ownerNames.includes(',') ? 'Owners' : 'Owner'
     const isWeekView = viewMode === 'week'
-    const titleLine = isWeekView ? [orderName, city].filter(Boolean).join(' • ') : orderName
-    const detailLine = [
-      appointmentTime,
-      ownerNames ? `${ownerLabel}: ${ownerNames}` : '',
-      clientName ? `Client: ${clientName}` : '',
-      !isWeekView && city ? `City: ${city}` : ''
-    ].filter(Boolean).join(' • ')
-    const titleText = [orderName, city, appointmentTime, ownerNames && `${ownerLabel}: ${ownerNames}`, clientName && `Client: ${clientName}`].filter(Boolean).join(' • ')
+    const isDayView = viewMode === 'day'
+    const isDayOrWeek = isDayView || isWeekView
+    const addressCity = jobCity || city
+    const addressParts = jobAddress ? [jobAddress, addressCity, jobState, jobZip].filter(Boolean) : []
+    const addressText = addressParts.join(', ')
+    const mapsUrl = addressText
+      ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addressText)}`
+      : ''
+    const titleLine = isDayOrWeek ? orderName : [orderName, city].filter(Boolean).join(' • ')
+    const detailItems: Array<React.ReactNode> = []
+
+    if (isDayOrWeek) {
+      if (appointmentTime) detailItems.push(appointmentTime)
+      if (ownerNames) detailItems.push(`${ownerLabel}: ${ownerNames}`)
+      if (addressText) {
+        detailItems.push(
+          <a
+            key="address"
+            href={mapsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 underline"
+            onClick={(event) => event.stopPropagation()}
+          >
+            {addressText}
+          </a>
+        )
+      }
+    } else {
+      if (appointmentTime) detailItems.push(appointmentTime)
+      if (ownerNames) detailItems.push(`${ownerLabel}: ${ownerNames}`)
+      if (clientName) detailItems.push(`Client: ${clientName}`)
+      if (!isWeekView && city) detailItems.push(`City: ${city}`)
+    }
+
+    const titleText = isDayOrWeek
+      ? [orderName, ownerNames && `${ownerLabel}: ${ownerNames}`, addressText].filter(Boolean).join(' • ')
+      : [orderName, city, appointmentTime, ownerNames && `${ownerLabel}: ${ownerNames}`, clientName && `Client: ${clientName}`].filter(Boolean).join(' • ')
 
     return (
       <div className="sales-calendar-event flex min-w-0 flex-col gap-[2px] leading-tight" title={titleText}>
         <span className="sales-calendar-event-title text-[11px] font-semibold">{titleLine}</span>
-        {detailLine && (
-          <span className="sales-calendar-event-detail text-[10px] text-gray-700 dark:text-gray-200">{detailLine}</span>
+        {detailItems.length > 0 && (
+          <span className="sales-calendar-event-detail text-[10px] text-gray-700 dark:text-gray-200">
+            {detailItems.map((item, index) => (
+              <span key={index}>
+                {item}
+                {index < detailItems.length - 1 ? ' • ' : ''}
+              </span>
+            ))}
+          </span>
         )}
       </div>
     )
@@ -132,7 +173,7 @@ export default function SalesCalendar ({ auth, owners, legend }: SalesCalendarPr
   return (
     <AuthenticatedCalendarLayout auth={auth}>
       <Head title="Sales Calendar" />
-      <div className={`sales-calendar w-full h-[90vh] flex flex-col overflow-y-auto ${viewMode === 'week' ? 'sales-calendar-week' : ''}`}>
+      <div className={`sales-calendar w-full h-[90vh] flex flex-col overflow-y-auto ${viewMode === 'week' ? 'sales-calendar-week' : ''} ${viewMode === 'day' ? 'sales-calendar-day' : ''}`}>
         <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
           <div className="flex flex-wrap items-center gap-4">
             <label className="flex items-center gap-2">
