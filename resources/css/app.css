@@ -747,3 +747,23 @@ pre.hljs {
 .sales-calendar-week .mbsc-schedule-grid {
   min-width: 1400px;
 }
+
+/* Sales calendar day view: hide schedule event time range */
+.sales-calendar-day .mbsc-event-time {
+  display: none !important;
+  width: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.sales-calendar-day .mbsc-event-time * {
+  display: none !important;
+}
+
+.sales-calendar-day .mbsc-schedule-event-range {
+  display: none !important;
+}
+
+.sales-calendar-week .mbsc-schedule-event-range {
+  display: none !important;
+}

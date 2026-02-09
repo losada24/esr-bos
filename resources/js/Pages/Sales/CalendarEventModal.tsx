@@ -12,6 +12,11 @@ interface CalendarEventDetails {
   is_supply?: boolean
   vip_client?: boolean
   company_name?: string
+  job_address?: string
+  job_city?: string
+  job_state?: string
+  job_zip?: string
+  city?: string
 }
 
 interface CalendarEventModalProps {
@@ -25,6 +30,27 @@ const CalendarEventModal = ({ show, onClose, event }: CalendarEventModalProps) =
   const isCommercial = normalizedOrderType === 'COMMERCIAL'
   const isSupply = normalizedOrderType === 'SUPPLY' || !!event?.is_supply
   const isVip = !!event?.vip_client
+  const addressCity = event?.job_city ?? event?.city ?? ''
+  const hasAddress = !!event?.job_address
+  const addressParts = hasAddress
+    ? [event?.job_address, addressCity, event?.job_state, event?.job_zip].filter(Boolean)
+    : []
+  const addressText = addressParts.join(', ')
+  const mapsUrl = addressText
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addressText)}`
+    : ''
+  const addressValue = addressText
+    ? (
+        <a
+          href={mapsUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-600 underline"
+        >
+          {addressText}
+        </a>
+      )
+    : null
 
   const rows = [
     { label: 'Order Name', value: event?.order_name },
@@ -32,6 +58,7 @@ const CalendarEventModal = ({ show, onClose, event }: CalendarEventModalProps) =
     { label: 'Appointment Time', value: event?.appointment_time },
     { label: 'Owner', value: event?.owner_names },
     { label: 'Client Name', value: event?.client_name },
+    { label: 'Address', value: addressValue },
     { label: 'Client Phone', value: event?.client_phone },
     { label: 'Client Email', value: event?.client_email },
     ...(isCommercial ? [{ label: 'Company Name', value: event?.company_name }] : []),

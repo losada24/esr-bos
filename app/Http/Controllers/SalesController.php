@@ -496,6 +496,10 @@ class SalesController extends Controller
         'vip_client' => (bool) ($client?->vip_clients ?? false),
         'company_name' => $companyName,
         'city' => $order->city ?? '',
+        'job_address' => $order->job_address ?? '',
+        'job_city' => $order->job_city ?? '',
+        'job_state' => $order->job_state ?? '',
+        'job_zip' => $order->job_zip ?? '',
         'secondary_label' => $secondaryLine,
       ];
     });
