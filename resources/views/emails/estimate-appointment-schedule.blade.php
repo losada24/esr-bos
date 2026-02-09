@@ -11,7 +11,10 @@
 
     if ($appointmentStart && $appointmentEnd) {
         $eventTitle = 'Estimate appointment - ' . ($order->order_number ?? $order->name);
-        $details = 'Order: ' . ($order->order_number ?? $order->name);
+        $clientPhone = $order->client?->phone;
+        $clientPhoneLabel = $clientPhone ?: 'No phone';
+        $details = 'Order: ' . ($order->order_number ?? $order->name)
+            . "\n" . 'Client phone: ' . $clientPhoneLabel;
         $location = trim(implode(', ', array_filter([
             $order->job_address,
             $order->job_city,
