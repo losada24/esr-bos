@@ -29,6 +29,7 @@ class Order extends Model
 
   protected $fillable = [
     'order_number',
+    'invoice_number',
     'name',
     'job_address',
     'job_city',
@@ -145,22 +146,7 @@ class Order extends Model
 
   public function getNotesAttribute($value)
   {
-    if (!empty($value)) {
-      return $value;
-    }
-
-    if (!$this->exists) {
-      return $value;
-    }
-
-    if ($this->relationLoaded('notes')) {
-      $note = $this->getRelation('notes')->sortByDesc('created_at')->first();
-      return $note?->content ?? $value;
-    }
-
-    $latestNote = $this->notes()->latest()->first();
-
-    return $latestNote?->content ?? $value;
+    return $value;
   }
 
   public function scopeFilter($query, array $filters)
@@ -399,6 +385,16 @@ class Order extends Model
   public function paymentSchedule(): HasOne
   {
     return $this->hasOne(PaymentSchedule::class);
+  }
+
+  public function orderPayments(): HasMany
+  {
+    return $this->hasMany(OrderPayment::class);
+  }
+
+  public function changeOrderPayment(): HasOne
+  {
+    return $this->hasOne(OrderPayment::class)->where('type', 'CHANGE_ORDER');
   }
 
   public function permit(): HasOne

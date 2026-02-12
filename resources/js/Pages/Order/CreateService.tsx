@@ -18,13 +18,15 @@ import {
   type DurationOfWork,
   type InstallationTeam
 } from '@/types'
-import { SERVICES } from '@/Utils/constants'
+import { PAYMENT_METHODS, SERVICES } from '@/Utils/constants'
 
 export default function CreateService ({
   auth,
   supervisors,
   methods_of_payment,
   services,
+  payment_schedule_types,
+  payment_schedule_templates,
   travel_costs,
   status,
   type_of_products,
@@ -41,6 +43,8 @@ export default function CreateService ({
   supervisors: Array<{ id: number, name: string }>
   methods_of_payment: string[]
   services: string[]
+  payment_schedule_types: string[]
+  payment_schedule_templates: Record<string, { label: string, percentage: number }[]>
   travel_costs: TravelCost[]
   status: string[]
   type_of_products: TypeOfProduct[]
@@ -98,6 +102,7 @@ export default function CreateService ({
       }),
       status: values.status,
       method_of_payment: values.method_of_payment,
+      payment_schedule_type: values.method_of_payment === PAYMENT_METHODS.CASH ? values.payment_schedule_type : null,
       type_of_financing: values.type_of_financing ? values.type_of_financing : null,
       service: values.service ?? resolvedService,
       contact_type: 'RESIDENTIAL CONTACT',
@@ -150,6 +155,8 @@ export default function CreateService ({
             supervisors={supervisors}
             methods_of_payment={methods_of_payment}
             services={services.length > 0 ? services : [resolvedService]}
+            payment_schedule_types={payment_schedule_types}
+            payment_schedule_templates={payment_schedule_templates}
             travel_costs={travel_costs}
             status={status}
             setFieldValue={setFieldValue}

@@ -717,6 +717,7 @@ public function showQuantifiedModal(Order $order)
       'attachments.user',
       'orderStatus.user',
       'paymentSchedule.installments.paidBy',
+      'changeOrderPayment.paidBy',
       'orderCompanyContacts.companyContact',
       'orderCompanyContacts.client',
       'orderCompanyContacts.source'

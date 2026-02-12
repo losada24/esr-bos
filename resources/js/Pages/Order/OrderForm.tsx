@@ -26,7 +26,6 @@ import {
 } from '@/types'
 import Select, { type SingleValue } from 'react-select'
 import { getOrderProducts, getValueIdNotNull, type OrderFormValues } from './OrderCommon'
-import SearchIcon from '@/Components/Icons/SearchIcon'
 import ProductModal from './ProductModal'
 import ProductTable from './ProductTable'
 import DeleteIcon from '@/Components/Icons/DeleteIcon'
@@ -35,6 +34,19 @@ import { capitalizeWords } from '@/Utils/string'
 import { getProductExtraWorkPrice, getProductPrice, getProductPriceWithExtraWorks } from '@/Utils/price'
 import { type OrderColor } from '@/types/interfaces/order'
 import OrderNotesForOrder from '@/Components/OrderNotesForOrder'
+
+type ClientSearchResult = {
+  id: number
+  name: string
+  phone: string
+  email?: string | null
+  vip_clients?: boolean | number
+  vip_notes?: string | null
+  company_contact?: { id: number, name: string } | null
+}
+
+type PaymentScheduleTemplateItem = { label: string, percentage: number }
+type PaymentScheduleTemplates = Record<string, PaymentScheduleTemplateItem[]>
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
 const GOOGLE_MAPS_LIBRARIES: Library[] = ['places']
@@ -88,6 +100,9 @@ const OrderForm = ({
   supervisors,
   methods_of_payment,
   services,
+  order_types,
+  payment_schedule_types,
+  payment_schedule_templates,
   travel_costs,
   duration_of_works,
   products_config,
@@ -117,6 +132,9 @@ const OrderForm = ({
   supervisors: User[]
   methods_of_payment: string[]
   services: string[]
+  order_types: string[]
+  payment_schedule_types: string[]
+  payment_schedule_templates?: PaymentScheduleTemplates
   travel_costs: TravelCost[]
   duration_of_works: DurationOfWork[]
   products_config: ProductConfig[]
@@ -250,6 +268,21 @@ const OrderForm = ({
   const [isCreated] = useState<boolean>(true)
   const [showProductModal, setShowProductModal] = useState<boolean>(false)
   const [attachmentsArray, setAttachmentsList] = useState<Attachment[]>(attachments ?? [])
+  const [clientSearchTerm, setClientSearchTerm] = useState<string>('')
+  const [clientSearchResults, setClientSearchResults] = useState<ClientSearchResult[]>([])
+  const [clientSearchLoading, setClientSearchLoading] = useState<boolean>(false)
+  const [clientSearchError, setClientSearchError] = useState<string>('')
+  const [selectedClientId, setSelectedClientId] = useState<number | null>(
+    isCreate && Number(values.client_id) > 0 ? Number(values.client_id) : null
+  )
+  const isClientLocked = isCreate && selectedClientId !== null
+  const suppressNextSearchRef = useRef<boolean>(false)
+  const suppressNextPhoneSearchRef = useRef<boolean>(false)
+  const [phoneSearchTerm, setPhoneSearchTerm] = useState<string>(values.phone ?? '')
+  const [phoneSearchResults, setPhoneSearchResults] = useState<ClientSearchResult[]>([])
+  const [phoneSearchLoading, setPhoneSearchLoading] = useState<boolean>(false)
+  const [phoneSearchError, setPhoneSearchError] = useState<string>('')
+  const [phoneExists, setPhoneExists] = useState<boolean>(false)
   const removeAttachmentProduct = (index: number) => {
     if (confirm('Are you sure you want to delete this attachment?')) {
       router.delete(route('order.drop_attachment', { id: attachmentsArray[index].id }), {
@@ -266,6 +299,168 @@ const OrderForm = ({
     console.log('updateOrderProduct', index)
   }
   // console.log(values)
+
+  const runClientSearch = async (term: string) => {
+    const normalized = term.trim()
+    if (normalized.length < 2) {
+      setClientSearchError('Enter at least 2 characters.')
+      setClientSearchResults([])
+      return
+    }
+
+    setClientSearchError('')
+    setClientSearchLoading(true)
+
+    try {
+      const response = await fetch(`${route('client.search')}?q=${encodeURIComponent(normalized)}`)
+      if (!response.ok) {
+        throw new Error('Search failed')
+      }
+      const data = await response.json()
+      setClientSearchResults(Array.isArray(data.data) ? data.data : [])
+    } catch (error) {
+      setClientSearchError('Search failed. Try again.')
+      setClientSearchResults([])
+    } finally {
+      setClientSearchLoading(false)
+    }
+  }
+
+  const runPhoneSearch = async (term: string) => {
+    const digits = term.replace(/\D/g, '')
+    if (digits.length < 7) {
+      setPhoneSearchResults([])
+      setPhoneSearchError('')
+      return
+    }
+
+    setPhoneSearchError('')
+    setPhoneSearchLoading(true)
+
+    try {
+      const response = await fetch(`${route('client.search')}?q=${encodeURIComponent(digits)}`)
+      if (!response.ok) {
+        throw new Error('Search failed')
+      }
+      const data = await response.json()
+      setPhoneSearchResults(Array.isArray(data.data) ? data.data : [])
+    } catch (error) {
+      setPhoneSearchError('Search failed. Try again.')
+      setPhoneSearchResults([])
+    } finally {
+      setPhoneSearchLoading(false)
+    }
+  }
+
+  const checkPhoneExists = async (term: string) => {
+    const digits = term.replace(/\D/g, '')
+    if (digits.length !== 10) {
+      setPhoneExists(false)
+      return
+    }
+
+    try {
+      const response = await fetch(`${route('client.phone_exists')}?phone=${encodeURIComponent(digits)}`)
+      if (!response.ok) {
+        return
+      }
+      const data = await response.json()
+      setPhoneExists(Boolean(data.exists))
+    } catch (error) {
+      // ignore
+    }
+  }
+
+  useEffect(() => {
+    if (!isCreate || isClientLocked) {
+      setClientSearchResults([])
+      setClientSearchError('')
+      return
+    }
+    if (suppressNextSearchRef.current) {
+      suppressNextSearchRef.current = false
+      return
+    }
+    const term = clientSearchTerm.trim()
+    if (term.length < 2) {
+      setClientSearchResults([])
+      setClientSearchError('')
+      return
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      runClientSearch(term)
+    }, 300)
+
+    return () => {
+      window.clearTimeout(timeoutId)
+    }
+  }, [clientSearchTerm, isCreate, isClientLocked])
+
+  useEffect(() => {
+    if (!isCreate || isClientLocked) {
+      setPhoneSearchResults([])
+      setPhoneSearchError('')
+      setPhoneExists(false)
+      return
+    }
+    if (suppressNextPhoneSearchRef.current) {
+      suppressNextPhoneSearchRef.current = false
+      return
+    }
+    const term = phoneSearchTerm.trim()
+    if (term.length === 0) {
+      setPhoneSearchResults([])
+      setPhoneSearchError('')
+      setPhoneExists(false)
+      return
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      runPhoneSearch(term)
+      checkPhoneExists(term)
+    }, 300)
+
+    return () => {
+      window.clearTimeout(timeoutId)
+    }
+  }, [phoneSearchTerm, isCreate, isClientLocked])
+
+  const handleSelectClient = (client: ClientSearchResult) => {
+    suppressNextSearchRef.current = true
+    suppressNextPhoneSearchRef.current = true
+    setSelectedClientId(client.id)
+    setFieldValue('client_id', client.id)
+    setFieldValue('client_name', client.name ?? '')
+    setFieldValue('phone', client.phone ?? '')
+    setFieldValue('email', client.email ?? '')
+    setFieldValue('vip_clients', !!client.vip_clients)
+    setFieldValue('vip_notes', client.vip_notes ?? '')
+    setFieldValue('client_company_name', client.company_contact?.name ?? '')
+    setClientSearchResults([])
+    setClientSearchTerm(client.name ?? '')
+    setPhoneSearchResults([])
+    setPhoneSearchTerm(client.phone ?? '')
+    setPhoneExists(false)
+  }
+
+  const clearSelectedClient = () => {
+    setSelectedClientId(null)
+    setFieldValue('client_id', 0)
+    setFieldValue('client_name', '')
+    setFieldValue('phone', '')
+    setFieldValue('email', '')
+    setFieldValue('vip_clients', false)
+    setFieldValue('vip_notes', '')
+    setFieldValue('client_company_name', '')
+    setClientSearchResults([])
+    setClientSearchTerm('')
+    setClientSearchError('')
+    setPhoneSearchResults([])
+    setPhoneSearchTerm('')
+    setPhoneSearchError('')
+    setPhoneExists(false)
+  }
 
   const addOrderProduct = (orderProduct: OrderProduct) => {
     const orderProductsList = [...orderProducts, orderProduct]
@@ -345,37 +540,112 @@ const OrderForm = ({
     label: duration_of_works.find((duration_of_work) => duration_of_work.id === values.duration_of_work_id)?.name ?? ''
   }
 
+  const formatCurrency = (value?: number | string | null) => {
+    const numeric = typeof value === 'number' ? value : Number(value)
+    if (!Number.isFinite(numeric)) return '--'
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(numeric)
+  }
+
+  const scheduleTemplates = payment_schedule_templates ?? {}
+  const selectedScheduleItems = values.payment_schedule_type
+    ? (scheduleTemplates[values.payment_schedule_type] ?? [])
+    : []
+  const projectAmountValue = Number(String(values.project_amount ?? '').replace(/,/g, ''))
+  const hasProjectAmount = Number.isFinite(projectAmountValue) && projectAmountValue > 0
+  const buildSchedulePreview = (items: PaymentScheduleTemplateItem[]) => {
+    if (!items.length) return []
+    if (!hasProjectAmount) {
+      return items.map((item) => ({ ...item, amount: null }))
+    }
+    let runningTotal = 0
+    return items.map((item, index) => {
+      const amount = index === items.length - 1
+        ? Math.round((projectAmountValue - runningTotal) * 100) / 100
+        : Math.round((projectAmountValue * (item.percentage / 100)) * 100) / 100
+      runningTotal += amount
+      return { ...item, amount }
+    })
+  }
+  const schedulePreviewItems = buildSchedulePreview(selectedScheduleItems)
+  const shouldShowSchedulePreview = isCreate
+    && values.method_of_payment === PAYMENT_METHODS.CASH
+    && values.payment_schedule_type
+
   //console.log('selectedStatus', selectedStatus)
   return (
     <>
       <Form className='space-y-5'>
+        {Number(values.is_supply) === 1 && (
+          <div className="px-3 py-2 rounded-lg border border-emerald-300 bg-emerald-50 text-emerald-800 font-semibold tracking-wide">
+            SUPPLY
+          </div>
+        )}
         <fieldset className='p-3 border rounded-xl'>
           <legend className='text-lg font-semibold px-3'>Client Information</legend>
           <div className='grid gap-4 grid-cols-3'>
-            <div className={submitCount ? (errors.last_name) ? 'has-error' : 'has-success' : ''}>
+            <div className={`${submitCount ? (errors.last_name) ? 'has-error' : 'has-success' : ''} relative`}>
               <label htmlFor="last_name">Name</label>
               <div className='flex'>
                 <Field
                   id="client_name"
                   name="client_name"
-                  className="form-input rounded-r-none"
+                  className="form-input"
                   autoComplete="client_name"
                   placeholder='Name'
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                     const formattedValue = capitalizeWords(e.target.value)
                     setFieldValue('client_name', formattedValue)
+                    if (isCreate && !isClientLocked) {
+                      setClientSearchTerm(formattedValue)
+                    }
                   }}
+                  readOnly={isClientLocked}
                 />
-                <button onClick={(e) => {
-                  e.preventDefault()
-                  alert('search from bigin')
-                }} className="bg-[#eee] flex justify-center items-center ltr:rounded-r-md rtl:rounded-l-md px-3 font-semibold border ltr:border-l-0 rtl:border-r-0 border-[#e0e6ed] dark:border-[#17263c] dark:bg-[#1b2e4b]">
-                  <SearchIcon className="text-[#eee]" />
-                </button>
+                {isCreate && isClientLocked && (
+                  <button
+                    type="button"
+                    className="ml-2 px-2 text-[#5c6370] hover:text-[#111]"
+                    onClick={clearSelectedClient}
+                    aria-label="Clear client"
+                  >
+                    ×
+                  </button>
+                )}
               </div>
+              {isCreate && !isClientLocked && (
+                <div className="text-xs text-[#5c6370] mt-1">Type to search by name or phone.</div>
+              )}
               {(submitCount && errors.client_name) ? <InputError message={errors.client_name} className="mt-2" /> : ''}
+              {isCreate && !isClientLocked && clientSearchError && (
+                <div className="text-danger text-sm mt-1">{clientSearchError}</div>
+              )}
+              {isCreate && !isClientLocked && clientSearchLoading && (
+                <div className="text-sm mt-1">Searching...</div>
+              )}
+              {isCreate && !isClientLocked && clientSearchResults.length > 0 && (
+                <div className="absolute z-50 mt-2 w-full border border-[#e0e6ed] rounded-md divide-y bg-white shadow-lg dark:border-[#17263c] dark:bg-[#1b2e4b]">
+                  {clientSearchResults.map((client) => (
+                    <button
+                      key={client.id}
+                      type="button"
+                      className="w-full text-left px-3 py-2 hover:bg-[#f5f7fb]"
+                      onClick={() => { handleSelectClient(client) }}
+                    >
+                      <div className="font-semibold">{client.name}</div>
+                      <div className="text-xs text-[#5c6370]">
+                        {client.phone}
+                        {client.email ? ` • ${client.email}` : ''}
+                        {client.vip_clients ? ' • VIP' : ''}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+              {isCreate && isClientLocked && (
+                <div className="text-xs text-[#5c6370] mt-1">Client selected. Fields locked.</div>
+              )}
             </div>
-            <div className={submitCount ? (errors.phone) ? 'has-error' : 'has-success' : ''}>
+            <div className={`${submitCount ? (errors.phone) ? 'has-error' : 'has-success' : ''} relative`}>
               <label htmlFor="phone">Phone</label>
               <Field
                 id="phone"
@@ -383,8 +653,43 @@ const OrderForm = ({
                 className="form-input"
                 autoComplete="phone"
                 placeholder='Phone'
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                  setFieldValue('phone', e.target.value)
+                  if (isCreate && !isClientLocked) {
+                    setPhoneSearchTerm(e.target.value)
+                  }
+                }}
+                readOnly={isClientLocked}
               />
               {(submitCount && errors.phone) ? <InputError message={errors.phone} className="mt-2" /> : ''}
+              {isCreate && !isClientLocked && phoneExists && (
+                <div className="text-danger text-sm mt-1">Phone already exists. Select a client from the list.</div>
+              )}
+              {isCreate && !isClientLocked && phoneSearchError && (
+                <div className="text-danger text-sm mt-1">{phoneSearchError}</div>
+              )}
+              {isCreate && !isClientLocked && phoneSearchLoading && (
+                <div className="text-sm mt-1">Searching...</div>
+              )}
+              {isCreate && !isClientLocked && phoneSearchResults.length > 0 && (
+                <div className="absolute z-50 mt-2 w-full border border-[#e0e6ed] rounded-md divide-y bg-white shadow-lg dark:border-[#17263c] dark:bg-[#1b2e4b]">
+                  {phoneSearchResults.map((client) => (
+                    <button
+                      key={client.id}
+                      type="button"
+                      className="w-full text-left px-3 py-2 hover:bg-[#f5f7fb]"
+                      onClick={() => { handleSelectClient(client) }}
+                    >
+                      <div className="font-semibold">{client.name}</div>
+                      <div className="text-xs text-[#5c6370]">
+                        {client.phone}
+                        {client.email ? ` • ${client.email}` : ''}
+                        {client.vip_clients ? ' • VIP' : ''}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
             <div className={submitCount ? (errors.email) ? 'has-error' : 'has-success' : ''}>
               <label htmlFor="email">Email</label>
@@ -394,9 +699,21 @@ const OrderForm = ({
                 className="form-input"
                 autoComplete="email"
                 placeholder='Email'
+                readOnly={isClientLocked}
               />
               {(submitCount && errors.email) ? <InputError message={errors.email} className="mt-2" /> : ''}
             </div>
+            {values.order_type === 'COMMERCIAL' && (
+              <div className='col-span-3'>
+                <label htmlFor="client_company_name">Company</label>
+                <div
+                  id="client_company_name"
+                  className="form-input bg-[#f5f7fb] text-[#5c6370]"
+                >
+                  {values.client_company_name?.trim() || '—'}
+                </div>
+              </div>
+            )}
                 <div className='flex mt-8'>
                   <Field
                     id="vip_clients"
@@ -409,6 +726,7 @@ const OrderForm = ({
                         setFieldValue('vip_notes', ' ')
                       }
                     }}
+                    disabled={isClientLocked}
                   />
                   <label htmlFor="vip_clients" className='font-bold inline-flex'>VIP</label>
                 </div>
@@ -434,6 +752,7 @@ const OrderForm = ({
                 rows="3"
                 className="form-textarea resize-none placeholder:text-white-dark"
                 placeholder='Notes'
+                readOnly={isClientLocked}
               />
             </div>
             )}
@@ -456,6 +775,28 @@ const OrderForm = ({
                 </span>
               </div>
           <div className='grid gap-4 grid-cols-4'>
+            <div className={submitCount ? (errors.order_type) ? 'has-error' : 'has-success' : ''}>
+              <label htmlFor="order_type">Order Type</label>
+              <Field
+                id="order_type"
+                name="order_type"
+                className="form-select"
+                autoComplete="order_type"
+                placeholder='Order Type'
+                as="select"
+                onChange={(e: { target: { value: string } }) => {
+                  setFieldValue('order_type', e.target.value)
+                }}
+              >
+                <option value="">Order Type</option>
+                {order_types
+                  .filter((order_type) => order_type !== 'SUPPLY')
+                  .map((order_type, index) => (
+                    <option key={index} value={order_type}>{order_type}</option>
+                  ))}
+              </Field>
+              {(submitCount && errors.order_type) ? <InputError message={errors.order_type} className="mt-2" /> : ''}
+            </div>
             <div className={submitCount ? (errors.name) ? 'has-error' : 'has-success' : ''}>
               <label htmlFor="name">Name</label>
               <Field
@@ -481,6 +822,17 @@ const OrderForm = ({
                 placeholder='Order Number'
               />
               {(submitCount && errors.order_number) ? <InputError message={errors.order_number} className="mt-2" /> : ''}
+            </div>
+            <div className={submitCount ? (errors.invoice_number) ? 'has-error' : 'has-success' : ''}>
+              <label htmlFor="invoice_number">Invoice Number</label>
+              <Field
+                id="invoice_number"
+                name="invoice_number"
+                className="form-input"
+                autoComplete="invoice_number"
+                placeholder='Invoice Number'
+              />
+              {(submitCount && errors.invoice_number) ? <InputError message={errors.invoice_number} className="mt-2" /> : ''}
             </div>
           { /* <div className={submitCount ? (errors.job_address) ? 'has-error' : 'has-success' : ''}>
               <label htmlFor="job_address">Job Address</label>
@@ -576,11 +928,14 @@ const OrderForm = ({
                 placeholder='Service'
                 as="select"
                 onChange={(e: { target: { value: string } }) => {
-                  setFieldValue('service', e.target.value)
-                  setFieldValue('city_permits', false)
-                  setFieldValue('cost_city_fee', 0)
-                  setFieldValue('association_permits', false)
-                  setFieldValue('equipment_rental', false)
+                  const nextService = e.target.value
+                  setFieldValue('service', nextService)
+                  if (nextService !== SERVICES.DELIVERY_AND_INSTALLATION) {
+                    setFieldValue('city_permits', false)
+                    setFieldValue('cost_city_fee', 0)
+                    setFieldValue('association_permits', false)
+                    setFieldValue('equipment_rental', false)
+                  }
                   setFieldValue('type_of_work_id', 0)
                   setFieldValue('type_of_housing_id', 0)
                   setFieldValue('travel_cost_id', 0)
@@ -976,50 +1331,6 @@ const OrderForm = ({
                 {(submitCount && errors.equipment_rental) ? <div className='block'><InputError message={errors.equipment_rental} className="mt-2" /></div> : ''}
             </div>
             </>)}
-            <div className={submitCount ? (errors.method_of_payment) ? 'has-error' : 'has-success' : ''}>
-              <label htmlFor="method_of_payment">Project Payment Method</label>
-              <Field
-                id="method_of_payment"
-                name="method_of_payment"
-                className="form-select"
-                autoComplete="method_of_payment"
-                placeholder='Method of Payment'
-                as="select"
-                onChange={(e: { target: { value: string } }) => {
-                  setFieldValue('method_of_payment', e.target.value)
-                  setFieldValue('cost_delivery', 0)
-                  setFieldValue('type_of_financing', '')
-                }}
-              >
-                <option value="">Method of Payment</option>
-                {methods_of_payment.map((method_of_payment, index) => (
-                  <option key={index} value={method_of_payment}>{method_of_payment}</option>
-                ))}
-              </Field>
-              {(submitCount && errors.method_of_payment) ? <InputError message={errors.method_of_payment} className="mt-2" /> : ''}
-            </div>
-            {(values.method_of_payment === PAYMENT_METHODS.FINANCED || values.method_of_payment === PAYMENT_METHODS.CASH_AND_FINANCE) && (
-              <div className={submitCount ? (errors.type_of_financing) ? 'has-error' : 'has-success' : ''}>
-                <label htmlFor="method_of_payment">Type Of Financing</label>
-                <Field
-                  id="type_of_financing"
-                  name="type_of_financing"
-                  className="form-select"
-                  autoComplete="type_of_financing"
-                  placeholder='Type Of Financing'
-                  as="select"
-                  onChange={(e: { target: { value: string } }) => {
-                    setFieldValue('type_of_financing', e.target.value)
-                  }}
-                >
-                  <option value="">Type Of Financing</option>
-                  {type_of_financing.map((financing, index) => (
-                    <option key={index} value={financing}>{financing}</option>
-                  ))}
-                </Field>
-                {(submitCount && errors.type_of_financing) ? <InputError message={errors.type_of_financing} className="mt-2" /> : ''}
-              </div>
-            )}
               <div className={submitCount ? (errors.cost_delivery) ? 'has-error' : 'has-success' : ''}>
                 <label htmlFor="cost_delivery"> Client Pending Payment</label>
                 <Field
@@ -1078,18 +1389,6 @@ const OrderForm = ({
                 options={status.map((status) => { return { label: status, value: status } })}
               />
               {(submitCount && errors.status) ? <InputError message={errors.status} className="mt-2" /> : ''}
-            </div>
-            <div className={submitCount ? (errors.project_amount) ? 'has-error' : 'has-success' : ''}>
-              <label htmlFor="project_amount">Project Amount</label>
-              <Field
-                id="project_amount"
-                name="project_amount"
-                className="form-input text-right"
-                autoComplete="project_amount"
-                placeholder='Project Amount'
-                type='number'
-              />
-              {(submitCount && errors.project_amount) ? <InputError message={errors.project_amount} className="mt-2" /> : ''}
             </div>
            {(values.service === SERVICES.DELIVERY_AND_INSTALLATION) && (
               <>
@@ -1173,6 +1472,242 @@ const OrderForm = ({
               {(submitCount && errors.material_received_date) ? <InputError message={errors.material_received_date?.toString()} className="mt-2" /> : ''}
             </div>
             ) }
+          </div>
+        </fieldset>
+        <fieldset className='p-3 border rounded-xl'>
+          <legend className='text-lg font-semibold px-3'>Payment Information</legend>
+          <div className='grid gap-4 grid-cols-3'>
+            <div className={submitCount ? (errors.method_of_payment) ? 'has-error' : 'has-success' : ''}>
+              <label htmlFor="method_of_payment">Project Payment Method</label>
+              <Field
+                id="method_of_payment"
+                name="method_of_payment"
+                className="form-select"
+                autoComplete="method_of_payment"
+                placeholder='Method of Payment'
+                as="select"
+                onChange={(e: { target: { value: string } }) => {
+                  setFieldValue('method_of_payment', e.target.value)
+                  setFieldValue('cost_delivery', 0)
+                  setFieldValue('type_of_financing', '')
+                  setFieldValue('payment_schedule_type', '')
+                }}
+              >
+                <option value="">Method of Payment</option>
+                {methods_of_payment.map((method_of_payment, index) => (
+                  <option key={index} value={method_of_payment}>{method_of_payment}</option>
+                ))}
+              </Field>
+              {(submitCount && errors.method_of_payment) ? <InputError message={errors.method_of_payment} className="mt-2" /> : ''}
+            </div>
+            {isCreate && values.method_of_payment === PAYMENT_METHODS.CASH && (
+              <div className={submitCount ? (errors.payment_schedule_type) ? 'has-error' : 'has-success' : ''}>
+                <label htmlFor="payment_schedule_type">Payment Schedule</label>
+                <Field
+                  id="payment_schedule_type"
+                  name="payment_schedule_type"
+                  className="form-select"
+                  autoComplete="payment_schedule_type"
+                  placeholder="Payment Schedule"
+                  as="select"
+                  onChange={(e: { target: { value: string } }) => {
+                    setFieldValue('payment_schedule_type', e.target.value)
+                  }}
+                >
+                  <option value="">Select Payment Schedule</option>
+                  {payment_schedule_types
+                    .filter((type) => type !== 'CUSTOMIZED')
+                    .map((type, index) => (
+                      <option key={index} value={type}>{type}</option>
+                    ))}
+                </Field>
+                {(submitCount && errors.payment_schedule_type) ? <InputError message={errors.payment_schedule_type} className="mt-2" /> : ''}
+              </div>
+            )}
+            <div className={submitCount ? (errors.project_amount) ? 'has-error' : 'has-success' : ''}>
+              <label htmlFor="project_amount">Project Amount</label>
+              <Field
+                id="project_amount"
+                name="project_amount"
+                className="form-input text-right"
+                autoComplete="project_amount"
+                placeholder='Project Amount'
+                type='number'
+              />
+              {(submitCount && errors.project_amount) ? <InputError message={errors.project_amount} className="mt-2" /> : ''}
+            </div>
+            {shouldShowSchedulePreview && (
+              <div className="col-span-3">
+                <label className="mb-1 block text-sm font-medium text-[#5c6370]">
+                  Payment Schedule Preview
+                </label>
+                {schedulePreviewItems.length > 0 ? (
+                  <div className="rounded-md border border-[#e0e6ed] dark:border-[#1b2e4b]">
+                    <div className="flex flex-wrap gap-6 px-3 py-2 text-sm text-[#5c6370]">
+                      <div>
+                        <span className="font-semibold text-[#1f2937]">Type:</span>{' '}
+                        {values.payment_schedule_type || '--'}
+                      </div>
+                      <div>
+                        <span className="font-semibold text-[#1f2937]">Total:</span>{' '}
+                        {hasProjectAmount ? formatCurrency(projectAmountValue) : '--'}
+                      </div>
+                    </div>
+                    <div className="border-t border-[#e0e6ed] dark:border-[#1b2e4b]">
+                      {schedulePreviewItems.map((item, index) => (
+                        <div
+                          key={`${item.label}-${index}`}
+                          className="flex flex-wrap items-center gap-4 px-3 py-2 text-sm text-[#5c6370]"
+                        >
+                          <span className="font-semibold text-[#1f2937]">{item.label}</span>
+                          <span>{item.percentage}%</span>
+                          <span>{item.amount != null ? formatCurrency(item.amount) : '--'}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-sm text-[#5c6370]">
+                    No payment schedule template available for this selection.
+                  </div>
+                )}
+              </div>
+            )}
+            {(values.method_of_payment === PAYMENT_METHODS.FINANCED || values.method_of_payment === PAYMENT_METHODS.CASH_AND_FINANCE) && (
+              <div className={submitCount ? (errors.type_of_financing) ? 'has-error' : 'has-success' : ''}>
+                <label htmlFor="method_of_payment">Type Of Financing</label>
+                <Field
+                  id="type_of_financing"
+                  name="type_of_financing"
+                  className="form-select"
+                  autoComplete="type_of_financing"
+                  placeholder='Type Of Financing'
+                  as="select"
+                  onChange={(e: { target: { value: string } }) => {
+                    setFieldValue('type_of_financing', e.target.value)
+                  }}
+                >
+                  <option value="">Type Of Financing</option>
+                  {type_of_financing.map((financing, index) => (
+                    <option key={index} value={financing}>{financing}</option>
+                  ))}
+                </Field>
+                {(submitCount && errors.type_of_financing) ? <InputError message={errors.type_of_financing} className="mt-2" /> : ''}
+              </div>
+            )}
+            {values.method_of_payment === PAYMENT_METHODS.CASH_AND_FINANCE && (
+              <div className={submitCount ? (errors.down_payment) ? 'has-error' : 'has-success' : ''}>
+                <label htmlFor="down_payment">Down Payment</label>
+                <Field
+                  id="down_payment"
+                  name="down_payment"
+                  className="form-input text-right"
+                  autoComplete="down_payment"
+                  placeholder='Down Payment'
+                  type='number'
+                />
+                {(submitCount && errors.down_payment) ? <InputError message={errors.down_payment} className="mt-2" /> : ''}
+              </div>
+            )}
+            <div className={submitCount ? (errors.change_order_enabled) ? 'has-error inline-flex flex-col' : 'has-success inline-flex' : 'inline-flex items-end'}>
+              <div className='flex'>
+                <Field
+                  id="change_order_enabled"
+                  name="change_order_enabled"
+                  className="form-checkbox"
+                  type='checkbox'
+                  checked={Boolean(values.change_order_enabled)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                    const enabled = e.target.checked
+                    setFieldValue('change_order_enabled', enabled)
+                    if (!enabled) {
+                      setFieldValue('change_order_amount', null)
+                      setFieldValue('change_order_note', '')
+                    }
+                  }}
+                />
+                <label htmlFor="change_order_enabled" className="ml-2">Change Order</label>
+              </div>
+              {(submitCount && errors.change_order_enabled) ? <div className='block'><InputError message={errors.change_order_enabled} className="mt-2" /></div> : ''}
+            </div>
+            {values.change_order_enabled && (
+              <>
+                <div className={submitCount ? (errors.change_order_amount) ? 'has-error' : 'has-success' : ''}>
+                  <label htmlFor="change_order_amount">Change Order Price</label>
+                  <Field
+                    id="change_order_amount"
+                    name="change_order_amount"
+                    className="form-input text-right"
+                    autoComplete="change_order_amount"
+                    placeholder='Change Order Price'
+                    type='number'
+                  />
+                  {(submitCount && errors.change_order_amount) ? <InputError message={errors.change_order_amount} className="mt-2" /> : ''}
+                </div>
+                <div className={submitCount ? (errors.change_order_note) ? 'has-error' : 'has-success' : ''}>
+                  <label htmlFor="change_order_note">Change Order Note</label>
+                  <Field
+                    id="change_order_note"
+                    name="change_order_note"
+                    className="form-input"
+                    autoComplete="change_order_note"
+                    placeholder='Change Order Note'
+                    type='text'
+                  />
+                  {(submitCount && errors.change_order_note) ? <InputError message={errors.change_order_note} className="mt-2" /> : ''}
+                </div>
+              </>
+            )}
+            {!isCreate && values.method_of_payment === PAYMENT_METHODS.CASH && (
+              <div className="col-span-3">
+                <label className="mb-1 block text-sm font-medium text-[#5c6370]" htmlFor="payment_schedule">
+                  Payment Schedule
+                </label>
+                {values.payment_schedule ? (
+                  <div className="rounded-md border border-[#e0e6ed] dark:border-[#1b2e4b]">
+                    <div className="flex flex-wrap gap-6 px-3 py-2 text-sm text-[#5c6370]">
+                      <div>
+                        <span className="font-semibold text-[#1f2937]">Type:</span>{' '}
+                        {values.payment_schedule.schedule_type ?? '--'}
+                      </div>
+                      <div>
+                        <span className="font-semibold text-[#1f2937]">Total:</span>{' '}
+                        {formatCurrency(values.payment_schedule.total_amount)}
+                      </div>
+                    </div>
+                    {values.payment_schedule.installments && values.payment_schedule.installments.length > 0 ? (
+                      <div className="border-t border-[#e0e6ed] dark:border-[#1b2e4b]">
+                        {values.payment_schedule.installments.map((installment) => (
+                          <div
+                            key={installment.id}
+                            className="flex flex-wrap items-center gap-4 px-3 py-2 text-sm text-[#5c6370]"
+                          >
+                            <span className="font-semibold text-[#1f2937]">{installment.label}</span>
+                            <span>{installment.percentage}%</span>
+                            <span>{formatCurrency(installment.amount)}</span>
+                            <span>{installment.due_date ?? '-'}</span>
+                            <span className="text-xs uppercase tracking-wide">{installment.status}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="px-3 py-2 text-sm text-[#5c6370]">
+                        No payment installments recorded for this order.
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-sm text-[#5c6370]">
+                    No payment schedule has been created for this order. (Likely an older order.)
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </fieldset>
+        <fieldset className='p-3 border rounded-xl'>
+          <legend className='text-lg font-semibold px-3'>Installer Notes</legend>
+          <div className='grid gap-4 grid-cols-4'>
             <div className='col-span-4'>
               <label htmlFor="notes">Installer Notes</label>
               <Field
@@ -1260,8 +1795,8 @@ const OrderForm = ({
           />
         </fieldset>
         <fieldset className='p-3 border rounded-xl'>
-          <legend className='text-lg font-semibold px-3'>Work Team Notes History</legend>
-          <OrderNotesForOrder orderId={values.id || null} canCreate={values.id !== 0} noteType="work_team_note" />
+          <legend className='text-lg font-semibold px-3'>Work Team Notes (All Notes)</legend>
+          <OrderNotesForOrder orderId={values.id || null} canCreate={values.id !== 0} />
         </fieldset>
         <div className="flex items-center justify-between mt-4">
           <Link className='btn btn-danger uppercase' href={route('order.index')}>Cancel</Link>

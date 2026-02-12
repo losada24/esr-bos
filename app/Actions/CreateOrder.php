@@ -3,6 +3,7 @@
 namespace App\Actions;
 
 use App\Enum\PlaningDateSupervisorEnum;
+use App\Enum\MethodOfPayment;
 use App\Models\Client;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -10,7 +11,10 @@ use App\Enum\ServiceEnum;
 use App\Enum\SupervisorPaymentStatusEnum;
 use App\Models\Order;
 use App\Models\OrderProduct;
+use App\Models\PaymentSchedule;
 use App\Models\SupervisorComissionOrder;
+use App\Support\PaymentScheduleCalculator;
+use App\Support\PaymentScheduleTemplates;
 use App\Traits\ComissionSupervisor;
 use App\Traits\OrderEmails;
 use App\Traits\OrderStatus;
@@ -24,15 +28,19 @@ class CreateOrder
   public function handle(Request $request)
   {
     DB::transaction(function () use ($request) {
-      $client = Client::create([
-        'name' => $request->client_name,
-        'phone' => $request->phone,
-        'email' => $request->email,
-        'vip_clients' => $request->vip_clients,
-        'vip_notes' => $request->vip_notes,
-        'contact_type' => $request->contact_type,
-        'user_id' => auth()->user()->id,
-      ]);
+      if ($request->filled('client_id')) {
+        $client = Client::findOrFail($request->client_id);
+      } else {
+        $client = Client::create([
+          'name' => $request->client_name,
+          'phone' => $request->phone,
+          'email' => $request->email,
+          'vip_clients' => $request->vip_clients,
+          'vip_notes' => $request->vip_notes,
+          'contact_type' => $request->contact_type,
+          'user_id' => auth()->user()->id,
+        ]);
+      }
 
       $project_amount = $request->project_amount;
 
@@ -79,6 +87,8 @@ class CreateOrder
         'job_address' => $request->job_address,
         // 'job_city' => $request->job_city ?? $request->city,
         'order_number' => $request->order_number,
+        'invoice_number' => $request->invoice_number,
+        'order_type' => $request->order_type,
         'type_of_work_id' => $typeOfWorkId,
         'type_of_housing_id' => $typeOfHousingId,
         'supervisor_id' => $request->supervisor_id,
@@ -107,6 +117,7 @@ class CreateOrder
         'cost_delivery' => $request->cost_delivery,
         'cost_city_fee' => $request->cost_city_fee,
         'project_amount' => $request->project_amount,
+        'down_payment' => $request->down_payment,
         'initial_payment_percentage' => $initial_payment_percentage,
         'payment_definition' => $request->payment_definition,
         'execution_planing_date' => $execution_planing_date,
@@ -118,6 +129,42 @@ class CreateOrder
         'is_send_email' => true,
         
       ]);
+
+      $paymentScheduleType = $request->payment_schedule_type;
+      $requiresSchedule = $request->method_of_payment === MethodOfPayment::CASH->value;
+      if ($requiresSchedule && $paymentScheduleType) {
+        $totalAmount = (float) ($request->project_amount ?? 0);
+        $scheduleItems = PaymentScheduleTemplates::itemsFor($paymentScheduleType);
+        $installments = PaymentScheduleCalculator::withAmounts($scheduleItems, $totalAmount);
+
+        $paymentSchedule = PaymentSchedule::create([
+          'order_id' => $order->id,
+          'schedule_type' => $paymentScheduleType,
+          'total_amount' => $totalAmount,
+        ]);
+
+        foreach ($installments as $index => $installment) {
+          $paymentSchedule->installments()->create([
+            'position' => $index + 1,
+            'label' => $installment['label'],
+            'percentage' => $installment['percentage'],
+            'amount' => $installment['amount'],
+            'status' => 'PENDING',
+          ]);
+        }
+      }
+
+      $changeOrderEnabled = filter_var($request->input('change_order_enabled'), FILTER_VALIDATE_BOOLEAN);
+      if ($changeOrderEnabled) {
+        $changeOrderAmount = $request->input('change_order_amount');
+        $changeOrderNote = $request->input('change_order_note');
+        $order->orderPayments()->create([
+          'type' => 'CHANGE_ORDER',
+          'amount' => $changeOrderAmount ?? 0,
+          'note' => $changeOrderNote,
+          'status' => 'PENDING',
+        ]);
+      }
 
       if ($request->filled('notes')) {
         $order->notes()->create([

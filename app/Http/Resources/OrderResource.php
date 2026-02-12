@@ -32,6 +32,7 @@ class OrderResource extends JsonResource
           'delivery_date' => $this->delivery_date ?? '',
           'installation_date' => $this->installation_date ?? '',
           'service' => $this->service ?? '',
+          'is_supply' => (bool) ($this->is_supply ?? false),
         ];
     }
 }

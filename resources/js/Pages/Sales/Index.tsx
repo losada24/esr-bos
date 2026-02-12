@@ -46,6 +46,8 @@ type ContractSignedSubmitValues = {
   addressCheck: boolean
   amountCheck: boolean
   emailCheck: boolean
+  cityPermits: boolean
+  associationPermits: boolean
   paymentScheduleType: string
   customSchedule: Array<{ label: string, amount: number }>
 }
@@ -311,7 +313,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
   const [preContractError, setPreContractError] = useState<string | null>(null)
   const [pendingPreContract, setPendingPreContract] = useState<{ task: Tasks, oldStatus: string, newStatus: string } | null>(null)
   const [contractSignedModalOpen, setContractSignedModalOpen] = useState(false)
-  const [contractSignedInitialValues, setContractSignedInitialValues] = useState<{ projectName: string, projectAmount: string, downPayment: string, jobAddress: string, city: string, jobState: string, jobZip: string, methodOfPayment: string, typeOfFinancing: string, contactEmail: string, orderCompanyContactId: number | null, nameCheck: boolean, addressCheck: boolean, amountCheck: boolean, emailCheck: boolean, paymentScheduleType: string, customSchedule: Array<{ label: string, amount: string }> }>({ projectName: '', projectAmount: '', downPayment: '', jobAddress: '', city: '', jobState: '', jobZip: '', methodOfPayment: '', typeOfFinancing: '', contactEmail: '', orderCompanyContactId: null, nameCheck: false, addressCheck: false, amountCheck: false, emailCheck: false, paymentScheduleType: '', customSchedule: buildEmptyCustomSchedule() })
+  const [contractSignedInitialValues, setContractSignedInitialValues] = useState<{ projectName: string, projectAmount: string, downPayment: string, jobAddress: string, city: string, jobState: string, jobZip: string, methodOfPayment: string, typeOfFinancing: string, contactEmail: string, orderCompanyContactId: number | null, nameCheck: boolean, addressCheck: boolean, amountCheck: boolean, emailCheck: boolean, cityPermits: boolean, associationPermits: boolean, paymentScheduleType: string, customSchedule: Array<{ label: string, amount: string }> }>({ projectName: '', projectAmount: '', downPayment: '', jobAddress: '', city: '', jobState: '', jobZip: '', methodOfPayment: '', typeOfFinancing: '', contactEmail: '', orderCompanyContactId: null, nameCheck: false, addressCheck: false, amountCheck: false, emailCheck: false, cityPermits: false, associationPermits: false, paymentScheduleType: '', customSchedule: buildEmptyCustomSchedule() })
   const [contractSignedSaving, setContractSignedSaving] = useState(false)
   const [contractSignedError, setContractSignedError] = useState<string | null>(null)
   const [contractSignedConfirmation, setContractSignedConfirmation] = useState<null | { message: string, userEmail?: string, userRoles?: string[] }>(null)
@@ -602,7 +604,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
     setContractSignedConfirmation(null)
     setContractSignedPendingValues(null)
     setContractSignedSaving(false)
-    setContractSignedInitialValues({ projectName: '', projectAmount: '', downPayment: '', jobAddress: '', city: '', jobState: '', jobZip: '', methodOfPayment: '', typeOfFinancing: '', contactEmail: '', orderCompanyContactId: null, nameCheck: false, addressCheck: false, amountCheck: false, emailCheck: false, paymentScheduleType: '', customSchedule: buildEmptyCustomSchedule() })
+    setContractSignedInitialValues({ projectName: '', projectAmount: '', downPayment: '', jobAddress: '', city: '', jobState: '', jobZip: '', methodOfPayment: '', typeOfFinancing: '', contactEmail: '', orderCompanyContactId: null, nameCheck: false, addressCheck: false, amountCheck: false, emailCheck: false, cityPermits: false, associationPermits: false, paymentScheduleType: '', customSchedule: buildEmptyCustomSchedule() })
     setPendingContractSigned(null)
   }
 
@@ -882,6 +884,8 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
       formData.append('address_check', values.addressCheck ? '1' : '0')
       formData.append('amount_check', values.amountCheck ? '1' : '0')
       formData.append('email_check', values.emailCheck ? '1' : '0')
+      formData.append('city_permits', values.cityPermits ? '1' : '0')
+      formData.append('association_permits', values.associationPermits ? '1' : '0')
       formData.append('method_of_payment', normalizedMethod)
       formData.append('type_of_financing', normalizedFinancing)
       formData.append('down_payment', normalizedDownPayment)
@@ -976,7 +980,9 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
         name_check: data.order.name_check ?? values.nameCheck,
         address_check: data.order.address_check ?? values.addressCheck,
         amount_check: data.order.amount_check ?? values.amountCheck,
-        email_check: data.order.email_check ?? values.emailCheck
+        email_check: data.order.email_check ?? values.emailCheck,
+        city_permits: data.order.city_permits ?? values.cityPermits,
+        association_permits: data.order.association_permits ?? values.associationPermits
       })
 
       applyTaskMove(updatedTask, pendingContractSigned.newStatus)
@@ -1340,6 +1346,8 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
                             addressCheck: foundTask.address_check ?? false,
                             amountCheck: foundTask.amount_check ?? false,
                             emailCheck: foundTask.email_check ?? false,
+                            cityPermits: foundTask.city_permits ?? false,
+                            associationPermits: foundTask.association_permits ?? false,
                             paymentScheduleType: '',
                             customSchedule: buildEmptyCustomSchedule(),
                           })
@@ -1644,6 +1652,8 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
         initialAddressCheck={contractSignedInitialValues.addressCheck}
         initialAmountCheck={contractSignedInitialValues.amountCheck}
         initialEmailCheck={contractSignedInitialValues.emailCheck}
+        initialCityPermits={contractSignedInitialValues.cityPermits}
+        initialAssociationPermits={contractSignedInitialValues.associationPermits}
         initialPaymentScheduleType={contractSignedInitialValues.paymentScheduleType}
         initialCustomSchedule={contractSignedInitialValues.customSchedule}
         paymentMethods={paymentMethods}

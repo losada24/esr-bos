@@ -115,6 +115,22 @@ class UpdateOrder
 
       $status = $request->status;
       $type_of_work_id = $request->type_of_work_id;
+      $type_of_housing_id = $request->type_of_housing_id;
+      $travel_cost_id = $request->travel_cost_id;
+      $duration_of_work_id = $request->duration_of_work_id;
+
+      if ($type_of_work_id === 0 || $type_of_work_id === '0' || $type_of_work_id === '') {
+        $type_of_work_id = null;
+      }
+      if ($type_of_housing_id === 0 || $type_of_housing_id === '0' || $type_of_housing_id === '') {
+        $type_of_housing_id = null;
+      }
+      if ($travel_cost_id === 0 || $travel_cost_id === '0' || $travel_cost_id === '') {
+        $travel_cost_id = null;
+      }
+      if ($duration_of_work_id === 0 || $duration_of_work_id === '0' || $duration_of_work_id === '') {
+        $duration_of_work_id = null;
+      }
       
       //dd($request->pending_collect);
       $sendEmail = $status != $order->status;
@@ -126,12 +142,14 @@ class UpdateOrder
         'job_address' => $request->job_address,
         // 'job_city' => $request->job_city ?? $request->city,
         'order_number' => $request->order_number,
-        'type_of_work_id' => $request->type_of_work_id,
-        'type_of_housing_id' => $request->type_of_housing_id,
+        'invoice_number' => $request->invoice_number,
+        'order_type' => $request->order_type,
+        'type_of_work_id' => $type_of_work_id,
+        'type_of_housing_id' => $type_of_housing_id,
         'supervisor_id' => $request->supervisor_id,
-        'travel_cost_id' => $request->travel_cost_id,
-        'duration_of_work_id' => $request->duration_of_work_id,
-        'duration_of_work_id' => $request->duration_of_work_id,
+        'travel_cost_id' => $travel_cost_id,
+        'duration_of_work_id' => $duration_of_work_id,
+        'duration_of_work_id' => $duration_of_work_id,
         'method_of_payment' => $request->method_of_payment,
         'type_of_financing' => $request->type_of_financing,
         'service' => $request->service,
@@ -146,13 +164,13 @@ class UpdateOrder
         'association_permits' => $request->association_permits,
         'equipment_rental' => $request->equipment_rental,
         'notes' => $request->notes,
-        'work_team_notes' => null,
         'delivery_date' => $request->delivery_date,
         'status' => $status,
         //'frame_color' => $request->frame_color,
         'cost_delivery' => $request->cost_delivery,
         'cost_city_fee' => $request->cost_city_fee,
         'project_amount' => $request->project_amount,
+        'down_payment' => $request->down_payment,
         'city' => $request->city ,
         'job_state' => $request->job_state,
         'job_zip' => $request->job_zip,
@@ -175,6 +193,28 @@ class UpdateOrder
       //dd( $orderData);
       //dd($request->frame_color);
       $order->update($orderData);
+
+      if ($request->has('change_order_enabled')) {
+        $changeOrderEnabled = filter_var($request->input('change_order_enabled'), FILTER_VALIDATE_BOOLEAN);
+        $changeOrderPayment = $order->orderPayments()->where('type', 'CHANGE_ORDER')->first();
+        if ($changeOrderEnabled) {
+          $payload = [
+            'amount' => $request->input('change_order_amount') ?? 0,
+            'note' => $request->input('change_order_note'),
+          ];
+          if ($changeOrderPayment) {
+            $changeOrderPayment->update($payload);
+          } else {
+            $order->orderPayments()->create([
+              'type' => 'CHANGE_ORDER',
+              'status' => 'PENDING',
+              ...$payload,
+            ]);
+          }
+        } elseif ($changeOrderPayment) {
+          $changeOrderPayment->delete();
+        }
+      }
 
       $currentWorkTeamNotes = trim((string) ($request->work_team_notes ?? ''));
       if ($currentWorkTeamNotes !== '') {
@@ -404,10 +444,9 @@ class UpdateOrder
       $orderStatus = $order->orderStatus()->where('status', $request->status)->first(); // Busca el registro relacionado
 
       if ($orderStatus) {
-        // Actualiza el registro existente
-        $orderStatus->update([
+        // Actualiza el registro existente (solo cambia user_id si cambia el status)
+        $payload = [
           //'status' => $request->status,
-          'user_id' => auth()->user()->id,
           //'notes' => $request->status . " updated by " . auth()->user()->name,
           'start_date' => $request->installation_date,
           'end_date' => $request->installation_end_date,
@@ -418,7 +457,13 @@ class UpdateOrder
           'final_inspection_date' => $request->final_inspection_date,
           'complete_date' => $request->complete_date,
           'material_received_date' => $request->material_received_date,
-        ]);
+        ];
+
+        if ($sendEmail) {
+          $payload['user_id'] = auth()->user()->id;
+        }
+
+        $orderStatus->update($payload);
       }
     }
   }

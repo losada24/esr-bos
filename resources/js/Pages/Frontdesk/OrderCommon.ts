@@ -85,6 +85,17 @@ export interface PaymentSchedule {
   installments?: PaymentInstallment[]
 }
 
+export interface OrderPayment {
+  id: number
+  order_id: number
+  type: string
+  amount: number
+  note?: string | null
+  status?: string | null
+  paid_at?: string | null
+  paid_by?: { id: number, name: string } | null
+}
+
 export interface Order {
   id: number
   client?: Client
@@ -120,7 +131,10 @@ export interface Order {
   address_check?: boolean
   amount_check?: boolean
   email_check?: boolean
+  city_permits?: boolean
+  association_permits?: boolean
   payment_schedule?: PaymentSchedule | null
+  change_order_payment?: OrderPayment | null
   invoice_number?: string | null
 }
 

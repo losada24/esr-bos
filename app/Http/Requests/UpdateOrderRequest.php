@@ -10,12 +10,50 @@ use App\Enum\OrderStatusEnum;
 use App\Enum\PlaningDateSupervisorEnum;
 use App\Enum\SupervisorPaymentStatusEnum;
 use App\Enum\TypeOfFinancing;
+use App\Enum\OrderTypeEnum;
+use App\Models\Client;
 use App\Models\Order;
 use App\Rules\ValidateOrderStatus;
 use Illuminate\Validation\Rule;
 
 class UpdateOrderRequest extends FormRequest
 {
+    protected function prepareForValidation()
+    {
+        $normalize = function (string $key) {
+            $value = $this->input($key);
+            if ($value === 0 || $value === '0' || $value === '') {
+                $this->merge([$key => null]);
+            }
+        };
+
+        $normalize('client_id');
+        $normalize('type_of_work_id');
+        $normalize('type_of_housing_id');
+        $normalize('travel_cost_id');
+        $normalize('duration_of_work_id');
+
+        if ($this->input('order_type') === '') {
+            $this->merge(['order_type' => null]);
+        }
+    }
+
+    private function shouldValidateUniquePhone(): bool
+    {
+        $clientId = $this->input('client_id');
+        if (empty($clientId)) {
+            return true;
+        }
+
+        $currentPhone = Client::query()->where('id', $clientId)->value('phone');
+        $incomingPhone = (string) ($this->input('phone') ?? '');
+
+        $normalizedIncoming = preg_replace('/\D+/', '', $incomingPhone) ?? '';
+        $normalizedCurrent = preg_replace('/\D+/', '', (string) $currentPhone) ?? '';
+
+        return $normalizedIncoming !== $normalizedCurrent;
+    }
+
     /**
      * Determine if the user is authorized to make this request.
      *
@@ -41,7 +79,11 @@ class UpdateOrderRequest extends FormRequest
           //'phone' => 'required|string|max:255',
            'phone' => [
               'required',
-              'regex:/^\d{10}$/'
+              'regex:/^\d{10}$/',
+              Rule::when(
+                fn () => $this->shouldValidateUniquePhone(),
+                [Rule::unique('clients', 'phone')->ignore($this->input('client_id'))]
+              )
             ],
           'email' => 'nullable|email|max:255',
           'vip_clients' => 'boolean',
@@ -51,6 +93,7 @@ class UpdateOrderRequest extends FormRequest
           'name' => 'required|string|max:255',
            //'order_number' => 'required|integer',
            'order_number' => 'required|string|max:255',
+           'invoice_number' => 'nullable|string|max:255',
           'job_address' => 'required|string|max:255',
           'owners' => [
             Rule::when(
@@ -96,11 +139,19 @@ class UpdateOrderRequest extends FormRequest
           'new_travel_cost' => 'nullable|numeric',
           'cost_city_fee' => 'nullable|numeric',
           'project_amount' => 'nullable|numeric',
+          'down_payment' => 'nullable|numeric',
           'city' => 'nullable|string|max:100',
           'job_state' => 'nullable|string|max:100',
           'job_zip' => 'nullable|string|max:100',
           'initial_payment_percentage' => 'nullable|numeric',
           'payment_definition' => 'boolean',
+          'change_order_enabled' => 'boolean',
+          'change_order_amount' => [
+            'nullable',
+            'numeric',
+            Rule::requiredIf(fn () => filter_var($this->input('change_order_enabled'), FILTER_VALIDATE_BOOLEAN)),
+          ],
+          'change_order_note' => 'nullable|string|max:2000',
           'method_of_payment' =>  [
             'required',
             'string',
@@ -168,6 +219,15 @@ class UpdateOrderRequest extends FormRequest
                 ServiceEnum::PICKUP->value,
                 ServiceEnum::SERVICE->value,
               ]),
+            ],
+            'order_type' => [
+              'nullable',
+              'string',
+              Rule::in(
+                OrderTypeEnum::RESIDENTIAL->value,
+                OrderTypeEnum::COMMERCIAL->value,
+                OrderTypeEnum::SUPPLY->value,
+              )
             ],
             'supervisor_payment_status' => [
               'nullable',
