@@ -531,12 +531,17 @@ export default function ShowStatusOrder ({
     addressCheck: Boolean(order.address_check),
     amountCheck: Boolean(order.amount_check),
     emailCheck: Boolean(order.email_check),
+    cityPermits: Boolean(order.city_permits),
+    associationPermits: Boolean(order.association_permits),
     paymentScheduleType: initialScheduleType,
     customSchedule: initialCustomSchedule
   })
   const [paymentEdits, setPaymentEdits] = useState<Record<number, { status: string, dueDate: string }>>({})
   const [paymentSavingId, setPaymentSavingId] = useState<number | null>(null)
   const [paymentError, setPaymentError] = useState<string | null>(null)
+  const [changeOrderStatus, setChangeOrderStatus] = useState<string>(initialOrder.change_order_payment?.status ?? 'PENDING')
+  const [changeOrderSaving, setChangeOrderSaving] = useState(false)
+  const [changeOrderError, setChangeOrderError] = useState<string | null>(null)
 
   const [lostContractModalOpen, setLostContractModalOpen] = useState(false)
   const [lostContractSaving, setLostContractSaving] = useState(false)
@@ -588,6 +593,10 @@ export default function ShowStatusOrder ({
   const [contactSaving, setContactSaving] = useState(false)
   const [requestSaving, setRequestSaving] = useState(false)
   const canEditContact = clientIsContact
+
+  useEffect(() => {
+    setChangeOrderStatus(order.change_order_payment?.status ?? 'PENDING')
+  }, [order.change_order_payment?.id, order.change_order_payment?.status])
 
   const contactSourceOptions = useMemo(
     () => mergeOptionWithCurrent(sources, contactFormValues.source),
@@ -1371,6 +1380,8 @@ export default function ShowStatusOrder ({
         addressCheck: Boolean(order.address_check),
         amountCheck: Boolean(order.amount_check),
         emailCheck: Boolean(order.email_check),
+        cityPermits: Boolean(order.city_permits),
+        associationPermits: Boolean(order.association_permits),
         paymentScheduleType: order.payment_schedule?.schedule_type ?? prev.paymentScheduleType,
         customSchedule: order.payment_schedule?.schedule_type === CUSTOM_SCHEDULE_TYPE
           ? buildCustomSchedule(order.payment_schedule?.installments)
@@ -1773,10 +1784,12 @@ export default function ShowStatusOrder ({
         addressCheck: 'address_check',
         amountCheck: 'amount_check',
         emailCheck: 'email_check',
+        cityPermits: 'city_permits',
+        associationPermits: 'association_permits',
         orderCompanyContactId: 'order_company_contact_id'
       }
 
-      const booleanFields = new Set(['nameCheck', 'addressCheck', 'amountCheck', 'emailCheck'])
+      const booleanFields = new Set(['nameCheck', 'addressCheck', 'amountCheck', 'emailCheck', 'cityPermits', 'associationPermits'])
       Object.entries(values).forEach(([key, value]) => {
         if (key === 'attachments' && Array.isArray(value)) {
           value.forEach((file: File) => {
@@ -1851,6 +1864,8 @@ export default function ShowStatusOrder ({
         address_check: data.address_check ?? prev.address_check,
         amount_check: data.amount_check ?? prev.amount_check,
         email_check: data.email_check ?? prev.email_check,
+        city_permits: data.city_permits ?? prev.city_permits,
+        association_permits: data.association_permits ?? prev.association_permits,
         client: prev.client
           ? { ...prev.client, email: data.contact_email ?? prev.client.email }
           : prev.client,
@@ -1943,6 +1958,50 @@ export default function ShowStatusOrder ({
       setPaymentError(error?.message ?? 'No se pudo actualizar el pago.')
     } finally {
       setPaymentSavingId(prev => (prev === installmentId ? null : prev))
+    }
+  }
+
+  const handleChangeOrderSave = async () => {
+    if (!changeOrderPayment) return
+    setChangeOrderSaving(true)
+    setChangeOrderError(null)
+
+    try {
+      const response = await fetch(route('order_payments.update', changeOrderPayment.id), {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          'X-CSRF-TOKEN': csrfToken
+        },
+        body: JSON.stringify({
+          status: changeOrderStatus
+        })
+      })
+
+      const payload = await response.json().catch(() => null)
+
+      if (!response.ok) {
+        if (response.status === 422 && payload?.errors) {
+          const messages = Object.values(payload.errors).flat()
+          throw new Error(typeof messages[0] === 'string' ? messages[0] : 'Unable to update change order payment.')
+        }
+
+        throw new Error(payload?.message ?? 'Unable to update change order payment.')
+      }
+
+      if (!payload?.payment) {
+        throw new Error('Unexpected server response.')
+      }
+
+      setOrder(prev => ({
+        ...prev,
+        change_order_payment: payload.payment
+      }))
+    } catch (error: any) {
+      setChangeOrderError(error?.message ?? 'Unable to update change order payment.')
+    } finally {
+      setChangeOrderSaving(false)
     }
   }
 
@@ -2116,6 +2175,7 @@ export default function ShowStatusOrder ({
     ? `$${projectAmountNumber.toLocaleString()}`
     : null
   const paymentSchedule = order.payment_schedule ?? null
+  const changeOrderPayment = order.change_order_payment ?? null
   const paymentInstallments = Array.isArray(paymentSchedule?.installments)
     ? paymentSchedule?.installments ?? []
     : []
@@ -3205,6 +3265,60 @@ export default function ShowStatusOrder ({
                       : (
                         <p className="text-sm text-slate-400">No payment schedule has been created for this order.</p>
                         )}
+                    {changeOrderPayment && (
+                      <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div>
+                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Change Order Payment</p>
+                            <p className="text-sm font-semibold text-slate-700">
+                              {changeOrderPayment.note || 'Change Order'}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Amount</p>
+                            <p className="text-sm font-semibold text-slate-700">
+                              {formatScheduleCurrency(Number(changeOrderPayment.amount ?? 0))}
+                            </p>
+                          </div>
+                        </div>
+                        {changeOrderError && (
+                          <div className="mt-3 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-600">
+                            {changeOrderError}
+                          </div>
+                        )}
+                        <div className="mt-3 flex flex-wrap gap-4 text-xs text-slate-500">
+                          <div>
+                            <span className="font-semibold text-slate-600">Status:</span>{' '}
+                            <select
+                              value={changeOrderStatus}
+                              onChange={(event) => { setChangeOrderStatus(event.target.value) }}
+                              className="ml-2 rounded-lg border border-slate-200 px-2 py-1 text-xs text-slate-700 focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
+                            >
+                              <option value="PENDING">PENDING</option>
+                              <option value="PAID">PAID</option>
+                            </select>
+                          </div>
+                          <div>
+                            <span className="font-semibold text-slate-600">Paid at:</span>{' '}
+                            {formatPaidAt(changeOrderPayment.paid_at)}
+                          </div>
+                          <div>
+                            <span className="font-semibold text-slate-600">Paid by:</span>{' '}
+                            {changeOrderPayment.paid_by?.name ?? '-'}
+                          </div>
+                          <div>
+                            <button
+                              type="button"
+                              onClick={handleChangeOrderSave}
+                              className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:border-sky-400 hover:text-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
+                              disabled={changeOrderSaving}
+                            >
+                              {changeOrderSaving ? 'Saving...' : 'Save'}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -3464,6 +3578,8 @@ export default function ShowStatusOrder ({
         initialAddressCheck={contractSignedInitialValues.addressCheck}
         initialAmountCheck={contractSignedInitialValues.amountCheck}
         initialEmailCheck={contractSignedInitialValues.emailCheck}
+        initialCityPermits={contractSignedInitialValues.cityPermits}
+        initialAssociationPermits={contractSignedInitialValues.associationPermits}
         initialPaymentScheduleType={contractSignedInitialValues.paymentScheduleType}
         initialCustomSchedule={contractSignedInitialValues.customSchedule}
         paymentMethods={methods_of_payment ?? []}

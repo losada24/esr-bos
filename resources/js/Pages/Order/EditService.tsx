@@ -26,6 +26,8 @@ export default function EditService ({
   supervisors,
   methods_of_payment,
   services,
+  payment_schedule_types,
+  payment_schedule_templates,
   travel_costs,
   status,
   type_of_products,
@@ -42,6 +44,8 @@ export default function EditService ({
   supervisors: Array<{ id: number, name: string }>
   methods_of_payment: string[]
   services: string[]
+  payment_schedule_types: string[]
+  payment_schedule_templates: Record<string, { label: string, percentage: number }[]>
   travel_costs: TravelCost[]
   status: string[]
   type_of_products: TypeOfProduct[]
@@ -100,6 +104,9 @@ export default function EditService ({
       method_of_payment: values.method_of_payment,
       type_of_financing: values.type_of_financing ? values.type_of_financing : null,
       project_amount: values.project_amount,
+      change_order_enabled: values.change_order_enabled,
+      change_order_amount: values.change_order_amount,
+      change_order_note: values.change_order_note,
       service: order.service,
       status: values.status,
       supervisor_id: values.supervisor_id !== 0 ? values.supervisor_id : null,
@@ -142,6 +149,8 @@ export default function EditService ({
             supervisors={supervisors}
             methods_of_payment={methods_of_payment}
             services={services}
+            payment_schedule_types={payment_schedule_types}
+            payment_schedule_templates={payment_schedule_templates}
             travel_costs={travel_costs}
             status={status}
             setFieldValue={setFieldValue}

@@ -24,11 +24,21 @@ import { capitalizeWords } from '@/Utils/string'
 import ProductTable from './ProductTable'
 import ProductModal from './ProductModal'
 import { SERVICES, PAYMENT_METHODS } from '@/Utils/constants'
-import SearchIcon from '@/Components/Icons/SearchIcon'
+import OrderNotesForOrder from '@/Components/OrderNotesForOrder'
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
 
 type Option = { label: string, value: number }
+type ClientSearchResult = {
+  id: number
+  name: string
+  phone: string
+  email?: string | null
+  vip_clients?: boolean | number
+  vip_notes?: string | null
+}
+type PaymentScheduleTemplateItem = { label: string, percentage: number }
+type PaymentScheduleTemplates = Record<string, PaymentScheduleTemplateItem[]>
 
 const ServiceForm = ({
   submitCount,
@@ -39,6 +49,8 @@ const ServiceForm = ({
   supervisors,
   methods_of_payment,
   services,
+  payment_schedule_types,
+  payment_schedule_templates,
   travel_costs,
   status,
   type_of_products,
@@ -59,6 +71,8 @@ const ServiceForm = ({
   supervisors: Array<{ id: number, name: string }>
   methods_of_payment: string[]
   services: string[]
+  payment_schedule_types: string[]
+  payment_schedule_templates?: PaymentScheduleTemplates
   travel_costs: TravelCost[]
   status: string[]
   type_of_products: TypeOfProduct[]
@@ -116,6 +130,52 @@ const ServiceForm = ({
   )
   const [showProductModal, setShowProductModal] = useState<boolean>(false)
   const [isCreated] = useState<boolean>(true)
+  const [clientSearchTerm, setClientSearchTerm] = useState<string>('')
+  const [clientSearchResults, setClientSearchResults] = useState<ClientSearchResult[]>([])
+  const [clientSearchLoading, setClientSearchLoading] = useState<boolean>(false)
+  const [clientSearchError, setClientSearchError] = useState<string>('')
+  const [selectedClientId, setSelectedClientId] = useState<number | null>(
+    isCreate && Number(values.client_id) > 0 ? Number(values.client_id) : null
+  )
+  const isClientLocked = isCreate && selectedClientId !== null
+  const suppressNextSearchRef = useRef<boolean>(false)
+  const suppressNextPhoneSearchRef = useRef<boolean>(false)
+  const [phoneSearchTerm, setPhoneSearchTerm] = useState<string>(values.phone ?? '')
+  const [phoneSearchResults, setPhoneSearchResults] = useState<ClientSearchResult[]>([])
+  const [phoneSearchLoading, setPhoneSearchLoading] = useState<boolean>(false)
+  const [phoneSearchError, setPhoneSearchError] = useState<string>('')
+  const [phoneExists, setPhoneExists] = useState<boolean>(false)
+
+  const formatCurrency = (value?: number | string | null) => {
+    const numeric = typeof value === 'number' ? value : Number(value)
+    if (!Number.isFinite(numeric)) return '--'
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(numeric)
+  }
+
+  const scheduleTemplates = payment_schedule_templates ?? {}
+  const selectedScheduleItems = values.payment_schedule_type
+    ? (scheduleTemplates[values.payment_schedule_type] ?? [])
+    : []
+  const projectAmountValue = Number(String(values.project_amount ?? '').replace(/,/g, ''))
+  const hasProjectAmount = Number.isFinite(projectAmountValue) && projectAmountValue > 0
+  const buildSchedulePreview = (items: PaymentScheduleTemplateItem[]) => {
+    if (!items.length) return []
+    if (!hasProjectAmount) {
+      return items.map((item) => ({ ...item, amount: null }))
+    }
+    let runningTotal = 0
+    return items.map((item, index) => {
+      const amount = index === items.length - 1
+        ? Math.round((projectAmountValue - runningTotal) * 100) / 100
+        : Math.round((projectAmountValue * (item.percentage / 100)) * 100) / 100
+      runningTotal += amount
+      return { ...item, amount }
+    })
+  }
+  const schedulePreviewItems = buildSchedulePreview(selectedScheduleItems)
+  const shouldShowSchedulePreview = isCreate
+    && values.method_of_payment === PAYMENT_METHODS.CASH
+    && values.payment_schedule_type
 
   const addOrderProduct = (orderProduct: OrderProduct) => {
     const orderProductsList = [...orderProducts, orderProduct]
@@ -133,6 +193,77 @@ const ServiceForm = ({
     console.log('updateOrderProduct', index)
   }
 
+  const runClientSearch = async (term: string) => {
+    const normalized = term.trim()
+    if (normalized.length < 2) {
+      setClientSearchError('Enter at least 2 characters.')
+      setClientSearchResults([])
+      return
+    }
+
+    setClientSearchError('')
+    setClientSearchLoading(true)
+
+    try {
+      const response = await fetch(`${route('client.search')}?q=${encodeURIComponent(normalized)}`)
+      if (!response.ok) {
+        throw new Error('Search failed')
+      }
+      const data = await response.json()
+      setClientSearchResults(Array.isArray(data.data) ? data.data : [])
+    } catch (error) {
+      setClientSearchError('Search failed. Try again.')
+      setClientSearchResults([])
+    } finally {
+      setClientSearchLoading(false)
+    }
+  }
+
+  const runPhoneSearch = async (term: string) => {
+    const digits = term.replace(/\D/g, '')
+    if (digits.length < 7) {
+      setPhoneSearchResults([])
+      setPhoneSearchError('')
+      return
+    }
+
+    setPhoneSearchError('')
+    setPhoneSearchLoading(true)
+
+    try {
+      const response = await fetch(`${route('client.search')}?q=${encodeURIComponent(digits)}`)
+      if (!response.ok) {
+        throw new Error('Search failed')
+      }
+      const data = await response.json()
+      setPhoneSearchResults(Array.isArray(data.data) ? data.data : [])
+    } catch (error) {
+      setPhoneSearchError('Search failed. Try again.')
+      setPhoneSearchResults([])
+    } finally {
+      setPhoneSearchLoading(false)
+    }
+  }
+
+  const checkPhoneExists = async (term: string) => {
+    const digits = term.replace(/\D/g, '')
+    if (digits.length !== 10) {
+      setPhoneExists(false)
+      return
+    }
+
+    try {
+      const response = await fetch(`${route('client.phone_exists')}?phone=${encodeURIComponent(digits)}`)
+      if (!response.ok) {
+        return
+      }
+      const data = await response.json()
+      setPhoneExists(Boolean(data.exists))
+    } catch (error) {
+      // ignore
+    }
+  }
+
   const installationTeamOptions: Option[] = installation_teams.map((team) => ({
     label: team.user?.name ?? team.company_name ?? `Team ${team.id}`,
     value: team.id
@@ -148,6 +279,94 @@ const ServiceForm = ({
   useEffect(() => {
     setFieldValue('orderProducts', orderProducts)
   }, [orderProducts, setFieldValue])
+  useEffect(() => {
+    if (!isCreate || isClientLocked) {
+      setClientSearchResults([])
+      setClientSearchError('')
+      return
+    }
+    if (suppressNextSearchRef.current) {
+      suppressNextSearchRef.current = false
+      return
+    }
+    const term = clientSearchTerm.trim()
+    if (term.length < 2) {
+      setClientSearchResults([])
+      setClientSearchError('')
+      return
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      runClientSearch(term)
+    }, 300)
+
+    return () => {
+      window.clearTimeout(timeoutId)
+    }
+  }, [clientSearchTerm, isCreate, isClientLocked])
+
+  useEffect(() => {
+    if (!isCreate || isClientLocked) {
+      setPhoneSearchResults([])
+      setPhoneSearchError('')
+      setPhoneExists(false)
+      return
+    }
+    if (suppressNextPhoneSearchRef.current) {
+      suppressNextPhoneSearchRef.current = false
+      return
+    }
+    const term = phoneSearchTerm.trim()
+    if (term.length === 0) {
+      setPhoneSearchResults([])
+      setPhoneSearchError('')
+      setPhoneExists(false)
+      return
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      runPhoneSearch(term)
+      checkPhoneExists(term)
+    }, 300)
+
+    return () => {
+      window.clearTimeout(timeoutId)
+    }
+  }, [phoneSearchTerm, isCreate, isClientLocked])
+
+  const handleSelectClient = (client: ClientSearchResult) => {
+    suppressNextSearchRef.current = true
+    suppressNextPhoneSearchRef.current = true
+    setSelectedClientId(client.id)
+    setFieldValue('client_id', client.id)
+    setFieldValue('client_name', client.name ?? '')
+    setFieldValue('phone', client.phone ?? '')
+    setFieldValue('email', client.email ?? '')
+    setFieldValue('vip_clients', !!client.vip_clients)
+    setFieldValue('vip_notes', client.vip_notes ?? '')
+    setClientSearchResults([])
+    setClientSearchTerm(client.name ?? '')
+    setPhoneSearchResults([])
+    setPhoneSearchTerm(client.phone ?? '')
+    setPhoneExists(false)
+  }
+
+  const clearSelectedClient = () => {
+    setSelectedClientId(null)
+    setFieldValue('client_id', 0)
+    setFieldValue('client_name', '')
+    setFieldValue('phone', '')
+    setFieldValue('email', '')
+    setFieldValue('vip_clients', false)
+    setFieldValue('vip_notes', '')
+    setClientSearchResults([])
+    setClientSearchTerm('')
+    setClientSearchError('')
+    setPhoneSearchResults([])
+    setPhoneSearchTerm('')
+    setPhoneSearchError('')
+    setPhoneExists(false)
+  }
 
   const selectedSupervisor = (() => {
     const supervisorValue: any = values.supervisor_id
@@ -171,33 +390,69 @@ const ServiceForm = ({
         <fieldset className='p-3 border rounded-xl'>
           <legend className='text-lg font-semibold px-3'>Client Information</legend>
           <div className='grid gap-4 grid-cols-3'>
-            <div className={submitCount ? (errors.client_name ? 'has-error' : 'has-success') : ''}>
+            <div className={`${submitCount ? (errors.client_name ? 'has-error' : 'has-success') : ''} relative`}>
               <label htmlFor="client_name">Name</label>
               <div className='flex'>
                 <Field
                   id="client_name"
                   name="client_name"
-                  className="form-input rounded-r-none"
+                  className="form-input"
                   autoComplete="client_name"
                   placeholder='Name'
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                     const formattedValue = capitalizeWords(e.target.value)
                     setFieldValue('client_name', formattedValue)
+                    if (isCreate && !isClientLocked) {
+                      setClientSearchTerm(formattedValue)
+                    }
                   }}
+                  readOnly={isClientLocked}
                 />
-                <button
-                  onClick={(e) => {
-                    e.preventDefault()
-                    alert('search from begin')
-                  }}
-                  className="bg-[#eee] flex justify-center items-center ltr:rounded-r-md rtl:rounded-l-md px-3 font-semibold border ltr:border-l-0 rtl:border-r-0 border-[#e0e6ed] dark:border-[#17263c] dark:bg-[#1b2e4b]"
-                >
-                  <SearchIcon className="text-[#eee]" />
-                </button>
+                {isCreate && isClientLocked && (
+                  <button
+                    type="button"
+                    className="ml-2 px-2 text-[#5c6370] hover:text-[#111]"
+                    onClick={clearSelectedClient}
+                    aria-label="Clear client"
+                  >
+                    ×
+                  </button>
+                )}
               </div>
+              {isCreate && !isClientLocked && (
+                <div className="text-xs text-[#5c6370] mt-1">Type to search by name or phone.</div>
+              )}
               {(submitCount && errors.client_name) ? <InputError message={errors.client_name} className="mt-2" /> : ''}
+              {isCreate && !isClientLocked && clientSearchError && (
+                <div className="text-danger text-sm mt-1">{clientSearchError}</div>
+              )}
+              {isCreate && !isClientLocked && clientSearchLoading && (
+                <div className="text-sm mt-1">Searching...</div>
+              )}
+              {isCreate && !isClientLocked && clientSearchResults.length > 0 && (
+                <div className="absolute z-50 mt-2 w-full border border-[#e0e6ed] rounded-md divide-y bg-white shadow-lg dark:border-[#17263c] dark:bg-[#1b2e4b]">
+                  {clientSearchResults.map((client) => (
+                    <button
+                      key={client.id}
+                      type="button"
+                      className="w-full text-left px-3 py-2 hover:bg-[#f5f7fb]"
+                      onClick={() => { handleSelectClient(client) }}
+                    >
+                      <div className="font-semibold">{client.name}</div>
+                      <div className="text-xs text-[#5c6370]">
+                        {client.phone}
+                        {client.email ? ` • ${client.email}` : ''}
+                        {client.vip_clients ? ' • VIP' : ''}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+              {isCreate && isClientLocked && (
+                <div className="text-xs text-[#5c6370] mt-1">Client selected. Fields locked.</div>
+              )}
             </div>
-            <div className={submitCount ? (errors.phone ? 'has-error' : 'has-success') : ''}>
+            <div className={`${submitCount ? (errors.phone ? 'has-error' : 'has-success') : ''} relative`}>
               <label htmlFor="phone">Phone</label>
               <Field
                 id="phone"
@@ -205,8 +460,43 @@ const ServiceForm = ({
                 className="form-input"
                 autoComplete="phone"
                 placeholder='Phone'
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                  setFieldValue('phone', e.target.value)
+                  if (isCreate && !isClientLocked) {
+                    setPhoneSearchTerm(e.target.value)
+                  }
+                }}
+                readOnly={isClientLocked}
               />
               {(submitCount && errors.phone) ? <InputError message={errors.phone} className="mt-2" /> : ''}
+              {isCreate && !isClientLocked && phoneExists && (
+                <div className="text-danger text-sm mt-1">Phone already exists. Select a client from the list.</div>
+              )}
+              {isCreate && !isClientLocked && phoneSearchError && (
+                <div className="text-danger text-sm mt-1">{phoneSearchError}</div>
+              )}
+              {isCreate && !isClientLocked && phoneSearchLoading && (
+                <div className="text-sm mt-1">Searching...</div>
+              )}
+              {isCreate && !isClientLocked && phoneSearchResults.length > 0 && (
+                <div className="absolute z-50 mt-2 w-full border border-[#e0e6ed] rounded-md divide-y bg-white shadow-lg dark:border-[#17263c] dark:bg-[#1b2e4b]">
+                  {phoneSearchResults.map((client) => (
+                    <button
+                      key={client.id}
+                      type="button"
+                      className="w-full text-left px-3 py-2 hover:bg-[#f5f7fb]"
+                      onClick={() => { handleSelectClient(client) }}
+                    >
+                      <div className="font-semibold">{client.name}</div>
+                      <div className="text-xs text-[#5c6370]">
+                        {client.phone}
+                        {client.email ? ` • ${client.email}` : ''}
+                        {client.vip_clients ? ' • VIP' : ''}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
             <div className={submitCount ? (errors.email ? 'has-error' : 'has-success') : ''}>
               <label htmlFor="email">Email</label>
@@ -216,6 +506,7 @@ const ServiceForm = ({
                 className="form-input"
                 autoComplete="email"
                 placeholder='Email'
+                readOnly={isClientLocked}
               />
               {(submitCount && errors.email) ? <InputError message={errors.email} className="mt-2" /> : ''}
             </div>
@@ -232,10 +523,11 @@ const ServiceForm = ({
                     setFieldValue('vip_notes', '')
                   }
                 }}
+                disabled={isClientLocked}
               />
               <label htmlFor="vip_clients" className='font-semibold'>VIP</label>
             </div>
-            {values.vip_clients && (
+            {Number(values.vip_clients) === 1 && (
               <div className='col-span-3'>
                 <label htmlFor="vip_notes">VIP Notes</label>
                 <Field
@@ -245,6 +537,7 @@ const ServiceForm = ({
                   rows="3"
                   className="form-textarea resize-none placeholder:text-white-dark"
                   placeholder='VIP Notes'
+                  readOnly={isClientLocked}
                 />
                 {(submitCount && errors.vip_notes) ? <InputError message={errors.vip_notes} className="mt-2" /> : ''}
               </div>
@@ -468,6 +761,30 @@ const ServiceForm = ({
               </Field>
               {(submitCount && errors.duration_of_work_id) ? <InputError message={errors.duration_of_work_id.toString()} className="mt-2" /> : ''}
             </div>
+            <div className={submitCount ? (errors.status ? 'has-error' : 'has-success') : ''}>
+              <label htmlFor="status">Status</label>
+              <Field
+                id="status"
+                name="status"
+                className="form-select"
+                as="select"
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                  setFieldValue('status', e.target.value)
+                }}
+              >
+                <option value="" disabled hidden>Select Status</option>
+                {status.map((currentStatus, index) => (
+                  <option key={index} value={currentStatus}>{currentStatus}</option>
+                ))}
+              </Field>
+              {(submitCount && errors.status) ? <InputError message={errors.status} className="mt-2" /> : ''}
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset className='p-3 border rounded-xl'>
+          <legend className='text-lg font-semibold px-3'>Payment Information</legend>
+          <div className='grid gap-4 grid-cols-3'>
             <div className={submitCount ? (errors.method_of_payment ? 'has-error' : 'has-success') : ''}>
               <label htmlFor="method_of_payment">Project Payment Method</label>
               <Field
@@ -482,6 +799,9 @@ const ServiceForm = ({
                   if (value !== PAYMENT_METHODS.FINANCED && value !== PAYMENT_METHODS.CASH_AND_FINANCE) {
                     setFieldValue('type_of_financing', '')
                   }
+                  if (value !== PAYMENT_METHODS.CASH) {
+                    setFieldValue('payment_schedule_type', '')
+                  }
                 }}
               >
                 <option value="" disabled hidden>Select Method</option>
@@ -491,6 +811,78 @@ const ServiceForm = ({
               </Field>
               {(submitCount && errors.method_of_payment) ? <InputError message={errors.method_of_payment} className="mt-2" /> : ''}
             </div>
+            {isCreate && values.method_of_payment === PAYMENT_METHODS.CASH && (
+              <div className={submitCount ? (errors.payment_schedule_type ? 'has-error' : 'has-success') : ''}>
+                <label htmlFor="payment_schedule_type">Payment Schedule</label>
+                <Field
+                  id="payment_schedule_type"
+                  name="payment_schedule_type"
+                  className="form-select"
+                  as="select"
+                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                    setFieldValue('payment_schedule_type', e.target.value)
+                  }}
+                  value={values.payment_schedule_type ?? ''}
+                >
+                  <option value="">Select Payment Schedule</option>
+                  {payment_schedule_types
+                    .filter((type) => type !== 'CUSTOMIZED')
+                    .map((type, index) => (
+                      <option key={index} value={type}>{type}</option>
+                    ))}
+                </Field>
+                {(submitCount && errors.payment_schedule_type) ? <InputError message={errors.payment_schedule_type} className="mt-2" /> : ''}
+              </div>
+            )}
+            <div className={submitCount ? (errors.project_amount ? 'has-error' : 'has-success') : ''}>
+              <label htmlFor="project_amount">Project Amount</label>
+              <Field
+                id="project_amount"
+                name="project_amount"
+                className="form-input text-right"
+                autoComplete="project_amount"
+                placeholder='Project Amount'
+                type='number'
+              />
+              {(submitCount && errors.project_amount) ? <InputError message={errors.project_amount} className="mt-2" /> : ''}
+            </div>
+            {shouldShowSchedulePreview && (
+              <div className="col-span-3">
+                <label className="mb-1 block text-sm font-medium text-[#5c6370]">
+                  Payment Schedule Preview
+                </label>
+                {schedulePreviewItems.length > 0 ? (
+                  <div className="rounded-md border border-[#e0e6ed] dark:border-[#1b2e4b]">
+                    <div className="flex flex-wrap gap-6 px-3 py-2 text-sm text-[#5c6370]">
+                      <div>
+                        <span className="font-semibold text-[#1f2937]">Type:</span>{' '}
+                        {values.payment_schedule_type || '--'}
+                      </div>
+                      <div>
+                        <span className="font-semibold text-[#1f2937]">Total:</span>{' '}
+                        {hasProjectAmount ? formatCurrency(projectAmountValue) : '--'}
+                      </div>
+                    </div>
+                    <div className="border-t border-[#e0e6ed] dark:border-[#1b2e4b]">
+                      {schedulePreviewItems.map((item, index) => (
+                        <div
+                          key={`${item.label}-${index}`}
+                          className="flex flex-wrap items-center gap-4 px-3 py-2 text-sm text-[#5c6370]"
+                        >
+                          <span className="font-semibold text-[#1f2937]">{item.label}</span>
+                          <span>{item.percentage}%</span>
+                          <span>{item.amount != null ? formatCurrency(item.amount) : '--'}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-sm text-[#5c6370]">
+                    No payment schedule template available for this selection.
+                  </div>
+                )}
+              </div>
+            )}
             {(values.method_of_payment === PAYMENT_METHODS.FINANCED || values.method_of_payment === PAYMENT_METHODS.CASH_AND_FINANCE) && (
               <div className={submitCount ? (errors.type_of_financing ? 'has-error' : 'has-success') : ''}>
                 <label htmlFor="type_of_financing">Type of Financing</label>
@@ -512,36 +904,114 @@ const ServiceForm = ({
                 {(submitCount && errors.type_of_financing) ? <InputError message={errors.type_of_financing} className="mt-2" /> : ''}
               </div>
             )}
-            <div className={submitCount ? (errors.status ? 'has-error' : 'has-success') : ''}>
-              <label htmlFor="status">Status</label>
-              <Field
-                id="status"
-                name="status"
-                className="form-select"
-                as="select"
-                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
-                  setFieldValue('status', e.target.value)
-                }}
-              >
-                <option value="" disabled hidden>Select Status</option>
-                {status.map((currentStatus, index) => (
-                  <option key={index} value={currentStatus}>{currentStatus}</option>
-                ))}
-              </Field>
-              {(submitCount && errors.status) ? <InputError message={errors.status} className="mt-2" /> : ''}
+            {values.method_of_payment === PAYMENT_METHODS.CASH_AND_FINANCE && (
+              <div className={submitCount ? (errors.down_payment ? 'has-error' : 'has-success') : ''}>
+                <label htmlFor="down_payment">Down Payment</label>
+                <Field
+                  id="down_payment"
+                  name="down_payment"
+                  className="form-input text-right"
+                  autoComplete="down_payment"
+                  placeholder='Down Payment'
+                  type='number'
+                />
+                {(submitCount && errors.down_payment) ? <InputError message={errors.down_payment} className="mt-2" /> : ''}
+              </div>
+            )}
+            <div className={submitCount ? (errors.change_order_enabled ? 'has-error inline-flex flex-col' : 'has-success inline-flex') : 'inline-flex items-end'}>
+              <div className='flex'>
+                <Field
+                  id="change_order_enabled"
+                  name="change_order_enabled"
+                  className="form-checkbox"
+                  type='checkbox'
+                  checked={Boolean(values.change_order_enabled)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                    const enabled = e.target.checked
+                    setFieldValue('change_order_enabled', enabled)
+                    if (!enabled) {
+                      setFieldValue('change_order_amount', null)
+                      setFieldValue('change_order_note', '')
+                    }
+                  }}
+                />
+                <label htmlFor="change_order_enabled" className="ml-2">Change Order</label>
+              </div>
+              {(submitCount && errors.change_order_enabled) ? <div className='block'><InputError message={errors.change_order_enabled.toString()} className="mt-2" /></div> : ''}
             </div>
-            <div className={submitCount ? (errors.project_amount ? 'has-error' : 'has-success') : ''}>
-              <label htmlFor="project_amount">Project Amount</label>
-              <Field
-                id="project_amount"
-                name="project_amount"
-                className="form-input text-right"
-                autoComplete="project_amount"
-                placeholder='Project Amount'
-                type='number'
-              />
-              {(submitCount && errors.project_amount) ? <InputError message={errors.project_amount} className="mt-2" /> : ''}
-            </div>
+            {values.change_order_enabled && (
+              <>
+                <div className={submitCount ? (errors.change_order_amount ? 'has-error' : 'has-success') : ''}>
+                  <label htmlFor="change_order_amount">Change Order Price</label>
+                  <Field
+                    id="change_order_amount"
+                    name="change_order_amount"
+                    className="form-input text-right"
+                    autoComplete="change_order_amount"
+                    placeholder='Change Order Price'
+                    type='number'
+                  />
+                  {(submitCount && errors.change_order_amount) ? <InputError message={errors.change_order_amount.toString()} className="mt-2" /> : ''}
+                </div>
+                <div className={submitCount ? (errors.change_order_note ? 'has-error' : 'has-success') : ''}>
+                  <label htmlFor="change_order_note">Change Order Note</label>
+                  <Field
+                    id="change_order_note"
+                    name="change_order_note"
+                    className="form-input"
+                    autoComplete="change_order_note"
+                    placeholder='Change Order Note'
+                    type='text'
+                  />
+                  {(submitCount && errors.change_order_note) ? <InputError message={errors.change_order_note.toString()} className="mt-2" /> : ''}
+                </div>
+              </>
+            )}
+            {!isCreate && values.method_of_payment === PAYMENT_METHODS.CASH && (
+              <div className="col-span-3">
+                <label className="mb-1 block text-sm font-medium text-[#5c6370]">
+                  Payment Schedule
+                </label>
+                {values.payment_schedule ? (
+                  <div className="rounded-md border border-[#e0e6ed] dark:border-[#1b2e4b]">
+                    <div className="flex flex-wrap gap-6 px-3 py-2 text-sm text-[#5c6370]">
+                      <div>
+                        <span className="font-semibold text-[#1f2937]">Type:</span>{' '}
+                        {values.payment_schedule.schedule_type ?? '--'}
+                      </div>
+                      <div>
+                        <span className="font-semibold text-[#1f2937]">Total:</span>{' '}
+                        {formatCurrency(values.payment_schedule.total_amount)}
+                      </div>
+                    </div>
+                    {values.payment_schedule.installments && values.payment_schedule.installments.length > 0 ? (
+                      <div className="border-t border-[#e0e6ed] dark:border-[#1b2e4b]">
+                        {values.payment_schedule.installments.map((installment, index) => (
+                          <div
+                            key={`${installment.id ?? installment.label}-${index}`}
+                            className="flex flex-wrap items-center gap-4 px-3 py-2 text-sm text-[#5c6370]"
+                          >
+                            <span className="font-semibold text-[#1f2937]">{installment.label}</span>
+                            <span>{installment.percentage}%</span>
+                            <span>{formatCurrency(installment.amount)}</span>
+                            <span>{installment.due_date ?? '-'}</span>
+                            <span className="text-xs uppercase tracking-wide">{installment.status}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="px-3 py-2 text-sm text-[#5c6370]">
+                        No payment installments recorded for this order.
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-sm text-[#5c6370]">
+                    No payment schedule has been created for this order.
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </fieldset>
 
@@ -600,10 +1070,10 @@ const ServiceForm = ({
         </fieldset>
 
         <fieldset className='p-3 border rounded-xl'>
-          <legend className='text-lg font-semibold px-3'>Notes</legend>
+          <legend className='text-lg font-semibold px-3'>Installer Notes</legend>
           <div className='grid gap-4 grid-cols-1'>
             <div className={submitCount ? (errors.notes ? 'has-error' : 'has-success') : ''}>
-              <label htmlFor="notes">Notes</label>
+              <label htmlFor="notes">Installer Notes</label>
               <Field
                 id="notes"
                 name="notes"
@@ -614,6 +1084,20 @@ const ServiceForm = ({
               />
               {(submitCount && errors.notes) ? <InputError message={errors.notes} className="mt-2" /> : ''}
             </div>
+            {isCreate && (
+              <div className={submitCount ? (errors.work_team_notes ? 'has-error' : 'has-success') : ''}>
+                <label htmlFor="work_team_notes">Work Team Notes</label>
+                <Field
+                  id="work_team_notes"
+                  name="work_team_notes"
+                  component="textarea"
+                  rows="4"
+                  className="form-textarea resize-none placeholder:text-white-dark"
+                  placeholder='Work Team Notes'
+                />
+                {(submitCount && errors.work_team_notes) ? <InputError message={errors.work_team_notes} className="mt-2" /> : ''}
+              </div>
+            )}
           </div>
         </fieldset>
 
@@ -665,6 +1149,11 @@ const ServiceForm = ({
             extraWorks={extraWorks}
             product_costs={product_costs}
           />
+        </fieldset>
+
+        <fieldset className='p-3 border rounded-xl'>
+          <legend className='text-lg font-semibold px-3'>Work Team Notes (All Notes)</legend>
+          <OrderNotesForOrder orderId={values.id || null} canCreate={values.id !== 0} />
         </fieldset>
 
         <div className="flex items-center justify-between mt-4">

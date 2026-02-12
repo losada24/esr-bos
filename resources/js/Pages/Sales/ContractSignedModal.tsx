@@ -29,6 +29,8 @@ interface ContractSignedFormValues {
   addressCheck: boolean
   amountCheck: boolean
   emailCheck: boolean
+  cityPermits: boolean
+  associationPermits: boolean
   attachments: File[]
   paymentScheduleType: string
   customSchedule: CustomScheduleItem[]
@@ -59,6 +61,8 @@ type ContractSignedSubmitValues = {
   addressCheck: boolean
   amountCheck: boolean
   emailCheck: boolean
+  cityPermits: boolean
+  associationPermits: boolean
   paymentScheduleType: string
   customSchedule: CustomSchedulePayload[]
 }
@@ -80,6 +84,8 @@ export interface ContractSignedModalProps {
   initialAddressCheck: boolean
   initialAmountCheck: boolean
   initialEmailCheck: boolean
+  initialCityPermits: boolean
+  initialAssociationPermits: boolean
   orderType?: string | null
   companyOptions?: Array<{ id: number, label: string, client_email?: string | null }>
   initialOrderCompanyContactId?: number | null
@@ -114,6 +120,8 @@ export default function ContractSignedModal ({
   initialAddressCheck,
   initialAmountCheck,
   initialEmailCheck,
+  initialCityPermits,
+  initialAssociationPermits,
   orderType,
   companyOptions = [],
   initialOrderCompanyContactId = null,
@@ -215,6 +223,8 @@ export default function ContractSignedModal ({
             addressCheck: initialAddressCheck ?? true,
             amountCheck: initialAmountCheck ?? true,
             emailCheck: initialEmailCheck ?? true,
+            cityPermits: initialCityPermits ?? false,
+            associationPermits: initialAssociationPermits ?? false,
             attachments: [],
             paymentScheduleType: initialPaymentScheduleType ?? '',
             customSchedule: buildCustomSchedule(initialCustomSchedule),
@@ -356,6 +366,8 @@ export default function ContractSignedModal ({
               addressCheck: values.addressCheck,
               amountCheck: values.amountCheck,
               emailCheck: values.emailCheck,
+              cityPermits: values.cityPermits,
+              associationPermits: values.associationPermits,
               attachments: values.attachments ?? [],
               paymentScheduleType: values.paymentScheduleType,
               customSchedule,
@@ -810,6 +822,28 @@ export default function ContractSignedModal ({
                       disabled={loading}
                     />
                     <span>Email</span>
+                  </label>
+                  <label className="inline-flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      name="cityPermits"
+                      checked={values.cityPermits}
+                      onChange={(event) => { setFieldValue('cityPermits', event.target.checked) }}
+                      className="form-checkbox h-4 w-4"
+                      disabled={loading}
+                    />
+                    <span>Included City Permits</span>
+                  </label>
+                  <label className="inline-flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      name="associationPermits"
+                      checked={values.associationPermits}
+                      onChange={(event) => { setFieldValue('associationPermits', event.target.checked) }}
+                      className="form-checkbox h-4 w-4"
+                      disabled={loading}
+                    />
+                    <span>HOA</span>
                   </label>
                 </div>
                 {submitCount > 0 && errors.nameCheck && (

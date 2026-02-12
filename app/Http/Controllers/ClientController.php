@@ -202,6 +202,39 @@ class ClientController extends Controller
         ]);
     }
 
+    public function search(Request $request)
+    {
+        $data = $request->validate([
+            'q' => ['required', 'string', 'min:2'],
+        ]);
+
+        $term = trim($data['q']);
+        if ($term === '') {
+            return response()->json(['data' => []]);
+        }
+
+        $digits = preg_replace('/\D+/', '', $term) ?? '';
+        $like = '%' . $term . '%';
+
+        $clients = Client::query()
+            ->select('id', 'name', 'phone', 'email', 'vip_clients', 'vip_notes', 'company_contact_id')
+            ->with('companyContact:id,name')
+            ->where(function ($query) use ($like, $digits) {
+                $query->where('name', 'like', $like);
+
+                if ($digits !== '') {
+                    $query->orWhere('phone', 'like', '%' . $digits . '%');
+                } else {
+                    $query->orWhere('phone', 'like', $like);
+                }
+            })
+            ->orderBy('name')
+            ->limit(10)
+            ->get();
+
+        return response()->json(['data' => $clients]);
+    }
+
     public function document($id)
     {
         $clientAddress = ClientAddress::with(['client', 'client.user'])->find($id);

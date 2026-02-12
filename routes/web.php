@@ -17,6 +17,7 @@ use App\Http\Controllers\OrderNoteController;
 use App\Http\Controllers\OrderProcessingController;
 use App\Http\Controllers\OrderStorageController;
 use App\Http\Controllers\OrderSearchController;
+use App\Http\Controllers\OrderPaymentController;
 use App\Http\Controllers\PaymentScheduleController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SalesController;
@@ -184,6 +185,9 @@ Route::middleware('auth')->group(function () {
       ->name('order.duplicate');
 
     // CLIENTS
+    Route::get('client/search', [ClientController::class, 'search'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|' . RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::FRONTDESK->value . '|' . RoleEnum::OWNER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|' . RoleEnum::FRONTDESK_ADMIN->value ])
+      ->name('client.search');
     Route::get('client/is_unique/{phone}/{address?}', [ClientController::class, 'isUnique'])
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|' . RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::FRONTDESK->value . '|' . RoleEnum::OWNER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|' . RoleEnum::FRONTDESK_ADMIN->value ]);
     Route::get('client/phone-exists', [ClientController::class, 'phoneExists'])
@@ -308,6 +312,10 @@ Route::middleware('auth')->group(function () {
       Route::patch('/payment-installments/{installment}', [PaymentScheduleController::class, 'updateInstallment'])
         ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::OWNER->value. '|'. RoleEnum::FRONTDESK_ADMIN->value])
         ->name('payment_installments.update');
+
+      Route::patch('/order-payments/{orderPayment}', [OrderPaymentController::class, 'update'])
+        ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::OWNER->value. '|'. RoleEnum::FRONTDESK_ADMIN->value])
+        ->name('order_payments.update');
 
       Route::post('/sales/{order}/assign-lost-contract', [SalesController::class, 'assignLostContract'])
         ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value. '|'. RoleEnum::FRONTDESK_ADMIN->value. '|'. RoleEnum::OWNER->value])

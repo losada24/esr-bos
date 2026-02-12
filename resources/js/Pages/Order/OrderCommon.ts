@@ -1,4 +1,5 @@
 import { ExtraWorks, type InstallationTeam, type Order } from '@/types'
+import type { PaymentSchedule } from '@/types/interfaces/order'
 import { type OrderProduct, type OrderProductsExtraWorks } from '@/types/interfaces/order'
 import * as Yup from 'yup'
 
@@ -66,6 +67,15 @@ export type OrderFormValues = Omit<Order, 'installation_date' | 'delivery_date' 
   installation_end_date: Date | null
   frame_color: string[] | DropdownOption[]
   contact_type: string
+  order_type?: string
+  is_supply?: boolean
+  client_company_name?: string
+  down_payment?: number | null
+  payment_schedule?: PaymentSchedule | null
+  payment_schedule_type?: string
+  change_order_enabled?: boolean
+  change_order_amount?: number | null
+  change_order_note?: string
 }
 
 export const orderFormObj: OrderFormValues = {
@@ -78,6 +88,7 @@ export const orderFormObj: OrderFormValues = {
   vip_notes: '',
   name: '',
   order_number: 0,
+  invoice_number: '',
   job_address: '',
   job_state: '',
   job_zip: '',
@@ -119,7 +130,16 @@ export const orderFormObj: OrderFormValues = {
   is_new_travel_cost: false,
   new_travel_cost: 0,
   material_received_date: null,
-  contact_type: ''
+  contact_type: '',
+  order_type: '',
+  is_supply: false,
+  client_company_name: '',
+  down_payment: null,
+  payment_schedule: null,
+  payment_schedule_type: '',
+  change_order_enabled: false,
+  change_order_amount: null,
+  change_order_note: ''
 }
 
 export interface OrderProductExtraWorksFormValues {
@@ -142,6 +162,7 @@ export const loadOrderFormObj = (order: Order): OrderFormValues => {
     vip_notes: order.client?.vip_notes ?? '',
     name: order.name,
     order_number: order.order_number,
+    invoice_number: order.invoice_number ?? '',
     job_address: order.job_address,
     job_state: order.job_state,
     job_zip: order.job_zip,
@@ -189,7 +210,16 @@ export const loadOrderFormObj = (order: Order): OrderFormValues => {
     new_travel_cost: order.new_travel_cost,
     material_received_date: order.material_received_date ?? null,
     order_colors: order.order_colors ?? [],
-    contact_type: order.client?.contact_type ?? ''
+    contact_type: order.client?.contact_type ?? '',
+    order_type: order.order_type ?? '',
+    is_supply: order.is_supply ?? false,
+    client_company_name: order.client?.company_contact?.name ?? '',
+    down_payment: order.down_payment ?? null,
+    payment_schedule: order.payment_schedule ?? null,
+    payment_schedule_type: order.payment_schedule?.schedule_type ?? '',
+    change_order_enabled: Boolean(order.change_order_payment),
+    change_order_amount: order.change_order_payment?.amount ?? null,
+    change_order_note: order.change_order_payment?.note ?? ''
   }
 }
 

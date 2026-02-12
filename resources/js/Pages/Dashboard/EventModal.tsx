@@ -798,27 +798,6 @@ const EventModal = ({
                   />
                   </div>
                   )}
-            {/* event?.work_team_notes && (
-              <div className='flex flex-col gap-2'>
-                  <strong>Work Team Notes:</strong>
-                  <div className='flex flex-row justify-start'>
-                    {event?.work_team_notes ?? ''}
-                  </div>
-              </div>
-            ) */}
-               <div className='col-span-4 mt-4'>
-              <label htmlFor="work_team_notes"><strong>Work Team Notes </strong></label>
-              <textarea
-                id="work_team_notes"
-                name="work_team_notes"
-                rows = {6}
-                value={editableData.work_team_notes ?? ''}
-                disabled={isInstaller }
-                className="form-textarea resize-none placeholder:text-white-dark"
-                placeholder='Work Team Notes'
-                onChange={(e) => { setEditableData({ ...editableData, work_team_notes: e.target.value }) }}
-              />
-            </div>
             <div className='col-span-4 mt-4'>
               <label htmlFor="notes"><strong>Installer Notes </strong></label>
               <textarea
@@ -826,7 +805,7 @@ const EventModal = ({
                 name="notes"
                 rows = {6}
                 value={editableData.notes ?? ''}
-                disabled={isInstaller }
+                disabled={!isAdminOrAccountManager}
                 className="form-textarea resize-none placeholder:text-white-dark"
                 placeholder='Notes'
                 onChange={(e) => { setEditableData({ ...editableData, notes: e.target.value }) }}
@@ -933,7 +912,14 @@ const EventModal = ({
                         }}
               />
             </div>)}
-            {(attachmentsList && (event?.service === 'DELIVERY AND INSTALLATION' || event?.service === 'SERVICE')) && (
+            {(attachmentsList && (
+              event?.service === 'DELIVERY AND INSTALLATION' ||
+              event?.service === 'SERVICE' ||
+              event?.service === 'PICKUP' ||
+              event?.service === 'DELIVERY ONLY' ||
+              isInstaller ||
+              isOwner
+            )) && (
               <div className='space-y-3 mt-3'>
                 <div className='flex flex-col gap-2'>
                   {!isInstaller && (
@@ -986,19 +972,20 @@ const EventModal = ({
                   </div>
                 </div>
                 <fieldset className='p-3 border rounded-xl mt-3'>
-                  <legend className='text-lg font-semibold px-3'>Work Team Notes History</legend>
+                  <legend className='text-lg font-semibold px-3'>Work Team Notes (All Notes)</legend>
                   <OrderNotesForOrder
                     orderId={event?.id ?? null}
                     canCreate={(event?.id ?? 0) !== 0}
-                    noteType="work_team_note"
                   />
                 </fieldset>
-                <div className='flex flex-col gap-2'>
-                  <strong>Payment List:</strong>
-                  <div className='flex flex-col justify-start'>
-                    <a href={route('order.get_payment_list', { id: event?.id ?? 0 })} target='_blank' className='badge badge-outline-dark' rel='noreferrer'>Download Payment List</a>
+                {!(event?.service === 'PICKUP' || event?.service === 'DELIVERY ONLY') && (
+                  <div className='flex flex-col gap-2'>
+                    <strong>Payment List:</strong>
+                    <div className='flex flex-col justify-start'>
+                      <a href={route('order.get_payment_list', { id: event?.id ?? 0 })} target='_blank' className='badge badge-outline-dark' rel='noreferrer'>Download Payment List</a>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             )}
             {(isSupervisor) && (event?.service === 'DELIVERY AND INSTALLATION') && (

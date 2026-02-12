@@ -8,6 +8,7 @@ use App\Enum\MethodOfPayment;
 use App\Enum\OrderStatusEnum;
 use App\Enum\ServiceEnum;
 use App\Enum\TypeOfFinancing;
+use App\Support\PaymentScheduleTemplates;
 
 class StoreServiceRequest extends FormRequest
 {
@@ -19,17 +20,34 @@ class StoreServiceRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation()
+    {
+        $clientId = $this->input('client_id');
+        if ($clientId === 0 || $clientId === '0' || $clientId === '') {
+            $this->merge(['client_id' => null]);
+        }
+
+        if ($this->input('payment_schedule_type') === '') {
+            $this->merge(['payment_schedule_type' => null]);
+        }
+    }
+
     /**
      * Get the validation rules that apply to the request.
      */
     public function rules(): array
     {
         return [
+            'client_id' => 'nullable|integer|exists:clients,id',
             'client_name' => 'required|string|max:255',
             //'phone' => 'required|string|max:255',
              'phone' => [
               'required',
-              'regex:/^\d{10}$/'
+              'regex:/^\d{10}$/',
+              Rule::when(
+                fn ($input) => empty($input->client_id),
+                [Rule::unique('clients', 'phone')]
+              )
             ],
             'email' => 'nullable|email|max:255',
             'name' => 'required|string|max:255',
@@ -77,6 +95,11 @@ class StoreServiceRequest extends FormRequest
                     TypeOfFinancing::GOOD_LEAP->value,
                 ),
             ],
+            'payment_schedule_type' => [
+                'nullable',
+                Rule::requiredIf(fn () => $this->input('method_of_payment') === MethodOfPayment::CASH->value),
+                Rule::in(PaymentScheduleTemplates::types()),
+            ],
             'status' => [
                 'required',
                 'string',
@@ -88,10 +111,19 @@ class StoreServiceRequest extends FormRequest
             ],
             'supervisor_id' => 'nullable|integer|exists:users,id',
             'project_amount' => 'nullable|numeric',
+            'down_payment' => 'nullable|numeric',
+            'change_order_enabled' => 'boolean',
+            'change_order_amount' => [
+                'nullable',
+                'numeric',
+                Rule::requiredIf(fn () => filter_var($this->input('change_order_enabled'), FILTER_VALIDATE_BOOLEAN)),
+            ],
+            'change_order_note' => 'nullable|string|max:2000',
             'entry_date' => 'nullable|date_format:Y-m-d',
             'delivery_date' => 'nullable|date_format:Y-m-d',
             'installation_date' => 'nullable|date_format:Y-m-d',
             'notes' => 'nullable|string|max:1000',
+            'work_team_notes' => 'nullable|string|max:2000',
             'attachments' => 'nullable|array',
             'attachments.*' => 'file|mimes:jpeg,png,jpg,pdf,docx,doc,xlsx,heic|max:10240',
             'orderProducts' => 'nullable|array',

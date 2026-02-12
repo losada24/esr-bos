@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Models\Order;
 use App\Enum\OrderStatusEnum;
+use App\Enum\OrderTypeEnum;
 use App\Enum\RoleEnum;
 use App\Enum\ServiceEnum;
 use App\Enum\SupervisorPaymentStatusEnum;
@@ -41,6 +42,7 @@ use App\Traits\OrderDates;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
 use Doctrine\DBAL\Types\Type;
+use App\Support\PaymentScheduleTemplates;
 
 class OrderController extends Controller
 {
@@ -181,6 +183,13 @@ class OrderController extends Controller
       'extra_works' => ExtraWork::all(),
       'extraWorks' => ExtraWork::select('id', 'name')->get(),
       'product_costs' => ProductCost::all(),
+      'payment_schedule_types' => PaymentScheduleTemplates::types(),
+      'payment_schedule_templates' => PaymentScheduleTemplates::templates(),
+      'order_types' => [
+        OrderTypeEnum::RESIDENTIAL->value,
+        OrderTypeEnum::COMMERCIAL->value,
+        OrderTypeEnum::SUPPLY->value,
+      ],
       'status' => [
         OrderStatusEnum::REVIEW->value,
         OrderStatusEnum::PLANNED->value,
@@ -298,12 +307,14 @@ class OrderController extends Controller
       })->values();
 
       $data['order'] = $order->load([
-        'client',
+        'client.companyContact',
         'installationTeams.user',
         'orderProducts.productConfig',
         'orderProducts.productCategory',
         'orderProducts.orderProductExtraWorks',
         'orderProducts.typeOfWork',
+        'paymentSchedule.installments',
+        'changeOrderPayment',
         'owners',
         'attachments'
       ]);
@@ -348,7 +359,7 @@ class OrderController extends Controller
 
     return Inertia::render('Order/Edit', [
       'order' => $order->load([
-        'client',
+        'client.companyContact',
         'typeOfWork',
         'typeOfHousing',
         'user',
@@ -356,7 +367,9 @@ class OrderController extends Controller
         'owners',
         'orderProducts.orderProductExtraWorks',
         'orderColors',
-        
+        'paymentSchedule.installments',
+        'changeOrderPayment',
+
         'installationTeams.user',
       ]),
       //dd($order),
@@ -415,6 +428,13 @@ class OrderController extends Controller
       'type_of_products' => TypeOfProduct::with(['extraWorks'])->get(),
       'product_category' => ProductCategory::all(),
       'product_costs' => ProductCost::all(),
+      'payment_schedule_types' => PaymentScheduleTemplates::types(),
+      'payment_schedule_templates' => PaymentScheduleTemplates::templates(),
+      'order_types' => [
+        OrderTypeEnum::RESIDENTIAL->value,
+        OrderTypeEnum::COMMERCIAL->value,
+        OrderTypeEnum::SUPPLY->value,
+      ],
       'status' => $status
     ]);
    

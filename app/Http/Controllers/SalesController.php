@@ -324,6 +324,8 @@ class SalesController extends Controller
       'address_check' => (bool) ($order->address_check ?? false),
       'amount_check' => (bool) ($order->amount_check ?? false),
       'email_check' => (bool) ($order->email_check ?? false),
+      'city_permits' => (bool) ($order->city_permits ?? false),
+      'association_permits' => (bool) ($order->association_permits ?? false),
       'project_amount' => $order->project_amount ? (float) $order->project_amount : 0,
       'down_payment' => $order->down_payment ? (float) $order->down_payment : null,
       'job_address' => $order->job_address ?? null,
@@ -1082,6 +1084,8 @@ class SalesController extends Controller
       'address_check' => ['nullable', 'boolean'],
       'amount_check' => ['nullable', 'boolean'],
       'email_check' => ['nullable', 'boolean'],
+      'city_permits' => ['nullable', 'boolean'],
+      'association_permits' => ['nullable', 'boolean'],
       'method_of_payment' => ['required', Rule::in(array_map(fn (MethodOfPayment $method) => $method->value, MethodOfPayment::cases()))],
       'type_of_financing' => ['nullable', Rule::in(array_map(fn (TypeOfFinancing $financing) => $financing->value, TypeOfFinancing::cases()))],
       'down_payment' => ['nullable', 'numeric', 'min:0'],
@@ -1179,6 +1183,8 @@ class SalesController extends Controller
       $order->address_check = $request->boolean('address_check');
       $order->amount_check = $request->boolean('amount_check');
       $order->email_check = $request->boolean('email_check');
+      $order->city_permits = $request->boolean('city_permits');
+      $order->association_permits = $request->boolean('association_permits');
       $order->status = $newPipelineStatus;
       $order->save();
 
@@ -1347,6 +1353,8 @@ class SalesController extends Controller
         'address_check' => (bool) ($order->address_check ?? false),
         'amount_check' => (bool) ($order->amount_check ?? false),
         'email_check' => (bool) ($order->email_check ?? false),
+        'city_permits' => (bool) ($order->city_permits ?? false),
+        'association_permits' => (bool) ($order->association_permits ?? false),
         'payment_schedule' => $order->paymentSchedule
           ? [
             'id' => $order->paymentSchedule->id,

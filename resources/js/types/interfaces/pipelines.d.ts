@@ -18,6 +18,8 @@ export interface Tasks {
   address_check?: boolean
   amount_check?: boolean
   email_check?: boolean
+  city_permits?: boolean
+  association_permits?: boolean
   project_amount?: number | string | null
   down_payment?: number | string | null
   job_address?: string | null

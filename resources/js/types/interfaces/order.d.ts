@@ -6,6 +6,8 @@ export interface Order {
   id: number
   name: string
   order_number: number
+  invoice_number?: string
+  is_supply?: boolean
   job_address?: string
   job_city?: string
   job_state?: string
@@ -56,7 +58,7 @@ export interface Order {
   cost_delivery?: number
   cost_city_fee?: number
   project_amount?: number
-  down_payment?: number
+  down_payment?: number | null
   city?: string
   job_state?: string
   job_zip?: string
@@ -69,6 +71,7 @@ export interface Order {
   payment_extra_fields?: PaymentExtraFields
   installation_payment?: InstallationPayment[]
   payment_schedule?: PaymentSchedule | null
+  change_order_payment?: OrderPayment | null
   pre_inspection?: boolean
   inspection?: boolean
   walk_trough?: boolean
@@ -87,6 +90,7 @@ export interface Order {
   address_check?: boolean
   amount_check?: boolean
   email_check?: boolean
+  order_type?: string
 }
 
 export interface TypeOfWork {
@@ -301,6 +305,17 @@ export interface PaymentSchedule {
   schedule_type: string
   total_amount: number
   installments?: PaymentInstallment[]
+}
+
+export interface OrderPayment {
+  id: number
+  order_id: number
+  type: string
+  amount: number
+  note?: string | null
+  status?: string | null
+  paid_at?: string | null
+  paid_by?: { id: number, name: string } | null
 }
 
 export interface BiweeklyInstaller {
