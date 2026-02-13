@@ -35,10 +35,11 @@ class EstimateAppointmentScheduleSaleForm extends Mailable implements ShouldQueu
 
     public function envelope(): Envelope
     {
-        $appName = config('app.name');
+        $this->order->loadMissing('client');
+        $clientName = optional($this->order->client)->name ?? 'Unknown client';
 
         return new Envelope(
-            subject: "Sale form for estimate appointment. [$appName]",
+            subject: "New estimate appointment assignment - {$clientName}",
         );
     }
 
