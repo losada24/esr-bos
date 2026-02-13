@@ -17,6 +17,7 @@ use App\Enum\SupervisorPaymentStatusEnum;
 use App\Exports\InstallerExport;
 use App\Exports\InstallerConfirmedSummaryExport;
 use App\Exports\DailyOrderStatusSummaryExport;
+use App\Exports\AccountingStatusSummaryExport;
 use App\Exports\MarketingReportExport;
 use App\Exports\OwnerAssignedSummaryExport;
 use App\Exports\SupervisorExport;
@@ -723,9 +724,34 @@ class ReportController extends Controller
   public function accountingStatusSummary(Request $request)
   {
     [$startDate, $endDate] = $this->resolveSummaryDateRange($request);
-    $data = $this->buildAccountingStatusSummaryData($startDate, $endDate);
+    $selectedStatus = $this->resolveAccountingStatus($request);
+    $data = $this->buildAccountingStatusSummaryData($startDate, $endDate, $selectedStatus);
 
     return Inertia::render('Report/AccountingStatusSummary', $data);
+  }
+
+  public function accountingStatusSummaryPdf(Request $request)
+  {
+    [$startDate, $endDate] = $this->resolveSummaryDateRange($request);
+    $selectedStatus = $this->resolveAccountingStatus($request);
+    $data = $this->buildAccountingStatusSummaryData($startDate, $endDate, $selectedStatus);
+    $pdf = Pdf::loadView('pdf.accounting-status-summary', $data)->setPaper('A4', 'landscape');
+    $pdfName = 'accounting-status-summary.pdf';
+
+    return $pdf->stream($pdfName);
+  }
+
+  public function accountingStatusSummaryExcel(Request $request)
+  {
+    [$startDate, $endDate] = $this->resolveSummaryDateRange($request);
+    $selectedStatus = $this->resolveAccountingStatus($request);
+    $data = $this->buildAccountingStatusSummaryData($startDate, $endDate, $selectedStatus);
+
+    return Excel::download(
+      new AccountingStatusSummaryExport($data),
+      'Accounting Status Summary.xlsx',
+      \Maatwebsite\Excel\Excel::XLSX
+    );
   }
 
   public function dailyOrderStatusSummary(Request $request)
@@ -1044,12 +1070,25 @@ class ReportController extends Controller
     ];
   }
 
-  private function buildAccountingStatusSummaryData(Carbon $startDate, Carbon $endDate): array
+  private function resolveAccountingStatus(Request $request): ?string
   {
-    $statuses = [
+    $allowedStatuses = [
       OrderStatusEnum::ACCOUNT_RECEIPT->value,
       OrderStatusEnum::COMPLETE->value,
     ];
+
+    return $request->filled('status') && in_array($request->status, $allowedStatuses, true)
+      ? $request->status
+      : null;
+  }
+
+  private function buildAccountingStatusSummaryData(Carbon $startDate, Carbon $endDate, ?string $selectedStatus = null): array
+  {
+    $availableStatuses = [
+      OrderStatusEnum::ACCOUNT_RECEIPT->value,
+      OrderStatusEnum::COMPLETE->value,
+    ];
+    $statuses = $selectedStatus ? [$selectedStatus] : $availableStatuses;
 
     $rows = OrderStatus::query()
       ->with([
@@ -1084,6 +1123,8 @@ class ReportController extends Controller
         'account_receipt' => $rows->where('status', OrderStatusEnum::ACCOUNT_RECEIPT->value)->count(),
         'complete' => $rows->where('status', OrderStatusEnum::COMPLETE->value)->count(),
       ],
+      'selectedStatus' => $selectedStatus,
+      'availableStatuses' => $availableStatuses,
       'startDate' => $startDate->toDateString(),
       'endDate' => $endDate->toDateString(),
     ];
