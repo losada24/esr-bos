@@ -423,8 +423,16 @@ Route::middleware('auth')->group(function () {
     ->name('report.order-status-summary');
 
     Route::get('/report/accounting-status-summary', [ReportController::class, 'accountingStatusSummary'])
-    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::ACCOUNTING->value . '|'. RoleEnum::OWNER_ADMIN->value] )
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNTING->value] )
     ->name('report.accounting-status-summary');
+
+    Route::get('/report/accounting-status-summary/pdf', [ReportController::class, 'accountingStatusSummaryPdf'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNTING->value] )
+    ->name('report.accounting-status-summary-pdf');
+
+    Route::get('/report/accounting-status-summary/excel', [ReportController::class, 'accountingStatusSummaryExcel'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNTING->value] )
+    ->name('report.accounting-status-summary-excel');
 
     Route::get('/report/daily-order-status-summary', [ReportController::class, 'dailyOrderStatusSummary'])
     ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::FRONTDESK_ADMIN->value . '|'. RoleEnum::OWNER_ADMIN->value] )

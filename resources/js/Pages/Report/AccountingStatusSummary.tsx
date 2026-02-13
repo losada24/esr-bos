@@ -22,6 +22,7 @@ type AccountingStatusSummaryProps = PageProps & {
     account_receipt: number
     complete: number
   }
+  selectedStatus: string | null
   startDate: string
   endDate: string
 }
@@ -39,7 +40,13 @@ function formatCurrency(value: number | string | null): string {
   }).format(numericValue)
 }
 
-export default function AccountingStatusSummary({ rows, totals, startDate, endDate, auth }: AccountingStatusSummaryProps) {
+export default function AccountingStatusSummary({ rows, totals, selectedStatus, startDate, endDate, auth }: AccountingStatusSummaryProps) {
+  const exportParams = new URLSearchParams()
+  if (startDate) exportParams.set('start_date', startDate)
+  if (endDate) exportParams.set('end_date', endDate)
+  if (selectedStatus) exportParams.set('status', selectedStatus)
+  const exportQuery = `?${exportParams.toString()}`
+
   return (
     <AuthenticatedLayout
       auth={auth}
@@ -48,6 +55,7 @@ export default function AccountingStatusSummary({ rows, totals, startDate, endDa
       <Head title="Accounting Status Summary" />
       <Formik
         initialValues={{
+          status: selectedStatus || '',
           start_date: startDate || '',
           end_date: endDate || ''
         }}
@@ -59,6 +67,22 @@ export default function AccountingStatusSummary({ rows, totals, startDate, endDa
       >
         {({ setFieldValue, values }) => (
           <Form className="mb-6 flex gap-4 items-end">
+            <div>
+              <label htmlFor="status" className="block mb-1 font-semibold">Status</label>
+              <select
+                id="status"
+                value={values.status}
+                onChange={(event) => {
+                  setFieldValue('status', event.target.value)
+                }}
+                className="form-select border p-2 rounded w-full"
+              >
+                <option value="">All</option>
+                <option value="ACCOUNT RECEIPT">ACCOUNT RECEIPT</option>
+                <option value="COMPLETE">COMPLETE</option>
+              </select>
+            </div>
+
             <div>
               <label htmlFor="start_date" className="block mb-1 font-semibold">Start Date</label>
               <Flatpickr
@@ -98,6 +122,25 @@ export default function AccountingStatusSummary({ rows, totals, startDate, endDa
           </Form>
         )}
       </Formik>
+
+      <div className="mb-4 flex gap-2">
+        <a
+          className="btn btn-primary"
+          href={route('report.accounting-status-summary-pdf') + exportQuery}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Print PDF
+        </a>
+        <a
+          className="btn btn-secondary"
+          href={route('report.accounting-status-summary-excel') + exportQuery}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Export Excel
+        </a>
+      </div>
 
       <div className="mt-2 text-left font-semibold text-gray-700">
         Total Rows: {totals.total}
