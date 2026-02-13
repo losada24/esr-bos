@@ -2,7 +2,7 @@
     <thead>
       <tr>
         <td colspan="5" style="font-weight: bold; font-size: 16px; text-align: left; background-color: #f0f0f0;">
-            Estimate &amp; Appt Schedule by Salesperson ({{ $startDate }} to {{ $endDate }})
+            Owner Report ({{ $startDate }} to {{ $endDate }})
         </td>
       </tr>
       <tr>

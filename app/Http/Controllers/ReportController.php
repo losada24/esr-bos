@@ -836,7 +836,7 @@ class ReportController extends Controller
     [$startDate, $endDate] = $this->resolveOwnerAssignedSummaryDateRange($request);
     $data = $this->buildOwnerAssignedSummaryData($startDate, $endDate);
     $pdf = Pdf::loadView('pdf.owner-assigned-summary', $data)->setPaper('A4', 'landscape');
-    $pdfName = 'owner-assigned-summary.pdf';
+    $pdfName = 'owner-report.pdf';
 
     return $pdf->stream($pdfName);
   }
@@ -848,7 +848,7 @@ class ReportController extends Controller
 
     return Excel::download(
       new OwnerAssignedSummaryExport($data),
-      'Owner Assigned Summary.xlsx',
+      'Owner Report.xlsx',
       \Maatwebsite\Excel\Excel::XLSX
     );
   }
