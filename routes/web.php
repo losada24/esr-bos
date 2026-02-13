@@ -422,6 +422,10 @@ Route::middleware('auth')->group(function () {
     ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::SERVICE_MANAGER->value] )
     ->name('report.order-status-summary');
 
+    Route::get('/report/accounting-status-summary', [ReportController::class, 'accountingStatusSummary'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::ACCOUNTING->value . '|'. RoleEnum::OWNER_ADMIN->value] )
+    ->name('report.accounting-status-summary');
+
     Route::get('/report/daily-order-status-summary', [ReportController::class, 'dailyOrderStatusSummary'])
     ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::FRONTDESK_ADMIN->value . '|'. RoleEnum::OWNER_ADMIN->value] )
     ->name('report.daily-order-status-summary');
