@@ -33,6 +33,7 @@ class MobileOrderController extends Controller
 
         $orders = Order::query()
             ->with([
+                'client:id,phone',
                 'owners:id,name,email,phone',
                 'supervisor:id,name,email,phone',
                 'installationTeams:id,company_name,phone,user_id',
@@ -42,11 +43,13 @@ class MobileOrderController extends Controller
             ->orderByDesc('updated_at')
             ->get([
                 'id',
+                'client_id',
                 'order_number',
                 'name',
                 'order_type',
                 'status',
                 'city_permits',
+                'cost_city_fee',
                 'project_amount',
                 'down_payment',
                 'job_address',
@@ -74,6 +77,8 @@ class MobileOrderController extends Controller
                 'order_type' => $order->order_type,
                 'status' => $order->status,
                 'city_permits' => (bool) $order->city_permits,
+                'phone' => $order->client?->phone,
+                'cost_city_fee' => $order->cost_city_fee,
                 'project_amount' => $order->project_amount,
                 'down_payment' => $order->down_payment,
                 'job_address' => $order->job_address,
@@ -139,6 +144,7 @@ class MobileOrderController extends Controller
         }
 
         $order->loadMissing([
+            'client:id,phone',
             'attachments:id,attachable_id,attachable_type,filename,file_path,file_type,created_at',
             'orderStatus:id,order_id,status,created_at',
             'owners:id,name,email,phone',
@@ -183,6 +189,8 @@ class MobileOrderController extends Controller
                 'order_type' => $order->order_type,
                 'status' => $order->status,
                 'city_permits' => (bool) $order->city_permits,
+                'phone' => $order->client?->phone,
+                'cost_city_fee' => $order->cost_city_fee,
                 'project_amount' => $order->project_amount,
                 'down_payment' => $order->down_payment,
                 'job_address' => $order->job_address,
