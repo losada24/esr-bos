@@ -720,6 +720,14 @@ class ReportController extends Controller
     ]);
   }
 
+  public function accountingStatusSummary(Request $request)
+  {
+    [$startDate, $endDate] = $this->resolveSummaryDateRange($request);
+    $data = $this->buildAccountingStatusSummaryData($startDate, $endDate);
+
+    return Inertia::render('Report/AccountingStatusSummary', $data);
+  }
+
   public function dailyOrderStatusSummary(Request $request)
   {
     [$startDate, $endDate] = $this->resolveDailyOrderStatusSummaryDateRange($request);
@@ -1031,6 +1039,51 @@ class ReportController extends Controller
     return [
       'dailySummary' => $dailySummary,
       'totals' => $totals,
+      'startDate' => $startDate->toDateString(),
+      'endDate' => $endDate->toDateString(),
+    ];
+  }
+
+  private function buildAccountingStatusSummaryData(Carbon $startDate, Carbon $endDate): array
+  {
+    $statuses = [
+      OrderStatusEnum::ACCOUNT_RECEIPT->value,
+      OrderStatusEnum::COMPLETE->value,
+    ];
+
+    $rows = OrderStatus::query()
+      ->with([
+        'order:id,name,project_amount',
+        'order.owners:id,name',
+      ])
+      ->whereIn('status', $statuses)
+      ->whereBetween('created_at', [$startDate, $endDate])
+      ->whereHas('order')
+      ->orderByDesc('created_at')
+      ->get(['id', 'order_id', 'status', 'created_at'])
+      ->map(function (OrderStatus $statusRow) {
+        $owners = $statusRow->order?->owners
+          ? $statusRow->order->owners->pluck('name')->filter()->implode(', ')
+          : '';
+
+        return [
+          'id' => $statusRow->id,
+          'status' => $statusRow->status,
+          'order_name' => $statusRow->order?->name,
+          'owner' => $owners,
+          'amount' => $statusRow->order?->project_amount,
+          'status_date' => $statusRow->created_at?->toDateTimeString(),
+        ];
+      })
+      ->values();
+
+    return [
+      'rows' => $rows,
+      'totals' => [
+        'total' => $rows->count(),
+        'account_receipt' => $rows->where('status', OrderStatusEnum::ACCOUNT_RECEIPT->value)->count(),
+        'complete' => $rows->where('status', OrderStatusEnum::COMPLETE->value)->count(),
+      ],
       'startDate' => $startDate->toDateString(),
       'endDate' => $endDate->toDateString(),
     ];

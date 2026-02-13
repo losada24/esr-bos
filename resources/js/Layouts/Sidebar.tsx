@@ -40,6 +40,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
   const CAN_VIEW_BIWEEKLY = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_PAYMENT_COORDINATOR
   const CAN_VIEW_PRODUCT_SUMMARY = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER
   const CAN_VIEW_ORDER_STATUS_SUMMARY = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER
+  const CAN_VIEW_ACCOUNTING_STATUS_SUMMARY = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_ACCOUNTING || IS_OWNER_ADMIN
   const CAN_VIEW_INSTALLER_CONFIRMED = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER
   const CAN_VIEW_OWNER_ASSIGNED = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER || IS_OWNER_ADMIN
   const CAN_VIEW_SUPERVISOR_ASSIGNED = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER
@@ -51,6 +52,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
     || CAN_VIEW_BIWEEKLY
     || CAN_VIEW_PRODUCT_SUMMARY
     || CAN_VIEW_ORDER_STATUS_SUMMARY
+    || CAN_VIEW_ACCOUNTING_STATUS_SUMMARY
     || CAN_VIEW_INSTALLER_CONFIRMED
     || CAN_VIEW_OWNER_ASSIGNED
     || CAN_VIEW_SUPERVISOR_ASSIGNED
@@ -302,6 +304,16 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                         <div className="flex items-center">
                                           <ReferralIcon/>
                                           <SidebarLinkLabel>Order Status Summary</SidebarLinkLabel>
+                                        </div>
+                                      </NavLink>
+                                    </li>
+                                  )}
+                                  {CAN_VIEW_ACCOUNTING_STATUS_SUMMARY && (
+                                    <li className="menu nav-item">
+                                      <NavLink href={route('report.accounting-status-summary')} active={route().current('report.accounting-status-summary')} className="group">
+                                        <div className="flex items-center">
+                                          <ReferralIcon/>
+                                          <SidebarLinkLabel>Accounting Status</SidebarLinkLabel>
                                         </div>
                                       </NavLink>
                                     </li>
