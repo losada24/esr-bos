@@ -39,8 +39,8 @@ export default function OwnerAssignedSummary({
   const exportQuery = `?start_date=${startDate || ''}&end_date=${endDate || ''}`
 
   return (
-    <AuthenticatedLayout auth={auth} pageTitle="Estimate & Appt by Salesperson">
-      <Head title="Estimate & Appt by Salesperson" />
+    <AuthenticatedLayout auth={auth} pageTitle="Owner Report">
+      <Head title="Owner Report" />
       <Formik
         initialValues={{
           start_date: startDate || '',

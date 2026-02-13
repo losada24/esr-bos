@@ -32,7 +32,7 @@
     <thead>
         <tr>
             <td class="header" colspan="5">
-                Estimate &amp; Appt Schedule by Salesperson ({{ $startDate }} to {{ $endDate }})
+                Owner Report ({{ $startDate }} to {{ $endDate }})
             </td>
         </tr>
         <tr class="totals">
