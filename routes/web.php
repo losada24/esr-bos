@@ -458,6 +458,18 @@ Route::middleware('auth')->group(function () {
     ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::SERVICE_MANAGER->value] )
     ->name('report.installer-confirmed-summary-excel');
 
+    Route::get('/report/owner-assigned-summary', [ReportController::class, 'ownerAssignedSummary'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::SERVICE_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value] )
+    ->name('report.owner-assigned-summary');
+
+    Route::get('/report/owner-assigned-summary/pdf', [ReportController::class, 'ownerAssignedSummaryPdf'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::SERVICE_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value] )
+    ->name('report.owner-assigned-summary-pdf');
+
+    Route::get('/report/owner-assigned-summary/excel', [ReportController::class, 'ownerAssignedSummaryExcel'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::SERVICE_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value] )
+    ->name('report.owner-assigned-summary-excel');
+
     Route::get('/report/supervisor-assigned-summary', [ReportController::class, 'supervisorAssignedSummary'])
     ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::SERVICE_MANAGER->value] )
     ->name('report.supervisor-assigned-summary');

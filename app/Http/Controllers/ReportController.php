@@ -18,6 +18,7 @@ use App\Exports\InstallerExport;
 use App\Exports\InstallerConfirmedSummaryExport;
 use App\Exports\DailyOrderStatusSummaryExport;
 use App\Exports\MarketingReportExport;
+use App\Exports\OwnerAssignedSummaryExport;
 use App\Exports\SupervisorExport;
 use App\Exports\SupervisorExportPayment;
 use App\Exports\SupervisorAssignedSummaryExport;
@@ -792,6 +793,14 @@ class ReportController extends Controller
     return Inertia::render('Report/InstallerConfirmedSummary', $data);
   }
 
+  public function ownerAssignedSummary(Request $request)
+  {
+    [$startDate, $endDate] = $this->resolveOwnerAssignedSummaryDateRange($request);
+    $data = $this->buildOwnerAssignedSummaryData($startDate, $endDate);
+
+    return Inertia::render('Report/OwnerAssignedSummary', $data);
+  }
+
   public function supervisorAssignedSummary(Request $request)
   {
     [$startDate, $endDate] = $this->resolveSummaryDateRange($request);
@@ -818,6 +827,28 @@ class ReportController extends Controller
     return Excel::download(
       new InstallerConfirmedSummaryExport($data),
       'Installer Confirmed Summary.xlsx',
+      \Maatwebsite\Excel\Excel::XLSX
+    );
+  }
+
+  public function ownerAssignedSummaryPdf(Request $request)
+  {
+    [$startDate, $endDate] = $this->resolveOwnerAssignedSummaryDateRange($request);
+    $data = $this->buildOwnerAssignedSummaryData($startDate, $endDate);
+    $pdf = Pdf::loadView('pdf.owner-assigned-summary', $data)->setPaper('A4', 'landscape');
+    $pdfName = 'owner-assigned-summary.pdf';
+
+    return $pdf->stream($pdfName);
+  }
+
+  public function ownerAssignedSummaryExcel(Request $request)
+  {
+    [$startDate, $endDate] = $this->resolveOwnerAssignedSummaryDateRange($request);
+    $data = $this->buildOwnerAssignedSummaryData($startDate, $endDate);
+
+    return Excel::download(
+      new OwnerAssignedSummaryExport($data),
+      'Owner Assigned Summary.xlsx',
       \Maatwebsite\Excel\Excel::XLSX
     );
   }
@@ -852,6 +883,25 @@ class ReportController extends Controller
     $endDate = $request->end_date
       ? Carbon::parse($request->end_date)->endOfDay()
       : Carbon::now()->endOfMonth();
+
+    return [$startDate, $endDate];
+  }
+
+  private function resolveOwnerAssignedSummaryDateRange(Request $request): array
+  {
+    $firstOrderCreatedAt = Order::query()
+      ->whereNull('deleted_at')
+      ->min('created_at');
+
+    $startDate = $request->start_date
+      ? Carbon::parse($request->start_date)->startOfDay()
+      : ($firstOrderCreatedAt
+        ? Carbon::parse($firstOrderCreatedAt)->startOfDay()
+        : Carbon::now()->startOfMonth());
+
+    $endDate = $request->end_date
+      ? Carbon::parse($request->end_date)->endOfDay()
+      : Carbon::now()->endOfDay();
 
     return [$startDate, $endDate];
   }
@@ -1307,6 +1357,104 @@ class ReportController extends Controller
       'summary' => $summary,
       'totalConfirmed' => $totalConfirmed,
       'totalAssigned' => $totalAssigned,
+      'startDate' => $startDate->toDateString(),
+      'endDate' => $endDate->toDateString(),
+    ];
+  }
+
+  private function buildOwnerAssignedSummaryData(Carbon $startDate, Carbon $endDate): array
+  {
+    $ownerAssignments = DB::table('owner_user')
+      ->select('user_id', 'order_id')
+      ->whereNull('deleted_at')
+      ->groupBy('user_id', 'order_id');
+
+    $estimateOrdersInRange = OrderStatus::query()
+      ->select('order_id')
+      ->where('status', OrderStatusEnum::ESTIMATE_APPT_SCHEDULE->value)
+      ->whereBetween('created_at', [$startDate, $endDate])
+      ->distinct();
+
+    $closedWonOrders = OrderStatus::query()
+      ->select('order_id')
+      ->where('status', OrderStatusEnum::CLOSED_WON->value)
+      ->distinct();
+
+    $amountExpression = 'COALESCE(orders.project_amount, 0)';
+
+    $summary = DB::query()
+      ->fromSub($ownerAssignments, 'owner_assignments')
+      ->joinSub($estimateOrdersInRange, 'estimate_orders_in_range', function ($join) {
+        $join->on('estimate_orders_in_range.order_id', '=', 'owner_assignments.order_id');
+      })
+      ->join('users', 'users.id', '=', 'owner_assignments.user_id')
+      ->join('orders', 'orders.id', '=', 'owner_assignments.order_id')
+      ->leftJoinSub($closedWonOrders, 'closed_won_orders', function ($join) {
+        $join->on('closed_won_orders.order_id', '=', 'orders.id');
+      })
+      ->whereNull('orders.deleted_at')
+      ->select(
+        'users.id as owner_id',
+        'users.name as owner_name',
+        DB::raw('COUNT(owner_assignments.order_id) as estimate_orders'),
+        DB::raw('SUM(' . $amountExpression . ') as estimate_amount'),
+        DB::raw('SUM(CASE WHEN closed_won_orders.order_id IS NOT NULL THEN 1 ELSE 0 END) as closed_won_orders'),
+        DB::raw('SUM(CASE WHEN closed_won_orders.order_id IS NOT NULL THEN (' . $amountExpression . ') ELSE 0 END) as closed_won_amount')
+      )
+      ->groupBy('users.id', 'users.name')
+      ->orderBy('users.name')
+      ->get();
+
+    $totalEstimateOrders = DB::query()
+      ->fromSub($ownerAssignments, 'owner_assignments')
+      ->joinSub($estimateOrdersInRange, 'estimate_orders_in_range', function ($join) {
+        $join->on('estimate_orders_in_range.order_id', '=', 'owner_assignments.order_id');
+      })
+      ->join('orders', 'orders.id', '=', 'owner_assignments.order_id')
+      ->whereNull('orders.deleted_at')
+      ->count();
+
+    $totalEstimateAmount = DB::query()
+      ->fromSub($ownerAssignments, 'owner_assignments')
+      ->joinSub($estimateOrdersInRange, 'estimate_orders_in_range', function ($join) {
+        $join->on('estimate_orders_in_range.order_id', '=', 'owner_assignments.order_id');
+      })
+      ->join('orders', 'orders.id', '=', 'owner_assignments.order_id')
+      ->whereNull('orders.deleted_at')
+      ->select(DB::raw('SUM(' . $amountExpression . ') as total_estimate_amount'))
+      ->value('total_estimate_amount') ?? 0;
+
+    $totalClosedWonOrders = DB::query()
+      ->fromSub($ownerAssignments, 'owner_assignments')
+      ->joinSub($estimateOrdersInRange, 'estimate_orders_in_range', function ($join) {
+        $join->on('estimate_orders_in_range.order_id', '=', 'owner_assignments.order_id');
+      })
+      ->join('orders', 'orders.id', '=', 'owner_assignments.order_id')
+      ->joinSub($closedWonOrders, 'closed_won_orders', function ($join) {
+        $join->on('closed_won_orders.order_id', '=', 'orders.id');
+      })
+      ->whereNull('orders.deleted_at')
+      ->count();
+
+    $totalClosedWonAmount = DB::query()
+      ->fromSub($ownerAssignments, 'owner_assignments')
+      ->joinSub($estimateOrdersInRange, 'estimate_orders_in_range', function ($join) {
+        $join->on('estimate_orders_in_range.order_id', '=', 'owner_assignments.order_id');
+      })
+      ->join('orders', 'orders.id', '=', 'owner_assignments.order_id')
+      ->joinSub($closedWonOrders, 'closed_won_orders', function ($join) {
+        $join->on('closed_won_orders.order_id', '=', 'orders.id');
+      })
+      ->whereNull('orders.deleted_at')
+      ->select(DB::raw('SUM(' . $amountExpression . ') as total_closed_won_amount'))
+      ->value('total_closed_won_amount') ?? 0;
+
+    return [
+      'summary' => $summary,
+      'totalEstimateOrders' => $totalEstimateOrders,
+      'totalEstimateAmount' => $totalEstimateAmount,
+      'totalClosedWonOrders' => $totalClosedWonOrders,
+      'totalClosedWonAmount' => $totalClosedWonAmount,
       'startDate' => $startDate->toDateString(),
       'endDate' => $endDate->toDateString(),
     ];

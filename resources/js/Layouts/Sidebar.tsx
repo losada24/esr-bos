@@ -41,6 +41,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
   const CAN_VIEW_PRODUCT_SUMMARY = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER
   const CAN_VIEW_ORDER_STATUS_SUMMARY = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER
   const CAN_VIEW_INSTALLER_CONFIRMED = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER
+  const CAN_VIEW_OWNER_ASSIGNED = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER || IS_OWNER_ADMIN
   const CAN_VIEW_SUPERVISOR_ASSIGNED = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER
   const CAN_VIEW_DAILY_ORDER_STATUS = IS_ADMIN || IS_FRONTDESK_ADMIN || IS_OWNER_ADMIN
   const CAN_VIEW_MARKETING_REPORT = IS_ADMIN || IS_FRONTDESK_ADMIN || IS_OWNER_ADMIN
@@ -51,6 +52,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
     || CAN_VIEW_PRODUCT_SUMMARY
     || CAN_VIEW_ORDER_STATUS_SUMMARY
     || CAN_VIEW_INSTALLER_CONFIRMED
+    || CAN_VIEW_OWNER_ASSIGNED
     || CAN_VIEW_SUPERVISOR_ASSIGNED
     || CAN_VIEW_DAILY_ORDER_STATUS
     || CAN_VIEW_MARKETING_REPORT
@@ -330,6 +332,16 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                         <div className="flex items-center">
                                           <ReferralIcon/>
                                           <SidebarLinkLabel>Installer Confirmed Orders</SidebarLinkLabel>
+                                        </div>
+                                      </NavLink>
+                                    </li>
+                                  )}
+                                  {CAN_VIEW_OWNER_ASSIGNED && (
+                                    <li className="menu nav-item">
+                                      <NavLink href={route('report.owner-assigned-summary')} active={route().current('report.owner-assigned-summary')} className="group">
+                                        <div className="flex items-center">
+                                          <ReferralIcon/>
+                                          <SidebarLinkLabel>Estimate & Appt by Salesperson</SidebarLinkLabel>
                                         </div>
                                       </NavLink>
                                     </li>
