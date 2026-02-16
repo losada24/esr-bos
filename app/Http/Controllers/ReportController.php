@@ -616,8 +616,7 @@ class ReportController extends Controller
   public function productSummary(Request $request)
   {
       // $user = auth()->user();
-    $startDate = Carbon::parse($request->start_date);
-    $endDate = Carbon::parse($request->end_date);
+    [$startDate, $endDate] = $this->resolveSummaryDateRange($request);
 
           /*$filteredOrderIds = Order::with(['orderStatus' => function ($q) use ($startDate, $endDate) {
             $q->whereBetween('created_at', [$startDate, $endDate]);
@@ -625,10 +624,11 @@ class ReportController extends Controller
             $statuses = $order->orderStatus->pluck('status');
             return $statuses->contains('PLANNED');
         })->pluck('id');*/
-        $filteredOrderIds = Order::whereHas('orderStatus', function ($q) use ($startDate, $endDate) {
-          $q->where('status', 'CONFIRMED')
-            ->whereBetween('created_at', [$startDate, $endDate]);
-      })->pluck('id');
+        $filteredOrderIds = $this->resolveUniqueOrderIdsByStatus(
+          OrderStatusEnum::CONFIRMED->value,
+          $startDate,
+          $endDate
+        );
         
             //dd($filteredOrderIds);
             $totalOrders = $filteredOrderIds->count();
@@ -695,39 +695,35 @@ class ReportController extends Controller
     }
 
     $buildCounts = function (Carbon $rangeStart, Carbon $rangeEnd) use ($statuses) {
-      $confirmedOrders = OrderStatus::query()
-        ->select('order_id')
-        ->where('status', OrderStatusEnum::CONFIRMED->value)
-        ->whereBetween('created_at', [$rangeStart, $rangeEnd])
-        ->distinct();
+      $confirmedOrderIds = $this->resolveUniqueOrderIdsByStatus(
+        OrderStatusEnum::CONFIRMED->value,
+        $rangeStart,
+        $rangeEnd
+      );
 
-      $completedOrders = OrderStatus::query()
-        ->select('order_id')
-        ->where('status', OrderStatusEnum::COMPLETE->value)
-        ->whereBetween('created_at', [$rangeStart, $rangeEnd])
-        ->distinct();
+      $completedOrderIds = $this->resolveUniqueOrderIdsByStatus(
+        OrderStatusEnum::COMPLETE->value,
+        $rangeStart,
+        $rangeEnd
+      );
 
-      $confirmedCompletedCount = DB::query()
-        ->fromSub($confirmedOrders, 'confirmed')
-        ->joinSub($completedOrders, 'completed', function ($join) {
-          $join->on('completed.order_id', '=', 'confirmed.order_id');
-        })
-        ->count();
+      $confirmedCount = $confirmedOrderIds->count();
+      $confirmedCompletedCount = $confirmedOrderIds->intersect($completedOrderIds)->count();
 
-      $counts = collect($statuses)->mapWithKeys(function ($status) use ($rangeStart, $rangeEnd, $confirmedCompletedCount) {
+      $counts = collect($statuses)->mapWithKeys(function ($status) use ($rangeStart, $rangeEnd, $confirmedCompletedCount, $confirmedCount) {
         if ($status === OrderStatusEnum::COMPLETE->value) {
           return [$status => $confirmedCompletedCount];
         }
 
-        $count = OrderStatus::query()
-          ->where('status', $status)
-          ->whereBetween('created_at', [$rangeStart, $rangeEnd])
-          ->count();
+        if ($status === OrderStatusEnum::CONFIRMED->value) {
+          return [$status => $confirmedCount];
+        }
+
+        $count = $this->resolveUniqueOrderIdsByStatus($status, $rangeStart, $rangeEnd)->count();
 
         return [$status => $count];
       })->all();
 
-      $confirmedCount = (clone $confirmedOrders)->count();
       $completedFromConfirmedPercentage = $confirmedCount > 0
         ? round(($confirmedCompletedCount / $confirmedCount) * 100, 2)
         : 0;
@@ -979,6 +975,17 @@ class ReportController extends Controller
       : Carbon::now()->endOfMonth();
 
     return [$startDate, $endDate];
+  }
+
+  private function resolveUniqueOrderIdsByStatus(string $status, Carbon $startDate, Carbon $endDate): Collection
+  {
+    return OrderStatus::query()
+      ->join('orders', 'orders.id', '=', 'order_status.order_id')
+      ->whereNull('orders.deleted_at')
+      ->where('order_status.status', $status)
+      ->whereBetween('order_status.created_at', [$startDate, $endDate])
+      ->distinct()
+      ->pluck('order_status.order_id');
   }
 
   private function resolveOwnerAssignedSummaryDateRange(Request $request): array
