@@ -11,17 +11,21 @@ interface SupervisorSummaryItem {
   supervisor_name: string | null
   confirmed_orders: number
   confirmed_completed_orders: number
+  execution_not_completed_orders: number
+  inspection_not_completed_orders: number
 }
 
 type SupervisorAssignedSummaryProps = PageProps & {
   summary: SupervisorSummaryItem[]
   totalConfirmed: number
   totalConfirmedCompleted: number
+  totalExecutionNotCompleted: number
+  totalInspectionNotCompleted: number
   startDate: string
   endDate: string
 }
 
-export default function SupervisorAssignedSummary({ summary, totalConfirmed, totalConfirmedCompleted, startDate, endDate, auth }: SupervisorAssignedSummaryProps) {
+export default function SupervisorAssignedSummary({ summary, totalConfirmed, totalConfirmedCompleted, totalExecutionNotCompleted, totalInspectionNotCompleted, startDate, endDate, auth }: SupervisorAssignedSummaryProps) {
   const exportQuery = `?start_date=${startDate || ''}&end_date=${endDate || ''}`
 
   return (
@@ -108,6 +112,12 @@ export default function SupervisorAssignedSummary({ summary, totalConfirmed, tot
       <div className="mt-2 text-left font-semibold text-gray-700">
         Total Confirmed & Completed: {totalConfirmedCompleted}
       </div>
+      <div className="mt-2 text-left font-semibold text-gray-700">
+        Total Execution & Not Completed: {totalExecutionNotCompleted}
+      </div>
+      <div className="mt-2 text-left font-semibold text-gray-700">
+        Total Inspection & Not Completed: {totalInspectionNotCompleted}
+      </div>
 
       <table className="w-full border border-gray-300 mt-4">
         <thead className="bg-gray-100">
@@ -115,6 +125,8 @@ export default function SupervisorAssignedSummary({ summary, totalConfirmed, tot
             <th className="p-2 border">Supervisor</th>
             <th className="p-2 border">Confirmed Orders</th>
             <th className="p-2 border">Confirmed & Completed</th>
+            <th className="p-2 border">Execution & Not Completed</th>
+            <th className="p-2 border">Inspection & Not Completed</th>
           </tr>
         </thead>
         <tbody>
@@ -125,6 +137,8 @@ export default function SupervisorAssignedSummary({ summary, totalConfirmed, tot
                 <td className="p-2 border">{item.supervisor_name || 'PICKUP OR DELIVERY ONLY'}</td>
                 <td className="p-2 border">{item.confirmed_orders}</td>
                 <td className="p-2 border">{item.confirmed_completed_orders}</td>
+                <td className="p-2 border">{item.execution_not_completed_orders}</td>
+                <td className="p-2 border">{item.inspection_not_completed_orders}</td>
               </tr>
             )
           })}

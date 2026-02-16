@@ -668,8 +668,7 @@ class ReportController extends Controller
 
   public function orderStatusSummary(Request $request)
   {
-    $startDate = Carbon::parse($request->start_date)->startOfDay();
-    $endDate = Carbon::parse($request->end_date)->endOfDay();
+    [$startDate, $endDate] = $this->resolveSummaryDateRange($request);
 
     $statuses = [
       OrderStatusEnum::PLANNED->value,
@@ -677,47 +676,108 @@ class ReportController extends Controller
       OrderStatusEnum::COMPLETE->value,
     ];
 
-    $confirmedOrders = OrderStatus::query()
-      ->select('order_id')
-      ->where('status', OrderStatusEnum::CONFIRMED->value)
-      ->whereBetween('created_at', [$startDate, $endDate])
-      ->distinct();
+    $periodDays = $startDate->copy()->startOfDay()->diffInDays($endDate->copy()->startOfDay()) + 1;
+    $defaultPreviousEndDate = $startDate->copy()->subDay()->endOfDay();
+    $defaultPreviousStartDate = $defaultPreviousEndDate->copy()->subDays($periodDays - 1)->startOfDay();
 
-    $completedOrders = OrderStatus::query()
-      ->select('order_id')
-      ->where('status', OrderStatusEnum::COMPLETE->value)
-      ->whereBetween('created_at', [$startDate, $endDate])
-      ->distinct();
+    if ($request->filled('previous_start_date') && $request->filled('previous_end_date')) {
+      $previousStartDate = Carbon::parse($request->previous_start_date)->startOfDay();
+      $previousEndDate = Carbon::parse($request->previous_end_date)->endOfDay();
+    } elseif ($request->filled('previous_start_date')) {
+      $previousStartDate = Carbon::parse($request->previous_start_date)->startOfDay();
+      $previousEndDate = $previousStartDate->copy()->addDays($periodDays - 1)->endOfDay();
+    } elseif ($request->filled('previous_end_date')) {
+      $previousEndDate = Carbon::parse($request->previous_end_date)->endOfDay();
+      $previousStartDate = $previousEndDate->copy()->subDays($periodDays - 1)->startOfDay();
+    } else {
+      $previousStartDate = $defaultPreviousStartDate;
+      $previousEndDate = $defaultPreviousEndDate;
+    }
 
-    $confirmedCompletedCount = DB::query()
-      ->fromSub($confirmedOrders, 'confirmed')
-      ->joinSub($completedOrders, 'completed', function ($join) {
-        $join->on('completed.order_id', '=', 'confirmed.order_id');
-      })
-      ->count();
+    $buildCounts = function (Carbon $rangeStart, Carbon $rangeEnd) use ($statuses) {
+      $confirmedOrders = OrderStatus::query()
+        ->select('order_id')
+        ->where('status', OrderStatusEnum::CONFIRMED->value)
+        ->whereBetween('created_at', [$rangeStart, $rangeEnd])
+        ->distinct();
 
-    $statusSummary = collect($statuses)->map(function ($status) use ($startDate, $endDate, $confirmedCompletedCount) {
-      if ($status === OrderStatusEnum::COMPLETE->value) {
-        return [
-          'status' => $status,
-          'count' => $confirmedCompletedCount,
-        ];
-      }
+      $completedOrders = OrderStatus::query()
+        ->select('order_id')
+        ->where('status', OrderStatusEnum::COMPLETE->value)
+        ->whereBetween('created_at', [$rangeStart, $rangeEnd])
+        ->distinct();
 
-      $count = OrderStatus::where('status', $status)
-        ->whereBetween('created_at', [$startDate, $endDate])
+      $confirmedCompletedCount = DB::query()
+        ->fromSub($confirmedOrders, 'confirmed')
+        ->joinSub($completedOrders, 'completed', function ($join) {
+          $join->on('completed.order_id', '=', 'confirmed.order_id');
+        })
         ->count();
+
+      $counts = collect($statuses)->mapWithKeys(function ($status) use ($rangeStart, $rangeEnd, $confirmedCompletedCount) {
+        if ($status === OrderStatusEnum::COMPLETE->value) {
+          return [$status => $confirmedCompletedCount];
+        }
+
+        $count = OrderStatus::query()
+          ->where('status', $status)
+          ->whereBetween('created_at', [$rangeStart, $rangeEnd])
+          ->count();
+
+        return [$status => $count];
+      })->all();
+
+      $confirmedCount = (clone $confirmedOrders)->count();
+      $completedFromConfirmedPercentage = $confirmedCount > 0
+        ? round(($confirmedCompletedCount / $confirmedCount) * 100, 2)
+        : 0;
+
+      return [
+        'counts' => $counts,
+        'confirmedCount' => $confirmedCount,
+        'completedConfirmedCount' => $confirmedCompletedCount,
+        'completedFromConfirmedPercentage' => $completedFromConfirmedPercentage,
+      ];
+    };
+
+    $currentPeriodData = $buildCounts($startDate, $endDate);
+    $previousPeriodData = $buildCounts($previousStartDate, $previousEndDate);
+
+    $statusSummary = collect($statuses)->map(function ($status) use ($currentPeriodData, $previousPeriodData) {
+      $currentCount = $currentPeriodData['counts'][$status] ?? 0;
+      $previousCount = $previousPeriodData['counts'][$status] ?? 0;
+      $delta = $currentCount - $previousCount;
+
+      $percentageChange = $previousCount > 0
+        ? round(($delta / $previousCount) * 100, 2)
+        : null;
+      $representationPercentage = $previousCount > 0
+        ? round(($currentCount / $previousCount) * 100, 2)
+        : null;
 
       return [
         'status' => $status,
-        'count' => $count,
+        'count' => $currentCount,
+        'current_count' => $currentCount,
+        'previous_count' => $previousCount,
+        'delta' => $delta,
+        'percentage_change' => $percentageChange,
+        'representation_percentage' => $representationPercentage,
       ];
     });
 
     return Inertia::render('Report/OrderStatusSummary', [
       'statusSummary' => $statusSummary,
+      'confirmedCount' => $currentPeriodData['confirmedCount'],
+      'completedConfirmedCount' => $currentPeriodData['completedConfirmedCount'],
+      'completedFromConfirmedPercentage' => $currentPeriodData['completedFromConfirmedPercentage'],
+      'previousConfirmedCount' => $previousPeriodData['confirmedCount'],
+      'previousCompletedConfirmedCount' => $previousPeriodData['completedConfirmedCount'],
+      'previousCompletedFromConfirmedPercentage' => $previousPeriodData['completedFromConfirmedPercentage'],
       'startDate' => $startDate->toDateString(),
       'endDate' => $endDate->toDateString(),
+      'previousStartDate' => $previousStartDate->toDateString(),
+      'previousEndDate' => $previousEndDate->toDateString(),
     ]);
   }
 
@@ -1568,6 +1628,34 @@ class ReportController extends Controller
       ->whereBetween('created_at', [$startDate, $endDate])
       ->distinct();
 
+    $executionOrders = OrderStatus::query()
+      ->select('order_id')
+      ->where('status', OrderStatusEnum::EXECUTION->value)
+      ->whereBetween('created_at', [$startDate, $endDate])
+      ->distinct();
+
+    $inspectionOrders = OrderStatus::query()
+      ->select('order_id')
+      ->where('status', OrderStatusEnum::INSPECTION->value)
+      ->whereBetween('created_at', [$startDate, $endDate])
+      ->distinct();
+
+    $executionNotCompletedOrders = DB::query()
+      ->fromSub($executionOrders, 'execution')
+      ->leftJoinSub($completedOrders, 'completed', function ($join) {
+        $join->on('completed.order_id', '=', 'execution.order_id');
+      })
+      ->whereNull('completed.order_id')
+      ->select('execution.order_id');
+
+    $inspectionNotCompletedOrders = DB::query()
+      ->fromSub($inspectionOrders, 'inspection')
+      ->leftJoinSub($completedOrders, 'completed', function ($join) {
+        $join->on('completed.order_id', '=', 'inspection.order_id');
+      })
+      ->whereNull('completed.order_id')
+      ->select('inspection.order_id');
+
     $summary = Order::query()
       ->leftJoin('users', 'users.id', '=', 'orders.supervisor_id')
       ->leftJoinSub($confirmedOrders, 'confirmed_orders', function ($join) {
@@ -1576,15 +1664,25 @@ class ReportController extends Controller
       ->leftJoinSub($completedOrders, 'completed_orders', function ($join) {
         $join->on('completed_orders.order_id', '=', 'orders.id');
       })
+      ->leftJoinSub($executionNotCompletedOrders, 'execution_not_completed_orders', function ($join) {
+        $join->on('execution_not_completed_orders.order_id', '=', 'orders.id');
+      })
+      ->leftJoinSub($inspectionNotCompletedOrders, 'inspection_not_completed_orders', function ($join) {
+        $join->on('inspection_not_completed_orders.order_id', '=', 'orders.id');
+      })
       ->where(function ($query) {
         $query->whereNotNull('confirmed_orders.order_id')
-          ->orWhereNotNull('completed_orders.order_id');
+          ->orWhereNotNull('completed_orders.order_id')
+          ->orWhereNotNull('execution_not_completed_orders.order_id')
+          ->orWhereNotNull('inspection_not_completed_orders.order_id');
       })
       ->select(
         'orders.supervisor_id',
         'users.name as supervisor_name',
         DB::raw('COUNT(confirmed_orders.order_id) as confirmed_orders'),
-        DB::raw('SUM(CASE WHEN confirmed_orders.order_id IS NOT NULL AND completed_orders.order_id IS NOT NULL THEN 1 ELSE 0 END) as confirmed_completed_orders')
+        DB::raw('SUM(CASE WHEN confirmed_orders.order_id IS NOT NULL AND completed_orders.order_id IS NOT NULL THEN 1 ELSE 0 END) as confirmed_completed_orders'),
+        DB::raw('COUNT(execution_not_completed_orders.order_id) as execution_not_completed_orders'),
+        DB::raw('COUNT(inspection_not_completed_orders.order_id) as inspection_not_completed_orders')
       )
       ->groupBy('orders.supervisor_id', 'users.name')
       ->orderBy('users.name')
@@ -1599,10 +1697,28 @@ class ReportController extends Controller
       })
       ->count();
 
+    $totalExecutionNotCompleted = DB::query()
+      ->fromSub($executionOrders, 'execution')
+      ->leftJoinSub($completedOrders, 'completed', function ($join) {
+        $join->on('completed.order_id', '=', 'execution.order_id');
+      })
+      ->whereNull('completed.order_id')
+      ->count();
+
+    $totalInspectionNotCompleted = DB::query()
+      ->fromSub($inspectionOrders, 'inspection')
+      ->leftJoinSub($completedOrders, 'completed', function ($join) {
+        $join->on('completed.order_id', '=', 'inspection.order_id');
+      })
+      ->whereNull('completed.order_id')
+      ->count();
+
     return [
       'summary' => $summary,
       'totalConfirmed' => $totalConfirmed,
       'totalConfirmedCompleted' => $totalConfirmedCompleted,
+      'totalExecutionNotCompleted' => $totalExecutionNotCompleted,
+      'totalInspectionNotCompleted' => $totalInspectionNotCompleted,
       'startDate' => $startDate->toDateString(),
       'endDate' => $endDate->toDateString(),
     ];
