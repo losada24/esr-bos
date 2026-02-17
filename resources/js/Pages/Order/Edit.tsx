@@ -19,7 +19,7 @@ import {
   type ProductCost
 } from '@/types'
 import { type OrderColor } from '@/types/interfaces/order'
-import { SERVICES } from '@/Utils/constants'
+import { PAYMENT_METHODS, SERVICES } from '@/Utils/constants'
 
 export default function Edit ({
   auth,
@@ -123,6 +123,15 @@ export default function Edit ({
       ...values,
       type_of_work_id: resolvedTypeOfWorkId,
       type_of_housing_id: resolvedTypeOfHousingId,
+      payment_schedule_type: values.method_of_payment === PAYMENT_METHODS.CASH ? (values.payment_schedule_type || null) : null,
+      custom_schedule: values.method_of_payment === PAYMENT_METHODS.CASH && values.payment_schedule_type === 'CUSTOMIZED'
+        ? (values.custom_schedule ?? [])
+          .map((item: { label?: string, amount?: string | number }) => ({
+            label: String(item.label ?? '').trim(),
+            amount: Number(String(item.amount ?? '').replace(/,/g, ''))
+          }))
+          .filter((item: { label: string, amount: number }) => item.label !== '' && Number.isFinite(item.amount))
+        : [],
       frame_color: (values.frame_color || []).map((color: { label: string, value: string }) => color.label),
       complete_date: values.status.value === 'COMPLETE' ? new Date().toLocaleDateString('en-CA') : null,
       pending_collect: values.status.value === 'PENDING COLLECT' ? new Date().toLocaleDateString('en-CA') : null,

@@ -103,6 +103,14 @@ export default function CreateService ({
       status: values.status,
       method_of_payment: values.method_of_payment,
       payment_schedule_type: values.method_of_payment === PAYMENT_METHODS.CASH ? values.payment_schedule_type : null,
+      custom_schedule: values.method_of_payment === PAYMENT_METHODS.CASH && values.payment_schedule_type === 'CUSTOMIZED'
+        ? (values.custom_schedule ?? [])
+          .map((item: { label?: string, amount?: string | number }) => ({
+            label: String(item.label ?? '').trim(),
+            amount: Number(String(item.amount ?? '').replace(/,/g, ''))
+          }))
+          .filter((item: { label: string, amount: number }) => item.label !== '' && Number.isFinite(item.amount))
+        : [],
       type_of_financing: values.type_of_financing ? values.type_of_financing : null,
       service: values.service ?? resolvedService,
       contact_type: 'RESIDENTIAL CONTACT',

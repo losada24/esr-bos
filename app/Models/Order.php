@@ -397,6 +397,11 @@ class Order extends Model
     return $this->hasOne(OrderPayment::class)->where('type', 'CHANGE_ORDER');
   }
 
+  public function financialEvents(): HasMany
+  {
+    return $this->hasMany(OrderFinancialEvent::class)->latest();
+  }
+
   public function permit(): HasOne
   {
     return $this->hasOne(Permit::class);
@@ -468,6 +473,17 @@ class Order extends Model
       $this->orderColors()->createMany(
           collect($colors)->map(fn($color) => ['name' => $color])->toArray()
       );
+  }
+
+  public function hasReachedContractSigned(): bool
+  {
+    if ($this->status === OrderStatusEnum::CONTRACT_SIGNED_BY_CLIENT->value) {
+      return true;
+    }
+
+    return $this->orderStatus()
+      ->where('status', OrderStatusEnum::CONTRACT_SIGNED_BY_CLIENT->value)
+      ->exists();
   }
 
 }

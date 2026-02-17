@@ -4,6 +4,7 @@ namespace App\Actions;
 
 use App\Enum\PlaningDateSupervisorEnum;
 use App\Enum\MethodOfPayment;
+use App\Enum\PaymentScheduleTypeEnum;
 use App\Models\Client;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -13,6 +14,7 @@ use App\Models\Order;
 use App\Models\OrderProduct;
 use App\Models\PaymentSchedule;
 use App\Models\SupervisorComissionOrder;
+use App\Support\OrderFinancialEventLogger;
 use App\Support\PaymentScheduleCalculator;
 use App\Support\PaymentScheduleTemplates;
 use App\Traits\ComissionSupervisor;
@@ -134,8 +136,33 @@ class CreateOrder
       $requiresSchedule = $request->method_of_payment === MethodOfPayment::CASH->value;
       if ($requiresSchedule && $paymentScheduleType) {
         $totalAmount = (float) ($request->project_amount ?? 0);
-        $scheduleItems = PaymentScheduleTemplates::itemsFor($paymentScheduleType);
-        $installments = PaymentScheduleCalculator::withAmounts($scheduleItems, $totalAmount);
+        if ($paymentScheduleType === PaymentScheduleTypeEnum::CUSTOMIZED->value) {
+          $customSchedule = $request->input('custom_schedule', []);
+          $installments = [];
+          $runningPercent = 0.0;
+          $count = count($customSchedule);
+
+          foreach ($customSchedule as $index => $item) {
+            $amount = round((float) ($item['amount'] ?? 0), 2);
+            $percentage = $totalAmount > 0
+              ? round(($amount / $totalAmount) * 100, 2)
+              : 0.0;
+
+            if ($index === $count - 1 && $totalAmount > 0) {
+              $percentage = round(100 - $runningPercent, 2);
+            }
+
+            $runningPercent += $percentage;
+            $installments[] = [
+              'label' => trim((string) ($item['label'] ?? '')),
+              'percentage' => $percentage,
+              'amount' => $amount,
+            ];
+          }
+        } else {
+          $scheduleItems = PaymentScheduleTemplates::itemsFor($paymentScheduleType);
+          $installments = PaymentScheduleCalculator::withAmounts($scheduleItems, $totalAmount);
+        }
 
         $paymentSchedule = PaymentSchedule::create([
           'order_id' => $order->id,
@@ -152,18 +179,41 @@ class CreateOrder
             'status' => 'PENDING',
           ]);
         }
+
+        OrderFinancialEventLogger::log(
+          $order,
+          'PAYMENT_SCHEDULE_DEFINED',
+          "Payment schedule configured as {$paymentScheduleType}",
+          [
+            'schedule_type' => $paymentScheduleType,
+            'total_amount' => $totalAmount,
+            'installments' => $installments,
+          ]
+        );
       }
 
       $changeOrderEnabled = filter_var($request->input('change_order_enabled'), FILTER_VALIDATE_BOOLEAN);
       if ($changeOrderEnabled) {
         $changeOrderAmount = $request->input('change_order_amount');
         $changeOrderNote = $request->input('change_order_note');
-        $order->orderPayments()->create([
+        $payment = $order->orderPayments()->create([
           'type' => 'CHANGE_ORDER',
           'amount' => $changeOrderAmount ?? 0,
           'note' => $changeOrderNote,
           'status' => 'PENDING',
         ]);
+
+        OrderFinancialEventLogger::log(
+          $order,
+          'CHANGE_ORDER_CREATED',
+          'Change order payment created',
+          [
+            'order_payment_id' => $payment->id,
+            'amount' => (float) $payment->amount,
+            'note' => $payment->note,
+            'status' => $payment->status,
+          ]
+        );
       }
 
       if ($request->filled('notes')) {

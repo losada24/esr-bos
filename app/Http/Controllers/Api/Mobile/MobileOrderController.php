@@ -6,6 +6,7 @@ use App\Enum\RoleEnum;
 use App\Http\Controllers\Controller;
 use App\Models\Client;
 use App\Models\Order;
+use App\Support\PaymentInstallmentPresenter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -154,32 +155,11 @@ class MobileOrderController extends Controller
             'paymentSchedule:id,order_id,schedule_type,total_amount',
             'paymentSchedule.installments:id,payment_schedule_id,position,label,percentage,amount,due_date,status,paid_at,paid_by',
             'paymentSchedule.installments.paidBy:id,name',
+            'paymentSchedule.installments.movements:id,payment_installment_id,amount,paid_at,paid_by,method,note,created_at,updated_at',
+            'paymentSchedule.installments.movements.paidBy:id,name',
         ]);
 
-        $paymentSchedule = null;
-        if ($order->paymentSchedule) {
-            $paymentSchedule = [
-                'schedule_type' => $order->paymentSchedule->schedule_type,
-                'total_amount' => $order->paymentSchedule->total_amount,
-                'installments' => $order->paymentSchedule->installments
-                    ->sortBy('position')
-                    ->values()
-                    ->map(fn ($installment) => [
-                        'id' => $installment->id,
-                        'position' => $installment->position,
-                        'label' => $installment->label,
-                        'percentage' => $installment->percentage,
-                        'amount' => $installment->amount,
-                        'due_date' => $installment->due_date,
-                        'status' => $installment->status,
-                        'paid_at' => $installment->paid_at,
-                        'paid_by' => $installment->paidBy ? [
-                            'id' => $installment->paidBy->id,
-                            'name' => $installment->paidBy->name,
-                        ] : null,
-                    ]),
-            ];
-        }
+        $paymentSchedule = PaymentInstallmentPresenter::schedule($order->paymentSchedule);
 
         return response()->json([
             'data' => [

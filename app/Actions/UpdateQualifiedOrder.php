@@ -8,6 +8,7 @@ use App\Models\Client;
 use App\Models\Order;
 use App\Models\OrderCompanyContact;
 use App\Models\User;
+use App\Support\OrderFinancialEventLogger;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -32,9 +33,17 @@ class UpdateQualifiedOrder
                 'schedule_appointment' => $request->schedule_appointment ?: null,
             ];
             $projectAmount = $request->input('project_amount');
+            $oldProjectAmount = (float) ($order->project_amount ?? 0);
             $payload['project_amount'] = ($projectAmount !== null && $projectAmount !== '')
                 ? (float) $projectAmount
                 : null;
+            $newProjectAmount = (float) ($payload['project_amount'] ?? 0);
+
+            if ($order->hasReachedContractSigned() && abs($newProjectAmount - $oldProjectAmount) > 0.01) {
+                throw ValidationException::withMessages([
+                    'project_amount' => 'Project amount cannot be edited after CONTRACT SIGNED BY CLIENT. Use Change Order instead.',
+                ]);
+            }
 
             $statusChanged = false;
             if ($request->filled('status')) {
@@ -77,6 +86,18 @@ class UpdateQualifiedOrder
 
             $order->fill($payload);
             $order->save();
+
+            if (abs($newProjectAmount - $oldProjectAmount) > 0.01) {
+                OrderFinancialEventLogger::log(
+                    $order,
+                    'PROJECT_AMOUNT_UPDATED',
+                    'Project amount updated',
+                    [
+                        'before_amount' => $oldProjectAmount,
+                        'after_amount' => $newProjectAmount,
+                    ]
+                );
+            }
 
             if ($statusChanged) {
                 $order->orderStatus()->create([
@@ -184,7 +205,7 @@ class UpdateQualifiedOrder
                 $order->owner_ids = $validOwners;
             }
 
-            return $order->refresh()->load(
+            $refreshedOrder = $order->refresh()->load(
                 'tags:id,name,color,taggable_id,taggable_type',
                 'client.companyContact',
                 'user',
@@ -196,6 +217,9 @@ class UpdateQualifiedOrder
                 'orderCompanyContacts.client',
                 'orderCompanyContacts.source'
             );
+            $refreshedOrder->setAttribute('has_contract_signed', $refreshedOrder->hasReachedContractSigned());
+
+            return $refreshedOrder;
         });
     }
 

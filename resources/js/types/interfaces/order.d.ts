@@ -8,6 +8,7 @@ export interface Order {
   order_number: number
   invoice_number?: string
   is_supply?: boolean
+  has_contract_signed?: boolean
   job_address?: string
   job_city?: string
   job_state?: string
@@ -293,17 +294,35 @@ export interface PaymentInstallment {
   label: string
   percentage: number
   amount: number
+  paid_amount?: number
+  balance?: number
+  credit?: number
   due_date?: string | null
   status: string
   paid_at?: string | null
   paid_by?: { id: number, name: string } | null
   position?: number | null
+  movements?: PaymentInstallmentMovement[]
+}
+
+export interface PaymentInstallmentMovement {
+  id: number
+  amount: number
+  paid_at?: string | null
+  method?: string | null
+  note?: string | null
+  paid_by?: { id: number, name: string } | null
+  created_at?: string | null
+  updated_at?: string | null
 }
 
 export interface PaymentSchedule {
   id: number
   schedule_type: string
   total_amount: number
+  paid_amount?: number
+  remaining_amount?: number
+  credit_amount?: number
   installments?: PaymentInstallment[]
 }
 

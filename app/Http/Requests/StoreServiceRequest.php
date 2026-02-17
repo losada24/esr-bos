@@ -6,6 +6,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use App\Enum\MethodOfPayment;
 use App\Enum\OrderStatusEnum;
+use App\Enum\PaymentScheduleTypeEnum;
 use App\Enum\ServiceEnum;
 use App\Enum\TypeOfFinancing;
 use App\Support\PaymentScheduleTemplates;
@@ -100,6 +101,9 @@ class StoreServiceRequest extends FormRequest
                 Rule::requiredIf(fn () => $this->input('method_of_payment') === MethodOfPayment::CASH->value),
                 Rule::in(PaymentScheduleTemplates::types()),
             ],
+            'custom_schedule' => ['nullable', 'array', 'max:6'],
+            'custom_schedule.*.label' => ['required_with:custom_schedule', 'string', 'max:255'],
+            'custom_schedule.*.amount' => ['required_with:custom_schedule', 'numeric', 'min:0.01'],
             'status' => [
                 'required',
                 'string',
@@ -141,5 +145,33 @@ class StoreServiceRequest extends FormRequest
             'orderProducts.*.extra_works' => 'nullable|array',
             'orderProducts.*.pivot_cost' => 'nullable|numeric',
         ];
+    }
+
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator) {
+            $isCash = $this->input('method_of_payment') === MethodOfPayment::CASH->value;
+            $scheduleType = (string) $this->input('payment_schedule_type');
+
+            if (!$isCash || $scheduleType !== PaymentScheduleTypeEnum::CUSTOMIZED->value) {
+                return;
+            }
+
+            $customSchedule = $this->input('custom_schedule', []);
+            if (!is_array($customSchedule) || count($customSchedule) === 0) {
+                $validator->errors()->add('custom_schedule', 'Add at least one custom payment.');
+                return;
+            }
+
+            $total = 0.0;
+            foreach ($customSchedule as $item) {
+                $total += (float) ($item['amount'] ?? 0);
+            }
+
+            $projectAmount = (float) $this->input('project_amount', 0);
+            if (abs($total - $projectAmount) > 0.01) {
+                $validator->errors()->add('custom_schedule', 'Custom payments must total the project amount.');
+            }
+        });
     }
 }

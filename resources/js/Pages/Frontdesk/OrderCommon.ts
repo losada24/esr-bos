@@ -71,17 +71,35 @@ export interface PaymentInstallment {
   label: string
   percentage: number
   amount: number
+  paid_amount?: number
+  balance?: number
+  credit?: number
   due_date?: string | null
   status: string
   paid_at?: string | null
   paid_by?: { id: number, name: string } | null
   position?: number | null
+  movements?: PaymentInstallmentMovement[]
+}
+
+export interface PaymentInstallmentMovement {
+  id: number
+  amount: number
+  paid_at?: string | null
+  method?: string | null
+  note?: string | null
+  paid_by?: { id: number, name: string } | null
+  created_at?: string | null
+  updated_at?: string | null
 }
 
 export interface PaymentSchedule {
   id: number
   schedule_type: string
   total_amount: number
+  paid_amount?: number
+  remaining_amount?: number
+  credit_amount?: number
   installments?: PaymentInstallment[]
 }
 
@@ -94,6 +112,15 @@ export interface OrderPayment {
   status?: string | null
   paid_at?: string | null
   paid_by?: { id: number, name: string } | null
+}
+
+export interface OrderFinancialEvent {
+  id: number
+  event_type: string
+  summary: string
+  details?: Record<string, any> | null
+  created_at?: string | null
+  user?: { id?: number, name?: string } | null
 }
 
 export interface Order {
@@ -135,6 +162,8 @@ export interface Order {
   association_permits?: boolean
   payment_schedule?: PaymentSchedule | null
   change_order_payment?: OrderPayment | null
+  financial_events?: OrderFinancialEvent[]
+  has_contract_signed?: boolean
   invoice_number?: string | null
 }
 
@@ -247,7 +276,9 @@ export const orderFormObj: OrderFormValues = {
   name_check: false,
   address_check: false,
   amount_check: false,
-  email_check: false
+  email_check: false,
+  has_contract_signed: false,
+  financial_events: []
 }
 
 export const loadOrderFormObj = (order: Order): OrderFormValues => {
@@ -341,6 +372,8 @@ export const loadOrderFormObj = (order: Order): OrderFormValues => {
     name_check: order.name_check ?? false,
     address_check: order.address_check ?? false,
     amount_check: order.amount_check ?? false,
-    email_check: order.email_check ?? false
+    email_check: order.email_check ?? false,
+    has_contract_signed: order.has_contract_signed ?? false,
+    financial_events: order.financial_events ?? []
   }
 }

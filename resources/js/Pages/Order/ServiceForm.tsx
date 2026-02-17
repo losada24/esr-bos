@@ -39,6 +39,23 @@ type ClientSearchResult = {
 }
 type PaymentScheduleTemplateItem = { label: string, percentage: number }
 type PaymentScheduleTemplates = Record<string, PaymentScheduleTemplateItem[]>
+type CustomScheduleItem = { label: string, amount: string }
+
+const CUSTOM_SCHEDULE_TYPE = 'CUSTOMIZED'
+const buildCustomSchedule = (items?: Array<{ label?: string | null, amount?: number | string | null }>) => {
+  const normalized = Array.isArray(items)
+    ? items.map((item) => ({
+      label: item?.label ?? '',
+      amount: item?.amount != null ? String(item.amount) : ''
+    }))
+    : []
+
+  while (normalized.length < 6) {
+    normalized.push({ label: '', amount: '' })
+  }
+
+  return normalized.slice(0, 6)
+}
 
 const ServiceForm = ({
   submitCount,
@@ -156,6 +173,7 @@ const ServiceForm = ({
   const selectedScheduleItems = values.payment_schedule_type
     ? (scheduleTemplates[values.payment_schedule_type] ?? [])
     : []
+  const customSchedule: CustomScheduleItem[] = buildCustomSchedule(values.custom_schedule)
   const projectAmountValue = Number(String(values.project_amount ?? '').replace(/,/g, ''))
   const hasProjectAmount = Number.isFinite(projectAmountValue) && projectAmountValue > 0
   const buildSchedulePreview = (items: PaymentScheduleTemplateItem[]) => {
@@ -172,10 +190,42 @@ const ServiceForm = ({
       return { ...item, amount }
     })
   }
-  const schedulePreviewItems = buildSchedulePreview(selectedScheduleItems)
-  const shouldShowSchedulePreview = isCreate
-    && values.method_of_payment === PAYMENT_METHODS.CASH
+  const isCustomSchedule = values.payment_schedule_type === CUSTOM_SCHEDULE_TYPE
+  const customScheduleItems = customSchedule
+    .map((item) => ({
+      label: String(item.label ?? '').trim(),
+      amount: Number(String(item.amount ?? '').replace(/,/g, ''))
+    }))
+    .filter((item) => item.label !== '' && Number.isFinite(item.amount))
+  const customScheduleTotal = customSchedule.reduce((total, item) => {
+    const value = Number(String(item.amount ?? '').replace(/,/g, ''))
+    return Number.isFinite(value) ? total + value : total
+  }, 0)
+  const customTotalMatches = hasProjectAmount && Math.abs(customScheduleTotal - projectAmountValue) <= 0.01
+  const customTotalClass = hasProjectAmount
+    ? customTotalMatches
+      ? 'text-emerald-600'
+      : 'text-rose-600'
+    : 'text-slate-400'
+  const schedulePreviewItems = isCustomSchedule
+    ? customScheduleItems.map((item) => ({
+      label: item.label,
+      percentage: hasProjectAmount ? Math.round(((item.amount / projectAmountValue) * 100) * 100) / 100 : Number.NaN,
+      amount: item.amount
+    }))
+    : buildSchedulePreview(selectedScheduleItems)
+  const hasRecordedSchedulePayments = Boolean(values.payment_schedule && (
+    Number(values.payment_schedule.paid_amount ?? 0) > 0
+    || (values.payment_schedule.installments ?? []).some((installment) => (
+      Number(installment.paid_amount ?? 0) > 0
+      || (installment.movements?.length ?? 0) > 0
+      || String(installment.status ?? '').toUpperCase() !== 'PENDING'
+    ))
+  ))
+  const canEditScheduleInForm = values.method_of_payment === PAYMENT_METHODS.CASH && (isCreate || !hasRecordedSchedulePayments)
+  const shouldShowSchedulePreview = canEditScheduleInForm
     && values.payment_schedule_type
+  const isProjectAmountLocked = !isCreate && Boolean(values.has_contract_signed)
 
   const addOrderProduct = (orderProduct: OrderProduct) => {
     const orderProductsList = [...orderProducts, orderProduct]
@@ -801,6 +851,7 @@ const ServiceForm = ({
                   }
                   if (value !== PAYMENT_METHODS.CASH) {
                     setFieldValue('payment_schedule_type', '')
+                    setFieldValue('custom_schedule', buildCustomSchedule())
                   }
                 }}
               >
@@ -811,7 +862,7 @@ const ServiceForm = ({
               </Field>
               {(submitCount && errors.method_of_payment) ? <InputError message={errors.method_of_payment} className="mt-2" /> : ''}
             </div>
-            {isCreate && values.method_of_payment === PAYMENT_METHODS.CASH && (
+            {canEditScheduleInForm && (
               <div className={submitCount ? (errors.payment_schedule_type ? 'has-error' : 'has-success') : ''}>
                 <label htmlFor="payment_schedule_type">Payment Schedule</label>
                 <Field
@@ -820,16 +871,16 @@ const ServiceForm = ({
                   className="form-select"
                   as="select"
                   onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
-                    setFieldValue('payment_schedule_type', e.target.value)
+                    const nextType = e.target.value
+                    setFieldValue('payment_schedule_type', nextType)
+                    setFieldValue('custom_schedule', nextType === CUSTOM_SCHEDULE_TYPE ? buildCustomSchedule(values.custom_schedule) : buildCustomSchedule())
                   }}
                   value={values.payment_schedule_type ?? ''}
                 >
                   <option value="">Select Payment Schedule</option>
-                  {payment_schedule_types
-                    .filter((type) => type !== 'CUSTOMIZED')
-                    .map((type, index) => (
-                      <option key={index} value={type}>{type}</option>
-                    ))}
+                  {payment_schedule_types.map((type, index) => (
+                    <option key={index} value={type}>{type}</option>
+                  ))}
                 </Field>
                 {(submitCount && errors.payment_schedule_type) ? <InputError message={errors.payment_schedule_type} className="mt-2" /> : ''}
               </div>
@@ -843,9 +894,56 @@ const ServiceForm = ({
                 autoComplete="project_amount"
                 placeholder='Project Amount'
                 type='number'
+                disabled={isProjectAmountLocked}
               />
               {(submitCount && errors.project_amount) ? <InputError message={errors.project_amount} className="mt-2" /> : ''}
+              {isProjectAmountLocked && (
+                <div className="mt-1 text-xs text-slate-500">
+                  Locked after CONTRACT SIGNED BY CLIENT. Use Change Order for amount changes.
+                </div>
+              )}
             </div>
+            {canEditScheduleInForm && isCustomSchedule && (
+              <div className="col-span-3 space-y-3 rounded-md border border-[#e0e6ed] bg-white p-3 dark:border-[#1b2e4b]">
+                <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-[#5c6370]">
+                  <span>Custom schedule</span>
+                  <span className={customTotalClass}>
+                    Total: {formatCurrency(customScheduleTotal)}
+                    {hasProjectAmount ? ` / ${formatCurrency(projectAmountValue)}` : ''}
+                  </span>
+                </div>
+                {customSchedule.map((item, index) => (
+                  <div key={`custom-schedule-${index}`} className="grid gap-3 md:grid-cols-3">
+                    <div className="md:col-span-2">
+                      <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-[#5c6370]">Label</label>
+                      <input
+                        name={`custom_schedule[${index}].label`}
+                        type="text"
+                        value={item.label}
+                        onChange={(event) => { setFieldValue(`custom_schedule[${index}].label`, event.target.value) }}
+                        className="form-input"
+                        placeholder={`Payment ${index + 1}`}
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-[#5c6370]">Amount</label>
+                      <input
+                        name={`custom_schedule[${index}].amount`}
+                        type="number"
+                        step="0.01"
+                        value={item.amount}
+                        onChange={(event) => { setFieldValue(`custom_schedule[${index}].amount`, event.target.value) }}
+                        className="form-input text-right"
+                        placeholder="0.00"
+                      />
+                    </div>
+                  </div>
+                ))}
+                {submitCount && typeof errors.custom_schedule === 'string'
+                  ? <InputError message={errors.custom_schedule} className="mt-2" />
+                  : null}
+              </div>
+            )}
             {shouldShowSchedulePreview && (
               <div className="col-span-3">
                 <label className="mb-1 block text-sm font-medium text-[#5c6370]">
@@ -870,7 +968,7 @@ const ServiceForm = ({
                           className="flex flex-wrap items-center gap-4 px-3 py-2 text-sm text-[#5c6370]"
                         >
                           <span className="font-semibold text-[#1f2937]">{item.label}</span>
-                          <span>{item.percentage}%</span>
+                          <span>{Number.isFinite(Number(item.percentage)) ? `${item.percentage}%` : '--'}</span>
                           <span>{item.amount != null ? formatCurrency(item.amount) : '--'}</span>
                         </div>
                       ))}
@@ -967,11 +1065,14 @@ const ServiceForm = ({
                 </div>
               </>
             )}
-            {!isCreate && values.method_of_payment === PAYMENT_METHODS.CASH && (
+            {!isCreate && values.method_of_payment === PAYMENT_METHODS.CASH && !canEditScheduleInForm && (
               <div className="col-span-3">
                 <label className="mb-1 block text-sm font-medium text-[#5c6370]">
                   Payment Schedule
                 </label>
+                <div className="mb-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                  Schedule locked: this order already has recorded payments.
+                </div>
                 {values.payment_schedule ? (
                   <div className="rounded-md border border-[#e0e6ed] dark:border-[#1b2e4b]">
                     <div className="flex flex-wrap gap-6 px-3 py-2 text-sm text-[#5c6370]">
@@ -980,20 +1081,40 @@ const ServiceForm = ({
                         {values.payment_schedule.schedule_type ?? '--'}
                       </div>
                       <div>
-                        <span className="font-semibold text-[#1f2937]">Total:</span>{' '}
+                        <span className="font-semibold text-[#1f2937]">Planned:</span>{' '}
                         {formatCurrency(values.payment_schedule.total_amount)}
+                      </div>
+                      <div>
+                        <span className="font-semibold text-[#1f2937]">Paid:</span>{' '}
+                        {formatCurrency(values.payment_schedule.paid_amount ?? 0)}
+                      </div>
+                      <div>
+                        <span className="font-semibold text-[#1f2937]">Balance:</span>{' '}
+                        {formatCurrency(values.payment_schedule.remaining_amount ?? 0)}
                       </div>
                     </div>
                     {values.payment_schedule.installments && values.payment_schedule.installments.length > 0 ? (
                       <div className="border-t border-[#e0e6ed] dark:border-[#1b2e4b]">
+                        <div className="grid grid-cols-2 md:grid-cols-6 gap-3 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-[#5c6370]">
+                          <span>Installment</span>
+                          <span>Planned</span>
+                          <span>Paid</span>
+                          <span>Balance</span>
+                          <span>Due Date</span>
+                          <span>Status</span>
+                        </div>
                         {values.payment_schedule.installments.map((installment, index) => (
                           <div
                             key={`${installment.id ?? installment.label}-${index}`}
-                            className="flex flex-wrap items-center gap-4 px-3 py-2 text-sm text-[#5c6370]"
+                            className="grid grid-cols-2 md:grid-cols-6 gap-3 px-3 py-2 text-sm text-[#5c6370] border-t border-[#e0e6ed] dark:border-[#1b2e4b]"
                           >
-                            <span className="font-semibold text-[#1f2937]">{installment.label}</span>
-                            <span>{installment.percentage}%</span>
+                            <span className="font-semibold text-[#1f2937]">
+                              {installment.label}
+                              <span className="ml-2 text-xs font-normal text-[#5c6370]">{installment.percentage}%</span>
+                            </span>
                             <span>{formatCurrency(installment.amount)}</span>
+                            <span>{formatCurrency(installment.paid_amount ?? 0)}</span>
+                            <span>{formatCurrency(installment.balance ?? 0)}</span>
                             <span>{installment.due_date ?? '-'}</span>
                             <span className="text-xs uppercase tracking-wide">{installment.status}</span>
                           </div>
