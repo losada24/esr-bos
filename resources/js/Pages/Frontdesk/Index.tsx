@@ -105,7 +105,7 @@ const TASKS_PAGE_SIZE = 20
 const SCROLL_THRESHOLD_PX = 120
 type StatusPaginationState = { nextPage: number, loading: boolean }
 type IdOption = { id: number, name: string }
-type TagOption = { id: number, name: string | null }
+type TagOption = { name: string | null }
 
 const buildFilterQuery = (filters?: BoardFilters): Record<string, unknown> => {
   if (!filters) return {}
@@ -244,6 +244,20 @@ export default function Frontdesk ({
   const appliedFilters = filters ?? {}
   const filterQueryParams = buildFilterQuery(appliedFilters)
 
+  const tagFilterOptions = useMemo(() => {
+    const seen = new Set<string>()
+    return tags
+      .map((tag) => (typeof tag.name === 'string' ? tag.name.trim() : ''))
+      .filter((name) => {
+        if (!name) return false
+        const normalized = name.toLowerCase()
+        if (seen.has(normalized)) return false
+        seen.add(normalized)
+        return true
+      })
+      .map((name) => ({ label: name, value: name }))
+  }, [tags])
+
   const filterFields = useMemo<FilterFieldConfig[]>(() => ([
     { value: 'name', label: 'Order Name', type: 'text', placeholder: 'Order name or job address' },
     {
@@ -268,12 +282,12 @@ export default function Frontdesk ({
     { value: 'company_name', label: 'Company Name', type: 'text' },
     { value: 'client_name', label: 'Client Name', type: 'text' },
     { value: 'phone', label: 'Phone', type: 'text' },
-    { value: 'tag', label: 'Tag', type: 'select', options: tags.filter((tag) => Boolean(tag.name)).map((tag) => ({ label: tag.name ?? '', value: tag.id.toString() })) },
+    { value: 'tag', label: 'Tag', type: 'select', options: tagFilterOptions },
     { value: 'supervisor', label: 'Supervisor', type: 'select', options: supervisors.map((supervisor) => ({ label: supervisor.name, value: supervisor.id.toString() })) },
     { value: 'created_by', label: 'Created By', type: 'select', options: created_by_users.map((user) => ({ label: user.name, value: user.id.toString() })) },
     { value: 'created_time', label: 'Created Time', type: 'date' },
     { value: 'project_amount', label: 'Project Amount', type: 'amount' }
-  ]), [statuses, order_types, owners, sources, tags, supervisors, created_by_users])
+  ]), [statuses, order_types, owners, sources, tagFilterOptions, supervisors, created_by_users])
 
   useEffect(() => {
     const sorted = sortPipelinesByRecentActivity(data)

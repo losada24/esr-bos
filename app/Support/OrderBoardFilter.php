@@ -128,12 +128,19 @@ class OrderBoardFilter
                 }
                 break;
             case 'tag':
-                $tagId = self::parseId($value);
-                if ($tagId !== null) {
-                    $query->whereHas('tags', function ($query) use ($tagId) {
-                        $query->where('tags.id', $tagId);
-                    });
+                if (!self::hasText($value)) {
+                    break;
                 }
+                $tagId = self::parseId($value);
+                $normalizedTagName = mb_strtolower(trim((string) $value));
+                $query->whereHas('tags', function ($query) use ($tagId, $normalizedTagName) {
+                    if ($tagId !== null) {
+                        $query->where('tags.id', $tagId);
+                        return;
+                    }
+
+                    $query->whereRaw('LOWER(TRIM(tags.name)) = ?', [$normalizedTagName]);
+                });
                 break;
             case 'supervisor':
                 $supervisorId = self::parseId($value);
