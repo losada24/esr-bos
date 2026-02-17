@@ -2,56 +2,57 @@
 
 namespace App\Http\Controllers;
 
-use App\Enum\PaymentInstallmentStatusEnum;
 use App\Models\PaymentInstallment;
+use App\Support\OrderFinancialEventLogger;
+use App\Support\PaymentInstallmentPresenter;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class PaymentScheduleController extends Controller
 {
     public function updateInstallment(Request $request, PaymentInstallment $installment)
     {
-        $previousStatus = $installment->status;
         $validated = $request->validate([
-            'status' => ['required', Rule::in(array_map(
-                fn (PaymentInstallmentStatusEnum $status) => $status->value,
-                PaymentInstallmentStatusEnum::cases()
-            ))],
             'due_date' => ['nullable', 'date'],
         ]);
 
-        $installment->status = $validated['status'];
-        $installment->due_date = $validated['due_date'] ?? null;
-
-        if ($validated['status'] === PaymentInstallmentStatusEnum::PAID->value) {
-            if ($previousStatus !== PaymentInstallmentStatusEnum::PAID->value) {
-                $installment->paid_by = auth()->id();
-            }
-            $installment->paid_at = $installment->paid_at ?? now();
+        $schedule = $installment->schedule()->with('order')->first();
+        if (!$schedule || !$schedule->order) {
+            throw ValidationException::withMessages([
+                'due_date' => 'Payment schedule not found for this installment.',
+            ]);
         }
 
-        if ($validated['status'] === PaymentInstallmentStatusEnum::PENDING->value) {
-            $installment->paid_at = null;
-            $installment->paid_by = null;
+        $hasRecordedPayments = $schedule->installments()->whereHas('movements')->exists();
+        if ($hasRecordedPayments && strtoupper((string) $installment->status) !== 'PENDING') {
+            throw ValidationException::withMessages([
+                'due_date' => 'Only pending installments can be edited after payments are recorded.',
+            ]);
         }
 
+        $previousDueDate = $installment->due_date?->format('Y-m-d');
+        $nextDueDate = $validated['due_date'] ?? null;
+        $installment->due_date = $nextDueDate;
         $installment->save();
-        $installment->load('paidBy');
+
+        if ($previousDueDate !== $nextDueDate) {
+            OrderFinancialEventLogger::log(
+                $schedule->order,
+                'INSTALLMENT_DUE_DATE_UPDATED',
+                "Updated due date for installment '{$installment->label}'",
+                [
+                    'installment_id' => $installment->id,
+                    'installment_label' => $installment->label,
+                    'before_due_date' => $previousDueDate,
+                    'after_due_date' => $nextDueDate,
+                ]
+            );
+        }
+
+        $installment->load(['paidBy', 'movements.paidBy']);
 
         return response()->json([
-            'installment' => [
-                'id' => $installment->id,
-                'label' => $installment->label,
-                'percentage' => $installment->percentage,
-                'amount' => $installment->amount,
-                'due_date' => $installment->due_date?->format('Y-m-d'),
-                'status' => $installment->status,
-                'paid_at' => $installment->paid_at?->toISOString(),
-                'position' => $installment->position,
-                'paid_by' => $installment->paidBy
-                    ? ['id' => $installment->paidBy->id, 'name' => $installment->paidBy->name]
-                    : null,
-            ],
+            'installment' => PaymentInstallmentPresenter::installment($installment),
         ]);
     }
 }

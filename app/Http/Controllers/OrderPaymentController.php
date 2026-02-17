@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\OrderPayment;
+use App\Support\OrderFinancialEventLogger;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -31,6 +32,28 @@ class OrderPaymentController extends Controller
 
         $orderPayment->save();
         $orderPayment->load('paidBy');
+
+        if ($previousStatus !== $orderPayment->status) {
+            $orderPayment->loadMissing('order');
+            if ($orderPayment->order) {
+                OrderFinancialEventLogger::log(
+                    $orderPayment->order,
+                    'CHANGE_ORDER_STATUS_UPDATED',
+                    "Change order payment status changed from {$previousStatus} to {$orderPayment->status}",
+                    [
+                        'order_payment_id' => $orderPayment->id,
+                        'type' => $orderPayment->type,
+                        'amount' => (float) $orderPayment->amount,
+                        'before_status' => $previousStatus,
+                        'after_status' => $orderPayment->status,
+                        'paid_at' => $orderPayment->paid_at?->toISOString(),
+                        'paid_by' => $orderPayment->paidBy
+                            ? ['id' => $orderPayment->paidBy->id, 'name' => $orderPayment->paidBy->name]
+                            : null,
+                    ]
+                );
+            }
+        }
 
         return response()->json([
             'payment' => [

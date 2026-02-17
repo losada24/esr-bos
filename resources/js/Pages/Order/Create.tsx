@@ -104,7 +104,15 @@ export default function Create ({
       travel_cost_id: resolvedTravelCostId,
       status: typeof values.status === 'string' ? values.status : getValueIdNotNull(values.status),
       contact_type: 'RESIDENTIAL CONTACT',
-      payment_schedule_type: values.method_of_payment === PAYMENT_METHODS.CASH ? values.payment_schedule_type : null
+      payment_schedule_type: values.method_of_payment === PAYMENT_METHODS.CASH ? values.payment_schedule_type : null,
+      custom_schedule: values.method_of_payment === PAYMENT_METHODS.CASH && values.payment_schedule_type === 'CUSTOMIZED'
+        ? (values.custom_schedule ?? [])
+          .map((item: { label?: string, amount?: string | number }) => ({
+            label: String(item.label ?? '').trim(),
+            amount: Number(String(item.amount ?? '').replace(/,/g, ''))
+          }))
+          .filter((item: { label: string, amount: number }) => item.label !== '' && Number.isFinite(item.amount))
+        : []
     }
 
     console.log('Order data:', order)

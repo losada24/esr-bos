@@ -393,6 +393,7 @@ const OrderQualifiedForm = ({
   }
   const projectAmountNumber = Number(values.project_amount ?? 0)
   const showProjectAmountField = !isCreate && Number.isFinite(projectAmountNumber) && projectAmountNumber > 0
+  const isProjectAmountLocked = !isCreate && Boolean(values.has_contract_signed)
   console.log('frame_colors ->', frame_colors)
   return (
     <>
@@ -475,10 +476,16 @@ const OrderQualifiedForm = ({
                     autoComplete="project_amount"
                     placeholder="Project Amount"
                     type="number"
+                    disabled={isProjectAmountLocked}
                   />
                   {(submitCount && errors.project_amount)
                     ? <InputError message={errors.project_amount} className="mt-2" />
                     : null}
+                  {isProjectAmountLocked && (
+                    <div className="mt-1 text-xs text-slate-500">
+                      Locked after CONTRACT SIGNED BY CLIENT. Use Change Order for amount changes.
+                    </div>
+                  )}
                 </div>
               )}
               <div className={submitCount ? (errors.job_address ? 'has-error' : 'has-success') : ''}>

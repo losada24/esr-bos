@@ -2,10 +2,11 @@
 
 namespace App\Models;
 
+use App\Support\PaymentInstallmentAccounting;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use App\Models\User;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class PaymentInstallment extends Model
 {
@@ -38,5 +39,25 @@ class PaymentInstallment extends Model
     public function paidBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'paid_by');
+    }
+
+    public function movements(): HasMany
+    {
+        return $this->hasMany(PaymentInstallmentMovement::class, 'payment_installment_id')
+            ->orderByDesc('paid_at')
+            ->orderByDesc('id');
+    }
+
+    public function syncPaymentState(): void
+    {
+        $paidAmount = (float) $this->movements()->sum('amount');
+        $summary = PaymentInstallmentAccounting::summarize((float) $this->amount, $paidAmount);
+
+        $latestMovement = $this->movements()->first();
+
+        $this->status = $summary['status'];
+        $this->paid_at = $latestMovement?->paid_at;
+        $this->paid_by = $latestMovement?->paid_by;
+        $this->save();
     }
 }

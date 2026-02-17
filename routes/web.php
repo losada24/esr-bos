@@ -18,6 +18,7 @@ use App\Http\Controllers\OrderProcessingController;
 use App\Http\Controllers\OrderStorageController;
 use App\Http\Controllers\OrderSearchController;
 use App\Http\Controllers\OrderPaymentController;
+use App\Http\Controllers\PaymentInstallmentMovementController;
 use App\Http\Controllers\PaymentScheduleController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SalesController;
@@ -312,6 +313,18 @@ Route::middleware('auth')->group(function () {
       Route::patch('/payment-installments/{installment}', [PaymentScheduleController::class, 'updateInstallment'])
         ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::ACCOUNTING->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::OWNER->value. '|'. RoleEnum::FRONTDESK_ADMIN->value])
         ->name('payment_installments.update');
+
+      Route::post('/payment-installments/{installment}/movements', [PaymentInstallmentMovementController::class, 'store'])
+        ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::ACCOUNTING->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::OWNER->value. '|'. RoleEnum::FRONTDESK_ADMIN->value])
+        ->name('payment_installment_movements.store');
+
+      Route::patch('/payment-installment-movements/{movement}', [PaymentInstallmentMovementController::class, 'update'])
+        ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::ACCOUNTING->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::OWNER->value. '|'. RoleEnum::FRONTDESK_ADMIN->value])
+        ->name('payment_installment_movements.update');
+
+      Route::post('/payment-installment-movements/{movement}/void', [PaymentInstallmentMovementController::class, 'void'])
+        ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::ACCOUNTING->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::OWNER->value. '|'. RoleEnum::FRONTDESK_ADMIN->value])
+        ->name('payment_installment_movements.void');
 
       Route::patch('/order-payments/{orderPayment}', [OrderPaymentController::class, 'update'])
         ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::ACCOUNTING->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::OWNER->value. '|'. RoleEnum::FRONTDESK_ADMIN->value])

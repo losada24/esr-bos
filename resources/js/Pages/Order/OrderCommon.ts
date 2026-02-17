@@ -69,10 +69,12 @@ export type OrderFormValues = Omit<Order, 'installation_date' | 'delivery_date' 
   contact_type: string
   order_type?: string
   is_supply?: boolean
+  has_contract_signed?: boolean
   client_company_name?: string
   down_payment?: number | null
   payment_schedule?: PaymentSchedule | null
   payment_schedule_type?: string
+  custom_schedule?: Array<{ label: string, amount: string }>
   change_order_enabled?: boolean
   change_order_amount?: number | null
   change_order_note?: string
@@ -133,10 +135,12 @@ export const orderFormObj: OrderFormValues = {
   contact_type: '',
   order_type: '',
   is_supply: false,
+  has_contract_signed: false,
   client_company_name: '',
   down_payment: null,
   payment_schedule: null,
   payment_schedule_type: '',
+  custom_schedule: Array.from({ length: 6 }, () => ({ label: '', amount: '' })),
   change_order_enabled: false,
   change_order_amount: null,
   change_order_note: ''
@@ -152,6 +156,20 @@ export interface OrderProductExtraWorksFormValues {
 }
 
 export const loadOrderFormObj = (order: Order): OrderFormValues => {
+  const scheduleType = order.payment_schedule?.schedule_type ?? ''
+  const customScheduleFromOrder = scheduleType === 'CUSTOMIZED'
+    ? (order.payment_schedule?.installments ?? [])
+      .map((item) => ({
+        label: String(item.label ?? '').trim(),
+        amount: item.amount != null ? String(item.amount) : ''
+      }))
+      .filter((item) => item.label !== '' || item.amount !== '')
+    : []
+  const customSchedule = [
+    ...customScheduleFromOrder.slice(0, 6),
+    ...Array.from({ length: Math.max(0, 6 - customScheduleFromOrder.length) }, () => ({ label: '', amount: '' }))
+  ]
+
   return {
     id: order.id,
     last_name: order.client?.last_name ?? '',
@@ -213,10 +231,12 @@ export const loadOrderFormObj = (order: Order): OrderFormValues => {
     contact_type: order.client?.contact_type ?? '',
     order_type: order.order_type ?? '',
     is_supply: order.is_supply ?? false,
+    has_contract_signed: Boolean(order.has_contract_signed ?? false),
     client_company_name: order.client?.company_contact?.name ?? '',
     down_payment: order.down_payment ?? null,
     payment_schedule: order.payment_schedule ?? null,
-    payment_schedule_type: order.payment_schedule?.schedule_type ?? '',
+    payment_schedule_type: scheduleType,
+    custom_schedule: customSchedule,
     change_order_enabled: Boolean(order.change_order_payment),
     change_order_amount: order.change_order_payment?.amount ?? null,
     change_order_note: order.change_order_payment?.note ?? ''

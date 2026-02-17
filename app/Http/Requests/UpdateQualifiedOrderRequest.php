@@ -13,6 +13,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use App\Enum\ServiceEnum;
 use App\Enum\SupervisorPaymentStatusEnum;
 use App\Enum\TypeOfFinancing;
+use App\Models\Order;
 use App\Rules\ValidateOrderStatus;
 use Illuminate\Validation\Rule;
 
@@ -84,5 +85,35 @@ class UpdateQualifiedOrderRequest extends FormRequest
               ))
             ],
         ];
+    }
+
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator) {
+            $order = $this->route('order');
+            if (!$order instanceof Order) {
+                return;
+            }
+
+            $incomingAmount = $this->input('project_amount');
+            if ($incomingAmount === null || $incomingAmount === '') {
+                return;
+            }
+
+            $hasReachedContractSigned = $order->status === OrderStatusEnum::CONTRACT_SIGNED_BY_CLIENT->value
+              || $order->orderStatus()
+                ->where('status', OrderStatusEnum::CONTRACT_SIGNED_BY_CLIENT->value)
+                ->exists();
+
+            if (!$hasReachedContractSigned) {
+                return;
+            }
+
+            $currentAmount = (float) ($order->project_amount ?? 0);
+            $newAmount = (float) $incomingAmount;
+            if (abs($newAmount - $currentAmount) > 0.01) {
+                $validator->errors()->add('project_amount', 'Project amount cannot be edited after CONTRACT SIGNED BY CLIENT. Use Change Order instead.');
+            }
+        });
     }
 }

@@ -40,6 +40,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use App\Traits\OrderEmails;
 use App\Traits\Snapshot;
 use App\Support\PaymentScheduleTemplates;
+use App\Support\PaymentInstallmentPresenter;
 use App\Support\OrderBoardFilter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -717,7 +718,9 @@ public function showQuantifiedModal(Order $order)
       'attachments.user',
       'orderStatus.user',
       'paymentSchedule.installments.paidBy',
+      'paymentSchedule.installments.movements.paidBy',
       'changeOrderPayment.paidBy',
+      'financialEvents.user',
       'orderCompanyContacts.companyContact',
       'orderCompanyContacts.client',
       'orderCompanyContacts.source'
@@ -900,10 +903,28 @@ public function showQuantifiedModal(Order $order)
         OrderStatusEnum::QUALIFIED->value,
     ];
 
+    $orderData = $order->toArray();
+    $orderData['payment_schedule'] = PaymentInstallmentPresenter::schedule($order->paymentSchedule);
+    $orderData['financial_events'] = $order->financialEvents
+      ->take(200)
+      ->map(fn ($event) => [
+        'id' => $event->id,
+        'event_type' => $event->event_type,
+        'summary' => $event->summary,
+        'details' => $event->details,
+        'created_at' => optional($event->created_at)->toISOString(),
+        'user' => $event->user ? [
+          'id' => $event->user->id,
+          'name' => $event->user->name,
+        ] : null,
+      ])
+      ->values();
+    $orderData['has_contract_signed'] = $order->hasReachedContractSigned();
+
     // Obtener los parámetros de filtro de la solicitud (request)
     return Inertia::render('Frontdesk/OrderView', [
       //'orderStatuses' => $orderStatuses,
-      'order' => $order,
+      'order' => $orderData,
       'snapshots' => $orderSnapshots,
       'clientOrders' => $clientOrders,
        'tags' => $order->tags->map(fn($t) => [
@@ -1128,6 +1149,7 @@ public function showQuantifiedModal(Order $order)
     if (($clientChanged || $noteCreated) && ! $orderChanged) {
       $this->createSnapshot($order);
     }
+    $order->setAttribute('has_contract_signed', $order->hasReachedContractSigned());
 
     return response()->json([
       'success' => true,

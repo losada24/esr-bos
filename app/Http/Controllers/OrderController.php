@@ -42,6 +42,7 @@ use App\Traits\OrderDates;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
 use Doctrine\DBAL\Types\Type;
+use App\Support\PaymentInstallmentPresenter;
 use App\Support\PaymentScheduleTemplates;
 
 class OrderController extends Controller
@@ -306,18 +307,23 @@ class OrderController extends Controller
         ];
       })->values();
 
-      $data['order'] = $order->load([
+      $loadedOrder = $order->load([
         'client.companyContact',
         'installationTeams.user',
         'orderProducts.productConfig',
         'orderProducts.productCategory',
         'orderProducts.orderProductExtraWorks',
         'orderProducts.typeOfWork',
-        'paymentSchedule.installments',
+        'paymentSchedule.installments.paidBy',
+        'paymentSchedule.installments.movements.paidBy',
         'changeOrderPayment',
         'owners',
         'attachments'
       ]);
+      $orderData = $loadedOrder->toArray();
+      $orderData['payment_schedule'] = PaymentInstallmentPresenter::schedule($loadedOrder->paymentSchedule);
+      $orderData['has_contract_signed'] = $loadedOrder->hasReachedContractSigned();
+      $data['order'] = $orderData;
 
       return Inertia::render('Order/EditService', $data);
     }
@@ -357,8 +363,7 @@ class OrderController extends Controller
     $statusPaymentInstaller = PaymentExtraField::where('order_id', $order->id)->first();
     //dd($statusPaymentInstaller->installer_payment_status);
 
-    return Inertia::render('Order/Edit', [
-      'order' => $order->load([
+    $loadedOrder = $order->load([
         'client.companyContact',
         'typeOfWork',
         'typeOfHousing',
@@ -367,11 +372,18 @@ class OrderController extends Controller
         'owners',
         'orderProducts.orderProductExtraWorks',
         'orderColors',
-        'paymentSchedule.installments',
+        'paymentSchedule.installments.paidBy',
+        'paymentSchedule.installments.movements.paidBy',
         'changeOrderPayment',
 
         'installationTeams.user',
-      ]),
+      ]);
+    $orderData = $loadedOrder->toArray();
+    $orderData['payment_schedule'] = PaymentInstallmentPresenter::schedule($loadedOrder->paymentSchedule);
+    $orderData['has_contract_signed'] = $loadedOrder->hasReachedContractSigned();
+
+    return Inertia::render('Order/Edit', [
+      'order' => $orderData,
       //dd($order),
 
       'extraWorks' => ExtraWork::select('id', 'name')->get(),

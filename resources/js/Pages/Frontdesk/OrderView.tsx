@@ -10,7 +10,7 @@ import TagPicker, { type TagItem } from '@/Components/TagPicker'
 import UserIcon from '@/Components/Icons/UserIcon'
 import { type Client } from '@/Pages/Client/ClientCommon'
 import OrderEditModal from './OrderEditModal'
-import { getValueIdNotNull, loadOrderFormObj, type Order, type OrderFormValues } from './OrderCommon'
+import { getValueIdNotNull, loadOrderFormObj, type Order, type OrderFinancialEvent, type OrderFormValues, type PaymentInstallment, type PaymentInstallmentMovement } from './OrderCommon'
 import LocationIcon from '@/Components/Icons/LocationIcon'
 import PhoneIcon from '@/Components/Icons/PhoneIcon'
 import EmailIcon from '@/Components/Icons/EmailIcon'
@@ -127,6 +127,12 @@ type TimelineItem = {
   iconTone: 'neutral' | 'info' | 'success' | 'warning'
 }
 
+type MovementFormValues = {
+  useDefaultAmount: boolean
+  amount: string
+  note: string
+}
+
 const HIDE_DESCRIPTION_AND_JOB_STATUS = new Set([
   'NEW REQUEST',
   'REQUEST FOLLOW UP',
@@ -148,6 +154,12 @@ const FRONTDESK_SALES_DROPDOWN_EXTRA_STATUSES = [
 ] as const
 
 const CUSTOM_SCHEDULE_TYPE = 'CUSTOMIZED'
+const emptyMovementFormValues = (): MovementFormValues => ({
+  useDefaultAmount: true,
+  amount: '',
+  note: ''
+})
+
 const buildCustomSchedule = (items?: Array<{ label?: string | null, amount?: number | string | null }>) => {
   const normalized = Array.isArray(items)
     ? items.map((item) => ({
@@ -215,6 +227,8 @@ const formatDateForInput = (date: Date): string => {
   const minutes = pad(date.getMinutes())
   return `${year}-${month}-${day} ${hours}:${minutes}`
 }
+
+const round2 = (value: number): number => Math.round((value + Number.EPSILON) * 100) / 100
 
 const normalizeScheduleValue = (value?: string | null): string => {
   if (!value) return ''
@@ -357,6 +371,50 @@ const trimValue = (value: any, max = 60): string => {
   return `${stringValue.slice(0, max).trim()}…`
 }
 
+const formatFinancialAmount = (value: any): string | null => {
+  const numeric = Number(value)
+  if (!Number.isFinite(numeric)) return null
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(numeric)
+}
+
+const financialEventDetailText = (event: OrderFinancialEvent): string | undefined => {
+  const details = event.details ?? {}
+  const parts: string[] = []
+
+  const beforeAmount = formatFinancialAmount((details as any).before_amount)
+  const afterAmount = formatFinancialAmount((details as any).after_amount)
+  if (beforeAmount || afterAmount) {
+    parts.push(`Amount: ${beforeAmount ?? '—'} → ${afterAmount ?? '—'}`)
+  }
+
+  const beforeDueDate = (details as any).before_due_date
+  const afterDueDate = (details as any).after_due_date
+  if (beforeDueDate || afterDueDate) {
+    parts.push(`Due date: ${beforeDueDate ?? '—'} → ${afterDueDate ?? '—'}`)
+  }
+
+  const beforeStatus = (details as any).before_status
+  const afterStatus = (details as any).after_status
+  if (beforeStatus || afterStatus) {
+    parts.push(`Status: ${beforeStatus ?? '—'} → ${afterStatus ?? '—'}`)
+  }
+
+  if ((details as any).amount != null) {
+    const amount = formatFinancialAmount((details as any).amount)
+    if (amount) parts.push(`Amount: ${amount}`)
+  }
+
+  if (typeof (details as any).note === 'string' && (details as any).note.trim() !== '') {
+    parts.push(`Note: ${(details as any).note}`)
+  }
+
+  if (parts.length === 0) {
+    return undefined
+  }
+
+  return parts.join(' • ')
+}
+
 const isPrimitive = (value: any): boolean =>
   value === null || ['string', 'number', 'boolean'].includes(typeof value)
 
@@ -445,6 +503,7 @@ export default function ShowStatusOrder ({
   const scheduleAppointmentIso = order.schedule_appointment_iso ?? toScheduleString(order.schedule_appointment ?? null)
   const safeOrderStatuses = Array.isArray(orderStatuses) ? orderStatuses : []
   const safeSnapshots = Array.isArray(snapshots) ? snapshots : []
+  const safeFinancialEvents = Array.isArray(order.financial_events) ? order.financial_events : []
   const safeTags = Array.isArray(tags) ? tags : []
   const safeUsedTags = Array.isArray(usedTags) ? usedTags : []
   const relatedClientOrders = Array.isArray(clientOrders) ? clientOrders : []
@@ -536,9 +595,12 @@ export default function ShowStatusOrder ({
     paymentScheduleType: initialScheduleType,
     customSchedule: initialCustomSchedule
   })
-  const [paymentEdits, setPaymentEdits] = useState<Record<number, { status: string, dueDate: string }>>({})
+  const [paymentEdits, setPaymentEdits] = useState<Record<number, { dueDate: string }>>({})
   const [paymentSavingId, setPaymentSavingId] = useState<number | null>(null)
   const [paymentError, setPaymentError] = useState<string | null>(null)
+  const [movementDrafts, setMovementDrafts] = useState<Record<number, MovementFormValues>>({})
+  const [movementEdits, setMovementEdits] = useState<Record<number, MovementFormValues>>({})
+  const [movementSavingKey, setMovementSavingKey] = useState<string | null>(null)
   const [changeOrderStatus, setChangeOrderStatus] = useState<string>(initialOrder.change_order_payment?.status ?? 'PENDING')
   const [changeOrderSaving, setChangeOrderSaving] = useState(false)
   const [changeOrderError, setChangeOrderError] = useState<string | null>(null)
@@ -727,7 +789,10 @@ export default function ShowStatusOrder ({
         return
       }
       if (responseData?.order) {
-        setOrder(responseData.order)
+        setOrder(prev => ({
+          ...prev,
+          ...responseData.order
+        }))
       }
       setContactModalOpen(false)
       setContactModalTargetClientId(null)
@@ -768,7 +833,10 @@ export default function ShowStatusOrder ({
         return
       }
       if (responseData?.order) {
-        setOrder(responseData.order)
+        setOrder(prev => ({
+          ...prev,
+          ...responseData.order
+        }))
       }
       setRequestModalOpen(false)
     } catch (error) {
@@ -844,7 +912,10 @@ export default function ShowStatusOrder ({
         throw new Error('Unexpected server response.')
       }
 
-      setOrder(updatedOrder)
+      setOrder(prev => ({
+        ...prev,
+        ...updatedOrder
+      }))
       if (Array.isArray((updatedOrder as any).order_company_contacts)) {
         setClientsList(prev => {
           const next = [...prev]
@@ -965,6 +1036,12 @@ export default function ShowStatusOrder ({
   useEffect(() => {
     setOrder(initialOrder)
     setOrderFormInitialValues(loadOrderFormObj(initialOrder))
+    setPaymentEdits({})
+    setPaymentError(null)
+    setPaymentSavingId(null)
+    setMovementDrafts({})
+    setMovementEdits({})
+    setMovementSavingKey(null)
     const nextScheduleIso = initialOrder.schedule_appointment_iso ?? toScheduleString(initialOrder.schedule_appointment ?? null)
     setScheduleInitialValues({
       scheduleDate: nextScheduleIso ? normalizeScheduleValue(nextScheduleIso) : '',
@@ -980,7 +1057,7 @@ export default function ShowStatusOrder ({
   const refreshOrderActivity = useCallback(() => {
     setActivityRefreshKey(prev => prev + 1)
     router.reload({
-      only: ['order'],
+      only: ['order', 'snapshots'],
       preserveScroll: true,
       preserveState: true
     })
@@ -1882,7 +1959,35 @@ export default function ShowStatusOrder ({
     }
   }
 
-  const handleInstallmentFieldChange = (installmentId: number, field: 'status' | 'dueDate', value: string) => {
+  const mergeUpdatedInstallment = (updated: PaymentInstallment) => {
+    setOrder(prev => {
+      const schedule = prev.payment_schedule
+      if (!schedule || !Array.isArray(schedule.installments)) return prev
+
+      const updatedInstallments = schedule.installments.map((item) =>
+        item.id === updated.id ? { ...item, ...updated } : item
+      )
+
+      const paidAmount = updatedInstallments.reduce((total, installment) => {
+        const value = Number(installment.paid_amount ?? 0)
+        return Number.isFinite(value) ? total + value : total
+      }, 0)
+      const totalAmount = Number(schedule.total_amount ?? 0)
+
+      return {
+        ...prev,
+        payment_schedule: {
+          ...schedule,
+          installments: updatedInstallments,
+          paid_amount: round2(paidAmount),
+          remaining_amount: round2(Math.max(0, totalAmount - paidAmount)),
+          credit_amount: round2(Math.max(0, paidAmount - totalAmount))
+        }
+      }
+    })
+  }
+
+  const handleInstallmentFieldChange = (installmentId: number, field: 'dueDate', value: string) => {
     setPaymentEdits(prev => ({
       ...prev,
       [installmentId]: {
@@ -1892,13 +1997,12 @@ export default function ShowStatusOrder ({
     }))
   }
 
-  const handleInstallmentSave = async (installmentId: number, defaultStatus: string, defaultDueDate: string | null) => {
+  const handleInstallmentSave = async (installmentId: number, defaultDueDate: string | null) => {
     setPaymentSavingId(installmentId)
     setPaymentError(null)
 
     try {
       const editValues = paymentEdits[installmentId] ?? {}
-      const status = editValues.status ?? defaultStatus ?? 'PENDING'
       const dueDate = editValues.dueDate ?? (defaultDueDate ?? '')
 
       const response = await fetch(route('payment_installments.update', installmentId), {
@@ -1909,7 +2013,6 @@ export default function ShowStatusOrder ({
           'X-CSRF-TOKEN': csrfToken
         },
         body: JSON.stringify({
-          status,
           due_date: dueDate || null
         })
       })
@@ -1931,33 +2034,238 @@ export default function ShowStatusOrder ({
 
       const updated = payload.installment
 
-      setOrder(prev => {
-        const schedule = prev.payment_schedule
-        if (!schedule || !Array.isArray(schedule.installments)) return prev
-        const updatedInstallments = schedule.installments.map((item) =>
-          item.id === updated.id ? { ...item, ...updated } : item
-        )
-        return {
-          ...prev,
-          payment_schedule: {
-            ...schedule,
-            installments: updatedInstallments
-          }
-        }
-      })
+      mergeUpdatedInstallment(updated)
 
       setPaymentEdits(prev => ({
         ...prev,
         [installmentId]: {
-          status: updated.status ?? status,
           dueDate: updated.due_date ?? dueDate
         }
       }))
+      refreshOrderActivity()
     } catch (error: any) {
       console.error('payment installment update error', error)
       setPaymentError(error?.message ?? 'No se pudo actualizar el pago.')
     } finally {
       setPaymentSavingId(prev => (prev === installmentId ? null : prev))
+    }
+  }
+
+  const handleMovementDraftChange = (installmentId: number, field: keyof MovementFormValues, value: string | boolean) => {
+    setMovementDrafts(prev => ({
+      ...prev,
+      [installmentId]: {
+        ...(prev[installmentId] ?? emptyMovementFormValues()),
+        [field]: value
+      }
+    }))
+  }
+
+  const handleMovementEditChange = (movement: PaymentInstallmentMovement, field: keyof MovementFormValues, value: string) => {
+    const defaultValues: MovementFormValues = {
+      useDefaultAmount: false,
+      amount: String(movement.amount ?? ''),
+      note: movement.note ?? ''
+    }
+
+    setMovementEdits(prev => ({
+      ...prev,
+      [movement.id]: {
+        ...(prev[movement.id] ?? defaultValues),
+        [field]: value
+      }
+    }))
+  }
+
+  const handleMovementCreate = async (installment: PaymentInstallment) => {
+    const installmentId = installment.id
+    const draft = movementDrafts[installmentId] ?? emptyMovementFormValues()
+    const scheduledAmount = Number(installment.amount ?? 0)
+    const remainingAmount = Number(installment.balance ?? Math.max(0, scheduledAmount - Number(installment.paid_amount ?? 0)))
+    const defaultAmount = remainingAmount > 0 ? remainingAmount : scheduledAmount
+    const amount = draft.useDefaultAmount
+      ? defaultAmount
+      : Number(String(draft.amount ?? '').replace(/,/g, '').trim())
+    const schedule = order.payment_schedule
+    const scheduleTotal = Number(schedule?.total_amount ?? 0)
+    const schedulePaid = Number(schedule?.paid_amount ?? 0)
+    const remainingCapacity = Math.max(0, round2(scheduleTotal - schedulePaid))
+
+    if (!Number.isFinite(amount) || amount <= 0) {
+      setPaymentError(draft.useDefaultAmount
+        ? 'This installment has no pending default amount to pay.'
+        : 'Enter a valid payment amount greater than 0.')
+      return
+    }
+
+    if (amount > remainingCapacity + 0.01) {
+      setPaymentError(`Total paid cannot exceed schedule total. Maximum allowed now is ${formatScheduleCurrency(remainingCapacity)}.`)
+      return
+    }
+
+    setMovementSavingKey(`create-${installmentId}`)
+    setPaymentError(null)
+
+    try {
+      const response = await fetch(route('payment_installment_movements.store', installmentId), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          'X-CSRF-TOKEN': csrfToken
+        },
+        body: JSON.stringify({
+          amount,
+          note: draft.note || null
+        })
+      })
+
+      const payload = await response.json().catch(() => null)
+      if (!response.ok) {
+        if (response.status === 422 && payload?.errors) {
+          const messages = Object.values(payload.errors).flat()
+          throw new Error(typeof messages[0] === 'string' ? messages[0] : 'Unable to create payment movement.')
+        }
+        throw new Error(payload?.message ?? 'Unable to create payment movement.')
+      }
+
+      if (!payload?.installment) {
+        throw new Error('Unexpected server response.')
+      }
+
+      mergeUpdatedInstallment(payload.installment)
+      setMovementDrafts(prev => ({
+        ...prev,
+        [installmentId]: emptyMovementFormValues()
+      }))
+      refreshOrderActivity()
+    } catch (error: any) {
+      console.error('payment movement create error', error)
+      setPaymentError(error?.message ?? 'No se pudo registrar el pago.')
+    } finally {
+      setMovementSavingKey(prev => (prev === `create-${installmentId}` ? null : prev))
+    }
+  }
+
+  const handleMovementUpdate = async (movement: PaymentInstallmentMovement) => {
+    const editedValues = movementEdits[movement.id] ?? {
+      useDefaultAmount: false,
+      amount: String(movement.amount ?? ''),
+      note: movement.note ?? ''
+    }
+    const amountRaw = editedValues.amount
+    const amount = Number(String(amountRaw).replace(/,/g, '').trim())
+    const currentAmount = Number(movement.amount ?? 0)
+    const schedule = order.payment_schedule
+    const scheduleTotal = Number(schedule?.total_amount ?? 0)
+    const schedulePaid = Number(schedule?.paid_amount ?? 0)
+    const remainingCapacity = Math.max(0, round2(scheduleTotal - schedulePaid))
+    const maxAllowed = round2(currentAmount + remainingCapacity)
+
+    if (!Number.isFinite(amount) || amount <= 0) {
+      setPaymentError('Enter a valid payment amount greater than 0.')
+      return
+    }
+
+    if (amount > maxAllowed + 0.01) {
+      setPaymentError(`Total paid cannot exceed schedule total. Maximum allowed now is ${formatScheduleCurrency(maxAllowed)}.`)
+      return
+    }
+
+    setMovementSavingKey(`update-${movement.id}`)
+    setPaymentError(null)
+
+    try {
+      const response = await fetch(route('payment_installment_movements.update', movement.id), {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          'X-CSRF-TOKEN': csrfToken
+        },
+        body: JSON.stringify({
+          amount,
+          note: editedValues.note || null
+        })
+      })
+
+      const payload = await response.json().catch(() => null)
+      if (!response.ok) {
+        if (response.status === 422 && payload?.errors) {
+          const messages = Object.values(payload.errors).flat()
+          throw new Error(typeof messages[0] === 'string' ? messages[0] : 'Unable to update payment movement.')
+        }
+        throw new Error(payload?.message ?? 'Unable to update payment movement.')
+      }
+
+      if (!payload?.installment) {
+        throw new Error('Unexpected server response.')
+      }
+
+      mergeUpdatedInstallment(payload.installment)
+      setMovementEdits(prev => {
+        const next = { ...prev }
+        delete next[movement.id]
+        return next
+      })
+      refreshOrderActivity()
+    } catch (error: any) {
+      console.error('payment movement update error', error)
+      setPaymentError(error?.message ?? 'No se pudo actualizar el movimiento.')
+    } finally {
+      setMovementSavingKey(prev => (prev === `update-${movement.id}` ? null : prev))
+    }
+  }
+
+  const handleMovementVoid = async (movementId: number, installmentId: number) => {
+    const confirmVoid = window.confirm('This payment will be deleted and removed from totals. Continue?')
+    if (!confirmVoid) return
+
+    setMovementSavingKey(`void-${movementId}`)
+    setPaymentError(null)
+
+    try {
+      const response = await fetch(route('payment_installment_movements.void', movementId), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          'X-CSRF-TOKEN': csrfToken
+        },
+        body: JSON.stringify({
+          note: movementEdits[movementId]?.note || null
+        })
+      })
+
+      const payload = await response.json().catch(() => null)
+      if (!response.ok) {
+        if (response.status === 422 && payload?.errors) {
+          const messages = Object.values(payload.errors).flat()
+          throw new Error(typeof messages[0] === 'string' ? messages[0] : 'Unable to void payment movement.')
+        }
+        throw new Error(payload?.message ?? 'Unable to void payment movement.')
+      }
+
+      if (!payload?.installment) {
+        throw new Error('Unexpected server response.')
+      }
+
+      mergeUpdatedInstallment(payload.installment)
+      setMovementEdits(prev => {
+        const next = { ...prev }
+        delete next[movementId]
+        return next
+      })
+      refreshOrderActivity()
+    } catch (error: any) {
+      console.error('payment movement void error', error)
+      setPaymentError(error?.message ?? 'No se pudo anular el movimiento.')
+    } finally {
+      setMovementSavingKey(prev => (prev === `void-${movementId}` ? null : prev))
+      setMovementDrafts(prev => ({
+        ...prev,
+        [installmentId]: prev[installmentId] ?? emptyMovementFormValues()
+      }))
     }
   }
 
@@ -1998,6 +2306,7 @@ export default function ShowStatusOrder ({
         ...prev,
         change_order_payment: payload.payment
       }))
+      refreshOrderActivity()
     } catch (error: any) {
       setChangeOrderError(error?.message ?? 'Unable to update change order payment.')
     } finally {
@@ -2176,17 +2485,17 @@ export default function ShowStatusOrder ({
     : null
   const paymentSchedule = order.payment_schedule ?? null
   const changeOrderPayment = order.change_order_payment ?? null
-  const paymentInstallments = Array.isArray(paymentSchedule?.installments)
+  const paymentInstallments: PaymentInstallment[] = Array.isArray(paymentSchedule?.installments)
     ? paymentSchedule?.installments ?? []
     : []
   const paymentTotalAmount = Number(paymentSchedule?.total_amount ?? 0)
-  const paymentPaidAmount = paymentInstallments.reduce((total, installment) => {
-    const amountValue = Number(installment.amount ?? 0)
-    return installment.status === 'PAID' && Number.isFinite(amountValue)
-      ? total + amountValue
-      : total
-  }, 0)
-  const paymentRemainingAmount = Math.max(0, paymentTotalAmount - paymentPaidAmount)
+  const paymentPaidAmount = Number(paymentSchedule?.paid_amount ?? paymentInstallments.reduce((total, installment) => {
+    const amountValue = Number(installment.paid_amount ?? 0)
+    return Number.isFinite(amountValue) ? total + amountValue : total
+  }, 0))
+  const paymentRemainingAmount = Number(paymentSchedule?.remaining_amount ?? Math.max(0, paymentTotalAmount - paymentPaidAmount))
+  const paymentCreditAmount = Number(paymentSchedule?.credit_amount ?? Math.max(0, paymentPaidAmount - paymentTotalAmount))
+  const scheduleRemainingCapacity = Math.max(0, paymentTotalAmount - paymentPaidAmount)
   const formatScheduleCurrency = (value: number) =>
     new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value)
   const formatPaidAt = (value?: string | null) => {
@@ -2214,7 +2523,6 @@ export default function ShowStatusOrder ({
   const selectedTagCount = data.tags?.length ?? 0
   const statusCount = safeOrderStatuses.length
   const timelineItems = useMemo(() => {
-    if (safeSnapshots.length === 0) return []
     const sortedSnapshots = [...safeSnapshots]
       .filter((snapshot) => snapshot?.snapshot_data)
       .sort((a, b) => {
@@ -2381,8 +2689,32 @@ export default function ShowStatusOrder ({
       }
     })
 
+    safeFinancialEvents.forEach((event) => {
+      const createdAt = event?.created_at ? new Date(event.created_at) : new Date()
+      const actorName = event?.user?.name ?? 'System'
+      const summary = (event?.summary ?? '').trim()
+      const title = summary !== '' ? `${summary} by ${actorName}` : `Financial update by ${actorName}`
+      const upperEventType = String(event?.event_type ?? '').toUpperCase()
+      const iconTone: TimelineItem['iconTone'] = upperEventType.includes('VOID')
+        ? 'warning'
+        : upperEventType.includes('PAID') || upperEventType.includes('STATUS')
+          ? 'success'
+          : 'info'
+
+      items.push({
+        id: `financial-${event.id}`,
+        createdAt,
+        timeLabel: formatTimelineTime(createdAt),
+        dateLabel: formatTimelineDate(createdAt),
+        title,
+        description: financialEventDetailText(event),
+        icon: MoneyBagIcon,
+        iconTone
+      })
+    })
+
     return items.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-  }, [safeSnapshots])
+  }, [safeSnapshots, safeFinancialEvents])
 
   const timelineGroups = useMemo(() => {
     const groups = new Map<string, TimelineItem[]>()
@@ -3159,7 +3491,7 @@ export default function ShowStatusOrder ({
                             </div>
                           </div>
 
-                          <div className="grid gap-3 md:grid-cols-3">
+                          <div className="grid gap-3 md:grid-cols-4">
                             <div className="rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3">
                               <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600">Paid</p>
                               <p className="text-sm font-semibold text-emerald-700">
@@ -3178,7 +3510,16 @@ export default function ShowStatusOrder ({
                                 {formatScheduleCurrency(paymentTotalAmount)}
                               </p>
                             </div>
+                            <div className="rounded-xl border border-sky-100 bg-sky-50 px-4 py-3">
+                              <p className="text-xs font-semibold uppercase tracking-wide text-sky-600">Credit</p>
+                              <p className="text-sm font-semibold text-sky-700">
+                                {formatScheduleCurrency(paymentCreditAmount)}
+                              </p>
+                            </div>
                           </div>
+                          <p className="text-xs text-slate-500">
+                            Total paid is capped to the schedule total. No final total credit is allowed.
+                          </p>
 
                           {paymentError && (
                             <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-600">
@@ -3188,71 +3529,185 @@ export default function ShowStatusOrder ({
 
                           {paymentInstallments.length > 0
                             ? (
-                              <div className="overflow-x-auto rounded-xl border border-slate-200">
-                                <table className="min-w-full text-left text-sm text-slate-600">
-                                  <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-400">
-                                    <tr>
-                                      <th className="px-4 py-3">Payment</th>
-                                      <th className="px-4 py-3">%</th>
-                                      <th className="px-4 py-3">Amount</th>
-                                      <th className="px-4 py-3">Due date</th>
-                                      <th className="px-4 py-3">Status</th>
-                                      <th className="px-4 py-3">Paid at</th>
-                                      <th className="px-4 py-3">Paid by</th>
-                                      <th className="px-4 py-3 text-right">Action</th>
-                                    </tr>
-                                  </thead>
-                                  <tbody className="divide-y divide-slate-100">
-                                    {paymentInstallments.map((installment) => {
-                                      const statusValue = paymentEdits[installment.id]?.status ?? installment.status ?? 'PENDING'
-                                      const dueDateValue = paymentEdits[installment.id]?.dueDate ?? installment.due_date ?? ''
-                                      const saving = paymentSavingId === installment.id
-                                      return (
-                                        <tr key={installment.id} className="bg-white">
-                                          <td className="px-4 py-3 font-medium text-slate-700">{installment.label}</td>
-                                          <td className="px-4 py-3">{Number(installment.percentage ?? 0).toFixed(2)}%</td>
-                                          <td className="px-4 py-3">{formatScheduleCurrency(Number(installment.amount ?? 0))}</td>
-                                          <td className="px-4 py-3">
-                                            <input
-                                              type="date"
-                                              value={dueDateValue}
-                                              onChange={(event) => { handleInstallmentFieldChange(installment.id, 'dueDate', event.target.value) }}
-                                              className="w-full rounded-lg border border-slate-200 px-2 py-1 text-sm text-slate-700 focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
-                                            />
-                                          </td>
-                                          <td className="px-4 py-3">
-                                            <select
-                                              value={statusValue}
-                                              onChange={(event) => { handleInstallmentFieldChange(installment.id, 'status', event.target.value) }}
-                                              className="w-full rounded-lg border border-slate-200 px-2 py-1 text-sm text-slate-700 focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
-                                            >
-                                              <option value="PENDING">PENDING</option>
-                                              <option value="PAID">PAID</option>
-                                            </select>
-                                          </td>
-                                          <td className="px-4 py-3 text-xs text-slate-500">
-                                            {formatPaidAt(installment.paid_at)}
-                                          </td>
-                                          <td className="px-4 py-3">
-                                            <span className="text-xs text-slate-500">
-                                              {installment.paid_by?.name ?? '-'}
-                                            </span>
-                                          </td>
-                                          <td className="px-4 py-3 text-right">
-                                            <button
-                                              type="button"
-                                              onClick={() => { handleInstallmentSave(installment.id, statusValue, installment.due_date ?? null) }}
-                                              className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:border-sky-400 hover:text-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
-                                              disabled={saving}
-                                            >
-                                              {saving ? 'Saving...' : 'Save'}
-                                            </button>
-                                          </td>
-                                        </tr>
-                                      )
-                                    })}
-                                  </tbody>
-                                </table>
+                              <div className="space-y-4">
+                                {paymentInstallments.map((installment) => {
+                                  const dueDateValue = paymentEdits[installment.id]?.dueDate ?? installment.due_date ?? ''
+                                  const movements = Array.isArray(installment.movements) ? installment.movements : []
+                                  const movementDraft = movementDrafts[installment.id] ?? emptyMovementFormValues()
+                                  const scheduledAmount = Number(installment.amount ?? 0)
+                                  const paidAmount = Number(installment.paid_amount ?? 0)
+                                  const remainingAmount = Number(installment.balance ?? Math.max(0, scheduledAmount - paidAmount))
+                                  const defaultAmount = Math.min(remainingAmount > 0 ? remainingAmount : scheduledAmount, scheduleRemainingCapacity)
+                                  const progress = scheduledAmount > 0
+                                    ? Math.min(100, Math.max(0, Math.round((paidAmount / scheduledAmount) * 100)))
+                                    : 0
+                                  const saving = paymentSavingId === installment.id
+
+                                  return (
+                                    <div key={installment.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                                      <div className="flex flex-wrap items-center justify-between gap-3">
+                                        <div>
+                                          <p className="text-base font-semibold text-slate-800">{installment.label}</p>
+                                          <p className="text-xs text-slate-500">{Number(installment.percentage ?? 0).toFixed(2)}% of schedule</p>
+                                        </div>
+                                        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+                                          {installment.status ?? 'PENDING'}
+                                        </span>
+                                      </div>
+
+                                      <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100">
+                                        <div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${progress}%` }} />
+                                      </div>
+
+                                      <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                                        <div className="rounded-lg border border-slate-200 bg-slate-50 p-2">
+                                          <p className="text-[11px] uppercase text-slate-400">Scheduled</p>
+                                          <p className="text-sm font-semibold text-slate-700">{formatScheduleCurrency(scheduledAmount)}</p>
+                                        </div>
+                                        <div className="rounded-lg border border-emerald-100 bg-emerald-50 p-2">
+                                          <p className="text-[11px] uppercase text-emerald-600">Paid</p>
+                                          <p className="text-sm font-semibold text-emerald-700">{formatScheduleCurrency(paidAmount)}</p>
+                                        </div>
+                                        <div className="rounded-lg border border-amber-100 bg-amber-50 p-2">
+                                          <p className="text-[11px] uppercase text-amber-600">Balance</p>
+                                          <p className="text-sm font-semibold text-amber-700">{formatScheduleCurrency(Number(installment.balance ?? 0))}</p>
+                                        </div>
+                                        <div className="rounded-lg border border-sky-100 bg-sky-50 p-2">
+                                          <p className="text-[11px] uppercase text-sky-600">Credit</p>
+                                          <p className="text-sm font-semibold text-sky-700">{formatScheduleCurrency(Number(installment.credit ?? 0))}</p>
+                                        </div>
+                                      </div>
+
+                                      <div className="mt-4 grid gap-2 lg:grid-cols-[220px_1fr_auto]">
+                                        <input
+                                          type="date"
+                                          value={dueDateValue}
+                                          onChange={(event) => { handleInstallmentFieldChange(installment.id, 'dueDate', event.target.value) }}
+                                          className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
+                                        />
+                                        <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                                          Last payment: {formatPaidAt(installment.paid_at)} by {installment.paid_by?.name ?? '-'}
+                                        </div>
+                                        <button
+                                          type="button"
+                                          onClick={() => { handleInstallmentSave(installment.id, installment.due_date ?? null) }}
+                                          className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 hover:border-sky-400 hover:text-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                          disabled={saving}
+                                        >
+                                          {saving ? 'Saving...' : 'Save due date'}
+                                        </button>
+                                      </div>
+
+                                      <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Register Payment</p>
+                                        <div className="mt-2 grid gap-2 md:grid-cols-4">
+                                          <select
+                                            value={movementDraft.useDefaultAmount ? 'default' : 'custom'}
+                                            onChange={(event) => { handleMovementDraftChange(installment.id, 'useDefaultAmount', event.target.value === 'default') }}
+                                            className="rounded-lg border border-slate-200 px-2 py-2 text-xs text-slate-700 focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
+                                          >
+                                            <option value="default">Default amount</option>
+                                            <option value="custom">Custom amount</option>
+                                          </select>
+                                          <input
+                                            type="number"
+                                            step="0.01"
+                                            min="0"
+                                            value={movementDraft.useDefaultAmount ? String(round2(defaultAmount)) : movementDraft.amount}
+                                            onChange={(event) => { handleMovementDraftChange(installment.id, 'amount', event.target.value) }}
+                                            className="rounded-lg border border-slate-200 px-2 py-2 text-xs text-slate-700 focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
+                                            placeholder={movementDraft.useDefaultAmount ? 'Using default' : 'Amount'}
+                                            disabled={movementDraft.useDefaultAmount}
+                                          />
+                                          <input
+                                            type="text"
+                                            value={movementDraft.note}
+                                            onChange={(event) => { handleMovementDraftChange(installment.id, 'note', event.target.value) }}
+                                            className="rounded-lg border border-slate-200 px-2 py-2 text-xs text-slate-700 focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
+                                            placeholder="Note (optional)"
+                                          />
+                                          <button
+                                            type="button"
+                                            onClick={() => { handleMovementCreate(installment) }}
+                                            className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 hover:border-emerald-300 disabled:cursor-not-allowed disabled:opacity-60"
+                                            disabled={movementSavingKey === `create-${installment.id}`}
+                                          >
+                                            {movementSavingKey === `create-${installment.id}` ? 'Saving...' : 'Add payment'}
+                                          </button>
+                                        </div>
+                                        <p className="mt-2 text-[11px] text-slate-500">
+                                          Default amount now: {formatScheduleCurrency(defaultAmount)}
+                                        </p>
+                                      </div>
+
+                                      <div className="mt-4">
+                                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Payment History</p>
+                                        {movements.length > 0
+                                          ? (
+                                            <div className="mt-2 space-y-2">
+                                              {movements.map((movement) => {
+                                                const hasEdit = Object.prototype.hasOwnProperty.call(movementEdits, movement.id)
+                                                const edited = hasEdit
+                                                  ? movementEdits[movement.id]
+                                                  : {
+                                                      useDefaultAmount: false,
+                                                      amount: String(movement.amount ?? ''),
+                                                      note: movement.note ?? ''
+                                                    }
+                                                return (
+                                                  <div key={movement.id} className="rounded-lg border border-slate-200 bg-white p-3">
+                                                    <div className="grid gap-2 md:grid-cols-3">
+                                                      <input
+                                                        type="number"
+                                                        step="0.01"
+                                                        min="0"
+                                                        value={edited.amount}
+                                                        onChange={(event) => { handleMovementEditChange(movement, 'amount', event.target.value) }}
+                                                        className="rounded-lg border border-slate-200 px-2 py-2 text-xs text-slate-700 focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
+                                                      />
+                                                      <input
+                                                        type="text"
+                                                        value={edited.note}
+                                                        onChange={(event) => { handleMovementEditChange(movement, 'note', event.target.value) }}
+                                                        className="rounded-lg border border-slate-200 px-2 py-2 text-xs text-slate-700 focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
+                                                        placeholder="Note (optional)"
+                                                      />
+                                                      <div className="flex items-center justify-end gap-2">
+                                                        <button
+                                                          type="button"
+                                                          onClick={() => { handleMovementUpdate(movement) }}
+                                                          className="rounded border border-slate-200 px-2 py-1.5 text-[11px] font-semibold text-slate-600 hover:border-sky-400 hover:text-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                                          disabled={movementSavingKey === `update-${movement.id}`}
+                                                        >
+                                                          {movementSavingKey === `update-${movement.id}` ? 'Updating...' : 'Update'}
+                                                        </button>
+                                                        <button
+                                                          type="button"
+                                                          onClick={() => { handleMovementVoid(movement.id, installment.id) }}
+                                                          className="rounded border border-rose-200 px-2 py-1.5 text-[11px] font-semibold text-rose-600 hover:border-rose-300 disabled:cursor-not-allowed disabled:opacity-60"
+                                                          disabled={movementSavingKey === `void-${movement.id}`}
+                                                        >
+                                                          {movementSavingKey === `void-${movement.id}` ? 'Deleting...' : 'Delete'}
+                                                        </button>
+                                                      </div>
+                                                    </div>
+                                                    <p className="mt-2 text-[11px] text-slate-500">
+                                                      Recorded by {movement.paid_by?.name ?? '-'} on {formatPaidAt(movement.paid_at)}
+                                                    </p>
+                                                  </div>
+                                                )
+                                              })}
+                                            </div>
+                                            )
+                                          : (
+                                            <p className="mt-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-500">
+                                              No payments recorded yet for this installment.
+                                            </p>
+                                            )}
+                                      </div>
+                                    </div>
+                                  )
+                                })}
                               </div>
                               )
                             : (
@@ -3319,6 +3774,39 @@ export default function ShowStatusOrder ({
                         </div>
                       </div>
                     )}
+                    <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Financial History</p>
+                        <span className="text-xs text-slate-500">{safeFinancialEvents.length} events</span>
+                      </div>
+                      {safeFinancialEvents.length > 0
+                        ? (
+                          <div className="mt-3 space-y-2">
+                            {safeFinancialEvents.map((event) => (
+                              <div key={event.id} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                  <p className="text-xs font-semibold text-slate-700">{event.summary}</p>
+                                  <span className="text-[11px] text-slate-500">{formatPaidAt(event.created_at)}</span>
+                                </div>
+                                <p className="mt-1 text-[11px] text-slate-500">
+                                  By {event.user?.name ?? 'System'}
+                                  {event.event_type ? ` • ${event.event_type}` : ''}
+                                </p>
+                                {financialEventDetailText(event) && (
+                                  <p className="mt-1 text-[11px] text-slate-600">
+                                    {financialEventDetailText(event)}
+                                  </p>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                          )
+                        : (
+                          <p className="mt-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-500">
+                            No financial events recorded yet.
+                          </p>
+                          )}
+                    </div>
                   </div>
                 )}
 

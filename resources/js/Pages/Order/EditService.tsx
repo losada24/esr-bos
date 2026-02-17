@@ -19,6 +19,7 @@ import {
   type DurationOfWork,
   type InstallationTeam
 } from '@/types'
+import { PAYMENT_METHODS } from '@/Utils/constants'
 
 export default function EditService ({
   auth,
@@ -102,8 +103,18 @@ export default function EditService ({
       travel_cost_id: values.travel_cost_id !== 0 ? values.travel_cost_id : '',
       duration_of_work_id: values.duration_of_work_id !== 0 ? values.duration_of_work_id : '',
       method_of_payment: values.method_of_payment,
+      payment_schedule_type: values.method_of_payment === PAYMENT_METHODS.CASH ? (values.payment_schedule_type || null) : null,
+      custom_schedule: values.method_of_payment === PAYMENT_METHODS.CASH && values.payment_schedule_type === 'CUSTOMIZED'
+        ? (values.custom_schedule ?? [])
+          .map((item: { label?: string, amount?: string | number }) => ({
+            label: String(item.label ?? '').trim(),
+            amount: Number(String(item.amount ?? '').replace(/,/g, ''))
+          }))
+          .filter((item: { label: string, amount: number }) => item.label !== '' && Number.isFinite(item.amount))
+        : [],
       type_of_financing: values.type_of_financing ? values.type_of_financing : null,
       project_amount: values.project_amount,
+      down_payment: values.down_payment,
       change_order_enabled: values.change_order_enabled,
       change_order_amount: values.change_order_amount,
       change_order_note: values.change_order_note,

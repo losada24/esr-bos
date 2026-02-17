@@ -3,19 +3,26 @@
 namespace App\Actions;
 
 use App\Enum\OrderStatusEnum;
+use App\Enum\PaymentScheduleTypeEnum;
 use App\Enum\ServiceEnum;
 use App\Enum\SupervisorPaymentStatusEnum;
+use App\Enum\MethodOfPayment;
 use App\Events\OrderStatusChanged;
 use App\Models\Client;
 use App\Models\Order;
 use App\Models\OrderProduct;
 use App\Models\PaymentExtraField;
+use App\Models\PaymentSchedule;
+use App\Support\OrderFinancialEventLogger;
+use App\Support\PaymentScheduleCalculator;
+use App\Support\PaymentScheduleTemplates;
 use App\Traits\ComissionSupervisor;
 use App\Traits\OrderEmails;
 use App\Traits\OrderStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use App\Traits\Twilio;
 use Twilio\TwiML\Voice\Pay;
 
@@ -57,6 +64,12 @@ class UpdateOrder
       $oldAmount = $order->project_amount;
       $newAmount = $request->project_amount;
       $hasCommissions = $order->comissions()->exists();
+
+      if ($order->hasReachedContractSigned() && abs((float) $newAmount - (float) $oldAmount) > 0.01) {
+        throw ValidationException::withMessages([
+          'project_amount' => 'Project amount cannot be edited after CONTRACT SIGNED BY CLIENT. Use Change Order instead.',
+        ]);
+      }
   
      
        //dd( $oldAmount, $newAmount, $order);
@@ -194,6 +207,192 @@ class UpdateOrder
       //dd($request->frame_color);
       $order->update($orderData);
 
+      $totalAmount = (float) ($request->project_amount ?? 0);
+      $requiresSchedule = $request->method_of_payment === MethodOfPayment::CASH->value;
+      $existingSchedule = $order->paymentSchedule()->with('installments')->first();
+      $hasScheduleTypeInput = $request->exists('payment_schedule_type');
+      $hasCustomScheduleInput = $request->exists('custom_schedule');
+      $shouldProcessSchedule = !$requiresSchedule || $hasScheduleTypeInput || $hasCustomScheduleInput;
+      $scheduleType = $requiresSchedule
+        ? ($hasScheduleTypeInput
+          ? (string) ($request->input('payment_schedule_type') ?? '')
+          : (string) ($existingSchedule?->schedule_type ?? ''))
+        : '';
+      $customSchedule = $hasCustomScheduleInput ? $request->input('custom_schedule', []) : [];
+      $hasRecordedPayments = $existingSchedule
+        ? $existingSchedule->installments()->whereHas('movements')->exists()
+        : false;
+
+      if ($requiresSchedule && !$hasCustomScheduleInput && $scheduleType === PaymentScheduleTypeEnum::CUSTOMIZED->value && $existingSchedule) {
+        $customSchedule = $existingSchedule->installments
+          ->sortBy('position')
+          ->values()
+          ->map(fn ($item) => [
+            'label' => $item->label,
+            'amount' => (float) $item->amount,
+          ])->all();
+      }
+
+      if ($shouldProcessSchedule && $hasRecordedPayments) {
+        if (!$requiresSchedule || !$existingSchedule || $scheduleType === '' || $scheduleType !== (string) $existingSchedule->schedule_type) {
+          throw ValidationException::withMessages([
+            'payment_schedule_type' => 'Payment schedule cannot be changed after payments are recorded.',
+          ]);
+        }
+
+        if ($scheduleType === PaymentScheduleTypeEnum::CUSTOMIZED->value) {
+          $incomingItems = collect($customSchedule)
+            ->map(function ($item) {
+              return [
+                'label' => trim((string) ($item['label'] ?? '')),
+                'amount' => round((float) ($item['amount'] ?? 0), 2),
+              ];
+            })
+            ->filter(fn ($item) => $item['label'] !== '')
+            ->values()
+            ->all();
+
+          $existingItems = $existingSchedule->installments
+            ->sortBy('position')
+            ->values()
+            ->map(fn ($item) => [
+              'label' => trim((string) $item->label),
+              'amount' => round((float) $item->amount, 2),
+            ])
+            ->all();
+
+          if ($incomingItems !== $existingItems) {
+            throw ValidationException::withMessages([
+              'payment_schedule_type' => 'Payment schedule cannot be changed after payments are recorded.',
+            ]);
+          }
+        }
+      } elseif ($shouldProcessSchedule) {
+        if (!$requiresSchedule || $scheduleType === '') {
+          if ($existingSchedule) {
+            $previousScheduleType = $existingSchedule->schedule_type;
+            $previousTotalAmount = (float) $existingSchedule->total_amount;
+            $existingSchedule->installments()->delete();
+            $existingSchedule->delete();
+
+            OrderFinancialEventLogger::log(
+              $order,
+              'PAYMENT_SCHEDULE_REMOVED',
+              'Payment schedule removed',
+              [
+                'before_schedule_type' => $previousScheduleType,
+                'before_total_amount' => $previousTotalAmount,
+              ]
+            );
+          }
+        } else {
+          if ($scheduleType === PaymentScheduleTypeEnum::CUSTOMIZED->value) {
+            $installments = [];
+            $runningPercent = 0.0;
+            $count = count($customSchedule);
+            foreach ($customSchedule as $index => $item) {
+              $amount = round((float) ($item['amount'] ?? 0), 2);
+              $percentage = $totalAmount > 0
+                ? round(($amount / $totalAmount) * 100, 2)
+                : 0;
+
+              if ($index === $count - 1 && $totalAmount > 0) {
+                $percentage = round(100 - $runningPercent, 2);
+              }
+
+              $runningPercent += $percentage;
+              $installments[] = [
+                'label' => trim((string) ($item['label'] ?? '')),
+                'percentage' => $percentage,
+                'amount' => $amount,
+              ];
+            }
+          } else {
+            $scheduleItems = PaymentScheduleTemplates::itemsFor($scheduleType);
+            $installments = PaymentScheduleCalculator::withAmounts($scheduleItems, $totalAmount);
+          }
+
+          $beforeScheduleType = $existingSchedule?->schedule_type;
+          $beforeTotalAmount = $existingSchedule ? (float) $existingSchedule->total_amount : null;
+          $beforeInstallments = $existingSchedule
+            ? $existingSchedule->installments
+              ->sortBy('position')
+              ->values()
+              ->map(fn ($item) => [
+                'label' => $item->label,
+                'percentage' => round((float) $item->percentage, 2),
+                'amount' => round((float) $item->amount, 2),
+              ])->all()
+            : [];
+
+          $afterInstallments = collect($installments)
+            ->map(fn ($item) => [
+              'label' => $item['label'],
+              'percentage' => round((float) $item['percentage'], 2),
+              'amount' => round((float) $item['amount'], 2),
+            ])
+            ->values()
+            ->all();
+
+          $scheduleChanged =
+            $beforeScheduleType !== $scheduleType
+            || abs((float) ($beforeTotalAmount ?? 0) - $totalAmount) > 0.01
+            || $beforeInstallments !== $afterInstallments;
+
+          if ($scheduleChanged) {
+            if (!$existingSchedule) {
+              $existingSchedule = PaymentSchedule::create([
+                'order_id' => $order->id,
+                'schedule_type' => $scheduleType,
+                'total_amount' => $totalAmount,
+              ]);
+            } else {
+              $existingSchedule->update([
+                'schedule_type' => $scheduleType,
+                'total_amount' => $totalAmount,
+              ]);
+              $existingSchedule->installments()->delete();
+            }
+
+            foreach ($installments as $index => $installment) {
+              $existingSchedule->installments()->create([
+                'position' => $index + 1,
+                'label' => $installment['label'],
+                'percentage' => $installment['percentage'],
+                'amount' => $installment['amount'],
+                'status' => 'PENDING',
+              ]);
+            }
+
+            OrderFinancialEventLogger::log(
+              $order,
+              'PAYMENT_SCHEDULE_DEFINED',
+              "Payment schedule configured as {$scheduleType}",
+              [
+                'schedule_type' => $scheduleType,
+                'total_amount' => $totalAmount,
+                'before_schedule_type' => $beforeScheduleType,
+                'before_total_amount' => $beforeTotalAmount,
+                'before_installments' => $beforeInstallments,
+                'installments' => $afterInstallments,
+              ]
+            );
+          }
+        }
+      }
+
+      if (abs((float) $newAmount - (float) $oldAmount) > 0.01) {
+        OrderFinancialEventLogger::log(
+          $order,
+          'PROJECT_AMOUNT_UPDATED',
+          'Project amount updated',
+          [
+            'before_amount' => (float) $oldAmount,
+            'after_amount' => (float) $newAmount,
+          ]
+        );
+      }
+
       if ($request->has('change_order_enabled')) {
         $changeOrderEnabled = filter_var($request->input('change_order_enabled'), FILTER_VALIDATE_BOOLEAN);
         $changeOrderPayment = $order->orderPayments()->where('type', 'CHANGE_ORDER')->first();
@@ -203,15 +402,58 @@ class UpdateOrder
             'note' => $request->input('change_order_note'),
           ];
           if ($changeOrderPayment) {
+            $before = [
+              'amount' => (float) $changeOrderPayment->amount,
+              'note' => $changeOrderPayment->note,
+              'status' => $changeOrderPayment->status,
+            ];
             $changeOrderPayment->update($payload);
+            if (abs((float) $before['amount'] - (float) ($changeOrderPayment->amount ?? 0)) > 0.01 || (string) $before['note'] !== (string) ($changeOrderPayment->note ?? '')) {
+              OrderFinancialEventLogger::log(
+                $order,
+                'CHANGE_ORDER_UPDATED',
+                'Change order payment updated',
+                [
+                  'order_payment_id' => $changeOrderPayment->id,
+                  'before' => $before,
+                  'after' => [
+                    'amount' => (float) $changeOrderPayment->amount,
+                    'note' => $changeOrderPayment->note,
+                    'status' => $changeOrderPayment->status,
+                  ],
+                ]
+              );
+            }
           } else {
-            $order->orderPayments()->create([
+            $createdChangeOrder = $order->orderPayments()->create([
               'type' => 'CHANGE_ORDER',
               'status' => 'PENDING',
               ...$payload,
             ]);
+            OrderFinancialEventLogger::log(
+              $order,
+              'CHANGE_ORDER_CREATED',
+              'Change order payment created',
+              [
+                'order_payment_id' => $createdChangeOrder->id,
+                'amount' => (float) $createdChangeOrder->amount,
+                'note' => $createdChangeOrder->note,
+                'status' => $createdChangeOrder->status,
+              ]
+            );
           }
         } elseif ($changeOrderPayment) {
+          OrderFinancialEventLogger::log(
+            $order,
+            'CHANGE_ORDER_REMOVED',
+            'Change order payment removed',
+            [
+              'order_payment_id' => $changeOrderPayment->id,
+              'amount' => (float) $changeOrderPayment->amount,
+              'note' => $changeOrderPayment->note,
+              'status' => $changeOrderPayment->status,
+            ]
+          );
           $changeOrderPayment->delete();
         }
       }
@@ -330,6 +572,15 @@ class UpdateOrder
   public function partialUpdate(Request $request, Order $order)
   {
     $statusOrder = $order->status;
+
+    if ($request->has('project_amount') && $order->hasReachedContractSigned()) {
+      $incomingAmount = $request->input('project_amount');
+      if ($incomingAmount !== null && $incomingAmount !== '' && abs((float) $incomingAmount - (float) ($order->project_amount ?? 0)) > 0.01) {
+        throw ValidationException::withMessages([
+          'project_amount' => 'Project amount cannot be edited after CONTRACT SIGNED BY CLIENT. Use Change Order instead.',
+        ]);
+      }
+    }
 
     $order->loadMissing(['installationTeams']);
     $installer = $order->installationTeams()->pluck('installation_teams.id')->toArray();

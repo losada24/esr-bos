@@ -30,10 +30,13 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use App\Traits\OrderEmails;
 use Illuminate\Http\JsonResponse;
 use App\Support\PaymentScheduleCalculator;
+use App\Support\PaymentInstallmentPresenter;
+use App\Support\OrderFinancialEventLogger;
 use App\Support\PaymentScheduleTemplates;
 use App\Support\OrderBoardFilter;
 
@@ -818,7 +821,7 @@ class SalesController extends Controller
     ]);
   }
 
-  public function assignFollowUp(Request $request, Order $order)
+    public function assignFollowUp(Request $request, Order $order)
     {
         $validated = $request->validate([
           'status' => ['required', Rule::in([
@@ -832,11 +835,32 @@ class SalesController extends Controller
         ]);
 
         $noteContent = trim((string) ($validated['note'] ?? ''));
+        $currentProjectAmount = (float) ($order->project_amount ?? 0);
+        $incomingProjectAmount = (float) $validated['project_amount'];
+
+        if ($order->hasReachedContractSigned() && abs($incomingProjectAmount - $currentProjectAmount) > 0.01) {
+          throw ValidationException::withMessages([
+            'project_amount' => 'Project amount cannot be edited after CONTRACT SIGNED BY CLIENT. Use Change Order instead.',
+          ]);
+        }
 
         DB::transaction(function () use ($order, $validated, $request, $noteContent) {
+          $oldProjectAmount = (float) ($order->project_amount ?? 0);
           $order->project_amount = $validated['project_amount'];
           $order->status = $validated['status'];
           $order->save();
+
+          if (abs((float) $order->project_amount - $oldProjectAmount) > 0.01) {
+            OrderFinancialEventLogger::log(
+              $order,
+              'PROJECT_AMOUNT_UPDATED',
+              'Project amount updated',
+              [
+                'before_amount' => $oldProjectAmount,
+                'after_amount' => (float) $order->project_amount,
+              ]
+            );
+          }
 
           $order->orderStatus()->create([
             'status' => $order->status,
@@ -1137,6 +1161,16 @@ class SalesController extends Controller
 
     $validated = $validator->validate();
 
+    if ($order->hasReachedContractSigned()) {
+      $currentAmount = (float) ($order->project_amount ?? 0);
+      $incomingAmount = (float) ($validated['project_amount'] ?? 0);
+      if (abs($incomingAmount - $currentAmount) > 0.01) {
+        throw ValidationException::withMessages([
+          'project_amount' => 'Project amount cannot be edited after CONTRACT SIGNED BY CLIENT. Use Change Order instead.',
+        ]);
+      }
+    }
+
     $contactEmail = trim((string) ($validated['contact_email'] ?? ''));
     $confirmCustomerRole = $request->boolean('confirm_customer_role');
     if ($contactEmail !== '') {
@@ -1156,6 +1190,7 @@ class SalesController extends Controller
     }
 
     DB::transaction(function () use ($order, $validated, $request, $orderCompanyContacts, $companyCount) {
+      $oldProjectAmount = (float) ($order->project_amount ?? 0);
       $newPipelineStatus = $order->is_supply
         ? OrderStatusEnum::ORDER_MATERIALS_AND_FILE_ORGANIZATION->value
         : OrderStatusEnum::RECTIFICATION_OF_MEASURES_AND_HOA->value;
@@ -1187,6 +1222,18 @@ class SalesController extends Controller
       $order->association_permits = $request->boolean('association_permits');
       $order->status = $newPipelineStatus;
       $order->save();
+
+      if (abs((float) $order->project_amount - $oldProjectAmount) > 0.01) {
+        OrderFinancialEventLogger::log(
+          $order,
+          'PROJECT_AMOUNT_UPDATED',
+          'Project amount updated',
+          [
+            'before_amount' => $oldProjectAmount,
+            'after_amount' => (float) $order->project_amount,
+          ]
+        );
+      }
 
       $selectedContact = null;
       if ($order->order_type === OrderTypeEnum::COMMERCIAL->value && $companyCount > 0) {
@@ -1247,12 +1294,33 @@ class SalesController extends Controller
       $customSchedule = $validated['custom_schedule'] ?? [];
       $totalAmount = (float) $order->project_amount;
       $requiresSchedule = $validated['method_of_payment'] === MethodOfPayment::CASH->value;
+      $existingSchedule = $order->paymentSchedule()->first();
+      $hasRecordedPayments = $existingSchedule
+        ? $existingSchedule->installments()->whereHas('movements')->exists()
+        : false;
+
+      if ($hasRecordedPayments) {
+        throw ValidationException::withMessages([
+          'payment_schedule_type' => 'Payment schedule cannot be changed after payments are recorded.',
+        ]);
+      }
 
       if (!$requiresSchedule || !$scheduleType) {
-        $existingSchedule = $order->paymentSchedule()->first();
         if ($existingSchedule) {
+          $previousScheduleType = $existingSchedule->schedule_type;
+          $previousTotalAmount = (float) $existingSchedule->total_amount;
           $existingSchedule->installments()->delete();
           $existingSchedule->delete();
+
+          OrderFinancialEventLogger::log(
+            $order,
+            'PAYMENT_SCHEDULE_REMOVED',
+            'Payment schedule removed',
+            [
+              'before_schedule_type' => $previousScheduleType,
+              'before_total_amount' => $previousTotalAmount,
+            ]
+          );
         }
       } elseif ($scheduleType === PaymentScheduleTypeEnum::CUSTOMIZED->value) {
         $installments = [];
@@ -1296,6 +1364,17 @@ class SalesController extends Controller
             'status' => 'PENDING',
           ]);
         }
+
+        OrderFinancialEventLogger::log(
+          $order,
+          'PAYMENT_SCHEDULE_DEFINED',
+          "Payment schedule configured as {$scheduleType}",
+          [
+            'schedule_type' => $scheduleType,
+            'total_amount' => $totalAmount,
+            'installments' => $installments,
+          ]
+        );
       } else {
         $scheduleItems = PaymentScheduleTemplates::itemsFor($scheduleType);
         $installments = PaymentScheduleCalculator::withAmounts($scheduleItems, $totalAmount);
@@ -1319,10 +1398,21 @@ class SalesController extends Controller
             'status' => 'PENDING',
           ]);
         }
+
+        OrderFinancialEventLogger::log(
+          $order,
+          'PAYMENT_SCHEDULE_DEFINED',
+          "Payment schedule configured as {$scheduleType}",
+          [
+            'schedule_type' => $scheduleType,
+            'total_amount' => $totalAmount,
+            'installments' => $installments,
+          ]
+        );
       }
     });
 
-    $order->load('owners', 'client', 'paymentSchedule.installments.paidBy', 'orderCompanyContacts.companyContact', 'orderCompanyContacts.client', 'orderCompanyContacts.source');
+    $order->load('owners', 'client', 'paymentSchedule.installments.paidBy', 'paymentSchedule.installments.movements.paidBy', 'orderCompanyContacts.companyContact', 'orderCompanyContacts.client', 'orderCompanyContacts.source');
 
     $schedule = $order->schedule_appointment
       ? Carbon::parse($order->schedule_appointment)
@@ -1355,26 +1445,8 @@ class SalesController extends Controller
         'email_check' => (bool) ($order->email_check ?? false),
         'city_permits' => (bool) ($order->city_permits ?? false),
         'association_permits' => (bool) ($order->association_permits ?? false),
-        'payment_schedule' => $order->paymentSchedule
-          ? [
-            'id' => $order->paymentSchedule->id,
-            'schedule_type' => $order->paymentSchedule->schedule_type,
-            'total_amount' => $order->paymentSchedule->total_amount,
-            'installments' => $order->paymentSchedule->installments->map(fn ($installment) => [
-              'id' => $installment->id,
-              'label' => $installment->label,
-              'percentage' => $installment->percentage,
-              'amount' => $installment->amount,
-              'due_date' => $installment->due_date?->format('Y-m-d'),
-              'status' => $installment->status,
-              'paid_at' => $installment->paid_at?->toISOString(),
-              'position' => $installment->position,
-              'paid_by' => $installment->paidBy
-                ? ['id' => $installment->paidBy->id, 'name' => $installment->paidBy->name]
-                : null,
-            ])->values(),
-          ]
-          : null,
+        'has_contract_signed' => true,
+        'payment_schedule' => PaymentInstallmentPresenter::schedule($order->paymentSchedule),
         'order_company_contacts' => $order->orderCompanyContacts->map(fn ($item) => [
           'id' => $item->id,
           'company_name' => $item->companyContact?->name,
