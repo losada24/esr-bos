@@ -143,9 +143,15 @@ class SalesController extends Controller
 
       $tags = Tag::query()
           ->where('taggable_type', Order::class)
-          ->select('id', 'name')
+          ->whereNotNull('name')
+          ->select('name')
           ->orderBy('name')
-          ->get();
+          ->get()
+          ->map(fn ($tag) => trim((string) $tag->name))
+          ->filter(fn ($name) => $name !== '')
+          ->unique(fn ($name) => mb_strtolower($name))
+          ->values()
+          ->map(fn ($name) => ['name' => $name]);
 
       $createdByUsers = User::query()
           ->select('id', 'name')
