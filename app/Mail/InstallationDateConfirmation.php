@@ -26,7 +26,8 @@ class InstallationDateConfirmation extends Mailable implements ShouldQueue
       protected bool $displaySummary = false,
       protected bool $orderAttachments = false,
       protected bool $installationAttachments = false,
-      protected bool $supervisorAttachments = false
+      protected bool $supervisorAttachments = false,
+      protected array $selectedOrderAttachmentIds = []
 
     ){}
 
@@ -64,17 +65,21 @@ class InstallationDateConfirmation extends Mailable implements ShouldQueue
     {
         $attachments = [];
         if ($this->orderAttachments) {
-         /* foreach ($this->order->attachments as $attachment) {
-            $attachments[] = Attachment::fromPath(storage_path('app/public/' . $attachment->file_path));
-          } */
-              foreach ($this->order->attachments as $attachment) {
-          
-                // En producción, accede al contenido desde el bucket (usando driver s3)
-                //$content = Storage::disk('public')->get($attachment->file_path);
-                //$filename = basename($attachment->file_path);
-                //$attachments[] = Attachment::fromData(fn () => $content, $filename);
-                $attachments[] = Attachment::fromStorageDisk('public', $attachment->file_path);
+          $attachmentIds = collect($this->selectedOrderAttachmentIds)
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+
+          if (!empty($attachmentIds)) {
+            $orderAttachments = $this->order->attachments()
+              ->whereIn('attachments.id', $attachmentIds)
+              ->get();
+
+            foreach ($orderAttachments as $attachment) {
+              $attachments[] = Attachment::fromStorageDisk('public', $attachment->file_path);
             }
+          }
         }
 
          /* if ($this->installationAttachments) {

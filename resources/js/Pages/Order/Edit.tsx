@@ -162,6 +162,16 @@ export default function Edit ({
       contact_type: values.contact_type ?? 'RESIDENTIAL CONTACT'
     }
 
+    const pendingAttachments = Array.isArray(values.attachments)
+      ? values.attachments.filter((item: any) => item instanceof File)
+      : []
+    ;(order as any).attachments = pendingAttachments
+
+    const allowsAttachmentRoleSelection = values.service !== SERVICES.PICKUP && values.service !== SERVICES.DELIVERY_ONLY
+    if (!allowsAttachmentRoleSelection) {
+      delete (order as any).attachment_role_targets
+    }
+
     console.log(order)
 
     if (!Object.prototype.hasOwnProperty.call(order, 'orderProducts')) {

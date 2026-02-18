@@ -528,6 +528,7 @@ class DashboardController extends Controller
       'typeOfHousing',
       'user',
       'attachments',
+      'attachmentRoleTargets',
       'owners',
       'orderProducts.orderProductExtraWorks',
       'installationTeams.user',
@@ -538,8 +539,20 @@ class DashboardController extends Controller
       'orderColors',
     ]);
 
+    $attachmentRoleTargetsByRole = $order->attachmentRoleTargets
+      ->groupBy('role')
+      ->map(function ($items) {
+        return $items->pluck('attachment_id')
+          ->map(fn ($id) => (int) $id)
+          ->unique()
+          ->values();
+      })
+      ->toArray();
+
     return response()
-      ->json($order);
+      ->json(array_merge($order->toArray(), [
+        'attachment_role_targets_by_role' => $attachmentRoleTargetsByRole,
+      ]));
   }
 
   public function getPaymentList(Order $order)

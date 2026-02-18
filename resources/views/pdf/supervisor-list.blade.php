@@ -18,7 +18,7 @@
       <div id="logo">
         <img src="{{ base_path('resources/assets/images/logo-reylos.jpg') }}">
       </div>
-      <h1>MATERIAL LIST {{ strtoupper($order->typeOfWork->name) }}</h1>
+      <h1>MATERIAL LIST {{ strtoupper((string) (optional($order->typeOfWork)->name ?? $order->service ?? 'N/A')) }}</h1>
       <div id="company" class="clearfix">
         <div><span>DATE</span> {{ Carbon\Carbon::parse($order->installation_date)->format('m/d/Y') }}</div>
       </div>
@@ -56,7 +56,7 @@
                 <tr>
                   <td class="service">&nbsp;</td>
                   <td class="desc">
-                    {{ $product->productConfig->name }}
+                    {{ optional($product->productConfig)->name }}
                     @if ($product->installation_other_level) 
                        (Other Level) 
                     @endif

@@ -78,6 +78,7 @@ export type OrderFormValues = Omit<Order, 'installation_date' | 'delivery_date' 
   change_order_enabled?: boolean
   change_order_amount?: number | null
   change_order_note?: string
+  attachment_role_targets?: Record<string, number[]>
 }
 
 export const orderFormObj: OrderFormValues = {
@@ -143,7 +144,13 @@ export const orderFormObj: OrderFormValues = {
   custom_schedule: Array.from({ length: 6 }, () => ({ label: '', amount: '' })),
   change_order_enabled: false,
   change_order_amount: null,
-  change_order_note: ''
+  change_order_note: '',
+  attachment_role_targets: {
+    supervisor: [],
+    service_manager: [],
+    installer: [],
+    account_manager: []
+  }
 }
 
 export interface OrderProductExtraWorksFormValues {
@@ -157,6 +164,11 @@ export interface OrderProductExtraWorksFormValues {
 
 export const loadOrderFormObj = (order: Order): OrderFormValues => {
   const scheduleType = order.payment_schedule?.schedule_type ?? ''
+  const attachmentRoleTargetsByRole = order.attachment_role_targets_by_role ?? {}
+  const getAttachmentRoleTargetIds = (role: string): number[] => {
+    const ids = attachmentRoleTargetsByRole[role]
+    return Array.isArray(ids) ? ids : []
+  }
   const customScheduleFromOrder = scheduleType === 'CUSTOMIZED'
     ? (order.payment_schedule?.installments ?? [])
       .map((item) => ({
@@ -239,7 +251,13 @@ export const loadOrderFormObj = (order: Order): OrderFormValues => {
     custom_schedule: customSchedule,
     change_order_enabled: Boolean(order.change_order_payment),
     change_order_amount: order.change_order_payment?.amount ?? null,
-    change_order_note: order.change_order_payment?.note ?? ''
+    change_order_note: order.change_order_payment?.note ?? '',
+    attachment_role_targets: {
+      supervisor: getAttachmentRoleTargetIds('supervisor'),
+      service_manager: getAttachmentRoleTargetIds('service_manager'),
+      installer: getAttachmentRoleTargetIds('installer'),
+      account_manager: getAttachmentRoleTargetIds('account_manager')
+    }
   }
 }
 

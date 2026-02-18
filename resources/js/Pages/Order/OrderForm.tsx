@@ -29,11 +29,65 @@ import { getOrderProducts, getValueIdNotNull, type OrderFormValues } from './Ord
 import ProductModal from './ProductModal'
 import ProductTable from './ProductTable'
 import DeleteIcon from '@/Components/Icons/DeleteIcon'
+import ExportIcon from '@/Components/Icons/ExportIcon'
 import { PAYMENT_METHODS, SERVICES, STOREFRONT_CATEGORY } from '@/Utils/constants'
 import { capitalizeWords } from '@/Utils/string'
 import { getProductExtraWorkPrice, getProductPrice, getProductPriceWithExtraWorks } from '@/Utils/price'
 import { type OrderColor } from '@/types/interfaces/order'
 import OrderNotesForOrder from '@/Components/OrderNotesForOrder'
+
+const ATTACHMENT_ROLE_OPTIONS = [
+  { key: 'supervisor', label: 'Supervisor' },
+  { key: 'service_manager', label: 'Service Mgr' },
+  { key: 'installer', label: 'Installer' },
+  { key: 'account_manager', label: 'Account Mgr' }
+] as const
+
+type AttachmentRoleKey = typeof ATTACHMENT_ROLE_OPTIONS[number]['key']
+type AttachmentRoleTargets = Record<AttachmentRoleKey, number[]>
+
+const buildEmptyAttachmentRoleTargets = (): AttachmentRoleTargets => ({
+  supervisor: [],
+  service_manager: [],
+  installer: [],
+  account_manager: []
+})
+
+const normalizeAttachmentRoleTargets = (
+  incomingTargets: Record<string, unknown> | undefined,
+  validAttachmentIds: number[]
+): AttachmentRoleTargets => {
+  const validAttachmentIdSet = new Set(validAttachmentIds)
+  const initialTargets = buildEmptyAttachmentRoleTargets()
+
+  ATTACHMENT_ROLE_OPTIONS.forEach((roleOption) => {
+    const rawRoleTargets = incomingTargets?.[roleOption.key]
+    if (!Array.isArray(rawRoleTargets)) {
+      return
+    }
+
+    initialTargets[roleOption.key] = Array.from(
+      new Set(
+        rawRoleTargets
+          .map((value) => Number(value))
+          .filter((value) => Number.isInteger(value) && validAttachmentIdSet.has(value))
+      )
+    )
+  })
+
+  return initialTargets
+}
+
+const removeAttachmentFromRoleTargets = (
+  currentTargets: AttachmentRoleTargets,
+  attachmentId: number
+): AttachmentRoleTargets => {
+  const nextTargets = { ...currentTargets }
+  ATTACHMENT_ROLE_OPTIONS.forEach((roleOption) => {
+    nextTargets[roleOption.key] = nextTargets[roleOption.key].filter((id) => id !== attachmentId)
+  })
+  return nextTargets
+}
 
 type ClientSearchResult = {
   id: number
@@ -285,6 +339,13 @@ const OrderForm = ({
   const [isCreated] = useState<boolean>(true)
   const [showProductModal, setShowProductModal] = useState<boolean>(false)
   const [attachmentsArray, setAttachmentsList] = useState<Attachment[]>(attachments ?? [])
+  const [attachmentRoleTargets, setAttachmentRoleTargets] = useState<AttachmentRoleTargets>(() => {
+    const validAttachmentIds = (attachments ?? [])
+      .map((attachment) => Number(attachment.id))
+      .filter((attachmentId) => Number.isInteger(attachmentId) && attachmentId > 0)
+
+    return normalizeAttachmentRoleTargets(values.attachment_role_targets as Record<string, unknown> | undefined, validAttachmentIds)
+  })
   const [clientSearchTerm, setClientSearchTerm] = useState<string>('')
   const [clientSearchResults, setClientSearchResults] = useState<ClientSearchResult[]>([])
   const [clientSearchLoading, setClientSearchLoading] = useState<boolean>(false)
@@ -300,13 +361,63 @@ const OrderForm = ({
   const [phoneSearchLoading, setPhoneSearchLoading] = useState<boolean>(false)
   const [phoneSearchError, setPhoneSearchError] = useState<string>('')
   const [phoneExists, setPhoneExists] = useState<boolean>(false)
+  const allowsAttachmentRoleSelection = values.service !== SERVICES.PICKUP && values.service !== SERVICES.DELIVERY_ONLY
+
+  const syncAttachmentRoleTargets = useCallback((nextTargets: AttachmentRoleTargets) => {
+    setAttachmentRoleTargets(nextTargets)
+    setFieldValue('attachment_role_targets', nextTargets)
+  }, [setFieldValue])
+
+  useEffect(() => {
+    const validAttachmentIds = attachmentsArray
+      .map((attachment) => Number(attachment.id))
+      .filter((attachmentId) => Number.isInteger(attachmentId) && attachmentId > 0)
+
+    const normalizedTargets = normalizeAttachmentRoleTargets(
+      values.attachment_role_targets as Record<string, unknown> | undefined,
+      validAttachmentIds
+    )
+    setAttachmentRoleTargets(normalizedTargets)
+    setFieldValue('attachment_role_targets', normalizedTargets)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [values.id])
+
+  const toggleAttachmentRoleTarget = (role: AttachmentRoleKey, attachmentId: number, isChecked: boolean) => {
+    const currentRoleTargets = attachmentRoleTargets[role] ?? []
+    let nextTargets: AttachmentRoleTargets
+    if (isChecked) {
+      if (currentRoleTargets.includes(attachmentId)) {
+        return
+      }
+      nextTargets = {
+        ...attachmentRoleTargets,
+        [role]: [...currentRoleTargets, attachmentId]
+      }
+    } else {
+      nextTargets = {
+        ...attachmentRoleTargets,
+        [role]: currentRoleTargets.filter((id) => id !== attachmentId)
+      }
+    }
+
+    syncAttachmentRoleTargets(nextTargets)
+  }
+
   const removeAttachmentProduct = (index: number) => {
     if (confirm('Are you sure you want to delete this attachment?')) {
       router.delete(route('order.drop_attachment', { id: attachmentsArray[index].id }), {
         onSuccess: () => {
           const attachmentsList = attachmentsArray.filter((_, i) => i !== index)
           setAttachmentsList(attachmentsList)
-          setFieldValue('attachments', attachmentsList)
+          const pendingFiles = Array.isArray(values.attachments)
+            ? values.attachments.filter((item: any) => item instanceof File)
+            : []
+          setFieldValue('attachments', pendingFiles)
+          const removedAttachmentId = Number(attachmentsArray[index]?.id ?? 0)
+          if (Number.isInteger(removedAttachmentId) && removedAttachmentId > 0) {
+            const nextTargets = removeAttachmentFromRoleTargets(attachmentRoleTargets, removedAttachmentId)
+            syncAttachmentRoleTargets(nextTargets)
+          }
         }
       })
     }
@@ -1864,27 +1975,68 @@ const OrderForm = ({
                 placeholder="Qty"
                 multiple={true}
                 onChange={(event: any) => {
-                  setFieldValue('attachments', event.currentTarget.files)
+                  const files = Array.from(event.currentTarget.files ?? [])
+                  setFieldValue('attachments', files)
                 }}
               />
               {attachments !== undefined && attachments.length > 0 && (
                 <div className="flex flex-col rounded-md border border-[#e0e6ed] dark:border-[#1b2e4b] mt-3">
-                  {attachmentsArray.map((attachment, index) => {
-                    return (
-                      <div key={index} className="border-b border-[#e0e6ed] dark:border-[#1b2e4b] px-4 py-2.5 hover:bg-[#eee] dark:hover:bg-[#eee]/10 flex justify-between">
-                        <span>{attachment.filename}</span>
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault()
-                            removeAttachmentProduct(index)
-                          }}
-                          title='Delete Attachment'
-                        >
-                          <DeleteIcon />
-                      </button>
-                      </div>
-                    )
-                  })}
+                  <table className='w-full whitespace-nowrap'>
+                    <thead>
+                      <tr>
+                        <th className='border-b px-4 py-2 text-left'>File</th>
+                        {allowsAttachmentRoleSelection && ATTACHMENT_ROLE_OPTIONS.map((roleOption) => (
+                          <th key={roleOption.key} className='border-b px-3 py-2 text-center text-xs'>{roleOption.label}</th>
+                        ))}
+                        <th className='border-b px-4 py-2 text-right'>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {attachmentsArray.map((attachment, index) => {
+                        const attachmentId = Number(attachment.id)
+                        return (
+                          <tr key={index} className='border-b border-[#e0e6ed] dark:border-[#1b2e4b] hover:bg-[#eee] dark:hover:bg-[#eee]/10'>
+                            <td className='px-4 py-2.5'>{attachment.filename}</td>
+                            {allowsAttachmentRoleSelection && ATTACHMENT_ROLE_OPTIONS.map((roleOption) => {
+                              const roleTargets = attachmentRoleTargets[roleOption.key] ?? []
+                              const isChecked = Number.isInteger(attachmentId) && roleTargets.includes(attachmentId)
+
+                              return (
+                                <td key={`${attachment.id}-${roleOption.key}`} className='px-3 py-2.5 text-center'>
+                                  <input
+                                    type='checkbox'
+                                    checked={isChecked}
+                                    disabled={!Number.isInteger(attachmentId) || attachmentId <= 0}
+                                    onChange={(event) => {
+                                      toggleAttachmentRoleTarget(roleOption.key, attachmentId, event.currentTarget.checked)
+                                    }}
+                                  />
+                                </td>
+                              )
+                            })}
+                            <td className='px-4 py-2.5 text-right'>
+                              <div className='flex flex-row gap-2 justify-end'>
+                                {Number.isInteger(attachmentId) && attachmentId > 0 && (
+                                  <a href={route('download.file', { id: attachmentId })} target='_blank' rel='noreferrer' title='Open Attachment'>
+                                    <ExportIcon />
+                                  </a>
+                                )}
+                                <button
+                                  onClick={(e) => {
+                                    e.preventDefault()
+                                    removeAttachmentProduct(index)
+                                  }}
+                                  title='Delete Attachment'
+                                >
+                                  <DeleteIcon />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </div>

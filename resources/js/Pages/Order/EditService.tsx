@@ -130,10 +130,25 @@ export default function EditService ({
       contact_type: values.contact_type,
       owners: [],
       installation_teams: (values.installation_teams ?? []).map((team: any) => team.value ?? team.id ?? team),
-      orderProducts: values.orderProducts ?? []
+      orderProducts: values.orderProducts ?? [],
+      attachment_role_targets: values.attachment_role_targets
     }
 
-    router.put(route('order.update_service', order.id), payload, {
+    const pendingAttachments = Array.isArray(values.attachments)
+      ? values.attachments.filter((item: any) => item instanceof File)
+      : []
+    ;(payload as any).attachments = pendingAttachments
+
+    const allowsAttachmentRoleSelection = values.service !== 'PICKUP' && values.service !== 'DELIVERY ONLY'
+    if (!allowsAttachmentRoleSelection) {
+      delete (payload as any).attachment_role_targets
+    }
+
+    router.post(route('order.update_service', order.id), {
+      _method: 'PUT',
+      ...payload
+    }, {
+      forceFormData: true,
       onError: (errors: any) => {
         helpers.setErrors(errors)
       }
@@ -175,6 +190,7 @@ export default function EditService ({
             duration_of_works={duration_of_works}
             installation_teams={installation_teams}
             type_of_financing={type_of_financing}
+            attachments={order.attachments}
           />
         )}
       </Formik>
