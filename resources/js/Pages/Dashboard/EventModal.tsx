@@ -20,6 +20,59 @@ import { Field } from 'formik'
 import { inspect } from 'util'
 import OrderNotesForOrder from '@/Components/OrderNotesForOrder'
 
+const ATTACHMENT_ROLE_OPTIONS = [
+  { key: 'supervisor', label: 'Supervisor' },
+  { key: 'service_manager', label: 'Service Mgr' },
+  { key: 'installer', label: 'Installer' },
+  { key: 'account_manager', label: 'Account Mgr' }
+] as const
+
+type AttachmentRoleKey = typeof ATTACHMENT_ROLE_OPTIONS[number]['key']
+type AttachmentRoleTargets = Record<AttachmentRoleKey, number[]>
+
+const buildEmptyAttachmentRoleTargets = (): AttachmentRoleTargets => ({
+  supervisor: [],
+  service_manager: [],
+  installer: [],
+  account_manager: []
+})
+
+const normalizeAttachmentRoleTargets = (
+  incomingTargets: Record<string, unknown> | undefined,
+  validAttachmentIds: number[]
+): AttachmentRoleTargets => {
+  const validAttachmentIdSet = new Set(validAttachmentIds)
+  const initialTargets = buildEmptyAttachmentRoleTargets()
+
+  ATTACHMENT_ROLE_OPTIONS.forEach((roleOption) => {
+    const rawRoleTargets = incomingTargets?.[roleOption.key]
+    if (!Array.isArray(rawRoleTargets)) {
+      return
+    }
+
+    initialTargets[roleOption.key] = Array.from(
+      new Set(
+        rawRoleTargets
+          .map((value) => Number(value))
+          .filter((value) => Number.isInteger(value) && validAttachmentIdSet.has(value))
+      )
+    )
+  })
+
+  return initialTargets
+}
+
+const removeAttachmentFromRoleTargets = (
+  currentTargets: AttachmentRoleTargets,
+  attachmentId: number
+): AttachmentRoleTargets => {
+  const nextTargets = { ...currentTargets }
+  ATTACHMENT_ROLE_OPTIONS.forEach((roleOption) => {
+    nextTargets[roleOption.key] = nextTargets[roleOption.key].filter((id) => id !== attachmentId)
+  })
+  return nextTargets
+}
+
 
 const EventModal = ({
   showModal,
@@ -116,6 +169,7 @@ const EventModal = ({
   const [attachmentInspection, SetAttachmentInspection] = useState<File []>([])
   const [attachmentIWalkTrough, SetAttachmentWalkTrough] = useState<File []>([])
   const [attachmentsList, setAttachmentsList] = useState<any[]>([])
+  const [attachmentRoleTargets, setAttachmentRoleTargets] = useState<AttachmentRoleTargets>(buildEmptyAttachmentRoleTargets())
   const [message, setMessage] = useState<string | null>(null)
 
   const removeAttachmentProduct = (index: number) => {
@@ -125,6 +179,10 @@ const EventModal = ({
           if (page.props.flash.success != null) {
             const aux = attachmentsList.filter((_, i) => i !== index)
             setAttachmentsList(aux)
+            const removedAttachmentId = Number(attachmentsList[index]?.id ?? 0)
+            if (Number.isInteger(removedAttachmentId) && removedAttachmentId > 0) {
+              setAttachmentRoleTargets((currentTargets) => removeAttachmentFromRoleTargets(currentTargets, removedAttachmentId))
+            }
           } else {
             setMessage(page.props.flash.error)
           }
@@ -142,6 +200,7 @@ const EventModal = ({
     if (id === 0) {
       setEditableData(defaultState)
       setEvent(null)
+      setAttachmentRoleTargets(buildEmptyAttachmentRoleTargets())
     } else if (id !== 0 && showModal) {
       // setIsLoading(true)
       const url = route('dashboard.get_event', { id })
@@ -149,8 +208,18 @@ const EventModal = ({
         .then(async (response) => await response.json())
         .then((data: Order) => {
           setEvent(data)
-          // console.log(data.attachments)
-          setAttachmentsList(data.attachments ?? [])
+          const fetchedAttachments = data.attachments ?? []
+          setAttachmentsList(fetchedAttachments)
+          const validAttachmentIds = fetchedAttachments
+            .map((attachment) => Number(attachment.id))
+            .filter((attachmentId) => Number.isInteger(attachmentId) && attachmentId > 0)
+
+          setAttachmentRoleTargets(
+            normalizeAttachmentRoleTargets(
+              data.attachment_role_targets_by_role as Record<string, unknown> | undefined,
+              validAttachmentIds
+            )
+          )
           // const installationDate = new Date(data.installation_date ?? new Date())
           // const duration = data?.duration_of_work?.number_of_day ?? 0
           // const endDate = new Date(installationDate.setDate(installationDate.getDate() + duration - 1))
@@ -187,6 +256,7 @@ const EventModal = ({
         })
     } else {
       setEditableData(defaultState)
+      setAttachmentRoleTargets(buildEmptyAttachmentRoleTargets())
     }
   }, [showModal])
   // console.log(editableData)
@@ -208,6 +278,29 @@ const EventModal = ({
   const handleInputChange = (field: keyof Order, value: string) => {
     setEditableData((prev: any) => ({ ...prev, [field]: value }))
   }
+
+  const toggleAttachmentRoleTarget = (role: AttachmentRoleKey, attachmentId: number, isChecked: boolean) => {
+    setAttachmentRoleTargets((currentTargets) => {
+      const currentRoleTargets = currentTargets[role] ?? []
+      if (isChecked) {
+        if (currentRoleTargets.includes(attachmentId)) {
+          return currentTargets
+        }
+
+        return {
+          ...currentTargets,
+          [role]: [...currentRoleTargets, attachmentId]
+        }
+      }
+
+      return {
+        ...currentTargets,
+        [role]: currentRoleTargets.filter((id) => id !== attachmentId)
+      }
+    })
+  }
+
+  const allowsAttachmentRoleSelection = event?.service !== 'PICKUP' && event?.service !== 'DELIVERY ONLY'
 
   const [showValidationErrors, setShowValidationErrors] = useState(false)
   const isService = event?.service === 'SERVICE'
@@ -259,7 +352,7 @@ const EventModal = ({
         pendingCollect = today
       }
     }
-    const data = {
+    const data: any = {
       ...editableData,
       installation_teams: editableData.installation_teams.map((team: any) => team.value),
       supervisor_id: editableData.supervisor_id || null,
@@ -271,6 +364,9 @@ const EventModal = ({
       complete_date: completeDate,
       pending_collect: pendingCollect,
       order_id: id
+    }
+    if (allowsAttachmentRoleSelection) {
+      data.attachment_role_targets = attachmentRoleTargets
     }
 
     router.post(route('update.order.from.modal', id), data, {
@@ -288,6 +384,7 @@ const EventModal = ({
     SetAttachmentInspection([])
     SetAttachmentPreInspection([])
     setAttachmentsArray([])
+    setAttachmentRoleTargets(buildEmptyAttachmentRoleTargets())
     setMessage(null)
   }
   function setFieldValue(arg0: string, checked: boolean) {
@@ -297,6 +394,7 @@ const EventModal = ({
   return (
     <Modal
       show={showModal}
+      maxWidth='6xl'
       closeable={true}
       onClose={() => {
         // setEditableData(defaultState)
@@ -944,11 +1042,39 @@ const EventModal = ({
                       <div className='flex items-center p-3.5 rounded text-danger dark:bg-danger-dark-light'>{message}</div>
                     )}
                     <table className='w-full whitespace-nowrap'>
+                      <thead>
+                        <tr>
+                          <th className='border-t px-6 py-3 text-left'>File</th>
+                          <th className='border-t px-6 py-3 text-left'>Type</th>
+                          {allowsAttachmentRoleSelection && ATTACHMENT_ROLE_OPTIONS.map((roleOption) => (
+                            <th key={roleOption.key} className='border-t px-3 py-3 text-center text-xs'>{roleOption.label}</th>
+                          ))}
+                          <th className='border-t px-6 py-3 text-right'>Actions</th>
+                        </tr>
+                      </thead>
                       <tbody>
                         {attachmentsList.map((attachment, index) => (
                           <tr key={index} className='hover:bg-gray-100 focus-within:bg-gray-100'>
                             <td className='border-t px-6 py-4 align-top'>{attachment.filename}</td>
                             <td className='border-t px-6 py-4 align-top'>{attachment.file_type}</td>
+                            {allowsAttachmentRoleSelection && ATTACHMENT_ROLE_OPTIONS.map((roleOption) => {
+                              const attachmentId = Number(attachment.id)
+                              const roleTargets = attachmentRoleTargets[roleOption.key] ?? []
+                              const isChecked = Number.isInteger(attachmentId) && roleTargets.includes(attachmentId)
+
+                              return (
+                                <td key={`${attachment.id}-${roleOption.key}`} className='border-t px-3 py-4 align-top text-center'>
+                                  <input
+                                    type='checkbox'
+                                    checked={isChecked}
+                                    disabled={!Number.isInteger(attachmentId) || attachmentId <= 0}
+                                    onChange={(event) => {
+                                      toggleAttachmentRoleTarget(roleOption.key, attachmentId, event.currentTarget.checked)
+                                    }}
+                                  />
+                                </td>
+                              )
+                            })}
                             <td className='border-t px-6 py-4 align-top'>
                               <div className='flex flex-row gap-2 justify-end'>
                                 <a key={attachment.id} href={route('download.file', { id: attachment.id })} target='_blank' rel='noreferrer'>

@@ -52,6 +52,7 @@ export interface Order {
   owners: User[]
   order_products?: OrderProduct[]
   attachments?: Attachment[]
+  attachment_role_targets_by_role?: Record<string, number[]>
   eta_date?: Date
   installation_end_date?: Date
   frame_color: string []

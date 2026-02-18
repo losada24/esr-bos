@@ -155,6 +155,9 @@ class PartialOrderRequest extends FormRequest
           'complete_date' => 'nullable|date_format:Y-m-d',
           'attachments' => 'nullable|array',
           'attachments.*' => 'file|mimes:jpeg,png,jpg,pdf,docx,doc,xlsx,heic|max:10240',
+          'attachment_role_targets' => 'nullable|array',
+          'attachment_role_targets.*' => 'nullable|array',
+          'attachment_role_targets.*.*' => 'integer|exists:attachments,id',
           //'walk_trough_attach.*'=> 'file|mimes:jpeg,png,jpg,pdf,docx,doc,xlsx|max:10240',
           'walk_trough_attach' => [
               'nullable',

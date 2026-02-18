@@ -18,7 +18,6 @@ use App\Mail\RequestReSchedule;
 use App\Mail\RequestStandBy;
 use App\Models\Order;
 use App\Models\User;
-use Symfony\Component\HttpFoundation\Request;
 
 trait OrderEmails {
 
@@ -146,29 +145,41 @@ trait OrderEmails {
           SendGmailEmail::dispatch($user, $installationDateConfirmation)->onQueue('emails');
         }
 
-        $users = [];
-        $users[] = $order->supervisor->email;
-        $serviceManager = User::role([RoleEnum::SERVICE_MANAGER->value])->get();
-        $users = array_merge($users, $serviceManager->pluck('email')->toArray());
-        foreach ($users as $user) {
+        $supervisorAttachmentIds = $this->selectedAttachmentIdsForRole($order, 'supervisor');
+        $supervisorEmail = optional($order->supervisor)->email;
+        if (!empty($supervisorEmail)) {
           // Mail::to($user)->send(new InstallationDateConfirmation($order, true, true, false,true));
-          $installationDateConfirmation = new InstallationDateConfirmation($order, true, true, false, true);
+          $installationDateConfirmation = new InstallationDateConfirmation($order, true, true, false, true, $supervisorAttachmentIds);
+          SendGmailEmail::dispatch($supervisorEmail, $installationDateConfirmation)->onQueue('emails');
+        }
+
+        $serviceManagerAttachmentIds = $this->selectedAttachmentIdsForRole($order, 'service_manager');
+        $serviceManager = User::role([RoleEnum::SERVICE_MANAGER->value])->pluck('email')->toArray();
+        $serviceManager = array_values(array_unique(array_filter($serviceManager)));
+        foreach ($serviceManager as $user) {
+          $installationDateConfirmation = new InstallationDateConfirmation($order, true, true, false, true, $serviceManagerAttachmentIds);
           SendGmailEmail::dispatch($user, $installationDateConfirmation)->onQueue('emails');
         }
 
+        $installerAttachmentIds = $this->selectedAttachmentIdsForRole($order, 'installer');
         $users = [];
-       
-        //$installers = $order->loadMissing('installationTeams.user');
-        //dd($order->installationTeams);
         foreach ($order->installationTeams as $installationTeam) {
-          $users[] = $installationTeam->user->email;
+          $email = optional($installationTeam->user)->email;
+          if (!empty($email)) {
+            $users[] = $email;
+          }
         }
-        //$users = $order->installationTeams->pluck('email')->toArray();
-        $accountManager = User::role([RoleEnum::ACCOUNT_MANAGER->value])->get();
-        $users = array_merge($users, $accountManager->pluck('email')->toArray());
+        $users = array_values(array_unique(array_filter($users)));
         foreach ($users as $user) {
-          // Mail::to($user)->send(new InstallationDateConfirmation($order, true, true, true));
-          $installationDateConfirmation = new InstallationDateConfirmation($order, true, true, true);
+          $installationDateConfirmation = new InstallationDateConfirmation($order, true, true, true, false, $installerAttachmentIds);
+          SendGmailEmail::dispatch($user, $installationDateConfirmation)->onQueue('emails');
+        }
+
+        $accountManagerAttachmentIds = $this->selectedAttachmentIdsForRole($order, 'account_manager');
+        $accountManager = User::role([RoleEnum::ACCOUNT_MANAGER->value])->pluck('email')->toArray();
+        $accountManager = array_values(array_unique(array_filter($accountManager)));
+        foreach ($accountManager as $user) {
+          $installationDateConfirmation = new InstallationDateConfirmation($order, true, true, true, false, $accountManagerAttachmentIds);
           SendGmailEmail::dispatch($user, $installationDateConfirmation)->onQueue('emails');
         }
       } else if ($order->service === ServiceEnum::DELIVERY->value || $order->service === ServiceEnum::PICKUP->value) {
@@ -193,5 +204,18 @@ trait OrderEmails {
         }
       }
     }
+  }
+
+  private function selectedAttachmentIdsForRole(Order $order, string $role): array
+  {
+    $order->loadMissing('attachmentRoleTargets');
+
+    return $order->attachmentRoleTargets
+      ->where('role', $role)
+      ->pluck('attachment_id')
+      ->map(fn ($id) => (int) $id)
+      ->unique()
+      ->values()
+      ->all();
   }
 }

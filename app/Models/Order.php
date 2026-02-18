@@ -347,6 +347,11 @@ class Order extends Model
     return $this->morphMany(Attachment::class, 'attachable');
   }
 
+  public function attachmentRoleTargets(): HasMany
+  {
+    return $this->hasMany(OrderAttachmentRoleTarget::class);
+  }
+
   public function owners(): BelongsToMany
   {
     return $this->belongsToMany(User::class, 'owner_user');

@@ -318,9 +318,11 @@ class OrderController extends Controller
         'paymentSchedule.installments.movements.paidBy',
         'changeOrderPayment',
         'owners',
-        'attachments'
+        'attachments',
+        'attachmentRoleTargets',
       ]);
       $orderData = $loadedOrder->toArray();
+      $orderData['attachment_role_targets_by_role'] = $this->attachmentRoleTargetsByRole($loadedOrder);
       $orderData['payment_schedule'] = PaymentInstallmentPresenter::schedule($loadedOrder->paymentSchedule);
       $orderData['has_contract_signed'] = $loadedOrder->hasReachedContractSigned();
       $data['order'] = $orderData;
@@ -369,6 +371,7 @@ class OrderController extends Controller
         'typeOfHousing',
         'user',
         'attachments',
+        'attachmentRoleTargets',
         'owners',
         'orderProducts.orderProductExtraWorks',
         'orderColors',
@@ -379,6 +382,7 @@ class OrderController extends Controller
         'installationTeams.user',
       ]);
     $orderData = $loadedOrder->toArray();
+    $orderData['attachment_role_targets_by_role'] = $this->attachmentRoleTargetsByRole($loadedOrder);
     $orderData['payment_schedule'] = PaymentInstallmentPresenter::schedule($loadedOrder->paymentSchedule);
     $orderData['has_contract_signed'] = $loadedOrder->hasReachedContractSigned();
 
@@ -450,6 +454,22 @@ class OrderController extends Controller
       'status' => $status
     ]);
    
+  }
+
+  private function attachmentRoleTargetsByRole(Order $order): array
+  {
+    $order->loadMissing('attachmentRoleTargets');
+
+    return $order->attachmentRoleTargets
+      ->groupBy('role')
+      ->map(function ($items) {
+        return $items->pluck('attachment_id')
+          ->map(fn ($id) => (int) $id)
+          ->unique()
+          ->values()
+          ->all();
+      })
+      ->toArray();
   }
 
   /**

@@ -28,6 +28,12 @@ use Twilio\TwiML\Voice\Pay;
 
 class UpdateOrder
 {
+  private const EMAIL_ATTACHMENT_ROLES = [
+    'supervisor',
+    'service_manager',
+    'installer',
+    'account_manager',
+  ];
 
   use OrderEmails, OrderStatus, Twilio, ComissionSupervisor;
 
@@ -488,6 +494,7 @@ class UpdateOrder
           ]);
         }
       }
+      $this->syncAttachmentRoleTargets($request, $order);
       $order->installationTeams()->sync($request->installation_teams ?? []);
       $order->load('installationTeams');
      
@@ -657,6 +664,7 @@ class UpdateOrder
         'user_id' => auth()->id(),
       ]);
     }
+    $this->syncAttachmentRoleTargets($request, $order);
 
 
 
@@ -716,6 +724,51 @@ class UpdateOrder
 
         $orderStatus->update($payload);
       }
+    }
+  }
+
+  private function syncAttachmentRoleTargets(Request $request, Order $order): void
+  {
+    if (!$request->exists('attachment_role_targets')) {
+      return;
+    }
+
+    $rawTargets = $request->input('attachment_role_targets', []);
+    if (!is_array($rawTargets)) {
+      $rawTargets = [];
+    }
+
+    $validAttachmentIdMap = $order->attachments()
+      ->pluck('attachments.id')
+      ->mapWithKeys(fn ($id) => [(int) $id => true])
+      ->all();
+
+    $rows = [];
+    foreach (self::EMAIL_ATTACHMENT_ROLES as $role) {
+      $roleTargets = $rawTargets[$role] ?? [];
+      if (!is_array($roleTargets)) {
+        continue;
+      }
+
+      $attachmentIds = collect($roleTargets)
+        ->map(fn ($id) => (int) $id)
+        ->filter(fn ($id) => isset($validAttachmentIdMap[$id]))
+        ->unique()
+        ->values()
+        ->all();
+
+      foreach ($attachmentIds as $attachmentId) {
+        $rows[] = [
+          'attachment_id' => $attachmentId,
+          'role' => $role,
+          'created_by' => auth()->id(),
+        ];
+      }
+    }
+
+    $order->attachmentRoleTargets()->delete();
+    if (!empty($rows)) {
+      $order->attachmentRoleTargets()->createMany($rows);
     }
   }
 }
