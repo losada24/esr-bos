@@ -40,6 +40,8 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
   const CAN_VIEW_BIWEEKLY = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_PAYMENT_COORDINATOR
   const CAN_VIEW_PRODUCT_SUMMARY = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER
   const CAN_VIEW_ORDER_STATUS_SUMMARY = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER
+  const CAN_VIEW_PLANNED_TO_COMPLETE_AVERAGE = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER || IS_OWNER_ADMIN || IS_FRONTDESK_ADMIN
+  const HAS_PLANNED_TO_COMPLETE_AVERAGE_ROUTE = route().has('report.planned-to-complete-average')
   const CAN_VIEW_ACCOUNTING_STATUS_SUMMARY = IS_ADMIN || IS_ACCOUNTING
   const CAN_VIEW_INSTALLER_CONFIRMED = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER
   const CAN_VIEW_OWNER_ASSIGNED = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER || IS_OWNER_ADMIN
@@ -52,6 +54,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
     || CAN_VIEW_BIWEEKLY
     || CAN_VIEW_PRODUCT_SUMMARY
     || CAN_VIEW_ORDER_STATUS_SUMMARY
+    || CAN_VIEW_PLANNED_TO_COMPLETE_AVERAGE
     || CAN_VIEW_ACCOUNTING_STATUS_SUMMARY
     || CAN_VIEW_INSTALLER_CONFIRMED
     || CAN_VIEW_OWNER_ASSIGNED
@@ -304,6 +307,16 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                         <div className="flex items-center">
                                           <ReferralIcon/>
                                           <SidebarLinkLabel>Order Status Summary</SidebarLinkLabel>
+                                        </div>
+                                      </NavLink>
+                                    </li>
+                                  )}
+                                  {CAN_VIEW_PLANNED_TO_COMPLETE_AVERAGE && HAS_PLANNED_TO_COMPLETE_AVERAGE_ROUTE && (
+                                    <li className="menu nav-item">
+                                      <NavLink href={route('report.planned-to-complete-average')} active={route().current('report.planned-to-complete-average')} className="group">
+                                        <div className="flex items-center">
+                                          <ReferralIcon/>
+                                          <SidebarLinkLabel>Status Transition Average</SidebarLinkLabel>
                                         </div>
                                       </NavLink>
                                     </li>
