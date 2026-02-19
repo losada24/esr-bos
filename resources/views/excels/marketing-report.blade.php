@@ -6,7 +6,13 @@
       </td>
     </tr>
     <tr>
+      <td colspan="4" style="font-weight: bold;">Total Clients from Sources (Instagram/Facebook + Google Ads): {{ $totals['total_clients'] }}</td>
+    </tr>
+    <tr>
       <td colspan="4" style="font-weight: bold;">Qualified Clients: {{ $totals['qualified_clients'] }}</td>
+    </tr>
+    <tr>
+      <td colspan="4" style="font-weight: bold;">Qualified Clients with Appointment: {{ $totals['qualified_clients_with_appointment'] }}</td>
     </tr>
     <tr>
       <td colspan="4" style="font-weight: bold;">Lost Request Clients: {{ $totals['lost_clients'] }}</td>
@@ -48,6 +54,36 @@
 <table>
   <thead>
     <tr>
+      <td colspan="3" style="font-weight: bold;">Qualified Clients With Appointment</td>
+    </tr>
+    <tr>
+      <th width="30">Client</th>
+      <th width="20">Source</th>
+      <th width="20">Appointment Date</th>
+    </tr>
+  </thead>
+  <tbody>
+    @forelse ($qualifiedClientsWithAppointment as $row)
+      <tr>
+        <td>{{ $row['name'] }}</td>
+        <td>{{ $row['source'] }}</td>
+        <td>{{ $row['appointment_date'] ?? '-' }}</td>
+      </tr>
+    @empty
+      <tr>
+        <td colspan="3">No qualified clients with appointment for the selected dates.</td>
+      </tr>
+    @endforelse
+    <tr>
+      <td colspan="2" style="font-weight: bold;">Total</td>
+      <td style="font-weight: bold;">{{ $totals['qualified_clients_with_appointment'] }}</td>
+    </tr>
+  </tbody>
+</table>
+
+<table>
+  <thead>
+    <tr>
       <td colspan="2" style="font-weight: bold;">Lost Clients by Reason</td>
     </tr>
     <tr>
@@ -76,7 +112,7 @@
 <table>
   <thead>
     <tr>
-      <td colspan="4" style="font-weight: bold;">Qualified Clients</td>
+      <td colspan="4" style="font-weight: bold;">Qualified Orders by Client</td>
     </tr>
     <tr>
       <th width="30">Client</th>
@@ -99,7 +135,7 @@
       </tr>
     @endforelse
     <tr>
-      <td colspan="3" style="font-weight: bold;">Total</td>
+      <td colspan="3" style="font-weight: bold;">Total Qualified Orders</td>
       <td style="font-weight: bold;">{{ $totals['qualified_orders'] }}</td>
     </tr>
   </tbody>

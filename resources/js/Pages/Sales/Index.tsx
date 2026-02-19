@@ -1452,6 +1452,9 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
                           ? 'bg-rose-100 text-rose-800 ring-rose-200'
                           : 'bg-emerald-100 text-emerald-800 ring-emerald-200'
                         const bidDueLabelClass = bidDuePast ? 'text-rose-600' : 'text-emerald-600'
+                        const appointmentDisplay = typeof task.schedule_appointment === 'string'
+                          ? task.schedule_appointment.trim()
+                          : ''
                         const isVipClient = Boolean(task.vip_clients)
                         return (
                           <div className="sortable-list " key={task.id} data-id={task.id}>
@@ -1573,6 +1576,14 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
                                   </div>
                                 )
                                 )}
+                              {appointmentDisplay && (
+                                <div className="mt-1 flex justify-end">
+                                  <span className="inline-flex max-w-full items-center gap-1.5 text-[11px] font-semibold text-sky-700 dark:text-sky-200">
+                                    <span className="text-[10px] uppercase tracking-wide text-sky-600 dark:text-sky-300">Appt</span>
+                                    <span className="break-all">{appointmentDisplay}</span>
+                                  </span>
+                                </div>
+                              )}
                               {/* <p className="break-all">{formatPrice(Number(task.precio))}</p> */}
                             </div>
                           </div>

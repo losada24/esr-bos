@@ -11,6 +11,7 @@ interface MarketingClient {
   name: string
   source: string
   created_at: string | null
+  appointment_date?: string | null
   qualified_orders_count?: number
   first_qualified_at?: string | null
   last_qualified_at?: string | null
@@ -22,10 +23,12 @@ interface MarketingClient {
 
 type MarketingReportProps = PageProps & {
   qualifiedClients: MarketingClient[]
+  qualifiedClientsWithAppointment: MarketingClient[]
   lostClients: MarketingClient[]
   totals: {
     total_clients: number
     qualified_clients: number
+    qualified_clients_with_appointment: number
     lost_clients: number
     qualified_orders: number
     lost_orders: number
@@ -43,7 +46,16 @@ type MarketingReportProps = PageProps & {
   endDate: string
 }
 
-export default function MarketingReport ({ qualifiedClients, lostClients, totals, filters, startDate, endDate, auth }: MarketingReportProps) {
+export default function MarketingReport ({
+  qualifiedClients,
+  qualifiedClientsWithAppointment,
+  lostClients,
+  totals,
+  filters,
+  startDate,
+  endDate,
+  auth
+}: MarketingReportProps) {
   const exportQuery = `?start_date=${startDate || ''}&end_date=${endDate || ''}`
 
   return (
@@ -121,7 +133,13 @@ export default function MarketingReport ({ qualifiedClients, lostClients, totals
       </div>
 
       <div className="mt-2 text-left font-semibold text-gray-700">
+        Total Clients from Sources (Instagram/Facebook + Google Ads): {totals.total_clients}
+      </div>
+      <div className="mt-2 text-left font-semibold text-gray-700">
         Qualified Clients: {totals.qualified_clients}
+      </div>
+      <div className="mt-2 text-left font-semibold text-gray-700">
+        Qualified Clients with Appointment: {totals.qualified_clients_with_appointment}
       </div>
       <div className="mt-2 text-left font-semibold text-gray-700">
         Lost Request Clients: {totals.lost_clients}
@@ -187,7 +205,39 @@ export default function MarketingReport ({ qualifiedClients, lostClients, totals
         </div>
       </div>
 
-      <h3 className="mt-6 mb-2 text-lg font-semibold">Qualified Clients</h3>
+      <h3 className="mt-6 mb-2 text-lg font-semibold">Qualified Clients With Appointment</h3>
+      <table className="w-full border border-gray-300">
+        <thead className="bg-gray-100">
+          <tr>
+            <th className="p-2 border">Client</th>
+            <th className="p-2 border">Source</th>
+            <th className="p-2 border">Appointment Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          {qualifiedClientsWithAppointment.length === 0 ? (
+            <tr>
+              <td className="p-2 border text-center" colSpan={3}>No qualified clients with appointment for the selected dates.</td>
+            </tr>
+          ) : (
+            qualifiedClientsWithAppointment.map((row) => (
+              <tr key={`qualified-appt-${row.id}`}>
+                <td className="p-2 border">{row.name}</td>
+                <td className="p-2 border">{row.source}</td>
+                <td className="p-2 border">{row.appointment_date || '-'}</td>
+              </tr>
+            ))
+          )}
+        </tbody>
+        <tfoot>
+          <tr className="bg-gray-100 font-semibold">
+            <td className="p-2 border" colSpan={2}>Total</td>
+            <td className="p-2 border">{totals.qualified_clients_with_appointment}</td>
+          </tr>
+        </tfoot>
+      </table>
+
+      <h3 className="mt-6 mb-2 text-lg font-semibold">Qualified Orders by Client</h3>
       <table className="w-full border border-gray-300">
         <thead className="bg-gray-100">
           <tr>
@@ -215,7 +265,7 @@ export default function MarketingReport ({ qualifiedClients, lostClients, totals
         </tbody>
         <tfoot>
           <tr className="bg-gray-100 font-semibold">
-            <td className="p-2 border" colSpan={3}>Total</td>
+            <td className="p-2 border" colSpan={3}>Total Qualified Orders</td>
             <td className="p-2 border">
               {qualifiedClients.reduce((sum, row) => sum + (row.qualified_orders_count ?? 0), 0)}
             </td>
