@@ -11,8 +11,10 @@ use App\Enum\MethodOfPayment;
 use App\Enum\ContactSourceEnum;
 use App\Enum\LostReasonfrontdeskEnum;
 use App\Enum\OrderStatusEnum;
+use App\Enum\OrderTypeEnum;
 use App\Enum\PaymentStatusEnum;
 use App\Enum\RoleEnum;
+use App\Enum\ServiceEnum;
 use App\Enum\SupervisorPaymentStatusEnum;
 use App\Exports\InstallerExport;
 use App\Exports\InstallerConfirmedSummaryExport;
@@ -20,6 +22,7 @@ use App\Exports\DailyOrderStatusSummaryExport;
 use App\Exports\AccountingStatusSummaryExport;
 use App\Exports\MarketingReportExport;
 use App\Exports\OwnerAssignedSummaryExport;
+use App\Exports\StatusTransitionAverageExport;
 use App\Exports\SupervisorExport;
 use App\Exports\SupervisorExportPayment;
 use App\Exports\SupervisorAssignedSummaryExport;
@@ -777,6 +780,46 @@ class ReportController extends Controller
     ]);
   }
 
+  public function plannedToCompleteAverage(Request $request)
+  {
+    [$startDate, $endDate] = $this->resolveSummaryDateRange($request);
+    $businessType = $this->resolvePlannedToCompleteBusinessType($request);
+    $transitionType = $this->resolvePlannedToCompleteTransitionType($request);
+    $serviceType = $this->resolvePlannedToCompleteServiceType($request);
+    $data = $this->buildPlannedToCompleteAverageData($startDate, $endDate, $businessType, $transitionType, $serviceType);
+
+    return Inertia::render('Report/PlannedToCompleteAverage', $data);
+  }
+
+  public function plannedToCompleteAveragePdf(Request $request)
+  {
+    [$startDate, $endDate] = $this->resolveSummaryDateRange($request);
+    $businessType = $this->resolvePlannedToCompleteBusinessType($request);
+    $transitionType = $this->resolvePlannedToCompleteTransitionType($request);
+    $serviceType = $this->resolvePlannedToCompleteServiceType($request);
+    $data = $this->buildPlannedToCompleteAverageData($startDate, $endDate, $businessType, $transitionType, $serviceType);
+
+    $pdf = Pdf::loadView('pdf.status-transition-average', $data)->setPaper('A4', 'landscape');
+    $pdfName = 'status-transition-average.pdf';
+
+    return $pdf->stream($pdfName);
+  }
+
+  public function plannedToCompleteAverageExcel(Request $request)
+  {
+    [$startDate, $endDate] = $this->resolveSummaryDateRange($request);
+    $businessType = $this->resolvePlannedToCompleteBusinessType($request);
+    $transitionType = $this->resolvePlannedToCompleteTransitionType($request);
+    $serviceType = $this->resolvePlannedToCompleteServiceType($request);
+    $data = $this->buildPlannedToCompleteAverageData($startDate, $endDate, $businessType, $transitionType, $serviceType);
+
+    return Excel::download(
+      new StatusTransitionAverageExport($data),
+      'Status Transition Average.xlsx',
+      \Maatwebsite\Excel\Excel::XLSX
+    );
+  }
+
   public function accountingStatusSummary(Request $request)
   {
     [$startDate, $endDate] = $this->resolveSummaryDateRange($request);
@@ -975,6 +1018,201 @@ class ReportController extends Controller
       : Carbon::now()->endOfMonth();
 
     return [$startDate, $endDate];
+  }
+
+  private function resolvePlannedToCompleteBusinessType(Request $request): string
+  {
+    $allowedTypes = ['all', 'residential', 'commercial'];
+
+    return $request->filled('business_type') && in_array($request->business_type, $allowedTypes, true)
+      ? $request->business_type
+      : 'all';
+  }
+
+  private function resolvePlannedToCompleteTransitionType(Request $request): string
+  {
+    $allowedTypes = ['planned_completed', 'confirmed_completed'];
+
+    return $request->filled('transition_type') && in_array($request->transition_type, $allowedTypes, true)
+      ? $request->transition_type
+      : 'planned_completed';
+  }
+
+  private function resolvePlannedToCompleteServiceType(Request $request): string
+  {
+    $allowedServices = [
+      'all',
+      ServiceEnum::PICKUP->value,
+      ServiceEnum::SERVICE->value,
+      ServiceEnum::INSTALLATION->value,
+      ServiceEnum::DELIVERY->value,
+    ];
+
+    return $request->filled('service') && in_array($request->service, $allowedServices, true)
+      ? $request->service
+      : 'all';
+  }
+
+  private function buildPlannedToCompleteAverageData(
+    Carbon $startDate,
+    Carbon $endDate,
+    string $businessType,
+    string $transitionType,
+    string $serviceType
+  ): array
+  {
+    $startStatus = $this->resolveTransitionStartStatus($transitionType);
+    $transitionLabel = $this->resolveTransitionLabel($transitionType);
+
+    $startStatusDates = OrderStatus::query()
+      ->select('order_id', DB::raw('MIN(created_at) as started_at'))
+      ->where('status', $startStatus)
+      ->groupBy('order_id');
+
+    $completedStatus = OrderStatus::query()
+      ->select('order_id', DB::raw('MIN(created_at) as completed_at'))
+      ->where('status', OrderStatusEnum::COMPLETE->value)
+      ->groupBy('order_id');
+
+    $rowsQuery = DB::table('orders')
+      ->joinSub($startStatusDates, 'start_status', function ($join) {
+        $join->on('start_status.order_id', '=', 'orders.id');
+      })
+      ->joinSub($completedStatus, 'completed_status', function ($join) {
+        $join->on('completed_status.order_id', '=', 'orders.id');
+      })
+      ->leftJoin('types_of_housing', 'types_of_housing.id', '=', 'orders.type_of_housing_id')
+      ->whereNull('orders.deleted_at')
+      ->whereColumn('completed_status.completed_at', '>=', 'start_status.started_at')
+      ->whereBetween('completed_status.completed_at', [$startDate, $endDate])
+      ->select(
+        'orders.id',
+        'orders.order_number',
+        'orders.name',
+        'orders.service',
+        'orders.order_type',
+        'types_of_housing.name as type_of_housing',
+        'start_status.started_at',
+        'completed_status.completed_at'
+      )
+      ->orderByDesc('completed_status.completed_at');
+
+    if ($businessType === 'commercial') {
+      $rowsQuery->where(function ($query) {
+        $query->where('orders.order_type', OrderTypeEnum::COMMERCIAL->value)
+          ->orWhereRaw('LOWER(types_of_housing.name) = ?', ['commercial']);
+      });
+    } elseif ($businessType === 'residential') {
+      $rowsQuery->where(function ($query) {
+        $query->where('orders.order_type', OrderTypeEnum::RESIDENTIAL->value)
+          ->orWhereRaw('LOWER(types_of_housing.name) IN (?, ?)', ['apartment', 'single family home']);
+      });
+    }
+
+    if ($serviceType !== 'all') {
+      $rowsQuery->where('orders.service', $serviceType);
+    }
+
+    $rows = $rowsQuery->get()->map(function ($row) {
+      $startedAt = Carbon::parse($row->started_at);
+      $completedAt = Carbon::parse($row->completed_at);
+      $durationSeconds = $startedAt->diffInSeconds($completedAt);
+
+      return [
+        'id' => $row->id,
+        'order_number' => $row->order_number,
+        'name' => $row->name,
+        'service' => $row->service,
+        'order_type' => $row->order_type,
+        'type_of_housing' => $row->type_of_housing,
+        'start_at' => $startedAt->toDateTimeString(),
+        'completed_at' => $completedAt->toDateTimeString(),
+        'duration_seconds' => $durationSeconds,
+        'duration_days' => round($durationSeconds / 86400, 2),
+        'duration_label' => $this->formatDurationSeconds($durationSeconds),
+      ];
+    })->values();
+
+    $totalOrders = $rows->count();
+    $averageDurationSeconds = $totalOrders > 0
+      ? (int) round($rows->avg('duration_seconds'))
+      : 0;
+
+    return [
+      'rows' => $rows,
+      'totalOrders' => $totalOrders,
+      'averageDurationSeconds' => $averageDurationSeconds,
+      'averageDurationDays' => $totalOrders > 0 ? round($averageDurationSeconds / 86400, 2) : 0,
+      'averageDurationLabel' => $this->formatDurationSeconds($averageDurationSeconds),
+      'transitionType' => $transitionType,
+      'transitionLabel' => $transitionLabel,
+      'startStatusLabel' => $transitionType === 'confirmed_completed' ? 'Confirmed At' : 'Planned At',
+      'businessType' => $businessType,
+      'businessTypeLabel' => $this->resolveBusinessTypeLabel($businessType),
+      'serviceType' => $serviceType,
+      'serviceTypeLabel' => $serviceType === 'all' ? 'ALL SERVICES' : $serviceType,
+      'serviceOptions' => [
+        ['label' => 'ALL', 'value' => 'all'],
+        ['label' => ServiceEnum::PICKUP->value, 'value' => ServiceEnum::PICKUP->value],
+        ['label' => ServiceEnum::SERVICE->value, 'value' => ServiceEnum::SERVICE->value],
+        ['label' => ServiceEnum::INSTALLATION->value, 'value' => ServiceEnum::INSTALLATION->value],
+        ['label' => ServiceEnum::DELIVERY->value, 'value' => ServiceEnum::DELIVERY->value],
+      ],
+      'startDate' => $startDate->toDateString(),
+      'endDate' => $endDate->toDateString(),
+    ];
+  }
+
+  private function resolveTransitionStartStatus(string $transitionType): string
+  {
+    return $transitionType === 'confirmed_completed'
+      ? OrderStatusEnum::CONFIRMED->value
+      : OrderStatusEnum::PLANNED->value;
+  }
+
+  private function resolveTransitionLabel(string $transitionType): string
+  {
+    return $transitionType === 'confirmed_completed'
+      ? 'CONFIRMED -> COMPLETE'
+      : 'PLANNED -> COMPLETE';
+  }
+
+  private function resolveBusinessTypeLabel(string $businessType): string
+  {
+    return match ($businessType) {
+      'commercial' => 'COMMERCIAL',
+      'residential' => 'RESIDENTIAL',
+      default => 'ALL TYPES',
+    };
+  }
+
+  private function formatDurationSeconds(int $seconds): string
+  {
+    if ($seconds <= 0) {
+      return '0 minutes';
+    }
+
+    $days = intdiv($seconds, 86400);
+    $remaining = $seconds % 86400;
+    $hours = intdiv($remaining, 3600);
+    $remaining = $remaining % 3600;
+    $minutes = intdiv($remaining, 60);
+
+    $parts = [];
+
+    if ($days > 0) {
+      $parts[] = $days . ' day' . ($days === 1 ? '' : 's');
+    }
+
+    if ($hours > 0) {
+      $parts[] = $hours . ' hour' . ($hours === 1 ? '' : 's');
+    }
+
+    if ($minutes > 0) {
+      $parts[] = $minutes . ' minute' . ($minutes === 1 ? '' : 's');
+    }
+
+    return empty($parts) ? 'less than 1 minute' : implode(' ', $parts);
   }
 
   private function resolveUniqueOrderIdsByStatus(string $status, Carbon $startDate, Carbon $endDate): Collection

@@ -435,6 +435,18 @@ Route::middleware('auth')->group(function () {
     ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::SERVICE_MANAGER->value] )
     ->name('report.order-status-summary');
 
+    Route::get('/report/planned-to-complete-average', [ReportController::class, 'plannedToCompleteAverage'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::SERVICE_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::FRONTDESK_ADMIN->value] )
+    ->name('report.planned-to-complete-average');
+
+    Route::get('/report/planned-to-complete-average/pdf', [ReportController::class, 'plannedToCompleteAveragePdf'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::SERVICE_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::FRONTDESK_ADMIN->value] )
+    ->name('report.planned-to-complete-average-pdf');
+
+    Route::get('/report/planned-to-complete-average/excel', [ReportController::class, 'plannedToCompleteAverageExcel'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::SERVICE_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::FRONTDESK_ADMIN->value] )
+    ->name('report.planned-to-complete-average-excel');
+
     Route::get('/report/accounting-status-summary', [ReportController::class, 'accountingStatusSummary'])
     ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNTING->value] )
     ->name('report.accounting-status-summary');
