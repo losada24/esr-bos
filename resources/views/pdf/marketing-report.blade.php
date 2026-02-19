@@ -34,7 +34,9 @@
 </style>
 
 <div class="meta">Marketing Report ({{ $startDate }} to {{ $endDate }})</div>
+<div class="meta">Total Clients from Sources (Instagram/Facebook + Google Ads): {{ $totals['total_clients'] }}</div>
 <div class="meta">Qualified Clients: {{ $totals['qualified_clients'] }}</div>
+<div class="meta">Qualified Clients with Appointment: {{ $totals['qualified_clients_with_appointment'] }}</div>
 <div class="meta">Lost Request Clients: {{ $totals['lost_clients'] }}</div>
 <div class="meta">Grand Total Clients (Qualified + Lost): {{ $totals['grand_total_clients'] }}</div>
 
@@ -60,6 +62,34 @@
     <tr class="totals">
       <td>Total</td>
       <td>{{ ($totals['qualified_clients_by_source'][\App\Enum\ContactSourceEnum::INSTAGRAM_FACEBOOK->value] ?? 0) + ($totals['qualified_clients_by_source'][\App\Enum\ContactSourceEnum::GOOGLE_ADS->value] ?? 0) }}</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="section-title">Qualified Clients With Appointment</div>
+<table>
+  <thead>
+    <tr>
+      <th>Client</th>
+      <th>Source</th>
+      <th>Appointment Date</th>
+    </tr>
+  </thead>
+  <tbody>
+    @forelse ($qualifiedClientsWithAppointment as $row)
+      <tr>
+        <td>{{ $row['name'] }}</td>
+        <td>{{ $row['source'] }}</td>
+        <td>{{ $row['appointment_date'] ?? '-' }}</td>
+      </tr>
+    @empty
+      <tr>
+        <td colspan="3">No qualified clients with appointment for the selected dates.</td>
+      </tr>
+    @endforelse
+    <tr class="totals">
+      <td colspan="2">Total</td>
+      <td>{{ $totals['qualified_clients_with_appointment'] }}</td>
     </tr>
   </tbody>
 </table>
@@ -90,7 +120,7 @@
   </tbody>
 </table>
 
-<div class="section-title">Qualified Clients</div>
+<div class="section-title">Qualified Orders by Client</div>
 <table>
   <thead>
     <tr>
@@ -114,7 +144,7 @@
       </tr>
     @endforelse
     <tr class="totals">
-      <td colspan="3">Total</td>
+      <td colspan="3">Total Qualified Orders</td>
       <td>{{ $totals['qualified_orders'] }}</td>
     </tr>
   </tbody>

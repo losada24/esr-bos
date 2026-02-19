@@ -1333,6 +1333,42 @@ class ReportController extends Controller
       })
       ->values();
 
+    $qualifiedWithAppointmentByClient = DB::query()
+      ->fromSub($qualifiedClientOrders, 'qualified_client_orders')
+      ->join('orders', 'orders.id', '=', 'qualified_client_orders.order_id')
+      ->join('clients', 'clients.id', '=', 'qualified_client_orders.client_id')
+      ->whereBetween('clients.created_at', [$startDate, $endDate])
+      ->whereIn('clients.source', $sources)
+      ->whereNotNull('orders.schedule_appointment')
+      ->select(
+        'qualified_client_orders.client_id',
+        DB::raw('MIN(orders.schedule_appointment) as first_appointment_at')
+      )
+      ->groupBy('qualified_client_orders.client_id');
+
+    $qualifiedClientsWithAppointment = Client::query()
+      ->joinSub($qualifiedWithAppointmentByClient, 'qualified_with_appointment', function ($join) {
+        $join->on('qualified_with_appointment.client_id', '=', 'clients.id');
+      })
+      ->orderBy('qualified_with_appointment.first_appointment_at')
+      ->get([
+        'clients.id',
+        'clients.name',
+        'clients.source',
+        'qualified_with_appointment.first_appointment_at',
+      ])
+      ->map(function ($row) {
+        return [
+          'id' => $row->id,
+          'name' => $row->name,
+          'source' => $row->source,
+          'appointment_date' => $row->first_appointment_at
+            ? Carbon::parse($row->first_appointment_at)->toDateString()
+            : null,
+        ];
+      })
+      ->values();
+
     $lostOrdersBase = DB::table('orders')
       ->whereNull('orders.deleted_at')
       ->where('orders.status', OrderStatusEnum::LOST_CUSTOMER_REQUEST->value)
@@ -1436,10 +1472,12 @@ class ReportController extends Controller
 
     return [
       'qualifiedClients' => $qualifiedClients,
+      'qualifiedClientsWithAppointment' => $qualifiedClientsWithAppointment,
       'lostClients' => $lostClients,
       'totals' => [
         'total_clients' => $totalClientsInRange,
         'qualified_clients' => $qualifiedClients->count(),
+        'qualified_clients_with_appointment' => $qualifiedClientsWithAppointment->count(),
         'lost_clients' => $lostClients->count(),
         'qualified_orders' => $qualifiedClients->sum('qualified_orders_count'),
         'lost_orders' => $lostClients->sum('lost_orders_count'),
