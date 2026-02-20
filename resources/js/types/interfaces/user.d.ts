@@ -6,6 +6,7 @@ export interface User {
   email: string
   email_verified_at: string
   roles: Role[]
+  has_frontdesk_admin_role?: boolean
   featured_image?: string
   phone: string
   status?: string

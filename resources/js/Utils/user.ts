@@ -31,7 +31,24 @@ export const isFrontdesk = (roles: string[]): boolean => {
   return roles.find((role) => role === ROLES.FRONTDESK) !== undefined
 }
 export const isFrontdeskAdmin = (roles: string[]): boolean => {
-  return roles.find((role) => role === ROLES.FRONTDESK_ADMIN) !== undefined
+  return roles.find((role) => {
+    const normalized = String(role ?? '')
+      .trim()
+      .toLowerCase()
+      .replace(/[\s-]+/g, '_')
+      .replace(/[^a-z0-9_]/g, '')
+
+    if (normalized === ROLES.FRONTDESK_ADMIN) {
+      return true
+    }
+
+    const compact = normalized.replace(/_/g, '')
+    const hasFrontChunk = compact.includes('front') || compact.includes('fron')
+    const hasDeskChunk = compact.includes('desk') || compact.includes('destk')
+    const hasAdminChunk = compact.includes('admin')
+
+    return hasFrontChunk && hasDeskChunk && hasAdminChunk
+  }) !== undefined
 }
 export const isServiceManager = (roles: string[]): boolean => {
   return roles.find((role) => role === ROLES.SERVICE_MANAGER) !== undefined

@@ -20,6 +20,7 @@ use App\Exports\InstallerExport;
 use App\Exports\InstallerConfirmedSummaryExport;
 use App\Exports\DailyOrderStatusSummaryExport;
 use App\Exports\AccountingStatusSummaryExport;
+use App\Exports\SalesAppointmentsBySellerExport;
 use App\Exports\MarketingReportExport;
 use App\Exports\OwnerAssignedSummaryExport;
 use App\Exports\StatusTransitionAverageExport;
@@ -918,6 +919,36 @@ class ReportController extends Controller
     );
   }
 
+  public function salesAppointmentsBySeller(Request $request)
+  {
+    [$startDate, $endDate] = $this->resolveSummaryDateRange($request);
+    $data = $this->buildSalesAppointmentsBySellerData($startDate, $endDate);
+
+    return Inertia::render('Report/SalesAppointmentsBySeller', $data);
+  }
+
+  public function salesAppointmentsBySellerPdf(Request $request)
+  {
+    [$startDate, $endDate] = $this->resolveSummaryDateRange($request);
+    $data = $this->buildSalesAppointmentsBySellerData($startDate, $endDate);
+    $pdf = Pdf::loadView('pdf.sales-appointments-by-seller', $data)->setPaper('A4', 'portrait');
+    $pdfName = 'sales-appointments-by-seller.pdf';
+
+    return $pdf->stream($pdfName);
+  }
+
+  public function salesAppointmentsBySellerExcel(Request $request)
+  {
+    [$startDate, $endDate] = $this->resolveSummaryDateRange($request);
+    $data = $this->buildSalesAppointmentsBySellerData($startDate, $endDate);
+
+    return Excel::download(
+      new SalesAppointmentsBySellerExport($data),
+      'Sales Appointments by Seller.xlsx',
+      \Maatwebsite\Excel\Excel::XLSX
+    );
+  }
+
   public function installerConfirmedSummary(Request $request)
   {
     [$startDate, $endDate] = $this->resolveSummaryDateRange($request);
@@ -1728,6 +1759,41 @@ class ReportController extends Controller
         'qualified_status' => OrderStatusEnum::QUALIFIED->value,
         'lost_status' => OrderStatusEnum::LOST_CUSTOMER_REQUEST->value,
         'loss_reasons' => $lossReasons,
+      ],
+      'startDate' => $startDate->toDateString(),
+      'endDate' => $endDate->toDateString(),
+    ];
+  }
+
+  private function buildSalesAppointmentsBySellerData(Carbon $startDate, Carbon $endDate): array
+  {
+    $ownerAssignments = DB::table('owner_user')
+      ->select('user_id', 'order_id')
+      ->whereNull('deleted_at')
+      ->groupBy('user_id', 'order_id');
+
+    $summary = DB::query()
+      ->fromSub($ownerAssignments, 'owner_assignments')
+      ->join('users', 'users.id', '=', 'owner_assignments.user_id')
+      ->join('orders', 'orders.id', '=', 'owner_assignments.order_id')
+      ->whereNull('orders.deleted_at')
+      ->whereNotNull('orders.schedule_appointment')
+      ->whereBetween('orders.schedule_appointment', [$startDate, $endDate])
+      ->select(
+        'users.id as seller_id',
+        'users.name as seller_name',
+        DB::raw('COUNT(owner_assignments.order_id) as appointments_count')
+      )
+      ->groupBy('users.id', 'users.name')
+      ->orderBy('users.name')
+      ->get();
+
+    $totalAppointments = (int) $summary->sum('appointments_count');
+
+    return [
+      'summary' => $summary,
+      'totals' => [
+        'appointments' => $totalAppointments,
       ],
       'startDate' => $startDate->toDateString(),
       'endDate' => $endDate->toDateString(),

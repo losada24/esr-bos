@@ -327,6 +327,8 @@ class OrderStorageController extends Controller
             RoleEnum::ADMIN->value,
             RoleEnum::ACCOUNT_MANAGER->value,
             RoleEnum::ACCOUNTING->value,
+            RoleEnum::FRONTDESK_ADMIN->value,
+            'FRONTDESK_ADMIN',
         ]);
     }
 }
