@@ -23,32 +23,35 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
     state.toggleSidebar
   ])
 
-  const IS_ADMIN = isAdmin(auth.user.roles.map((role: Role) => role.name))
-  const IS_ACCOUNT_MANAGER = isAccountManager(auth.user.roles.map((role: Role) => role.name))
-  const IS_ACCOUNTING = isAccounting(auth.user.roles.map((role: Role) => role.name))
-  const IS_FRONTDESK = isFrontdesk(auth.user.roles.map((role: Role) => role.name))
-  const IS_FRONTDESK_ADMIN = isFrontdeskAdmin(auth.user.roles.map((role: Role) => role.name))
-  const IS_OWNER = isOwner(auth.user.roles.map((role: Role) => role.name))
-  const IS_SUPERVISOR = isSupervisor(auth.user.roles.map((role: Role) => role.name))
-  const IS_SERVICE_MANAGER = isServiceManager(auth.user.roles.map((role: Role) => role.name))
-  const IS_INSTALLER = isInstaller(auth.user.roles.map((role: Role) => role.name))
-  const IS_PAYMENT_COORDINATOR = isPaymentCoordinator(auth.user.roles.map((role: Role) => role.name))
-  const IS_OWNER_ADMIN = isOwnerAdmin(auth.user.roles.map((role: Role) => role.name))
-  const IS_FRONTDESK_ESR = isFrontdeskEsr(auth.user.roles.map((role: Role) => role.name))
+  const roleNames = auth.user.roles.map((role: Role) => String(role.name ?? '').trim().toLowerCase().replace(/[\s-]+/g, '_'))
+  const IS_ADMIN = isAdmin(roleNames)
+  const IS_ACCOUNT_MANAGER = isAccountManager(roleNames)
+  const IS_ACCOUNTING = isAccounting(roleNames)
+  const IS_FRONTDESK = isFrontdesk(roleNames)
+  const IS_FRONTDESK_ADMIN = isFrontdeskAdmin(roleNames)
+  const HAS_FRONTDESK_ADMIN_ROLE = IS_FRONTDESK_ADMIN || Boolean(auth.user?.has_frontdesk_admin_role)
+  const IS_OWNER = isOwner(roleNames)
+  const IS_SUPERVISOR = isSupervisor(roleNames)
+  const IS_SERVICE_MANAGER = isServiceManager(roleNames)
+  const IS_INSTALLER = isInstaller(roleNames)
+  const IS_PAYMENT_COORDINATOR = isPaymentCoordinator(roleNames)
+  const IS_OWNER_ADMIN = isOwnerAdmin(roleNames)
+  const IS_FRONTDESK_ESR = isFrontdeskEsr(roleNames)
   const CAN_VIEW_REPORT_SUPERVISOR = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SUPERVISOR || IS_SERVICE_MANAGER
   const CAN_VIEW_REPORT_INSTALLER = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_INSTALLER || IS_SERVICE_MANAGER || IS_PAYMENT_COORDINATOR
   const CAN_VIEW_BIWEEKLY = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_PAYMENT_COORDINATOR
   const CAN_VIEW_PRODUCT_SUMMARY = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER
   const CAN_VIEW_ORDER_STATUS_SUMMARY = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER
-  const CAN_VIEW_PLANNED_TO_COMPLETE_AVERAGE = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER || IS_OWNER_ADMIN || IS_FRONTDESK_ADMIN
+  const CAN_VIEW_PLANNED_TO_COMPLETE_AVERAGE = !HAS_FRONTDESK_ADMIN_ROLE && (IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER || IS_OWNER_ADMIN)
   const HAS_PLANNED_TO_COMPLETE_AVERAGE_ROUTE = route().has('report.planned-to-complete-average')
   const CAN_VIEW_ACCOUNTING_STATUS_SUMMARY = IS_ADMIN || IS_ACCOUNTING
   const CAN_VIEW_INSTALLER_CONFIRMED = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER
   const CAN_VIEW_OWNER_ASSIGNED = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER || IS_OWNER_ADMIN
   const CAN_VIEW_SUPERVISOR_ASSIGNED = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER
-  const CAN_VIEW_DAILY_ORDER_STATUS = IS_ADMIN || IS_FRONTDESK_ADMIN || IS_OWNER_ADMIN
-  const CAN_VIEW_MARKETING_REPORT = IS_ADMIN || IS_FRONTDESK_ADMIN || IS_OWNER_ADMIN
-  const CAN_VIEW_ORDER_STORAGE = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_ACCOUNTING
+  const CAN_VIEW_DAILY_ORDER_STATUS = IS_ADMIN || HAS_FRONTDESK_ADMIN_ROLE || IS_OWNER_ADMIN
+  const CAN_VIEW_MARKETING_REPORT = IS_ADMIN || HAS_FRONTDESK_ADMIN_ROLE || IS_OWNER_ADMIN
+  const CAN_VIEW_SALES_APPOINTMENTS = IS_ADMIN || IS_ACCOUNT_MANAGER || HAS_FRONTDESK_ADMIN_ROLE || IS_OWNER_ADMIN
+  const CAN_VIEW_ORDER_STORAGE = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_ACCOUNTING || HAS_FRONTDESK_ADMIN_ROLE
   const CAN_VIEW_REPORTS = CAN_VIEW_REPORT_SUPERVISOR
     || CAN_VIEW_REPORT_INSTALLER
     || CAN_VIEW_BIWEEKLY
@@ -61,6 +64,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
     || CAN_VIEW_SUPERVISOR_ASSIGNED
     || CAN_VIEW_DAILY_ORDER_STATUS
     || CAN_VIEW_MARKETING_REPORT
+    || CAN_VIEW_SALES_APPOINTMENTS
 
   return (
         <div className={`${themeState.semidark ? 'dark' : ''}`}>
@@ -133,7 +137,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                               </>
                           )}
 
-                           {(IS_ADMIN || IS_OWNER || IS_OWNER_ADMIN || IS_FRONTDESK_ADMIN || IS_ACCOUNT_MANAGER) && (
+                           {(IS_ADMIN || IS_OWNER || IS_OWNER_ADMIN || HAS_FRONTDESK_ADMIN_ROLE || IS_ACCOUNT_MANAGER) && (
                             <>
                             <h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">
                                 <svg className="w-4 h-5 flex-none hidden" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
@@ -160,7 +164,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                             </li>
                                </>
                            )}
-                           {(IS_ADMIN || IS_OWNER || IS_OWNER_ADMIN || IS_ACCOUNT_MANAGER) && (
+                           {(IS_ADMIN || IS_OWNER || IS_OWNER_ADMIN || IS_ACCOUNT_MANAGER || HAS_FRONTDESK_ADMIN_ROLE) && (
                             <>
                              <h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">
                                 <svg className="w-4 h-5 flex-none hidden" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
@@ -231,7 +235,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
 
                            </>
                             )}
-                             {(IS_SUPERVISOR || IS_OWNER || IS_FRONTDESK_ADMIN) && (
+                             {(IS_SUPERVISOR || IS_OWNER || HAS_FRONTDESK_ADMIN_ROLE) && (
                               <>
                                <li className="menu nav-item">
                                 <NavLink href={route('dashboard')} active={route().current('dashboard')} className="group">
@@ -241,7 +245,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                     </div>
                                 </NavLink>
                               </li>
-                              {(IS_SUPERVISOR || IS_OWNER) && (
+                             {(IS_SUPERVISOR || IS_OWNER) && (
                                 <li className="menu nav-item">
                                       <NavLink href={route('report.show-supervisor-report', { id: auth.user.id })} active={route().current('report.show-supervisor-report')} className="group">
                                           <div className="flex items-center">
@@ -249,6 +253,16 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                               <SidebarLinkLabel>My Orders</SidebarLinkLabel>
                                           </div>
                                       </NavLink>
+                                </li>
+                              )}
+                              {HAS_FRONTDESK_ADMIN_ROLE && (
+                                <li className="menu nav-item">
+                                  <NavLink href={route('order.index')} active={route().current('order.index')} className="group">
+                                    <div className="flex items-center">
+                                      <FolderIcon />
+                                      <SidebarLinkLabel>Order</SidebarLinkLabel>
+                                    </div>
+                                  </NavLink>
                                 </li>
                               )}
                               </>
@@ -347,6 +361,16 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                         <div className="flex items-center">
                                           <ReferralIcon/>
                                           <SidebarLinkLabel>Marketing Report</SidebarLinkLabel>
+                                        </div>
+                                      </NavLink>
+                                    </li>
+                                  )}
+                                  {CAN_VIEW_SALES_APPOINTMENTS && (
+                                    <li className="menu nav-item">
+                                      <NavLink href={route('report.sales-appointments-by-seller')} active={route().current('report.sales-appointments-by-seller')} className="group">
+                                        <div className="flex items-center">
+                                          <ReferralIcon/>
+                                          <SidebarLinkLabel>Sales Appointments</SidebarLinkLabel>
                                         </div>
                                       </NavLink>
                                     </li>

@@ -176,6 +176,14 @@ class OrderProcessingController extends Controller
         return $user->hasRole(RoleEnum::OWNER->value) && !$user->hasAnyRole([
             RoleEnum::ADMIN->value,
             RoleEnum::ACCOUNT_MANAGER->value,
+            RoleEnum::OWNER_ADMIN->value,
+            RoleEnum::FRONTDESK_ADMIN->value,
+            'OWNER_ADMIN',
+            'FRONTDESK_ADMIN',
+            'frondesk_admin',
+            'frondestk_admin',
+            'FRONDESK_ADMIN',
+            'FRONDESTK_ADMIN',
         ]);
     }
 

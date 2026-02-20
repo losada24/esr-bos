@@ -227,9 +227,23 @@ class Order extends Model
     }
 
 
-    if (!(auth()->user()->hasRole(RoleEnum::ACCOUNT_MANAGER->value)) && !(auth()->user()->hasRole(RoleEnum::ADMIN->value))&& !(auth()->user()->hasRole(RoleEnum::OWNER_ADMIN->value))&& !(auth()->user()->hasRole(RoleEnum::FRONTDESK->value)) && !(auth()->user()->hasRole(RoleEnum::FRONTDESK_ADMIN->value))) {
-      if (auth()->user()->hasRole(RoleEnum::INSTALLER->value)) {
-        $installationTeams = InstallationTeam::where('user_id', auth()->user()->id)->first();
+    $user = auth()->user();
+    if (!$user) {
+      return;
+    }
+
+    $hasCalendarWideAccess = $user->hasAnyRole([
+      RoleEnum::ACCOUNT_MANAGER->value,
+      RoleEnum::ADMIN->value,
+      RoleEnum::OWNER_ADMIN->value,
+      RoleEnum::FRONTDESK->value,
+      RoleEnum::FRONTDESK_ADMIN->value,
+      'FRONTDESK_ADMIN',
+    ]);
+
+    if (!$hasCalendarWideAccess) {
+      if ($user->hasRole(RoleEnum::INSTALLER->value)) {
+        $installationTeams = InstallationTeam::where('user_id', $user->id)->first();
         $query->whereHas('installationTeams', function ($q) use ($installationTeams) {
           $q->where('installation_teams.id', $installationTeams->id);
         });
@@ -240,8 +254,8 @@ class Order extends Model
           $q->where('supervisor_id', $supervisor->user->id);
         });*/
 
-      if (auth()->user()->hasRole(RoleEnum::SUPERVISOR->value)) {
-        $query->where('supervisor_id', auth()->user()->id)
+      if ($user->hasRole(RoleEnum::SUPERVISOR->value)) {
+        $query->where('supervisor_id', $user->id)
           ->whereIn('status', [
             OrderStatusEnum::PLANNED,        // Solo órdenes en "PLANNED"
             OrderStatusEnum::RESCHEDULE,   // Solo órdenes en "EXECUTION"
@@ -259,9 +273,9 @@ class Order extends Model
           ]);
       }
 
-      if (auth()->user()->hasRole(RoleEnum::OWNER->value)) {
-        $query->whereHas('owners', function ($ownerQuery) {
-          $ownerQuery->where('user_id', auth()->user()->id);
+      if ($user->hasRole(RoleEnum::OWNER->value)) {
+        $query->whereHas('owners', function ($ownerQuery) use ($user) {
+          $ownerQuery->where('user_id', $user->id);
         })
         ->whereIn('status', [
           OrderStatusEnum::PLANNED,
@@ -279,7 +293,7 @@ class Order extends Model
         ]);
       }
 
-      if (auth()->user()->hasRole(RoleEnum::SERVICE_MANAGER->value) || auth()->user()->hasRole(RoleEnum::PAYMENT_COORDINATOR->value)) {
+      if ($user->hasRole(RoleEnum::SERVICE_MANAGER->value) || $user->hasRole(RoleEnum::PAYMENT_COORDINATOR->value)) {
         $query->whereIn('status', [
           OrderStatusEnum::RESCHEDULE,   // Solo órdenes en "EXECUTION"
           OrderStatusEnum::CONFIRMED,   // Solo órdenes en "EXECUTION"
