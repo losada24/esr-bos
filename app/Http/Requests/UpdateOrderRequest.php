@@ -75,7 +75,7 @@ class UpdateOrderRequest extends FormRequest
     {   
       return [
           'id' => 'required|exists:orders,id',
-          'client_id' => 'required|integer|exists:clients,id',
+          'client_id' => 'nullable|integer|exists:clients,id',
           'client_name' => 'required|string|max:255',
           // 'last_name' => 'required|string|max:255',
           //'phone' => 'required|string|max:255',

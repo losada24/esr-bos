@@ -54,18 +54,6 @@ class UpdateOrder
     //dd($order->supervisor_id, $request->supervisor_id);
     DB::beginTransaction();
     try {
-      $client = Client::find($request->client_id);
-      if ($client) {
-        $client->update([
-          'name' => $request->client_name,
-          'phone' => $request->phone,
-          'email' => $request->email,
-          'vip_clients' =>$request->vip_clients,
-          'vip_notes' => $request->vip_notes,
-          'contact_type' => $request->contact_type,
-          'user_id' => auth()->user()->id,
-        ]);
-      }
       $order = Order::with('comissions')->findOrFail($order->id);
       $oldAmount = $order->project_amount;
       $newAmount = $request->project_amount;
@@ -133,6 +121,22 @@ class UpdateOrder
       }
 
       $status = $request->status;
+      $requestedClientId = $request->filled('client_id') ? (int) $request->client_id : null;
+      $clientId = $requestedClientId;
+      if (!$clientId) {
+        $client = Client::query()->firstOrCreate(
+          ['phone' => (string) $request->phone],
+          [
+            'name' => (string) $request->client_name,
+            'email' => $request->email,
+            'vip_clients' => (bool) $request->vip_clients,
+            'vip_notes' => $request->vip_notes,
+            'contact_type' => $request->contact_type,
+            'user_id' => auth()->id(),
+          ]
+        );
+        $clientId = (int) $client->id;
+      }
       $type_of_work_id = $request->type_of_work_id;
       $type_of_housing_id = $request->type_of_housing_id;
       $travel_cost_id = $request->travel_cost_id;
@@ -155,7 +159,7 @@ class UpdateOrder
       $sendEmail = $status != $order->status;
       //dd($sendEmail,$status,$order->status);
       $orderData = [
-        'client_id' => $client->id,
+        'client_id' => $clientId,
         'user_id' => auth()->user()->id,
         'name' => $request->name,
         'job_address' => $request->job_address,

@@ -219,7 +219,18 @@ const ServiceForm = ({
   const [selectedClientId, setSelectedClientId] = useState<number | null>(
     isCreate && Number(values.client_id) > 0 ? Number(values.client_id) : null
   )
-  const isClientLocked = isCreate && selectedClientId !== null
+  const [isClientReassigning, setIsClientReassigning] = useState<boolean>(false)
+  const clientSnapshotRef = useRef({
+    client_id: Number(values.client_id ?? 0),
+    client_name: values.client_name ?? '',
+    phone: values.phone ?? '',
+    email: values.email ?? '',
+    vip_clients: Boolean(values.vip_clients),
+    vip_notes: values.vip_notes ?? ''
+  })
+  const isClientLocked = selectedClientId !== null
+  const canSearchClient = isCreate ? !isClientLocked : isClientReassigning
+  const canEditClientLookupFields = canSearchClient
   const suppressNextSearchRef = useRef<boolean>(false)
   const suppressNextPhoneSearchRef = useRef<boolean>(false)
   const [phoneSearchTerm, setPhoneSearchTerm] = useState<string>(values.phone ?? '')
@@ -453,7 +464,7 @@ const ServiceForm = ({
     setFieldValue('orderProducts', orderProducts)
   }, [orderProducts, setFieldValue])
   useEffect(() => {
-    if (!isCreate || isClientLocked) {
+    if (!canSearchClient) {
       setClientSearchResults([])
       setClientSearchError('')
       return
@@ -476,10 +487,10 @@ const ServiceForm = ({
     return () => {
       window.clearTimeout(timeoutId)
     }
-  }, [clientSearchTerm, isCreate, isClientLocked])
+  }, [clientSearchTerm, canSearchClient])
 
   useEffect(() => {
-    if (!isCreate || isClientLocked) {
+    if (!canSearchClient) {
       setPhoneSearchResults([])
       setPhoneSearchError('')
       setPhoneExists(false)
@@ -505,7 +516,7 @@ const ServiceForm = ({
     return () => {
       window.clearTimeout(timeoutId)
     }
-  }, [phoneSearchTerm, isCreate, isClientLocked])
+  }, [phoneSearchTerm, canSearchClient])
 
   const handleSelectClient = (client: ClientSearchResult) => {
     suppressNextSearchRef.current = true
@@ -522,6 +533,9 @@ const ServiceForm = ({
     setPhoneSearchResults([])
     setPhoneSearchTerm(client.phone ?? '')
     setPhoneExists(false)
+    if (!isCreate) {
+      setIsClientReassigning(false)
+    }
   }
 
   const clearSelectedClient = () => {
@@ -539,6 +553,38 @@ const ServiceForm = ({
     setPhoneSearchTerm('')
     setPhoneSearchError('')
     setPhoneExists(false)
+  }
+
+  const startClientReassignment = () => {
+    clientSnapshotRef.current = {
+      client_id: Number(values.client_id ?? 0),
+      client_name: values.client_name ?? '',
+      phone: values.phone ?? '',
+      email: values.email ?? '',
+      vip_clients: Boolean(values.vip_clients),
+      vip_notes: values.vip_notes ?? ''
+    }
+    clearSelectedClient()
+    setIsClientReassigning(true)
+  }
+
+  const cancelClientReassignment = () => {
+    const snapshot = clientSnapshotRef.current
+    setFieldValue('client_id', snapshot.client_id)
+    setFieldValue('client_name', snapshot.client_name)
+    setFieldValue('phone', snapshot.phone)
+    setFieldValue('email', snapshot.email)
+    setFieldValue('vip_clients', snapshot.vip_clients)
+    setFieldValue('vip_notes', snapshot.vip_notes)
+    setSelectedClientId(snapshot.client_id > 0 ? snapshot.client_id : null)
+    setClientSearchResults([])
+    setClientSearchTerm('')
+    setClientSearchError('')
+    setPhoneSearchResults([])
+    setPhoneSearchTerm(snapshot.phone ?? '')
+    setPhoneSearchError('')
+    setPhoneExists(false)
+    setIsClientReassigning(false)
   }
 
   const selectedSupervisor = (() => {
@@ -564,7 +610,30 @@ const ServiceForm = ({
           <legend className='text-lg font-semibold px-3'>Client Information</legend>
           <div className='grid gap-4 grid-cols-3'>
             <div className={`${submitCount ? (errors.client_name ? 'has-error' : 'has-success') : ''} relative`}>
-              <label htmlFor="client_name">Name</label>
+              <div className='flex items-center justify-between'>
+                <label htmlFor="client_name">Name</label>
+                {!isCreate && (
+                  isClientReassigning
+                    ? (
+                      <button
+                        type="button"
+                        className="text-xs font-semibold text-[#dc2626] hover:text-[#b91c1c]"
+                        onClick={cancelClientReassignment}
+                      >
+                        Cancel
+                      </button>
+                      )
+                    : (
+                      <button
+                        type="button"
+                        className="text-xs font-semibold text-[#2563eb] hover:text-[#1d4ed8]"
+                        onClick={startClientReassignment}
+                      >
+                        Change client
+                      </button>
+                      )
+                )}
+              </div>
               <div className='flex'>
                 <Field
                   id="client_name"
@@ -575,11 +644,11 @@ const ServiceForm = ({
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                     const formattedValue = capitalizeWords(e.target.value)
                     setFieldValue('client_name', formattedValue)
-                    if (isCreate && !isClientLocked) {
+                    if (canSearchClient) {
                       setClientSearchTerm(formattedValue)
                     }
                   }}
-                  readOnly={isClientLocked}
+                  readOnly={!canEditClientLookupFields}
                 />
                 {isCreate && isClientLocked && (
                   <button
@@ -592,17 +661,23 @@ const ServiceForm = ({
                   </button>
                 )}
               </div>
-              {isCreate && !isClientLocked && (
+              {canSearchClient && (
                 <div className="text-xs text-[#5c6370] mt-1">Type to search by name or phone.</div>
               )}
+              {!isCreate && isClientReassigning && (
+                <div className="text-xs text-[#5c6370] mt-1">If no match appears, keep the data and save to create a new client.</div>
+              )}
+              {!isCreate && !isClientReassigning && (
+                <div className="text-xs text-[#5c6370] mt-1">Client data is locked here. Manage it from Clients.</div>
+              )}
               {(submitCount && errors.client_name) ? <InputError message={errors.client_name} className="mt-2" /> : ''}
-              {isCreate && !isClientLocked && clientSearchError && (
+              {canSearchClient && clientSearchError && (
                 <div className="text-danger text-sm mt-1">{clientSearchError}</div>
               )}
-              {isCreate && !isClientLocked && clientSearchLoading && (
+              {canSearchClient && clientSearchLoading && (
                 <div className="text-sm mt-1">Searching...</div>
               )}
-              {isCreate && !isClientLocked && clientSearchResults.length > 0 && (
+              {canSearchClient && clientSearchResults.length > 0 && (
                 <div className="absolute z-50 mt-2 w-full border border-[#e0e6ed] rounded-md divide-y bg-white shadow-lg dark:border-[#17263c] dark:bg-[#1b2e4b]">
                   {clientSearchResults.map((client) => (
                     <button
@@ -635,23 +710,23 @@ const ServiceForm = ({
                 placeholder='Phone'
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                   setFieldValue('phone', e.target.value)
-                  if (isCreate && !isClientLocked) {
+                  if (canSearchClient) {
                     setPhoneSearchTerm(e.target.value)
                   }
                 }}
-                readOnly={isClientLocked}
+                readOnly={!canEditClientLookupFields}
               />
               {(submitCount && errors.phone) ? <InputError message={errors.phone} className="mt-2" /> : ''}
-              {isCreate && !isClientLocked && phoneExists && (
+              {canSearchClient && phoneExists && (
                 <div className="text-danger text-sm mt-1">Phone already exists. Select a client from the list.</div>
               )}
-              {isCreate && !isClientLocked && phoneSearchError && (
+              {canSearchClient && phoneSearchError && (
                 <div className="text-danger text-sm mt-1">{phoneSearchError}</div>
               )}
-              {isCreate && !isClientLocked && phoneSearchLoading && (
+              {canSearchClient && phoneSearchLoading && (
                 <div className="text-sm mt-1">Searching...</div>
               )}
-              {isCreate && !isClientLocked && phoneSearchResults.length > 0 && (
+              {canSearchClient && phoneSearchResults.length > 0 && (
                 <div className="absolute z-50 mt-2 w-full border border-[#e0e6ed] rounded-md divide-y bg-white shadow-lg dark:border-[#17263c] dark:bg-[#1b2e4b]">
                   {phoneSearchResults.map((client) => (
                     <button
@@ -679,7 +754,7 @@ const ServiceForm = ({
                 className="form-input"
                 autoComplete="email"
                 placeholder='Email'
-                readOnly={isClientLocked}
+                readOnly={!canEditClientLookupFields}
               />
               {(submitCount && errors.email) ? <InputError message={errors.email} className="mt-2" /> : ''}
             </div>
@@ -696,7 +771,7 @@ const ServiceForm = ({
                     setFieldValue('vip_notes', '')
                   }
                 }}
-                disabled={isClientLocked}
+                disabled={!canEditClientLookupFields}
               />
               <label htmlFor="vip_clients" className='font-semibold'>VIP</label>
             </div>
@@ -710,7 +785,7 @@ const ServiceForm = ({
                   rows="3"
                   className="form-textarea resize-none placeholder:text-white-dark"
                   placeholder='VIP Notes'
-                  readOnly={isClientLocked}
+                  readOnly={!canEditClientLookupFields}
                 />
                 {(submitCount && errors.vip_notes) ? <InputError message={errors.vip_notes} className="mt-2" /> : ''}
               </div>
