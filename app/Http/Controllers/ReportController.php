@@ -15,6 +15,7 @@ use App\Enum\OrderTypeEnum;
 use App\Enum\PaymentStatusEnum;
 use App\Enum\RoleEnum;
 use App\Enum\ServiceEnum;
+use App\Enum\StatusUserEnum;
 use App\Enum\SupervisorPaymentStatusEnum;
 use App\Exports\InstallerExport;
 use App\Exports\InstallerConfirmedSummaryExport;
@@ -1768,6 +1769,7 @@ class ReportController extends Controller
   private function buildSalesAppointmentsBySellerData(Carbon $startDate, Carbon $endDate): array
   {
     $owners = User::role(RoleEnum::OWNER->value)
+      ->where('status', StatusUserEnum::ACTIVE->value)
       ->select('users.id', 'users.name');
 
     $ownerAssignments = DB::table('owner_user')
