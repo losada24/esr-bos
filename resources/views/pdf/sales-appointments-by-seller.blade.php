@@ -31,32 +31,37 @@
 <table>
   <thead>
     <tr>
-      <td class="header" colspan="2">
-        Sales Appointments Report ({{ $startDate }} to {{ $endDate }})
+      <td class="header" colspan="3">
+        Sales Assigned Orders & Assigned With Appointment Report ({{ $startDate }} to {{ $endDate }})
       </td>
     </tr>
     <tr class="totals">
-      <td colspan="2">Total Appointments: {{ $totals['appointments'] }}</td>
+      <td colspan="3">
+        Total Assigned Orders: {{ $totals['assigned_orders'] }} | Total Assigned With Appointment: {{ $totals['assigned_with_appointment'] }}
+      </td>
     </tr>
     <tr>
       <th>Salesperson</th>
-      <th>Appointments</th>
+      <th>Assigned Orders</th>
+      <th>Assigned With Appointment</th>
     </tr>
   </thead>
   <tbody>
     @forelse ($summary as $item)
       <tr>
         <td>{{ $item->seller_name }}</td>
-        <td>{{ $item->appointments_count }}</td>
+        <td>{{ $item->assigned_orders_count }}</td>
+        <td>{{ $item->assigned_with_appointment_count }}</td>
       </tr>
     @empty
       <tr>
-        <td colspan="2">No appointments found for the selected dates.</td>
+        <td colspan="3">No assigned orders found for the selected dates.</td>
       </tr>
     @endforelse
     <tr class="totals">
       <td><strong>Total</strong></td>
-      <td><strong>{{ $totals['appointments'] }}</strong></td>
+      <td><strong>{{ $totals['assigned_orders'] }}</strong></td>
+      <td><strong>{{ $totals['assigned_with_appointment'] }}</strong></td>
     </tr>
   </tbody>
 </table>

@@ -932,7 +932,7 @@ class ReportController extends Controller
     [$startDate, $endDate] = $this->resolveSummaryDateRange($request);
     $data = $this->buildSalesAppointmentsBySellerData($startDate, $endDate);
     $pdf = Pdf::loadView('pdf.sales-appointments-by-seller', $data)->setPaper('A4', 'portrait');
-    $pdfName = 'sales-appointments-by-seller.pdf';
+    $pdfName = 'sales-assigned-orders-and-appointments-by-seller.pdf';
 
     return $pdf->stream($pdfName);
   }
@@ -944,7 +944,7 @@ class ReportController extends Controller
 
     return Excel::download(
       new SalesAppointmentsBySellerExport($data),
-      'Sales Appointments by Seller.xlsx',
+      'Sales Assigned Orders and Assigned With Appointment by Seller.xlsx',
       \Maatwebsite\Excel\Excel::XLSX
     );
   }
@@ -1767,33 +1767,49 @@ class ReportController extends Controller
 
   private function buildSalesAppointmentsBySellerData(Carbon $startDate, Carbon $endDate): array
   {
+    $owners = User::role(RoleEnum::OWNER->value)
+      ->select('users.id', 'users.name');
+
     $ownerAssignments = DB::table('owner_user')
-      ->select('user_id', 'order_id')
+      ->selectRaw('user_id, order_id, MIN(created_at) as assigned_at')
       ->whereNull('deleted_at')
       ->groupBy('user_id', 'order_id');
 
+    $assignmentDateExpression = 'COALESCE(owner_assignments.assigned_at, orders.created_at)';
+    $assignedOrdersExpression = 'COUNT(DISTINCT CASE WHEN ' . $assignmentDateExpression . ' BETWEEN ? AND ? THEN owner_assignments.order_id END)';
+    $hasAppointmentExpression = '(orders.schedule_appointment IS NOT NULL OR EXISTS (
+      SELECT 1
+      FROM client_address
+      WHERE client_address.client_id = orders.client_id
+        AND client_address.deleted_at IS NULL
+        AND client_address.appointment_date IS NOT NULL
+    ))';
+    $assignedWithAppointmentExpression = 'COUNT(DISTINCT CASE WHEN ' . $assignmentDateExpression . ' BETWEEN ? AND ? AND ' . $hasAppointmentExpression . ' THEN owner_assignments.order_id END)';
+
     $summary = DB::query()
-      ->fromSub($ownerAssignments, 'owner_assignments')
-      ->join('users', 'users.id', '=', 'owner_assignments.user_id')
-      ->join('orders', 'orders.id', '=', 'owner_assignments.order_id')
-      ->whereNull('orders.deleted_at')
-      ->whereNotNull('orders.schedule_appointment')
-      ->whereBetween('orders.schedule_appointment', [$startDate, $endDate])
-      ->select(
-        'users.id as seller_id',
-        'users.name as seller_name',
-        DB::raw('COUNT(owner_assignments.order_id) as appointments_count')
-      )
-      ->groupBy('users.id', 'users.name')
-      ->orderBy('users.name')
+      ->fromSub($owners, 'owner_users')
+      ->leftJoinSub($ownerAssignments, 'owner_assignments', function ($join) {
+        $join->on('owner_assignments.user_id', '=', 'owner_users.id');
+      })
+      ->leftJoin('orders', function ($join) {
+        $join->on('orders.id', '=', 'owner_assignments.order_id')
+          ->whereNull('orders.deleted_at');
+      })
+      ->select('owner_users.id as seller_id', 'owner_users.name as seller_name')
+      ->selectRaw($assignedOrdersExpression . ' as assigned_orders_count', [$startDate, $endDate])
+      ->selectRaw($assignedWithAppointmentExpression . ' as assigned_with_appointment_count', [$startDate, $endDate])
+      ->groupBy('owner_users.id', 'owner_users.name')
+      ->orderBy('owner_users.name')
       ->get();
 
-    $totalAppointments = (int) $summary->sum('appointments_count');
+    $totalAssignedOrders = (int) $summary->sum('assigned_orders_count');
+    $totalAssignedWithAppointment = (int) $summary->sum('assigned_with_appointment_count');
 
     return [
       'summary' => $summary,
       'totals' => [
-        'appointments' => $totalAppointments,
+        'assigned_orders' => $totalAssignedOrders,
+        'assigned_with_appointment' => $totalAssignedWithAppointment,
       ],
       'startDate' => $startDate->toDateString(),
       'endDate' => $endDate->toDateString(),

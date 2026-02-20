@@ -9,13 +9,15 @@ import { type PageProps } from '@/types'
 interface SalesAppointmentsSummaryItem {
   seller_id: number
   seller_name: string
-  appointments_count: number
+  assigned_orders_count: number
+  assigned_with_appointment_count: number
 }
 
 type SalesAppointmentsBySellerProps = PageProps & {
   summary: SalesAppointmentsSummaryItem[]
   totals: {
-    appointments: number
+    assigned_orders: number
+    assigned_with_appointment: number
   }
   startDate: string
   endDate: string
@@ -31,8 +33,8 @@ export default function SalesAppointmentsBySeller ({
   const exportQuery = `?start_date=${startDate || ''}&end_date=${endDate || ''}`
 
   return (
-    <AuthenticatedLayout auth={auth} pageTitle="Sales Appointments Report">
-      <Head title="Sales Appointments Report" />
+    <AuthenticatedLayout auth={auth} pageTitle="Sales Assigned Orders & Assigned With Appointment Report">
+      <Head title="Sales Assigned Orders & Assigned With Appointment Report" />
 
       <Formik
         initialValues={{
@@ -107,28 +109,33 @@ export default function SalesAppointmentsBySeller ({
       </div>
 
       <div className="mt-2 text-left font-semibold text-gray-700">
-        Total Appointments: {totals.appointments}
+        Total Assigned Orders: {totals.assigned_orders}
+      </div>
+      <div className="mt-1 text-left font-semibold text-gray-700">
+        Total Assigned With Appointment: {totals.assigned_with_appointment}
       </div>
 
       <table className="w-full border border-gray-300 mt-4">
         <thead className="bg-gray-100">
           <tr>
             <th className="p-2 border">Salesperson</th>
-            <th className="p-2 border">Appointments</th>
+            <th className="p-2 border">Assigned Orders</th>
+            <th className="p-2 border">Assigned With Appointment</th>
           </tr>
         </thead>
         <tbody>
           {summary.length === 0 ? (
             <tr>
-              <td className="p-2 border text-center" colSpan={2}>
-                No appointments found for the selected dates.
+              <td className="p-2 border text-center" colSpan={3}>
+                No assigned orders found for the selected dates.
               </td>
             </tr>
           ) : (
             summary.map((item) => (
               <tr key={item.seller_id}>
                 <td className="p-2 border">{item.seller_name}</td>
-                <td className="p-2 border">{item.appointments_count}</td>
+                <td className="p-2 border">{item.assigned_orders_count}</td>
+                <td className="p-2 border">{item.assigned_with_appointment_count}</td>
               </tr>
             ))
           )}
@@ -136,7 +143,8 @@ export default function SalesAppointmentsBySeller ({
         <tfoot>
           <tr className="bg-gray-100 font-semibold">
             <td className="p-2 border">Total</td>
-            <td className="p-2 border">{totals.appointments}</td>
+            <td className="p-2 border">{totals.assigned_orders}</td>
+            <td className="p-2 border">{totals.assigned_with_appointment}</td>
           </tr>
         </tfoot>
       </table>

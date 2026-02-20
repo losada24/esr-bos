@@ -370,7 +370,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                       <NavLink href={route('report.sales-appointments-by-seller')} active={route().current('report.sales-appointments-by-seller')} className="group">
                                         <div className="flex items-center">
                                           <ReferralIcon/>
-                                          <SidebarLinkLabel>Sales Appointments</SidebarLinkLabel>
+                                          <SidebarLinkLabel>Sales Orders & Appointments</SidebarLinkLabel>
                                         </div>
                                       </NavLink>
                                     </li>

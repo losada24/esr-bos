@@ -368,7 +368,8 @@ class Order extends Model
 
   public function owners(): BelongsToMany
   {
-    return $this->belongsToMany(User::class, 'owner_user');
+    return $this->belongsToMany(User::class, 'owner_user')
+      ->withTimestamps();
   }
 
   public function orderProducts(): HasMany
