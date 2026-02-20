@@ -1775,8 +1775,17 @@ class ReportController extends Controller
       ->whereNull('deleted_at')
       ->groupBy('user_id', 'order_id');
 
-    $assignmentDateExpression = 'COALESCE(owner_assignments.assigned_at, orders.created_at)';
-    $assignedOrdersExpression = 'COUNT(DISTINCT CASE WHEN ' . $assignmentDateExpression . ' BETWEEN ? AND ? THEN owner_assignments.order_id END)';
+    $qualifiedOrdersInRange = DB::table('order_status')
+      ->join('orders', function ($join) {
+        $join->on('orders.id', '=', 'order_status.order_id')
+          ->whereNull('orders.deleted_at');
+      })
+      ->where('order_status.status', OrderStatusEnum::QUALIFIED->value)
+      ->whereBetween('order_status.created_at', [$startDate, $endDate])
+      ->select('order_status.order_id')
+      ->distinct();
+
+    $assignedOrdersExpression = 'COUNT(DISTINCT qualified_orders.order_id)';
     $hasAppointmentExpression = '(orders.schedule_appointment IS NOT NULL OR EXISTS (
       SELECT 1
       FROM client_address
@@ -1784,20 +1793,20 @@ class ReportController extends Controller
         AND client_address.deleted_at IS NULL
         AND client_address.appointment_date IS NOT NULL
     ))';
-    $assignedWithAppointmentExpression = 'COUNT(DISTINCT CASE WHEN ' . $assignmentDateExpression . ' BETWEEN ? AND ? AND ' . $hasAppointmentExpression . ' THEN owner_assignments.order_id END)';
+    $assignedWithAppointmentExpression = 'COUNT(DISTINCT CASE WHEN ' . $hasAppointmentExpression . ' THEN qualified_orders.order_id END)';
 
     $summary = DB::query()
       ->fromSub($owners, 'owner_users')
       ->leftJoinSub($ownerAssignments, 'owner_assignments', function ($join) {
         $join->on('owner_assignments.user_id', '=', 'owner_users.id');
       })
-      ->leftJoin('orders', function ($join) {
-        $join->on('orders.id', '=', 'owner_assignments.order_id')
-          ->whereNull('orders.deleted_at');
+      ->leftJoinSub($qualifiedOrdersInRange, 'qualified_orders', function ($join) {
+        $join->on('qualified_orders.order_id', '=', 'owner_assignments.order_id');
       })
+      ->leftJoin('orders', 'orders.id', '=', 'qualified_orders.order_id')
       ->select('owner_users.id as seller_id', 'owner_users.name as seller_name')
-      ->selectRaw($assignedOrdersExpression . ' as assigned_orders_count', [$startDate, $endDate])
-      ->selectRaw($assignedWithAppointmentExpression . ' as assigned_with_appointment_count', [$startDate, $endDate])
+      ->selectRaw($assignedOrdersExpression . ' as assigned_orders_count')
+      ->selectRaw($assignedWithAppointmentExpression . ' as assigned_with_appointment_count')
       ->groupBy('owner_users.id', 'owner_users.name')
       ->orderBy('owner_users.name')
       ->get();
