@@ -9,11 +9,17 @@ use App\Models\Order;
 use App\Models\OrderCompanyContact;
 use App\Models\User;
 use App\Support\OrderFinancialEventLogger;
+use App\Support\QualifiedOrderDuplicateChecker;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class UpdateQualifiedOrder
 {
+    public function __construct(
+        protected QualifiedOrderDuplicateChecker $qualifiedOrderDuplicateChecker
+    ) {
+    }
+
     public function handle(UpdateQualifiedOrderRequest $request, Order $order): Order
     {
         return DB::transaction(function () use ($request, $order) {
@@ -82,6 +88,23 @@ class UpdateQualifiedOrder
                     $selectedClientId = (int) $companyClientPairs[0]['client_id'];
                 }
                 $payload['client_id'] = $selectedClientId;
+            }
+
+            $duplicateClientIds = collect()
+                ->when(isset($payload['client_id']) && !empty($payload['client_id']), fn ($c) => $c->push((int) $payload['client_id']))
+                ->when($request->filled('client_id'), fn ($c) => $c->push((int) $request->input('client_id')))
+                ->merge(collect($companyClientPairs)->pluck('client_id')->map(fn ($id) => (int) $id))
+                ->filter(fn ($id) => $id > 0)
+                ->unique()
+                ->values();
+
+            foreach ($duplicateClientIds as $duplicateClientId) {
+                $this->qualifiedOrderDuplicateChecker->ensureNoDuplicateUnlessForced(
+                    $payload['name'] ?? $request->input('name'),
+                    (int) $duplicateClientId,
+                    $request->boolean('force_duplicate'),
+                    (int) $order->id
+                );
             }
 
             $order->fill($payload);

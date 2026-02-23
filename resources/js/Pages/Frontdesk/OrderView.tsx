@@ -127,6 +127,9 @@ type TimelineItem = {
   iconTone: 'neutral' | 'info' | 'success' | 'warning'
 }
 
+const DUPLICATE_ORDER_ERROR_KEY = 'duplicate_order_confirmation'
+const DUPLICATE_ORDER_FALLBACK_MESSAGE = 'Existe una orden con este mismo nombre y el mismo cliente asociado. ¿Desea crearla de todas formas?'
+
 type MovementFormValues = {
   useDefaultAmount: boolean
   amount: string
@@ -879,34 +882,59 @@ export default function ShowStatusOrder ({
         payload.status = normalizedStatus
       }
 
-      const response = await fetch(route('frontdesk.orders.update-qualified', { order: order.id }), {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-          'X-CSRF-TOKEN': csrfToken
-        },
-        body: JSON.stringify(payload)
-      })
-
-      if (response.status === 422) {
-        const data = await response.json().catch(() => null)
-        const formattedErrors: FormikErrors<OrderFormValues> = {}
-        Object.entries(data?.errors ?? {}).forEach(([field, messages]) => {
-          if (Array.isArray(messages) && messages.length > 0) {
-            formattedErrors[field as keyof OrderFormValues] = messages[0]
-          }
+      const submitOrderEdit = async (forceDuplicate = false): Promise<any | null> => {
+        const response = await fetch(route('frontdesk.orders.update-qualified', { order: order.id }), {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+            'X-CSRF-TOKEN': csrfToken
+          },
+          body: JSON.stringify({
+            ...payload,
+            force_duplicate: forceDuplicate
+          })
         })
-        helpers.setErrors(formattedErrors)
-        setOrderEditError(data?.message ?? 'Please fix the highlighted fields.')
+
+        if (response.status === 422) {
+          const data = await response.json().catch(() => null)
+          const duplicateMessageRaw = data?.errors?.[DUPLICATE_ORDER_ERROR_KEY]
+          const duplicateMessage = Array.isArray(duplicateMessageRaw)
+            ? duplicateMessageRaw[0]
+            : duplicateMessageRaw
+
+          if (!forceDuplicate && typeof duplicateMessage === 'string' && duplicateMessage.trim() !== '') {
+            const shouldContinue = window.confirm(duplicateMessage || DUPLICATE_ORDER_FALLBACK_MESSAGE)
+            if (shouldContinue) {
+              return await submitOrderEdit(true)
+            }
+            return null
+          }
+
+          const formattedErrors: FormikErrors<OrderFormValues> = {}
+          Object.entries(data?.errors ?? {}).forEach(([field, messages]) => {
+            if (Array.isArray(messages) && messages.length > 0) {
+              formattedErrors[field as keyof OrderFormValues] = messages[0]
+            } else if (typeof messages === 'string') {
+              formattedErrors[field as keyof OrderFormValues] = messages
+            }
+          })
+          helpers.setErrors(formattedErrors)
+          setOrderEditError(data?.message ?? 'Please fix the highlighted fields.')
+          return null
+        }
+
+        if (!response.ok) {
+          throw new Error('Failed to update order. Please try again later.')
+        }
+
+        return await response.json().catch(() => null)
+      }
+
+      const data = await submitOrderEdit()
+      if (!data) {
         return
       }
-
-      if (!response.ok) {
-        throw new Error('Failed to update order. Please try again later.')
-      }
-
-      const data = await response.json().catch(() => null)
       const updatedOrder: Order | undefined = data?.order
       if (!updatedOrder) {
         throw new Error('Unexpected server response.')

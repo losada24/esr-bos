@@ -42,6 +42,7 @@ use App\Traits\Snapshot;
 use App\Support\PaymentScheduleTemplates;
 use App\Support\PaymentInstallmentPresenter;
 use App\Support\OrderBoardFilter;
+use App\Support\QualifiedOrderDuplicateChecker;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
@@ -576,12 +577,17 @@ public function showQuantifiedModal(Order $order)
     return response()->json($order);
 }
     
-    public function updateStatusQuantified(Request $request, Order $order)
+    public function updateStatusQuantified(Request $request, Order $order, QualifiedOrderDuplicateChecker $qualifiedOrderDuplicateChecker)
     {     
         //dd($request->all());
         $request->validate([
-          'phone' => ['required', 'regex:/^\d{10}$/'],
+          'phone' => [
+            'required',
+            'regex:/^\d{10}$/',
+            Rule::unique('clients', 'phone')->ignore($order->client_id),
+          ],
           'notes' => ['nullable', 'string', 'max:2000'],
+          'force_duplicate' => ['nullable', 'boolean'],
           'language' => [
             'required',
             'string',
@@ -591,6 +597,14 @@ public function showQuantifiedModal(Order $order)
             ))
           ],
         ]);
+
+        $qualifiedOrderDuplicateChecker->ensureNoDuplicateUnlessForced(
+          $request->input('name'),
+          $order->client_id ? (int) $order->client_id : null,
+          $request->boolean('force_duplicate'),
+          (int) $order->id
+        );
+
         $status = $request['status'];
         if ($request['order_type'] === OrderTypeEnum::RESIDENTIAL->value || $request['order_type'] === OrderTypeEnum::SUPPLY->value) {
           $status = OrderStatusEnum::PENDING_ASSIGNMENT->value;
