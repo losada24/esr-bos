@@ -104,6 +104,17 @@ type PaymentScheduleTemplates = Record<string, PaymentScheduleTemplateItem[]>
 type CustomScheduleItem = { label: string, amount: string }
 
 const CUSTOM_SCHEDULE_TYPE = 'CUSTOMIZED'
+const REPLANNED_REASON_OPTIONS = ['CLIENT', 'PERMIT', 'MATERIALS'] as const
+
+const getStatusValue = (statusValue: unknown): string => {
+  if (typeof statusValue === 'string') return statusValue
+  if (statusValue && typeof statusValue === 'object' && 'value' in statusValue) {
+    const value = (statusValue as { value?: unknown }).value
+    return typeof value === 'string' ? value : ''
+  }
+  return ''
+}
+
 const buildCustomSchedule = (items?: Array<{ label?: string | null, amount?: number | string | null }>) => {
   const normalized = Array.isArray(items)
     ? items.map((item) => ({
@@ -705,6 +716,16 @@ const OrderForm = ({
   const selectedStatus: SingleValue<OptionType> = {
     value: values.status ?? '',
     label: status.find((status) => status === values.status) ?? ''
+  }
+  const selectedStatusValue = getStatusValue(values.status)
+  const selectedReplannedReasons = Array.isArray(values.replanned_reasons) ? values.replanned_reasons : []
+
+  const toggleReplannedReason = (reason: string, checked: boolean) => {
+    const nextReasons = checked
+      ? Array.from(new Set([...selectedReplannedReasons, reason]))
+      : selectedReplannedReasons.filter((item) => item !== reason)
+
+    setFieldValue('replanned_reasons', nextReasons)
   }
 
   const selectedTravelCost: SingleValue<OptionType> = {
@@ -1624,11 +1645,35 @@ const OrderForm = ({
                 name='status'
                 defaultValue={selectedStatus}
                 isMulti={false}
-                onChange={(value) => { setFieldValue('status', value) }}
+                onChange={(value) => {
+                  setFieldValue('status', value)
+                  if ((value?.value ?? '') !== 'REPLANNED') {
+                    setFieldValue('replanned_reasons', [])
+                  }
+                }}
                 options={status.map((status) => { return { label: status, value: status } })}
               />
               {(submitCount && errors.status) ? <InputError message={errors.status} className="mt-2" /> : ''}
             </div>
+            {selectedStatusValue === 'REPLANNED' && (
+              <div className={submitCount ? (errors.replanned_reasons ? 'has-error' : 'has-success') : ''}>
+                <label>Replanned Reasons</label>
+                <div className='mt-2 flex flex-wrap gap-4'>
+                  {REPLANNED_REASON_OPTIONS.map((reason) => (
+                    <label key={reason} className='inline-flex items-center gap-2'>
+                      <input
+                        type='checkbox'
+                        className='form-checkbox'
+                        checked={selectedReplannedReasons.includes(reason)}
+                        onChange={(e) => { toggleReplannedReason(reason, e.target.checked) }}
+                      />
+                      <span>{capitalizeWords(reason.toLowerCase())}</span>
+                    </label>
+                  ))}
+                </div>
+                {(submitCount && errors.replanned_reasons) ? <InputError message={Array.isArray(errors.replanned_reasons) ? errors.replanned_reasons.join(', ') : String(errors.replanned_reasons)} className="mt-2" /> : ''}
+              </div>
+            )}
            {(values.service === SERVICES.DELIVERY_AND_INSTALLATION) && (
               <>
                <div className={submitCount ? (errors.hide_on_weekends) ? 'has-error inline-flex flex-col' : 'has-success inline-flex' : 'inline-flex items-end'}>

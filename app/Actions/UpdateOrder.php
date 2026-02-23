@@ -34,6 +34,11 @@ class UpdateOrder
     'installer',
     'account_manager',
   ];
+  private const REPLANNED_REASON_VALUES = [
+    'CLIENT',
+    'PERMIT',
+    'MATERIALS',
+  ];
 
   use OrderEmails, OrderStatus, Twilio, ComissionSupervisor;
 
@@ -121,6 +126,7 @@ class UpdateOrder
       }
 
       $status = $request->status;
+      $replannedReasons = $this->resolveReplannedReasons($request, $status);
       $requestedClientId = $request->filled('client_id') ? (int) $request->client_id : null;
       $clientId = $requestedClientId;
       if (!$clientId) {
@@ -547,6 +553,7 @@ class UpdateOrder
           'status' => $status,
           'user_id' => auth()->user()->id,
           'notes' => "$status created by " . auth()->user()->name,
+          'replanned_reasons' => $replannedReasons,
           'start_date' => $request->installation_date,
           'end_date' => $request->installation_end_date,
           'pickup_date' => $request->delivery_date,
@@ -604,7 +611,7 @@ class UpdateOrder
     $installationTeamsChanged = $currentInstallers !== $requestInstallers;
     $supervisorChanged = ((int) $order->supervisor_id !== (int) $request->supervisor_id);
 
-    $order->update($request->except('installation_teams', 'supervisor_payment_status'));
+    $order->update($request->except('installation_teams', 'supervisor_payment_status', 'replanned_reasons'));
     if ($request->status == OrderStatusEnum::COMPLETE->value) {
       $supervisor_payment_status = SupervisorPaymentStatusEnum::PENDING->value;
     } else {
@@ -680,6 +687,7 @@ class UpdateOrder
         'status' => $request->status,
         'user_id' => auth()->user()->id,
         'notes' => $request->status . " created by " . auth()->user()->name,
+        'replanned_reasons' => $this->resolveReplannedReasons($request, $request->status),
         'start_date' => $request->installation_date,
         'end_date' => $request->installation_end_date,
         'pickup_date' => $request->delivery_date,
@@ -711,6 +719,7 @@ class UpdateOrder
         $payload = [
           //'status' => $request->status,
           //'notes' => $request->status . " updated by " . auth()->user()->name,
+          'replanned_reasons' => $this->resolveReplannedReasons($request, $request->status),
           'start_date' => $request->installation_date,
           'end_date' => $request->installation_end_date,
           'pickup_date' => $request->delivery_date,
@@ -729,6 +738,32 @@ class UpdateOrder
         $orderStatus->update($payload);
       }
     }
+  }
+
+  private function resolveReplannedReasons(Request $request, ?string $status): ?array
+  {
+    if ($status !== OrderStatusEnum::REPLANNED->value) {
+      return null;
+    }
+
+    $rawReasons = $request->input('replanned_reasons', []);
+    if (!is_array($rawReasons)) {
+      return null;
+    }
+
+    $normalized = [];
+    foreach ($rawReasons as $reason) {
+      $value = strtoupper(trim((string) $reason));
+      if ($value === '' || !in_array($value, self::REPLANNED_REASON_VALUES, true)) {
+        continue;
+      }
+
+      $normalized[] = $value;
+    }
+
+    $normalized = array_values(array_unique($normalized));
+
+    return $normalized === [] ? null : $normalized;
   }
 
   private function syncAttachmentRoleTargets(Request $request, Order $order): void

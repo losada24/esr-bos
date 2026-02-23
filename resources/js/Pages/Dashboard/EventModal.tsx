@@ -73,6 +73,24 @@ const removeAttachmentFromRoleTargets = (
   return nextTargets
 }
 
+const REPLANNED_REASON_OPTIONS = ['CLIENT', 'PERMIT', 'MATERIALS'] as const
+
+const normalizeReplannedReasons = (incoming: unknown): string[] => {
+  if (!Array.isArray(incoming)) {
+    return []
+  }
+
+  const allowed = new Set(REPLANNED_REASON_OPTIONS)
+
+  return Array.from(
+    new Set(
+      incoming
+        .map((reason) => String(reason).trim().toUpperCase())
+        .filter((reason) => allowed.has(reason as typeof REPLANNED_REASON_OPTIONS[number]))
+    )
+  )
+}
+
 
 const EventModal = ({
   showModal,
@@ -130,6 +148,7 @@ const EventModal = ({
     equipment_rental: false,
     notes: '',
     work_team_notes: '',
+    replanned_reasons: [],
     order_colors: [],
     installation_teams: [],
     supervisor_id: 0,
@@ -245,6 +264,7 @@ const EventModal = ({
             hide_on_weekends: data.hide_on_weekends ?? null,
             notes: data.notes ?? '',
             work_team_notes: data.work_team_notes ?? '',
+            replanned_reasons: normalizeReplannedReasons(data.replanned_reasons),
             pre_inspection: data.pre_inspection ?? false,
             inspection: data.inspection ?? false,
             walk_trough: data.walk_trough ?? false,
@@ -303,6 +323,7 @@ const EventModal = ({
   const allowsAttachmentRoleSelection = event?.service !== 'PICKUP' && event?.service !== 'DELIVERY ONLY'
 
   const [showValidationErrors, setShowValidationErrors] = useState(false)
+  const [replannedReasonsError, setReplannedReasonsError] = useState<string | null>(null)
   const isService = event?.service === 'SERVICE'
   const InfoItem = ({ label, children }: { label: string, children: React.ReactNode }) => (
     <div>
@@ -332,10 +353,20 @@ const EventModal = ({
 
   const handle = () => {
     // Actualizamos editableData con los nuevos valores
-    if (event?.service === 'DELIVERY AND INSTALLATION' && (editableData.installation_teams.length === 0 || editableData.supervisor_id === 0) && (editableData.status.value !== 'PLANNED' && editableData.status.value !== 'DELIVERY CONFIRMED' && editableData.status.value !== 'MATERIALS RECEIVED')) {
+    if (event?.service === 'DELIVERY AND INSTALLATION' && (editableData.installation_teams.length === 0 || editableData.supervisor_id === 0) && (editableData.status.value !== 'PLANNED' && editableData.status.value !== 'REPLANNED' && editableData.status.value !== 'DELIVERY CONFIRMED' && editableData.status.value !== 'MATERIALS RECEIVED')) {
+      setReplannedReasonsError(null)
       setShowValidationErrors(true)
       return
     }
+
+    const normalizedReplannedReasons = normalizeReplannedReasons(editableData.replanned_reasons)
+    if (editableData.status.value === 'REPLANNED' && normalizedReplannedReasons.length === 0) {
+      setShowValidationErrors(false)
+      setReplannedReasonsError('Please select at least one replanned reason.')
+      return
+    }
+
+    setReplannedReasonsError(null)
 
     let completeDate = editableData.complete_date
     if (editableData.status.value === 'COMPLETE') {
@@ -363,6 +394,7 @@ const EventModal = ({
       pre_inspection_attach: attachmentPreInspection,
       complete_date: completeDate,
       pending_collect: pendingCollect,
+      replanned_reasons: normalizedReplannedReasons,
       order_id: id
     }
     if (allowsAttachmentRoleSelection) {
@@ -373,9 +405,16 @@ const EventModal = ({
       forceFormData: true,
       onSuccess: (response) => {
         setEditableData(defaultState)
+        setReplannedReasonsError(null)
         onClose(false)
       },
       onError: (errors: any) => {
+        if (errors?.replanned_reasons) {
+          const message = Array.isArray(errors.replanned_reasons)
+            ? String(errors.replanned_reasons[0] ?? 'Select at least one replanned reason.')
+            : String(errors.replanned_reasons)
+          setReplannedReasonsError(message)
+        }
         console.log(errors)
       }
     })
@@ -399,13 +438,14 @@ const EventModal = ({
       onClose={() => {
         // setEditableData(defaultState)
         setEvent(null)
+        setReplannedReasonsError(null)
         onClose(false)
       }
       }
     >
         <div className="flex items-center justify-between bg-[#fbfbfb] px-5 py-3 dark:bg-[#121c2c]">
           <div className="text-lg font-bold">Order Number: {`#${event?.order_number}`}</div>
-          <button type="button" className="text-white-dark hover:text-dark" onClick={() => { onClose(false); setShowValidationErrors(false); setMessage(null) }}>
+          <button type="button" className="text-white-dark hover:text-dark" onClick={() => { onClose(false); setShowValidationErrors(false); setReplannedReasonsError(null); setMessage(null) }}>
             <CloseIcon />
           </button>
         </div>
@@ -746,12 +786,24 @@ const EventModal = ({
                     value={editableData.status}
                     isDisabled={isInstaller || isOwner}
                     isMulti={false}
-                    onChange={(value) => { setEditableData({ ...editableData, status: value }) }}
+                    onChange={(value) => {
+                      const nextStatus = value?.value ?? ''
+                      setShowValidationErrors(false)
+                      setReplannedReasonsError(null)
+                      setEditableData({
+                        ...editableData,
+                        status: value,
+                        replanned_reasons: nextStatus === 'REPLANNED'
+                          ? normalizeReplannedReasons(editableData.replanned_reasons)
+                          : []
+                      })
+                    }}
                     options={(() => {
                       let options = status.map((status) => { return { label: status, value: status } })
                       if (event?.service === 'PICKUP' || event?.service === 'DELIVERY ONLY') {
                         options = status.filter((status) =>
                           status === 'PLANNED' ||
+                          status === 'REPLANNED' ||
                           status === 'COMPLETE' ||
                           status === 'CONFIRMED' ||
                           status === 'DELIVERY CONFIRMED'
@@ -762,6 +814,35 @@ const EventModal = ({
                     })()}
                   />
               </div>
+              {editableData.status?.value === 'REPLANNED' && (
+                <div className='w-2/3'>
+                  <label className='font-bold'>Replanned Reasons:</label>
+                  <div className='mt-2 flex flex-wrap gap-4'>
+                    {REPLANNED_REASON_OPTIONS.map((reason) => {
+                      const selectedReasons = normalizeReplannedReasons(editableData.replanned_reasons)
+                      const checked = selectedReasons.includes(reason)
+                      return (
+                        <label key={reason} className='inline-flex items-center gap-2'>
+                          <input
+                            type='checkbox'
+                            className='form-checkbox'
+                            checked={checked}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                              const nextReasons = e.target.checked
+                                ? Array.from(new Set([...selectedReasons, reason]))
+                                : selectedReasons.filter((item) => item !== reason)
+                              setReplannedReasonsError(null)
+                              setEditableData({ ...editableData, replanned_reasons: nextReasons })
+                            }}
+                          />
+                          <span>{reason.charAt(0) + reason.slice(1).toLowerCase()}</span>
+                        </label>
+                      )
+                    })}
+                  </div>
+                  {replannedReasonsError && <InputError message={replannedReasonsError} className='mt-2' />}
+                </div>
+              )}
               {(isAdminOrAccountManager) && !isService && (
               <div className='w-1/3  mt-8'>
                    <input
@@ -1130,7 +1211,7 @@ const EventModal = ({
           )}
           {((isAdminOrAccountManager) || (isSupervisor) || (isServiceManager) || (isOwner)) && (
             <div className="flex items-center justify-between mt-4">
-              <button className='btn btn-danger uppercase' onClick={() => { onClose(); setShowValidationErrors(false); setMessage(null) }}>Cancel</button>
+              <button className='btn btn-danger uppercase' onClick={() => { onClose(); setShowValidationErrors(false); setReplannedReasonsError(null); setMessage(null) }}>Cancel</button>
               <PrimaryButton className="btn btn-primary" type='button' onClick={() => { handle() }}>
                 Save
               </PrimaryButton>

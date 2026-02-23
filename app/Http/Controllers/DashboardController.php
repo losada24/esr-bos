@@ -46,6 +46,7 @@ class DashboardController extends Controller
     if ($user->hasRole(RoleEnum::ACCOUNT_MANAGER->value) || $user->hasRole(RoleEnum::ADMIN->value) || $user->hasRole(RoleEnum::OWNER->value) || $user->hasRole(RoleEnum::OWNER_ADMIN->value) || $user->hasRole(RoleEnum::FRONTDESK_ADMIN->value) || $user->hasRole('FRONTDESK_ADMIN') ) {
       $status = [
         OrderStatusEnum::PLANNED->value,
+        OrderStatusEnum::REPLANNED->value,
         OrderStatusEnum::CONFIRMED->value,
         OrderStatusEnum::DELIVERY_CONFIRMED->value,
         OrderStatusEnum::EXECUTION->value,
@@ -66,6 +67,7 @@ class DashboardController extends Controller
       ];
       $statusmodal = [  
         OrderStatusEnum::PLANNED->value,
+        OrderStatusEnum::REPLANNED->value,
         OrderStatusEnum::MATERIALS_RECEIVED->value,
         OrderStatusEnum::CONFIRMED->value,
         OrderStatusEnum::EXECUTION->value,
@@ -137,6 +139,7 @@ class DashboardController extends Controller
       $status = [
         //OrderStatusEnum::RESCHEDULE->value,
         OrderStatusEnum::PLANNED->value,
+        OrderStatusEnum::REPLANNED->value,
         OrderStatusEnum::CONFIRMED->value,
         OrderStatusEnum::ON_HOLD->value,
         OrderStatusEnum::EXECUTION->value,
@@ -152,6 +155,7 @@ class DashboardController extends Controller
         OrderStatusEnum::CANCELED->value,
       ];
     $statusmodal = [  
+        OrderStatusEnum::REPLANNED->value,
         OrderStatusEnum::SUPERVISION->value,
         OrderStatusEnum::INSPECTION->value,
         OrderStatusEnum::FINISH->value,
@@ -552,7 +556,22 @@ class DashboardController extends Controller
     return response()
       ->json(array_merge($order->toArray(), [
         'attachment_role_targets_by_role' => $attachmentRoleTargetsByRole,
+        'replanned_reasons' => $this->currentReplannedReasons($order),
       ]));
+  }
+
+  private function currentReplannedReasons(Order $order): array
+  {
+    if ($order->status !== OrderStatusEnum::REPLANNED->value) {
+      return [];
+    }
+
+    $statusRecord = $order->orderStatus()
+      ->where('status', OrderStatusEnum::REPLANNED->value)
+      ->latest('id')
+      ->first();
+
+    return is_array($statusRecord?->replanned_reasons) ? $statusRecord->replanned_reasons : [];
   }
 
   public function getPaymentList(Order $order)

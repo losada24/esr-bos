@@ -58,6 +58,7 @@ class PartialOrderRequest extends FormRequest
             'string',
             Rule::in(
               OrderStatusEnum::PLANNED->value,
+              OrderStatusEnum::REPLANNED->value,
               OrderStatusEnum::CONFIRMED->value,
               OrderStatusEnum::EXECUTION->value,
               OrderStatusEnum::SUPERVISION->value,
@@ -73,6 +74,16 @@ class PartialOrderRequest extends FormRequest
               OrderStatusEnum::MATERIALS_RECEIVED->value,
               OrderStatusEnum::CANCELED->value
             ),
+          ],
+          'replanned_reasons' => [
+            'nullable',
+            'array',
+            Rule::requiredIf(fn () => $this->input('status') === OrderStatusEnum::REPLANNED->value),
+            'min:1',
+          ],
+          'replanned_reasons.*' => [
+            'string',
+            Rule::in(['CLIENT', 'PERMIT', 'MATERIALS']),
           ],
             'supervisor_payment_status' => [
               'nullable',

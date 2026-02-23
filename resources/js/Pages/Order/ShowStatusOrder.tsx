@@ -12,6 +12,16 @@ type IndexOrderProps = PageProps & {
 }
 
 export default function ShowStatusOrder ({ auth, orderStatuses, order }: IndexOrderProps) {
+  const formatReplannedReasons = (reasons?: string[] | null) => {
+    if (!Array.isArray(reasons) || reasons.length === 0) return ''
+    return reasons
+      .map((reason) => {
+        const normalized = String(reason).trim().toLowerCase()
+        return normalized.charAt(0).toUpperCase() + normalized.slice(1)
+      })
+      .join(', ')
+  }
+
   useEffect(() => {
     /* fetch(route('order.status.filter', { })).then(async (response) => { return await response.json() }).then((data) => {
       setStatuses(data)
@@ -38,6 +48,7 @@ export default function ShowStatusOrder ({ auth, orderStatuses, order }: IndexOr
               <th className="px-6 pt-5 pb-4">Date </th>
                 <th className="px-6 pt-5 pb-4">Status</th>
                 <th className="px-6 pt-5 pb-4">Usuario</th>
+                <th className="px-6 pt-5 pb-4">Replanned Causes</th>
                 <th className="px-6 pt-5 pb-4">Delivery/Pickup Date</th>
                 <th className="px-6 pt-5 pb-4">Installation Date</th>
                 <th className="px-6 pt-5 pb-4"> Installation End Date</th>
@@ -66,13 +77,16 @@ export default function ShowStatusOrder ({ auth, orderStatuses, order }: IndexOr
                       {order?.user?.name}
                     </td>
                     <td className="border-t px-6 py-4 align-top">
-                    {['PLANNED', 'CONFIRMED', 'DELIVERY CONFIRMED'].includes(order.status) ? order.pickup_date?.toString() : ''}
+                      {order.status === 'REPLANNED' ? formatReplannedReasons(order.replanned_reasons) : ''}
                     </td>
                     <td className="border-t px-6 py-4 align-top">
-                    {['PLANNED', 'CONFIRMED', 'RESCHEDULED', 'SUPERVISION'].includes(order.status) ? order.start_date?.toString() : ''}
+                    {['PLANNED', 'REPLANNED', 'CONFIRMED', 'DELIVERY CONFIRMED'].includes(order.status) ? order.pickup_date?.toString() : ''}
                     </td>
                     <td className="border-t px-6 py-4 align-top">
-                    {['PLANNED', 'CONFIRMED', 'RESCHEDULED', 'SUPERVISION'].includes(order.status) ? order.end_date?.toString() : ''}
+                    {['PLANNED', 'REPLANNED', 'CONFIRMED', 'RESCHEDULED', 'SUPERVISION'].includes(order.status) ? order.start_date?.toString() : ''}
+                    </td>
+                    <td className="border-t px-6 py-4 align-top">
+                    {['PLANNED', 'REPLANNED', 'CONFIRMED', 'RESCHEDULED', 'SUPERVISION'].includes(order.status) ? order.end_date?.toString() : ''}
                     </td>
                     <td className="border-t px-6 py-4 align-top">
                     {order.status === 'MATERIALS RECEIVED' ? order.material_received_date?.toString() : ''}
@@ -97,7 +111,7 @@ export default function ShowStatusOrder ({ auth, orderStatuses, order }: IndexOr
               })}
               {orderStatuses.length === 0 && (
                 <tr>
-                  <td className="px-6 py-4 border-t" colSpan={7}>
+                  <td className="px-6 py-4 border-t" colSpan={13}>
                     No Orders found.
                   </td>
                 </tr>

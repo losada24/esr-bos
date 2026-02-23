@@ -189,6 +189,7 @@ class UpdateOrderRequest extends FormRequest
             Rule::in(
               OrderStatusEnum::REVIEW->value,
               OrderStatusEnum::PLANNED->value,
+              OrderStatusEnum::REPLANNED->value,
               OrderStatusEnum::CONFIRMED->value,
               OrderStatusEnum::EXECUTION->value,
               OrderStatusEnum::SUPERVISION->value,
@@ -205,6 +206,16 @@ class UpdateOrderRequest extends FormRequest
               OrderStatusEnum::CANCELED->value,
             ),
             new ValidateOrderStatus
+          ],
+          'replanned_reasons' => [
+            'nullable',
+            'array',
+            Rule::requiredIf(fn () => $this->input('status') === OrderStatusEnum::REPLANNED->value),
+            'min:1',
+          ],
+          'replanned_reasons.*' => [
+            'string',
+            Rule::in(['CLIENT', 'PERMIT', 'MATERIALS']),
           ],
           /*'frame_color' => [
             'nullable',

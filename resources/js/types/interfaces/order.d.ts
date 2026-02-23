@@ -57,6 +57,7 @@ export interface Order {
   installation_end_date?: Date
   frame_color: string []
   status?: string
+  replanned_reasons?: string[]
   cost_delivery?: number
   cost_city_fee?: number
   project_amount?: number
@@ -262,6 +263,7 @@ export interface OrderStatus {
   final_inspection_date: Date
   complete_date: Date
   material_received_date?: Date
+  replanned_reasons?: string[] | null
 }
 
 export interface PaymentExtraFields {
