@@ -83,6 +83,7 @@ class OrderController extends Controller
      $allowedStatuses = [
         OrderStatusEnum::REVIEW->value,
         OrderStatusEnum::PLANNED->value,
+        OrderStatusEnum::REPLANNED->value,
         OrderStatusEnum::CONFIRMED->value,
         OrderStatusEnum::DELIVERY_CONFIRMED->value,
         OrderStatusEnum::EXECUTION->value,
@@ -294,6 +295,7 @@ class OrderController extends Controller
       $data['defaultService'] = ServiceEnum::SERVICE->value;
       $data['status'] = [
         OrderStatusEnum::PLANNED->value,
+        OrderStatusEnum::REPLANNED->value,
         OrderStatusEnum::CONFIRMED->value,
         OrderStatusEnum::EXECUTION->value,
         OrderStatusEnum::SUPERVISION->value,
@@ -325,6 +327,7 @@ class OrderController extends Controller
       $orderData['attachment_role_targets_by_role'] = $this->attachmentRoleTargetsByRole($loadedOrder);
       $orderData['payment_schedule'] = PaymentInstallmentPresenter::schedule($loadedOrder->paymentSchedule);
       $orderData['has_contract_signed'] = $loadedOrder->hasReachedContractSigned();
+      $orderData['replanned_reasons'] = $this->currentReplannedReasons($loadedOrder);
       $data['order'] = $orderData;
 
       return Inertia::render('Order/EditService', $data);
@@ -334,6 +337,7 @@ class OrderController extends Controller
       OrderStatusEnum::REVIEW->value,
       OrderStatusEnum::PLANNED->value,
       OrderStatusEnum::MATERIALS_RECEIVED->value,
+      OrderStatusEnum::REPLANNED->value,
       OrderStatusEnum::CONFIRMED->value,
       OrderStatusEnum::ON_HOLD->value,
       OrderStatusEnum::COMPLETE->value,
@@ -343,6 +347,7 @@ class OrderController extends Controller
       $status = [
         OrderStatusEnum::REVIEW->value,
         OrderStatusEnum::PLANNED->value,
+        OrderStatusEnum::REPLANNED->value,
         OrderStatusEnum::CONFIRMED->value,
         OrderStatusEnum::DELIVERY_CONFIRMED->value,
         OrderStatusEnum::EXECUTION->value,
@@ -385,6 +390,7 @@ class OrderController extends Controller
     $orderData['attachment_role_targets_by_role'] = $this->attachmentRoleTargetsByRole($loadedOrder);
     $orderData['payment_schedule'] = PaymentInstallmentPresenter::schedule($loadedOrder->paymentSchedule);
     $orderData['has_contract_signed'] = $loadedOrder->hasReachedContractSigned();
+    $orderData['replanned_reasons'] = $this->currentReplannedReasons($loadedOrder);
 
     return Inertia::render('Order/Edit', [
       'order' => $orderData,
@@ -470,6 +476,20 @@ class OrderController extends Controller
           ->all();
       })
       ->toArray();
+  }
+
+  private function currentReplannedReasons(Order $order): array
+  {
+    if ($order->status !== OrderStatusEnum::REPLANNED->value) {
+      return [];
+    }
+
+    $statusRecord = $order->orderStatus()
+      ->where('status', OrderStatusEnum::REPLANNED->value)
+      ->latest('id')
+      ->first();
+
+    return is_array($statusRecord?->replanned_reasons) ? $statusRecord->replanned_reasons : [];
   }
 
   /**

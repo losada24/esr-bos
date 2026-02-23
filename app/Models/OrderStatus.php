@@ -16,6 +16,7 @@ class OrderStatus extends Model
         'status',
         'order_id',
         'notes',
+        'replanned_reasons',
         'user_id',
         'start_date',
         'end_date',
@@ -28,6 +29,9 @@ class OrderStatus extends Model
         'pending_collect',
         'material_received_date',
 
+    ];
+    protected $casts = [
+      'replanned_reasons' => 'array',
     ];
     protected $dates = [
       'start_date',

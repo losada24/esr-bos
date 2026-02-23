@@ -45,6 +45,17 @@ type PaymentScheduleTemplates = Record<string, PaymentScheduleTemplateItem[]>
 type CustomScheduleItem = { label: string, amount: string }
 
 const CUSTOM_SCHEDULE_TYPE = 'CUSTOMIZED'
+const REPLANNED_REASON_OPTIONS = ['CLIENT', 'PERMIT', 'MATERIALS'] as const
+
+const getStatusValue = (statusValue: unknown): string => {
+  if (typeof statusValue === 'string') return statusValue
+  if (statusValue && typeof statusValue === 'object' && 'value' in statusValue) {
+    const value = (statusValue as { value?: unknown }).value
+    return typeof value === 'string' ? value : ''
+  }
+  return ''
+}
+
 const ATTACHMENT_ROLE_OPTIONS = [
   { key: 'supervisor', label: 'Supervisor' },
   { key: 'service_manager', label: 'Service Mgr' },
@@ -602,6 +613,15 @@ const ServiceForm = ({
     }
     return null
   })()
+  const selectedStatusValue = getStatusValue(values.status)
+  const selectedReplannedReasons = Array.isArray(values.replanned_reasons) ? values.replanned_reasons : []
+  const toggleReplannedReason = (reason: string, checked: boolean) => {
+    const nextReasons = checked
+      ? Array.from(new Set([...selectedReplannedReasons, reason]))
+      : selectedReplannedReasons.filter((item) => item !== reason)
+
+    setFieldValue('replanned_reasons', nextReasons)
+  }
 
   return (
     <>
@@ -1017,7 +1037,11 @@ const ServiceForm = ({
                 className="form-select"
                 as="select"
                 onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
-                  setFieldValue('status', e.target.value)
+                  const nextStatus = e.target.value
+                  setFieldValue('status', nextStatus)
+                  if (nextStatus !== 'REPLANNED') {
+                    setFieldValue('replanned_reasons', [])
+                  }
                 }}
               >
                 <option value="" disabled hidden>Select Status</option>
@@ -1027,6 +1051,27 @@ const ServiceForm = ({
               </Field>
               {(submitCount && errors.status) ? <InputError message={errors.status} className="mt-2" /> : ''}
             </div>
+            {selectedStatusValue === 'REPLANNED' && (
+              <div className={submitCount ? (errors.replanned_reasons ? 'has-error' : 'has-success') : ''}>
+                <label>Replanned Reasons</label>
+                <div className='mt-2 flex flex-wrap gap-4'>
+                  {REPLANNED_REASON_OPTIONS.map((reason) => (
+                    <label key={reason} className='inline-flex items-center gap-2'>
+                      <input
+                        type='checkbox'
+                        className='form-checkbox'
+                        checked={selectedReplannedReasons.includes(reason)}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                          toggleReplannedReason(reason, e.target.checked)
+                        }}
+                      />
+                      <span>{capitalizeWords(reason.toLowerCase())}</span>
+                    </label>
+                  ))}
+                </div>
+                {(submitCount && errors.replanned_reasons) ? <InputError message={Array.isArray(errors.replanned_reasons) ? errors.replanned_reasons.join(', ') : String(errors.replanned_reasons)} className="mt-2" /> : ''}
+              </div>
+            )}
           </div>
         </fieldset>
 

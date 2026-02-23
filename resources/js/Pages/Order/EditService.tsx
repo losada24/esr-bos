@@ -120,6 +120,7 @@ export default function EditService ({
       change_order_note: values.change_order_note,
       service: order.service,
       status: values.status,
+      replanned_reasons: values.replanned_reasons ?? [],
       supervisor_id: values.supervisor_id !== 0 ? values.supervisor_id : null,
       notes: values.notes,
       entry_date: values.entry_date,
