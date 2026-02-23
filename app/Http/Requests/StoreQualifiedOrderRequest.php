@@ -74,6 +74,7 @@ class StoreQualifiedOrderRequest extends FormRequest
             'associate_source_id_1' => ['nullable', 'integer', 'exists:sources,id', 'required_with:associate_company_contact_id_1'],
             'associate_source_id_2' => ['nullable', 'integer', 'exists:sources,id', 'required_with:associate_company_contact_id_2'],
             'hoa' => ['nullable', 'boolean'],
+            'force_duplicate' => ['nullable', 'boolean'],
             'language' => [
               'required',
               'string',

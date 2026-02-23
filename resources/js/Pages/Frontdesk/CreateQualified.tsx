@@ -12,6 +12,9 @@ import OrderQualifiedForm from './OrderQualifiedForm'
 import { type Source } from '@/types/interfaces/order'
 import { type Client } from '../Client/ClientCommon'
 
+const DUPLICATE_ORDER_ERROR_KEY = 'duplicate_order_confirmation'
+const DUPLICATE_ORDER_FALLBACK_MESSAGE = 'Existe una orden con este mismo nombre y el mismo cliente asociado. ¿Desea crearla de todas formas?'
+
 export default function CreateQualified ({
   auth,
   clients,
@@ -58,12 +61,32 @@ export default function CreateQualified ({
 
     console.log('Order data:', order)
 
-    router.post(route('frontdesk.store-qualified-order'), order, {
-      forceFormData: true,
-      onError: (errors: any) => {
-        helpers.setErrors(errors)
-      }
-    })
+    const submitQualifiedOrder = (forceDuplicate = false) => {
+      router.post(route('frontdesk.store-qualified-order'), {
+        ...order,
+        force_duplicate: forceDuplicate
+      }, {
+        forceFormData: true,
+        onError: (errors: any) => {
+          const duplicateMessageRaw = errors?.[DUPLICATE_ORDER_ERROR_KEY]
+          const duplicateMessage = Array.isArray(duplicateMessageRaw)
+            ? duplicateMessageRaw[0]
+            : duplicateMessageRaw
+
+          if (!forceDuplicate && typeof duplicateMessage === 'string' && duplicateMessage.trim() !== '') {
+            const shouldContinue = window.confirm(duplicateMessage || DUPLICATE_ORDER_FALLBACK_MESSAGE)
+            if (shouldContinue) {
+              submitQualifiedOrder(true)
+            }
+            return
+          }
+
+          helpers.setErrors(errors)
+        }
+      })
+    }
+
+    submitQualifiedOrder()
   }
 
   return (

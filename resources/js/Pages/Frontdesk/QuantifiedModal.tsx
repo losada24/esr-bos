@@ -16,6 +16,8 @@ import { useJsApiLoader } from '@react-google-maps/api'
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
 const GOOGLE_MAPS_LIBRARIES: Array<'places'> = ['places']
+const DUPLICATE_ORDER_ERROR_KEY = 'duplicate_order_confirmation'
+const DUPLICATE_ORDER_FALLBACK_MESSAGE = 'Existe una orden con este mismo nombre y el mismo cliente asociado. ¿Desea crearla de todas formas?'
 
 const parseAddressComponents = (components: google.maps.GeocoderAddressComponent[] = []) => {
   const find = (type: string) =>
@@ -242,7 +244,7 @@ const QuantifiedModal = ({
     values: OrderFormValues,
     helpers: FormikHelpers<OrderFormValues>
   ) => {
-    try {
+    const submitQuantifiedOrder = async (forceDuplicate = false): Promise<void> => {
       const response = await fetch(route('frontdesk.update-status-quantified', { order: task?.id ?? 0 }), {
         method: 'POST',
         headers: {
@@ -256,16 +258,43 @@ const QuantifiedModal = ({
           from_modal: true,
           id: task?.id,
           status: lostStatusId,
-          notes: values.notes
+          notes: values.notes,
+          force_duplicate: forceDuplicate
         })
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
-        helpers.setErrors(errorData.errors || {})
+        const errorData = await response.json().catch(() => null)
+        const duplicateMessageRaw = errorData?.errors?.[DUPLICATE_ORDER_ERROR_KEY]
+        const duplicateMessage = Array.isArray(duplicateMessageRaw)
+          ? duplicateMessageRaw[0]
+          : duplicateMessageRaw
+
+        if (!forceDuplicate && response.status === 422 && typeof duplicateMessage === 'string' && duplicateMessage.trim() !== '') {
+          const shouldContinue = window.confirm(duplicateMessage || DUPLICATE_ORDER_FALLBACK_MESSAGE)
+          if (shouldContinue) {
+            return await submitQuantifiedOrder(true)
+          }
+          helpers.setSubmitting(false)
+          return
+        }
+
+        const formattedErrors: Record<string, string> = {}
+        Object.entries(errorData?.errors ?? {}).forEach(([field, messages]) => {
+          if (typeof messages === 'string') {
+            formattedErrors[field] = messages
+            return
+          }
+          if (Array.isArray(messages) && messages.length > 0 && typeof messages[0] === 'string') {
+            formattedErrors[field] = messages[0]
+          }
+        })
+
+        helpers.setErrors(formattedErrors as FormikErrors<OrderFormValues>)
         helpers.setSubmitting(false)
         return
       }
+
       const data = await response.json().catch(() => null)
       if (onSuccess) {
         onSuccess(data?.order ?? null)
@@ -274,6 +303,10 @@ const QuantifiedModal = ({
           router.visit(route('frontdesk.index'))
         }, 100)
       }
+    }
+
+    try {
+      await submitQuantifiedOrder()
     } catch (error) {
       console.error(error)
       helpers.setSubmitting(false)

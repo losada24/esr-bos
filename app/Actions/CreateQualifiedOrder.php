@@ -18,6 +18,7 @@ use App\Models\SupervisorComissionOrder;
 use App\Traits\ComissionSupervisor;
 use App\Traits\OrderEmails;
 use App\Traits\OrderStatus;
+use App\Support\QualifiedOrderDuplicateChecker;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -25,9 +26,20 @@ class CreateQualifiedOrder
 {
 
   use OrderEmails, OrderStatus, ComissionSupervisor;
+
+  public function __construct(
+    protected QualifiedOrderDuplicateChecker $qualifiedOrderDuplicateChecker
+  ) {
+  }
  
   public function handle(Request $request)
   {
+    $this->qualifiedOrderDuplicateChecker->ensureNoDuplicateUnlessForced(
+      $request->input('name'),
+      $request->filled('client_id') ? (int) $request->input('client_id') : null,
+      $request->boolean('force_duplicate')
+    );
+
     DB::transaction(function () use ($request) {
       /*$client = Client::create([
         'name' => $request->client_name,
