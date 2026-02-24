@@ -129,6 +129,7 @@ class SalesController extends Controller
 
       $ownerOptions = User::role(RoleEnum::OWNER->value)
           ->select('id', 'name')
+          ->where('status', StatusUserEnum::ACTIVE->value)
           ->orderBy('name');
 
       if ($this->isOwnerRestricted($user)) {
@@ -700,7 +701,9 @@ class SalesController extends Controller
   {
     return Inertia::render('Frontdesk/Create', [
       'clients' => Client::all(),
-      'owners' => User::role(RoleEnum::OWNER->value)->get(),
+      'owners' => User::role(RoleEnum::OWNER->value)
+        ->where('status', StatusUserEnum::ACTIVE->value)
+        ->get(),
       'status' => [
         OrderStatusEnum::NEW_CUSTOMER_REQUEST->value,
         OrderStatusEnum::NEW_CUSTOMER_REQUEST_FOLLOW_UP->value,

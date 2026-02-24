@@ -332,7 +332,9 @@ class FrontdeskController extends Controller
   {
     return Inertia::render('Frontdesk/Create', [
       'clients' => Client::all(),
-      'owners' => User::role(RoleEnum::OWNER->value)->get(),
+      'owners' => User::role(RoleEnum::OWNER->value)
+        ->where('status', StatusUserEnum::ACTIVE->value)
+        ->get(),
       'status' => [
         OrderStatusEnum::NEW_CUSTOMER_REQUEST->value,
         OrderStatusEnum::NEW_CUSTOMER_REQUEST_FOLLOW_UP->value,
@@ -364,7 +366,9 @@ class FrontdeskController extends Controller
   {
     return Inertia::render('Frontdesk/CreateQualified', [
       'clients' => Client::all(),
-      'owners' => User::role(RoleEnum::OWNER->value)->get(),
+      'owners' => User::role(RoleEnum::OWNER->value)
+        ->where('status', StatusUserEnum::ACTIVE->value)
+        ->get(),
       'status' => [
         OrderStatusEnum::NEW_CUSTOMER_REQUEST->value,
         OrderStatusEnum::NEW_CUSTOMER_REQUEST_FOLLOW_UP->value,
@@ -821,6 +825,7 @@ public function showQuantifiedModal(Order $order)
 
     $ownerOptionsQuery = User::role(RoleEnum::OWNER->value)
       ->select('id', 'name')
+      ->where('status', StatusUserEnum::ACTIVE->value)
       ->orderBy('name');
 
     if ($this->isOwnerRestricted(auth()->user())) {
