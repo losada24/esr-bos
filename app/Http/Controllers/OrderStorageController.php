@@ -76,6 +76,7 @@ class OrderStorageController extends Controller
 
         $ownerOptions = User::role(RoleEnum::OWNER->value)
             ->select('id', 'name')
+            ->where('status', StatusUserEnum::ACTIVE->value)
             ->orderBy('name');
 
         if ($this->isOwnerRestricted($user)) {
