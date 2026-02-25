@@ -1829,6 +1829,18 @@ class ReportController extends Controller
 
   private function buildInstallerConfirmedSummaryData(Carbon $startDate, Carbon $endDate): array
   {
+    $confirmedOrders = OrderStatus::query()
+      ->select('order_id')
+      ->where('status', OrderStatusEnum::CONFIRMED->value)
+      ->whereBetween('created_at', [$startDate, $endDate])
+      ->distinct();
+
+    $completedOrders = OrderStatus::query()
+      ->select('order_id')
+      ->where('status', OrderStatusEnum::COMPLETE->value)
+      ->whereBetween('created_at', [$startDate, $endDate])
+      ->distinct();
+
     $orderProductsTotals = OrderProduct::query()
       ->select('order_id', DB::raw('SUM(total_price + extra_work_price) as products_total'))
       ->whereNull('deleted_at')
@@ -1871,6 +1883,40 @@ class ReportController extends Controller
     $totalConfirmed = OrderStatus::where('status', OrderStatusEnum::CONFIRMED->value)
       ->whereBetween('created_at', [$startDate, $endDate])
       ->count();
+
+    $unassignedCompletedWithoutConfirmed = Order::query()
+      ->leftJoinSub($firstInstallationTeam, 'first_installation_team', function ($join) {
+        $join->on('first_installation_team.order_id', '=', 'orders.id');
+      })
+      ->joinSub($completedOrders, 'completed_orders', function ($join) {
+        $join->on('completed_orders.order_id', '=', 'orders.id');
+      })
+      ->leftJoinSub($confirmedOrders, 'confirmed_orders', function ($join) {
+        $join->on('confirmed_orders.order_id', '=', 'orders.id');
+      })
+      ->whereNull('first_installation_team.first_installation_team_order_id')
+      ->whereNull('confirmed_orders.order_id')
+      ->count();
+
+    if ($unassignedCompletedWithoutConfirmed > 0) {
+      $unassignedSummaryRow = $summary->first(function ($row) {
+        return $row->id === null;
+      });
+
+      if ($unassignedSummaryRow) {
+        $unassignedSummaryRow->confirmed_orders += $unassignedCompletedWithoutConfirmed;
+      } else {
+        $summary->push((object) [
+          'id' => null,
+          'company_name' => null,
+          'installer_name' => null,
+          'confirmed_orders' => $unassignedCompletedWithoutConfirmed,
+          'assigned_amount' => 0,
+        ]);
+      }
+
+      $totalConfirmed += $unassignedCompletedWithoutConfirmed;
+    }
 
     $totalAssigned = OrderStatus::query()
       ->join('orders', 'orders.id', '=', 'order_status.order_id')
