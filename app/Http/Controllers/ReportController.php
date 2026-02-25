@@ -2052,11 +2052,15 @@ class ReportController extends Controller
           ->orWhereNotNull('execution_not_completed_orders.order_id')
           ->orWhereNotNull('inspection_not_completed_orders.order_id');
       })
+      ->where(function ($query) {
+        $query->whereNull('orders.supervisor_id')
+          ->orWhere('users.status', StatusUserEnum::ACTIVE->value);
+      })
       ->select(
         'orders.supervisor_id',
         'users.name as supervisor_name',
-        DB::raw('COUNT(confirmed_orders.order_id) as confirmed_orders'),
-        DB::raw('SUM(CASE WHEN confirmed_orders.order_id IS NOT NULL AND completed_orders.order_id IS NOT NULL THEN 1 ELSE 0 END) as confirmed_completed_orders'),
+        DB::raw('SUM(CASE WHEN confirmed_orders.order_id IS NOT NULL OR (orders.supervisor_id IS NULL AND completed_orders.order_id IS NOT NULL) THEN 1 ELSE 0 END) as confirmed_orders'),
+        DB::raw('SUM(CASE WHEN completed_orders.order_id IS NOT NULL AND (confirmed_orders.order_id IS NOT NULL OR orders.supervisor_id IS NULL) THEN 1 ELSE 0 END) as confirmed_completed_orders'),
         DB::raw('COUNT(execution_not_completed_orders.order_id) as execution_not_completed_orders'),
         DB::raw('COUNT(inspection_not_completed_orders.order_id) as inspection_not_completed_orders')
       )
@@ -2072,6 +2076,20 @@ class ReportController extends Controller
         $join->on('completed.order_id', '=', 'confirmed.order_id');
       })
       ->count();
+
+    $unassignedCompletedWithoutConfirmed = Order::query()
+      ->leftJoinSub($confirmedOrders, 'confirmed_orders', function ($join) {
+        $join->on('confirmed_orders.order_id', '=', 'orders.id');
+      })
+      ->joinSub($completedOrders, 'completed_orders', function ($join) {
+        $join->on('completed_orders.order_id', '=', 'orders.id');
+      })
+      ->whereNull('orders.supervisor_id')
+      ->whereNull('confirmed_orders.order_id')
+      ->count();
+
+    $totalConfirmed += $unassignedCompletedWithoutConfirmed;
+    $totalConfirmedCompleted += $unassignedCompletedWithoutConfirmed;
 
     $totalExecutionNotCompleted = DB::query()
       ->fromSub($executionOrders, 'execution')
