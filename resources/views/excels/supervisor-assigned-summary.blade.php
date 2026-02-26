@@ -8,8 +8,8 @@
       <tr>
         <td style="font-weight: bold;">Total Confirmed Orders: {{ $totalConfirmed }}</td>
         <td style="font-weight: bold;">Total Confirmed &amp; Completed: {{ $totalConfirmedCompleted }}</td>
-        <td style="font-weight: bold;">Total Execution &amp; Not Completed: {{ $totalExecutionNotCompleted }}</td>
-        <td colspan="2" style="font-weight: bold;">Total Inspection &amp; Not Completed: {{ $totalInspectionNotCompleted }}</td>
+        <td style="font-weight: bold;">Total Current Open Orders: {{ $totalExecutionNotCompleted }}</td>
+        <td colspan="2" style="font-weight: bold;">Total Current Inspection Orders: {{ $totalInspectionNotCompleted }}</td>
       </tr>
       <tr></tr>
       <tr></tr>
@@ -17,12 +17,15 @@
           <th width="50">Supervisor</th>
           <th width="20">Confirmed Orders</th>
           <th width="20">Confirmed &amp; Completed</th>
-          <th width="20">Execution &amp; Not Completed</th>
-          <th width="20">Inspection &amp; Not Completed</th>
+          <th width="20">Current Open Orders*</th>
+          <th width="20">Current Inspection Orders*</th>
       </tr>
     </thead>
     <tbody>
       @foreach ($summary as $item)
+        @php
+          $isPickupOrDeliveryOnly = empty($item->supervisor_name) || $item->supervisor_name === 'PICKUP OR DELIVERY ONLY';
+        @endphp
         <tr>
             <td width="50" height="25" text-align="left" valign="middle">
               {{ $item->supervisor_name ?? 'PICKUP OR DELIVERY ONLY' }}
@@ -34,10 +37,10 @@
               {{ $item->confirmed_completed_orders }}
             </td>
             <td width="20" height="25" text-align="center" valign="middle">
-              {{ $item->execution_not_completed_orders }}
+              {{ $isPickupOrDeliveryOnly ? 0 : $item->execution_not_completed_orders }}
             </td>
             <td width="20" height="25" text-align="center" valign="middle">
-              {{ $item->inspection_not_completed_orders }}
+              {{ $isPickupOrDeliveryOnly ? 0 : $item->inspection_not_completed_orders }}
             </td>
         </tr>
       @endforeach
@@ -49,6 +52,9 @@
             <td width="20" height="25" text-align="center" valign="middle"><strong>{{ $totalConfirmedCompleted }}</strong></td>
             <td width="20" height="25" text-align="center" valign="middle"><strong>{{ $totalExecutionNotCompleted }}</strong></td>
             <td width="20" height="25" text-align="center" valign="middle"><strong>{{ $totalInspectionNotCompleted }}</strong></td>
+        </tr>
+        <tr>
+            <td colspan="5">* Current Open Orders and Current Inspection Orders use current order status and do not depend on the selected date range.</td>
         </tr>
     </tfoot>
 </table>

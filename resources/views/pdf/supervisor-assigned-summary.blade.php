@@ -41,25 +41,28 @@
         <tr class="totals">
             <td>Total Confirmed Orders: {{ $totalConfirmed }}</td>
             <td>Total Confirmed &amp; Completed: {{ $totalConfirmedCompleted }}</td>
-            <td>Total Execution &amp; Not Completed: {{ $totalExecutionNotCompleted }}</td>
-            <td colspan="2">Total Inspection &amp; Not Completed: {{ $totalInspectionNotCompleted }}</td>
+            <td>Total Current Open Orders: {{ $totalExecutionNotCompleted }}</td>
+            <td colspan="2">Total Current Inspection Orders: {{ $totalInspectionNotCompleted }}</td>
         </tr>
         <tr>
             <th>Supervisor</th>
             <th>Confirmed Orders</th>
             <th>Confirmed &amp; Completed</th>
-            <th>Execution &amp; Not Completed</th>
-            <th>Inspection &amp; Not Completed</th>
+            <th>Current Open Orders*</th>
+            <th>Current Inspection Orders*</th>
         </tr>
     </thead>
     <tbody>
         @foreach ($summary as $item)
-            <tr class="{{ empty($item->supervisor_name) ? 'unassigned' : '' }}">
+            @php
+                $isPickupOrDeliveryOnly = empty($item->supervisor_name) || $item->supervisor_name === 'PICKUP OR DELIVERY ONLY';
+            @endphp
+            <tr class="{{ $isPickupOrDeliveryOnly ? 'unassigned' : '' }}">
                 <td>{{ $item->supervisor_name ?? 'PICKUP OR DELIVERY ONLY' }}</td>
                 <td>{{ $item->confirmed_orders }}</td>
                 <td>{{ $item->confirmed_completed_orders }}</td>
-                <td>{{ $item->execution_not_completed_orders }}</td>
-                <td>{{ $item->inspection_not_completed_orders }}</td>
+                <td>{{ $isPickupOrDeliveryOnly ? 0 : $item->execution_not_completed_orders }}</td>
+                <td>{{ $isPickupOrDeliveryOnly ? 0 : $item->inspection_not_completed_orders }}</td>
             </tr>
         @endforeach
         <tr class="totals">
@@ -68,6 +71,9 @@
             <td><strong>{{ $totalConfirmedCompleted }}</strong></td>
             <td><strong>{{ $totalExecutionNotCompleted }}</strong></td>
             <td><strong>{{ $totalInspectionNotCompleted }}</strong></td>
+        </tr>
+        <tr>
+            <td colspan="5" style="font-size: 11px; text-align: left;">* Current Open Orders and Current Inspection Orders use current order status and do not depend on the selected date range.</td>
         </tr>
     </tbody>
 </table>
