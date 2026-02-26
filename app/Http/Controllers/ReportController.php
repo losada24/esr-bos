@@ -715,6 +715,16 @@ class ReportController extends Controller
       $confirmedCount = $confirmedOrderIds->count();
       $confirmedCompletedCount = $confirmedOrderIds->intersect($completedOrderIds)->count();
 
+      $unassignedCompletedWithoutConfirmedCount = Order::query()
+        ->whereNull('deleted_at')
+        ->whereNull('supervisor_id')
+        ->whereIn('id', $completedOrderIds)
+        ->whereNotIn('id', $confirmedOrderIds)
+        ->count();
+
+      $confirmedCount += $unassignedCompletedWithoutConfirmedCount;
+      $confirmedCompletedCount += $unassignedCompletedWithoutConfirmedCount;
+
       $counts = collect($statuses)->mapWithKeys(function ($status) use ($rangeStart, $rangeEnd, $confirmedCompletedCount, $confirmedCount) {
         if ($status === OrderStatusEnum::COMPLETE->value) {
           return [$status => $confirmedCompletedCount];
