@@ -2531,6 +2531,25 @@ export default function ShowStatusOrder ({
     const parsed = new Date(value)
     return Number.isNaN(parsed.getTime()) ? value : parsed.toLocaleString()
   }
+  const paymentMethodLabel = typeof order.method_of_payment === 'string'
+    ? order.method_of_payment.trim()
+    : ''
+  const normalizedPaymentMethod = paymentMethodLabel.toUpperCase()
+  const hasFinancingPaymentMethod = normalizedPaymentMethod === 'FINANCED' || normalizedPaymentMethod === 'CASH AND FINANCED'
+  const isCashAndFinancedPaymentMethod = normalizedPaymentMethod === 'CASH AND FINANCED'
+  const financingTypeLabel = typeof order.type_of_financing === 'string' && order.type_of_financing.trim() !== ''
+    ? order.type_of_financing.trim()
+    : '-'
+  const downPaymentNumber = Number(order.down_payment ?? 0)
+  const downPaymentLabel = order.down_payment != null && Number.isFinite(downPaymentNumber)
+    ? formatScheduleCurrency(downPaymentNumber)
+    : '-'
+  const amountToFinanceNumber = Number.isFinite(projectAmountNumber) && Number.isFinite(downPaymentNumber)
+    ? projectAmountNumber - downPaymentNumber
+    : null
+  const amountToFinanceLabel = amountToFinanceNumber != null && Number.isFinite(amountToFinanceNumber)
+    ? formatScheduleCurrency(amountToFinanceNumber)
+    : '-'
 
   const onKeyDown = (e: KeyboardEvent<HTMLUListElement>) => {
     const idx = tabs.findIndex((t) => t.key === tab)
@@ -3501,6 +3520,32 @@ export default function ShowStatusOrder ({
 
                 {tab === 'payments' && (
                   <div id="panel-payments" role="tabpanel" aria-labelledby="tab-payments" className="space-y-5 p-6 text-sm text-slate-600">
+                    {hasFinancingPaymentMethod && (
+                      <div className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3">
+                        <div className={`grid gap-3 ${isCashAndFinancedPaymentMethod ? 'md:grid-cols-4' : 'md:grid-cols-2'}`}>
+                          <div>
+                            <p className="text-xs font-semibold uppercase tracking-wide text-sky-600">Project Payment Method</p>
+                            <p className="text-sm font-semibold text-slate-700">{paymentMethodLabel || 'FINANCED'}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs font-semibold uppercase tracking-wide text-sky-600">Type of Financing</p>
+                            <p className="text-sm font-semibold text-slate-700">{financingTypeLabel}</p>
+                          </div>
+                          {isCashAndFinancedPaymentMethod && (
+                            <div>
+                              <p className="text-xs font-semibold uppercase tracking-wide text-sky-600">Down Payment</p>
+                              <p className="text-sm font-semibold text-slate-700">{downPaymentLabel}</p>
+                            </div>
+                          )}
+                          {isCashAndFinancedPaymentMethod && (
+                            <div>
+                              <p className="text-xs font-semibold uppercase tracking-wide text-sky-600">Amount to Finance</p>
+                              <p className="text-sm font-semibold text-slate-700">{amountToFinanceLabel}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
                     {paymentSchedule
                       ? (
                         <div className="space-y-4">
