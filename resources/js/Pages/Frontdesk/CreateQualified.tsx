@@ -13,7 +13,7 @@ import { type Source } from '@/types/interfaces/order'
 import { type Client } from '../Client/ClientCommon'
 
 const DUPLICATE_ORDER_ERROR_KEY = 'duplicate_order_confirmation'
-const DUPLICATE_ORDER_FALLBACK_MESSAGE = 'Existe una orden con este mismo nombre y el mismo cliente asociado. ¿Desea crearla de todas formas?'
+const DUPLICATE_ORDER_FALLBACK_MESSAGE = 'A potentially duplicate order was found (same client/name or same job address). Do you want to create it anyway?'
 
 export default function CreateQualified ({
   auth,

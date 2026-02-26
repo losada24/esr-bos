@@ -9,7 +9,8 @@ class QualifiedOrderDuplicateChecker
 {
     public const ERROR_KEY = 'duplicate_order_confirmation';
 
-    public const DEFAULT_MESSAGE = 'Existe una orden con este mismo nombre y el mismo cliente asociado. ¿Desea crearla de todas formas?';
+    public const DEFAULT_MESSAGE = 'An order already exists with the same name and associated client. Do you want to create it anyway?';
+    public const JOB_ADDRESS_DUPLICATE_MESSAGE = 'An order already exists with the same job address. Do you want to create it anyway?';
 
     public function findDuplicate(?string $orderName, ?int $clientId, ?int $ignoreOrderId = null): ?Order
     {
@@ -31,11 +32,44 @@ class QualifiedOrderDuplicateChecker
             ->first();
     }
 
+    public function findDuplicateByJobAddress(
+        ?string $jobAddress,
+        ?int $ignoreOrderId = null,
+        ?string $city = null,
+        ?string $jobZip = null
+    ): ?Order {
+        $normalizedJobAddress = trim((string) $jobAddress);
+        if ($normalizedJobAddress === '') {
+            return null;
+        }
+
+        $query = Order::query()
+            ->when($ignoreOrderId, fn ($query) => $query->where('id', '!=', $ignoreOrderId))
+            ->whereRaw('LOWER(TRIM(job_address)) = ?', [mb_strtolower($normalizedJobAddress)]);
+
+        $normalizedCity = trim((string) $city);
+        if ($normalizedCity !== '') {
+            $query->whereRaw('LOWER(TRIM(city)) = ?', [mb_strtolower($normalizedCity)]);
+        }
+
+        $normalizedJobZip = trim((string) $jobZip);
+        if ($normalizedJobZip !== '') {
+            $query->whereRaw('LOWER(TRIM(job_zip)) = ?', [mb_strtolower($normalizedJobZip)]);
+        }
+
+        return $query
+            ->orderByDesc('id')
+            ->first();
+    }
+
     public function ensureNoDuplicateUnlessForced(
         ?string $orderName,
         ?int $clientId,
         bool $forceDuplicate = false,
-        ?int $ignoreOrderId = null
+        ?int $ignoreOrderId = null,
+        ?string $jobAddress = null,
+        ?string $city = null,
+        ?string $jobZip = null
     ): void {
         if ($forceDuplicate) {
             return;
@@ -43,7 +77,14 @@ class QualifiedOrderDuplicateChecker
 
         $duplicate = $this->findDuplicate($orderName, $clientId, $ignoreOrderId);
         if (!$duplicate) {
-            return;
+            $duplicate = $this->findDuplicateByJobAddress($jobAddress, $ignoreOrderId, $city, $jobZip);
+            if (!$duplicate) {
+                return;
+            }
+
+            throw ValidationException::withMessages([
+                self::ERROR_KEY => self::JOB_ADDRESS_DUPLICATE_MESSAGE,
+            ]);
         }
 
         throw ValidationException::withMessages([

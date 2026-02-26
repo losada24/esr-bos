@@ -37,7 +37,11 @@ class CreateQualifiedOrder
     $this->qualifiedOrderDuplicateChecker->ensureNoDuplicateUnlessForced(
       $request->input('name'),
       $request->filled('client_id') ? (int) $request->input('client_id') : null,
-      $request->boolean('force_duplicate')
+      $request->boolean('force_duplicate'),
+      null,
+      $request->input('job_address'),
+      $request->input('city'),
+      $request->input('job_zip')
     );
 
     DB::transaction(function () use ($request) {

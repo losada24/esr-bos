@@ -606,7 +606,10 @@ public function showQuantifiedModal(Order $order)
           $request->input('name'),
           $order->client_id ? (int) $order->client_id : null,
           $request->boolean('force_duplicate'),
-          (int) $order->id
+          (int) $order->id,
+          $request->input('job_address'),
+          $request->input('city'),
+          $request->input('job_zip')
         );
 
         $status = $request['status'];
