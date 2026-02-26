@@ -2076,13 +2076,12 @@ class ReportController extends Controller
       ->whereBetween('order_status.created_at', [$startDate, $endDate])
       ->distinct();
 
-    $executionOrders = OrderStatus::query()
-      ->select('order_status.order_id')
-      ->join('orders', 'orders.id', '=', 'order_status.order_id')
-      ->whereNull('orders.deleted_at')
-      ->where('order_status.status', OrderStatusEnum::EXECUTION->value)
-      ->whereBetween('order_status.created_at', [$startDate, $endDate])
-      ->distinct();
+    $currentExecutionExcludedStatuses = [
+      OrderStatusEnum::CONFIRMED->value,
+      OrderStatusEnum::PLANNED->value,
+      OrderStatusEnum::RESCHEDULE->value,
+      OrderStatusEnum::COMPLETE->value,
+    ];
 
     $inspectionOrders = OrderStatus::query()
       ->select('order_status.order_id')
@@ -2093,11 +2092,13 @@ class ReportController extends Controller
       ->distinct();
 
     $executionNotCompletedOrders = DB::query()
-      ->fromSub($executionOrders, 'execution')
-      ->leftJoinSub($completedOrders, 'completed', function ($join) {
-        $join->on('completed.order_id', '=', 'execution.order_id');
-      })
-      ->whereNull('completed.order_id')
+      ->fromSub(
+        Order::query()
+          ->select('orders.id as order_id')
+          ->whereNull('orders.deleted_at')
+          ->whereNotIn('orders.status', $currentExecutionExcludedStatuses),
+        'execution'
+      )
       ->select('execution.order_id');
 
     $inspectionNotCompletedOrders = DB::query()
@@ -2150,6 +2151,28 @@ class ReportController extends Controller
       ->intersect($completedOrderIdsForTotals)
       ->count();
 
+    $confirmedCompletedIntersectionIds = $confirmedOrderIdsForTotals
+      ->intersect($completedOrderIdsForTotals)
+      ->values();
+
+    $confirmedCompletedBySupervisor = $confirmedCompletedIntersectionIds->isEmpty()
+      ? collect()
+      : Order::query()
+        ->leftJoin('users', 'users.id', '=', 'orders.supervisor_id')
+        ->whereIn('orders.id', $confirmedCompletedIntersectionIds->all())
+        ->where(function ($query) {
+          $query->whereNull('orders.supervisor_id')
+            ->orWhere('users.status', StatusUserEnum::ACTIVE->value);
+        })
+        ->select('orders.supervisor_id', DB::raw('COUNT(*) as total'))
+        ->groupBy('orders.supervisor_id')
+        ->get()
+        ->mapWithKeys(function ($row) {
+          $key = $row->supervisor_id === null ? 'null' : (string) $row->supervisor_id;
+
+          return [$key => (int) $row->total];
+        });
+
     $unassignedCompletedWithoutConfirmed = Order::query()
       ->leftJoinSub($confirmedOrders, 'confirmed_orders', function ($join) {
         $join->on('confirmed_orders.order_id', '=', 'orders.id');
@@ -2164,20 +2187,57 @@ class ReportController extends Controller
     $totalConfirmed += $unassignedCompletedWithoutConfirmed;
     $totalConfirmedCompleted += $unassignedCompletedWithoutConfirmed;
 
-    $totalExecutionNotCompleted = DB::query()
-      ->fromSub($executionOrders, 'execution')
-      ->leftJoinSub($completedOrders, 'completed', function ($join) {
-        $join->on('completed.order_id', '=', 'execution.order_id');
+    $summary = $summary->map(function ($item) use ($confirmedCompletedBySupervisor, $unassignedCompletedWithoutConfirmed) {
+      $key = $item->supervisor_id === null ? 'null' : (string) $item->supervisor_id;
+      $confirmedCompleted = (int) ($confirmedCompletedBySupervisor->get($key, 0));
+
+      if ($item->supervisor_id === null) {
+        $confirmedCompleted += $unassignedCompletedWithoutConfirmed;
+      }
+
+      $item->confirmed_completed_orders = $confirmedCompleted;
+
+      return $item;
+    });
+
+    $currentInspectionBySupervisor = Order::query()
+      ->leftJoin('users', 'users.id', '=', 'orders.supervisor_id')
+      ->whereNull('orders.deleted_at')
+      ->where('orders.status', OrderStatusEnum::INSPECTION->value)
+      ->where(function ($query) {
+        $query->whereNull('orders.supervisor_id')
+          ->orWhere('users.status', StatusUserEnum::ACTIVE->value);
       })
-      ->whereNull('completed.order_id')
+      ->select('orders.supervisor_id', DB::raw('COUNT(*) as total'))
+      ->groupBy('orders.supervisor_id')
+      ->get()
+      ->mapWithKeys(function ($row) {
+        $key = $row->supervisor_id === null ? 'null' : (string) $row->supervisor_id;
+
+        return [$key => (int) $row->total];
+      });
+
+    $summary = $summary->map(function ($item) use ($currentInspectionBySupervisor) {
+      $key = $item->supervisor_id === null ? 'null' : (string) $item->supervisor_id;
+      $item->inspection_not_completed_orders = (int) ($currentInspectionBySupervisor->get($key, 0));
+
+      return $item;
+    });
+
+    $totalExecutionNotCompleted = Order::query()
+      ->leftJoin('users', 'users.id', '=', 'orders.supervisor_id')
+      ->whereNull('orders.deleted_at')
+      ->whereNotNull('orders.supervisor_id')
+      ->where('users.status', StatusUserEnum::ACTIVE->value)
+      ->whereNotIn('orders.status', $currentExecutionExcludedStatuses)
       ->count();
 
-    $totalInspectionNotCompleted = DB::query()
-      ->fromSub($inspectionOrders, 'inspection')
-      ->leftJoinSub($completedOrders, 'completed', function ($join) {
-        $join->on('completed.order_id', '=', 'inspection.order_id');
-      })
-      ->whereNull('completed.order_id')
+    $totalInspectionNotCompleted = Order::query()
+      ->leftJoin('users', 'users.id', '=', 'orders.supervisor_id')
+      ->whereNull('orders.deleted_at')
+      ->where('orders.status', OrderStatusEnum::INSPECTION->value)
+      ->whereNotNull('orders.supervisor_id')
+      ->where('users.status', StatusUserEnum::ACTIVE->value)
       ->count();
 
     return [

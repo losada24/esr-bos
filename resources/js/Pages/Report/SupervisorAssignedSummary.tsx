@@ -113,10 +113,13 @@ export default function SupervisorAssignedSummary({ summary, totalConfirmed, tot
         Total Confirmed & Completed: {totalConfirmedCompleted}
       </div>
       <div className="mt-2 text-left font-semibold text-gray-700">
-        Total Execution & Not Completed: {totalExecutionNotCompleted}
+        Total Current Open Orders: {totalExecutionNotCompleted}
       </div>
       <div className="mt-2 text-left font-semibold text-gray-700">
-        Total Inspection & Not Completed: {totalInspectionNotCompleted}
+        Total Current Inspection Orders: {totalInspectionNotCompleted}
+      </div>
+      <div className="mt-1 text-left text-sm text-gray-500">
+        Note: Current Open Orders and Current Inspection Orders use current order status and do not depend on the selected date range.
       </div>
 
       <table className="w-full border border-gray-300 mt-4">
@@ -125,20 +128,20 @@ export default function SupervisorAssignedSummary({ summary, totalConfirmed, tot
             <th className="p-2 border">Supervisor</th>
             <th className="p-2 border">Confirmed Orders</th>
             <th className="p-2 border">Confirmed & Completed</th>
-            <th className="p-2 border">Execution & Not Completed</th>
-            <th className="p-2 border">Inspection & Not Completed</th>
+            <th className="p-2 border">Current Open Orders</th>
+            <th className="p-2 border">Current Inspection Orders</th>
           </tr>
         </thead>
         <tbody>
           {summary.map((item) => {
-            const isUnassigned = !item.supervisor_name
+            const isPickupOrDeliveryOnly = !item.supervisor_name || item.supervisor_name === 'PICKUP OR DELIVERY ONLY'
             return (
-              <tr key={item.supervisor_id ?? 'unassigned'} className={isUnassigned ? 'bg-gray-100' : ''}>
+              <tr key={item.supervisor_id ?? 'unassigned'} className={isPickupOrDeliveryOnly ? 'bg-gray-100' : ''}>
                 <td className="p-2 border">{item.supervisor_name || 'PICKUP OR DELIVERY ONLY'}</td>
                 <td className="p-2 border">{item.confirmed_orders}</td>
                 <td className="p-2 border">{item.confirmed_completed_orders}</td>
-                <td className="p-2 border">{item.execution_not_completed_orders}</td>
-                <td className="p-2 border">{item.inspection_not_completed_orders}</td>
+                <td className="p-2 border">{isPickupOrDeliveryOnly ? 0 : item.execution_not_completed_orders}</td>
+                <td className="p-2 border">{isPickupOrDeliveryOnly ? 0 : item.inspection_not_completed_orders}</td>
               </tr>
             )
           })}
