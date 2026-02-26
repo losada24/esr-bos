@@ -2081,6 +2081,7 @@ class ReportController extends Controller
       OrderStatusEnum::PLANNED->value,
       OrderStatusEnum::RESCHEDULE->value,
       OrderStatusEnum::COMPLETE->value,
+      OrderStatusEnum::MATERIALS_RECEIVED->value,
     ];
 
     $inspectionOrders = OrderStatus::query()
