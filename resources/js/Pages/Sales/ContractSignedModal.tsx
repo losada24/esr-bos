@@ -154,6 +154,7 @@ export default function ContractSignedModal ({
 
   const isCommercial = orderType?.toLowerCase() === 'commercial'
   const requiresCompanySelection = isCommercial && companyOptions.length > 1
+  const hiddenPaymentMethods = new Set(['CHECK', 'ZELLE', 'AIA'])
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
@@ -381,6 +382,9 @@ export default function ContractSignedModal ({
             const shouldShowFinancing = isFinanced || isCashAndFinance
             const shouldShowDownPayment = isCashAndFinance
             const shouldShowPaymentSchedule = isCash
+            const availablePaymentMethods = paymentMethods.filter((method) => (
+              !hiddenPaymentMethods.has(String(method).trim().toUpperCase())
+            ))
             const attachmentsErrorMessage = typeof errors.attachments === 'string'
               ? errors.attachments
               : Array.isArray(errors.attachments)
@@ -631,7 +635,7 @@ export default function ContractSignedModal ({
                       disabled={loading}
                     >
                       <option value="">Method of Payment</option>
-                      {paymentMethods.map((method) => (
+                      {availablePaymentMethods.map((method) => (
                         <option key={method} value={method}>{method}</option>
                       ))}
                     </select>

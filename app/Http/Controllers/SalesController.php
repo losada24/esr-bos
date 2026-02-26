@@ -171,7 +171,14 @@ class SalesController extends Controller
       'created_by_users' => $createdByUsers,
       'tags' => $tags,
       'filters' => $filters,
-      'methods_of_payment' => array_map(fn (MethodOfPayment $method) => $method->value, MethodOfPayment::cases()),
+      'methods_of_payment' => array_values(array_filter(
+        array_map(fn (MethodOfPayment $method) => $method->value, MethodOfPayment::cases()),
+        fn (string $method) => !in_array($method, [
+          MethodOfPayment::CHECK->value,
+          MethodOfPayment::ZELLE->value,
+          MethodOfPayment::AIA->value,
+        ], true)
+      )),
       'type_of_financing' => array_map(fn (TypeOfFinancing $financing) => $financing->value, TypeOfFinancing::cases()),
       'payment_schedule_templates' => PaymentScheduleTemplates::templates(),
     ]);
