@@ -587,6 +587,7 @@ class OrderController extends Controller
       $user->hasRole([
         RoleEnum::ADMIN->value,
         RoleEnum::ACCOUNT_MANAGER->value,
+        RoleEnum::OWNER_ADMIN->value,
       ])
     );
 

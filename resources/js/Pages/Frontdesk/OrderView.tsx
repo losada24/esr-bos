@@ -3941,7 +3941,12 @@ export default function ShowStatusOrder ({
                               : null
                             const uploaderName = attachment.uploaded_by ?? (attachment as any)?.user?.name ?? null
                             const uploadedByLabel = uploaderName ?? 'Usuario desconocido'
-                            const canDeleteAttachment = authUserId !== null && attachment.user_id === authUserId
+                            const canDeleteAttachment = (
+                              (authUserId !== null && attachment.user_id === authUserId) ||
+                              isAdmin(roleNames) ||
+                              isAccountManager(roleNames) ||
+                              isOwnerAdmin(roleNames)
+                            )
                             return (
                               <li key={attachment.id} className="flex items-center justify-between gap-3 rounded-xl border border-slate-200/70 bg-slate-50 px-4 py-3 shadow-sm">
                                 <div>
@@ -3985,7 +3990,7 @@ export default function ShowStatusOrder ({
                                     className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-rose-50 text-rose-600 hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
                                     disabled={isDeleting || !canDeleteAttachment}
                                     aria-label="Eliminar adjunto"
-                                    title={!canDeleteAttachment ? 'Solo puedes eliminar archivos que subiste' : 'Eliminar adjunto'}
+                                    title={!canDeleteAttachment ? 'Solo puedes eliminar archivos que subiste o tener rol autorizado' : 'Eliminar adjunto'}
                                   >
                                     <DeleteIcon className="h-4 w-4" />
                                   </button>
