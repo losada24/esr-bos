@@ -1841,13 +1841,13 @@ class ReportController extends Controller
   {
     $confirmedOrders = OrderStatus::query()
       ->select('order_id')
-      ->where('status', OrderStatusEnum::CONFIRMED->value)
+      ->where('order_status.status', OrderStatusEnum::CONFIRMED->value)
       ->whereBetween('created_at', [$startDate, $endDate])
       ->distinct();
 
     $completedOrders = OrderStatus::query()
       ->select('order_id')
-      ->where('status', OrderStatusEnum::COMPLETE->value)
+      ->where('order_status.status', OrderStatusEnum::COMPLETE->value)
       ->whereBetween('created_at', [$startDate, $endDate])
       ->distinct();
 
@@ -2048,28 +2048,48 @@ class ReportController extends Controller
 
   private function buildSupervisorAssignedSummaryData(Carbon $startDate, Carbon $endDate): array
   {
+    $confirmedOrderIdsForTotals = $this->resolveUniqueOrderIdsByStatus(
+      OrderStatusEnum::CONFIRMED->value,
+      $startDate,
+      $endDate
+    );
+
+    $completedOrderIdsForTotals = $this->resolveUniqueOrderIdsByStatus(
+      OrderStatusEnum::COMPLETE->value,
+      $startDate,
+      $endDate
+    );
+
     $confirmedOrders = OrderStatus::query()
-      ->select('order_id')
-      ->where('status', OrderStatusEnum::CONFIRMED->value)
-      ->whereBetween('created_at', [$startDate, $endDate])
+      ->select('order_status.order_id')
+      ->join('orders', 'orders.id', '=', 'order_status.order_id')
+      ->whereNull('orders.deleted_at')
+      ->where('order_status.status', OrderStatusEnum::CONFIRMED->value)
+      ->whereBetween('order_status.created_at', [$startDate, $endDate])
       ->distinct();
 
     $completedOrders = OrderStatus::query()
-      ->select('order_id')
-      ->where('status', OrderStatusEnum::COMPLETE->value)
-      ->whereBetween('created_at', [$startDate, $endDate])
+      ->select('order_status.order_id')
+      ->join('orders', 'orders.id', '=', 'order_status.order_id')
+      ->whereNull('orders.deleted_at')
+      ->where('order_status.status', OrderStatusEnum::COMPLETE->value)
+      ->whereBetween('order_status.created_at', [$startDate, $endDate])
       ->distinct();
 
     $executionOrders = OrderStatus::query()
-      ->select('order_id')
-      ->where('status', OrderStatusEnum::EXECUTION->value)
-      ->whereBetween('created_at', [$startDate, $endDate])
+      ->select('order_status.order_id')
+      ->join('orders', 'orders.id', '=', 'order_status.order_id')
+      ->whereNull('orders.deleted_at')
+      ->where('order_status.status', OrderStatusEnum::EXECUTION->value)
+      ->whereBetween('order_status.created_at', [$startDate, $endDate])
       ->distinct();
 
     $inspectionOrders = OrderStatus::query()
-      ->select('order_id')
-      ->where('status', OrderStatusEnum::INSPECTION->value)
-      ->whereBetween('created_at', [$startDate, $endDate])
+      ->select('order_status.order_id')
+      ->join('orders', 'orders.id', '=', 'order_status.order_id')
+      ->whereNull('orders.deleted_at')
+      ->where('order_status.status', OrderStatusEnum::INSPECTION->value)
+      ->whereBetween('order_status.created_at', [$startDate, $endDate])
       ->distinct();
 
     $executionNotCompletedOrders = DB::query()
@@ -2124,13 +2144,10 @@ class ReportController extends Controller
       ->orderBy('users.name')
       ->get();
 
-    $totalConfirmed = (clone $confirmedOrders)->count();
+    $totalConfirmed = $confirmedOrderIdsForTotals->count();
 
-    $totalConfirmedCompleted = DB::query()
-      ->fromSub($confirmedOrders, 'confirmed')
-      ->joinSub($completedOrders, 'completed', function ($join) {
-        $join->on('completed.order_id', '=', 'confirmed.order_id');
-      })
+    $totalConfirmedCompleted = $confirmedOrderIdsForTotals
+      ->intersect($completedOrderIdsForTotals)
       ->count();
 
     $unassignedCompletedWithoutConfirmed = Order::query()
