@@ -892,7 +892,14 @@ public function showQuantifiedModal(Order $order)
       LanguageEnum::cases()
     );
 
-    $methodsOfPayment = array_map(fn (MethodOfPayment $method) => $method->value, MethodOfPayment::cases());
+    $methodsOfPayment = array_values(array_filter(
+      array_map(fn (MethodOfPayment $method) => $method->value, MethodOfPayment::cases()),
+      fn (string $method) => !in_array($method, [
+        MethodOfPayment::CHECK->value,
+        MethodOfPayment::ZELLE->value,
+        MethodOfPayment::AIA->value,
+      ], true)
+    ));
     $typeOfFinancing = array_map(fn (TypeOfFinancing $financing) => $financing->value, TypeOfFinancing::cases());
 
     $clients = Client::with(['companyContact'])
