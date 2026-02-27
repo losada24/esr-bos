@@ -191,16 +191,15 @@ const EventModal = ({
   const [attachmentRoleTargets, setAttachmentRoleTargets] = useState<AttachmentRoleTargets>(buildEmptyAttachmentRoleTargets())
   const [message, setMessage] = useState<string | null>(null)
 
-  const removeAttachmentProduct = (index: number) => {
+  const removeAttachmentProduct = (attachmentId: number) => {
     if (confirm('Are you sure you want to delete this attachment?')) {
-      router.delete(route('order.drop_attachment', { id: attachmentsList[index].id }), {
+      router.delete(route('order.drop_attachment', { id: attachmentId }), {
         onSuccess: (page: any) => {
           if (page.props.flash.success != null) {
-            const aux = attachmentsList.filter((_, i) => i !== index)
+            const aux = attachmentsList.filter((attachment) => Number(attachment.id) !== attachmentId)
             setAttachmentsList(aux)
-            const removedAttachmentId = Number(attachmentsList[index]?.id ?? 0)
-            if (Number.isInteger(removedAttachmentId) && removedAttachmentId > 0) {
-              setAttachmentRoleTargets((currentTargets) => removeAttachmentFromRoleTargets(currentTargets, removedAttachmentId))
+            if (Number.isInteger(attachmentId) && attachmentId > 0) {
+              setAttachmentRoleTargets((currentTargets) => removeAttachmentFromRoleTargets(currentTargets, attachmentId))
             }
           } else {
             setMessage(page.props.flash.error)
@@ -320,7 +319,15 @@ const EventModal = ({
     })
   }
 
-  const allowsAttachmentRoleSelection = event?.service !== 'PICKUP' && event?.service !== 'DELIVERY ONLY'
+  const allowsAttachmentRoleSelection = isAdminOrAccountManager && event?.service !== 'PICKUP' && event?.service !== 'DELIVERY ONLY'
+  const installerAttachmentIds = new Set(
+    (attachmentRoleTargets.installer ?? [])
+      .map((id) => Number(id))
+      .filter((id) => Number.isInteger(id) && id > 0)
+  )
+  const visibleAttachments = isInstaller
+    ? attachmentsList.filter((attachment) => installerAttachmentIds.has(Number(attachment.id)))
+    : attachmentsList
 
   const [showValidationErrors, setShowValidationErrors] = useState(false)
   const [replannedReasonsError, setReplannedReasonsError] = useState<string | null>(null)
@@ -1134,8 +1141,8 @@ const EventModal = ({
                         </tr>
                       </thead>
                       <tbody>
-                        {attachmentsList.map((attachment, index) => (
-                          <tr key={index} className='hover:bg-gray-100 focus-within:bg-gray-100'>
+                        {visibleAttachments.map((attachment) => (
+                          <tr key={attachment.id} className='hover:bg-gray-100 focus-within:bg-gray-100'>
                             <td className='border-t px-6 py-4 align-top'>{attachment.filename}</td>
                             <td className='border-t px-6 py-4 align-top'>{attachment.file_type}</td>
                             {allowsAttachmentRoleSelection && ATTACHMENT_ROLE_OPTIONS.map((roleOption) => {
@@ -1164,7 +1171,7 @@ const EventModal = ({
                                 <button
                                   onClick={(e) => {
                                     e.preventDefault()
-                                    removeAttachmentProduct(index)
+                                    removeAttachmentProduct(Number(attachment.id))
                                   }}
                                   title='Delete Attachment'
                                 >
@@ -1185,7 +1192,7 @@ const EventModal = ({
                     canCreate={(event?.id ?? 0) !== 0}
                   />
                 </fieldset>
-                {!(event?.service === 'PICKUP' || event?.service === 'DELIVERY ONLY') && (
+                {!isSupervisor && !(event?.service === 'PICKUP' || event?.service === 'DELIVERY ONLY') && (
                   <div className='flex flex-col gap-2'>
                     <strong>Payment List:</strong>
                     <div className='flex flex-col justify-start'>

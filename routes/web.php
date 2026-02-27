@@ -222,7 +222,7 @@ Route::middleware('auth')->group(function () {
       ->name('report.supervisor');
 
       Route::get('/report/installer', [ReportController::class, 'installer'])
-      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::INSTALLER->value .'|'. RoleEnum::SERVICE_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value] )
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::SERVICE_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value] )
       ->name('report.installer');
 
       Route::get('/report/show_installer/{id?}', [ReportController::class, 'showInstaller'])
