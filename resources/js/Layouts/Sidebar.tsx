@@ -7,7 +7,7 @@ import ReferralIcon from '@/Components/Icons/ReferralIcon'
 import SidebarLinkLabel from '@/Components/SidebarLinkLabel'
 import DashboardIcon from '@/Components/Icons/DashboardIcon'
 import CompanyIcon from '@/Components/Icons/CompanyIcon'
-import { isAdmin, isAccountManager, isAccounting, isFrontdesk, isFrontdeskAdmin, isOwner, isSupervisor, isServiceManager, isInstaller, isPaymentCoordinator, isOwnerAdmin, isFrontdeskEsr } from '@/Utils/user'
+import { isAdmin, isAccountManager, isAccounting, isFrontdesk, isFrontdeskAdmin, isOwner, isSupervisor, isServiceManager, isPaymentCoordinator, isOwnerAdmin, isFrontdeskEsr } from '@/Utils/user'
 import { type Role, type Auth } from '@/types'
 import WindowsIcon from '@/Components/Icons/WindowsIcon'
 import PrintIcon from '@/Components/Icons/PrintIcon'
@@ -33,12 +33,11 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
   const IS_OWNER = isOwner(roleNames)
   const IS_SUPERVISOR = isSupervisor(roleNames)
   const IS_SERVICE_MANAGER = isServiceManager(roleNames)
-  const IS_INSTALLER = isInstaller(roleNames)
   const IS_PAYMENT_COORDINATOR = isPaymentCoordinator(roleNames)
   const IS_OWNER_ADMIN = isOwnerAdmin(roleNames)
   const IS_FRONTDESK_ESR = isFrontdeskEsr(roleNames)
   const CAN_VIEW_REPORT_SUPERVISOR = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SUPERVISOR || IS_SERVICE_MANAGER
-  const CAN_VIEW_REPORT_INSTALLER = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_INSTALLER || IS_SERVICE_MANAGER || IS_PAYMENT_COORDINATOR
+  const CAN_VIEW_REPORT_INSTALLER = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER || IS_PAYMENT_COORDINATOR
   const CAN_VIEW_BIWEEKLY = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_PAYMENT_COORDINATOR
   const CAN_VIEW_PRODUCT_SUMMARY = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER
   const CAN_VIEW_ORDER_STATUS_SUMMARY = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER

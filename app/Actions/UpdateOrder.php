@@ -2,6 +2,7 @@
 
 namespace App\Actions;
 
+use App\Enum\RoleEnum;
 use App\Enum\OrderStatusEnum;
 use App\Enum\PaymentScheduleTypeEnum;
 use App\Enum\ServiceEnum;
@@ -768,6 +769,14 @@ class UpdateOrder
 
   private function syncAttachmentRoleTargets(Request $request, Order $order): void
   {
+    $user = auth()->user();
+    if (
+      !$user
+      || (!$user->hasRole(RoleEnum::ADMIN->value) && !$user->hasRole(RoleEnum::ACCOUNT_MANAGER->value))
+    ) {
+      return;
+    }
+
     if (!$request->exists('attachment_role_targets')) {
       return;
     }
