@@ -104,8 +104,7 @@ const EventModal = ({
   installation_teams,
   supervisors,
   isOwner,
-  status,
-  attachments
+  status
   // auth
 
 }: {
@@ -121,7 +120,6 @@ const EventModal = ({
   installation_teams: InstallationTeam[]
   supervisors: User[]
   status: string[]
-  attachments?: File[]
 }) => {
   const defaultState = {
     client_id: 0,
@@ -183,12 +181,12 @@ const EventModal = ({
   const [isVipClient, setIsVipClient] = useState<boolean>(false)
   const [editableData, setEditableData] = useState<any>(defaultState)
   const [isLoading, setIsLoading] = useState(false)
-  const [attachmentsArray, setAttachmentsArray] = useState<File[]>(attachments ?? [])
   const [attachmentPreInspection, SetAttachmentPreInspection] = useState<File []>([])
   const [attachmentInspection, SetAttachmentInspection] = useState<File []>([])
   const [attachmentIWalkTrough, SetAttachmentWalkTrough] = useState<File []>([])
   const [attachmentsList, setAttachmentsList] = useState<any[]>([])
   const [attachmentRoleTargets, setAttachmentRoleTargets] = useState<AttachmentRoleTargets>(buildEmptyAttachmentRoleTargets())
+  const [isUploadingAttachments, setIsUploadingAttachments] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
 
   const removeAttachmentProduct = (attachmentId: number) => {
@@ -219,6 +217,7 @@ const EventModal = ({
       setEditableData(defaultState)
       setEvent(null)
       setAttachmentRoleTargets(buildEmptyAttachmentRoleTargets())
+      setIsUploadingAttachments(false)
     } else if (id !== 0 && showModal) {
       // setIsLoading(true)
       const url = route('dashboard.get_event', { id })
@@ -276,6 +275,7 @@ const EventModal = ({
     } else {
       setEditableData(defaultState)
       setAttachmentRoleTargets(buildEmptyAttachmentRoleTargets())
+      setIsUploadingAttachments(false)
     }
   }, [showModal])
   // console.log(editableData)
@@ -296,6 +296,60 @@ const EventModal = ({
 
   const handleInputChange = (field: keyof Order, value: string) => {
     setEditableData((prev: any) => ({ ...prev, [field]: value }))
+  }
+
+  const handleAttachmentSelection = async (changeEvent: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(changeEvent.currentTarget.files ?? [])
+    changeEvent.currentTarget.value = ''
+    if (files.length === 0) {
+      return
+    }
+
+    if (!Number.isInteger(id) || id <= 0) {
+      setMessage('Unable to upload attachments for this order.')
+      return
+    }
+
+    setIsUploadingAttachments(true)
+    setMessage(null)
+
+    try {
+      const formData = new FormData()
+      files.forEach((file) => formData.append('attachments[]', file))
+
+      const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? ''
+      const response = await fetch(route('order.attachments.store', id), {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'X-CSRF-TOKEN': token
+        },
+        body: formData
+      })
+
+      const data = await response.json().catch(() => null)
+      if (!response.ok) {
+        if (response.status === 422 && data?.errors) {
+          const messages = Object.values(data.errors as Record<string, string[]>).flat()
+          throw new Error(String(messages[0] ?? 'Unable to upload attachments.'))
+        }
+
+        throw new Error(String(data?.message ?? 'Unable to upload attachments.'))
+      }
+
+      const nextAttachments: Attachment[] = Array.isArray(data?.attachments) ? data.attachments as Attachment[] : []
+      setAttachmentsList(nextAttachments)
+      const validAttachmentIds = nextAttachments
+        .map((attachment: Attachment) => Number(attachment.id))
+        .filter((attachmentId: number) => Number.isInteger(attachmentId) && attachmentId > 0)
+      setAttachmentRoleTargets((currentTargets) => (
+        normalizeAttachmentRoleTargets(currentTargets as unknown as Record<string, unknown>, validAttachmentIds)
+      ))
+    } catch (error: any) {
+      setMessage(error?.message ?? 'Unable to upload attachments.')
+    } finally {
+      setIsUploadingAttachments(false)
+    }
   }
 
   const toggleAttachmentRoleTarget = (role: AttachmentRoleKey, attachmentId: number, isChecked: boolean) => {
@@ -359,6 +413,11 @@ const EventModal = ({
   }
 
   const handle = () => {
+    if (isUploadingAttachments) {
+      setMessage('Please wait for attachments to finish uploading.')
+      return
+    }
+
     // Actualizamos editableData con los nuevos valores
     if (event?.service === 'DELIVERY AND INSTALLATION' && (editableData.installation_teams.length === 0 || editableData.supervisor_id === 0) && (editableData.status.value !== 'PLANNED' && editableData.status.value !== 'REPLANNED' && editableData.status.value !== 'DELIVERY CONFIRMED' && editableData.status.value !== 'MATERIALS RECEIVED')) {
       setReplannedReasonsError(null)
@@ -395,7 +454,6 @@ const EventModal = ({
       installation_teams: editableData.installation_teams.map((team: any) => team.value),
       supervisor_id: editableData.supervisor_id || null,
       status: editableData.status.value,
-      attachments: attachmentsArray,
       walk_trough_attach: attachmentIWalkTrough,
       inspection_attach: attachmentInspection,
       pre_inspection_attach: attachmentPreInspection,
@@ -429,7 +487,6 @@ const EventModal = ({
     SetAttachmentWalkTrough([])
     SetAttachmentInspection([])
     SetAttachmentPreInspection([])
-    setAttachmentsArray([])
     setAttachmentRoleTargets(buildEmptyAttachmentRoleTargets())
     setMessage(null)
   }
@@ -1119,14 +1176,18 @@ const EventModal = ({
                         className='form-input file:py-2 file:px-4 file:border-0 file:font-semibold p-0 file:bg-primary/90 ltr:file:mr-5 rtl:file:ml-5 file:text-white file:hover:bg-primary'
                         placeholder='Qty'
                         multiple={true}
-                        onChange={(event: any) => {
-                          setAttachmentsArray(event.currentTarget.files)
+                        disabled={isUploadingAttachments}
+                        onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                          void handleAttachmentSelection(event)
                         }}
                       />
+                      {isUploadingAttachments && (
+                        <span className='text-xs text-primary'>Uploading attachments...</span>
+                      )}
                     </>
                   )}
                   <div className='flex flex-col rounded-md border border-[#e0e6ed] dark:border-[#1b2e4b] mt-3'>
-                    {message !== '' && (
+                    {message && (
                       <div className='flex items-center p-3.5 rounded text-danger dark:bg-danger-dark-light'>{message}</div>
                     )}
                     <table className='w-full whitespace-nowrap'>
@@ -1219,7 +1280,7 @@ const EventModal = ({
           {((isAdminOrAccountManager) || (isSupervisor) || (isServiceManager) || (isOwner)) && (
             <div className="flex items-center justify-between mt-4">
               <button className='btn btn-danger uppercase' onClick={() => { onClose(); setShowValidationErrors(false); setReplannedReasonsError(null); setMessage(null) }}>Cancel</button>
-              <PrimaryButton className="btn btn-primary" type='button' onClick={() => { handle() }}>
+              <PrimaryButton className="btn btn-primary" type='button' disabled={isUploadingAttachments} onClick={() => { handle() }}>
                 Save
               </PrimaryButton>
             </div>

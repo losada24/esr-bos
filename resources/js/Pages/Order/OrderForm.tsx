@@ -384,6 +384,8 @@ const OrderForm = ({
   const [phoneSearchLoading, setPhoneSearchLoading] = useState<boolean>(false)
   const [phoneSearchError, setPhoneSearchError] = useState<string>('')
   const [phoneExists, setPhoneExists] = useState<boolean>(false)
+  const [isUploadingAttachments, setIsUploadingAttachments] = useState<boolean>(false)
+  const [attachmentUploadError, setAttachmentUploadError] = useState<string>('')
   const allowsAttachmentRoleSelection = values.service !== SERVICES.PICKUP && values.service !== SERVICES.DELIVERY_ONLY
 
   const syncAttachmentRoleTargets = useCallback((nextTargets: AttachmentRoleTargets) => {
@@ -443,6 +445,73 @@ const OrderForm = ({
           }
         }
       })
+    }
+  }
+
+  const handleAttachmentChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.currentTarget.files ?? [])
+    event.currentTarget.value = ''
+    if (files.length === 0) {
+      return
+    }
+
+    setAttachmentUploadError('')
+    if (isCreate) {
+      setFieldValue('attachments', files)
+      return
+    }
+
+    const orderId = Number(values.id ?? 0)
+    if (!Number.isInteger(orderId) || orderId <= 0) {
+      setAttachmentUploadError('Unable to upload attachments for this order.')
+      return
+    }
+
+    if (isUploadingAttachments) {
+      return
+    }
+
+    setIsUploadingAttachments(true)
+
+    try {
+      const formData = new FormData()
+      files.forEach((file) => formData.append('attachments[]', file))
+
+      const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? ''
+      const response = await fetch(route('order.attachments.store', orderId), {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'X-CSRF-TOKEN': token
+        },
+        body: formData
+      })
+
+      const data = await response.json().catch(() => null)
+      if (!response.ok) {
+        if (response.status === 422 && data?.errors) {
+          const messages = Object.values(data.errors as Record<string, string[]>).flat()
+          throw new Error(String(messages[0] ?? 'Unable to upload attachments.'))
+        }
+
+        throw new Error(String(data?.message ?? 'Unable to upload attachments.'))
+      }
+
+      const nextAttachments = Array.isArray(data?.attachments) ? data.attachments as Attachment[] : []
+      setAttachmentsList(nextAttachments)
+      setFieldValue('attachments', [])
+      const validAttachmentIds = nextAttachments
+        .map((attachment) => Number(attachment.id))
+        .filter((attachmentId) => Number.isInteger(attachmentId) && attachmentId > 0)
+      const normalizedTargets = normalizeAttachmentRoleTargets(
+        attachmentRoleTargets as unknown as Record<string, unknown>,
+        validAttachmentIds
+      )
+      syncAttachmentRoleTargets(normalizedTargets)
+    } catch (error: any) {
+      setAttachmentUploadError(error?.message ?? 'Unable to upload attachments.')
+    } finally {
+      setIsUploadingAttachments(false)
     }
   }
 
@@ -2097,12 +2166,18 @@ const OrderForm = ({
                 className="form-input file:py-2 file:px-4 file:border-0 file:font-semibold p-0 file:bg-primary/90 ltr:file:mr-5 rtl:file:ml-5 file:text-white file:hover:bg-primary"
                 placeholder="Qty"
                 multiple={true}
-                onChange={(event: any) => {
-                  const files = Array.from(event.currentTarget.files ?? [])
-                  setFieldValue('attachments', files)
+                disabled={isUploadingAttachments}
+                onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                  void handleAttachmentChange(event)
                 }}
               />
-              {attachments !== undefined && attachments.length > 0 && (
+              {isUploadingAttachments && (
+                <p className='mt-2 text-xs text-primary'>Uploading attachments...</p>
+              )}
+              {attachmentUploadError !== '' && (
+                <InputError message={attachmentUploadError} className="mt-2" />
+              )}
+              {attachmentsArray.length > 0 && (
                 <div className="flex flex-col rounded-md border border-[#e0e6ed] dark:border-[#1b2e4b] mt-3">
                   <table className='w-full whitespace-nowrap'>
                     <thead>
@@ -2196,7 +2271,7 @@ const OrderForm = ({
         </fieldset>
         <div className="flex items-center justify-between mt-4">
           <Link className='btn btn-danger uppercase' href={route('order.index')}>Cancel</Link>
-          <PrimaryButton className="btn btn-primary" type='submit'>
+          <PrimaryButton className="btn btn-primary" type='submit' disabled={isUploadingAttachments}>
             {isCreate ? 'Create' : 'Save'}
           </PrimaryButton>
         </div>
