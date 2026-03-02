@@ -28,6 +28,14 @@ export const requestSchema = Yup.object({
 export const orderQualifiedSchema = Yup.object({
   order_type: Yup.string().required('Order Type is required'),
   language: Yup.string().required('Language is required'),
+  change_order_enabled: Yup.boolean().optional(),
+  change_order_amount: Yup.number()
+    .nullable()
+    .when('change_order_enabled', {
+      is: true,
+      then: (schema) => schema.required('Change Order Price is required')
+    }),
+  change_order_note: Yup.string().nullable().max(2000, 'Change Order Note must be less than 2000 characters'),
   company_source_id: Yup.number()
     .nullable()
     .when('order_type', {
@@ -208,6 +216,9 @@ export type OrderFormValues = Order & {
   language: string
   door_quantity: number
   window_quantity: number
+  change_order_enabled?: boolean
+  change_order_amount?: number | null
+  change_order_note?: string
 }
 
 export const orderFormObj: OrderFormValues = {
@@ -266,6 +277,9 @@ export const orderFormObj: OrderFormValues = {
   language: '',
   door_quantity: 0,
   window_quantity: 0,
+  change_order_enabled: false,
+  change_order_amount: null,
+  change_order_note: '',
   schedule_appointment: null,
   schedule_appointment_iso: null,
   owner_ids: [],
@@ -360,6 +374,9 @@ export const loadOrderFormObj = (order: Order): OrderFormValues => {
     language: order.sale_form ? (order.sale_form.language ?? '') : '',
     door_quantity: order.sale_form ? order.sale_form.door_quantity : 0,
     window_quantity: order.sale_form ? order.sale_form.window_quantity : 0,
+    change_order_enabled: Boolean(order.change_order_payment),
+    change_order_amount: order.change_order_payment?.amount != null ? Number(order.change_order_payment.amount) : null,
+    change_order_note: order.change_order_payment?.note ?? '',
     schedule_appointment: order.schedule_appointment ?? null,
     schedule_appointment_iso: order.schedule_appointment_iso ?? null,
     owner_ids: Array.isArray(order.owner_ids) && order.owner_ids.length > 0

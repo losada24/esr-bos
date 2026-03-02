@@ -467,17 +467,39 @@ const OrderQualifiedForm = ({
                 {(submitCount && errors.name) ? <InputError message={errors.name} className="mt-2" /> : ''}
               </div>
               {showProjectAmountField && (
-                <div className={submitCount ? (errors.project_amount) ? 'has-error' : 'has-success' : ''}>
-                  <label htmlFor="project_amount">Project Amount</label>
-                  <Field
-                    id="project_amount"
-                    name="project_amount"
-                    className="form-input text-right"
-                    autoComplete="project_amount"
-                    placeholder="Project Amount"
-                    type="number"
-                    disabled={isProjectAmountLocked}
-                  />
+                <div className={`col-span-2 ${submitCount ? (errors.project_amount ? 'has-error' : 'has-success') : ''}`}>
+                  <label htmlFor="project_amount" className="mb-1">Project Amount</label>
+                  <div className="flex items-center gap-3">
+                    <Field
+                      id="project_amount"
+                      name="project_amount"
+                      className="form-input text-right"
+                      autoComplete="project_amount"
+                      placeholder="Project Amount"
+                      type="number"
+                      disabled={isProjectAmountLocked}
+                    />
+                    {!isCreate && values.has_contract_signed && (
+                      <div className="inline-flex items-center whitespace-nowrap">
+                        <Field
+                          id="change_order_enabled"
+                          name="change_order_enabled"
+                          className="form-checkbox"
+                          type="checkbox"
+                          checked={Boolean(values.change_order_enabled)}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                            const enabled = e.target.checked
+                            setFieldValue('change_order_enabled', enabled)
+                            if (!enabled) {
+                              setFieldValue('change_order_amount', null)
+                              setFieldValue('change_order_note', '')
+                            }
+                          }}
+                        />
+                        <label htmlFor="change_order_enabled" className="mb-0 ml-2">Change Order</label>
+                      </div>
+                    )}
+                  </div>
                   {(submitCount && errors.project_amount)
                     ? <InputError message={errors.project_amount} className="mt-2" />
                     : null}
@@ -486,7 +508,59 @@ const OrderQualifiedForm = ({
                       Locked after CONTRACT SIGNED BY CLIENT. Use Change Order for amount changes.
                     </div>
                   )}
+                  {(submitCount && errors.change_order_enabled) ? <div className="block"><InputError message={errors.change_order_enabled as string} className="mt-2" /></div> : ''}
                 </div>
+              )}
+              {!showProjectAmountField && !isCreate && values.has_contract_signed && (
+                <div className={submitCount ? (errors.change_order_enabled ? 'has-error inline-flex flex-col' : 'has-success inline-flex') : 'inline-flex items-end'}>
+                  <div className="flex">
+                    <Field
+                      id="change_order_enabled"
+                      name="change_order_enabled"
+                      className="form-checkbox"
+                      type="checkbox"
+                      checked={Boolean(values.change_order_enabled)}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                        const enabled = e.target.checked
+                        setFieldValue('change_order_enabled', enabled)
+                        if (!enabled) {
+                          setFieldValue('change_order_amount', null)
+                          setFieldValue('change_order_note', '')
+                        }
+                      }}
+                    />
+                    <label htmlFor="change_order_enabled" className="ml-2">Change Order</label>
+                  </div>
+                  {(submitCount && errors.change_order_enabled) ? <div className="block"><InputError message={errors.change_order_enabled as string} className="mt-2" /></div> : ''}
+                </div>
+              )}
+              {!isCreate && values.has_contract_signed && values.change_order_enabled && (
+                <>
+                  <div className={submitCount ? (errors.change_order_amount ? 'has-error' : 'has-success') : ''}>
+                    <label htmlFor="change_order_amount">Change Order Price</label>
+                    <Field
+                      id="change_order_amount"
+                      name="change_order_amount"
+                      className="form-input text-right"
+                      autoComplete="change_order_amount"
+                      placeholder="Change Order Price"
+                      type="number"
+                    />
+                    {(submitCount && errors.change_order_amount) ? <InputError message={errors.change_order_amount as string} className="mt-2" /> : ''}
+                  </div>
+                  <div className={submitCount ? (errors.change_order_note ? 'has-error' : 'has-success') : ''}>
+                    <label htmlFor="change_order_note">Change Order Note</label>
+                    <Field
+                      id="change_order_note"
+                      name="change_order_note"
+                      className="form-input"
+                      autoComplete="change_order_note"
+                      placeholder="Change Order Note"
+                      type="text"
+                    />
+                    {(submitCount && errors.change_order_note) ? <InputError message={errors.change_order_note as string} className="mt-2" /> : ''}
+                  </div>
+                </>
               )}
               <div className={submitCount ? (errors.job_address ? 'has-error' : 'has-success') : ''}>
                   <label htmlFor="job_address"> Job Address</label>

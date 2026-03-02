@@ -122,6 +122,80 @@ class UpdateQualifiedOrder
                 );
             }
 
+            if ($order->hasReachedContractSigned() && $request->has('change_order_enabled')) {
+                $changeOrderEnabled = filter_var($request->input('change_order_enabled'), FILTER_VALIDATE_BOOLEAN);
+                $changeOrderPayment = $order->orderPayments()->where('type', 'CHANGE_ORDER')->first();
+
+                if ($changeOrderEnabled) {
+                    $changeOrderPayload = [
+                        'amount' => $request->input('change_order_amount') ?? 0,
+                        'note' => $request->input('change_order_note'),
+                    ];
+
+                    if ($changeOrderPayment) {
+                        $before = [
+                            'amount' => (float) $changeOrderPayment->amount,
+                            'note' => $changeOrderPayment->note,
+                            'status' => $changeOrderPayment->status,
+                        ];
+
+                        $changeOrderPayment->update($changeOrderPayload);
+
+                        if (
+                            abs((float) $before['amount'] - (float) ($changeOrderPayment->amount ?? 0)) > 0.01 ||
+                            (string) $before['note'] !== (string) ($changeOrderPayment->note ?? '')
+                        ) {
+                            OrderFinancialEventLogger::log(
+                                $order,
+                                'CHANGE_ORDER_UPDATED',
+                                'Change order payment updated',
+                                [
+                                    'order_payment_id' => $changeOrderPayment->id,
+                                    'before' => $before,
+                                    'after' => [
+                                        'amount' => (float) $changeOrderPayment->amount,
+                                        'note' => $changeOrderPayment->note,
+                                        'status' => $changeOrderPayment->status,
+                                    ],
+                                ]
+                            );
+                        }
+                    } else {
+                        $createdChangeOrder = $order->orderPayments()->create([
+                            'type' => 'CHANGE_ORDER',
+                            'status' => 'PENDING',
+                            ...$changeOrderPayload,
+                        ]);
+
+                        OrderFinancialEventLogger::log(
+                            $order,
+                            'CHANGE_ORDER_CREATED',
+                            'Change order payment created',
+                            [
+                                'order_payment_id' => $createdChangeOrder->id,
+                                'amount' => (float) $createdChangeOrder->amount,
+                                'note' => $createdChangeOrder->note,
+                                'status' => $createdChangeOrder->status,
+                            ]
+                        );
+                    }
+                } elseif ($changeOrderPayment) {
+                    OrderFinancialEventLogger::log(
+                        $order,
+                        'CHANGE_ORDER_REMOVED',
+                        'Change order payment removed',
+                        [
+                            'order_payment_id' => $changeOrderPayment->id,
+                            'amount' => (float) $changeOrderPayment->amount,
+                            'note' => $changeOrderPayment->note,
+                            'status' => $changeOrderPayment->status,
+                        ]
+                    );
+
+                    $changeOrderPayment->delete();
+                }
+            }
+
             if ($statusChanged) {
                 $order->orderStatus()->create([
                     'status' => $order->status,
@@ -236,6 +310,8 @@ class UpdateQualifiedOrder
                 'saleForm',
                 'attachments.user',
                 'orderStatus.user',
+                'changeOrderPayment.paidBy',
+                'financialEvents.user',
                 'orderCompanyContacts.companyContact',
                 'orderCompanyContacts.client',
                 'orderCompanyContacts.source'
