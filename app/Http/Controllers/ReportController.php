@@ -1302,6 +1302,14 @@ class ReportController extends Controller
 
   private function buildDailyOrderStatusSummaryData(Carbon $startDate, Carbon $endDate): array
   {
+    $totalEligibleStatuses = [
+      OrderStatusEnum::NEW_CUSTOMER_REQUEST->value,
+      OrderStatusEnum::NEW_CUSTOMER_REQUEST_FOLLOW_UP->value,
+      OrderStatusEnum::NEW_CUSTOMER_REQUEST_STAND_BY->value,
+      OrderStatusEnum::LOST_CUSTOMER_REQUEST->value,
+      OrderStatusEnum::QUALIFIED->value,
+    ];
+
     $createdOrdersBase = Order::query()
       ->whereNull('orders.deleted_at')
       ->whereBetween('orders.created_at', [$startDate, $endDate])
@@ -1310,11 +1318,19 @@ class ReportController extends Controller
           ->orWhere('orders.order_type', '!=', OrderTypeEnum::COMMERCIAL->value);
       });
 
-    $cohort = (clone $createdOrdersBase)
+    $totalEligibleOrdersBase = (clone $createdOrdersBase)
+      ->whereExists(function ($query) use ($totalEligibleStatuses) {
+        $query->select(DB::raw(1))
+          ->from('order_status')
+          ->whereColumn('order_status.order_id', 'orders.id')
+          ->whereIn('order_status.status', $totalEligibleStatuses);
+      });
+
+    $cohort = (clone $totalEligibleOrdersBase)
       ->selectRaw('DATE(orders.created_at) as summary_date, orders.id as order_id')
       ->distinct();
 
-    $cohortWithSchedule = (clone $createdOrdersBase)
+    $cohortWithSchedule = (clone $totalEligibleOrdersBase)
       ->whereNotNull('orders.schedule_appointment')
       ->selectRaw('DATE(orders.created_at) as summary_date, orders.id as order_id')
       ->distinct();
@@ -1469,19 +1485,21 @@ class ReportController extends Controller
       ->whereIn('id', $uniqueOrderIds)
       ->orderBy('created_at')
       ->orderBy('id')
-      ->get(['id', 'name', 'created_at'])
+      ->get(['id', 'name', 'status', 'created_at'])
       ->map(static function (Order $order) {
         $orderName = trim((string) ($order->name ?? ''));
         $createdDate = $order->created_at ? $order->created_at->toDateString() : null;
-        $dateLabel = $createdDate ? ' - ' . $createdDate : '';
+        $currentStatus = trim((string) ($order->status ?? ''));
+        $statusLabel = $currentStatus !== '' ? $currentStatus : '-';
 
         return [
           'id' => $order->id,
           'name' => $orderName,
           'created_date' => $createdDate,
+          'current_status' => $statusLabel,
           'label' => $orderName !== ''
-            ? '#' . $order->id . ' - ' . $orderName . $dateLabel
-            : '#' . $order->id . $dateLabel,
+            ? '#' . $order->id . ' - ' . $orderName
+            : '#' . $order->id,
         ];
       })
       ->values();

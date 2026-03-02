@@ -48,15 +48,6 @@
             <td colspan="4">Total Estimate &amp; Appt Schedule: {{ $totals['estimate_appt_schedule'] }}</td>
         </tr>
         <tr>
-            <td colspan="4"><strong>Total Orders List:</strong> {{ collect($orderLists['total'] ?? [])->map(fn ($order) => ($order['name'] ? '#' . $order['id'] . ' - ' . $order['name'] : '#' . $order['id']) . ' | ' . ($order['created_date'] ?? '-'))->implode(', ') ?: 'No orders for the selected dates.' }}</td>
-        </tr>
-        <tr>
-            <td colspan="4"><strong>Qualified Orders List:</strong> {{ collect($orderLists['qualified'] ?? [])->map(fn ($order) => ($order['name'] ? '#' . $order['id'] . ' - ' . $order['name'] : '#' . $order['id']) . ' | ' . ($order['created_date'] ?? '-'))->implode(', ') ?: 'No qualified orders for the selected dates.' }}</td>
-        </tr>
-        <tr>
-            <td colspan="4"><strong>Estimate &amp; Appt Schedule Orders List:</strong> {{ collect($orderLists['estimate_appt_schedule'] ?? [])->map(fn ($order) => ($order['name'] ? '#' . $order['id'] . ' - ' . $order['name'] : '#' . $order['id']) . ' | ' . ($order['created_date'] ?? '-'))->implode(', ') ?: 'No estimate & appt schedule orders for the selected dates.' }}</td>
-        </tr>
-        <tr>
             <th>Date</th>
             <th>Total</th>
             <th>Qualified</th>
@@ -78,5 +69,95 @@
             <td><strong>{{ $totals['qualified'] }}</strong></td>
             <td><strong>{{ $totals['estimate_appt_schedule'] }}</strong></td>
         </tr>
+    </tbody>
+</table>
+
+@php
+    $totalList = collect($orderLists['total'] ?? []);
+    $qualifiedList = collect($orderLists['qualified'] ?? []);
+    $estimateList = collect($orderLists['estimate_appt_schedule'] ?? []);
+@endphp
+
+<table style="margin-top: 16px;">
+    <thead>
+        <tr>
+            <td class="header" colspan="3">Total Orders List</td>
+        </tr>
+        <tr>
+            <th>Order</th>
+            <th>Created Date</th>
+            <th>Current Status</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if ($totalList->isEmpty())
+            <tr>
+                <td colspan="3">No orders for the selected dates.</td>
+            </tr>
+        @else
+            @foreach ($totalList as $order)
+                <tr>
+                    <td>{{ !empty($order['name']) ? '#' . $order['id'] . ' - ' . $order['name'] : '#' . $order['id'] }}</td>
+                    <td>{{ $order['created_date'] ?? '-' }}</td>
+                    <td>{{ $order['current_status'] ?? '-' }}</td>
+                </tr>
+            @endforeach
+        @endif
+    </tbody>
+</table>
+
+<table style="margin-top: 16px;">
+    <thead>
+        <tr>
+            <td class="header" colspan="3">Qualified Orders List</td>
+        </tr>
+        <tr>
+            <th>Order</th>
+            <th>Created Date</th>
+            <th>Current Status</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if ($qualifiedList->isEmpty())
+            <tr>
+                <td colspan="3">No qualified orders for the selected dates.</td>
+            </tr>
+        @else
+            @foreach ($qualifiedList as $order)
+                <tr>
+                    <td>{{ !empty($order['name']) ? '#' . $order['id'] . ' - ' . $order['name'] : '#' . $order['id'] }}</td>
+                    <td>{{ $order['created_date'] ?? '-' }}</td>
+                    <td>{{ $order['current_status'] ?? '-' }}</td>
+                </tr>
+            @endforeach
+        @endif
+    </tbody>
+</table>
+
+<table style="margin-top: 16px;">
+    <thead>
+        <tr>
+            <td class="header" colspan="3">Estimate &amp; Appt Schedule Orders List</td>
+        </tr>
+        <tr>
+            <th>Order</th>
+            <th>Created Date</th>
+            <th>Current Status</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if ($estimateList->isEmpty())
+            <tr>
+                <td colspan="3">No estimate &amp; appt schedule orders for the selected dates.</td>
+            </tr>
+        @else
+            @foreach ($estimateList as $order)
+                <tr>
+                    <td>{{ !empty($order['name']) ? '#' . $order['id'] . ' - ' . $order['name'] : '#' . $order['id'] }}</td>
+                    <td>{{ $order['created_date'] ?? '-' }}</td>
+                    <td>{{ $order['current_status'] ?? '-' }}</td>
+                </tr>
+            @endforeach
+        @endif
     </tbody>
 </table>

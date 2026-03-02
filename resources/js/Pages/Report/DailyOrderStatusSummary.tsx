@@ -17,6 +17,7 @@ interface OrderListItem {
   id: number
   name: string
   created_date: string | null
+  current_status: string
   label: string
 }
 
@@ -46,6 +47,34 @@ export default function DailyOrderStatusSummary({ dailySummary, totals, orderLis
 
     return `${year}-${month}-${day}`
   }
+
+  const renderOrderListTable = (title: string, rows: OrderListItem[], emptyMessage: string) => (
+    <div className="rounded border border-gray-300 p-3">
+      <h3 className="font-semibold text-gray-800">{title} ({rows.length})</h3>
+      {rows.length === 0 ? (
+        <p className="mt-2 text-sm text-gray-500">{emptyMessage}</p>
+      ) : (
+        <table className="mt-2 w-full border border-gray-300 text-sm">
+          <thead className="bg-gray-100">
+            <tr>
+              <th className="border p-2 text-left">Order</th>
+              <th className="border p-2 text-left">Created Date</th>
+              <th className="border p-2 text-left">Current Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((order) => (
+              <tr key={order.id}>
+                <td className="border p-2">{order.name ? `#${order.id} - ${order.name}` : `#${order.id}`}</td>
+                <td className="border p-2">{order.created_date || '-'}</td>
+                <td className="border p-2">{order.current_status || '-'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  )
 
   return (
     <AuthenticatedLayout
@@ -139,50 +168,9 @@ export default function DailyOrderStatusSummary({ dailySummary, totals, orderLis
       </div>
 
       <div className="mt-6 grid grid-cols-1 gap-4">
-        <div className="rounded border border-gray-300 p-3">
-          <h3 className="font-semibold text-gray-800">Total Orders List ({orderLists.total.length})</h3>
-          {orderLists.total.length === 0 ? (
-            <p className="mt-2 text-sm text-gray-500">No orders for the selected dates.</p>
-          ) : (
-            <ul className="mt-2 space-y-1 text-sm text-gray-700">
-              {orderLists.total.map((order) => (
-                <li key={order.id}>
-                  {order.name ? `#${order.id} - ${order.name}` : `#${order.id}`} | {order.created_date || '-'}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
-        <div className="rounded border border-gray-300 p-3">
-          <h3 className="font-semibold text-gray-800">Qualified Orders List ({orderLists.qualified.length})</h3>
-          {orderLists.qualified.length === 0 ? (
-            <p className="mt-2 text-sm text-gray-500">No qualified orders for the selected dates.</p>
-          ) : (
-            <ul className="mt-2 space-y-1 text-sm text-gray-700">
-              {orderLists.qualified.map((order) => (
-                <li key={order.id}>
-                  {order.name ? `#${order.id} - ${order.name}` : `#${order.id}`} | {order.created_date || '-'}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
-        <div className="rounded border border-gray-300 p-3">
-          <h3 className="font-semibold text-gray-800">Estimate &amp; Appt Schedule Orders List ({orderLists.estimate_appt_schedule.length})</h3>
-          {orderLists.estimate_appt_schedule.length === 0 ? (
-            <p className="mt-2 text-sm text-gray-500">No estimate &amp; appt schedule orders for the selected dates.</p>
-          ) : (
-            <ul className="mt-2 space-y-1 text-sm text-gray-700">
-              {orderLists.estimate_appt_schedule.map((order) => (
-                <li key={order.id}>
-                  {order.name ? `#${order.id} - ${order.name}` : `#${order.id}`} | {order.created_date || '-'}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+        {renderOrderListTable('Total Orders List', orderLists.total, 'No orders for the selected dates.')}
+        {renderOrderListTable('Qualified Orders List', orderLists.qualified, 'No qualified orders for the selected dates.')}
+        {renderOrderListTable('Estimate & Appt Schedule Orders List', orderLists.estimate_appt_schedule, 'No estimate & appt schedule orders for the selected dates.')}
       </div>
 
       <table className="w-full border border-gray-300 mt-4">
