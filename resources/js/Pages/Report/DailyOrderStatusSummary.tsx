@@ -16,6 +16,7 @@ interface DailySummaryRow {
 interface OrderListItem {
   id: number
   name: string
+  created_date: string | null
   label: string
 }
 
@@ -38,6 +39,13 @@ type DailyOrderStatusSummaryProps = PageProps & {
 
 export default function DailyOrderStatusSummary({ dailySummary, totals, orderLists, startDate, endDate, auth }: DailyOrderStatusSummaryProps) {
   const exportQuery = `?start_date=${startDate || ''}&end_date=${endDate || ''}`
+  const formatLocalDate = (date: Date): string => {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+
+    return `${year}-${month}-${day}`
+  }
 
   return (
     <AuthenticatedLayout
@@ -65,7 +73,7 @@ export default function DailyOrderStatusSummary({ dailySummary, totals, orderLis
                 value={values.start_date}
                 options={{ dateFormat: 'Y-m-d' }}
                 onChange={([date]) => {
-                  const formatted = date.toISOString().split('T')[0]
+                  const formatted = formatLocalDate(date)
                   setFieldValue('start_date', formatted)
                 }}
                 className="form-input border p-2 rounded w-full"
@@ -80,7 +88,7 @@ export default function DailyOrderStatusSummary({ dailySummary, totals, orderLis
                 value={values.end_date}
                 options={{ dateFormat: 'Y-m-d' }}
                 onChange={([date]) => {
-                  const formatted = date.toISOString().split('T')[0]
+                  const formatted = formatLocalDate(date)
                   setFieldValue('end_date', formatted)
                 }}
                 className="form-input border p-2 rounded w-full"
@@ -136,9 +144,13 @@ export default function DailyOrderStatusSummary({ dailySummary, totals, orderLis
           {orderLists.total.length === 0 ? (
             <p className="mt-2 text-sm text-gray-500">No orders for the selected dates.</p>
           ) : (
-            <p className="mt-2 text-sm text-gray-700 break-words">
-              {orderLists.total.map((order) => order.label).join(', ')}
-            </p>
+            <ul className="mt-2 space-y-1 text-sm text-gray-700">
+              {orderLists.total.map((order) => (
+                <li key={order.id}>
+                  {order.name ? `#${order.id} - ${order.name}` : `#${order.id}`} | {order.created_date || '-'}
+                </li>
+              ))}
+            </ul>
           )}
         </div>
 
@@ -147,9 +159,13 @@ export default function DailyOrderStatusSummary({ dailySummary, totals, orderLis
           {orderLists.qualified.length === 0 ? (
             <p className="mt-2 text-sm text-gray-500">No qualified orders for the selected dates.</p>
           ) : (
-            <p className="mt-2 text-sm text-gray-700 break-words">
-              {orderLists.qualified.map((order) => order.label).join(', ')}
-            </p>
+            <ul className="mt-2 space-y-1 text-sm text-gray-700">
+              {orderLists.qualified.map((order) => (
+                <li key={order.id}>
+                  {order.name ? `#${order.id} - ${order.name}` : `#${order.id}`} | {order.created_date || '-'}
+                </li>
+              ))}
+            </ul>
           )}
         </div>
 
@@ -158,9 +174,13 @@ export default function DailyOrderStatusSummary({ dailySummary, totals, orderLis
           {orderLists.estimate_appt_schedule.length === 0 ? (
             <p className="mt-2 text-sm text-gray-500">No estimate &amp; appt schedule orders for the selected dates.</p>
           ) : (
-            <p className="mt-2 text-sm text-gray-700 break-words">
-              {orderLists.estimate_appt_schedule.map((order) => order.label).join(', ')}
-            </p>
+            <ul className="mt-2 space-y-1 text-sm text-gray-700">
+              {orderLists.estimate_appt_schedule.map((order) => (
+                <li key={order.id}>
+                  {order.name ? `#${order.id} - ${order.name}` : `#${order.id}`} | {order.created_date || '-'}
+                </li>
+              ))}
+            </ul>
           )}
         </div>
       </div>

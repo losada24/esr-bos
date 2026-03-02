@@ -18,13 +18,13 @@
         <td colspan="4" style="font-weight: bold;">Total Estimate &amp; Appt Schedule: {{ $totals['estimate_appt_schedule'] }}</td>
       </tr>
       <tr>
-        <td colspan="4"><strong>Total Orders List:</strong> {{ collect($orderLists['total'] ?? [])->pluck('label')->implode(', ') ?: 'No orders for the selected dates.' }}</td>
+        <td colspan="4"><strong>Total Orders List:</strong> {{ collect($orderLists['total'] ?? [])->map(fn ($order) => ($order['name'] ? '#' . $order['id'] . ' - ' . $order['name'] : '#' . $order['id']) . ' | ' . ($order['created_date'] ?? '-'))->implode(', ') ?: 'No orders for the selected dates.' }}</td>
       </tr>
       <tr>
-        <td colspan="4"><strong>Qualified Orders List:</strong> {{ collect($orderLists['qualified'] ?? [])->pluck('label')->implode(', ') ?: 'No qualified orders for the selected dates.' }}</td>
+        <td colspan="4"><strong>Qualified Orders List:</strong> {{ collect($orderLists['qualified'] ?? [])->map(fn ($order) => ($order['name'] ? '#' . $order['id'] . ' - ' . $order['name'] : '#' . $order['id']) . ' | ' . ($order['created_date'] ?? '-'))->implode(', ') ?: 'No qualified orders for the selected dates.' }}</td>
       </tr>
       <tr>
-        <td colspan="4"><strong>Estimate &amp; Appt Schedule Orders List:</strong> {{ collect($orderLists['estimate_appt_schedule'] ?? [])->pluck('label')->implode(', ') ?: 'No estimate & appt schedule orders for the selected dates.' }}</td>
+        <td colspan="4"><strong>Estimate &amp; Appt Schedule Orders List:</strong> {{ collect($orderLists['estimate_appt_schedule'] ?? [])->map(fn ($order) => ($order['name'] ? '#' . $order['id'] . ' - ' . $order['name'] : '#' . $order['id']) . ' | ' . ($order['created_date'] ?? '-'))->implode(', ') ?: 'No estimate & appt schedule orders for the selected dates.' }}</td>
       </tr>
       <tr></tr>
       <tr></tr>
