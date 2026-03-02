@@ -136,7 +136,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                               </>
                           )}
 
-                           {(IS_ADMIN || IS_OWNER || IS_OWNER_ADMIN || HAS_FRONTDESK_ADMIN_ROLE || IS_ACCOUNT_MANAGER) && (
+                           {(IS_ADMIN || IS_OWNER || IS_OWNER_ADMIN || HAS_FRONTDESK_ADMIN_ROLE || IS_ACCOUNT_MANAGER || IS_ACCOUNTING) && (
                             <>
                             <h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">
                                 <svg className="w-4 h-5 flex-none hidden" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">

@@ -264,11 +264,15 @@ Route::middleware('auth')->group(function () {
 
       Route::get('sales/calendar', [SalesController::class, 'calendar'])->name('sales.calendar');
       Route::get('sales/calendar/events/{year}/{month}', [SalesController::class, 'calendarEvents'])->name('sales.calendar.events');
+      Route::get('/sales', [SalesController::class, 'index'])
+        ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::ACCOUNTING->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::OWNER->value . '|'. RoleEnum::FRONTDESK_ADMIN->value])
+        ->name('sales.index');
       Route::get('/sales/tasks', [SalesController::class, 'tasks'])
-        ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::OWNER->value . '|'. RoleEnum::FRONTDESK_ADMIN->value])
+        ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::ACCOUNTING->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::OWNER->value . '|'. RoleEnum::FRONTDESK_ADMIN->value])
         ->name('sales.tasks');
       Route::resource('sales', SalesController::class)
-    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::OWNER->value. '|'. RoleEnum::FRONTDESK_ADMIN->value ]);
+        ->except(['index'])
+        ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::OWNER->value. '|'. RoleEnum::FRONTDESK_ADMIN->value ]);
       Route::get('order-processing', [OrderProcessingController::class, 'index'])
         ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::OWNER->value. '|'. RoleEnum::FRONTDESK_ADMIN->value ])
         ->name('order-processing.index');
