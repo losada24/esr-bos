@@ -371,6 +371,7 @@ class ReportController extends Controller
       'installation_teams' => new InstallationTeamCollection(
         InstallationTeam::filter($request->only(['text']))
         ->join('users', 'users.id', '=', 'installation_teams.user_id')
+        ->where('users.status', StatusUserEnum::ACTIVE->value)
         ->orderBy('users.name', 'asc')
         ->select('installation_teams.*') // Importante: evita conflictos en los campos seleccionados
         ->paginate()
