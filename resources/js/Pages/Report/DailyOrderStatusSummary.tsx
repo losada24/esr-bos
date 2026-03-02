@@ -13,18 +13,30 @@ interface DailySummaryRow {
   estimate_appt_schedule: number
 }
 
+interface OrderListItem {
+  id: number
+  name: string
+  label: string
+}
+
 type DailyOrderStatusSummaryProps = PageProps & {
   dailySummary: DailySummaryRow[]
   totals: {
     total: number
     qualified: number
     estimate_appt_schedule: number
+    total_orders: number
+  }
+  orderLists: {
+    total: OrderListItem[]
+    qualified: OrderListItem[]
+    estimate_appt_schedule: OrderListItem[]
   }
   startDate: string
   endDate: string
 }
 
-export default function DailyOrderStatusSummary({ dailySummary, totals, startDate, endDate, auth }: DailyOrderStatusSummaryProps) {
+export default function DailyOrderStatusSummary({ dailySummary, totals, orderLists, startDate, endDate, auth }: DailyOrderStatusSummaryProps) {
   const exportQuery = `?start_date=${startDate || ''}&end_date=${endDate || ''}`
 
   return (
@@ -109,10 +121,48 @@ export default function DailyOrderStatusSummary({ dailySummary, totals, startDat
         Total: {totals.total}
       </div>
       <div className="mt-2 text-left font-semibold text-gray-700">
+        Total Orders: {totals.total_orders}
+      </div>
+      <div className="mt-2 text-left font-semibold text-gray-700">
         Total Qualified: {totals.qualified}
       </div>
       <div className="mt-2 text-left font-semibold text-gray-700">
         Total Estimate &amp; Appt Schedule: {totals.estimate_appt_schedule}
+      </div>
+
+      <div className="mt-6 grid grid-cols-1 gap-4">
+        <div className="rounded border border-gray-300 p-3">
+          <h3 className="font-semibold text-gray-800">Total Orders List ({orderLists.total.length})</h3>
+          {orderLists.total.length === 0 ? (
+            <p className="mt-2 text-sm text-gray-500">No orders for the selected dates.</p>
+          ) : (
+            <p className="mt-2 text-sm text-gray-700 break-words">
+              {orderLists.total.map((order) => order.label).join(', ')}
+            </p>
+          )}
+        </div>
+
+        <div className="rounded border border-gray-300 p-3">
+          <h3 className="font-semibold text-gray-800">Qualified Orders List ({orderLists.qualified.length})</h3>
+          {orderLists.qualified.length === 0 ? (
+            <p className="mt-2 text-sm text-gray-500">No qualified orders for the selected dates.</p>
+          ) : (
+            <p className="mt-2 text-sm text-gray-700 break-words">
+              {orderLists.qualified.map((order) => order.label).join(', ')}
+            </p>
+          )}
+        </div>
+
+        <div className="rounded border border-gray-300 p-3">
+          <h3 className="font-semibold text-gray-800">Estimate &amp; Appt Schedule Orders List ({orderLists.estimate_appt_schedule.length})</h3>
+          {orderLists.estimate_appt_schedule.length === 0 ? (
+            <p className="mt-2 text-sm text-gray-500">No estimate &amp; appt schedule orders for the selected dates.</p>
+          ) : (
+            <p className="mt-2 text-sm text-gray-700 break-words">
+              {orderLists.estimate_appt_schedule.map((order) => order.label).join(', ')}
+            </p>
+          )}
+        </div>
       </div>
 
       <table className="w-full border border-gray-300 mt-4">
