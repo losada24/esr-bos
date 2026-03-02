@@ -9,10 +9,22 @@
         <td colspan="4" style="font-weight: bold;">Total: {{ $totals['total'] }}</td>
       </tr>
       <tr>
+        <td colspan="4" style="font-weight: bold;">Total Orders: {{ $totals['total_orders'] ?? count($orderLists['total'] ?? []) }}</td>
+      </tr>
+      <tr>
         <td colspan="4" style="font-weight: bold;">Total Qualified: {{ $totals['qualified'] }}</td>
       </tr>
       <tr>
         <td colspan="4" style="font-weight: bold;">Total Estimate &amp; Appt Schedule: {{ $totals['estimate_appt_schedule'] }}</td>
+      </tr>
+      <tr>
+        <td colspan="4"><strong>Total Orders List:</strong> {{ collect($orderLists['total'] ?? [])->pluck('label')->implode(', ') ?: 'No orders for the selected dates.' }}</td>
+      </tr>
+      <tr>
+        <td colspan="4"><strong>Qualified Orders List:</strong> {{ collect($orderLists['qualified'] ?? [])->pluck('label')->implode(', ') ?: 'No qualified orders for the selected dates.' }}</td>
+      </tr>
+      <tr>
+        <td colspan="4"><strong>Estimate &amp; Appt Schedule Orders List:</strong> {{ collect($orderLists['estimate_appt_schedule'] ?? [])->pluck('label')->implode(', ') ?: 'No estimate & appt schedule orders for the selected dates.' }}</td>
       </tr>
       <tr></tr>
       <tr></tr>

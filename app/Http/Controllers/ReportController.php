@@ -873,6 +873,7 @@ class ReportController extends Controller
     return Inertia::render('Report/DailyOrderStatusSummary', [
       'dailySummary' => $data['dailySummary'],
       'totals' => $data['totals'],
+      'orderLists' => $data['orderLists'],
       'startDate' => $data['startDate'],
       'endDate' => $data['endDate'],
     ]);
@@ -1301,13 +1302,21 @@ class ReportController extends Controller
 
   private function buildDailyOrderStatusSummaryData(Carbon $startDate, Carbon $endDate): array
   {
-    $cohort = OrderStatus::query()
-      ->selectRaw('DATE(created_at) as summary_date, order_id')
-      ->whereIn('status', [
+    $dailySummaryStatusBase = OrderStatus::query()
+      ->join('orders', 'orders.id', '=', 'order_status.order_id')
+      ->whereNull('orders.deleted_at')
+      ->where(function ($query) {
+        $query->whereNull('orders.order_type')
+          ->orWhere('orders.order_type', '!=', OrderTypeEnum::COMMERCIAL->value);
+      });
+
+    $cohort = (clone $dailySummaryStatusBase)
+      ->selectRaw('DATE(order_status.created_at) as summary_date, order_status.order_id')
+      ->whereIn('order_status.status', [
         OrderStatusEnum::NEW_CUSTOMER_REQUEST->value,
         OrderStatusEnum::QUALIFIED->value,
       ])
-      ->whereBetween('created_at', [$startDate, $endDate])
+      ->whereBetween('order_status.created_at', [$startDate, $endDate])
       ->distinct();
 
     $cohortCounts = DB::query()
@@ -1318,14 +1327,14 @@ class ReportController extends Controller
       ->get()
       ->keyBy('summary_date');
 
-    $statusCounts = OrderStatus::query()
-      ->selectRaw('DATE(created_at) as summary_date, status, COUNT(DISTINCT order_id) as total')
-      ->whereIn('status', [
+    $statusCounts = (clone $dailySummaryStatusBase)
+      ->selectRaw('DATE(order_status.created_at) as summary_date, order_status.status as status, COUNT(DISTINCT order_status.order_id) as total')
+      ->whereIn('order_status.status', [
         OrderStatusEnum::NEW_CUSTOMER_REQUEST->value,
         OrderStatusEnum::QUALIFIED->value,
       ])
-      ->whereBetween('created_at', [$startDate, $endDate])
-      ->groupBy('summary_date', 'status')
+      ->whereBetween('order_status.created_at', [$startDate, $endDate])
+      ->groupBy('summary_date', 'order_status.status')
       ->orderBy('summary_date')
       ->get();
 
@@ -1333,7 +1342,12 @@ class ReportController extends Controller
       ->join('orders', 'orders.id', '=', 'order_status.order_id')
       ->selectRaw('DATE(order_status.created_at) as summary_date, order_status.order_id')
       ->where('order_status.status', OrderStatusEnum::ESTIMATE_APPT_SCHEDULE->value)
+      ->where(function ($query) {
+        $query->whereNull('orders.order_type')
+          ->orWhere('orders.order_type', '!=', OrderTypeEnum::COMMERCIAL->value);
+      })
       ->whereNotNull('orders.schedule_appointment')
+      ->whereNull('orders.deleted_at')
       ->whereBetween('order_status.created_at', [$startDate, $endDate])
       ->distinct();
 
@@ -1348,6 +1362,28 @@ class ReportController extends Controller
       ->orderBy('estimate.summary_date')
       ->get()
       ->keyBy('summary_date');
+
+    $totalOrderIds = DB::query()
+      ->fromSub($cohort, 'cohort')
+      ->select('cohort.order_id')
+      ->distinct()
+      ->pluck('cohort.order_id');
+
+    $qualifiedOrderIds = (clone $dailySummaryStatusBase)
+      ->where('order_status.status', OrderStatusEnum::QUALIFIED->value)
+      ->whereBetween('order_status.created_at', [$startDate, $endDate])
+      ->distinct()
+      ->pluck('order_status.order_id');
+
+    $estimateOrderIds = DB::query()
+      ->fromSub($estimateBase, 'estimate')
+      ->joinSub($cohort, 'cohort', function ($join) {
+        $join->on('cohort.order_id', '=', 'estimate.order_id');
+        $join->on('cohort.summary_date', '=', 'estimate.summary_date');
+      })
+      ->select('estimate.order_id')
+      ->distinct()
+      ->pluck('estimate.order_id');
 
     $daily = [];
     $current = $startDate->copy()->startOfDay();
@@ -1409,12 +1445,51 @@ class ReportController extends Controller
       'estimate_appt_schedule' => $dailySummary->sum('estimate_appt_schedule'),
     ];
 
+    $orderLists = [
+      'total' => $this->buildOrderReferenceList($totalOrderIds)->values(),
+      'qualified' => $this->buildOrderReferenceList($qualifiedOrderIds)->values(),
+      'estimate_appt_schedule' => $this->buildOrderReferenceList($estimateOrderIds)->values(),
+    ];
+
+    $totals['total_orders'] = $orderLists['total']->count();
+
     return [
       'dailySummary' => $dailySummary,
       'totals' => $totals,
+      'orderLists' => $orderLists,
       'startDate' => $startDate->toDateString(),
       'endDate' => $endDate->toDateString(),
     ];
+  }
+
+  private function buildOrderReferenceList(Collection $orderIds): Collection
+  {
+    $uniqueOrderIds = $orderIds
+      ->map(static fn ($orderId) => (int) $orderId)
+      ->filter(static fn (int $orderId) => $orderId > 0)
+      ->unique()
+      ->values();
+
+    if ($uniqueOrderIds->isEmpty()) {
+      return collect();
+    }
+
+    return Order::query()
+      ->whereIn('id', $uniqueOrderIds)
+      ->orderBy('id')
+      ->get(['id', 'name'])
+      ->map(static function (Order $order) {
+        $orderName = trim((string) ($order->name ?? ''));
+
+        return [
+          'id' => $order->id,
+          'name' => $orderName,
+          'label' => $orderName !== ''
+            ? '#' . $order->id . ' - ' . $orderName
+            : '#' . $order->id,
+        ];
+      })
+      ->values();
   }
 
   private function resolveAccountingStatus(Request $request): ?string
