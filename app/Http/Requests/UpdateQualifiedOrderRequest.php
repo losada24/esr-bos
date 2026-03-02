@@ -62,6 +62,13 @@ class UpdateQualifiedOrderRequest extends FormRequest
             ],*/
             'notes' => 'nullable|string|max:1000',
             'project_amount' => ['nullable', 'numeric', 'min:0'],
+            'change_order_enabled' => 'boolean',
+            'change_order_amount' => [
+                'nullable',
+                'numeric',
+                Rule::requiredIf(fn () => filter_var($this->input('change_order_enabled'), FILTER_VALIDATE_BOOLEAN)),
+            ],
+            'change_order_note' => 'nullable|string|max:2000',
            
             // Solo obligatoria en COMMERCIAL
             'company_contact_id' => [  'nullable','required_if:order_type,COMMERCIAL', 'integer', 'exists:company_contacts,id'],
@@ -96,17 +103,18 @@ class UpdateQualifiedOrderRequest extends FormRequest
                 return;
             }
 
-            $incomingAmount = $this->input('project_amount');
-            if ($incomingAmount === null || $incomingAmount === '') {
-                return;
-            }
-
             $hasReachedContractSigned = $order->status === OrderStatusEnum::CONTRACT_SIGNED_BY_CLIENT->value
               || $order->orderStatus()
                 ->where('status', OrderStatusEnum::CONTRACT_SIGNED_BY_CLIENT->value)
                 ->exists();
 
-            if (!$hasReachedContractSigned) {
+            $changeOrderEnabled = filter_var($this->input('change_order_enabled'), FILTER_VALIDATE_BOOLEAN);
+            if ($changeOrderEnabled && !$hasReachedContractSigned) {
+                $validator->errors()->add('change_order_enabled', 'Change Order is available only after CONTRACT SIGNED BY CLIENT.');
+            }
+
+            $incomingAmount = $this->input('project_amount');
+            if ($incomingAmount === null || $incomingAmount === '' || !$hasReachedContractSigned) {
                 return;
             }
 
