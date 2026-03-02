@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Dispatch, SetStateAction } from 'react'
-import { Head, Link } from '@inertiajs/react'
+import { Head, Link, router } from '@inertiajs/react'
+import type { RequestPayload } from '@inertiajs/core'
 import { ReactSortable } from 'react-sortablejs'
 import { type PageProps, type Pipelines, type Tasks } from '@/types'
 import AuthenticatedCalendarLayout from '@/Layouts/AuthenticatedCalendarLayout'
@@ -8,7 +9,12 @@ import { tagClasses, type TagColor } from '@/Utils/tags'
 import EyeIcon from '@/Components/Icons/EyeIcon'
 import EditIcon from '@/Components/Icons/EditIcon'
 import InfoTooltip from '@/Components/InfoTooltip'
+import OrderBoardFilter, { type BoardFilters, type FilterFieldConfig } from '@/Components/OrderBoardFilter'
 import OrderGlobalSearch from '@/Components/OrderGlobalSearch'
+
+export interface OwnerOption { id: number, name: string }
+type IdOption = { id: number, name: string }
+type TagOption = { name: string | null }
 
 const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const
 
@@ -79,25 +85,6 @@ const clonePipelines = (pipelines: Pipelines[] = []): Pipelines[] => {
   }))
 }
 
-const INFINITE_SCROLL_STATUSES = new Set(['CLOSED WON'])
-const TASKS_PAGE_SIZE = 20
-const SCROLL_THRESHOLD_PX = 120
-type StatusPaginationState = { nextPage: number, loading: boolean }
-
-const buildPaginationState = (pipelines: Pipelines[] = []): Record<string, StatusPaginationState> => {
-  return pipelines.reduce<Record<string, StatusPaginationState>>((acc, pipeline) => {
-    if (!INFINITE_SCROLL_STATUSES.has(pipeline.title)) return acc
-    const key = pipeline.id == null ? (pipeline.title ?? '') : pipeline.id.toString()
-    if (!key) return acc
-    const loadedPages = pipeline.tasks.length ? Math.ceil(pipeline.tasks.length / TASKS_PAGE_SIZE) : 0
-    acc[key] = {
-      nextPage: loadedPages + 1,
-      loading: false
-    }
-    return acc
-  }, {})
-}
-
 const formatDateForDisplay = (date: Date): string => {
   const monthLabel = MONTH_LABELS[date.getMonth()] ?? MONTH_LABELS[0]
   const day = date.getDate().toString().padStart(2, '0')
@@ -137,11 +124,98 @@ const stampTaskAsUpdated = (task: Tasks): Tasks => ({
   date_edited: formatDateForDisplay(new Date())
 })
 
-const OrderProcessing = ({ auth, data }: PageProps & { data: Pipelines[] }) => {
+const INFINITE_SCROLL_STATUSES = new Set(['CLOSED WON'])
+const TASKS_PAGE_SIZE = 20
+const SCROLL_THRESHOLD_PX = 120
+
+type StatusPaginationState = { nextPage: number, loading: boolean }
+
+const buildFilterQuery = (filters?: BoardFilters): Record<string, unknown> => {
+  if (!filters) return {}
+  if (Array.isArray(filters.filters) && filters.filters.length) {
+    return {
+      filter_match: filters.filter_match ?? 'and',
+      filters: JSON.stringify(filters.filters)
+    }
+  }
+
+  const params: Record<string, string> = {}
+  if (filters.filter_field) params.filter_field = filters.filter_field
+  if (filters.filter_value != null && `${filters.filter_value}`.trim() !== '') params.filter_value = `${filters.filter_value}`
+  if (filters.filter_value_secondary != null && `${filters.filter_value_secondary}`.trim() !== '') params.filter_value_secondary = `${filters.filter_value_secondary}`
+  if (filters.filter_op) params.filter_op = filters.filter_op
+  if (filters.filter_value_min != null && `${filters.filter_value_min}`.trim() !== '') params.filter_value_min = `${filters.filter_value_min}`
+  if (filters.filter_value_max != null && `${filters.filter_value_max}`.trim() !== '') params.filter_value_max = `${filters.filter_value_max}`
+  return params
+}
+
+const buildPaginationState = (pipelines: Pipelines[] = []): Record<string, StatusPaginationState> => {
+  return pipelines.reduce<Record<string, StatusPaginationState>>((acc, pipeline) => {
+    if (!INFINITE_SCROLL_STATUSES.has(pipeline.title)) return acc
+    const key = pipeline.id == null ? (pipeline.title ?? '') : pipeline.id.toString()
+    if (!key) return acc
+    const loadedPages = pipeline.tasks.length ? Math.ceil(pipeline.tasks.length / TASKS_PAGE_SIZE) : 0
+    acc[key] = {
+      nextPage: loadedPages + 1,
+      loading: false
+    }
+    return acc
+  }, {})
+}
+
+const OrderProcessing = ({ auth, data, statuses, owners, supervisors, created_by_users, tags, sources, order_types, filters }: PageProps & { data: Pipelines[], statuses: string[], owners: OwnerOption[], supervisors: IdOption[], created_by_users: IdOption[], tags: TagOption[], sources: string[], order_types: string[], filters: BoardFilters }) => {
   const [pipelines, setPipelinesState] = useState<Pipelines[]>(() => sortPipelinesByRecentActivity(data))
   const [statusPagination, setStatusPagination] = useState<Record<string, StatusPaginationState>>(() => buildPaginationState(data))
+  const [isFilterOpen, setIsFilterOpen] = useState(false)
   const dragSnapshotRef = useRef<Pipelines[] | null>(null)
   const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? ''
+  const appliedFilters = filters ?? {}
+  const filterQueryParams = buildFilterQuery(appliedFilters)
+
+  const tagFilterOptions = useMemo(() => {
+    const seen = new Set<string>()
+    return tags
+      .map((tag) => (typeof tag.name === 'string' ? tag.name.trim() : ''))
+      .filter((name) => {
+        if (!name) return false
+        const normalized = name.toLowerCase()
+        if (seen.has(normalized)) return false
+        seen.add(normalized)
+        return true
+      })
+      .map((name) => ({ label: name, value: name }))
+  }, [tags])
+
+  const filterFields = useMemo<FilterFieldConfig[]>(() => ([
+    { value: 'name', label: 'Order Name', type: 'text', placeholder: 'Order name or job address' },
+    {
+      value: 'name_and_job_address',
+      label: 'Order Name + Job Address',
+      type: 'dual_text',
+      primaryLabel: 'Order Name',
+      secondaryLabel: 'Job Address',
+      placeholder: 'Order name',
+      secondaryPlaceholder: 'Job address'
+    },
+    { value: 'job_address', label: 'Job Address', type: 'text' },
+    { value: 'job_city', label: 'Job City', type: 'text' },
+    { value: 'status', label: 'Status', type: 'select', options: statuses.map((status) => ({ label: status, value: status })) },
+    { value: 'city', label: 'City', type: 'text' },
+    { value: 'job_state', label: 'Job State', type: 'text' },
+    { value: 'job_zip', label: 'Job Zip', type: 'text' },
+    { value: 'order_type', label: 'Order Type', type: 'select', options: order_types.map((type) => ({ label: type, value: type })) },
+    { value: 'is_supply', label: 'Is Supply', type: 'select', options: [{ label: 'Yes', value: '1' }, { label: 'No', value: '0' }] },
+    { value: 'owner', label: 'Owner', type: 'select', options: owners.map((owner) => ({ label: owner.name, value: owner.id.toString() })) },
+    { value: 'source', label: 'Source', type: 'select', options: sources.map((source) => ({ label: source, value: source })) },
+    { value: 'company_name', label: 'Company Name', type: 'text' },
+    { value: 'client_name', label: 'Client Name', type: 'text' },
+    { value: 'phone', label: 'Phone', type: 'text' },
+    { value: 'tag', label: 'Tag', type: 'select', options: tagFilterOptions },
+    { value: 'supervisor', label: 'Supervisor', type: 'select', options: supervisors.map((supervisor) => ({ label: supervisor.name, value: supervisor.id.toString() })) },
+    { value: 'created_by', label: 'Created By', type: 'select', options: created_by_users.map((user) => ({ label: user.name, value: user.id.toString() })) },
+    { value: 'created_time', label: 'Created Time', type: 'date' },
+    { value: 'project_amount', label: 'Project Amount', type: 'amount' }
+  ]), [statuses, order_types, owners, sources, tagFilterOptions, supervisors, created_by_users])
 
   useEffect(() => {
     const sorted = sortPipelinesByRecentActivity(data)
@@ -178,9 +252,6 @@ const OrderProcessing = ({ auth, data }: PageProps & { data: Pipelines[] }) => {
     )
   }
 
-  const formatCurrency = (value: number) =>
-    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value)
-
   const updateOrderStatus = async (orderId: number, status: string) => {
     const response = await fetch(route('frontdesk.updateStatus', { order: orderId }), {
       method: 'POST',
@@ -202,26 +273,23 @@ const OrderProcessing = ({ auth, data }: PageProps & { data: Pipelines[] }) => {
   const loadMoreTasks = useCallback(async (statusKey: string, nextPage: number) => {
     setStatusPagination(prev => ({
       ...prev,
-      [statusKey]: {
-        nextPage,
-        loading: true
-      }
+      [statusKey]: { nextPage, loading: true }
     }))
 
     try {
-      const response = await fetch(route('order-processing.tasks', { status: statusKey, page: nextPage, per_page: TASKS_PAGE_SIZE }), {
-        headers: { Accept: 'application/json' }
+      const response = await fetch(route('order-processing.tasks', { status: statusKey, page: nextPage, per_page: TASKS_PAGE_SIZE, ...filterQueryParams }), {
+        headers: {
+          Accept: 'application/json'
+        }
       })
-
       if (!response.ok) {
         throw new Error('Error loading tasks')
       }
-
-      const payload = await response.json()
+      const payload = await response.json().catch(() => null)
       const incomingTasks = Array.isArray(payload?.tasks) ? payload.tasks as Tasks[] : []
       const totalTasks = typeof payload?.total === 'number' ? payload.total : null
 
-      if (incomingTasks.length) {
+      if (incomingTasks.length > 0) {
         setPipelines(prev =>
           prev.map(p => {
             const pipelineKey = p.id == null ? (p.title ?? '') : p.id.toString()
@@ -266,15 +334,67 @@ const OrderProcessing = ({ auth, data }: PageProps & { data: Pipelines[] }) => {
         }
       }))
     }
-  }, [setPipelines, setStatusPagination])
+  }, [setPipelines, setStatusPagination, filterQueryParams])
+
+  const formatCurrency = (value: number) =>
+    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value)
 
   return (
     <AuthenticatedCalendarLayout
       auth={auth}
       printPanel={false}
       leftActions={<OrderGlobalSearch origin="order_processing" className="w-full max-w-[420px]" />}
+      actions={
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            className="btn btn-outline-primary"
+            onClick={() => { setIsFilterOpen(true) }}
+          >
+            Filter
+          </button>
+        </div>
+      }
     >
       <Head title="Order Processing" />
+      {isFilterOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/40"
+          onClick={() => { setIsFilterOpen(false) }}
+        />
+      )}
+      <div
+        className={`fixed right-0 top-0 z-50 h-full w-[380px] max-w-[90vw] transform bg-white shadow-2xl transition-transform duration-200 dark:bg-[#0b1220] ${isFilterOpen ? 'translate-x-0' : 'translate-x-full'}`}
+      >
+        <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3 dark:border-white-dark/10">
+          <div className="text-sm font-semibold text-slate-700 dark:text-white">Filters</div>
+          <button
+            type="button"
+            className="btn btn-outline-primary"
+            onClick={() => { setIsFilterOpen(false) }}
+          >
+            Close
+          </button>
+        </div>
+        <div className="h-[calc(100%-60px)] overflow-y-auto p-4">
+          <OrderBoardFilter
+            fields={filterFields}
+            initialFilters={appliedFilters}
+            onApply={(params) => {
+              const payload: RequestPayload = {
+                ...params,
+                ...(Array.isArray(params.filters) ? { filters: JSON.stringify(params.filters) } : {})
+              }
+              router.get(route('order-processing.index'), payload, { replace: true, preserveState: true })
+              setIsFilterOpen(false)
+            }}
+            onReset={() => {
+              router.get(route('order-processing.index'), {}, { replace: true, preserveState: false })
+              setIsFilterOpen(false)
+            }}
+          />
+        </div>
+      </div>
       <div className="w-full h-[calc(100vh-140px)]">
         <div className="h-full overflow-x-auto overflow-y-hidden">
           <div className="flex h-full min-w-max gap-4">
@@ -390,21 +510,21 @@ const OrderProcessing = ({ auth, data }: PageProps & { data: Pipelines[] }) => {
 
                         return (
                           <div className="sortable-list" key={task.id} data-id={task.id}>
-                              <div className="shadow bg-[#f4f4f4] dark:bg-white-dark/20 p-3 pb-4 rounded-md mb-5 space-y-2 cursor-move text-xs text-slate-600">
-                                <div className="flex items-center justify-between w-full">
-                                  <p className="flex items-center gap-2 break-all text-sm font-semibold text-slate-700 dark:text-white">
-                                    {task.title}
-                                    {isVipClient && (
-                                      <span className="inline-flex items-center rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-rose-700 ring-1 ring-rose-200 dark:bg-rose-500/20 dark:text-rose-200 dark:ring-rose-400/40">
-                                        VIP
-                                      </span>
-                                    )}
-                                  </p>
-                              <div className="flex items-center gap-2 text-[11px]">
+                            <div className="shadow bg-[#f4f4f4] dark:bg-white-dark/20 p-3 pb-4 rounded-md mb-5 space-y-2 cursor-move text-xs text-slate-600">
+                              <div className="flex items-center justify-between w-full">
+                                <p className="flex items-center gap-2 break-all text-sm font-semibold text-slate-700 dark:text-white">
+                                  {task.title}
+                                  {isVipClient && (
+                                    <span className="inline-flex items-center rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-rose-700 ring-1 ring-rose-200 dark:bg-rose-500/20 dark:text-rose-200 dark:ring-rose-400/40">
+                                      VIP
+                                    </span>
+                                  )}
+                                </p>
+                                <div className="flex items-center gap-2 text-[11px]">
                                   <Link
                                     href={route('frontdesk.order_view', task.id)}
-                                    title='Order View'
-                                    className='flex items-center gap-1 hover:text-success'
+                                    title="Order View"
+                                    className="flex items-center gap-1 hover:text-success"
                                   >
                                     <EyeIcon />
                                   </Link>
@@ -435,19 +555,19 @@ const OrderProcessing = ({ auth, data }: PageProps & { data: Pipelines[] }) => {
                                 {task.tags?.length
                                   ? (
                                       task.tags.map((tag, index) => (
-                                    <span
-                                      key={`${task.id}-tag-${index}`}
-                                      className={tagClasses((tag.color as TagColor) || 'gray')}
-                                      title={tag.name}
-                                    >
-                                      <span className="truncate">{tag.name}</span>
-                                    </span>
+                                        <span
+                                          key={`${task.id}-tag-${index}`}
+                                          className={tagClasses((tag.color as TagColor) || 'gray')}
+                                          title={tag.name}
+                                        >
+                                          <span className="truncate">{tag.name}</span>
+                                        </span>
                                       ))
                                     )
                                   : (
-                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium ring-1 bg-slate-100 text-slate-600 ring-slate-200">
-                                    No Tags
-                                  </span>
+                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium ring-1 bg-slate-100 text-slate-600 ring-slate-200">
+                                      No Tags
+                                    </span>
                                     )}
                               </div>
                               <p className="break-all">{task.date}</p>

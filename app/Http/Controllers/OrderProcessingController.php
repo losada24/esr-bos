@@ -2,32 +2,54 @@
 
 namespace App\Http\Controllers;
 
+use App\Enum\ContactSourceEnum;
 use App\Enum\OrderStatusEnum;
+use App\Enum\OrderTypeEnum;
 use App\Enum\RoleEnum;
+use App\Enum\StatusUserEnum;
 use App\Models\Order;
+use App\Models\Tag;
 use App\Models\User;
+use App\Support\OrderBoardFilter;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Http\Request;
-use Inertia\Inertia;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Inertia\Response;
+use Inertia\Inertia;
 
 class OrderProcessingController extends Controller
 {
     private const ORDER_PROCESSING_PAGE_SIZE = 20;
 
-    public function index(): Response
+    public function index(Request $request): Response
     {
         $user = auth()->user();
+        $filters = $request->only([
+            'filter_field',
+            'filter_value',
+            'filter_value_secondary',
+            'filter_op',
+            'filter_value_min',
+            'filter_value_max'
+        ]);
+        $filters['filters'] = $request->input('filters', []);
+        $filters['filter_match'] = $request->input('filter_match', 'and');
+        if (is_string($filters['filters'])) {
+            $decoded = json_decode($filters['filters'], true);
+            $filters['filters'] = is_array($decoded) ? $decoded : [];
+        }
+        $filterRows = is_array($filters['filters']) ? $filters['filters'] : [];
+        $filterMatch = (string) ($filters['filter_match'] ?? 'and');
+        $hasMultiFilters = count($filterRows) > 0;
+
         $processingStatuses = $this->processingStatuses();
         $paginatedStatuses = $this->paginatedProcessingStatuses();
         $pipelineStatusMap = $this->statusPipelineMap();
         $queryStatuses = array_keys($pipelineStatusMap);
         $nonPaginatedQueryStatuses = array_values(array_diff($queryStatuses, $paginatedStatuses));
 
-        $ordersQuery = Order::with($this->orderProcessingRelations())
-            ->whereIn('status', $nonPaginatedQueryStatuses);
+        $ordersQuery = Order::query()->whereIn('status', $nonPaginatedQueryStatuses);
 
         if ($this->isOwnerRestricted($user)) {
             $ordersQuery->whereHas('owners', function ($query) use ($user) {
@@ -35,15 +57,22 @@ class OrderProcessingController extends Controller
             });
         }
 
-        $orders = $ordersQuery->get();
+        $ordersQuery = $hasMultiFilters
+            ? OrderBoardFilter::applyMultiple($ordersQuery, $filterRows, $filterMatch)
+            : OrderBoardFilter::apply($ordersQuery, $filters);
+
+        $orders = $ordersQuery->with($this->orderProcessingRelations())->get();
 
         $determinePipelineStatus = function (Order $order) use ($pipelineStatusMap) {
             return $this->determinePipelineStatus($order, $pipelineStatusMap);
         };
 
-        $data = collect($processingStatuses)->map(function (string $status) use ($orders, $determinePipelineStatus, $paginatedStatuses, $user) {
+        $data = collect($processingStatuses)->map(function (string $status) use ($orders, $determinePipelineStatus, $paginatedStatuses, $user, $filters, $filterRows, $filterMatch, $hasMultiFilters) {
             if (in_array($status, $paginatedStatuses, true)) {
                 $closedWonQuery = $this->closedWonOrdersQuery($user);
+                $closedWonQuery = $hasMultiFilters
+                    ? OrderBoardFilter::applyMultiple($closedWonQuery, $filterRows, $filterMatch)
+                    : OrderBoardFilter::apply($closedWonQuery, $filters);
                 $total = (clone $closedWonQuery)->count();
                 $closedWonOrders = $closedWonQuery
                     ->with($this->orderProcessingRelations())
@@ -71,8 +100,71 @@ class OrderProcessingController extends Controller
             ];
         });
 
+        $ownerOptions = User::role(RoleEnum::OWNER->value)
+            ->select('id', 'name')
+            ->where('status', StatusUserEnum::ACTIVE->value)
+            ->orderBy('name');
+
+        if ($this->isOwnerRestricted($user)) {
+            $ownerOptions->where('id', $user->id);
+        }
+
+        $supervisors = User::role(RoleEnum::SUPERVISOR->value)
+            ->select('id', 'name')
+            ->where('status', StatusUserEnum::ACTIVE->value)
+            ->orderBy('name')
+            ->get();
+
+        $tags = Tag::query()
+            ->where('taggable_type', Order::class)
+            ->whereNotNull('name')
+            ->select('name')
+            ->orderBy('name')
+            ->get()
+            ->map(fn ($tag) => trim((string) $tag->name))
+            ->filter(fn ($name) => $name !== '')
+            ->unique(fn ($name) => mb_strtolower($name))
+            ->values()
+            ->map(fn ($name) => ['name' => $name]);
+
+        $createdByUsers = User::query()
+            ->select('id', 'name')
+            ->where('status', StatusUserEnum::ACTIVE->value)
+            ->orderBy('name')
+            ->get();
+
+        $sources = [
+            ContactSourceEnum::TIK_TOK->value,
+            ContactSourceEnum::INSTAGRAM_FACEBOOK->value,
+            ContactSourceEnum::EXTERNAL_REFERAL->value,
+            ContactSourceEnum::INTERNAL_REFERAL->value,
+            ContactSourceEnum::SIGNS->value,
+            ContactSourceEnum::WALK_IN->value,
+            ContactSourceEnum::ESW_REFER->value,
+            ContactSourceEnum::ESR_REFER->value,
+            ContactSourceEnum::YOUTUBE->value,
+            ContactSourceEnum::NEW_ORDER->value,
+            ContactSourceEnum::GOOGLE_ADS->value,
+            ContactSourceEnum::SAME_AS_ORDER->value,
+            ContactSourceEnum::DIRECT_CALL->value,
+        ];
+
+        $orderTypes = [
+            OrderTypeEnum::RESIDENTIAL->value,
+            OrderTypeEnum::COMMERCIAL->value,
+            OrderTypeEnum::SUPPLY->value,
+        ];
+
         return Inertia::render('OrderProcessing/Index', [
             'data' => $data,
+            'statuses' => $processingStatuses,
+            'owners' => $ownerOptions->get(),
+            'supervisors' => $supervisors,
+            'created_by_users' => $createdByUsers,
+            'tags' => $tags,
+            'sources' => $sources,
+            'order_types' => $orderTypes,
+            'filters' => $filters,
         ]);
     }
 
@@ -96,7 +188,28 @@ class OrderProcessingController extends Controller
             ], 422);
         }
 
+        $filters = $request->only([
+            'filter_field',
+            'filter_value',
+            'filter_value_secondary',
+            'filter_op',
+            'filter_value_min',
+            'filter_value_max'
+        ]);
+        $filters['filters'] = $request->input('filters', []);
+        $filters['filter_match'] = $request->input('filter_match', 'and');
+        if (is_string($filters['filters'])) {
+            $decoded = json_decode($filters['filters'], true);
+            $filters['filters'] = is_array($decoded) ? $decoded : [];
+        }
+        $filterRows = is_array($filters['filters']) ? $filters['filters'] : [];
+        $filterMatch = (string) ($filters['filter_match'] ?? 'and');
+        $hasMultiFilters = count($filterRows) > 0;
+
         $ordersQuery = $this->closedWonOrdersQuery($user);
+        $ordersQuery = $hasMultiFilters
+            ? OrderBoardFilter::applyMultiple($ordersQuery, $filterRows, $filterMatch)
+            : OrderBoardFilter::apply($ordersQuery, $filters);
         $total = (clone $ordersQuery)->count();
         $orders = $ordersQuery
             ->with($this->orderProcessingRelations())
