@@ -102,6 +102,7 @@ class SalesController extends Controller
         $ordersQuery = $hasMultiFilters
             ? OrderBoardFilter::applyMultiple($ordersQuery, $filterRows, $filterMatch)
             : OrderBoardFilter::apply($ordersQuery, $filters);
+        $totalProjectAmount = (float) ((clone $ordersQuery)->sum('project_amount') ?? 0);
 
         if (in_array($status, $paginatedStatuses, true)) {
             $total = (clone $ordersQuery)->count();
@@ -121,6 +122,7 @@ class SalesController extends Controller
             'id' => $status, // puedes usar el valor del estado como id
             'title' => $status,
             'total_tasks' => $total,
+            'total_project_amount' => $totalProjectAmount,
             'tasks' => $orders->map(function ($order) use ($status) {
                 return $this->mapSalesOrderToTask($order, $status);
             })->values(),

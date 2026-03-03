@@ -167,6 +167,23 @@ const TASKS_PAGE_SIZE = 20
 const SCROLL_THRESHOLD_PX = 120
 const CUSTOM_SCHEDULE_TYPE = 'CUSTOMIZED'
 type StatusPaginationState = { nextPage: number, loading: boolean }
+
+const toNumericAmount = (value?: number | string | null): number => {
+  if (typeof value === 'number') return Number.isFinite(value) ? value : 0
+  if (typeof value === 'string') {
+    const parsed = Number(value.replace(/,/g, ''))
+    return Number.isFinite(parsed) ? parsed : 0
+  }
+  return 0
+}
+
+const getPipelineTotalProjectAmount = (pipeline: Pipelines): number => {
+  if (typeof pipeline.total_project_amount === 'number' && Number.isFinite(pipeline.total_project_amount)) {
+    return pipeline.total_project_amount
+  }
+  return (pipeline.tasks ?? []).reduce((sum, task) => sum + toNumericAmount(task.project_amount), 0)
+}
+
 const buildFilterQuery = (filters?: BoardFilters): Record<string, unknown> => {
   if (!filters) return {}
   if (Array.isArray(filters.filters) && filters.filters.length) {
@@ -397,43 +414,69 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
     new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value)
 
   const restoreTaskToStatus = (task: Tasks, status: string) => {
+    const taskAmount = toNumericAmount(task.project_amount)
     setProjectList(prev => prev.map(p => {
       const pipelineId = p.id?.toString?.() ?? ''
       const isTarget = matchesStatus(pipelineId, status)
-      const hadTask = p.tasks.some(t => Number(t.id) === Number(task.id))
+      const existingTask = p.tasks.find(t => Number(t.id) === Number(task.id))
+      const hadTask = Boolean(existingTask)
+      const existingTaskAmount = toNumericAmount(existingTask?.project_amount)
       const filtered = p.tasks.filter(t => Number(t.id) !== Number(task.id))
       const baseTotal = p.total_tasks ?? p.tasks.length
+      const baseProjectAmount = getPipelineTotalProjectAmount(p)
       let nextTotal = baseTotal
+      let nextProjectAmount = baseProjectAmount
       if (hadTask && !isTarget) {
         nextTotal = Math.max(0, nextTotal - 1)
+        nextProjectAmount = Math.max(0, nextProjectAmount - existingTaskAmount)
       }
       if (isTarget && !hadTask) {
         nextTotal += 1
+        nextProjectAmount += taskAmount
       }
+      const totalChanged = nextTotal !== baseTotal
+      const amountChanged = nextProjectAmount !== baseProjectAmount
       if (isTarget) {
         const tasks = [...filtered, task]
-        return nextTotal === baseTotal ? { ...p, tasks } : { ...p, tasks, total_tasks: nextTotal }
+        if (!totalChanged && !amountChanged) return { ...p, tasks }
+        return { ...p, tasks, ...(totalChanged ? { total_tasks: nextTotal } : {}), ...(amountChanged ? { total_project_amount: nextProjectAmount } : {}) }
       }
-      return nextTotal === baseTotal ? { ...p, tasks: filtered } : { ...p, tasks: filtered, total_tasks: nextTotal }
+      if (!totalChanged && !amountChanged) return { ...p, tasks: filtered }
+      return { ...p, tasks: filtered, ...(totalChanged ? { total_tasks: nextTotal } : {}), ...(amountChanged ? { total_project_amount: nextProjectAmount } : {}) }
     }))
   }
 
   const applyTaskMove = (task: Tasks, newStatus: string) => {
+    const taskAmount = toNumericAmount(task.project_amount)
     setProjectList(prev => prev.map(pipeline => {
       const pipelineId = pipeline.id?.toString?.() ?? ''
       const isNew = matchesStatus(pipelineId, newStatus)
-      const hadTask = pipeline.tasks.some(t => Number(t.id) === Number(task.id))
+      const existingTask = pipeline.tasks.find(t => Number(t.id) === Number(task.id))
+      const hadTask = Boolean(existingTask)
+      const existingTaskAmount = toNumericAmount(existingTask?.project_amount)
       const filtered = pipeline.tasks.filter(t => Number(t.id) !== Number(task.id))
       const tasks = isNew ? [...filtered, task] : filtered
       const baseTotal = pipeline.total_tasks ?? pipeline.tasks.length
+      const baseProjectAmount = getPipelineTotalProjectAmount(pipeline)
       let nextTotal = baseTotal
+      let nextProjectAmount = baseProjectAmount
       if (hadTask && !isNew) {
         nextTotal = Math.max(0, nextTotal - 1)
+        nextProjectAmount = Math.max(0, nextProjectAmount - existingTaskAmount)
       }
       if (!hadTask && isNew) {
         nextTotal += 1
+        nextProjectAmount += taskAmount
       }
-      return nextTotal === baseTotal ? { ...pipeline, tasks } : { ...pipeline, tasks, total_tasks: nextTotal }
+      const totalChanged = nextTotal !== baseTotal
+      const amountChanged = nextProjectAmount !== baseProjectAmount
+      if (!totalChanged && !amountChanged) return { ...pipeline, tasks }
+      return {
+        ...pipeline,
+        tasks,
+        ...(totalChanged ? { total_tasks: nextTotal } : {}),
+        ...(amountChanged ? { total_project_amount: nextProjectAmount } : {})
+      }
     }))
   }
 
@@ -1161,12 +1204,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
               const isInfiniteStatus = INFINITE_SCROLL_STATUSES.has(project.title)
               const hasMoreTasks = isInfiniteStatus && project.tasks.length < totalTasks
               const pagination = statusPagination[statusKey]
-              const totalProjectAmount = project.tasks.reduce((sum: number, task: Tasks) => {
-                const raw = task.project_amount ?? 0
-                const sanitized = typeof raw === 'string' ? raw.replace(/,/g, '') : raw
-                const amount = Number(sanitized)
-                return Number.isFinite(amount) ? sum + amount : sum
-              }, 0)
+              const totalProjectAmount = getPipelineTotalProjectAmount(project)
               return (
                 <div
                   key={project.id}
@@ -1398,7 +1436,9 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
                               })
                               if (!removed) return pipeline
                               const nextTotal = Math.max(0, (pipeline.total_tasks ?? pipeline.tasks.length) - 1)
-                              return { ...pipeline, tasks: newTasks, total_tasks: nextTotal }
+                              const removedAmount = movedTask ? toNumericAmount(movedTask.project_amount) : 0
+                              const nextAmount = Math.max(0, getPipelineTotalProjectAmount(pipeline) - removedAmount)
+                              return { ...pipeline, tasks: newTasks, total_tasks: nextTotal, total_project_amount: nextAmount }
                             }
                             return pipeline
                           })
