@@ -51,6 +51,7 @@ class OrderStorageController extends Controller
             $ordersQuery = $hasMultiFilters
                 ? OrderBoardFilter::applyMultiple($ordersQuery, $filterRows, $filterMatch)
                 : OrderBoardFilter::apply($ordersQuery, $filters);
+            $totalProjectAmount = (float) ((clone $ordersQuery)->sum('project_amount') ?? 0);
 
             if (in_array($status, $paginatedStatuses, true)) {
                 $total = (clone $ordersQuery)->count();
@@ -70,6 +71,7 @@ class OrderStorageController extends Controller
                 'id' => $status,
                 'title' => $status,
                 'total_tasks' => $total,
+                'total_project_amount' => $totalProjectAmount,
                 'tasks' => $orders->map(fn (Order $order) => $this->mapOrderToTask($order))->values(),
             ];
         });
