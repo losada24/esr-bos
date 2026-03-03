@@ -178,8 +178,8 @@ const toNumericAmount = (value?: number | string | null): number => {
 }
 
 const getPipelineTotalProjectAmount = (pipeline: Pipelines): number => {
-  if (typeof pipeline.total_project_amount === 'number' && Number.isFinite(pipeline.total_project_amount)) {
-    return pipeline.total_project_amount
+  if (pipeline.total_project_amount != null && `${pipeline.total_project_amount}`.trim() !== '') {
+    return toNumericAmount(pipeline.total_project_amount)
   }
   return (pipeline.tasks ?? []).reduce((sum, task) => sum + toNumericAmount(task.project_amount), 0)
 }

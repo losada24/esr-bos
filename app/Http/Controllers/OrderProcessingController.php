@@ -74,6 +74,7 @@ class OrderProcessingController extends Controller
                     ? OrderBoardFilter::applyMultiple($closedWonQuery, $filterRows, $filterMatch)
                     : OrderBoardFilter::apply($closedWonQuery, $filters);
                 $total = (clone $closedWonQuery)->count();
+                $totalProjectAmount = (float) ((clone $closedWonQuery)->sum('project_amount') ?? 0);
                 $closedWonOrders = $closedWonQuery
                     ->with($this->orderProcessingRelations())
                     ->orderByDesc('updated_at')
@@ -84,6 +85,7 @@ class OrderProcessingController extends Controller
                     'id' => $status,
                     'title' => $status,
                     'total_tasks' => $total,
+                    'total_project_amount' => $totalProjectAmount,
                     'tasks' => $closedWonOrders->map(fn (Order $order) => $this->mapOrderToTask($order))->values(),
                 ];
             }
@@ -96,6 +98,7 @@ class OrderProcessingController extends Controller
                 'id' => $status,
                 'title' => $status,
                 'total_tasks' => $ordersByStatus->count(),
+                'total_project_amount' => (float) $ordersByStatus->sum(fn (Order $order) => (float) ($order->project_amount ?? 0)),
                 'tasks' => $ordersByStatus->map(fn (Order $order) => $this->mapOrderToTask($order))->values(),
             ];
         });

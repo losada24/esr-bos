@@ -130,6 +130,22 @@ const SCROLL_THRESHOLD_PX = 120
 
 type StatusPaginationState = { nextPage: number, loading: boolean }
 
+const toNumericAmount = (value?: number | string | null): number => {
+  if (typeof value === 'number') return Number.isFinite(value) ? value : 0
+  if (typeof value === 'string') {
+    const parsed = Number(value.replace(/,/g, ''))
+    return Number.isFinite(parsed) ? parsed : 0
+  }
+  return 0
+}
+
+const getPipelineTotalProjectAmount = (pipeline: Pipelines): number => {
+  if (pipeline.total_project_amount != null && `${pipeline.total_project_amount}`.trim() !== '') {
+    return toNumericAmount(pipeline.total_project_amount)
+  }
+  return (pipeline.tasks ?? []).reduce((sum, task) => sum + toNumericAmount(task.project_amount), 0)
+}
+
 const buildFilterQuery = (filters?: BoardFilters): Record<string, unknown> => {
   if (!filters) return {}
   if (Array.isArray(filters.filters) && filters.filters.length) {
@@ -247,7 +263,17 @@ const OrderProcessing = ({ auth, data, statuses, owners, supervisors, created_by
         const baseTotal = pipeline.total_tasks ?? previousTasks.length
         const delta = nextTasks.length - previousTasks.length
         const nextTotal = Math.max(0, baseTotal + delta)
-        return { ...pipeline, tasks: nextTasks, total_tasks: nextTotal }
+        const previousById = new Map(previousTasks.map(task => [task.id, task]))
+        const nextById = new Map(nextTasks.map(task => [task.id, task]))
+        const removedAmount = previousTasks.reduce((sum, task) => {
+          return nextById.has(task.id) ? sum : sum + toNumericAmount(task.project_amount)
+        }, 0)
+        const addedAmount = nextTasks.reduce((sum, task) => {
+          return previousById.has(task.id) ? sum : sum + toNumericAmount(task.project_amount)
+        }, 0)
+        const baseProjectAmount = getPipelineTotalProjectAmount(pipeline)
+        const nextProjectAmount = Math.max(0, baseProjectAmount - removedAmount + addedAmount)
+        return { ...pipeline, tasks: nextTasks, total_tasks: nextTotal, total_project_amount: nextProjectAmount }
       })
     )
   }
@@ -404,12 +430,7 @@ const OrderProcessing = ({ auth, data, statuses, owners, supervisors, created_by
               const isInfiniteStatus = INFINITE_SCROLL_STATUSES.has(pipeline.title)
               const hasMoreTasks = isInfiniteStatus && pipeline.tasks.length < totalTasks
               const pagination = statusPagination[statusKey]
-              const totalProjectAmount = pipeline.tasks.reduce((sum, task) => {
-                const raw = task.project_amount ?? 0
-                const sanitized = typeof raw === 'string' ? raw.replace(/,/g, '') : raw
-                const amount = Number(sanitized)
-                return Number.isFinite(amount) ? sum + amount : sum
-              }, 0)
+              const totalProjectAmount = getPipelineTotalProjectAmount(pipeline)
 
               return (
                 <div

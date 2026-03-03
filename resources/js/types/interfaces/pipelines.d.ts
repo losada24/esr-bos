@@ -51,6 +51,6 @@ export interface Pipelines {
   title: string
   client_id: number
   total_tasks?: number
-  total_project_amount?: number
+  total_project_amount?: number | string | null
   tasks: Tasks[]
 }
