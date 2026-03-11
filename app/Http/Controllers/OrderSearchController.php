@@ -40,6 +40,7 @@ class OrderSearchController extends Controller
                 'client.companyContact:id,name',
                 'orderCompanyContacts.companyContact:id,name',
                 'orderCompanyContacts.client:id,name',
+                'owners:id,name',
             ]);
 
         if (!empty($statuses)) {
@@ -109,6 +110,7 @@ class OrderSearchController extends Controller
                 'name' => $order->name,
                 'status' => $order->status,
                 'client' => $this->resolveClientName($order),
+                'owner' => $this->resolveOwnerName($order),
             ];
         })->values();
 
@@ -214,5 +216,25 @@ class OrderSearchController extends Controller
             });
 
         return $orderContact?->client?->name;
+    }
+
+    private function resolveOwnerName(Order $order): ?string
+    {
+        if (!$order->relationLoaded('owners')) {
+            return null;
+        }
+
+        $ownerNames = $order->owners
+            ->pluck('name')
+            ->filter(function (?string $name) {
+                return filled($name);
+            })
+            ->values();
+
+        if ($ownerNames->isEmpty()) {
+            return null;
+        }
+
+        return $ownerNames->implode(', ');
     }
 }

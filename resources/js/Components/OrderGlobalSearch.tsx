@@ -17,6 +17,7 @@ export type OrderSearchResult = {
   name: string | null
   status: string | null
   client: string | null
+  owner: string | null
 }
 
 type OrderGlobalSearchProps = {
@@ -196,6 +197,9 @@ const OrderGlobalSearch = ({ origin, className = '' }: OrderGlobalSearchProps) =
                     </div>
                     <div className="truncate text-xs text-slate-500 dark:text-white/60">
                       {result.client ?? 'No client'}
+                    </div>
+                    <div className="truncate text-[11px] text-slate-500 dark:text-white/60">
+                      Owner: {result.owner ?? 'No owner'}
                     </div>
                   </div>
                   <span className="shrink-0 rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-600 dark:border-white-dark/30 dark:bg-white/10 dark:text-white/80">
