@@ -37,6 +37,7 @@ use Illuminate\Http\JsonResponse;
 use App\Support\PaymentScheduleCalculator;
 use App\Support\PaymentInstallmentPresenter;
 use App\Support\OrderFinancialEventLogger;
+use App\Support\OrderPaymentInformationAuditLogger;
 use App\Support\PaymentScheduleTemplates;
 use App\Support\OrderBoardFilter;
 
@@ -1113,6 +1114,10 @@ class SalesController extends Controller
 
     $orderCompanyContacts = $order->orderCompanyContacts()->with('client')->get();
     $companyCount = $orderCompanyContacts->count();
+    $methodOfPayment = (string) $request->input('method_of_payment');
+    $cashMethod = MethodOfPayment::CASH->value;
+    $cashAndFinancedMethod = MethodOfPayment::FINANCEDCASH->value;
+    $requiresSchedule = in_array($methodOfPayment, [$cashMethod, $cashAndFinancedMethod], true);
 
     $rules = [
       'project_name' => ['required', 'string', 'max:255'],
@@ -1133,7 +1138,7 @@ class SalesController extends Controller
       'down_payment' => ['nullable', 'numeric', 'min:0'],
       'payment_schedule_type' => [
         'nullable',
-        Rule::requiredIf($request->input('method_of_payment') === MethodOfPayment::CASH->value),
+        Rule::requiredIf($requiresSchedule),
         Rule::in(PaymentScheduleTemplates::types()),
       ],
       'custom_schedule' => ['nullable', 'array', 'max:6'],
@@ -1155,9 +1160,29 @@ class SalesController extends Controller
 
     $validator = Validator::make($request->all(), $rules);
     $validator->after(function ($validator) use ($request) {
+      $cashMethod = MethodOfPayment::CASH->value;
+      $cashAndFinancedMethod = MethodOfPayment::FINANCEDCASH->value;
+      $methodOfPayment = (string) $request->input('method_of_payment');
       $scheduleType = (string) $request->input('payment_schedule_type');
-      $requiresSchedule = $request->input('method_of_payment') === MethodOfPayment::CASH->value;
+      $requiresSchedule = in_array($methodOfPayment, [$cashMethod, $cashAndFinancedMethod], true);
+      $isCashAndFinanced = $methodOfPayment === $cashAndFinancedMethod;
       $customSchedule = $request->input('custom_schedule', []);
+      $projectAmount = (float) $request->input('project_amount', 0);
+      $cashAmount = (float) $request->input('down_payment', 0);
+
+      if ($isCashAndFinanced) {
+        if ($request->input('down_payment') === null) {
+          $validator->errors()->add('down_payment', 'Cash amount is required for CASH AND FINANCED.');
+        } elseif ($cashAmount <= 0) {
+          $validator->errors()->add('down_payment', 'Cash amount must be greater than 0.');
+        } elseif ($projectAmount > 0 && $cashAmount >= $projectAmount) {
+          $validator->errors()->add('down_payment', 'Cash amount must be less than project amount.');
+        }
+
+        if ($scheduleType !== PaymentScheduleTypeEnum::CUSTOMIZED->value) {
+          $validator->errors()->add('payment_schedule_type', 'CASH AND FINANCED requires CUSTOMIZED payment schedule.');
+        }
+      }
 
       if ($requiresSchedule && $scheduleType === PaymentScheduleTypeEnum::CUSTOMIZED->value) {
         if (!is_array($customSchedule) || count($customSchedule) === 0) {
@@ -1170,21 +1195,30 @@ class SalesController extends Controller
           $total += (float) ($item['amount'] ?? 0);
         }
 
-        $projectAmount = (float) $request->input('project_amount', 0);
-        if (abs($total - $projectAmount) > 0.01) {
-          $validator->errors()->add('custom_schedule', 'Custom payments must total the project amount.');
+        $targetAmount = $isCashAndFinanced ? $cashAmount : $projectAmount;
+        if ($targetAmount > 0 && abs($total - $targetAmount) > 0.01) {
+          $validator->errors()->add(
+            'custom_schedule',
+            $isCashAndFinanced
+              ? 'Custom payments must total the cash amount.'
+              : 'Custom payments must total the project amount.'
+          );
         }
       }
     });
 
     $validated = $validator->validate();
 
-    if ($order->hasReachedContractSigned()) {
+    $existingSchedule = $order->paymentSchedule()->with('installments')->first();
+    $hasRecordedPayments = $existingSchedule
+      ? $existingSchedule->installments()->whereHas('movements')->exists()
+      : false;
+    if ($hasRecordedPayments) {
       $currentAmount = (float) ($order->project_amount ?? 0);
       $incomingAmount = (float) ($validated['project_amount'] ?? 0);
       if (abs($incomingAmount - $currentAmount) > 0.01) {
         throw ValidationException::withMessages([
-          'project_amount' => 'Project amount cannot be edited after CONTRACT SIGNED BY CLIENT. Use Change Order instead.',
+          'project_amount' => 'Project amount cannot be changed after payments are recorded.',
         ]);
       }
     }
@@ -1208,6 +1242,8 @@ class SalesController extends Controller
     }
 
     DB::transaction(function () use ($order, $validated, $request, $orderCompanyContacts, $companyCount) {
+      $order->loadMissing('paymentSchedule.installments');
+      $beforePaymentInformation = OrderPaymentInformationAuditLogger::snapshot($order);
       $oldProjectAmount = (float) ($order->project_amount ?? 0);
       $newPipelineStatus = $order->is_supply
         ? OrderStatusEnum::ORDER_MATERIALS_AND_FILE_ORGANIZATION->value
@@ -1231,7 +1267,9 @@ class SalesController extends Controller
       $order->type_of_financing = isset($validated['type_of_financing']) && $validated['type_of_financing'] !== null
         ? trim($validated['type_of_financing'])
         : null;
-      $order->down_payment = $validated['down_payment'] ?? null;
+      $order->down_payment = $validated['method_of_payment'] === MethodOfPayment::FINANCEDCASH->value
+        ? ($validated['down_payment'] ?? null)
+        : null;
       $order->name_check = $request->boolean('name_check');
       $order->address_check = $request->boolean('address_check');
       $order->amount_check = $request->boolean('amount_check');
@@ -1310,8 +1348,16 @@ class SalesController extends Controller
 
       $scheduleType = $validated['payment_schedule_type'] ?? null;
       $customSchedule = $validated['custom_schedule'] ?? [];
-      $totalAmount = (float) $order->project_amount;
-      $requiresSchedule = $validated['method_of_payment'] === MethodOfPayment::CASH->value;
+      $projectAmount = (float) $order->project_amount;
+      $isCashAndFinanced = $validated['method_of_payment'] === MethodOfPayment::FINANCEDCASH->value;
+      $requiresSchedule = in_array(
+        $validated['method_of_payment'],
+        [MethodOfPayment::CASH->value, MethodOfPayment::FINANCEDCASH->value],
+        true
+      );
+      $scheduleTotalAmount = $isCashAndFinanced
+        ? (float) ($order->down_payment ?? 0)
+        : $projectAmount;
       $existingSchedule = $order->paymentSchedule()->first();
       $hasRecordedPayments = $existingSchedule
         ? $existingSchedule->installments()->whereHas('movements')->exists()
@@ -1346,11 +1392,11 @@ class SalesController extends Controller
         $count = count($customSchedule);
         foreach ($customSchedule as $index => $item) {
           $amount = round((float) ($item['amount'] ?? 0), 2);
-          $percentage = $totalAmount > 0
-            ? round(($amount / $totalAmount) * 100, 2)
+          $percentage = $scheduleTotalAmount > 0
+            ? round(($amount / $scheduleTotalAmount) * 100, 2)
             : 0;
 
-          if ($index === $count - 1 && $totalAmount > 0) {
+          if ($index === $count - 1 && $scheduleTotalAmount > 0) {
             $percentage = round(100 - $runningPercent, 2);
           }
 
@@ -1367,7 +1413,7 @@ class SalesController extends Controller
           ['order_id' => $order->id],
           [
             'schedule_type' => $scheduleType,
-            'total_amount' => $totalAmount,
+            'total_amount' => $scheduleTotalAmount,
           ]
         );
 
@@ -1389,19 +1435,19 @@ class SalesController extends Controller
           "Payment schedule configured as {$scheduleType}",
           [
             'schedule_type' => $scheduleType,
-            'total_amount' => $totalAmount,
+            'total_amount' => $scheduleTotalAmount,
             'installments' => $installments,
           ]
         );
       } else {
         $scheduleItems = PaymentScheduleTemplates::itemsFor($scheduleType);
-        $installments = PaymentScheduleCalculator::withAmounts($scheduleItems, $totalAmount);
+        $installments = PaymentScheduleCalculator::withAmounts($scheduleItems, $scheduleTotalAmount);
 
         $paymentSchedule = PaymentSchedule::updateOrCreate(
           ['order_id' => $order->id],
           [
             'schedule_type' => $scheduleType,
-            'total_amount' => $totalAmount,
+            'total_amount' => $scheduleTotalAmount,
           ]
         );
 
@@ -1423,11 +1469,19 @@ class SalesController extends Controller
           "Payment schedule configured as {$scheduleType}",
           [
             'schedule_type' => $scheduleType,
-            'total_amount' => $totalAmount,
+            'total_amount' => $scheduleTotalAmount,
             'installments' => $installments,
           ]
         );
       }
+
+      $order->load('paymentSchedule.installments');
+      OrderPaymentInformationAuditLogger::logIfChanged(
+        $order,
+        $beforePaymentInformation,
+        'CONTRACT_SIGNED_MODAL',
+        $request
+      );
     });
 
     $order->load('owners', 'client', 'paymentSchedule.installments.paidBy', 'paymentSchedule.installments.movements.paidBy', 'orderCompanyContacts.companyContact', 'orderCompanyContacts.client', 'orderCompanyContacts.source');

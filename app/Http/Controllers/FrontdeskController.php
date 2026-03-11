@@ -1003,10 +1003,13 @@ public function showQuantifiedModal(Order $order)
     Order $order
   ) {
     $updatedOrder = $updateQualifiedOrder->handle($request, $order);
+    $orderData = $updatedOrder->toArray();
+    $orderData['payment_schedule'] = PaymentInstallmentPresenter::schedule($updatedOrder->paymentSchedule);
+    $orderData['has_contract_signed'] = $updatedOrder->hasReachedContractSigned();
 
     return response()->json([
       'success' => true,
-      'order' => $updatedOrder,
+      'order' => $orderData,
     ]);
   }
 

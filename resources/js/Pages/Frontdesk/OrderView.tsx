@@ -30,6 +30,7 @@ import MessageIcon from '@/Components/Icons/MessageIcon'
 import StarIcon from '@/Components/Icons/StarIcon'
 import PlusIcon from '@/Components/Icons/PlusIcon'
 import { isAccountManager, isAccounting, isAdmin, isFrontdeskAdmin, isFrontdeskEsr, isOwner, isOwnerAdmin } from '@/Utils/user'
+import { PAYMENT_METHODS } from '@/Utils/constants'
 import EstimateScheduleModal from '@/Pages/Sales/EstimateScheduleModal'
 import FollowUpModal from '@/Pages/Sales/FollowUpModal'
 import StandByNoteModal from '@/Pages/Sales/StandByNoteModal'
@@ -350,7 +351,7 @@ const FIELD_LABELS: Record<string, string> = {
   order_type: 'Order type',
   method_of_payment: 'Method of payment',
   project_amount: 'Project amount',
-  down_payment: 'Down payment',
+  down_payment: 'Cash amount',
   eta_date: 'ETA date'
 }
 
@@ -527,6 +528,15 @@ export default function ShowStatusOrder ({
     : []
   const canViewPipeline = isAdmin(roleNames) || isAccountManager(roleNames) || isOwner(roleNames) || isOwnerAdmin(roleNames) || isFrontdeskAdmin(roleNames) || isAccounting(roleNames)
   const canEditPipeline = isAdmin(roleNames) || isAccountManager(roleNames) || isOwner(roleNames) || isOwnerAdmin(roleNames) || isFrontdeskAdmin(roleNames) || isAccounting(roleNames)
+  const canEditPaymentInformationInModal = isAdmin(roleNames) || isAccountManager(roleNames) || isAccounting(roleNames) || isOwnerAdmin(roleNames)
+  const hasReachedContractSigned = Boolean(order.has_contract_signed)
+  const hasAssignedPaymentMethod = String(order.method_of_payment ?? '').trim() !== ''
+  const hasAssignedPaymentSchedule = String(order.payment_schedule?.schedule_type ?? '').trim() !== ''
+  const hasAssignedPaymentConfiguration = hasAssignedPaymentMethod && hasAssignedPaymentSchedule
+  const canManagePaymentInformationForOrder = canEditPaymentInformationInModal && hasReachedContractSigned
+  const showProjectAmountOnlyBeforeContract = !hasReachedContractSigned
+  const isProjectAmountReadOnlyBeforeContract = showProjectAmountOnlyBeforeContract && isOwner(roleNames) && hasAssignedPaymentConfiguration
+  const canSubmitProjectAmountBeforeContract = showProjectAmountOnlyBeforeContract && !isProjectAmountReadOnlyBeforeContract
   const isFrontdeskEsrRole = isFrontdeskEsr(roleNames)
 
   const [scheduleModalOpen, setScheduleModalOpen] = useState(false)
@@ -876,6 +886,44 @@ export default function ShowStatusOrder ({
         associate_source_id_1: toNull(values.associate_source_id_1),
         associate_source_id_2: toNull(values.associate_source_id_2),
         source: typeof values.source === 'string' ? values.source : getValueIdNotNull(values.source)
+      }
+
+      if (canManagePaymentInformationForOrder) {
+        const isCash = values.method_of_payment === PAYMENT_METHODS.CASH
+        const isCashAndFinanced = values.method_of_payment === PAYMENT_METHODS.CASH_AND_FINANCE
+        const requiresSchedule = isCash || isCashAndFinanced
+        const resolvedPaymentScheduleType = requiresSchedule
+          ? (isCashAndFinanced ? CUSTOM_SCHEDULE_TYPE : (values.payment_schedule_type || null))
+          : null
+
+        payload.method_of_payment = values.method_of_payment || null
+        payload.type_of_financing = (values.method_of_payment === PAYMENT_METHODS.FINANCED || isCashAndFinanced)
+          ? (values.type_of_financing || null)
+          : null
+        payload.down_payment = isCashAndFinanced
+          ? (values.down_payment ?? null)
+          : null
+        payload.payment_schedule_type = resolvedPaymentScheduleType
+        payload.custom_schedule = requiresSchedule && resolvedPaymentScheduleType === CUSTOM_SCHEDULE_TYPE
+          ? (values.custom_schedule ?? [])
+            .map((item: { label?: string, amount?: string | number }) => ({
+              label: String(item.label ?? '').trim(),
+              amount: Number(String(item.amount ?? '').replace(/,/g, ''))
+            }))
+            .filter((item: { label: string, amount: number }) => item.label !== '' && Number.isFinite(item.amount))
+          : []
+      } else {
+        if (!canSubmitProjectAmountBeforeContract) {
+          delete payload.project_amount
+        }
+        delete payload.change_order_enabled
+        delete payload.change_order_amount
+        delete payload.change_order_note
+        delete payload.method_of_payment
+        delete payload.type_of_financing
+        delete payload.down_payment
+        delete payload.payment_schedule_type
+        delete payload.custom_schedule
       }
 
       if (normalizedStatus && (!currentStatusValue || !matchesStatus(normalizedStatus, currentStatusValue))) {
@@ -2540,12 +2588,16 @@ export default function ShowStatusOrder ({
   const financingTypeLabel = typeof order.type_of_financing === 'string' && order.type_of_financing.trim() !== ''
     ? order.type_of_financing.trim()
     : '-'
-  const downPaymentNumber = Number(order.down_payment ?? 0)
-  const downPaymentLabel = order.down_payment != null && Number.isFinite(downPaymentNumber)
-    ? formatScheduleCurrency(downPaymentNumber)
+  const downPaymentNumber = Number(order.down_payment ?? Number.NaN)
+  const paymentScheduleTotalAmount = Number(paymentSchedule?.total_amount ?? Number.NaN)
+  const cashAmountNumber = Number.isFinite(downPaymentNumber)
+    ? downPaymentNumber
+    : (isCashAndFinancedPaymentMethod && Number.isFinite(paymentScheduleTotalAmount) ? paymentScheduleTotalAmount : Number.NaN)
+  const cashAmountLabel = Number.isFinite(cashAmountNumber)
+    ? formatScheduleCurrency(cashAmountNumber)
     : '-'
-  const amountToFinanceNumber = Number.isFinite(projectAmountNumber) && Number.isFinite(downPaymentNumber)
-    ? projectAmountNumber - downPaymentNumber
+  const amountToFinanceNumber = Number.isFinite(projectAmountNumber) && Number.isFinite(cashAmountNumber)
+    ? projectAmountNumber - cashAmountNumber
     : null
   const amountToFinanceLabel = amountToFinanceNumber != null && Number.isFinite(amountToFinanceNumber)
     ? formatScheduleCurrency(amountToFinanceNumber)
@@ -3533,8 +3585,8 @@ export default function ShowStatusOrder ({
                           </div>
                           {isCashAndFinancedPaymentMethod && (
                             <div>
-                              <p className="text-xs font-semibold uppercase tracking-wide text-sky-600">Down Payment</p>
-                              <p className="text-sm font-semibold text-slate-700">{downPaymentLabel}</p>
+                              <p className="text-xs font-semibold uppercase tracking-wide text-sky-600">Cash Amount</p>
+                              <p className="text-sm font-semibold text-slate-700">{cashAmountLabel}</p>
                             </div>
                           )}
                           {isCashAndFinancedPaymentMethod && (
@@ -3556,7 +3608,7 @@ export default function ShowStatusOrder ({
                                 <p className="text-sm font-semibold text-slate-700">{paymentSchedule.schedule_type}</p>
                               </div>
                               <div className="text-right">
-                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Total</p>
+                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{isCashAndFinancedPaymentMethod ? 'Cash Schedule Total' : 'Total'}</p>
                                 <p className="text-sm font-semibold text-slate-700">
                                   {formatScheduleCurrency(Number(paymentSchedule.total_amount ?? 0))}
                                 </p>
@@ -4027,6 +4079,12 @@ export default function ShowStatusOrder ({
         glass_types={glass_types ?? []}
         glass_coatings={glass_coatings ?? []}
         languages={languages ?? []}
+        methodsOfPayment={methods_of_payment ?? []}
+        financingOptions={type_of_financing ?? []}
+        paymentScheduleTemplates={payment_schedule_templates ?? {}}
+        showPaymentInformationSection={canManagePaymentInformationForOrder}
+        showProjectAmountOnlySection={showProjectAmountOnlyBeforeContract}
+        projectAmountReadOnly={isProjectAmountReadOnlyBeforeContract}
         attachments={Array.isArray(order.attachments) ? order.attachments : []}
         errorMessage={orderEditError}
       />
