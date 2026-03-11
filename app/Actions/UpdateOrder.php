@@ -15,6 +15,7 @@ use App\Models\OrderProduct;
 use App\Models\PaymentExtraField;
 use App\Models\PaymentSchedule;
 use App\Support\OrderFinancialEventLogger;
+use App\Support\OrderPaymentInformationAuditLogger;
 use App\Support\PaymentScheduleCalculator;
 use App\Support\PaymentScheduleTemplates;
 use App\Traits\ComissionSupervisor;
@@ -25,7 +26,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use App\Traits\Twilio;
-use Twilio\TwiML\Voice\Pay;
 
 class UpdateOrder
 {
@@ -61,15 +61,11 @@ class UpdateOrder
     DB::beginTransaction();
     try {
       $order = Order::with('comissions')->findOrFail($order->id);
+      $order->loadMissing('paymentSchedule.installments');
+      $beforePaymentInformation = OrderPaymentInformationAuditLogger::snapshot($order);
       $oldAmount = $order->project_amount;
       $newAmount = $request->project_amount;
       $hasCommissions = $order->comissions()->exists();
-
-      if ($order->hasReachedContractSigned() && abs((float) $newAmount - (float) $oldAmount) > 0.01) {
-        throw ValidationException::withMessages([
-          'project_amount' => 'Project amount cannot be edited after CONTRACT SIGNED BY CLIENT. Use Change Order instead.',
-        ]);
-      }
   
      
        //dd( $oldAmount, $newAmount, $order);
@@ -181,7 +177,13 @@ class UpdateOrder
         'duration_of_work_id' => $duration_of_work_id,
         'duration_of_work_id' => $duration_of_work_id,
         'method_of_payment' => $request->method_of_payment,
-        'type_of_financing' => $request->type_of_financing,
+        'type_of_financing' => in_array(
+          $request->method_of_payment,
+          [MethodOfPayment::FINANCED->value, MethodOfPayment::FINANCEDCASH->value],
+          true
+        )
+          ? $request->type_of_financing
+          : null,
         'service' => $request->service,
         'contract_signing_date' => $request->contract_signing_date,
         'payment_factory_date' => $request->payment_factory_date,
@@ -200,7 +202,9 @@ class UpdateOrder
         'cost_delivery' => $request->cost_delivery,
         'cost_city_fee' => $request->cost_city_fee,
         'project_amount' => $request->project_amount,
-        'down_payment' => $request->down_payment,
+        'down_payment' => $request->method_of_payment === MethodOfPayment::FINANCEDCASH->value
+          ? $request->down_payment
+          : null,
         'city' => $request->city ,
         'job_state' => $request->job_state,
         'job_zip' => $request->job_zip,
@@ -224,8 +228,15 @@ class UpdateOrder
       //dd($request->frame_color);
       $order->update($orderData);
 
-      $totalAmount = (float) ($request->project_amount ?? 0);
-      $requiresSchedule = $request->method_of_payment === MethodOfPayment::CASH->value;
+      $isCashAndFinanced = $request->method_of_payment === MethodOfPayment::FINANCEDCASH->value;
+      $requiresSchedule = in_array(
+        $request->method_of_payment,
+        [MethodOfPayment::CASH->value, MethodOfPayment::FINANCEDCASH->value],
+        true
+      );
+      $scheduleTotalAmount = $isCashAndFinanced
+        ? (float) ($request->down_payment ?? 0)
+        : (float) ($request->project_amount ?? 0);
       $existingSchedule = $order->paymentSchedule()->with('installments')->first();
       $hasScheduleTypeInput = $request->exists('payment_schedule_type');
       $hasCustomScheduleInput = $request->exists('custom_schedule');
@@ -309,11 +320,11 @@ class UpdateOrder
             $count = count($customSchedule);
             foreach ($customSchedule as $index => $item) {
               $amount = round((float) ($item['amount'] ?? 0), 2);
-              $percentage = $totalAmount > 0
-                ? round(($amount / $totalAmount) * 100, 2)
+              $percentage = $scheduleTotalAmount > 0
+                ? round(($amount / $scheduleTotalAmount) * 100, 2)
                 : 0;
 
-              if ($index === $count - 1 && $totalAmount > 0) {
+              if ($index === $count - 1 && $scheduleTotalAmount > 0) {
                 $percentage = round(100 - $runningPercent, 2);
               }
 
@@ -326,7 +337,7 @@ class UpdateOrder
             }
           } else {
             $scheduleItems = PaymentScheduleTemplates::itemsFor($scheduleType);
-            $installments = PaymentScheduleCalculator::withAmounts($scheduleItems, $totalAmount);
+            $installments = PaymentScheduleCalculator::withAmounts($scheduleItems, $scheduleTotalAmount);
           }
 
           $beforeScheduleType = $existingSchedule?->schedule_type;
@@ -353,7 +364,7 @@ class UpdateOrder
 
           $scheduleChanged =
             $beforeScheduleType !== $scheduleType
-            || abs((float) ($beforeTotalAmount ?? 0) - $totalAmount) > 0.01
+            || abs((float) ($beforeTotalAmount ?? 0) - $scheduleTotalAmount) > 0.01
             || $beforeInstallments !== $afterInstallments;
 
           if ($scheduleChanged) {
@@ -361,12 +372,12 @@ class UpdateOrder
               $existingSchedule = PaymentSchedule::create([
                 'order_id' => $order->id,
                 'schedule_type' => $scheduleType,
-                'total_amount' => $totalAmount,
+                'total_amount' => $scheduleTotalAmount,
               ]);
             } else {
               $existingSchedule->update([
                 'schedule_type' => $scheduleType,
-                'total_amount' => $totalAmount,
+                'total_amount' => $scheduleTotalAmount,
               ]);
               $existingSchedule->installments()->delete();
             }
@@ -387,7 +398,7 @@ class UpdateOrder
               "Payment schedule configured as {$scheduleType}",
               [
                 'schedule_type' => $scheduleType,
-                'total_amount' => $totalAmount,
+                'total_amount' => $scheduleTotalAmount,
                 'before_schedule_type' => $beforeScheduleType,
                 'before_total_amount' => $beforeTotalAmount,
                 'before_installments' => $beforeInstallments,
@@ -409,6 +420,14 @@ class UpdateOrder
           ]
         );
       }
+
+      $order->load('paymentSchedule.installments');
+      OrderPaymentInformationAuditLogger::logIfChanged(
+        $order,
+        $beforePaymentInformation,
+        'ORDER_EDIT',
+        $request
+      );
 
       if ($request->has('change_order_enabled')) {
         $changeOrderEnabled = filter_var($request->input('change_order_enabled'), FILTER_VALIDATE_BOOLEAN);

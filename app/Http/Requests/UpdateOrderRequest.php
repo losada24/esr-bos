@@ -356,25 +356,42 @@ class UpdateOrderRequest extends FormRequest
                 return;
             }
 
-            $incomingAmount = $this->input('project_amount');
-            $hasReachedContractSigned = $order->status === OrderStatusEnum::CONTRACT_SIGNED_BY_CLIENT->value
-              || $order->orderStatus()
-                ->where('status', OrderStatusEnum::CONTRACT_SIGNED_BY_CLIENT->value)
-                ->exists();
+            $methodOfPayment = (string) $this->input('method_of_payment', (string) $order->method_of_payment);
+            $isCash = $methodOfPayment === MethodOfPayment::CASH->value;
+            $isCashAndFinanced = $methodOfPayment === MethodOfPayment::FINANCEDCASH->value;
+            $isSchedulePaymentMethod = $isCash || $isCashAndFinanced;
+            $hasScheduleTypeInput = $this->exists('payment_schedule_type');
+            $hasCustomScheduleInput = $this->exists('custom_schedule');
+            $existingSchedule = $order->paymentSchedule()->with('installments')->first();
+            $scheduleType = $hasScheduleTypeInput
+                ? (string) $this->input('payment_schedule_type')
+                : (string) ($existingSchedule?->schedule_type ?? '');
 
-            if ($incomingAmount !== null && $incomingAmount !== '' && $hasReachedContractSigned) {
-                $currentAmount = (float) ($order->project_amount ?? 0);
-                $newAmount = (float) $incomingAmount;
-                if (abs($newAmount - $currentAmount) > 0.01) {
-                    $validator->errors()->add('project_amount', 'Project amount cannot be edited after CONTRACT SIGNED BY CLIENT. Use Change Order instead.');
+            $projectAmountRaw = $this->exists('project_amount')
+                ? $this->input('project_amount')
+                : $order->project_amount;
+            $projectAmount = (float) ($projectAmountRaw ?? 0);
+
+            $downPaymentRaw = $this->exists('down_payment')
+                ? $this->input('down_payment')
+                : $order->down_payment;
+            $cashAmount = (float) ($downPaymentRaw ?? 0);
+
+            if ($isCashAndFinanced) {
+                if ($downPaymentRaw === null || $downPaymentRaw === '') {
+                    $validator->errors()->add('down_payment', 'Cash amount is required for CASH AND FINANCED.');
+                } elseif ($cashAmount <= 0) {
+                    $validator->errors()->add('down_payment', 'Cash amount must be greater than 0.');
+                } elseif ($projectAmount > 0 && $cashAmount >= $projectAmount) {
+                    $validator->errors()->add('down_payment', 'Cash amount must be less than project amount.');
+                }
+
+                if ($scheduleType !== PaymentScheduleTypeEnum::CUSTOMIZED->value) {
+                    $validator->errors()->add('payment_schedule_type', 'CASH AND FINANCED requires CUSTOMIZED payment schedule.');
                 }
             }
 
-            $isCash = $this->input('method_of_payment') === MethodOfPayment::CASH->value;
-            $hasScheduleTypeInput = $this->exists('payment_schedule_type');
-            $scheduleType = $hasScheduleTypeInput ? (string) $this->input('payment_schedule_type') : null;
-
-            if ($isCash && $scheduleType === PaymentScheduleTypeEnum::CUSTOMIZED->value) {
+            if ($isSchedulePaymentMethod && $scheduleType === PaymentScheduleTypeEnum::CUSTOMIZED->value && $hasCustomScheduleInput) {
                 $customSchedule = $this->input('custom_schedule', []);
                 if (!is_array($customSchedule) || count($customSchedule) === 0) {
                     $validator->errors()->add('custom_schedule', 'Add at least one custom payment.');
@@ -384,14 +401,18 @@ class UpdateOrderRequest extends FormRequest
                         $total += (float) ($item['amount'] ?? 0);
                     }
 
-                    $projectAmount = (float) $this->input('project_amount', 0);
-                    if (abs($total - $projectAmount) > 0.01) {
-                        $validator->errors()->add('custom_schedule', 'Custom payments must total the project amount.');
+                    $targetAmount = $isCashAndFinanced ? $cashAmount : $projectAmount;
+                    if ($targetAmount > 0 && abs($total - $targetAmount) > 0.01) {
+                        $validator->errors()->add(
+                            'custom_schedule',
+                            $isCashAndFinanced
+                                ? 'Custom payments must total the cash amount.'
+                                : 'Custom payments must total the project amount.'
+                        );
                     }
                 }
             }
 
-            $existingSchedule = $order->paymentSchedule()->with('installments')->first();
             if (!$existingSchedule) {
                 return;
             }
@@ -401,16 +422,41 @@ class UpdateOrderRequest extends FormRequest
                 return;
             }
 
-            $requestedScheduleType = $hasScheduleTypeInput
-                ? (string) $this->input('payment_schedule_type')
-                : (string) $existingSchedule->schedule_type;
+            $currentMethod = (string) $order->method_of_payment;
+            if ($methodOfPayment !== $currentMethod) {
+                $validator->errors()->add('method_of_payment', 'Project payment method cannot be changed after payments are recorded.');
+            }
 
-            if (!$isCash || $requestedScheduleType !== (string) $existingSchedule->schedule_type) {
+            if ($this->exists('project_amount')) {
+                $currentAmount = (float) ($order->project_amount ?? 0);
+                if (abs($projectAmount - $currentAmount) > 0.01) {
+                    $validator->errors()->add('project_amount', 'Project amount cannot be changed after payments are recorded.');
+                }
+            }
+
+            if ($this->exists('down_payment')) {
+                $currentDownPaymentRaw = $order->down_payment;
+                $requestedDownPaymentRaw = $this->input('down_payment');
+                $currentDownPayment = $currentDownPaymentRaw === null ? null : (float) $currentDownPaymentRaw;
+                $requestedDownPayment = $requestedDownPaymentRaw === null || $requestedDownPaymentRaw === ''
+                    ? null
+                    : (float) $requestedDownPaymentRaw;
+
+                $downPaymentChanged = $currentDownPayment === null
+                    ? $requestedDownPayment !== null
+                    : ($requestedDownPayment === null || abs($requestedDownPayment - $currentDownPayment) > 0.01);
+
+                if ($downPaymentChanged) {
+                    $validator->errors()->add('down_payment', 'Cash amount cannot be changed after payments are recorded.');
+                }
+            }
+
+            if (!$isSchedulePaymentMethod || $scheduleType !== (string) $existingSchedule->schedule_type) {
                 $validator->errors()->add('payment_schedule_type', 'Payment schedule cannot be changed after payments are recorded.');
                 return;
             }
 
-            if ($requestedScheduleType === PaymentScheduleTypeEnum::CUSTOMIZED->value && $this->exists('custom_schedule')) {
+            if ($scheduleType === PaymentScheduleTypeEnum::CUSTOMIZED->value && $hasCustomScheduleInput) {
                 $incomingItems = collect($this->input('custom_schedule', []))
                     ->map(function ($item) {
                         return [

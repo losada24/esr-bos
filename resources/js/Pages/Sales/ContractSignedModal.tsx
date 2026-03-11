@@ -227,15 +227,22 @@ export default function ContractSignedModal ({
             cityPermits: initialCityPermits ?? false,
             associationPermits: initialAssociationPermits ?? false,
             attachments: [],
-            paymentScheduleType: initialPaymentScheduleType ?? '',
+            paymentScheduleType: initialMethodOfPayment === PAYMENT_METHODS.CASH_AND_FINANCE
+              ? CUSTOM_SCHEDULE_TYPE
+              : (initialPaymentScheduleType ?? ''),
             customSchedule: buildCustomSchedule(initialCustomSchedule),
           }}
           validate={(values) => {
             const issues: Partial<Record<keyof ContractSignedFormValues, string>> = {}
 
+            const isCash = values.methodOfPayment === PAYMENT_METHODS.CASH
+            const isCashAndFinance = values.methodOfPayment === PAYMENT_METHODS.CASH_AND_FINANCE
             const requiresFinancing = [PAYMENT_METHODS.FINANCED, PAYMENT_METHODS.CASH_AND_FINANCE]
               .includes(values.methodOfPayment)
-            const requiresSchedule = values.methodOfPayment === PAYMENT_METHODS.CASH
+            const requiresSchedule = isCash || isCashAndFinance
+            const projectAmountValue = Number(String(values.projectAmount ?? '').replace(/,/g, ''))
+            const hasValidProjectAmount = Number.isFinite(projectAmountValue) && projectAmountValue > 0
+            const cashAmountValue = Number(String(values.downPayment ?? '').replace(/,/g, ''))
 
             if (!values.projectName || values.projectName.trim() === '') {
               issues.projectName = 'Project name is required.'
@@ -274,8 +281,17 @@ export default function ContractSignedModal ({
               issues.methodOfPayment = 'Select a payment method.'
             }
 
-            if (values.methodOfPayment === PAYMENT_METHODS.CASH_AND_FINANCE && values.downPayment && Number.isNaN(Number(values.downPayment))) {
-              issues.downPayment = 'Enter a valid number.'
+            if (isCashAndFinance) {
+              const normalizedCashAmount = String(values.downPayment ?? '').trim()
+              if (normalizedCashAmount === '') {
+                issues.downPayment = 'Cash amount is required.'
+              } else if (Number.isNaN(cashAmountValue)) {
+                issues.downPayment = 'Enter a valid number.'
+              } else if (cashAmountValue <= 0) {
+                issues.downPayment = 'Cash amount must be greater than 0.'
+              } else if (hasValidProjectAmount && cashAmountValue >= projectAmountValue) {
+                issues.downPayment = 'Cash amount must be less than project amount.'
+              }
             }
 
             if (requiresFinancing && !values.typeOfFinancing) {
@@ -284,6 +300,10 @@ export default function ContractSignedModal ({
 
             if (requiresSchedule && !values.paymentScheduleType) {
               issues.paymentScheduleType = 'Select a payment schedule.'
+            }
+
+            if (isCashAndFinance && values.paymentScheduleType !== CUSTOM_SCHEDULE_TYPE) {
+              issues.paymentScheduleType = 'Cash and financed requires CUSTOMIZED payment schedule.'
             }
 
             if (requiresSchedule && values.paymentScheduleType === CUSTOM_SCHEDULE_TYPE) {
@@ -317,10 +337,11 @@ export default function ContractSignedModal ({
                   total += amountValue
                 }
 
-                const projectAmountValue = Number(String(values.projectAmount ?? '').replace(/,/g, ''))
-                if (!issues.customSchedule && Number.isFinite(projectAmountValue) && projectAmountValue > 0) {
-                  if (Math.abs(total - projectAmountValue) > 0.01) {
-                    issues.customSchedule = 'Custom payments must total the project amount.'
+                const targetTotal = isCashAndFinance ? cashAmountValue : projectAmountValue
+                const targetLabel = isCashAndFinance ? 'cash amount' : 'project amount'
+                if (!issues.customSchedule && Number.isFinite(targetTotal) && targetTotal > 0) {
+                  if (Math.abs(total - targetTotal) > 0.01) {
+                    issues.customSchedule = `Custom payments must total the ${targetLabel}.`
                   }
                 }
               }
@@ -380,8 +401,8 @@ export default function ContractSignedModal ({
             const isCashAndFinance = values.methodOfPayment === PAYMENT_METHODS.CASH_AND_FINANCE
             const isFinanced = values.methodOfPayment === PAYMENT_METHODS.FINANCED
             const shouldShowFinancing = isFinanced || isCashAndFinance
-            const shouldShowDownPayment = isCashAndFinance
-            const shouldShowPaymentSchedule = isCash
+            const shouldShowCashAmount = isCashAndFinance
+            const shouldShowPaymentSchedule = isCash || isCashAndFinance
             const availablePaymentMethods = paymentMethods.filter((method) => (
               !hiddenPaymentMethods.has(String(method).trim().toUpperCase())
             ))
@@ -394,23 +415,32 @@ export default function ContractSignedModal ({
                   .join(', ') || undefined
                 : undefined
             const scheduleTemplates = paymentScheduleTemplates ?? {}
-            const scheduleOptions = Object.keys(scheduleTemplates)
+            const scheduleOptions = isCashAndFinance
+              ? [CUSTOM_SCHEDULE_TYPE]
+              : Object.keys(scheduleTemplates)
             const isCustomSchedule = values.paymentScheduleType === CUSTOM_SCHEDULE_TYPE
             const projectAmountValue = Number((values.projectAmount ?? '').toString().replace(/,/g, ''))
             const hasProjectAmount = Number.isFinite(projectAmountValue) && projectAmountValue > 0
+            const cashAmountValue = Number((values.downPayment ?? '').toString().replace(/,/g, ''))
+            const hasCashAmount = Number.isFinite(cashAmountValue) && cashAmountValue > 0
+            const financedAmountValue = hasProjectAmount && hasCashAmount
+              ? Math.max(projectAmountValue - cashAmountValue, 0)
+              : null
+            const scheduleTargetAmount = isCashAndFinance ? cashAmountValue : projectAmountValue
+            const hasScheduleTargetAmount = Number.isFinite(scheduleTargetAmount) && scheduleTargetAmount > 0
             const formatCurrency = (value: number) =>
               new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value)
 
             const buildPreviewItems = (items: Array<{ label: string, percentage: number }>) => {
               if (!items.length) return []
-              if (!hasProjectAmount) {
+              if (!hasScheduleTargetAmount) {
                 return items.map((item) => ({ ...item, amount: null }))
               }
               let runningTotal = 0
               return items.map((item, index) => {
                 const amount = index === items.length - 1
-                  ? Math.round((projectAmountValue - runningTotal) * 100) / 100
-                  : Math.round((projectAmountValue * (item.percentage / 100)) * 100) / 100
+                  ? Math.round((scheduleTargetAmount - runningTotal) * 100) / 100
+                  : Math.round((scheduleTargetAmount * (item.percentage / 100)) * 100) / 100
                 runningTotal += amount
                 return { ...item, amount }
               })
@@ -427,8 +457,8 @@ export default function ContractSignedModal ({
               const value = Number(String(item.amount ?? '').replace(/,/g, ''))
               return Number.isFinite(value) ? total + value : total
             }, 0)
-            const customTotalMatches = hasProjectAmount && Math.abs(customScheduleTotal - projectAmountValue) <= 0.01
-            const customTotalClass = hasProjectAmount
+            const customTotalMatches = hasScheduleTargetAmount && Math.abs(customScheduleTotal - scheduleTargetAmount) <= 0.01
+            const customTotalClass = hasScheduleTargetAmount
               ? customTotalMatches
                 ? 'text-emerald-600'
                 : 'text-rose-600'
@@ -436,8 +466,8 @@ export default function ContractSignedModal ({
             const previewItems = isCustomSchedule
               ? customScheduleItems.map((item) => ({
                 label: item.label,
-                percentage: hasProjectAmount
-                  ? Math.round(((item.amount / projectAmountValue) * 100) * 100) / 100
+                percentage: hasScheduleTargetAmount
+                  ? Math.round(((item.amount / scheduleTargetAmount) * 100) * 100) / 100
                   : null,
                 amount: Number.isFinite(item.amount) ? item.amount : null
               }))
@@ -614,6 +644,7 @@ export default function ContractSignedModal ({
                       name="methodOfPayment"
                       value={values.methodOfPayment}
                       onChange={(event) => {
+                        const previousMethod = values.methodOfPayment
                         handleChange(event)
                         const value = event.target.value
                         const isCashValue = value === PAYMENT_METHODS.CASH
@@ -625,7 +656,12 @@ export default function ContractSignedModal ({
                         if (!isCashAndFinanceValue) {
                           setFieldValue('downPayment', '')
                         }
-                        if (!isCashValue) {
+                        if (isCashAndFinanceValue) {
+                          setFieldValue('paymentScheduleType', CUSTOM_SCHEDULE_TYPE)
+                        } else if (isCashValue && previousMethod !== PAYMENT_METHODS.CASH) {
+                          setFieldValue('paymentScheduleType', '')
+                          setFieldValue('customSchedule', buildCustomSchedule())
+                        } else if (!isCashValue) {
                           setFieldValue('paymentScheduleType', '')
                           setFieldValue('customSchedule', buildCustomSchedule())
                         }
@@ -644,9 +680,9 @@ export default function ContractSignedModal ({
                       : null}
                   </div>
 
-                  {shouldShowDownPayment && (
+                  {shouldShowCashAmount && (
                     <div className={submitCount ? (errors.downPayment ? 'has-error' : 'has-success') : ''}>
-                      <label className="mb-1 block text-sm font-medium text-slate-600" htmlFor="downPayment">Down Payment</label>
+                      <label className="mb-1 block text-sm font-medium text-slate-600" htmlFor="downPayment">Cash Amount</label>
                       <input
                         id="downPayment"
                         name="downPayment"
@@ -656,12 +692,21 @@ export default function ContractSignedModal ({
                         onChange={handleChange}
                         onBlur={handleBlur}
                         className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
-                        placeholder="Enter down payment"
+                        placeholder="Enter cash amount"
                         disabled={loading}
                       />
                       {submitCount && errors.downPayment
                         ? <InputError message={errors.downPayment} className="mt-2" />
                         : null}
+                    </div>
+                  )}
+
+                  {isCashAndFinance && (
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-slate-600">Amount to Finance</label>
+                      <div className="w-full rounded-lg border border-slate-200 bg-slate-100 px-3 py-2 text-sm text-slate-700">
+                        {financedAmountValue != null ? formatCurrency(financedAmountValue) : 'Enter project and cash amounts'}
+                      </div>
                     </div>
                   )}
 
@@ -699,9 +744,11 @@ export default function ContractSignedModal ({
                         onChange={handleChange}
                         onBlur={handleBlur}
                         className="form-select w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
-                        disabled={loading}
+                        disabled={loading || isCashAndFinance}
                       >
-                        <option value="">Select a payment schedule</option>
+                        <option value="">
+                          {isCashAndFinance ? 'CUSTOMIZED' : 'Select a payment schedule'}
+                        </option>
                         {scheduleOptions.map((schedule) => (
                           <option key={schedule} value={schedule}>{schedule}</option>
                         ))}
@@ -717,7 +764,7 @@ export default function ContractSignedModal ({
                           <span>Custom schedule</span>
                           <span className={customTotalClass}>
                             Total: {formatCurrency(customScheduleTotal)}
-                            {hasProjectAmount ? ` / ${formatCurrency(projectAmountValue)}` : ''}
+                            {hasScheduleTargetAmount ? ` / ${formatCurrency(scheduleTargetAmount)}` : ''}
                           </span>
                         </div>
                         {values.customSchedule.map((item, index) => (
@@ -761,7 +808,7 @@ export default function ContractSignedModal ({
                       <div className="rounded-lg border border-slate-200 bg-white p-3">
                         <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-slate-400">
                           <span>Schedule preview</span>
-                          <span>{hasProjectAmount ? formatCurrency(projectAmountValue) : 'Enter project amount'}</span>
+                          <span>{hasScheduleTargetAmount ? formatCurrency(scheduleTargetAmount) : (isCashAndFinance ? 'Enter cash amount' : 'Enter project amount')}</span>
                         </div>
                         <div className="mt-3 space-y-2 text-sm text-slate-600">
                           {previewItems.map((item, index) => (

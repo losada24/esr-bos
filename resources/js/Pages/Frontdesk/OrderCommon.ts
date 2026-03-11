@@ -219,6 +219,8 @@ export type OrderFormValues = Order & {
   change_order_enabled?: boolean
   change_order_amount?: number | null
   change_order_note?: string
+  payment_schedule_type?: string
+  custom_schedule?: Array<{ label: string, amount: string }>
 }
 
 export const orderFormObj: OrderFormValues = {
@@ -285,6 +287,10 @@ export const orderFormObj: OrderFormValues = {
   owner_ids: [],
   down_payment: null,
   type_of_financing: null,
+  method_of_payment: '',
+  payment_schedule: null,
+  payment_schedule_type: '',
+  custom_schedule: Array.from({ length: 6 }, () => ({ label: '', amount: '' })),
   contact_email: '',
   loss_reason_frontdesk: '',
   name_check: false,
@@ -296,6 +302,20 @@ export const orderFormObj: OrderFormValues = {
 }
 
 export const loadOrderFormObj = (order: Order): OrderFormValues => {
+  const scheduleType = order.payment_schedule?.schedule_type ?? ''
+  const customScheduleFromOrder = scheduleType === 'CUSTOMIZED'
+    ? (order.payment_schedule?.installments ?? [])
+      .map((item) => ({
+        label: String(item.label ?? '').trim(),
+        amount: item.amount != null ? String(item.amount) : ''
+      }))
+      .filter((item) => item.label !== '' || item.amount !== '')
+    : []
+  const customSchedule = [
+    ...customScheduleFromOrder.slice(0, 6),
+    ...Array.from({ length: Math.max(0, 6 - customScheduleFromOrder.length) }, () => ({ label: '', amount: '' }))
+  ]
+
   const rawCompanyContact = order.client?.company_contact as CompanyContact[] | CompanyContact | undefined
   const companyContacts = rawCompanyContact
     ? (Array.isArray(rawCompanyContact) ? rawCompanyContact : [rawCompanyContact])
@@ -384,6 +404,10 @@ export const loadOrderFormObj = (order: Order): OrderFormValues => {
       : (Array.isArray(order.owners) ? order.owners.map(owner => owner?.id).filter((id): id is number => typeof id === 'number') : []),
     down_payment: order.down_payment ?? null,
     type_of_financing: order.type_of_financing ?? null,
+    method_of_payment: order.method_of_payment ?? '',
+    payment_schedule: order.payment_schedule ?? null,
+    payment_schedule_type: scheduleType,
+    custom_schedule: customSchedule,
     contact_email: order.contact_email ?? order.client?.email ?? '',
     loss_reason_frontdesk: order.loss_reason_frontdesk ?? '',
     name_check: order.name_check ?? false,

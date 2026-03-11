@@ -92,6 +92,13 @@ export default function Create ({
       ? (values.duration_of_work_id.value !== 0 ? values.duration_of_work_id.value : '')
       : null
 
+    const isCash = values.method_of_payment === PAYMENT_METHODS.CASH
+    const isCashAndFinanced = values.method_of_payment === PAYMENT_METHODS.CASH_AND_FINANCE
+    const requiresSchedule = isCash || isCashAndFinanced
+    const resolvedPaymentScheduleType = requiresSchedule
+      ? (isCashAndFinanced ? 'CUSTOMIZED' : values.payment_schedule_type)
+      : null
+
     const order = {
       ...values,
       frame_color: values.frame_color.map((color: { label: string, value: string }) => color.label),
@@ -104,8 +111,12 @@ export default function Create ({
       travel_cost_id: resolvedTravelCostId,
       status: typeof values.status === 'string' ? values.status : getValueIdNotNull(values.status),
       contact_type: 'RESIDENTIAL CONTACT',
-      payment_schedule_type: values.method_of_payment === PAYMENT_METHODS.CASH ? values.payment_schedule_type : null,
-      custom_schedule: values.method_of_payment === PAYMENT_METHODS.CASH && values.payment_schedule_type === 'CUSTOMIZED'
+      type_of_financing: (values.method_of_payment === PAYMENT_METHODS.FINANCED || isCashAndFinanced)
+        ? values.type_of_financing
+        : null,
+      down_payment: isCashAndFinanced ? values.down_payment : null,
+      payment_schedule_type: resolvedPaymentScheduleType,
+      custom_schedule: requiresSchedule && resolvedPaymentScheduleType === 'CUSTOMIZED'
         ? (values.custom_schedule ?? [])
           .map((item: { label?: string, amount?: string | number }) => ({
             label: String(item.label ?? '').trim(),

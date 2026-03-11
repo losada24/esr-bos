@@ -119,7 +119,9 @@ class CreateOrder
         'cost_delivery' => $request->cost_delivery,
         'cost_city_fee' => $request->cost_city_fee,
         'project_amount' => $request->project_amount,
-        'down_payment' => $request->down_payment,
+        'down_payment' => $request->method_of_payment === MethodOfPayment::FINANCEDCASH->value
+          ? $request->down_payment
+          : null,
         'initial_payment_percentage' => $initial_payment_percentage,
         'payment_definition' => $request->payment_definition,
         'execution_planing_date' => $execution_planing_date,
@@ -133,9 +135,16 @@ class CreateOrder
       ]);
 
       $paymentScheduleType = $request->payment_schedule_type;
-      $requiresSchedule = $request->method_of_payment === MethodOfPayment::CASH->value;
+      $isCashAndFinanced = $request->method_of_payment === MethodOfPayment::FINANCEDCASH->value;
+      $requiresSchedule = in_array(
+        $request->method_of_payment,
+        [MethodOfPayment::CASH->value, MethodOfPayment::FINANCEDCASH->value],
+        true
+      );
       if ($requiresSchedule && $paymentScheduleType) {
-        $totalAmount = (float) ($request->project_amount ?? 0);
+        $totalAmount = $isCashAndFinanced
+          ? (float) ($request->down_payment ?? 0)
+          : (float) ($request->project_amount ?? 0);
         if ($paymentScheduleType === PaymentScheduleTypeEnum::CUSTOMIZED->value) {
           $customSchedule = $request->input('custom_schedule', []);
           $installments = [];

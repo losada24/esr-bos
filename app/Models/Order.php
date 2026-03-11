@@ -422,6 +422,11 @@ class Order extends Model
     return $this->hasMany(OrderFinancialEvent::class)->latest();
   }
 
+  public function paymentInformationAudits(): HasMany
+  {
+    return $this->hasMany(OrderPaymentInformationAudit::class)->latest('changed_at');
+  }
+
   public function permit(): HasOne
   {
     return $this->hasOne(Permit::class);

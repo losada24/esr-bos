@@ -24,6 +24,12 @@ interface OrderEditModalProps {
   glass_types: string[]
   glass_coatings: string[]
   languages: string[]
+  methodsOfPayment?: string[]
+  financingOptions?: string[]
+  paymentScheduleTemplates?: Record<string, { label: string, percentage: number }[]>
+  showPaymentInformationSection?: boolean
+  showProjectAmountOnlySection?: boolean
+  projectAmountReadOnly?: boolean
   attachments?: Attachment[]
   errorMessage?: string | null
 }
@@ -45,6 +51,12 @@ export default function OrderEditModal ({
   glass_types,
   glass_coatings,
   languages,
+  methodsOfPayment = [],
+  financingOptions = [],
+  paymentScheduleTemplates = {},
+  showPaymentInformationSection = false,
+  showProjectAmountOnlySection = false,
+  projectAmountReadOnly = false,
   attachments,
   errorMessage
 }: OrderEditModalProps) {
@@ -102,14 +114,20 @@ export default function OrderEditModal ({
                   glass_types={glass_types}
                   glass_coatings={glass_coatings}
                   languages={languages}
-                attachments={attachments}
-                onCancel={() => { if (!isSubmitting) onClose() }}
-                submitLabel={isSubmitting ? 'Saving…' : 'Save Changes'}
-                showClientField
-                showNotesField={false}
-                useModalLayout
-                showOwnerField={shouldShowOwnerField}
-              />
+                  methodsOfPayment={methodsOfPayment}
+                  financingOptions={financingOptions}
+                  paymentScheduleTemplates={paymentScheduleTemplates}
+                  attachments={attachments}
+                  onCancel={() => { if (!isSubmitting) onClose() }}
+                  submitLabel={isSubmitting ? 'Saving…' : 'Save Changes'}
+                  showClientField
+                  showNotesField={false}
+                  useModalLayout
+                  showOwnerField={shouldShowOwnerField}
+                  showPaymentInformationSection={showPaymentInformationSection}
+                  showProjectAmountOnlySection={showProjectAmountOnlySection}
+                  projectAmountReadOnly={projectAmountReadOnly}
+                />
             </div>
           </div>
           </div>

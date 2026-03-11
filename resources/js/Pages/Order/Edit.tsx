@@ -118,13 +118,19 @@ export default function Edit ({
     const resolvedDurationOfWorkId = isInstallationService
       ? (typeof values.duration_of_work_id === 'number' ? values.duration_of_work_id : getValueIdNotNull(values.duration_of_work_id))
       : null
+    const isCash = values.method_of_payment === PAYMENT_METHODS.CASH
+    const isCashAndFinanced = values.method_of_payment === PAYMENT_METHODS.CASH_AND_FINANCE
+    const requiresSchedule = isCash || isCashAndFinanced
+    const resolvedPaymentScheduleType = requiresSchedule
+      ? (isCashAndFinanced ? 'CUSTOMIZED' : (values.payment_schedule_type || null))
+      : null
 
     const order = {
       ...values,
       type_of_work_id: resolvedTypeOfWorkId,
       type_of_housing_id: resolvedTypeOfHousingId,
-      payment_schedule_type: values.method_of_payment === PAYMENT_METHODS.CASH ? (values.payment_schedule_type || null) : null,
-      custom_schedule: values.method_of_payment === PAYMENT_METHODS.CASH && values.payment_schedule_type === 'CUSTOMIZED'
+      payment_schedule_type: resolvedPaymentScheduleType,
+      custom_schedule: requiresSchedule && resolvedPaymentScheduleType === 'CUSTOMIZED'
         ? (values.custom_schedule ?? [])
           .map((item: { label?: string, amount?: string | number }) => ({
             label: String(item.label ?? '').trim(),
@@ -132,6 +138,10 @@ export default function Edit ({
           }))
           .filter((item: { label: string, amount: number }) => item.label !== '' && Number.isFinite(item.amount))
         : [],
+      type_of_financing: (values.method_of_payment === PAYMENT_METHODS.FINANCED || isCashAndFinanced)
+        ? values.type_of_financing
+        : null,
+      down_payment: isCashAndFinanced ? values.down_payment : null,
       frame_color: (values.frame_color || []).map((color: { label: string, value: string }) => color.label),
       complete_date: values.status.value === 'COMPLETE' ? new Date().toLocaleDateString('en-CA') : null,
       pending_collect: values.status.value === 'PENDING COLLECT' ? new Date().toLocaleDateString('en-CA') : null,

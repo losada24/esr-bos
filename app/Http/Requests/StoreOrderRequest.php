@@ -40,6 +40,9 @@ class StoreOrderRequest extends FormRequest
         if ($this->input('payment_schedule_type') === '') {
             $this->merge(['payment_schedule_type' => null]);
         }
+        if ($this->input('down_payment') === '') {
+            $this->merge(['down_payment' => null]);
+        }
     }
 
     /**
@@ -142,7 +145,11 @@ class StoreOrderRequest extends FormRequest
             ],
             'payment_schedule_type' => [
               'nullable',
-              Rule::requiredIf(fn () => $this->input('method_of_payment') === MethodOfPayment::CASH->value),
+              Rule::requiredIf(fn () => in_array(
+                $this->input('method_of_payment'),
+                [MethodOfPayment::CASH->value, MethodOfPayment::FINANCEDCASH->value],
+                true
+              )),
               Rule::in(PaymentScheduleTemplates::types()),
             ],
             'custom_schedule' => ['nullable', 'array', 'max:6'],
@@ -299,9 +306,26 @@ class StoreOrderRequest extends FormRequest
     {
         $validator->after(function ($validator) {
             $isCash = $this->input('method_of_payment') === MethodOfPayment::CASH->value;
+            $isCashAndFinanced = $this->input('method_of_payment') === MethodOfPayment::FINANCEDCASH->value;
             $scheduleType = (string) $this->input('payment_schedule_type');
+            $cashAmount = (float) $this->input('down_payment', 0);
+            $projectAmount = (float) $this->input('project_amount', 0);
 
-            if (!$isCash || $scheduleType !== PaymentScheduleTypeEnum::CUSTOMIZED->value) {
+            if ($isCashAndFinanced) {
+                if ($this->input('down_payment') === null) {
+                    $validator->errors()->add('down_payment', 'Cash amount is required for CASH AND FINANCED.');
+                } elseif ($cashAmount <= 0) {
+                    $validator->errors()->add('down_payment', 'Cash amount must be greater than 0.');
+                } elseif ($projectAmount > 0 && $cashAmount >= $projectAmount) {
+                    $validator->errors()->add('down_payment', 'Cash amount must be less than project amount.');
+                }
+
+                if ($scheduleType !== PaymentScheduleTypeEnum::CUSTOMIZED->value) {
+                    $validator->errors()->add('payment_schedule_type', 'CASH AND FINANCED requires CUSTOMIZED payment schedule.');
+                }
+            }
+
+            if ((!$isCash && !$isCashAndFinanced) || $scheduleType !== PaymentScheduleTypeEnum::CUSTOMIZED->value) {
                 return;
             }
 
@@ -316,9 +340,14 @@ class StoreOrderRequest extends FormRequest
                 $total += (float) ($item['amount'] ?? 0);
             }
 
-            $projectAmount = (float) $this->input('project_amount', 0);
-            if (abs($total - $projectAmount) > 0.01) {
-                $validator->errors()->add('custom_schedule', 'Custom payments must total the project amount.');
+            $targetAmount = $isCashAndFinanced ? $cashAmount : $projectAmount;
+            if ($targetAmount > 0 && abs($total - $targetAmount) > 0.01) {
+                $validator->errors()->add(
+                    'custom_schedule',
+                    $isCashAndFinanced
+                        ? 'Custom payments must total the cash amount.'
+                        : 'Custom payments must total the project amount.'
+                );
             }
         });
     }
