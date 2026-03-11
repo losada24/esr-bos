@@ -17,12 +17,24 @@ export type OrderSearchResult = {
   name: string | null
   status: string | null
   client: string | null
+  company: string | null
   owner: string | null
 }
 
 type OrderGlobalSearchProps = {
   origin: ModuleValue
   className?: string
+}
+
+const STATUS_SHORT_LABELS: Record<string, string> = {
+  'ORDER MATERIALS AND FILE ORGANIZATION': 'ORDER MATERIALS',
+  'RECTIFICATION OF MEASURES AND HOA': 'RECTIFICATION OF MEASURES'
+}
+
+const formatStatusLabel = (status: string | null): string => {
+  if (!status) return 'Unknown'
+  const normalized = status.trim().toUpperCase()
+  return STATUS_SHORT_LABELS[normalized] ?? status
 }
 
 const OrderGlobalSearch = ({ origin, className = '' }: OrderGlobalSearchProps) => {
@@ -189,7 +201,7 @@ const OrderGlobalSearch = ({ origin, className = '' }: OrderGlobalSearchProps) =
                   key={result.id}
                   type="button"
                   onClick={() => { goToOrder(result.id) }}
-                  className={`flex w-full items-center justify-between gap-3 px-4 py-2 text-left transition hover:bg-slate-50 dark:hover:bg-white/5 ${index === activeIndex ? 'bg-slate-50 dark:bg-white/5' : ''}`}
+                  className={`grid w-full grid-cols-[minmax(0,1fr)_auto] items-start gap-3 px-4 py-2 text-left transition hover:bg-slate-50 dark:hover:bg-white/5 ${index === activeIndex ? 'bg-slate-50 dark:bg-white/5' : ''}`}
                 >
                   <div className="min-w-0">
                     <div className="truncate text-sm font-semibold text-slate-800 dark:text-white">
@@ -199,11 +211,17 @@ const OrderGlobalSearch = ({ origin, className = '' }: OrderGlobalSearchProps) =
                       {result.client ?? 'No client'}
                     </div>
                     <div className="truncate text-[11px] text-slate-500 dark:text-white/60">
+                      Company: {result.company ?? 'No company'}
+                    </div>
+                    <div className="truncate text-[11px] text-slate-500 dark:text-white/60">
                       Owner: {result.owner ?? 'No owner'}
                     </div>
                   </div>
-                  <span className="shrink-0 rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-600 dark:border-white-dark/30 dark:bg-white/10 dark:text-white/80">
-                    {result.status ?? 'Unknown'}
+                  <span
+                    title={result.status ?? 'Unknown'}
+                    className="block w-fit max-w-[9rem] shrink-0 justify-self-end truncate rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-600 dark:border-white-dark/30 dark:bg-white/10 dark:text-white/80 sm:max-w-[14rem]"
+                  >
+                    {formatStatusLabel(result.status)}
                   </span>
                 </button>
               ))}
