@@ -110,6 +110,7 @@ class OrderSearchController extends Controller
                 'name' => $order->name,
                 'status' => $order->status,
                 'client' => $this->resolveClientName($order),
+                'company' => $this->resolveCompanyName($order),
                 'owner' => $this->resolveOwnerName($order),
             ];
         })->values();
@@ -236,5 +237,25 @@ class OrderSearchController extends Controller
         }
 
         return $ownerNames->implode(', ');
+    }
+
+    private function resolveCompanyName(Order $order): ?string
+    {
+        $selectedCompany = $order->orderCompanyContacts
+            ->firstWhere('is_selected', true)
+            ?? $order->orderCompanyContacts
+                ->first(function ($contact) {
+                    return !empty($contact->companyContact?->name);
+                });
+
+        if (!empty($selectedCompany?->companyContact?->name)) {
+            return $selectedCompany->companyContact->name;
+        }
+
+        if ($order->relationLoaded('client') && !empty($order->client?->companyContact?->name)) {
+            return $order->client->companyContact->name;
+        }
+
+        return null;
     }
 }
