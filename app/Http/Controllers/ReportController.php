@@ -24,6 +24,7 @@ use App\Exports\AccountingStatusSummaryExport;
 use App\Exports\SalesAppointmentsBySellerExport;
 use App\Exports\MarketingReportExport;
 use App\Exports\OwnerAssignedSummaryExport;
+use App\Exports\ReplannedOrdersSummaryExport;
 use App\Exports\StatusTransitionAverageExport;
 use App\Exports\SupervisorExport;
 use App\Exports\SupervisorExportPayment;
@@ -986,6 +987,14 @@ class ReportController extends Controller
     return Inertia::render('Report/SupervisorAssignedSummary', $data);
   }
 
+  public function replannedOrdersSummary(Request $request)
+  {
+    [$startDate, $endDate] = $this->resolveSummaryDateRange($request);
+    $data = $this->buildReplannedOrdersSummaryData($startDate, $endDate);
+
+    return Inertia::render('Report/ReplannedOrdersSummary', $data);
+  }
+
   public function installerConfirmedSummaryPdf(Request $request)
   {
     [$startDate, $endDate] = $this->resolveSummaryDateRange($request);
@@ -1048,6 +1057,28 @@ class ReportController extends Controller
     return Excel::download(
       new SupervisorAssignedSummaryExport($data),
       'Supervisor Assigned Summary.xlsx',
+      \Maatwebsite\Excel\Excel::XLSX
+    );
+  }
+
+  public function replannedOrdersSummaryPdf(Request $request)
+  {
+    [$startDate, $endDate] = $this->resolveSummaryDateRange($request);
+    $data = $this->buildReplannedOrdersSummaryData($startDate, $endDate);
+    $pdf = Pdf::loadView('pdf.replanned-orders-summary', $data)->setPaper('A4', 'landscape');
+    $pdfName = 'replanned-orders-summary.pdf';
+
+    return $pdf->stream($pdfName);
+  }
+
+  public function replannedOrdersSummaryExcel(Request $request)
+  {
+    [$startDate, $endDate] = $this->resolveSummaryDateRange($request);
+    $data = $this->buildReplannedOrdersSummaryData($startDate, $endDate);
+
+    return Excel::download(
+      new ReplannedOrdersSummaryExport($data),
+      'Replanned Orders Summary.xlsx',
       \Maatwebsite\Excel\Excel::XLSX
     );
   }
@@ -2339,6 +2370,109 @@ class ReportController extends Controller
       'startDate' => $startDate->toDateString(),
       'endDate' => $endDate->toDateString(),
     ];
+  }
+
+  private function buildReplannedOrdersSummaryData(Carbon $startDate, Carbon $endDate): array
+  {
+    $plannedStatus = addslashes(OrderStatusEnum::PLANNED->value);
+
+    $rows = DB::table('order_status as replanned')
+      ->join('orders', function ($join) {
+        $join->on('orders.id', '=', 'replanned.order_id')
+          ->whereNull('orders.deleted_at');
+      })
+      ->leftJoin('order_status as planned', function ($join) use ($plannedStatus) {
+        $join->on('planned.id', '=', DB::raw("(
+          SELECT p.id
+          FROM order_status p
+          WHERE p.order_id = replanned.order_id
+            AND p.status = '{$plannedStatus}'
+            AND p.deleted_at IS NULL
+            AND p.created_at <= replanned.created_at
+          ORDER BY p.created_at DESC, p.id DESC
+          LIMIT 1
+        )"));
+      })
+      ->where('replanned.status', OrderStatusEnum::REPLANNED->value)
+      ->whereNull('replanned.deleted_at')
+      ->whereBetween('replanned.created_at', [$startDate, $endDate])
+      ->select(
+        'replanned.id',
+        'replanned.order_id',
+        'orders.order_number',
+        'orders.name as order_name',
+        'replanned.replanned_reasons',
+        'replanned.created_at as replanned_at',
+        'planned.pickup_date as planned_pickup_date',
+        'planned.start_date as planned_start_date',
+        'planned.end_date as planned_end_date',
+        'replanned.pickup_date as replanned_pickup_date',
+        'replanned.start_date as replanned_start_date',
+        'replanned.end_date as replanned_end_date'
+      )
+      ->orderByDesc('replanned.created_at')
+      ->get()
+      ->map(function ($row) {
+        $replannedReasons = $this->normalizeReplannedReasonsForReport($row->replanned_reasons);
+
+        return [
+          'id' => (int) $row->id,
+          'order_id' => (int) $row->order_id,
+          'order_number' => $row->order_number,
+          'order_name' => $row->order_name,
+          'replanned_at' => $row->replanned_at ? Carbon::parse($row->replanned_at)->toDateTimeString() : null,
+          'replanned_reasons' => $replannedReasons,
+          'replanned_reasons_label' => empty($replannedReasons) ? '-' : implode(', ', $replannedReasons),
+          'planned_pickup_date' => $row->planned_pickup_date ? Carbon::parse($row->planned_pickup_date)->toDateString() : null,
+          'planned_start_date' => $row->planned_start_date ? Carbon::parse($row->planned_start_date)->toDateString() : null,
+          'planned_end_date' => $row->planned_end_date ? Carbon::parse($row->planned_end_date)->toDateString() : null,
+          'replanned_pickup_date' => $row->replanned_pickup_date ? Carbon::parse($row->replanned_pickup_date)->toDateString() : null,
+          'replanned_start_date' => $row->replanned_start_date ? Carbon::parse($row->replanned_start_date)->toDateString() : null,
+          'replanned_end_date' => $row->replanned_end_date ? Carbon::parse($row->replanned_end_date)->toDateString() : null,
+        ];
+      })
+      ->values();
+
+    $reasonCounts = $rows
+      ->flatMap(static fn (array $row) => $row['replanned_reasons'] ?? [])
+      ->map(static fn (string $reason) => strtoupper(trim($reason)))
+      ->filter(static fn (string $reason) => $reason !== '')
+      ->countBy()
+      ->sortKeys()
+      ->all();
+
+    return [
+      'rows' => $rows,
+      'totals' => [
+        'total' => $rows->count(),
+        'reason_counts' => $reasonCounts,
+      ],
+      'startDate' => $startDate->toDateString(),
+      'endDate' => $endDate->toDateString(),
+    ];
+  }
+
+  private function normalizeReplannedReasonsForReport(mixed $rawReasons): array
+  {
+    $values = [];
+
+    if (is_array($rawReasons)) {
+      $values = $rawReasons;
+    } elseif (is_string($rawReasons) && $rawReasons !== '') {
+      $decoded = json_decode($rawReasons, true);
+      if (is_array($decoded)) {
+        $values = $decoded;
+      } else {
+        $values = explode(',', $rawReasons);
+      }
+    }
+
+    return collect($values)
+      ->map(static fn ($reason) => strtoupper(trim((string) $reason)))
+      ->filter(static fn (string $reason) => $reason !== '')
+      ->unique()
+      ->values()
+      ->all();
   }
 
 

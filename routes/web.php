@@ -535,6 +535,18 @@ Route::middleware('auth')->group(function () {
     ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::SERVICE_MANAGER->value] )
     ->name('report.supervisor-assigned-summary-excel');
 
+    Route::get('/report/replanned-orders-summary', [ReportController::class, 'replannedOrdersSummary'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::SERVICE_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::FRONTDESK_ADMIN->value] )
+    ->name('report.replanned-orders-summary');
+
+    Route::get('/report/replanned-orders-summary/pdf', [ReportController::class, 'replannedOrdersSummaryPdf'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::SERVICE_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::FRONTDESK_ADMIN->value] )
+    ->name('report.replanned-orders-summary-pdf');
+
+    Route::get('/report/replanned-orders-summary/excel', [ReportController::class, 'replannedOrdersSummaryExcel'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::SERVICE_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::FRONTDESK_ADMIN->value] )
+    ->name('report.replanned-orders-summary-excel');
+
     Route::post('/frontdesk/{order}/update-status', [FrontdeskController::class, 'updateStatus'])
      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::ACCOUNTING->value . '|'. RoleEnum::SERVICE_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value. '|'. RoleEnum::OWNER->value . '|'. RoleEnum::FRONTDESK_ADMIN->value]  )
     ->name('frontdesk.updateStatus');
