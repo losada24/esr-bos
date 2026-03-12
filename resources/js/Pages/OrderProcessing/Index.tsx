@@ -11,6 +11,15 @@ import EditIcon from '@/Components/Icons/EditIcon'
 import InfoTooltip from '@/Components/InfoTooltip'
 import OrderBoardFilter, { type BoardFilters, type FilterFieldConfig } from '@/Components/OrderBoardFilter'
 import OrderGlobalSearch from '@/Components/OrderGlobalSearch'
+import OrderPipelineSort from '@/Components/OrderPipelineSort'
+import {
+  type PipelineSortBy,
+  type PipelineSortDir,
+  hasPipelineSortInUrl,
+  normalizePipelineSort,
+  readStoredPipelineSort,
+  storePipelineSort
+} from '@/Utils/orderPipelineSort'
 
 export interface OwnerOption { id: number, name: string }
 type IdOption = { id: number, name: string }
@@ -179,14 +188,21 @@ const buildPaginationState = (pipelines: Pipelines[] = []): Record<string, Statu
   }, {})
 }
 
-const OrderProcessing = ({ auth, data, statuses, owners, supervisors, created_by_users, tags, sources, order_types, filters }: PageProps & { data: Pipelines[], statuses: string[], owners: OwnerOption[], supervisors: IdOption[], created_by_users: IdOption[], tags: TagOption[], sources: string[], order_types: string[], filters: BoardFilters }) => {
-  const [pipelines, setPipelinesState] = useState<Pipelines[]>(() => sortPipelinesByRecentActivity(data))
+const OrderProcessing = ({ auth, data, statuses, owners, supervisors, created_by_users, tags, sources, order_types, filters, sort }: PageProps & { data: Pipelines[], statuses: string[], owners: OwnerOption[], supervisors: IdOption[], created_by_users: IdOption[], tags: TagOption[], sources: string[], order_types: string[], filters: BoardFilters, sort: { sort_by?: string, sort_dir?: string } }) => {
+  const [pipelines, setPipelinesState] = useState<Pipelines[]>(() => data)
   const [statusPagination, setStatusPagination] = useState<Record<string, StatusPaginationState>>(() => buildPaginationState(data))
   const [isFilterOpen, setIsFilterOpen] = useState(false)
   const dragSnapshotRef = useRef<Pipelines[] | null>(null)
+  const sortHydratedRef = useRef(false)
   const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? ''
   const appliedFilters = filters ?? {}
-  const filterQueryParams = buildFilterQuery(appliedFilters)
+  const filterQueryParams = useMemo(() => buildFilterQuery(appliedFilters), [appliedFilters])
+  const sortState = useMemo(() => normalizePipelineSort(sort), [sort])
+  const hasSortInUrl = useMemo(() => hasPipelineSortInUrl(), [])
+  const sortQueryParams = useMemo(() => ({
+    sort_by: sortState.sort_by,
+    sort_dir: sortState.sort_dir
+  }), [sortState.sort_by, sortState.sort_dir])
 
   const tagFilterOptions = useMemo(() => {
     const seen = new Set<string>()
@@ -234,9 +250,8 @@ const OrderProcessing = ({ auth, data, statuses, owners, supervisors, created_by
   ]), [statuses, order_types, owners, sources, tagFilterOptions, supervisors, created_by_users])
 
   useEffect(() => {
-    const sorted = sortPipelinesByRecentActivity(data)
-    setPipelinesState(sorted)
-    setStatusPagination(buildPaginationState(sorted))
+    setPipelinesState(data)
+    setStatusPagination(buildPaginationState(data))
   }, [data])
 
   const setPipelines = useCallback<Dispatch<SetStateAction<Pipelines[]>>>((value) => {
@@ -245,9 +260,33 @@ const OrderProcessing = ({ auth, data, statuses, owners, supervisors, created_by
         ? (value as (prev: Pipelines[]) => Pipelines[])(prevState)
         : value
 
-      return sortPipelinesByRecentActivity(nextState)
+      return nextState
     })
   }, [setPipelinesState])
+
+  useEffect(() => {
+    if (sortHydratedRef.current) return
+    sortHydratedRef.current = true
+    if (hasSortInUrl) return
+    const storedSort = readStoredPipelineSort()
+    if (!storedSort) return
+    if (storedSort.sort_by === sortState.sort_by && storedSort.sort_dir === sortState.sort_dir) return
+
+    router.get(route('order-processing.index'), { ...filterQueryParams, ...storedSort }, { replace: true, preserveState: true, preserveScroll: true })
+  }, [filterQueryParams, hasSortInUrl, sortState.sort_by, sortState.sort_dir])
+
+  useEffect(() => {
+    if (!sortHydratedRef.current) return
+    storePipelineSort(sortState)
+  }, [sortState.sort_by, sortState.sort_dir])
+
+  const applySort = useCallback((nextSortBy: PipelineSortBy, nextSortDir: PipelineSortDir) => {
+    router.get(route('order-processing.index'), { ...filterQueryParams, sort_by: nextSortBy, sort_dir: nextSortDir }, {
+      replace: true,
+      preserveState: true,
+      preserveScroll: true
+    })
+  }, [filterQueryParams])
 
   const updatePipelineTasks = (pipelineId: Pipelines['id'], tasks: Tasks[]) => {
     setPipelines((prev) =>
@@ -303,7 +342,7 @@ const OrderProcessing = ({ auth, data, statuses, owners, supervisors, created_by
     }))
 
     try {
-      const response = await fetch(route('order-processing.tasks', { status: statusKey, page: nextPage, per_page: TASKS_PAGE_SIZE, ...filterQueryParams }), {
+      const response = await fetch(route('order-processing.tasks', { status: statusKey, page: nextPage, per_page: TASKS_PAGE_SIZE, ...filterQueryParams, ...sortQueryParams }), {
         headers: {
           Accept: 'application/json'
         }
@@ -360,7 +399,7 @@ const OrderProcessing = ({ auth, data, statuses, owners, supervisors, created_by
         }
       }))
     }
-  }, [setPipelines, setStatusPagination, filterQueryParams])
+  }, [setPipelines, setStatusPagination, filterQueryParams, sortQueryParams])
 
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value)
@@ -372,6 +411,12 @@ const OrderProcessing = ({ auth, data, statuses, owners, supervisors, created_by
       leftActions={<OrderGlobalSearch origin="order_processing" className="w-full max-w-[420px]" />}
       actions={
         <div className="flex flex-wrap items-center gap-2">
+          <OrderPipelineSort
+            sortBy={sortState.sort_by}
+            sortDir={sortState.sort_dir}
+            onSortByChange={(value) => { applySort(value, sortState.sort_dir) }}
+            onSortDirChange={(value) => { applySort(sortState.sort_by, value) }}
+          />
           <button
             type="button"
             className="btn btn-outline-primary"
@@ -409,13 +454,14 @@ const OrderProcessing = ({ auth, data, statuses, owners, supervisors, created_by
             onApply={(params) => {
               const payload: RequestPayload = {
                 ...params,
+                ...sortQueryParams,
                 ...(Array.isArray(params.filters) ? { filters: JSON.stringify(params.filters) } : {})
               }
               router.get(route('order-processing.index'), payload, { replace: true, preserveState: true })
               setIsFilterOpen(false)
             }}
             onReset={() => {
-              router.get(route('order-processing.index'), {}, { replace: true, preserveState: false })
+              router.get(route('order-processing.index'), sortQueryParams, { replace: true, preserveState: false })
               setIsFilterOpen(false)
             }}
           />

@@ -42,6 +42,7 @@ use App\Traits\Snapshot;
 use App\Support\PaymentScheduleTemplates;
 use App\Support\PaymentInstallmentPresenter;
 use App\Support\OrderBoardFilter;
+use App\Support\OrderPipelineSort;
 use App\Support\QualifiedOrderDuplicateChecker;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -134,6 +135,7 @@ class FrontdeskController extends Controller
 
     public function index(Request $request)
     {
+      $sort = OrderPipelineSort::resolveFromRequest($request);
       $filters = $request->only(['filter_field', 'filter_value', 'filter_value_secondary', 'filter_op', 'filter_value_min', 'filter_value_max']);
       $filters['filters'] = $request->input('filters', []);
       $filters['filter_match'] = $request->input('filter_match', 'and');
@@ -177,7 +179,7 @@ class FrontdeskController extends Controller
       //OrderTypeEnum::SUPPLY->value,
     ];
 
-    $data = collect($frontdeskStatuses)->map(function ($status) use ($paginatedStatuses, $filters, $filterRows, $filterMatch, $hasMultiFilters) {
+    $data = collect($frontdeskStatuses)->map(function ($status) use ($paginatedStatuses, $filters, $filterRows, $filterMatch, $hasMultiFilters, $sort) {
         $ordersQuery = $this->frontdeskOrderQuery($status);
         $ordersQuery = $hasMultiFilters
             ? OrderBoardFilter::applyMultiple($ordersQuery, $filterRows, $filterMatch)
@@ -185,12 +187,13 @@ class FrontdeskController extends Controller
 
         if (in_array($status, $paginatedStatuses, true)) {
             $total = (clone $ordersQuery)->count();
+            OrderPipelineSort::apply($ordersQuery, $sort['sort_by'], $sort['sort_dir']);
             $orders = $ordersQuery
                 ->with(['client','user','orderStatus','owners','orderCompanyContacts.companyContact','tags:id,name,color,taggable_id,taggable_type'])
-                ->orderByDesc('updated_at')
                 ->limit(self::FRONTDESK_PAGE_SIZE)
                 ->get();
         } else {
+            OrderPipelineSort::apply($ordersQuery, $sort['sort_by'], $sort['sort_dir']);
             $orders = $ordersQuery
                 ->with(['client','user','orderStatus','owners','orderCompanyContacts.companyContact','tags:id,name,color,taggable_id,taggable_type'])
                 ->get();
@@ -247,6 +250,7 @@ class FrontdeskController extends Controller
         'tags' => $tags,
         'statuses' => $frontdeskStatuses,
         'filters' => $filters,
+        'sort' => $sort,
         'frame_colors' => [
           FrameColorEnum::BLACK->value,
           FrameColorEnum::WHITE->value,
@@ -279,6 +283,7 @@ class FrontdeskController extends Controller
 
     public function tasks(Request $request)
     {
+      $sort = OrderPipelineSort::resolveFromRequest($request);
       $status = (string) $request->query('status', '');
       $page = max(1, (int) $request->query('page', 1));
       $perPage = (int) $request->query('per_page', self::FRONTDESK_PAGE_SIZE);
@@ -306,9 +311,9 @@ class FrontdeskController extends Controller
         ? OrderBoardFilter::applyMultiple($ordersQuery, $filterRows, $filterMatch)
         : OrderBoardFilter::apply($ordersQuery, $filters);
       $total = (clone $ordersQuery)->count();
+      OrderPipelineSort::apply($ordersQuery, $sort['sort_by'], $sort['sort_dir']);
       $orders = $ordersQuery
         ->with(['client','user','orderStatus','owners','orderCompanyContacts.companyContact','tags:id,name,color,taggable_id,taggable_type'])
-        ->orderByDesc('updated_at')
         ->forPage($page, $perPage)
         ->get();
 

@@ -20,6 +20,26 @@ class Note extends Model
 
     ];
 
+    protected static function booted(): void
+    {
+        $touchRelatedOrder = function (Note $note) {
+            $parent = $note->noteable;
+            if ($parent instanceof Order) {
+                $parent->touch();
+            }
+        };
+
+        static::created($touchRelatedOrder);
+        static::updated($touchRelatedOrder);
+        static::deleted($touchRelatedOrder);
+        static::restored($touchRelatedOrder);
+    }
+
+    public function noteable(): MorphTo
+    {
+        return $this->morphTo();
+    }
+
     public function clientNotes(): MorphTo
     {
         return $this->morphTo(Client::class, 'noteable');

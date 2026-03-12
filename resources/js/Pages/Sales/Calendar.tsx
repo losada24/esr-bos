@@ -65,6 +65,14 @@ export default function SalesCalendar ({ auth, owners, legend }: SalesCalendarPr
       type: viewMode
     }
 
+    if (viewMode === 'day') {
+      scheduleConfig.startTime = '00:00'
+      scheduleConfig.endTime = '24:00'
+      scheduleConfig.timeCellStep = 60
+      scheduleConfig.timeLabelStep = 60
+      scheduleConfig.days = false
+    }
+
     if (viewMode === 'week') {
       scheduleConfig.eventHeight = 'variable'
     }
@@ -250,6 +258,8 @@ export default function SalesCalendar ({ auth, owners, legend }: SalesCalendarPr
         <Eventcalendar
           data={events}
           view={view}
+          dataTimezone="local"
+          displayTimezone="local"
           clickToCreate={false}
           dragToCreate={false}
           dragToMove={false}
