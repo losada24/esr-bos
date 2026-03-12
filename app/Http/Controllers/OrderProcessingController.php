@@ -11,6 +11,7 @@ use App\Models\Order;
 use App\Models\Tag;
 use App\Models\User;
 use App\Support\OrderBoardFilter;
+use App\Support\OrderPipelineSort;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -25,6 +26,7 @@ class OrderProcessingController extends Controller
     public function index(Request $request): Response
     {
         $user = auth()->user();
+        $sort = OrderPipelineSort::resolveFromRequest($request);
         $filters = $request->only([
             'filter_field',
             'filter_value',
@@ -60,6 +62,7 @@ class OrderProcessingController extends Controller
         $ordersQuery = $hasMultiFilters
             ? OrderBoardFilter::applyMultiple($ordersQuery, $filterRows, $filterMatch)
             : OrderBoardFilter::apply($ordersQuery, $filters);
+        OrderPipelineSort::apply($ordersQuery, $sort['sort_by'], $sort['sort_dir']);
 
         $orders = $ordersQuery->with($this->orderProcessingRelations())->get();
 
@@ -67,7 +70,7 @@ class OrderProcessingController extends Controller
             return $this->determinePipelineStatus($order, $pipelineStatusMap);
         };
 
-        $data = collect($processingStatuses)->map(function (string $status) use ($orders, $determinePipelineStatus, $paginatedStatuses, $user, $filters, $filterRows, $filterMatch, $hasMultiFilters) {
+        $data = collect($processingStatuses)->map(function (string $status) use ($orders, $determinePipelineStatus, $paginatedStatuses, $user, $filters, $filterRows, $filterMatch, $hasMultiFilters, $sort) {
             if (in_array($status, $paginatedStatuses, true)) {
                 $closedWonQuery = $this->closedWonOrdersQuery($user);
                 $closedWonQuery = $hasMultiFilters
@@ -75,9 +78,9 @@ class OrderProcessingController extends Controller
                     : OrderBoardFilter::apply($closedWonQuery, $filters);
                 $total = (clone $closedWonQuery)->count();
                 $totalProjectAmount = (float) ((clone $closedWonQuery)->sum('project_amount') ?? 0);
+                OrderPipelineSort::apply($closedWonQuery, $sort['sort_by'], $sort['sort_dir']);
                 $closedWonOrders = $closedWonQuery
                     ->with($this->orderProcessingRelations())
-                    ->orderByDesc('updated_at')
                     ->limit(self::ORDER_PROCESSING_PAGE_SIZE)
                     ->get();
 
@@ -168,12 +171,14 @@ class OrderProcessingController extends Controller
             'sources' => $sources,
             'order_types' => $orderTypes,
             'filters' => $filters,
+            'sort' => $sort,
         ]);
     }
 
     public function tasks(Request $request): JsonResponse
     {
         $user = auth()->user();
+        $sort = OrderPipelineSort::resolveFromRequest($request);
         $status = (string) $request->query('status', '');
         $page = max(1, (int) $request->query('page', 1));
         $perPage = (int) $request->query('per_page', self::ORDER_PROCESSING_PAGE_SIZE);
@@ -214,9 +219,9 @@ class OrderProcessingController extends Controller
             ? OrderBoardFilter::applyMultiple($ordersQuery, $filterRows, $filterMatch)
             : OrderBoardFilter::apply($ordersQuery, $filters);
         $total = (clone $ordersQuery)->count();
+        OrderPipelineSort::apply($ordersQuery, $sort['sort_by'], $sort['sort_dir']);
         $orders = $ordersQuery
             ->with($this->orderProcessingRelations())
-            ->orderByDesc('updated_at')
             ->forPage($page, $perPage)
             ->get();
 

@@ -11,6 +11,7 @@ use App\Models\Order;
 use App\Models\Tag;
 use App\Models\User;
 use App\Support\OrderBoardFilter;
+use App\Support\OrderPipelineSort;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -25,6 +26,7 @@ class OrderStorageController extends Controller
     public function index(Request $request): Response
     {
         $user = auth()->user();
+        $sort = OrderPipelineSort::resolveFromRequest($request);
         $filters = $request->only([
             'filter_field',
             'filter_value',
@@ -46,7 +48,7 @@ class OrderStorageController extends Controller
         $storageStatuses = $this->storageStatuses();
         $paginatedStatuses = $this->paginatedStorageStatuses();
 
-        $data = collect($storageStatuses)->map(function (string $status) use ($user, $paginatedStatuses, $filters, $filterRows, $filterMatch, $hasMultiFilters) {
+        $data = collect($storageStatuses)->map(function (string $status) use ($user, $paginatedStatuses, $filters, $filterRows, $filterMatch, $hasMultiFilters, $sort) {
             $ordersQuery = $this->storageOrdersForStatusQuery($status, $user);
             $ordersQuery = $hasMultiFilters
                 ? OrderBoardFilter::applyMultiple($ordersQuery, $filterRows, $filterMatch)
@@ -55,12 +57,13 @@ class OrderStorageController extends Controller
 
             if (in_array($status, $paginatedStatuses, true)) {
                 $total = (clone $ordersQuery)->count();
+                OrderPipelineSort::apply($ordersQuery, $sort['sort_by'], $sort['sort_dir']);
                 $orders = $ordersQuery
                     ->with($this->orderStorageRelations())
-                    ->orderByDesc('updated_at')
                     ->limit(self::ORDER_STORAGE_PAGE_SIZE)
                     ->get();
             } else {
+                OrderPipelineSort::apply($ordersQuery, $sort['sort_by'], $sort['sort_dir']);
                 $orders = $ordersQuery
                     ->with($this->orderStorageRelations())
                     ->get();
@@ -141,12 +144,14 @@ class OrderStorageController extends Controller
             'sources' => $sources,
             'order_types' => $orderTypes,
             'filters' => $filters,
+            'sort' => $sort,
         ]);
     }
 
     public function tasks(Request $request): JsonResponse
     {
         $user = auth()->user();
+        $sort = OrderPipelineSort::resolveFromRequest($request);
         $status = (string) $request->query('status', '');
         $page = max(1, (int) $request->query('page', 1));
         $perPage = (int) $request->query('per_page', self::ORDER_STORAGE_PAGE_SIZE);
@@ -187,9 +192,9 @@ class OrderStorageController extends Controller
             ? OrderBoardFilter::applyMultiple($ordersQuery, $filterRows, $filterMatch)
             : OrderBoardFilter::apply($ordersQuery, $filters);
         $total = (clone $ordersQuery)->count();
+        OrderPipelineSort::apply($ordersQuery, $sort['sort_by'], $sort['sort_dir']);
         $orders = $ordersQuery
             ->with($this->orderStorageRelations())
-            ->orderByDesc('updated_at')
             ->forPage($page, $perPage)
             ->get();
 

@@ -22,6 +22,26 @@ class Attachment extends Model
 
     ];
 
+    protected static function booted(): void
+    {
+        $touchRelatedOrder = function (Attachment $attachment) {
+            $parent = $attachment->attachable;
+            if ($parent instanceof Order) {
+                $parent->touch();
+            }
+        };
+
+        static::created($touchRelatedOrder);
+        static::updated($touchRelatedOrder);
+        static::deleted($touchRelatedOrder);
+        static::restored($touchRelatedOrder);
+    }
+
+    public function attachable(): MorphTo
+    {
+        return $this->morphTo();
+    }
+
     public function orderDocuments(): MorphTo
     {
         return $this->morphTo(Order::class, 'attachable');

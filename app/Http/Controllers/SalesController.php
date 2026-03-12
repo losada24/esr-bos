@@ -40,15 +40,17 @@ use App\Support\OrderFinancialEventLogger;
 use App\Support\OrderPaymentInformationAuditLogger;
 use App\Support\PaymentScheduleTemplates;
 use App\Support\OrderBoardFilter;
+use App\Support\OrderPipelineSort;
 
 class SalesController extends Controller
 {
     use OrderEmails;
     private const SALES_PAGE_SIZE = 20;
 
-    public function index(Request $request)
-    {
+  public function index(Request $request)
+  {
         $user = auth()->user();
+        $sort = OrderPipelineSort::resolveFromRequest($request);
         $filters = $request->only(['filter_field', 'filter_value', 'filter_value_secondary', 'filter_op', 'filter_value_min', 'filter_value_max']);
         $filters['filters'] = $request->input('filters', []);
         $filters['filter_match'] = $request->input('filter_match', 'and');
@@ -98,7 +100,7 @@ class SalesController extends Controller
     }
 
     // Armar el arreglo que espera el componente React
-    $data = collect($visibleStatuses)->map(function ($status) use ($user, $paginatedStatuses, $filters, $filterRows, $filterMatch, $hasMultiFilters) {
+    $data = collect($visibleStatuses)->map(function ($status) use ($user, $paginatedStatuses, $filters, $filterRows, $filterMatch, $hasMultiFilters, $sort) {
         $ordersQuery = $this->salesOrdersForStatusQuery($status, $user);
         $ordersQuery = $hasMultiFilters
             ? OrderBoardFilter::applyMultiple($ordersQuery, $filterRows, $filterMatch)
@@ -107,12 +109,13 @@ class SalesController extends Controller
 
         if (in_array($status, $paginatedStatuses, true)) {
             $total = (clone $ordersQuery)->count();
+            OrderPipelineSort::apply($ordersQuery, $sort['sort_by'], $sort['sort_dir']);
             $orders = $ordersQuery
                 ->with($this->salesOrderRelations())
-                ->orderByDesc('updated_at')
                 ->limit(self::SALES_PAGE_SIZE)
                 ->get();
         } else {
+            OrderPipelineSort::apply($ordersQuery, $sort['sort_by'], $sort['sort_dir']);
             $orders = $ordersQuery
                 ->with($this->salesOrderRelations())
                 ->get();
@@ -174,6 +177,7 @@ class SalesController extends Controller
       'created_by_users' => $createdByUsers,
       'tags' => $tags,
       'filters' => $filters,
+      'sort' => $sort,
       'methods_of_payment' => array_values(array_filter(
         array_map(fn (MethodOfPayment $method) => $method->value, MethodOfPayment::cases()),
         fn (string $method) => !in_array($method, [
@@ -190,6 +194,7 @@ class SalesController extends Controller
   public function tasks(Request $request): JsonResponse
   {
     $user = auth()->user();
+    $sort = OrderPipelineSort::resolveFromRequest($request);
     $status = (string) $request->query('status', '');
     $page = max(1, (int) $request->query('page', 1));
     $perPage = (int) $request->query('per_page', self::SALES_PAGE_SIZE);
@@ -227,9 +232,9 @@ class SalesController extends Controller
         ? OrderBoardFilter::applyMultiple($ordersQuery, $filterRows, $filterMatch)
         : OrderBoardFilter::apply($ordersQuery, $filters);
     $total = (clone $ordersQuery)->count();
+    OrderPipelineSort::apply($ordersQuery, $sort['sort_by'], $sort['sort_dir']);
     $orders = $ordersQuery
       ->with($this->salesOrderRelations())
-      ->orderByDesc('updated_at')
       ->forPage($page, $perPage)
       ->get();
 
@@ -439,18 +444,28 @@ class SalesController extends Controller
   {
     $user = auth()->user();
     $ownerFilter = $request->query('owner');
+    $calendarTimezone = (string) config('app.timezone', 'UTC');
 
     $allowedStatuses = $this->salesStatuses();
     if ($this->isOwnerRestricted($user)) {
       $allowedStatuses = $this->ownerVisibleSalesStatuses();
     }
 
-    $start = Carbon::createFromDate($year, $month, 1)->startOfMonth()->subWeek();
-    $end = Carbon::createFromDate($year, $month, 1)->endOfMonth()->addWeek();
+    $rangeStart = Carbon::createFromDate($year, $month, 1, $calendarTimezone)
+      ->startOfMonth()
+      ->subWeek()
+      ->startOfDay();
+    $rangeEnd = Carbon::createFromDate($year, $month, 1, $calendarTimezone)
+      ->endOfMonth()
+      ->addWeek()
+      ->endOfDay();
 
     $ordersQuery = Order::with(['client', 'owners', 'user', 'orderCompanyContacts.companyContact'])
       ->whereNotNull('schedule_appointment')
-      ->whereBetween('schedule_appointment', [$start, $end])
+      ->whereBetween('schedule_appointment', [
+        $rangeStart->format('Y-m-d H:i:s'),
+        $rangeEnd->format('Y-m-d H:i:s'),
+      ])
       ->whereIn('status', $allowedStatuses);
 
     if (!empty($ownerFilter) && $ownerFilter !== 'all') {
@@ -471,9 +486,9 @@ class SalesController extends Controller
 
     $ownerColors = $this->ownerColorMapFromList($this->ownerListForCalendar($user));
 
-    $events = $ordersQuery->get()->map(function (Order $order) use ($ownerColors) {
-      $start = Carbon::parse($order->schedule_appointment);
-      $end = (clone $start)->addHour();
+    $events = $ordersQuery->get()->map(function (Order $order) use ($ownerColors, $calendarTimezone) {
+      $appointmentStart = Carbon::parse($order->schedule_appointment, $calendarTimezone);
+      $appointmentEnd = (clone $appointmentStart)->addHour();
 
       $client = $order->client;
       $clientName = $client?->name ?? 'Client';
@@ -484,7 +499,7 @@ class SalesController extends Controller
         ?? $order->orderCompanyContacts->first();
       $companyName = $selectedCompanyContact?->companyContact?->name ?? '';
       $primaryLine = ($order->name ?? 'Order');
-      $secondaryLine = $start->format('h:i A') . ($owners->isNotEmpty() ? ' (' . $owners->implode(', ') . ')' : '');
+      $secondaryLine = $appointmentStart->format('h:i A') . ($owners->isNotEmpty() ? ' (' . $owners->implode(', ') . ')' : '');
       $tooltipParts = [
         'Client: ' . $clientName,
         'Status: ' . $order->status,
@@ -500,14 +515,15 @@ class SalesController extends Controller
         'order_id' => $order->id,
         'title' => $primaryLine,
         'tooltip' => $tooltip,
-        'start' => $start->format('Y-m-d\TH:i'),
-        'end' => $end->format('Y-m-d\TH:i'),
+        // Include timezone offset to avoid DST/local parsing ambiguities in the browser.
+        'start' => $appointmentStart->format(\DateTimeInterface::ATOM),
+        'end' => $appointmentEnd->format(\DateTimeInterface::ATOM),
         'color' => $ownerColor ?? $this->salesStatusColor($order->status),
         'type_of_event' => $order->status,
         'text' => $order->name ?? 'Order',
         'order_name' => $order->name ?? 'Order',
-        'appointment_date' => $start->format('M d, Y'),
-        'appointment_time' => $start->format('h:i A'),
+        'appointment_date' => $appointmentStart->format('M d, Y'),
+        'appointment_time' => $appointmentStart->format('h:i A'),
         'owner_names' => $owners->implode(', '),
         'seller_name' => $sellerName,
         'client_name' => $clientName,

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Dispatch, SetStateAction } from 'react'
 import { Head, Link, router } from '@inertiajs/react'
 import type { RequestPayload } from '@inertiajs/core'
@@ -16,6 +16,15 @@ import { tagClasses, type TagColor } from '@/Utils/tags'
 import InfoTooltip from '@/Components/InfoTooltip'
 import OrderBoardFilter, { type BoardFilters, type FilterFieldConfig } from '@/Components/OrderBoardFilter'
 import OrderGlobalSearch from '@/Components/OrderGlobalSearch'
+import OrderPipelineSort from '@/Components/OrderPipelineSort'
+import {
+  type PipelineSortBy,
+  type PipelineSortDir,
+  hasPipelineSortInUrl,
+  normalizePipelineSort,
+  readStoredPipelineSort,
+  storePipelineSort
+} from '@/Utils/orderPipelineSort'
 
 const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const
 
@@ -201,6 +210,7 @@ export default function Frontdesk ({
   created_by_users,
   tags,
   filters,
+  sort,
   frame_colors,
   glass_colors,
   glass_types,
@@ -217,6 +227,7 @@ export default function Frontdesk ({
   created_by_users: IdOption[]
   tags: TagOption[]
   filters: BoardFilters
+  sort: { sort_by?: string, sort_dir?: string }
   frame_colors: string[]
   glass_colors: string[]
   glass_types: string[]
@@ -233,7 +244,7 @@ export default function Frontdesk ({
   const IS_FRONTDESK_ESR = isFrontdeskEsr(auth.user.roles.map((role: Role) => role.name))
   const canDeleteTasks = !IS_FRONTDESK_ESR
 
-  const [projectList, setProjectListState] = useState<Pipelines[]>(() => sortPipelinesByRecentActivity(data))
+  const [projectList, setProjectListState] = useState<Pipelines[]>(() => data)
   const [showModal, setShowModal] = useState(false)
   const [lostTask, setLostTask] = useState<Tasks | null>(null)
   const [showQuantifiedModal, setShowQuantifiedModal] = useState(false)
@@ -241,8 +252,15 @@ export default function Frontdesk ({
   const [previousStatusId, setPreviousStatusId] = useState<string | null>(null)
   const [statusPagination, setStatusPagination] = useState<Record<string, StatusPaginationState>>(() => buildPaginationState(data))
   const [isFilterOpen, setIsFilterOpen] = useState(false)
+  const sortHydratedRef = useRef(false)
   const appliedFilters = filters ?? {}
-  const filterQueryParams = buildFilterQuery(appliedFilters)
+  const filterQueryParams = useMemo(() => buildFilterQuery(appliedFilters), [appliedFilters])
+  const sortState = useMemo(() => normalizePipelineSort(sort), [sort])
+  const hasSortInUrl = useMemo(() => hasPipelineSortInUrl(), [])
+  const sortQueryParams = useMemo(() => ({
+    sort_by: sortState.sort_by,
+    sort_dir: sortState.sort_dir
+  }), [sortState.sort_by, sortState.sort_dir])
 
   const tagFilterOptions = useMemo(() => {
     const seen = new Set<string>()
@@ -290,9 +308,8 @@ export default function Frontdesk ({
   ]), [statuses, order_types, owners, sources, tagFilterOptions, supervisors, created_by_users])
 
   useEffect(() => {
-    const sorted = sortPipelinesByRecentActivity(data)
-    setProjectListState(sorted)
-    setStatusPagination(buildPaginationState(sorted))
+    setProjectListState(data)
+    setStatusPagination(buildPaginationState(data))
   }, [data])
 
   const setProjectList = useCallback<Dispatch<SetStateAction<Pipelines[]>>>((value) => {
@@ -301,9 +318,33 @@ export default function Frontdesk ({
         ? (value as (prev: Pipelines[]) => Pipelines[])(prevState)
         : value
 
-      return sortPipelinesByRecentActivity(nextState)
+      return nextState
     })
   }, [setProjectListState])
+
+  useEffect(() => {
+    if (sortHydratedRef.current) return
+    sortHydratedRef.current = true
+    if (hasSortInUrl) return
+    const storedSort = readStoredPipelineSort()
+    if (!storedSort) return
+    if (storedSort.sort_by === sortState.sort_by && storedSort.sort_dir === sortState.sort_dir) return
+
+    router.get(route('frontdesk.index'), { ...filterQueryParams, ...storedSort }, { replace: true, preserveState: true, preserveScroll: true })
+  }, [filterQueryParams, hasSortInUrl, sortState.sort_by, sortState.sort_dir])
+
+  useEffect(() => {
+    if (!sortHydratedRef.current) return
+    storePipelineSort(sortState)
+  }, [sortState.sort_by, sortState.sort_dir])
+
+  const applySort = useCallback((nextSortBy: PipelineSortBy, nextSortDir: PipelineSortDir) => {
+    router.get(route('frontdesk.index'), { ...filterQueryParams, sort_by: nextSortBy, sort_dir: nextSortDir }, {
+      replace: true,
+      preserveState: true,
+      preserveScroll: true
+    })
+  }, [filterQueryParams])
 
   async function updateOrderStatus (orderId: number, newStatus: string) {
     const url = route('frontdesk.updateStatus', { order: orderId })
@@ -340,7 +381,7 @@ export default function Frontdesk ({
     }))
 
     try {
-      const response = await fetch(route('frontdesk.tasks', { status: statusKey, page: nextPage, per_page: TASKS_PAGE_SIZE, ...filterQueryParams }), {
+      const response = await fetch(route('frontdesk.tasks', { status: statusKey, page: nextPage, per_page: TASKS_PAGE_SIZE, ...filterQueryParams, ...sortQueryParams }), {
         headers: { Accept: 'application/json' }
       })
 
@@ -397,7 +438,7 @@ export default function Frontdesk ({
         }
       }))
     }
-  }, [setProjectList, setStatusPagination, filterQueryParams])
+  }, [setProjectList, setStatusPagination, filterQueryParams, sortQueryParams])
 
   /* const loadEvents = (date: Date) => {
     const year = date.getFullYear()
@@ -415,6 +456,12 @@ export default function Frontdesk ({
       leftActions={<OrderGlobalSearch origin="frontdesk" className="w-full max-w-[420px]" />}
       actions={
         <div className="flex flex-wrap items-center gap-2">
+          <OrderPipelineSort
+            sortBy={sortState.sort_by}
+            sortDir={sortState.sort_dir}
+            onSortByChange={(value) => { applySort(value, sortState.sort_dir) }}
+            onSortDirChange={(value) => { applySort(sortState.sort_by, value) }}
+          />
           <button
             type="button"
             className="btn btn-outline-primary"
@@ -465,16 +512,17 @@ export default function Frontdesk ({
           <OrderBoardFilter
             fields={filterFields}
             initialFilters={appliedFilters}
-          onApply={(params) => {
-            const payload: RequestPayload = {
-              ...params,
-              ...(Array.isArray(params.filters) ? { filters: JSON.stringify(params.filters) } : {})
-            }
-            router.get(route('frontdesk.index'), payload, { replace: true, preserveState: true })
-            setIsFilterOpen(false)
-          }}
+            onApply={(params) => {
+              const payload: RequestPayload = {
+                ...params,
+                ...sortQueryParams,
+                ...(Array.isArray(params.filters) ? { filters: JSON.stringify(params.filters) } : {})
+              }
+              router.get(route('frontdesk.index'), payload, { replace: true, preserveState: true })
+              setIsFilterOpen(false)
+            }}
             onReset={() => {
-              router.get(route('frontdesk.index'), {}, { replace: true, preserveState: false })
+              router.get(route('frontdesk.index'), sortQueryParams, { replace: true, preserveState: false })
               setIsFilterOpen(false)
             }}
           />
