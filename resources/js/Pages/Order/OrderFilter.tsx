@@ -9,6 +9,7 @@ const OrderFilter = ({ statuses }: { statuses: string[] }) => {
   const { data, setData } = useForm({
     text: '',
     status: '',
+    is_supply: false,
     dates: [] as Date[] | []
   })
 
@@ -16,12 +17,14 @@ const OrderFilter = ({ statuses }: { statuses: string[] }) => {
     setData({
       text: '',
       status: '',
+      is_supply: false,
       dates: []
     })
 
     router.get(route('order.index'), {
       text: '',
       status: '',
+      is_supply: false,
       dates: []
     }, {
       replace: true,
@@ -76,6 +79,20 @@ const OrderFilter = ({ statuses }: { statuses: string[] }) => {
               <option key={index} value={status}>{status}</option>
             ))}
           </select>
+        </div>
+        <div className='mb-3 w-36 flex items-end'>
+          <label htmlFor="is_supply" className='inline-flex items-center gap-2 cursor-pointer pb-2'>
+            <input
+              id="is_supply"
+              name="is_supply"
+              type="checkbox"
+              checked={data.is_supply}
+              onChange={(e) => {
+                setData('is_supply', e.target.checked)
+              }}
+            />
+            <span>SUPPLY</span>
+          </label>
         </div>
         <div className="flex items-end justify-between w-44 pb-3">
           <PrimaryButton className="btn btn-primary">

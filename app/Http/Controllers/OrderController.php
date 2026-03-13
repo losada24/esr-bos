@@ -100,9 +100,12 @@ class OrderController extends Controller
         OrderStatusEnum::CANCELED->value
     ];
 
+    $filters = $request->only(['text', 'status']);
+    $filters['is_supply'] = $request->boolean('is_supply');
+
     $orders = Order::with(['installationTeams.user'])
         ->whereIn('orders.status', $allowedStatuses)   // <- filtro duro por status permitidos
-        ->filter($request->only(['text', 'status']))   // si viene un status fuera de la lista, igual quedará excluido
+        ->filter($filters)   // si viene un status fuera de la lista, igual quedará excluido
         ->orderBy('orders.updated_at', 'desc')
         ->orderBy('orders.id', 'desc')
         ->paginate()
