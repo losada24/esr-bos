@@ -153,8 +153,14 @@ class Order extends Model
   {
     $query->when($filters['status'] ?? null, function ($query, $search) {
       $query->where('status', $search);
+    })->when(($filters['is_supply'] ?? false) === true, function ($query) {
+      $query->where('is_supply', true);
     })->when($filters['text'] ?? null, function ($query, $search) {
-      $query->where(DB::raw("CONCAT(name, ' ', order_number, ' ', job_address)"), 'like', '%' . $search . '%');
+      $query->where(function ($query) use ($search) {
+        $query->where('name', 'like', '%' . $search . '%')
+          ->orWhere('order_number', 'like', '%' . $search . '%')
+          ->orWhere('job_address', 'like', '%' . $search . '%');
+      });
     });
   }
   public function scopeSupervisorFilter($query, array $filters)
