@@ -13,7 +13,7 @@ const ClientFilter = () => {
       text: ''
     })
 
-    router.get(route('client.index'), {
+    router.get(route('company_contact.index'), {
       text: ''
     }, {
       replace: true,
@@ -25,7 +25,7 @@ const ClientFilter = () => {
     e.preventDefault()
     let currentRoute = route().current()
     if (currentRoute === undefined) {
-      currentRoute = 'client.index'
+      currentRoute = 'company_contact.index'
     }
 
     router.get(route(currentRoute), data, {

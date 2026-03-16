@@ -36,6 +36,9 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
   const IS_PAYMENT_COORDINATOR = isPaymentCoordinator(roleNames)
   const IS_OWNER_ADMIN = isOwnerAdmin(roleNames)
   const IS_FRONTDESK_ESR = isFrontdeskEsr(roleNames)
+  const CAN_VIEW_FRONTDESK_PIPELINE = IS_ADMIN || IS_FRONTDESK || IS_OWNER_ADMIN || IS_FRONTDESK_ADMIN || IS_FRONTDESK_ESR
+  const CAN_VIEW_FRONTDESK_CONTACTS = CAN_VIEW_FRONTDESK_PIPELINE || IS_ACCOUNT_MANAGER
+  const CAN_VIEW_FRONTDESK_SECTION = CAN_VIEW_FRONTDESK_PIPELINE || CAN_VIEW_FRONTDESK_CONTACTS
   const CAN_VIEW_REPORT_SUPERVISOR = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SUPERVISOR || IS_SERVICE_MANAGER
   const CAN_VIEW_REPORT_INSTALLER = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER || IS_PAYMENT_COORDINATOR
   const CAN_VIEW_BIWEEKLY = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_PAYMENT_COORDINATOR
@@ -92,7 +95,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                     <PerfectScrollbar className="h-[calc(100vh-80px)] relative">
                       <ul className="relative font-semibold space-y-0.5 p-4 py-0">
 
-                          {(IS_ADMIN || IS_FRONTDESK || IS_OWNER_ADMIN || IS_FRONTDESK_ADMIN || IS_FRONTDESK_ESR) && (
+                          {CAN_VIEW_FRONTDESK_SECTION && (
                               <>
                               <h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">
                                 <svg className="w-4 h-5 flex-none hidden" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
@@ -101,40 +104,48 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                 <span>Frontdesk</span>
                             </h2>
 
-                            <li className="menu nav-item">
-                                <NavLink href={route('frontdesk.index')} active={route().current('frontdesk.index')} className="group">
-                                    <div className="flex items-center">
-                                        <CodeIcon />
-                                        <SidebarLinkLabel>Pipeline</SidebarLinkLabel>
-                                    </div>
-                                </NavLink>
-                            </li>
+                            {CAN_VIEW_FRONTDESK_PIPELINE && (
+                              <li className="menu nav-item">
+                                  <NavLink href={route('frontdesk.index')} active={route().current('frontdesk.index')} className="group">
+                                      <div className="flex items-center">
+                                          <CodeIcon />
+                                          <SidebarLinkLabel>Pipeline</SidebarLinkLabel>
+                                      </div>
+                                  </NavLink>
+                              </li>
+                            )}
 
-                            <li className="menu nav-item">
-                                    <NavLink href={route('client.index')} active={route().current('client.index')} className="group">
-                                        <div className="flex items-center">
-                                            <ReferralIcon />
-                                            <SidebarLinkLabel>Contact</SidebarLinkLabel>
-                                        </div>
-                                    </NavLink>
-                                </li>
+                            {CAN_VIEW_FRONTDESK_CONTACTS && (
+                              <li className="menu nav-item">
+                                      <NavLink href={route('client.index')} active={route().current('client.index')} className="group">
+                                          <div className="flex items-center">
+                                              <ReferralIcon />
+                                              <SidebarLinkLabel>Contact</SidebarLinkLabel>
+                                          </div>
+                                      </NavLink>
+                                  </li>
+                            )}
 
-                                <li className="menu nav-item">
-                                    <NavLink href={route('company_contact.index')} active={route().current('company_contact.index')} className="group">
-                                        <div className="flex items-center">
-                                            <BuildingIcon />
-                                            <SidebarLinkLabel>Company</SidebarLinkLabel>
-                                        </div>
-                                    </NavLink>
-                                </li>
-                                 <li className="menu nav-item">
-                                <NavLink href={route('source.index')} active={route().current('source.index')} className="group">
-                                    <div className="flex items-center">
-                                        <RoundIcon />
-                                        <SidebarLinkLabel>Sources</SidebarLinkLabel>
-                                    </div>
-                                </NavLink>
-                            </li>
+                            {CAN_VIEW_FRONTDESK_CONTACTS && (
+                              <li className="menu nav-item">
+                                  <NavLink href={route('company_contact.index')} active={route().current('company_contact.index')} className="group">
+                                      <div className="flex items-center">
+                                          <BuildingIcon />
+                                          <SidebarLinkLabel>Company</SidebarLinkLabel>
+                                      </div>
+                                  </NavLink>
+                              </li>
+                            )}
+                            {CAN_VIEW_FRONTDESK_PIPELINE && (
+                              <li className="menu nav-item">
+                                  <NavLink href={route('source.index')} active={route().current('source.index')} className="group">
+                                      <div className="flex items-center">
+                                          <RoundIcon />
+                                          <SidebarLinkLabel>Sources</SidebarLinkLabel>
+                                      </div>
+                                  </NavLink>
+                              </li>
+                            )}
                               </>
                           )}
 

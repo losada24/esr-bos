@@ -96,7 +96,18 @@ class UpdateOrderRequest extends FormRequest
            //'order_number' => 'required|integer',
            'order_number' => 'required|string|max:255',
            'invoice_number' => 'nullable|string|max:255',
-          'job_address' => 'required|string|max:255',
+          'job_address' => [
+            'nullable',
+            'string',
+            'max:255',
+            Rule::requiredIf(
+              fn () => !in_array(
+                $this->input('service'),
+                [ServiceEnum::PICKUP->value, ServiceEnum::DELIVERY->value],
+                true
+              )
+            ),
+          ],
           'owners' => [
             Rule::when(
               fn ($input) => $input->service == ServiceEnum::SERVICE->value,
