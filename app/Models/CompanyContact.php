@@ -45,7 +45,11 @@ class CompanyContact extends Model
     public function scopeFilter($query, array $filters)
     {
         $query->when($filters['text'] ?? null, function ($query, $search) {
-          $query->where(DB::raw("CONCAT(name, ' ', email, ' ', phone)"), 'like', '%'.$search.'%');
+          $query->where(function ($subQuery) use ($search) {
+            $subQuery->where('name', 'like', '%'.$search.'%')
+              ->orWhere('email', 'like', '%'.$search.'%')
+              ->orWhere('phone', 'like', '%'.$search.'%');
+          });
         });
     }
 
