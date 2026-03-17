@@ -19,15 +19,19 @@
         max-width: 1200px; /* Puedes ajustar este valor si necesitas más ancho */
         border-collapse: collapse;
         font-family: Arial, sans-serif;
-        font-size:18px;
+        font-size: 12px;
+        table-layout: fixed;
     }
 
     /* Bordes y alineación de celdas */
     th, td {
         border: 1px solid #000;
-        padding: 8px;
+        padding: 6px;
         text-align: center;
         vertical-align: middle;
+        white-space: normal;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
     }
 
     /* Encabezados */
@@ -67,6 +71,22 @@
         border-radius: 4px;
     }
 
+    .responsible-extra-work-column,
+    .responsible-extra-work-cell {
+        width: 90px;
+        max-width: 90px;
+        font-size: 11px;
+        line-height: 1.2;
+    }
+
+    .remarks-column,
+    .remarks-cell {
+        width: 90px;
+        max-width: 90px;
+        font-size: 11px;
+        line-height: 1.2;
+    }
+
 </style>
 <div class="table-container">
 <div class="table-wrapper">
@@ -103,12 +123,12 @@
           <th width='50'>Payment Processed</th>
           <th width='50'>Pending Pay</th>
           <th width='50'>Extra Work</th>
-          <th width='50'>Responsible Extra Work</th>
+          <th width='50' class="responsible-extra-work-column">Responsible Extra Work</th>
           <th width='50'>Extra Discount</th>
           <th width='50'>Other Cost</th>
            <th width='50'>Total Payment</th>
           <th width='50'>Collected Payment</th>
-          <th width='50'>Remarks</th>
+          <th width='50' class="remarks-column">Remarks</th>
           <th width='50'>Delivered Documents</th>
            <th width='50'>Status Payment</th>
       </tr>
@@ -186,7 +206,7 @@
              <td width='20' height='25' text-align='center' valign='middle'>{{ '$' . number_format($order['installation_payments'][$order['installation_payments']->count() - 1]['installer_payment'], 2, '.', ',')}}</td>
              <td width='20' height='25' text-align='center' valign='middle'>{{ '$' . number_format($pendingPaymentAmount, 2, '.', ',')}}</td>
              <td width='20' height='25' text-align='center' valign='middle'>{{ '$' . number_format($order['installation_payments'][$order['installation_payments']->count() - 1]['extra_work'], 2, '.', ',')}}</td>
-             <td width='20' height='25' text-align='center' valign='middle'>{{$order['installation_payments'][$order['installation_payments']->count() - 1]['responsible_extra_work'] ?? '' }}</td>
+             <td width='20' height='25' text-align='center' valign='middle' class="responsible-extra-work-cell">{{$order['installation_payments'][$order['installation_payments']->count() - 1]['responsible_extra_work'] ?? '' }}</td>
              <td width='20' height='25' text-align='center' valign='middle'>{{ '$' . number_format($order['installation_payments'][$order['installation_payments']->count() - 1]['extra_discount'], 2, '.', ',')}}</td>
              <td width='20' height='25' text-align='center' valign='middle'>{{ '$' . number_format($order['installation_payments'][$order['installation_payments']->count() - 1]['other_cost_installer'], 2, '.', ',')}}</td>
             <td width='20' height='25' text-align='center' valign='middle'>{{ '$' . number_format($totalPaymentAmount, 2, '.', ','); }}</td>
@@ -194,7 +214,7 @@
                                                           $order['partial_payment_installation'] ? 'PARTIAL' : '',
                                                           $order['final_payment_installation'] ? 'FINAL' : '',
                                                       ])->filter()->join(' , ') }}</td>
-            <td width='20' height='25' text-align='center' valign='middle'>{{ $order['notes']?? '' }}</td>
+            <td width='20' height='25' text-align='center' valign='middle' class="remarks-cell">{{ $order['notes']?? '' }}</td>
             <td width='20' height='25' text-align='center' valign='middle'>{{ collect([
                                                           $order['pre_inspection'] ? 'PI' : '',
                                                           $order['walk_trough'] ? 'WT' : '',
