@@ -1,9 +1,18 @@
 <style>
+    @page {
+        margin: 4px 6px;
+    }
+
+    body {
+        margin: 0;
+        padding: 0;
+    }
+
     /* Centrar la tabla en la página */
     .table-container {
         display: flex;
         justify-content: center;
-        padding: 20px;
+        padding: 0;
     }
 
     /* Agregar scroll horizontal y vertical */
@@ -16,10 +25,9 @@
     /* Estilo general de la tabla */
     table {
         width: 100%;
-        max-width: 1200px; /* Puedes ajustar este valor si necesitas más ancho */
         border-collapse: collapse;
         font-family: Arial, sans-serif;
-        font-size: 12px;
+        font-size: 18px;
         table-layout: fixed;
     }
 
@@ -64,7 +72,7 @@
         display: inline-block;
         margin-top: 4px;
         padding: 2px 6px;
-        font-size: 12px;
+        font-size: 15px;
         font-weight: bold;
         background-color: #007bff;
         color: #fff;
@@ -75,15 +83,26 @@
     .responsible-extra-work-cell {
         width: 90px;
         max-width: 90px;
-        font-size: 11px;
+        font-size: 14px;
         line-height: 1.2;
+    }
+
+    .city-permit-column,
+    .city-permit-cell,
+    .project-percent-column,
+    .project-percent-cell {
+        width: 22px;
+        max-width: 22px;
+        padding-left: 2px;
+        padding-right: 2px;
+        line-height: 1.1;
     }
 
     .remarks-column,
     .remarks-cell {
         width: 90px;
         max-width: 90px;
-        font-size: 11px;
+        font-size: 13px;
         line-height: 1.2;
     }
 
@@ -117,9 +136,9 @@
           <th width='50'>Name</th>
           <th width='20'>Owners</th>
           <th width='20'>Supervisor</th>
-          <th width='50'>City Permit</th>
+          <th width='22' class="city-permit-column">City Permit</th>
           <th width='50'>Total Project Payment</th>
-          <th width='50'>% Project</th>
+          <th width='22' class="project-percent-column">% Project</th>
           <th width='50'>Payment Processed</th>
           <th width='50'>Pending Pay</th>
           <th width='50'>Extra Work</th>
@@ -200,9 +219,9 @@
               
              </td>
              <td width='20' height='25' text-align='left' valign='middle'>{{$order['supervisor'] }}</td>
-             <td width='20' height='25' text-align='center' valign='middle'>{{$order['city_permits'] ? 'YES' : 'NO' }}</td>
+             <td width='20' height='25' text-align='center' valign='middle' class="city-permit-cell">{{$order['city_permits'] ? 'YES' : 'NO' }}</td>
              <td width='20' height='25' text-align='center' valign='middle'>{{ '$' . number_format($order['amount'], 2, '.', ',')}}</td>
-             <td width='20' height='25' text-align='center' valign='middle'> {{  number_format($order['installation_payments'][$order['installation_payments']->count() - 1]['percentage_payment'], 2, '.', ',') . '%'}}</td>
+             <td width='20' height='25' text-align='center' valign='middle' class="project-percent-cell"> {{  number_format($order['installation_payments'][$order['installation_payments']->count() - 1]['percentage_payment'], 2, '.', ',') . '%'}}</td>
              <td width='20' height='25' text-align='center' valign='middle'>{{ '$' . number_format($order['installation_payments'][$order['installation_payments']->count() - 1]['installer_payment'], 2, '.', ',')}}</td>
              <td width='20' height='25' text-align='center' valign='middle'>{{ '$' . number_format($pendingPaymentAmount, 2, '.', ',')}}</td>
              <td width='20' height='25' text-align='center' valign='middle'>{{ '$' . number_format($order['installation_payments'][$order['installation_payments']->count() - 1]['extra_work'], 2, '.', ',')}}</td>
