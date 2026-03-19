@@ -43,7 +43,7 @@ type ReferredClientsProps = PageProps & {
     data: ReferralRecord[]
     links: PaginatorLink[]
   }
-  is_admin: boolean
+  can_view_all_referrals: boolean
 }
 
 const formatDate = (value?: string | null) => {
@@ -72,7 +72,8 @@ const getReferrerKind = (referral: ReferralRecord) => {
   return 'Manual'
 }
 
-export default function ReferredClients ({ auth, referrals, is_admin }: ReferredClientsProps) {
+export default function ReferredClients ({ auth, referrals, can_view_all_referrals }: ReferredClientsProps) {
+  const pageTitle = can_view_all_referrals ? 'Referred Clients' : 'My Referred Clients'
   const groupedBySource = referrals.data.reduce<Record<string, ReferralRecord[]>>((groups, referral) => {
     const source = referral.type || 'Unknown'
 
@@ -109,12 +110,12 @@ export default function ReferredClients ({ auth, referrals, is_admin }: Referred
   }
 
   return (
-    <AuthenticatedLayout auth={auth} pageTitle='My Referred Clients'>
-      <Head title="My Referred Clients" />
+    <AuthenticatedLayout auth={auth} pageTitle={pageTitle}>
+      <Head title={pageTitle} />
 
       <div className="space-y-6">
         <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
-          {is_admin
+          {can_view_all_referrals
             ? 'This view is grouped by source, then by referrer, and then by referred clients.'
             : 'This view shows your referred clients grouped by source and referrer.'}
         </div>

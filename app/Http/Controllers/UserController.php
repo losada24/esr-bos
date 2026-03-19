@@ -118,7 +118,10 @@ class UserController extends Controller
     {
         $authenticatedUser = $request->user();
 
-        $isAdmin = $authenticatedUser->hasRole(RoleEnum::ADMIN->value);
+        $canViewAllReferrals = $authenticatedUser->hasAnyRole([
+            RoleEnum::ADMIN->value,
+            RoleEnum::FRONTDESK_ADMIN->value,
+        ]);
 
         $referrals = Referral::query()
             ->select([
@@ -151,7 +154,7 @@ class UserController extends Controller
             ])
             ->withCount('clients')
             ->has('clients')
-            ->when(! $isAdmin, function ($query) use ($authenticatedUser) {
+            ->when(! $canViewAllReferrals, function ($query) use ($authenticatedUser) {
                 $query->where('user_id', $authenticatedUser->id);
             })
             ->orderBy('type')
@@ -161,7 +164,7 @@ class UserController extends Controller
 
         return Inertia::render('User/ReferredClients', [
             'referrals' => $referrals,
-            'is_admin' => $isAdmin,
+            'can_view_all_referrals' => $canViewAllReferrals,
         ]);
     }
 
