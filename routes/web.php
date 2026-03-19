@@ -20,6 +20,7 @@ use App\Http\Controllers\OrderSearchController;
 use App\Http\Controllers\OrderPaymentController;
 use App\Http\Controllers\PaymentInstallmentMovementController;
 use App\Http\Controllers\PaymentScheduleController;
+use App\Http\Controllers\ReferralController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SalesController;
 use App\Http\Controllers\SourceController;
@@ -88,6 +89,9 @@ Route::middleware('auth')->group(function () {
         Route::put('notes/{note}',    [OrderNoteController::class, 'update'])->name('notes.update');
         Route::delete('notes/{note}', [OrderNoteController::class, 'destroy'])->name('notes.destroy');
     });
+
+    Route::get('user/referred-clients', [UserController::class, 'referredClients'])
+      ->name('user.referred-clients');
 
     Route::resource('user', UserController::class)
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value ]);
@@ -187,8 +191,14 @@ Route::middleware('auth')->group(function () {
 
     // CLIENTS
     Route::get('client/search', [ClientController::class, 'search'])
-      ->middleware(["role:" . RoleEnum::ADMIN->value . '|' . RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::FRONTDESK->value . '|' . RoleEnum::OWNER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|' . RoleEnum::FRONTDESK_ADMIN->value ])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|' . RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::FRONTDESK->value . '|' . RoleEnum::OWNER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|' . RoleEnum::FRONTDESK_ADMIN->value . '|' . RoleEnum::FRONTDESK_ESR->value ])
       ->name('client.search');
+    Route::get('users/search-referrers', [UserController::class, 'searchReferrers'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|' . RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::FRONTDESK->value . '|' . RoleEnum::OWNER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|' . RoleEnum::FRONTDESK_ADMIN->value . '|' . RoleEnum::FRONTDESK_ESR->value ])
+      ->name('user.referrers.search');
+    Route::get('referral/search', [ReferralController::class, 'search'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|' . RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::FRONTDESK->value . '|' . RoleEnum::OWNER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|' . RoleEnum::FRONTDESK_ADMIN->value . '|' . RoleEnum::FRONTDESK_ESR->value ])
+      ->name('referral.search');
     Route::get('client/is_unique/{phone}/{address?}', [ClientController::class, 'isUnique'])
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|' . RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::FRONTDESK->value . '|' . RoleEnum::OWNER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|' . RoleEnum::FRONTDESK_ADMIN->value ]);
     Route::get('client/phone-exists', [ClientController::class, 'phoneExists'])

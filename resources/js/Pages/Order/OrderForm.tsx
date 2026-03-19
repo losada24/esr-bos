@@ -45,6 +45,7 @@ const ATTACHMENT_ROLE_OPTIONS = [
 
 type AttachmentRoleKey = typeof ATTACHMENT_ROLE_OPTIONS[number]['key']
 type AttachmentRoleTargets = Record<AttachmentRoleKey, number[]>
+type PendingAttachment = Attachment | File
 
 const buildEmptyAttachmentRoleTargets = (): AttachmentRoleTargets => ({
   supervisor: [],
@@ -52,6 +53,8 @@ const buildEmptyAttachmentRoleTargets = (): AttachmentRoleTargets => ({
   installer: [],
   account_manager: []
 })
+
+const isBrowserFile = (item: PendingAttachment): item is File => typeof File !== 'undefined' && item instanceof File
 
 const normalizeAttachmentRoleTargets = (
   incomingTargets: Record<string, unknown> | undefined,
@@ -350,6 +353,9 @@ const OrderForm = ({
   const [isCreated] = useState<boolean>(true)
   const [showProductModal, setShowProductModal] = useState<boolean>(false)
   const [attachmentsArray, setAttachmentsList] = useState<Attachment[]>(attachments ?? [])
+  const pendingAttachmentFiles = Array.isArray(values.attachments)
+    ? values.attachments.filter(isBrowserFile)
+    : []
   const [attachmentRoleTargets, setAttachmentRoleTargets] = useState<AttachmentRoleTargets>(() => {
     const validAttachmentIds = (attachments ?? [])
       .map((attachment) => Number(attachment.id))
@@ -428,6 +434,17 @@ const OrderForm = ({
     syncAttachmentRoleTargets(nextTargets)
   }
 
+  const selectableAttachmentIds = attachmentsArray
+    .map((attachment) => Number(attachment.id))
+    .filter((attachmentId) => Number.isInteger(attachmentId) && attachmentId > 0)
+
+  const toggleAllAttachmentRoleTargets = (role: AttachmentRoleKey, isChecked: boolean) => {
+    syncAttachmentRoleTargets({
+      ...attachmentRoleTargets,
+      [role]: isChecked ? selectableAttachmentIds : []
+    })
+  }
+
   const removeAttachmentProduct = (index: number) => {
     if (confirm('Are you sure you want to delete this attachment?')) {
       router.delete(route('order.drop_attachment', { id: attachmentsArray[index].id }), {
@@ -435,7 +452,7 @@ const OrderForm = ({
           const attachmentsList = attachmentsArray.filter((_, i) => i !== index)
           setAttachmentsList(attachmentsList)
           const pendingFiles = Array.isArray(values.attachments)
-            ? values.attachments.filter((item: any) => item instanceof File)
+            ? values.attachments.filter(isBrowserFile)
             : []
           setFieldValue('attachments', pendingFiles)
           const removedAttachmentId = Number(attachmentsArray[index]?.id ?? 0)
@@ -2226,15 +2243,47 @@ const OrderForm = ({
               {attachmentUploadError !== '' && (
                 <InputError message={attachmentUploadError} className="mt-2" />
               )}
+              {isCreate && pendingAttachmentFiles.length > 0 && (
+                <div className="mt-3 rounded-md border border-[#e0e6ed] bg-[#f8fafc] px-4 py-3 text-sm text-[#0e1726] dark:border-[#1b2e4b] dark:bg-[#0e1726] dark:text-[#ebedf2]">
+                  <p className="font-semibold">Selected files</p>
+                  <ul className="mt-2 space-y-1">
+                    {pendingAttachmentFiles.map((file, index) => (
+                      <li key={`${file.name}-${index}`}>{file.name}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
               {attachmentsArray.length > 0 && (
                 <div className="flex flex-col rounded-md border border-[#e0e6ed] dark:border-[#1b2e4b] mt-3">
                   <table className='w-full whitespace-nowrap'>
                     <thead>
                       <tr>
                         <th className='border-b px-4 py-2 text-left'>File</th>
-                        {allowsAttachmentRoleSelection && ATTACHMENT_ROLE_OPTIONS.map((roleOption) => (
-                          <th key={roleOption.key} className='border-b px-3 py-2 text-center text-xs'>{roleOption.label}</th>
-                        ))}
+                        {allowsAttachmentRoleSelection && ATTACHMENT_ROLE_OPTIONS.map((roleOption) => {
+                          const selectedCount = (attachmentRoleTargets[roleOption.key] ?? [])
+                            .filter((attachmentId) => selectableAttachmentIds.includes(attachmentId))
+                            .length
+                          const isAllChecked = selectableAttachmentIds.length > 0 && selectedCount === selectableAttachmentIds.length
+
+                          return (
+                            <th key={roleOption.key} className='border-b px-3 py-2 text-center text-xs'>
+                              <div className='flex flex-col items-center gap-1'>
+                                <span>{roleOption.label}</span>
+                                <label className='flex items-center gap-1 text-[10px] font-normal normal-case'>
+                                  <input
+                                    type='checkbox'
+                                    checked={isAllChecked}
+                                    disabled={selectableAttachmentIds.length === 0}
+                                    onChange={(event) => {
+                                      toggleAllAttachmentRoleTargets(roleOption.key, event.currentTarget.checked)
+                                    }}
+                                  />
+                                  <span>All</span>
+                                </label>
+                              </div>
+                            </th>
+                          )
+                        })}
                         <th className='border-b px-4 py-2 text-right'>Actions</th>
                       </tr>
                     </thead>

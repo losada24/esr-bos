@@ -1,5 +1,5 @@
 import { ExtraWorks, type InstallationTeam, type Order } from '@/types'
-import type { PaymentSchedule } from '@/types/interfaces/order'
+import type { Attachment, PaymentSchedule } from '@/types/interfaces/order'
 import { type OrderProduct, type OrderProductsExtraWorks } from '@/types/interfaces/order'
 import * as Yup from 'yup'
 
@@ -49,14 +49,14 @@ interface DropdownOption {
   value: string
 }
 
-export type OrderFormValues = Omit<Order, 'installation_date' | 'delivery_date' | 'payment_factory_date' | 'contract_signing_date' | 'eta_date' | 'installation_end_date' | 'entry_date' | 'frame_color'> & {
+export type OrderFormValues = Omit<Order, 'installation_date' | 'delivery_date' | 'payment_factory_date' | 'contract_signing_date' | 'eta_date' | 'installation_end_date' | 'entry_date' | 'frame_color' | 'attachments'> & {
   client_name: string
   last_name: string
   phone: string
   email: string
   vip_clients: boolean
   vip_notes: string
-  attachments: any[]
+  attachments: Array<Attachment | File>
   installation_date: Date | null
   delivery_date: Date | null
   payment_factory_date: Date | null

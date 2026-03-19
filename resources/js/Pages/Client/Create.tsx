@@ -29,6 +29,12 @@ export default function Create ({ auth, contact_type, sources, companies }: Page
     source: '',
     vip_clients: false,
     vip_notes: '',
+    refer_name: '',
+    refer_phone: '',
+    refer_email: '',
+    referral_id: null,
+    referrer_client_id: null,
+    referrer_user_id: null,
     company_contact_id: 0
     // tags: []
   }

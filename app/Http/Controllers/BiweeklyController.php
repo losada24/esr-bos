@@ -9,6 +9,7 @@ use App\Exports\UncollectedCustomerPaymentsExport;
 use App\Models\Biweekly;
 use App\Models\HistoryPendingPayment;
 use App\Models\InstallationPayment;
+use App\Support\UncollectedCustomerPaymentsReportBuilder;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -192,43 +193,11 @@ class BiweeklyController extends Controller
                     ->where('type_history', 'INSTALLER')
                     ->get();
 
-                    //dd($biweeklys);
-                    $uncollected = collect();
-                    $uncollect1 = collect(); 
-
-                    foreach ($biweeklys as $uncollectBiweekly) {
-                      $items = collect(data_get($uncollectBiweekly, 'data', []));
-                      foreach ($items as $uncollectItem) {
-                        $payments = collect(data_get($uncollectItem, 'installation_payments', []));
-                          $lastPayment = $payments->last();
-              
-                          if (!$lastPayment) {
-                              continue; // No hay pagos, saltamos este item
-                          }
-                    $percent= (int) data_get($lastPayment, 'percentage_payment', 0);
-                    $partialPending = (int) data_get($uncollectItem, 'partial_payment_installation', 0) === 0;
-                    $finalPending   = (int) data_get($uncollectItem, 'final_payment_installation', 0) === 0;
-                  
-
-                    // Regla 1: 80% y parcial pendiente
-                    if ( ($percent >= 1 && $percent <= 100 &&  $partialPending &&  $finalPending) || ($percent === 20 && $partialPending && $finalPending) ) {
-                        $uncollected->push($uncollectItem);
-                    }
-
-                    // Regla 2: (20% o 100%) y final pendiente
-                    if ($percent === 20 && $finalPending && !$partialPending) {
-                        $uncollect1->push($uncollectItem);
-                    }
-                     if ($percent === 100 && $finalPending && !$partialPending) {
-                        $uncollect1->push($uncollectItem);
-                    }
-                      }
-                  }
+                    $report = UncollectedCustomerPaymentsReportBuilder::build($biweeklys);
                     
-                      //dd($uncollected,$uncollect1);
                     $biweekly = Biweekly::find($biweeklyId);
                     $biweeklyTitle = Carbon::parse($biweekly->start_biweekly_period)->locale('en')->isoFormat('MMMM D') . ' to ' . Carbon::parse($biweekly->end_biweekly_period)->locale('en')->isoFormat('MMMM D');
-                    $pdf = Pdf::loadView('pdf.uncollected-payments-report', ['biweeklys' => $uncollected, 'biweeklys1' => $uncollect1, 'biweeklyTitle' => $biweeklyTitle])->setPaper('A2', 'landscape');
+                    $pdf = Pdf::loadView('pdf.uncollected-payments-report', ['biweeklys' => $report['uncollected'], 'biweeklys1' => $report['final_payment_pending'], 'biweeklyTitle' => $biweeklyTitle])->setPaper('A2', 'landscape');
                     $pdfName = 'Uncollected-Payments-Report' .$biweeklyTitle .  '.pdf';
                     return $pdf->stream($pdfName);
           }

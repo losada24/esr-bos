@@ -6,7 +6,7 @@ import { Field, Form, Formik, type FormikHelpers } from 'formik'
 import InputError from '@/Components/InputError'
 import PrimaryButton from '@/Components/PrimaryButton'
 import { clientSchema } from './CompanyContactCommon'
-import { SOURCES } from '@/Utils/constants'
+import ReferralFields from '@/Components/ReferralFields'
 
 const ClientModal = ({
   showModal,
@@ -32,7 +32,10 @@ const ClientModal = ({
     vip_notes: '',
     refer_name: '',
     refer_phone: '',
-    referral_id: 0
+    refer_email: '',
+    referral_id: null,
+    referrer_client_id: null,
+    referrer_user_id: null
   }
 
   const handleSubmit = async (values: any, helpers: FormikHelpers<Client>) => {
@@ -159,6 +162,12 @@ const ClientModal = ({
                         as="select"
                         onChange={(e: { target: { value: string } }) => {
                           setFieldValue('source', e.target.value)
+                          setFieldValue('referral_id', null)
+                          setFieldValue('referrer_client_id', null)
+                          setFieldValue('referrer_user_id', null)
+                          setFieldValue('refer_name', '')
+                          setFieldValue('refer_phone', '')
+                          setFieldValue('refer_email', '')
                         }}
                       >
                         <option value="">Source</option>
@@ -168,32 +177,12 @@ const ClientModal = ({
                       </Field>
                       {(submitCount && errors.source) ? <InputError message={errors.source} className="mt-2" /> : ''}
                       </div>
-                        {(values.source === SOURCES.EXTERNAL_REFERAL || values.source === SOURCES.INTERNAL_REFERAL) && (
-                                <>
-                                <div className={submitCount ? (errors.refer_name) ? 'has-error' : 'has-success' : ''}>
-                                  <label htmlFor="refer_name">Refer Name</label>
-                                  <Field
-                                    id="refer_name"
-                                    name="refer_name"
-                                    className="form-input"
-                                    autoComplete={false}
-                                    placeholder='Refer Name'
-                                  />
-                                  {(submitCount && errors.refer_name) ? <InputError message={errors.refer_name} className="mt-2" /> : ''}
-                                </div>
-                                <div className={submitCount ? (errors.refer_phone) ? 'has-error' : 'has-success' : ''}>
-                                  <label htmlFor="refer_phone">Refer Phone</label>
-                                  <Field
-                                    id="refer_phone"
-                                    name="refer_phone"
-                                    className="form-input"
-                                    autoComplete={false}
-                                    placeholder='Refer Phone'
-                                  />
-                                  {(submitCount && errors.refer_phone) ? <InputError message={errors.refer_phone} className="mt-2" /> : ''}
-                                </div>
-                                </>
-                        )}
+                      <ReferralFields
+                        values={values}
+                        errors={errors as Record<string, any>}
+                        submitCount={submitCount}
+                        setFieldValue={setFieldValue}
+                      />
 
                       <div className='flex mt-8'>
                       <Field

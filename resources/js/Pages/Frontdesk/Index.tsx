@@ -346,7 +346,7 @@ export default function Frontdesk ({
     })
   }, [filterQueryParams])
 
-  async function updateOrderStatus (orderId: number, newStatus: string) {
+  async function updateOrderStatus (orderId: number, newStatus: string, confirmCustomerRole = false): Promise<void> {
     const url = route('frontdesk.updateStatus', { order: orderId })
 
     const response = await fetch(url, {
@@ -356,14 +356,26 @@ export default function Frontdesk ({
         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '',
         Accept: 'application/json'
       },
-      body: JSON.stringify({ status: newStatus })
+      body: JSON.stringify({
+        status: newStatus,
+        ...(confirmCustomerRole ? { confirm_customer_role: true } : {})
+      })
     })
 
+    const payload = await response.json().catch(() => null)
+
     if (!response.ok) {
-      const errorData = await response.json()
-      throw new Error(errorData.message || 'Error updating status')
+      if (response.status === 409 && payload?.requires_confirmation) {
+        const confirmed = window.confirm(payload?.message ?? 'This email already belongs to another user. Convert it to customer?')
+        if (!confirmed) {
+          return
+        }
+
+        return await updateOrderStatus(orderId, newStatus, true)
+      }
+
+      throw new Error(payload?.message || 'Error updating status')
     }
-    return await response.json()
   }
 
   const destroyOrder = (orderId: number) => {
@@ -664,7 +676,7 @@ export default function Frontdesk ({
                                   // 4) Actualizar backend y revertir si falla
                                   updateOrderStatus(movedTaskId, newStatus)
                                     .then(() => { console.log('✅ Estado actualizado en backend') })
-                                    .catch(err => {
+                                    .catch((err: unknown) => {
                                       console.error('❌ Error al actualizar el estado:', err)
                                       // revertir
                                       setProjectList(prev =>

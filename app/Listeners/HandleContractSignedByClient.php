@@ -23,7 +23,7 @@ class HandleContractSignedByClient
             return;
         }
 
-        if ($event->status !== OrderStatusEnum::CONTRACT_SIGNED_BY_CLIENT->value) {
+        if ($event->status !== OrderStatusEnum::REVIEW->value) {
             return;
         }
 

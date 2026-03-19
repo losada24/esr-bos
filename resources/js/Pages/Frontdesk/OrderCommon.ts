@@ -179,6 +179,12 @@ export type OrderFormValues = Order & {
   client_name: string
   phone: string
   source: string
+  refer_name?: string
+  refer_phone?: string
+  refer_email?: string
+  referral_id?: number | null
+  referrer_client_id?: number | null
+  referrer_user_id?: number | null
   email: string
   other_phone: string
   secondary_email: string
@@ -234,6 +240,12 @@ export const orderFormObj: OrderFormValues = {
   project_amount: 0,
   status: '',
   source: '',
+  refer_name: '',
+  refer_phone: '',
+  refer_email: '',
+  referral_id: null,
+  referrer_client_id: null,
+  referrer_user_id: null,
   notes: '',
   email: '',
   other_phone: '',
