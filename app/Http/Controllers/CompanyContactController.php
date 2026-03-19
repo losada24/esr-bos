@@ -113,7 +113,11 @@ class CompanyContactController extends Controller
             ContactSourceEnum::DIRECT_CALL->value,
           ],
           'companyContact' => $companyContact,
-          'clientslist' => $companyContact->clients,
+          'clientslist' => $companyContact->clients()->with([
+            'referral',
+            'referral.referrerClient:id,name,phone,email',
+            'referral.referrerUser:id,name,phone,email,status',
+          ])->get(),
         ]);
     }
 

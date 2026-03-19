@@ -6,8 +6,10 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Facades\DB;
 
@@ -78,9 +80,26 @@ class Client extends Model
       return $this->hasMany(ClientAddress::class);
     }
 
-    public function referral()
+    public function referral(): BelongsTo
     {
         return $this->belongsTo(Referral::class);
+    }
+
+    public function referralProfile(): HasOne
+    {
+        return $this->hasOne(Referral::class, 'client_id');
+    }
+
+    public function referredClients(): HasManyThrough
+    {
+        return $this->hasManyThrough(
+            Client::class,
+            Referral::class,
+            'client_id',
+            'referral_id',
+            'id',
+            'id'
+        );
     }
 
     public function orderClientTemps()

@@ -6,7 +6,6 @@ use App\Enum\ContactSourceEnum;
 use App\Enum\ContactTypeEnum;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
-use App\Enum\States;
 
 class UpdateCompanyContactRequest extends FormRequest
 {
@@ -40,6 +39,31 @@ class UpdateCompanyContactRequest extends FormRequest
             'billing_code' => 'nullable|numeric',
             'bid_due_date' =>'nullable|date_format:Y-m-d',
             'clients' => 'sometimes|array',
+            'clients.*.source' => [
+                'nullable',
+                'string',
+                Rule::in(
+                    ContactSourceEnum::TIK_TOK->value,
+                    ContactSourceEnum::INSTAGRAM_FACEBOOK->value,
+                    ContactSourceEnum::EXTERNAL_REFERAL->value,
+                    ContactSourceEnum::INTERNAL_REFERAL->value,
+                    ContactSourceEnum::SIGNS->value,
+                    ContactSourceEnum::WALK_IN->value,
+                    ContactSourceEnum::ESW_REFER->value,
+                    ContactSourceEnum::ESR_REFER->value,
+                    ContactSourceEnum::YOUTUBE->value,
+                    ContactSourceEnum::NEW_ORDER->value,
+                    ContactSourceEnum::GOOGLE_ADS->value,
+                    ContactSourceEnum::SAME_AS_ORDER->value,
+                    ContactSourceEnum::DIRECT_CALL->value,
+                ),
+            ],
+            'clients.*.refer_name' => 'nullable|string|max:255',
+            'clients.*.refer_phone' => 'nullable|string|max:50',
+            'clients.*.refer_email' => 'nullable|email|max:255',
+            'clients.*.referral_id' => 'nullable|integer|exists:referrals,id',
+            'clients.*.referrer_client_id' => 'nullable|integer|exists:clients,id',
+            'clients.*.referrer_user_id' => 'nullable|integer|exists:users,id',
         ];
 
         foreach ($clients as $index => $client) {

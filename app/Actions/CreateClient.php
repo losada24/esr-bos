@@ -1,19 +1,21 @@
 <?php
 namespace App\Actions;
 
-use App\Enum\ContactSourceEnum;
 use App\Enum\OrderTypeEnum;
 use App\Models\Client;
+use App\Traits\Bigin;
+use App\Support\ReferralResolver;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use App\Models\ClientAddress;
-use App\Models\Referral;
-use App\Traits\Bigin;
 use Illuminate\Validation\ValidationException;
 
 class CreateClient {
 
   use Bigin;
+
+  public function __construct(
+    private readonly ReferralResolver $referralResolver
+  ) {}
   
   public function handle(Request $request) {
     
@@ -42,20 +44,9 @@ class CreateClient {
       }
         //dd($request);
       if( !$existingClient )
-      {   $referral = null;
+      {
+          $referral = $this->referralResolver->resolve($request->all());
 
-        if (in_array($request->source, [
-            ContactSourceEnum::EXTERNAL_REFERAL->value,
-            ContactSourceEnum::INTERNAL_REFERAL->value
-        ])) {
-            $referral = Referral::firstOrCreate(
-            [
-                'name' => $request->refer_name,
-                'phone' => $request->refer_phone,
-                'type' => $request->source,
-            ]
-            );
-          }
           $existingClient = Client::create([
             'name' => $request->name,
             'email' => $request->email,

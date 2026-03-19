@@ -1,17 +1,18 @@
 <?php
 namespace App\Actions;
 
-use App\Enum\ContactSourceEnum;
 use App\Enum\ContactTypeEnum;
 use App\Models\Client;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\DB;
-use App\Enum\RoleEnum;
 use App\Models\CompanyContact;
-use App\Models\Referral;
+use App\Support\ReferralResolver;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class UpdateCompanyContact {
+
+  public function __construct(
+    private readonly ReferralResolver $referralResolver
+  ) {}
 
   public function handle(Request $request, CompanyContact $companyContact) {
 
@@ -99,22 +100,12 @@ class UpdateCompanyContact {
                 // Actualizar cliente existente
                 $client = Client::find($clientData['id']);
                 if ($client) {
+                    $referral = $this->referralResolver->resolve($clientData);
+                    $clientData['referral_id'] = $referral?->id;
                     $client->update($clientData);
                 }
             } else {
-                   $referral = null;
-
-                  if ($clientData['source'] == ContactSourceEnum::EXTERNAL_REFERAL->value || 
-                      $clientData['source'] == ContactSourceEnum::INTERNAL_REFERAL->value
-                  ) {
-                      $referral = Referral::firstOrCreate(
-                      [
-                          'name' => $clientData['refer_name'],
-                          'phone' => $clientData['refer_phone'],
-                          'type' => $clientData['source'],
-                      ]
-                      );
-                    }
+                $referral = $this->referralResolver->resolve($clientData);
 
                 //$companyContact->clients()->create($clientData);
                 $client = Client::create([

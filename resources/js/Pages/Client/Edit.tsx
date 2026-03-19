@@ -31,6 +31,10 @@ export default function Edit ({ auth, clients, tags, clientAddress, contact_type
     vip_notes: clients.vip_notes ?? '',
     refer_name: clients?.referral?.name ?? '',
     refer_phone: clients?.referral?.phone ?? '',
+    refer_email: clients?.referral?.email ?? '',
+    referral_id: clients?.referral?.id ?? null,
+    referrer_client_id: clients?.referral?.client_id ?? null,
+    referrer_user_id: clients?.referral?.user_id ?? null,
     company_contact_id: clients?.company_contact_id ?? 0,
     tags: tags ?? []
   }

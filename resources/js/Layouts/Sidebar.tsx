@@ -55,6 +55,8 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
   const CAN_VIEW_MARKETING_REPORT = IS_ADMIN || HAS_FRONTDESK_ADMIN_ROLE || IS_OWNER_ADMIN
   const CAN_VIEW_SALES_APPOINTMENTS = IS_ADMIN || IS_ACCOUNT_MANAGER || HAS_FRONTDESK_ADMIN_ROLE || IS_OWNER_ADMIN
   const CAN_VIEW_ORDER_STORAGE = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_ACCOUNTING || HAS_FRONTDESK_ADMIN_ROLE
+  const CAN_VIEW_MY_REFERRED_CLIENTS = true
+  const CAN_VIEW_ADMINISTRATION = IS_ADMIN || IS_ACCOUNT_MANAGER || CAN_VIEW_MY_REFERRED_CLIENTS
   const CAN_VIEW_REPORTS = CAN_VIEW_REPORT_SUPERVISOR
     || CAN_VIEW_REPORT_INSTALLER
     || CAN_VIEW_BIWEEKLY
@@ -429,7 +431,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                   )}
                                 </>
                               )}
-                            {(IS_ADMIN || IS_ACCOUNT_MANAGER) && (
+                            {CAN_VIEW_ADMINISTRATION && (
                               <>
                                 <h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">
                                     <svg className="w-4 h-5 flex-none hidden" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
@@ -437,6 +439,8 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                     </svg>
                                     <span>ADMINISTRATION</span>
                                 </h2>
+                                        {(IS_ADMIN || IS_ACCOUNT_MANAGER) && (
+                                          <>
                                         <li className="menu nav-item">
                                           <NavLink href={route('bigin.index')} active={route().current('bigin.index')} className="group">
                                                 <div className="flex items-center">
@@ -453,6 +457,18 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                                 </div>
                                             </NavLink>
                                         </li>
+                                          </>
+                                        )}
+                                        {CAN_VIEW_MY_REFERRED_CLIENTS && (
+                                        <li className="menu nav-item">
+                                            <NavLink href={route('user.referred-clients')} active={route().current('user.referred-clients')} className="group">
+                                                <div className="flex items-center">
+                                                  <ReferralIcon />
+                                                  <SidebarLinkLabel>My Referred Clients</SidebarLinkLabel>
+                                                </div>
+                                            </NavLink>
+                                        </li>
+                                        )}
                               </>
                             )}
                       </ul>

@@ -29,5 +29,7 @@ Route::prefix('mobile')->group(function () {
 
         Route::get('orders', [MobileOrderController::class, 'index']);
         Route::get('orders/{order}', [MobileOrderController::class, 'show']);
+        Route::get('referred-clients', [MobileOrderController::class, 'referredClients']);
+        Route::get('referred-clients/{client}/orders', [MobileOrderController::class, 'referredClientOrders']);
     });
 });

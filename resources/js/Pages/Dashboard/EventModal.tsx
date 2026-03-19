@@ -373,6 +373,17 @@ const EventModal = ({
     })
   }
 
+  const selectableAttachmentIds = attachmentsList
+    .map((attachment) => Number(attachment.id))
+    .filter((attachmentId) => Number.isInteger(attachmentId) && attachmentId > 0)
+
+  const toggleAllAttachmentRoleTargets = (role: AttachmentRoleKey, isChecked: boolean) => {
+    setAttachmentRoleTargets((currentTargets) => ({
+      ...currentTargets,
+      [role]: isChecked ? selectableAttachmentIds : []
+    }))
+  }
+
   const allowsAttachmentRoleSelection = isAdminOrAccountManager && event?.service !== 'PICKUP' && event?.service !== 'DELIVERY ONLY'
   const installerAttachmentIds = new Set(
     (attachmentRoleTargets.installer ?? [])
@@ -1195,9 +1206,31 @@ const EventModal = ({
                         <tr>
                           <th className='border-t px-6 py-3 text-left'>File</th>
                           <th className='border-t px-6 py-3 text-left'>Type</th>
-                          {allowsAttachmentRoleSelection && ATTACHMENT_ROLE_OPTIONS.map((roleOption) => (
-                            <th key={roleOption.key} className='border-t px-3 py-3 text-center text-xs'>{roleOption.label}</th>
-                          ))}
+                          {allowsAttachmentRoleSelection && ATTACHMENT_ROLE_OPTIONS.map((roleOption) => {
+                            const selectedCount = (attachmentRoleTargets[roleOption.key] ?? [])
+                              .filter((attachmentId) => selectableAttachmentIds.includes(attachmentId))
+                              .length
+                            const isAllChecked = selectableAttachmentIds.length > 0 && selectedCount === selectableAttachmentIds.length
+
+                            return (
+                              <th key={roleOption.key} className='border-t px-3 py-3 text-center text-xs'>
+                                <div className='flex flex-col items-center gap-1'>
+                                  <span>{roleOption.label}</span>
+                                  <label className='flex items-center gap-1 text-[10px] font-normal normal-case'>
+                                    <input
+                                      type='checkbox'
+                                      checked={isAllChecked}
+                                      disabled={selectableAttachmentIds.length === 0}
+                                      onChange={(event) => {
+                                        toggleAllAttachmentRoleTargets(roleOption.key, event.currentTarget.checked)
+                                      }}
+                                    />
+                                    <span>All</span>
+                                  </label>
+                                </div>
+                              </th>
+                            )
+                          })}
                           <th className='border-t px-6 py-3 text-right'>Actions</th>
                         </tr>
                       </thead>

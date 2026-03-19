@@ -12,6 +12,9 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Enum\RoleEnum;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class User extends Authenticatable
 {
@@ -76,14 +79,31 @@ class User extends Authenticatable
         });
     }
 
-    public function clients()
+    public function clients(): HasMany
     {
         return $this->hasMany(Client::class);
     }
 
-    public function mobileClients()
+    public function mobileClients(): HasMany
     {
         return $this->hasMany(Client::class, 'mobile_user_id');
+    }
+
+    public function referralProfile(): HasOne
+    {
+        return $this->hasOne(Referral::class, 'user_id');
+    }
+
+    public function referredClients(): HasManyThrough
+    {
+        return $this->hasManyThrough(
+            Client::class,
+            Referral::class,
+            'user_id',
+            'referral_id',
+            'id',
+            'id'
+        );
     }
 
     public function isCreatedByLoggedUser() {

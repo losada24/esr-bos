@@ -3,6 +3,7 @@ import { useRef, useMemo, useState, useEffect } from 'react'
 import { useJsApiLoader, StandaloneSearchBox } from '@react-google-maps/api'
 import { SOURCES, CONTACT_TYPES } from '@/Utils/constants'
 import InputError from '@/Components/InputError'
+import ReferralFields from '@/Components/ReferralFields'
 import Select, { type SingleValue } from 'react-select'
 import PrimaryButton from '@/Components/PrimaryButton'
 import { Link, useForm } from '@inertiajs/react'
@@ -171,13 +172,17 @@ const ClientForm = ({ submitCount, errors, isCreate, setFieldValue, values, cont
           autoComplete="source"
           placeholder='Source'
           as="select"
-          onChange={(e: { target: { value: string } }) => {
-            setFieldValue('source', e.target.value)
-            setFieldValue('cost_delivery', 0)
-            setFieldValue('type_of_financing', '')
-            setFieldValue('refer_name', '')
-            setFieldValue('refer_phone', '')
-          }}
+            onChange={(e: { target: { value: string } }) => {
+              setFieldValue('source', e.target.value)
+              setFieldValue('cost_delivery', 0)
+              setFieldValue('type_of_financing', '')
+              setFieldValue('referral_id', null)
+              setFieldValue('referrer_client_id', null)
+              setFieldValue('referrer_user_id', null)
+              setFieldValue('refer_name', '')
+              setFieldValue('refer_phone', '')
+              setFieldValue('refer_email', '')
+            }}
         >
           <option value="">Source</option>
           {sources.map((source, index) => (
@@ -186,33 +191,12 @@ const ClientForm = ({ submitCount, errors, isCreate, setFieldValue, values, cont
         </Field>
         {(submitCount && errors.source) ? <InputError message={errors.source} className="mt-2" /> : ''}
         </div>
-        {(values.source === SOURCES.EXTERNAL_REFERAL || values.source === SOURCES.INTERNAL_REFERAL) && (
-        <>
-        <div className={submitCount ? (errors.refer_name) ? 'has-error' : 'has-success' : ''}>
-          <label htmlFor="refer_name">Refer Name</label>
-          <Field
-            id="refer_name"
-            name="refer_name"
-            className="form-input"
-            autoComplete={false}
-            placeholder='Refer Name'
-          />
-          {(submitCount && errors.refer_name) ? <InputError message={errors.refer_name} className="mt-2" /> : ''}
-        </div>
-
-        <div className={submitCount ? (errors.refer_phone) ? 'has-error' : 'has-success' : ''}>
-          <label htmlFor="refer_phone">Refer Phone</label>
-          <Field
-            id="refer_phone"
-            name="refer_phone"
-            className="form-input"
-            autoComplete={false}
-            placeholder='Refer Phone'
-          />
-          {(submitCount && errors.refer_phone) ? <InputError message={errors.refer_phone} className="mt-2" /> : ''}
-        </div>
-        </>
-        )}
+        <ReferralFields
+          values={values}
+          errors={errors as Record<string, any>}
+          submitCount={submitCount}
+          setFieldValue={setFieldValue}
+        />
        {showCompanyField && (values.contact_type === CONTACT_TYPES.COMMERCIAL_CONTACT) && (
          <div className={submitCount ? (errors.company_contact_id) ? 'has-error' : 'has-success' : ''}>
               <label htmlFor="status">Company</label>

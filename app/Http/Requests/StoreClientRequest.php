@@ -7,7 +7,6 @@ use App\Enum\ContactTypeEnum;
 use App\Enum\OrderTypeEnum;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
-use App\Enum\States;
 
 class StoreClientRequest extends FormRequest
 {
@@ -71,7 +70,12 @@ class StoreClientRequest extends FormRequest
             ],
             'other_phone' => 'nullable|string|max:20',
             'secondary_email' => 'nullable|email|max:255',
-            //'source' => 'nullable|string|max:255',
+            'refer_name' => 'nullable|string|max:255',
+            'refer_phone' => 'nullable|string|max:50',
+            'refer_email' => 'nullable|email|max:255',
+            'referral_id' => 'nullable|integer|exists:referrals,id',
+            'referrer_client_id' => 'nullable|integer|exists:clients,id',
+            'referrer_user_id' => 'nullable|integer|exists:users,id',
             'from_modal' => 'sometimes|boolean',
             'force_create' => 'sometimes|boolean',
         ];

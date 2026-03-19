@@ -30,7 +30,7 @@ import MessageIcon from '@/Components/Icons/MessageIcon'
 import StarIcon from '@/Components/Icons/StarIcon'
 import PlusIcon from '@/Components/Icons/PlusIcon'
 import { isAccountManager, isAccounting, isAdmin, isFrontdeskAdmin, isFrontdeskEsr, isOwner, isOwnerAdmin } from '@/Utils/user'
-import { PAYMENT_METHODS } from '@/Utils/constants'
+import { PAYMENT_METHODS, SOURCES } from '@/Utils/constants'
 import EstimateScheduleModal from '@/Pages/Sales/EstimateScheduleModal'
 import FollowUpModal from '@/Pages/Sales/FollowUpModal'
 import StandByNoteModal from '@/Pages/Sales/StandByNoteModal'
@@ -1041,9 +1041,54 @@ export default function ShowStatusOrder ({
     { label: 'Phone', value: order.client?.phone, fallback: 'No phone available', Icon: PhoneIcon },
     { label: 'Email', value: order.client?.email, fallback: 'No email available', Icon: EmailIcon }
   ]
+  const normalizeDetailValue = (value?: string | null) => {
+    if (typeof value !== 'string') return null
+    const normalized = value.trim()
+    return normalized === '' ? null : normalized
+  }
 
   const jobLocation = [order.job_address, order.city, order.job_state, order.job_zip].filter(Boolean).join(', ')
   const sourceName = order.client?.source
+  const isReferralSource = sourceName != null && [
+    SOURCES.EXTERNAL_REFERAL,
+    SOURCES.INTERNAL_REFERAL,
+    SOURCES.ESW_REFER,
+    SOURCES.ESR_REFER
+  ].includes(sourceName)
+  const referralRecord = order.client?.referral as {
+    name?: string | null
+    phone?: string | null
+    email?: string | null
+    referrer_client?: {
+      name?: string | null
+      phone?: string | null
+      email?: string | null
+    } | null
+    referrer_user?: {
+      name?: string | null
+      phone?: string | null
+      email?: string | null
+    } | null
+    referrerClient?: {
+      name?: string | null
+      phone?: string | null
+      email?: string | null
+    } | null
+    referrerUser?: {
+      name?: string | null
+      phone?: string | null
+      email?: string | null
+    } | null
+  } | null | undefined
+  const linkedReferrer = referralRecord?.referrer_client
+    ?? referralRecord?.referrerClient
+    ?? referralRecord?.referrer_user
+    ?? referralRecord?.referrerUser
+  const referralDetails: Array<{ label: string, value?: string | null, fallback: string, Icon: DetailIcon }> = [
+    { label: 'Referral Name', value: normalizeDetailValue(referralRecord?.name) ?? normalizeDetailValue(linkedReferrer?.name), fallback: 'No referral name available', Icon: UserIcon },
+    { label: 'Referral Phone', value: normalizeDetailValue(referralRecord?.phone) ?? normalizeDetailValue(linkedReferrer?.phone), fallback: 'No referral phone available', Icon: PhoneIcon },
+    { label: 'Referral Email', value: normalizeDetailValue(referralRecord?.email) ?? normalizeDetailValue(linkedReferrer?.email), fallback: 'No referral email available', Icon: EmailIcon }
+  ]
   const descriptionText = order.description?.trim()
   const rawCompany = order.client?.company_contact as unknown
   const companyContacts = rawCompany
@@ -1253,7 +1298,11 @@ export default function ShowStatusOrder ({
     onError?: (message: string) => void
   }
 
-  const handleSimpleStatusChange = async (targetStatus: string, options?: SimpleStatusChangeOptions): Promise<boolean> => {
+  const handleSimpleStatusChange = async (
+    targetStatus: string,
+    options?: SimpleStatusChangeOptions,
+    confirmCustomerRole = false
+  ): Promise<boolean> => {
     setStatusChangeSaving(true)
     setStatusChangeError(null)
     closeStatusPicker()
@@ -1281,6 +1330,9 @@ export default function ShowStatusOrder ({
             if (invoiceNumber !== '') {
               formData.append('invoice_number', invoiceNumber)
             }
+            if (confirmCustomerRole) {
+              formData.append('confirm_customer_role', '1')
+            }
             attachments.forEach((file) => {
               formData.append('attachments[]', file)
             })
@@ -1294,12 +1346,25 @@ export default function ShowStatusOrder ({
             Accept: 'application/json',
             'X-CSRF-TOKEN': csrf
           },
-          body: JSON.stringify({ status: targetStatus, ...(invoiceNumber !== '' ? { invoice_number: invoiceNumber } : {}) })
+          body: JSON.stringify({
+            status: targetStatus,
+            ...(invoiceNumber !== '' ? { invoice_number: invoiceNumber } : {}),
+            ...(confirmCustomerRole ? { confirm_customer_role: true } : {})
+          })
         })
 
       const payload = await response.json().catch(() => null)
 
       if (!response.ok || !payload?.order) {
+        if (response.status === 409 && payload?.requires_confirmation) {
+          const confirmed = window.confirm(payload?.message ?? 'This email already belongs to another user. Convert it to customer?')
+          if (!confirmed) {
+            return false
+          }
+
+          return await handleSimpleStatusChange(targetStatus, options, true)
+        }
+
         const message = payload?.message ?? 'Unable to update status.'
         throw new Error(message)
       }
@@ -3311,6 +3376,30 @@ export default function ShowStatusOrder ({
                     <p className="text-sm text-slate-400">No source recorded.</p>
                     )}
               </div>
+
+              {isReferralSource && (
+                <div className="panel space-y-3">
+                  <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">Referred By</h2>
+                  <div className="space-y-3">
+                    {referralDetails.map(({ label, value, fallback, Icon }) => (
+                      <div
+                        key={label}
+                        className="flex items-center gap-3 rounded-xl border border-slate-200/80 bg-slate-50 px-3 py-3 shadow-sm"
+                      >
+                        <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white text-sky-500 shadow-sm">
+                          <Icon className="h-4 w-4" />
+                        </span>
+                        <div className="flex-1 text-sm">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{label}</p>
+                          <p className="font-medium text-slate-700">
+                            {value ?? <span className="text-slate-400">{fallback}</span>}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
             </aside>
 

@@ -74,6 +74,12 @@ class StoreFrontDeskOrderRequest extends FormRequest
             )
             ],
             'notes' => 'nullable|string|max:1000',
+            'refer_name' => 'nullable|string|max:255',
+            'refer_phone' => 'nullable|string|max:50',
+            'refer_email' => 'nullable|email|max:255',
+            'referral_id' => 'nullable|integer|exists:referrals,id',
+            'referrer_client_id' => 'nullable|integer|exists:clients,id',
+            'referrer_user_id' => 'nullable|integer|exists:users,id',
             'name_check' => ['boolean'],
             'address_check' => ['boolean'],
             'amount_check' => ['boolean'],

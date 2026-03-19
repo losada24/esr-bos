@@ -16,6 +16,7 @@ use App\Enum\LostReasonfrontdeskEnum;
 use App\Enum\OrderStatusEnum;
 use App\Enum\OrderTypeEnum;
 use App\Enum\RoleEnum;
+use App\Events\OrderStatusChanged;
 use App\Enum\MethodOfPayment;
 use App\Enum\TypeOfFinancing;
 use App\Enum\StatusUserEnum;
@@ -450,6 +451,7 @@ class FrontdeskController extends Controller
       'status' => ['required', 'string'],
       'note' => ['nullable', 'string', 'max:4000'],
       'invoice_number' => ['nullable', 'string', 'max:255'],
+      'confirm_customer_role' => ['nullable', 'boolean'],
       'attachments' => ['nullable', 'array'],
       'attachments.*' => ['file', 'max:10240'],
     ]);
@@ -463,8 +465,32 @@ class FrontdeskController extends Controller
     $historyStatuses = $status === OrderStatusEnum::CLOSED_WON->value
       ? [$status, $finalStatus]
       : [$status];
+    $confirmCustomerRole = (bool) ($validated['confirm_customer_role'] ?? false);
 
-    DB::transaction(function () use ($order, $request, $finalStatus, $historyStatuses, $noteContent, $invoiceNumber, $status) {
+    if ($finalStatus === OrderStatusEnum::REVIEW->value) {
+      $order->loadMissing('client');
+      $contactEmail = trim((string) $order->client?->email);
+
+      if ($contactEmail !== '') {
+        $existingUser = User::withTrashed()->where('email', $contactEmail)->first();
+
+        if ($existingUser) {
+          $existingUser->loadMissing('roles');
+          $hasCustomerRole = $existingUser->hasRole(RoleEnum::CUSTOMER->value);
+
+          if (!$hasCustomerRole && !$confirmCustomerRole) {
+            return response()->json([
+              'message' => 'This email already belongs to a user with role(s): ' . $existingUser->roles->pluck('name')->implode(', ') . '. Do you want to convert it to customer?',
+              'requires_confirmation' => true,
+              'user_email' => $existingUser->email,
+              'user_roles' => $existingUser->roles->pluck('name')->values(),
+            ], 409);
+          }
+        }
+      }
+    }
+
+    DB::transaction(function () use ($order, $request, $finalStatus, $historyStatuses, $noteContent, $invoiceNumber, $status, $confirmCustomerRole) {
       $order->status = $finalStatus;
       if ($invoiceNumber !== '' && $status === OrderStatusEnum::REVIEW->value) {
         $order->invoice_number = $invoiceNumber;
@@ -477,6 +503,10 @@ class FrontdeskController extends Controller
           'user_id' => auth()->id(),
           'notes' => "{$historyStatus} created by " . auth()->user()->name,
         ]);
+      }
+
+      if ($finalStatus === OrderStatusEnum::REVIEW->value) {
+        event(new OrderStatusChanged($order, $finalStatus, $confirmCustomerRole));
       }
 
       if ($noteContent !== '') {
@@ -744,6 +774,9 @@ public function showQuantifiedModal(Order $order)
     $order->load(
       'tags:id,name,color,taggable_id,taggable_type',
       'client.companyContact',
+      'client.referral',
+      'client.referral.referrerClient:id,name,phone,email',
+      'client.referral.referrerUser:id,name,phone,email,status',
       'user',
       'owners',
       'saleForm',

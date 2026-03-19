@@ -12,7 +12,6 @@ use App\Enum\MethodOfPayment;
 use App\Enum\PaymentScheduleTypeEnum;
 use App\Enum\TypeOfFinancing;
 use App\Enum\RoleEnum;
-use App\Events\OrderStatusChanged;
 use App\Enum\StatusUserEnum;
 use App\Http\Requests\StoreFrontDeskOrderRequest;
 use App\Models\Client;
@@ -1239,24 +1238,6 @@ class SalesController extends Controller
       }
     }
 
-    $contactEmail = trim((string) ($validated['contact_email'] ?? ''));
-    $confirmCustomerRole = $request->boolean('confirm_customer_role');
-    if ($contactEmail !== '') {
-      $existingUser = User::withTrashed()->where('email', $contactEmail)->first();
-      if ($existingUser) {
-        $existingUser->loadMissing('roles');
-        $hasCustomerRole = $existingUser->hasRole(RoleEnum::CUSTOMER->value);
-        if (!$hasCustomerRole && !$confirmCustomerRole) {
-          return response()->json([
-            'message' => 'This email already belongs to a user with role(s): ' . $existingUser->roles->pluck('name')->implode(', ') . '. Do you want to convert it to customer?',
-            'requires_confirmation' => true,
-            'user_email' => $existingUser->email,
-            'user_roles' => $existingUser->roles->pluck('name')->values(),
-          ], 409);
-        }
-      }
-    }
-
     DB::transaction(function () use ($order, $validated, $request, $orderCompanyContacts, $companyCount) {
       $order->loadMissing('paymentSchedule.installments');
       $beforePaymentInformation = OrderPaymentInformationAuditLogger::snapshot($order);
@@ -1336,11 +1317,6 @@ class SalesController extends Controller
         'user_id' => auth()->id(),
         'notes' => OrderStatusEnum::CONTRACT_SIGNED_BY_CLIENT->value . ' updated by ' . auth()->user()->name,
       ]);
-      event(new OrderStatusChanged(
-        $order,
-        OrderStatusEnum::CONTRACT_SIGNED_BY_CLIENT->value,
-        $request->boolean('confirm_customer_role')
-      ));
 
       $order->orderStatus()->create([
         'status' => $newPipelineStatus,

@@ -72,6 +72,12 @@ class ClientController extends Controller
         $client = $createClient->handle($storeClientRequest);
             //dd($client);
         if ($storeClientRequest->boolean('from_modal')) {
+            $client->load([
+                'referral',
+                'referral.referrerClient:id,name,phone,email',
+                'referral.referrerUser:id,name,phone,email,status',
+            ]);
+
             return response()->json(['client' => $client]);
         }
         return redirect()->route('client.index')
@@ -112,6 +118,8 @@ class ClientController extends Controller
           'clients' => $client->load([
               'clientAddress',
               'referral',
+              'referral.referrerClient:id,name,phone,email',
+              'referral.referrerUser:id,name,phone,email,status',
             ]),
 
             'tags' => $client->tags->map(fn($t) => [
@@ -220,7 +228,8 @@ class ClientController extends Controller
             ->select('id', 'name', 'phone', 'email', 'vip_clients', 'vip_notes', 'company_contact_id')
             ->with('companyContact:id,name')
             ->where(function ($query) use ($like, $digits) {
-                $query->where('name', 'like', $like);
+                $query->where('name', 'like', $like)
+                    ->orWhere('email', 'like', $like);
 
                 if ($digits !== '') {
                     $query->orWhere('phone', 'like', '%' . $digits . '%');

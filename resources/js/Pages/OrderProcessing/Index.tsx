@@ -317,7 +317,7 @@ const OrderProcessing = ({ auth, data, statuses, owners, supervisors, created_by
     )
   }
 
-  const updateOrderStatus = async (orderId: number, status: string) => {
+  const updateOrderStatus = async (orderId: number, status: string, confirmCustomerRole = false): Promise<void> => {
     const response = await fetch(route('frontdesk.updateStatus', { order: orderId }), {
       method: 'POST',
       headers: {
@@ -325,12 +325,24 @@ const OrderProcessing = ({ auth, data, statuses, owners, supervisors, created_by
         Accept: 'application/json',
         'X-CSRF-TOKEN': csrfToken
       },
-      body: JSON.stringify({ status })
+      body: JSON.stringify({
+        status,
+        ...(confirmCustomerRole ? { confirm_customer_role: true } : {})
+      })
     })
 
     const payload = await response.json().catch(() => null)
 
     if (!response.ok || !payload?.order) {
+      if (response.status === 409 && payload?.requires_confirmation) {
+        const confirmed = window.confirm(payload?.message ?? 'This email already belongs to another user. Convert it to customer?')
+        if (!confirmed) {
+          return
+        }
+
+        return await updateOrderStatus(orderId, status, true)
+      }
+
       throw new Error(payload?.message ?? 'Unable to update status.')
     }
   }

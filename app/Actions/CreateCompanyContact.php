@@ -1,19 +1,21 @@
 <?php
 namespace App\Actions;
 
-use App\Enum\ContactSourceEnum;
 use App\Enum\ContactTypeEnum;
 use App\Models\Client;
+use App\Models\CompanyContact;
+use App\Traits\Bigin;
+use App\Support\ReferralResolver;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use App\Models\ClientAddress;
-use App\Models\CompanyContact;
-use App\Models\Referral;
-use App\Traits\Bigin;
 
 class CreateCompanyContact {
 
   use Bigin;
+
+  public function __construct(
+    private readonly ReferralResolver $referralResolver
+  ) {}
   
   public function handle(Request $request) {
     
@@ -39,19 +41,8 @@ class CreateCompanyContact {
       }
       if (!empty($request->clients)) {
         foreach ($request->clients as $client) {
-              $referral = null;
+          $referral = $this->referralResolver->resolve($client);
 
-            if ($client['source'] == ContactSourceEnum::EXTERNAL_REFERAL->value || 
-                $client['source'] == ContactSourceEnum::INTERNAL_REFERAL->value
-            ) {
-                $referral = Referral::firstOrCreate(
-                [
-                    'name' => $client['refer_name'],
-                    'phone' => $client['refer_phone'],
-                    'type' => $client['source'],
-                ]
-                );
-              }
           Client::create([
             'company_contact_id' => $existingCompany->id,
             'name' =>$client['name'],

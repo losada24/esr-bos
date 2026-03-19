@@ -4,7 +4,8 @@ import CloseIcon from '@/Components/Icons/CloseIcon'
 import { type Client } from '@/Pages/Client/ClientCommon'
 import { Field, Form, Formik, type FormikHelpers } from 'formik'
 import InputError from '@/Components/InputError'
-import { SOURCES, ORDER_TYPES } from '@/Utils/constants'
+import { ORDER_TYPES } from '@/Utils/constants'
+import ReferralFields from '@/Components/ReferralFields'
 import { clientSchema } from '../CompanyContact/CompanyContactCommon'
 
 const SectionField = ({
@@ -50,7 +51,10 @@ const ClientModal = ({
     vip_notes: '',
     refer_name: '',
     refer_phone: '',
-    referral_id: 0,
+    refer_email: '',
+    referral_id: null,
+    referrer_client_id: null,
+    referrer_user_id: null,
     order_type: orderType ?? ''
   }
 
@@ -210,6 +214,12 @@ const ClientModal = ({
                           autoComplete="off"
                           onChange={(event: ChangeEvent<HTMLSelectElement>) => {
                             setFieldValue('source', event.target.value)
+                            setFieldValue('referral_id', null)
+                            setFieldValue('referrer_client_id', null)
+                            setFieldValue('referrer_user_id', null)
+                            setFieldValue('refer_name', '')
+                            setFieldValue('refer_phone', '')
+                            setFieldValue('refer_email', '')
                           }}
                         >
                           <option value="">Select source</option>
@@ -220,35 +230,12 @@ const ClientModal = ({
                       </SectionField>
                       <InputError message={submitCount && errors.source ? errors.source : null} className="mt-1" />
                     </div>
-
-                    {(values.source === SOURCES.EXTERNAL_REFERAL || values.source === SOURCES.INTERNAL_REFERAL) && (
-                      <>
-                        <div>
-                          <SectionField label="Refer Name" htmlFor="refer_name">
-                            <Field
-                              id="refer_name"
-                              name="refer_name"
-                              className="form-input"
-                              autoComplete="off"
-                              placeholder="Refer Name"
-                            />
-                          </SectionField>
-                          <InputError message={submitCount && errors.refer_name ? errors.refer_name : null} className="mt-1" />
-                        </div>
-                        <div>
-                          <SectionField label="Refer Phone" htmlFor="refer_phone">
-                            <Field
-                              id="refer_phone"
-                              name="refer_phone"
-                              className="form-input"
-                              autoComplete="off"
-                              placeholder="Refer Phone"
-                            />
-                          </SectionField>
-                          <InputError message={submitCount && errors.refer_phone ? errors.refer_phone : null} className="mt-1" />
-                        </div>
-                      </>
-                    )}
+                    <ReferralFields
+                      values={values}
+                      errors={errors as Record<string, any>}
+                      submitCount={submitCount}
+                      setFieldValue={setFieldValue}
+                    />
                   </div>
 
                   <div className="space-y-3 rounded-xl bg-slate-50 p-4">

@@ -582,7 +582,7 @@ class UpdateOrder
           'material_received_date' => $request->material_received_date,
         ]);
 
-        if ($status === OrderStatusEnum::CONTRACT_SIGNED_BY_CLIENT->value) {
+        if ($status === OrderStatusEnum::REVIEW->value) {
           event(new OrderStatusChanged($order, $status));
         }
         
@@ -719,7 +719,7 @@ class UpdateOrder
         'material_received_date' => $request->material_received_date,
       ]);
 
-      if ($request->status === OrderStatusEnum::CONTRACT_SIGNED_BY_CLIENT->value) {
+      if ($request->status === OrderStatusEnum::REVIEW->value) {
         event(new OrderStatusChanged($order, $request->status));
       }
 
