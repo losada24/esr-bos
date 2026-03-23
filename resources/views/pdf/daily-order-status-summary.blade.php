@@ -31,27 +31,31 @@
 <table>
     <thead>
         <tr>
-            <td class="header" colspan="4">
+            <td class="header" colspan="5">
                 Daily Order Status ({{ $startDate }} to {{ $endDate }})
             </td>
         </tr>
         <tr class="totals">
-            <td colspan="4">Total: {{ $totals['total'] }}</td>
+            <td colspan="5">Total: {{ $totals['total'] }}</td>
         </tr>
         <tr class="totals">
-            <td colspan="4">Total Orders: {{ $totals['total_orders'] ?? count($orderLists['total'] ?? []) }}</td>
+            <td colspan="5">Total Orders: {{ $totals['total_orders'] ?? count($orderLists['total'] ?? []) }}</td>
         </tr>
         <tr class="totals">
-            <td colspan="4">Total Qualified: {{ $totals['qualified'] }}</td>
+            <td colspan="5">Total Qualified: {{ $totals['qualified'] }}</td>
         </tr>
         <tr class="totals">
-            <td colspan="4">Total Estimate &amp; Appt Schedule: {{ $totals['estimate_appt_schedule'] }}</td>
+            <td colspan="5">Total Estimate &amp; Appt Schedule: {{ $totals['estimate_appt_schedule'] }}</td>
+        </tr>
+        <tr class="totals">
+            <td colspan="5">Total Lost Request: {{ $totals['lost_request'] }}</td>
         </tr>
         <tr>
             <th>Date</th>
             <th>Total</th>
             <th>Qualified</th>
             <th>Estimate &amp; Appt Schedule</th>
+            <th>Lost Request</th>
         </tr>
     </thead>
     <tbody>
@@ -61,6 +65,7 @@
                 <td>{{ $row['new_request_qualified'] }}</td>
                 <td>{{ $row['qualified'] }}</td>
                 <td>{{ $row['estimate_appt_schedule'] }}</td>
+                <td>{{ $row['lost_request'] }}</td>
             </tr>
         @endforeach
         <tr class="totals">
@@ -68,6 +73,7 @@
             <td><strong>{{ $totals['total'] }}</strong></td>
             <td><strong>{{ $totals['qualified'] }}</strong></td>
             <td><strong>{{ $totals['estimate_appt_schedule'] }}</strong></td>
+            <td><strong>{{ $totals['lost_request'] }}</strong></td>
         </tr>
     </tbody>
 </table>
@@ -76,6 +82,7 @@
     $totalList = collect($orderLists['total'] ?? []);
     $qualifiedList = collect($orderLists['qualified'] ?? []);
     $estimateList = collect($orderLists['estimate_appt_schedule'] ?? []);
+    $lostRequestList = collect($orderLists['lost_request'] ?? []);
 @endphp
 
 <table style="margin-top: 16px;">
@@ -128,6 +135,38 @@
                     <td>{{ !empty($order['name']) ? '#' . $order['id'] . ' - ' . $order['name'] : '#' . $order['id'] }}</td>
                     <td>{{ $order['created_date'] ?? '-' }}</td>
                     <td>{{ $order['current_status'] ?? '-' }}</td>
+                </tr>
+            @endforeach
+        @endif
+    </tbody>
+</table>
+
+<table style="margin-top: 16px;">
+    <thead>
+        <tr>
+            <td class="header" colspan="5">Lost Request Orders List</td>
+        </tr>
+        <tr>
+            <th>Order</th>
+            <th>Created Date</th>
+            <th>Lost Request Date</th>
+            <th>Current Status</th>
+            <th>Loss Reason</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if ($lostRequestList->isEmpty())
+            <tr>
+                <td colspan="5">No lost request orders for the selected dates.</td>
+            </tr>
+        @else
+            @foreach ($lostRequestList as $order)
+                <tr>
+                    <td>{{ !empty($order['name']) ? '#' . $order['id'] . ' - ' . $order['name'] : '#' . $order['id'] }}</td>
+                    <td>{{ $order['created_date'] ?? '-' }}</td>
+                    <td>{{ $order['status_date'] ?? '-' }}</td>
+                    <td>{{ $order['current_status'] ?? '-' }}</td>
+                    <td>{{ $order['loss_reason_frontdesk'] ?? '-' }}</td>
                 </tr>
             @endforeach
         @endif

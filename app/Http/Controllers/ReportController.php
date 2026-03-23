@@ -1407,6 +1407,26 @@ class ReportController extends Controller
       ->get()
       ->keyBy('summary_date');
 
+    $lostRequestTransitions = DB::table('order_status')
+      ->join('orders', 'orders.id', '=', 'order_status.order_id')
+      ->whereNull('orders.deleted_at')
+      ->where('order_status.status', OrderStatusEnum::LOST_CUSTOMER_REQUEST->value)
+      ->whereBetween('order_status.created_at', [$startDate, $endDate])
+      ->where(function ($query) {
+        $query->whereNull('orders.order_type')
+          ->orWhere('orders.order_type', '!=', OrderTypeEnum::COMMERCIAL->value);
+      })
+      ->selectRaw('order_status.order_id, MAX(order_status.created_at) as lost_request_at')
+      ->groupBy('order_status.order_id');
+
+    $lostRequestCounts = DB::query()
+      ->fromSub($lostRequestTransitions, 'lost_request_transitions')
+      ->selectRaw('DATE(lost_request_at) as summary_date, COUNT(DISTINCT order_id) as total')
+      ->groupBy('summary_date')
+      ->orderBy('summary_date')
+      ->get()
+      ->keyBy('summary_date');
+
     $totalOrderIds = DB::query()
       ->fromSub($cohort, 'cohort')
       ->select('cohort.order_id')
@@ -1431,6 +1451,16 @@ class ReportController extends Controller
       ->distinct()
       ->pluck('cohort_schedule.order_id');
 
+    $lostRequestRows = DB::query()
+      ->fromSub($lostRequestTransitions, 'lost_request_transitions')
+      ->select('order_id', 'lost_request_at')
+      ->orderBy('lost_request_at')
+      ->orderBy('order_id')
+      ->get();
+
+    $lostRequestOrderIds = $lostRequestRows->pluck('order_id');
+    $lostRequestMetadata = $this->buildLostRequestMetadata($lostRequestOrderIds, $lostRequestRows);
+
     $daily = [];
     $current = $startDate->copy()->startOfDay();
 
@@ -1440,6 +1470,7 @@ class ReportController extends Controller
         'date' => $dateKey,
         'qualified' => 0,
         'estimate_appt_schedule' => 0,
+        'lost_request' => 0,
         'total' => 0,
       ];
       $current->addDay();
@@ -1469,12 +1500,21 @@ class ReportController extends Controller
       $daily[$dateKey]['estimate_appt_schedule'] = (int) $row->total;
     }
 
+    foreach ($lostRequestCounts as $dateKey => $row) {
+      if (!isset($daily[$dateKey])) {
+        continue;
+      }
+
+      $daily[$dateKey]['lost_request'] = (int) $row->total;
+    }
+
     $dailySummary = collect($daily)->values()->map(function ($row) {
       return [
         'date' => $row['date'],
         'new_request_qualified' => $row['total'],
         'qualified' => $row['qualified'],
         'estimate_appt_schedule' => $row['estimate_appt_schedule'],
+        'lost_request' => $row['lost_request'],
       ];
     });
 
@@ -1482,12 +1522,20 @@ class ReportController extends Controller
       'total' => $dailySummary->sum('new_request_qualified'),
       'qualified' => $dailySummary->sum('qualified'),
       'estimate_appt_schedule' => $dailySummary->sum('estimate_appt_schedule'),
+      'lost_request' => $dailySummary->sum('lost_request'),
     ];
 
     $orderLists = [
       'total' => $this->buildOrderReferenceList($totalOrderIds)->values(),
       'qualified' => $this->buildOrderReferenceList($qualifiedOrderIds)->values(),
       'estimate_appt_schedule' => $this->buildOrderReferenceList($estimateOrderIds)->values(),
+      'lost_request' => $this->buildOrderReferenceList($lostRequestOrderIds, $lostRequestMetadata)
+        ->sortBy(static fn (array $order) => sprintf(
+          '%s-%010d',
+          $order['status_date'] ?? '9999-12-31',
+          (int) $order['id']
+        ))
+        ->values(),
     ];
 
     $totals['total_orders'] = $orderLists['total']->count();
@@ -1501,7 +1549,7 @@ class ReportController extends Controller
     ];
   }
 
-  private function buildOrderReferenceList(Collection $orderIds): Collection
+  private function buildOrderReferenceList(Collection $orderIds, array $metadataByOrderId = []): Collection
   {
     $uniqueOrderIds = $orderIds
       ->map(static fn ($orderId) => (int) $orderId)
@@ -1518,13 +1566,14 @@ class ReportController extends Controller
       ->orderBy('created_at')
       ->orderBy('id')
       ->get(['id', 'name', 'status', 'created_at'])
-      ->map(static function (Order $order) {
+      ->map(static function (Order $order) use ($metadataByOrderId) {
+        $metadata = $metadataByOrderId[$order->id] ?? [];
         $orderName = trim((string) ($order->name ?? ''));
         $createdDate = $order->created_at ? $order->created_at->toDateString() : null;
         $currentStatus = trim((string) ($order->status ?? ''));
         $statusLabel = $currentStatus !== '' ? $currentStatus : '-';
 
-        return [
+        return array_merge([
           'id' => $order->id,
           'name' => $orderName,
           'created_date' => $createdDate,
@@ -1532,9 +1581,42 @@ class ReportController extends Controller
           'label' => $orderName !== ''
             ? '#' . $order->id . ' - ' . $orderName
             : '#' . $order->id,
-        ];
+        ], $metadata);
       })
       ->values();
+  }
+
+  private function buildLostRequestMetadata(Collection $orderIds, Collection $lostRequestRows): array
+  {
+    $uniqueOrderIds = $orderIds
+      ->map(static fn ($orderId) => (int) $orderId)
+      ->filter(static fn (int $orderId) => $orderId > 0)
+      ->unique()
+      ->values();
+
+    if ($uniqueOrderIds->isEmpty()) {
+      return [];
+    }
+
+    $lossReasonsByOrderId = Order::query()
+      ->whereIn('id', $uniqueOrderIds)
+      ->pluck('loss_reason_frontdesk', 'id')
+      ->map(static fn ($reason) => filled($reason) ? trim((string) $reason) : null)
+      ->all();
+
+    return $lostRequestRows
+      ->keyBy(static fn ($row) => (int) $row->order_id)
+      ->map(static function ($row) use ($lossReasonsByOrderId) {
+        $orderId = (int) $row->order_id;
+
+        return [
+          'status_date' => $row->lost_request_at
+            ? Carbon::parse($row->lost_request_at)->toDateString()
+            : null,
+          'loss_reason_frontdesk' => $lossReasonsByOrderId[$orderId] ?? null,
+        ];
+      })
+      ->all();
   }
 
   private function resolveAccountingStatus(Request $request): ?string
