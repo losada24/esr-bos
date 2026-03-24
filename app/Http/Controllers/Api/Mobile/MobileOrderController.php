@@ -6,6 +6,7 @@ use App\Enum\RoleEnum;
 use App\Http\Controllers\Controller;
 use App\Models\Client;
 use App\Models\Order;
+use App\Models\OrderPayment;
 use App\Support\PaymentInstallmentPresenter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -102,6 +103,8 @@ class MobileOrderController extends Controller
                 'paymentSchedule.installments.paidBy:id,name',
                 'paymentSchedule.installments.movements:id,payment_installment_id,amount,paid_at,paid_by,method,note,created_at,updated_at',
                 'paymentSchedule.installments.movements.paidBy:id,name',
+                'changeOrderPayment:id,order_id,type,amount,note,status,paid_at,paid_by_id,created_at,updated_at',
+                'changeOrderPayment.paidBy:id,name',
             ];
         }
 
@@ -186,6 +189,28 @@ class MobileOrderController extends Controller
         ];
     }
 
+    private function serializeOrderPayment(?OrderPayment $orderPayment): ?array
+    {
+        if (! $orderPayment) {
+            return null;
+        }
+
+        return [
+            'id' => $orderPayment->id,
+            'order_id' => $orderPayment->order_id,
+            'type' => $orderPayment->type,
+            'amount' => (float) $orderPayment->amount,
+            'note' => $orderPayment->note,
+            'status' => $orderPayment->status,
+            'paid_at' => $orderPayment->paid_at?->toISOString(),
+            'paid_by' => $orderPayment->paidBy
+                ? ['id' => $orderPayment->paidBy->id, 'name' => $orderPayment->paidBy->name]
+                : null,
+            'created_at' => $orderPayment->created_at?->toISOString(),
+            'updated_at' => $orderPayment->updated_at?->toISOString(),
+        ];
+    }
+
     private function referredClientsQuery($clientIds)
     {
         return Client::query()
@@ -248,6 +273,7 @@ class MobileOrderController extends Controller
             $payload['attachments'] = $order->attachments;
             $payload['status_history'] = $order->orderStatus;
             $payload['payment_schedule'] = PaymentInstallmentPresenter::schedule($order->paymentSchedule);
+            $payload['change_order_payment'] = $this->serializeOrderPayment($order->changeOrderPayment);
         }
 
         return $payload;

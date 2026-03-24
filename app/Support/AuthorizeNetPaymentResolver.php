@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Exceptions\AuthorizeNetPaymentNotPayableException;
 use App\Models\OrderPayment;
 use App\Models\PaymentInstallment;
 use App\Support\PaymentInstallmentAccounting;
@@ -29,7 +30,7 @@ class AuthorizeNetPaymentResolver
         $amount = max(0, round((float) $summary['balance'], 2));
 
         if ($amount <= 0.0) {
-            throw new ModelNotFoundException("Payment installment [{$paymentId}] has no remaining balance.");
+            throw new AuthorizeNetPaymentNotPayableException("Payment installment [{$paymentId}] is already paid.");
         }
 
         $order = $installment->schedule?->order;
@@ -63,7 +64,7 @@ class AuthorizeNetPaymentResolver
         }
 
         if (strtoupper((string) $orderPayment->status) === 'PAID') {
-            throw new ModelNotFoundException("Order payment [{$paymentId}] is already paid.");
+            throw new AuthorizeNetPaymentNotPayableException("Order payment [{$paymentId}] is already paid.");
         }
 
         $order = $orderPayment->order;
