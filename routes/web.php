@@ -5,6 +5,8 @@ use App\Http\Controllers\BiginController;
 use App\Http\Controllers\BiweeklyController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\CompanyContactController;
+use App\Http\Controllers\AuthorizeNetHostedPaymentController;
+use App\Http\Controllers\AuthorizeNetWebhookController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\OrderController;
@@ -41,6 +43,20 @@ use App\Traits\TwilioWhatsAppMessage;
 */
 
 Route::get('/', [DashboardController::class, 'index'])->middleware(['auth'])->name('dashboard');
+
+Route::post('/webhook/authorize-net/payments', [AuthorizeNetWebhookController::class, 'payments'])
+  ->name('authorize-net.webhooks.payments');
+
+Route::get('/payments/authorize-net/complete', [AuthorizeNetHostedPaymentController::class, 'complete'])
+  ->name('authorize-net.payments.complete');
+
+Route::get('/payments/authorize-net/cancel', [AuthorizeNetHostedPaymentController::class, 'cancel'])
+  ->name('authorize-net.payments.cancel');
+
+Route::get('/payments/authorize-net/{paymentType}/{paymentId}', [AuthorizeNetHostedPaymentController::class, 'show'])
+  ->middleware(['auth', 'role:admin'])
+  ->whereIn('paymentType', ['quota', 'change-order'])
+  ->name('authorize-net.payments.show');
 
 Route::get('/pdf', function () {
   $order = App\Models\Order::with([
