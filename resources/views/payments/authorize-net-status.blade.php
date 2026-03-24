@@ -9,6 +9,40 @@
         $accent = $isCancelled ? '#b45309' : '#0f766e';
         $accentSoft = $isCancelled ? 'rgba(245, 158, 11, 0.16)' : 'rgba(20, 184, 166, 0.16)';
         $badge = $isCancelled ? 'Cancelled' : 'Submitted';
+        $heroTitle = $isCancelled ? 'Payment Was Not Completed' : 'Payment Submitted Successfully';
+        $heroMessage = $isCancelled
+            ? 'No charges were confirmed through this screen. You can safely close this page and return to the app whenever you are ready.'
+            : 'Thank you. Your payment information was submitted successfully. We are now waiting for the secure confirmation from Authorize.Net to finish updating your order.';
+        $statusLine = $isCancelled ? 'No payment confirmed yet' : 'Waiting for payment confirmation';
+        $timeline = $isCancelled
+            ? [
+                [
+                    'title' => 'Your payment session was cancelled',
+                    'text' => 'The payment window was closed before the transaction completed.',
+                ],
+                [
+                    'title' => 'No final payment update was applied',
+                    'text' => 'Your order will remain unchanged until a successful payment is confirmed.',
+                ],
+                [
+                    'title' => 'You can return and try again later',
+                    'text' => 'Go back to the app or website and restart the payment only when you are ready.',
+                ],
+            ]
+            : [
+                [
+                    'title' => 'Your payment form was completed',
+                    'text' => 'Authorize.Net received the payment details and is finishing the transaction workflow.',
+                ],
+                [
+                    'title' => 'The confirmation is sent securely to our system',
+                    'text' => 'Your order updates only after the payment webhook is validated successfully.',
+                ],
+                [
+                    'title' => 'Your payment status will be reflected shortly',
+                    'text' => 'If you opened this page from the mobile app, you can return there and refresh the order details in a moment.',
+                ],
+            ];
     @endphp
     <style>
         :root {
@@ -308,7 +342,7 @@
                     <div class="brand">
                         <div class="brand-mark">R</div>
                         <div class="brand-copy">
-                            <small>Payment Portal</small>
+                            <small>Secure Payment</small>
                             <strong>Reylos Glass</strong>
                         </div>
                     </div>
@@ -317,44 +351,32 @@
                 </div>
 
                 <div class="hero">
-                    <h1>{{ $title }}</h1>
-                    <p>{{ $message }}</p>
+                    <h1>{{ $heroTitle }}</h1>
+                    <p>{{ $heroMessage }}</p>
                 </div>
 
                 <div class="summary">
                     <section class="panel">
-                        <h2>What Happens Next</h2>
+                        <h2>{{ $isCancelled ? 'What This Means' : 'What Happens Next' }}</h2>
                         <div class="timeline">
-                            <div class="timeline-item">
-                                <div class="dot"></div>
-                                <div>
-                                    <strong>Authorize.Net handled the payment session</strong>
-                                    <span>The payment form already completed its part. Your transaction is now waiting for backend confirmation.</span>
+                            @foreach ($timeline as $item)
+                                <div class="timeline-item">
+                                    <div class="dot"></div>
+                                    <div>
+                                        <strong>{{ $item['title'] }}</strong>
+                                        <span>{{ $item['text'] }}</span>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="timeline-item">
-                                <div class="dot"></div>
-                                <div>
-                                    <strong>Your system will validate the webhook</strong>
-                                    <span>The order will only be updated after the signed webhook is received and verified successfully.</span>
-                                </div>
-                            </div>
-                            <div class="timeline-item">
-                                <div class="dot"></div>
-                                <div>
-                                    <strong>Order payment status will refresh in BOS</strong>
-                                    <span>If the gateway confirms the transaction, the related installment or change order will be marked accordingly in your system.</span>
-                                </div>
-                            </div>
+                            @endforeach
                         </div>
                     </section>
 
                     <aside class="panel">
-                        <h2>Payment Reference</h2>
+                        <h2>Payment Summary</h2>
                         <div class="meta-list">
                             <div class="meta-row">
                                 <small>Status</small>
-                                <strong>{{ $badge }}</strong>
+                                <strong>{{ $statusLine }}</strong>
                             </div>
                             @if (!empty($reference))
                                 <div class="meta-row">
@@ -371,11 +393,40 @@
                 </div>
 
                 <div class="footer">
-                    <p>If this page is open inside the mobile app, you can return there after a few seconds and check the payment status from the order details.</p>
-                    <button type="button" class="button" onclick="window.close()">Close Window</button>
+                    <p>{{ $isCancelled ? 'You may close this window now and return to the app or website.' : 'You may close this window now. If needed, return to the app or website and refresh the order status.' }}</p>
+                    <button type="button" class="button" onclick="handleCloseAction()">{{ $isCancelled ? 'Return' : 'Done' }}</button>
                 </div>
             </div>
         </section>
     </main>
+    <script>
+        function handleCloseAction() {
+            if (window.ReactNativeWebView && typeof window.ReactNativeWebView.postMessage === 'function') {
+                window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'AUTHORIZE_NET_CLOSE' }));
+            }
+
+            if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.closeWindow) {
+                window.webkit.messageHandlers.closeWindow.postMessage({ type: 'AUTHORIZE_NET_CLOSE' });
+            }
+
+            try {
+                window.close();
+            } catch (error) {
+            }
+
+            window.setTimeout(function () {
+                if (document.referrer && document.referrer !== window.location.href) {
+                    window.location.href = document.referrer;
+                    return;
+                }
+
+                window.history.back();
+
+                window.setTimeout(function () {
+                    window.location.href = '{{ url('/') }}';
+                }, 250);
+            }, 120);
+        }
+    </script>
 </body>
 </html>
