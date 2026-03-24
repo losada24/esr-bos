@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\AuthorizeNetPaymentNotPayableException;
 use App\Support\AuthorizeNetGateway;
 use App\Support\AuthorizeNetPaymentResolver;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 class AuthorizeNetHostedPaymentController extends Controller
@@ -15,10 +17,15 @@ class AuthorizeNetHostedPaymentController extends Controller
     ) {
     }
 
-    public function show(Request $request, string $paymentType, int $paymentId): View
+    public function show(Request $request, string $paymentType, int $paymentId): View|RedirectResponse
     {
         $channel = (string) $request->query('channel', 'web');
-        $payment = $this->paymentResolver->resolve($paymentType, $paymentId, $channel);
+        try {
+            $payment = $this->paymentResolver->resolve($paymentType, $paymentId, $channel);
+        } catch (AuthorizeNetPaymentNotPayableException $exception) {
+            return back()->with('error', $exception->getMessage());
+        }
+
         $hostedPayment = $this->gateway->requestHostedPaymentToken($payment);
 
         return view('payments.authorize-net-redirect', [
