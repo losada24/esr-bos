@@ -6,8 +6,8 @@
     <title>{{ $title }}</title>
     @php
         $isCancelled = str_contains(strtolower($title), 'cancel');
-        $accent = $isCancelled ? '#b45309' : '#0f766e';
-        $accentSoft = $isCancelled ? 'rgba(245, 158, 11, 0.16)' : 'rgba(20, 184, 166, 0.16)';
+        $accent = $isCancelled ? '#b45309' : '#15803d';
+        $accentSoft = $isCancelled ? 'rgba(245, 158, 11, 0.16)' : 'rgba(34, 197, 94, 0.16)';
         $badge = $isCancelled ? 'Cancelled' : 'Submitted';
         $heroTitle = $isCancelled ? 'Payment Was Not Completed' : 'Payment Submitted Successfully';
         $heroMessage = $isCancelled
@@ -46,14 +46,14 @@
     @endphp
     <style>
         :root {
-            --page-bg: #f5f1e8;
-            --ink: #1f2937;
-            --muted: #5b6576;
+            --page-bg: #eef5fb;
+            --ink: #0f172a;
+            --muted: #475569;
             --panel: rgba(255, 255, 255, 0.92);
-            --line: rgba(31, 41, 55, 0.10);
+            --line: rgba(15, 23, 42, 0.10);
             --accent: {{ $accent }};
             --accent-soft: {{ $accentSoft }};
-            --shadow: 0 30px 60px rgba(36, 29, 20, 0.18);
+            --shadow: 0 30px 60px rgba(15, 23, 42, 0.16);
         }
 
         * {
@@ -66,9 +66,9 @@
             font-family: "Trebuchet MS", "Gill Sans", sans-serif;
             color: var(--ink);
             background:
-                radial-gradient(circle at top left, rgba(180, 83, 9, 0.12), transparent 32%),
-                radial-gradient(circle at bottom right, rgba(15, 118, 110, 0.14), transparent 36%),
-                linear-gradient(135deg, #f7f1e5 0%, #efe6d6 42%, #f5f1e8 100%);
+                radial-gradient(circle at top left, rgba(14, 116, 144, 0.14), transparent 30%),
+                radial-gradient(circle at bottom right, rgba(37, 99, 235, 0.14), transparent 34%),
+                linear-gradient(135deg, #edf6ff 0%, #dbeafe 42%, #eff6ff 100%);
             display: grid;
             place-items: center;
             padding: 24px;
