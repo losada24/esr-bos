@@ -6,6 +6,7 @@ use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
+use SimpleXMLElement;
 
 class AuthorizeNetGateway
 {
@@ -86,7 +87,7 @@ class AuthorizeNetGateway
             throw new RuntimeException('Authorize.Net hosted payment token request failed.', previous: $exception);
         }
 
-        $body = $response->json();
+        $body = $this->decodeResponseBody($response->body());
         $payload = $body['getHostedPaymentPageResponse'] ?? $body;
         $messages = $payload['messages']['message'] ?? [];
         $resultCode = $payload['messages']['resultCode'] ?? null;
@@ -115,5 +116,25 @@ class AuthorizeNetGateway
             'token' => $token,
             'response' => $payload,
         ];
+    }
+
+    private function decodeResponseBody(string $body): ?array
+    {
+        $normalized = preg_replace('/^\xEF\xBB\xBF/', '', $body) ?? $body;
+        $decoded = json_decode($normalized, true);
+
+        if (is_array($decoded)) {
+            return $decoded;
+        }
+
+        $xml = @simplexml_load_string($normalized);
+        if ($xml instanceof SimpleXMLElement) {
+            $json = json_encode($xml);
+            $decoded = json_decode($json ?: '', true);
+
+            return is_array($decoded) ? $decoded : null;
+        }
+
+        return null;
     }
 }
