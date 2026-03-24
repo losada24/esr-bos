@@ -11,36 +11,36 @@
         $badge = $isCancelled ? 'Cancelled' : 'Submitted';
         $heroTitle = $isCancelled ? 'Payment Was Not Completed' : 'Payment Submitted Successfully';
         $heroMessage = $isCancelled
-            ? 'No charges were confirmed through this screen. You can safely close this page and return to the app whenever you are ready.'
-            : 'Thank you. Your payment information was submitted successfully. We are now waiting for the secure confirmation from Authorize.Net to finish updating your order.';
-        $statusLine = $isCancelled ? 'No payment confirmed yet' : 'Waiting for payment confirmation';
+            ? 'Your payment was cancelled before it was completed. You can close this page and return whenever you are ready to try again.'
+            : 'Thank you. Your payment request was submitted successfully. You may close this page and return to the app or website.';
+        $statusLine = $isCancelled ? 'Payment cancelled' : 'Payment submitted';
         $timeline = $isCancelled
             ? [
                 [
-                    'title' => 'Your payment session was cancelled',
-                    'text' => 'The payment window was closed before the transaction completed.',
+                    'title' => 'No payment was completed',
+                    'text' => 'This screen was closed before the payment process finished.',
                 ],
                 [
-                    'title' => 'No final payment update was applied',
-                    'text' => 'Your order will remain unchanged until a successful payment is confirmed.',
+                    'title' => 'You can try again later',
+                    'text' => 'Return to the app or website whenever you want to restart your payment.',
                 ],
                 [
-                    'title' => 'You can return and try again later',
-                    'text' => 'Go back to the app or website and restart the payment only when you are ready.',
+                    'title' => 'It is safe to close this page',
+                    'text' => 'Once you are back in the app or website, you can continue from there.',
                 ],
             ]
             : [
                 [
-                    'title' => 'Your payment form was completed',
-                    'text' => 'Authorize.Net received the payment details and is finishing the transaction workflow.',
+                    'title' => 'Your payment request was received',
+                    'text' => 'Your payment was submitted successfully from this page.',
                 ],
                 [
-                    'title' => 'The confirmation is sent securely to our system',
-                    'text' => 'Your order updates only after the payment webhook is validated successfully.',
+                    'title' => 'Your order will reflect the update shortly',
+                    'text' => 'If you return to the app or website in a moment, you should be able to review the latest status there.',
                 ],
                 [
-                    'title' => 'Your payment status will be reflected shortly',
-                    'text' => 'If you opened this page from the mobile app, you can return there and refresh the order details in a moment.',
+                    'title' => 'You may close this page now',
+                    'text' => 'You can safely return to the app or website after finishing here.',
                 ],
             ];
     @endphp
@@ -294,19 +294,6 @@
             line-height: 1.6;
         }
 
-        .button {
-            appearance: none;
-            border: 0;
-            border-radius: 999px;
-            padding: 13px 18px;
-            background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 72%, black));
-            color: white;
-            font-weight: 700;
-            cursor: pointer;
-            min-width: 148px;
-            box-shadow: 0 14px 24px rgba(15, 23, 42, 0.14);
-        }
-
         @media (max-width: 760px) {
             body {
                 padding: 16px;
@@ -380,53 +367,19 @@
                             </div>
                             @if (!empty($reference))
                                 <div class="meta-row">
-                                    <small>Reference</small>
+                                    <small>Confirmation Reference</small>
                                     <span class="reference">{{ $reference }}</span>
                                 </div>
                             @endif
-                            <div class="meta-row">
-                                <small>Environment</small>
-                                <span>{{ strtoupper(config('authorize_net.environment', 'sandbox')) }}</span>
-                            </div>
                         </div>
                     </aside>
                 </div>
 
                 <div class="footer">
-                    <p>{{ $isCancelled ? 'You may close this window now and return to the app or website.' : 'You may close this window now. If needed, return to the app or website and refresh the order status.' }}</p>
-                    <button type="button" class="button" onclick="handleCloseAction()">{{ $isCancelled ? 'Return' : 'Done' }}</button>
+                    <p>{{ $isCancelled ? 'You may now return to the app or website whenever you are ready.' : 'You may now return to the app or website to continue.' }}</p>
                 </div>
             </div>
         </section>
     </main>
-    <script>
-        function handleCloseAction() {
-            if (window.ReactNativeWebView && typeof window.ReactNativeWebView.postMessage === 'function') {
-                window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'AUTHORIZE_NET_CLOSE' }));
-            }
-
-            if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.closeWindow) {
-                window.webkit.messageHandlers.closeWindow.postMessage({ type: 'AUTHORIZE_NET_CLOSE' });
-            }
-
-            try {
-                window.close();
-            } catch (error) {
-            }
-
-            window.setTimeout(function () {
-                if (document.referrer && document.referrer !== window.location.href) {
-                    window.location.href = document.referrer;
-                    return;
-                }
-
-                window.history.back();
-
-                window.setTimeout(function () {
-                    window.location.href = '{{ url('/') }}';
-                }, 250);
-            }, 120);
-        }
-    </script>
 </body>
 </html>
