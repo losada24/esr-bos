@@ -45,7 +45,7 @@ class AuthorizeNetPaymentResolver
             'amount' => number_format($amount, 2, '.', ''),
             'order' => $order,
             'payment_installment' => $installment,
-            'invoice_number' => $this->invoiceNumberFor($order, 'INST-' . $installment->id),
+            'invoice_number' => $this->truncate('INST-' . $installment->id, 20),
             'description' => $this->truncate(
                 trim(sprintf('%s payment for order %s', $installment->label, $order->order_number ?: $order->id)),
                 255
@@ -79,26 +79,12 @@ class AuthorizeNetPaymentResolver
             'amount' => number_format((float) $orderPayment->amount, 2, '.', ''),
             'order' => $order,
             'order_payment' => $orderPayment,
-            'invoice_number' => $this->changeOrderInvoiceNumberFor($order, $orderPayment->id),
+            'invoice_number' => $this->truncate('CHG-' . $orderPayment->id, 20),
             'description' => $this->truncate(
                 trim(sprintf('Change order payment for order %s', $order->order_number ?: $order->id)),
                 255
             ),
         ];
-    }
-
-    private function invoiceNumberFor(object $order, string $fallback): string
-    {
-        $invoiceNumber = (string) ($order->invoice_number ?: $order->order_number ?: $fallback);
-
-        return $this->truncate($invoiceNumber, 20);
-    }
-
-    private function changeOrderInvoiceNumberFor(object $order, int $orderPaymentId): string
-    {
-        $invoiceNumber = (string) ($order->invoice_number ?: ('CHG-' . $orderPaymentId));
-
-        return $this->truncate($invoiceNumber, 20);
     }
 
     private function truncate(string $value, int $length): string
