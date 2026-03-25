@@ -350,8 +350,9 @@ const OrderForm = ({
       return getOrderProducts(orderProduct)
     }) ?? []
   )
-  const [isCreated] = useState<boolean>(true)
   const [showProductModal, setShowProductModal] = useState<boolean>(false)
+  const [editingProductIndex, setEditingProductIndex] = useState<number | null>(null)
+  const previousTypeOfWorkIdRef = useRef<number>(Number(values.type_of_work_id ?? 0))
   const [attachmentsArray, setAttachmentsList] = useState<Attachment[]>(attachments ?? [])
   const pendingAttachmentFiles = Array.isArray(values.attachments)
     ? values.attachments.filter(isBrowserFile)
@@ -399,6 +400,44 @@ const OrderForm = ({
     setFieldValue('attachment_role_targets', nextTargets)
   }, [setFieldValue])
 
+  const syncOrderProducts = useCallback((nextOrderProducts: OrderProduct[]) => {
+    setOrderProducts(nextOrderProducts)
+    setFieldValue('orderProducts', nextOrderProducts)
+    setFieldValue('order_products', nextOrderProducts)
+  }, [setFieldValue])
+
+  const recalculateOrderProductsByTypeOfWork = useCallback((
+    nextTypeOfWorkId: number,
+    products: OrderProduct[]
+  ) => {
+    if (nextTypeOfWorkId === 0 || products.length === 0) {
+      return products
+    }
+
+    return products.map((orderProduct) => {
+      const product = {
+        ...orderProduct,
+        type_of_work_id: nextTypeOfWorkId
+      }
+
+      const unit_price = getProductPrice(product, product_costs)
+      const unit_price_with_extrawork = getProductPriceWithExtraWorks(product, product_costs)
+      product.extra_work_price = getProductExtraWorkPrice(product) ?? 0
+      product.unit_price = unit_price
+
+      if (product.type_of_product_id !== STOREFRONT_CATEGORY) {
+        product.total_price = unit_price * product.qty
+      } else {
+        product.total_price = unit_price
+      }
+
+      product.unit_price_with_extraworks = unit_price_with_extrawork
+      product.total_price_with_extraworks = unit_price_with_extrawork + product.total_price
+
+      return product
+    })
+  }, [product_costs])
+
   useEffect(() => {
     const validAttachmentIds = attachmentsArray
       .map((attachment) => Number(attachment.id))
@@ -412,6 +451,25 @@ const OrderForm = ({
     setFieldValue('attachment_role_targets', normalizedTargets)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [values.id])
+
+  useEffect(() => {
+    const currentTypeOfWorkId = Number(values.type_of_work_id ?? 0)
+    const previousTypeOfWorkId = previousTypeOfWorkIdRef.current
+
+    if (values.service !== SERVICES.DELIVERY_AND_INSTALLATION) {
+      previousTypeOfWorkIdRef.current = currentTypeOfWorkId
+      return
+    }
+
+    if (currentTypeOfWorkId === 0 || previousTypeOfWorkId === currentTypeOfWorkId || orderProducts.length === 0) {
+      previousTypeOfWorkIdRef.current = currentTypeOfWorkId
+      return
+    }
+
+    const recalculatedOrderProducts = recalculateOrderProductsByTypeOfWork(currentTypeOfWorkId, orderProducts)
+    previousTypeOfWorkIdRef.current = currentTypeOfWorkId
+    syncOrderProducts(recalculatedOrderProducts)
+  }, [orderProducts, recalculateOrderProductsByTypeOfWork, syncOrderProducts, values.service, values.type_of_work_id])
 
   const toggleAttachmentRoleTarget = (role: AttachmentRoleKey, attachmentId: number, isChecked: boolean) => {
     const currentRoleTargets = attachmentRoleTargets[role] ?? []
@@ -532,8 +590,23 @@ const OrderForm = ({
     }
   }
 
+  const closeProductModal = () => {
+    setShowProductModal(false)
+    setEditingProductIndex(null)
+  }
+
+  const saveOrderProduct = (orderProduct: OrderProduct) => {
+    const nextOrderProducts = editingProductIndex === null
+      ? [...orderProducts, orderProduct]
+      : orderProducts.map((product, index) => (index === editingProductIndex ? orderProduct : product))
+
+    syncOrderProducts(nextOrderProducts)
+    closeProductModal()
+  }
+
   const updateOrderProduct = (index: number) => {
-    console.log('updateOrderProduct', index)
+    setEditingProductIndex(index)
+    setShowProductModal(true)
   }
   // console.log(values)
 
@@ -736,12 +809,6 @@ const OrderForm = ({
     setIsClientReassigning(false)
   }
 
-  const addOrderProduct = (orderProduct: OrderProduct) => {
-    const orderProductsList = [...orderProducts, orderProduct]
-    setOrderProducts(orderProductsList)
-    setFieldValue('orderProducts', orderProductsList)
-  }
-
   const selectDeliveryAndInstallationDate = async (payment_factory_date: string, cityPermits: boolean) => {
     console.log(values.travel_cost_id)
     let travel_cost_id = 0
@@ -790,8 +857,7 @@ const OrderForm = ({
 
   const removeOrderProduct = (index: number) => {
     const orderProductList = orderProducts.filter((_, i) => i !== index)
-    setOrderProducts(orderProductList)
-    setFieldValue('orderProducts', orderProductList)
+    syncOrderProducts(orderProductList)
   }
 
   const selectedSupervisor: SingleValue<OptionType> = {
@@ -1352,36 +1418,11 @@ const OrderForm = ({
                 onChange={(e: { target: { value: string } }) => {
                   const type_of_work_id = parseInt(e.target.value)
                   setFieldValue('type_of_work_id', type_of_work_id)
+                  previousTypeOfWorkIdRef.current = type_of_work_id
 
-                  // TODO: RECALCULATE PRICES
-                  // console.log(orderProducts)
                   if (type_of_work_id !== 0 && orderProducts.length > 0) {
-                    const recalculateOrderProducts = orderProducts.map((orderProduct) => {
-                      const product = {
-                        ...orderProduct,
-                        type_of_work_id
-                      }
-
-                      const unit_price = getProductPrice(product, product_costs)
-                      const unit_price_with_extrawork = getProductPriceWithExtraWorks(product, product_costs)
-                      product.extra_work_price = getProductExtraWorkPrice(product) ?? 0
-                      product.unit_price = unit_price
-
-                      if (product.type_of_product_id !== STOREFRONT_CATEGORY) {
-                        product.total_price = unit_price * product.qty
-                      } else {
-                        product.total_price = unit_price
-                      }
-
-                      product.unit_price_with_extraworks = unit_price_with_extrawork
-                      product.total_price_with_extraworks = unit_price_with_extrawork + product.total_price
-
-                      return product
-                    })
-
-                    setOrderProducts(recalculateOrderProducts)
-                    setFieldValue('orderProducts', recalculateOrderProducts)
-                    // console.log(recalculateOrderProducts)
+                    const recalculatedOrderProducts = recalculateOrderProductsByTypeOfWork(type_of_work_id, orderProducts)
+                    syncOrderProducts(recalculatedOrderProducts)
                   }
                 }}
               >
@@ -2344,6 +2385,7 @@ const OrderForm = ({
             <div className='flex items-center justify-end'>
               <button onClick={(e) => {
                 e.preventDefault()
+                setEditingProductIndex(null)
                 setShowProductModal(true)
               }} className="btn btn-primary">Add Product</button>
             </div>
@@ -2383,11 +2425,11 @@ const OrderForm = ({
         listTypeOfWork={type_of_works}
         productCosts={product_costs}
         service={values.service}
+        editingProduct={editingProductIndex !== null ? orderProducts[editingProductIndex] : null}
         onClose={() => {
-          setShowProductModal(false)
+          closeProductModal()
         }}
-        isCreated={isCreated}
-        addOrderProduct={(product: OrderProduct) => { addOrderProduct(product) }}
+        saveOrderProduct={(product: OrderProduct) => { saveOrderProduct(product) }}
       />
     </>
   )

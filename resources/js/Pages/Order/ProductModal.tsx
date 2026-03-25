@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import Modal from '@/Components/Modal'
 import CloseIcon from '@/Components/Icons/CloseIcon'
 import { type OrderProduct, type ProductCategory, type ProductConfig, type TypeOfProduct, type ProductCost, TypeOfWork } from '@/types'
@@ -7,24 +7,23 @@ import { type OrderProductExtraWorksFormValues, orderProductSchema, getValueIdNo
 import InputError from '@/Components/InputError'
 import PrimaryButton from '@/Components/PrimaryButton'
 import { getProductPriceWithExtraWorks, getProductPrice, getProductExtraWorkPrice, formatPrice } from '@/Utils/price'
-import { PAYMENT_METHODS, SERVICES, STOREFRONT_CATEGORY, PIVOT_CONFIG} from '@/Utils/constants'
+import { SERVICES, STOREFRONT_CATEGORY, PIVOT_CONFIG } from '@/Utils/constants'
 
 const ProductModal = ({
   showModal,
   onClose,
-  isCreated,
   typeOfProducts,
   productCategories,
   productConfigs,
   typeOfWork,
   listTypeOfWork,
   productCosts,
-  addOrderProduct,
+  editingProduct,
+  saveOrderProduct,
   service
 }: {
   showModal: boolean
   onClose: CallableFunction
-  isCreated: boolean
   typeOfProducts: TypeOfProduct[]
   productCategories: ProductCategory[]
   productConfigs: ProductConfig[]
@@ -32,36 +31,80 @@ const ProductModal = ({
   listTypeOfWork: TypeOfWork[]
   productCosts: ProductCost[]
   service: string
-  addOrderProduct: CallableFunction
+  editingProduct?: OrderProduct | null
+  saveOrderProduct: CallableFunction
 }) => {
   const [productCategoryOptions, setProductCategoryOptions] = useState<ProductCategory[]>([])
   const [productConfigOptions, setProductConfigOptions] = useState<ProductConfig[]>([])
   const [plannedExtraWorksFormValues, setPlannedExtraWorksFormValues] = useState<OrderProductExtraWorksFormValues[]>([])
+  const isEditing = editingProduct !== null && editingProduct !== undefined
 
-  const initialValues: OrderProduct = {
-    id: 0,
-    order_id: 0,
-    qty: 0,
-    height: 0,
-    width: 0,
-    unit_price: 0,
-    unit_price_with_extraworks: 0,
-    total_price_with_extraworks: 0,
-    extra_work_price: 0,
-    total_price: 0,
-    notes: '',
-    product_config_id: 0,
-    type_of_work_id: typeOfWork,
-    storefront_area: 0,
-    installation_other_level: false,
-    product_category_id: 0,
-    type_of_product_id: 0,
-    extra_works: [],
-    pivot_cost: 0,
-    new_price_storefront: 0
-  }
+  const buildExtraWorkFormValues = useCallback((
+    typeOfProductId: number,
+    selectedExtraWorks: OrderProduct['extra_works'] = []
+  ): OrderProductExtraWorksFormValues[] => {
+    const existingExtraWorkMap = new Map(
+      (selectedExtraWorks ?? []).map((extraWork) => [
+        Number(extraWork.extra_work_id),
+        extraWork
+      ])
+    )
 
-  const handleSubmit = async (values: any, helpers: FormikHelpers<OrderProduct>) => {
+    return typeOfProducts.find((typeOfProduct) => typeOfProduct.id === typeOfProductId)?.extra_works.map((extraWork) => {
+      const existingExtraWork = existingExtraWorkMap.get(extraWork.id)
+
+      return {
+        extra_work_id: extraWork.id,
+        extra_work_name: extraWork.name,
+        extra_work_unit: extraWork.unit,
+        amount: existingExtraWork ? Number(existingExtraWork.amount) : 0,
+        checked: existingExtraWork !== undefined,
+        price: existingExtraWork ? Number(existingExtraWork.price) : extraWork.price
+      }
+    }) ?? []
+  }, [typeOfProducts])
+
+  const initialValues: OrderProduct = useMemo(() => ({
+    id: Number(editingProduct?.id ?? 0),
+    order_id: Number(editingProduct?.order_id ?? 0),
+    qty: Number(editingProduct?.qty ?? 0),
+    height: Number(editingProduct?.height ?? 0),
+    width: Number(editingProduct?.width ?? 0),
+    unit_price: Number(editingProduct?.unit_price ?? 0),
+    unit_price_with_extraworks: Number(editingProduct?.unit_price_with_extraworks ?? 0),
+    total_price_with_extraworks: Number(editingProduct?.total_price_with_extraworks ?? 0),
+    extra_work_price: Number(editingProduct?.extra_work_price ?? 0),
+    total_price: Number(editingProduct?.total_price ?? 0),
+    notes: editingProduct?.notes ?? '',
+    product_config_id: Number(editingProduct?.product_config_id ?? 0),
+    type_of_work_id: Number(editingProduct?.type_of_work_id ?? typeOfWork),
+    storefront_area: Number(editingProduct?.storefront_area ?? 0),
+    installation_other_level: Boolean(editingProduct?.installation_other_level),
+    product_category_id: Number(editingProduct?.product_category_id ?? 0),
+    type_of_product_id: Number(editingProduct?.type_of_product_id ?? 0),
+    extra_works: editingProduct?.extra_works ?? [],
+    pivot_cost: Number(editingProduct?.pivot_cost ?? 0),
+    new_price_storefront: Number(editingProduct?.new_price_storefront ?? 0)
+  }), [editingProduct, typeOfWork])
+
+  useEffect(() => {
+    if (!showModal) {
+      return
+    }
+
+    const typeOfProductId = Number(initialValues.type_of_product_id)
+    const productCategoryId = Number(initialValues.product_category_id)
+
+    setProductCategoryOptions(
+      productCategories.filter((productCategory) => productCategory.type_of_products_id === typeOfProductId)
+    )
+    setProductConfigOptions(
+      productConfigs.filter((productConfig) => productConfig.product_categories_id === productCategoryId)
+    )
+    setPlannedExtraWorksFormValues(buildExtraWorkFormValues(typeOfProductId, initialValues.extra_works))
+  }, [buildExtraWorkFormValues, initialValues, productCategories, productConfigs, showModal])
+
+  const handleSubmit = async (values: any, _helpers: FormikHelpers<OrderProduct>) => {
     const plannedExtraWorks = plannedExtraWorksFormValues.filter((extraWork) => extraWork.checked)
     const product: OrderProduct = {
       ...values,
@@ -81,7 +124,7 @@ const ProductModal = ({
 
     product.unit_price_with_extraworks = unit_price_with_extrawork
     product.total_price_with_extraworks = unit_price_with_extrawork + product.total_price
-    addOrderProduct(product)
+    saveOrderProduct(product)
     onClose(false)
   }
 
@@ -92,7 +135,7 @@ const ProductModal = ({
       onClose={() => { onClose(false) }}
     >
         <div className="flex items-center justify-between bg-[#fbfbfb] px-5 py-3 dark:bg-[#121c2c]">
-          <div className="text-lg font-bold">{isCreated ? 'Add Product' : 'Edit Product'}</div>
+          <div className="text-lg font-bold">{isEditing ? 'Edit Product' : 'Add Product'}</div>
           <button type="button" className="text-white-dark hover:text-dark" onClick={() => { onClose(false) }}>
             <CloseIcon />
           </button>
@@ -101,14 +144,44 @@ const ProductModal = ({
           <div className="h-[550px] overflow-y-scroll">
             <Formik<OrderProduct>
                 initialValues={initialValues}
+                enableReinitialize={true}
                 validationSchema={orderProductSchema}
                 onSubmit={handleSubmit}
               >
                 {({ errors, submitCount, setFieldValue, values }) => {
+                  const selectedExtraWorks = plannedExtraWorksFormValues
+                    .filter((extraWork) => extraWork.checked)
+                    .map((extraWork) => ({
+                      order_product_id: Number(values.id ?? 0),
+                      extra_work_id: Number(extraWork.extra_work_id),
+                      amount: Number(extraWork.amount),
+                      extra_work_name: extraWork.extra_work_name,
+                      price: Number(extraWork.price)
+                    }))
+                  const productPreview: OrderProduct = {
+                    ...values,
+                    order_id: Number(values.order_id ?? 0),
+                    qty: Number(values.qty ?? 0),
+                    height: Number(values.height ?? 0),
+                    width: Number(values.width ?? 0),
+                    product_config_id: Number(values.product_config_id ?? 0),
+                    type_of_work_id: Number(values.type_of_work_id ?? 0),
+                    storefront_area: Number(values.storefront_area ?? 0),
+                    product_category_id: Number(values.product_category_id ?? 0),
+                    type_of_product_id: Number(values.type_of_product_id ?? 0),
+                    pivot_cost: Number(values.pivot_cost ?? 0),
+                    new_price_storefront: Number(values.new_price_storefront ?? 0),
+                    extra_works: selectedExtraWorks
+                  }
+                  const calculatedUnitPrice = getProductPrice(productPreview, productCosts)
+                  const calculatedExtraWorkPrice = getProductExtraWorkPrice(productPreview) ?? 0
+                  const calculatedTotalPrice = productPreview.type_of_product_id !== STOREFRONT_CATEGORY
+                    ? calculatedUnitPrice * Number(productPreview.qty ?? 0)
+                    : calculatedUnitPrice
                   const storefrontBasePrice = productCosts.find(
                     (productCost) =>
-                      productCost.product_config_id === values.product_config_id &&
-                      productCost.type_of_work_id === values.type_of_work_id
+                      Number(productCost.product_config_id) === Number(values.product_config_id) &&
+                      Number(productCost.type_of_work_id) === Number(values.type_of_work_id)
                   )?.price
                   const storefrontBasePriceLabel = storefrontBasePrice !== undefined ? formatPrice(storefrontBasePrice) : null
 
@@ -127,21 +200,15 @@ const ProductModal = ({
                             onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                               const id = parseInt(e.target.value)
                               setFieldValue('type_of_product_id', id)
+                              setFieldValue('product_category_id', 0)
+                              setFieldValue('product_config_id', 0)
                               setProductConfigOptions([])
                               if (id !== 3) {
                                 setFieldValue('storefront_area', 0)
+                                setFieldValue('new_price_storefront', 0)
                               }
                               setProductCategoryOptions(productCategories.filter((productCategory) => productCategory.type_of_products_id === id))
-
-                              const extraWorks = typeOfProducts.find((typeOfProduct) => typeOfProduct.id === id)?.extra_works.map((extraWork) => ({
-                                extra_work_id: extraWork.id,
-                                extra_work_name: extraWork.name,
-                                extra_work_unit: extraWork.unit,
-                                amount: 0,
-                                checked: false,
-                                price: extraWork.price
-                              })) ?? []
-                              setPlannedExtraWorksFormValues(extraWorks)
+                              setPlannedExtraWorksFormValues(buildExtraWorkFormValues(id))
                             }}
                           >
                             <option value="0">Type of Product</option>
@@ -163,6 +230,7 @@ const ProductModal = ({
                               onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                                 const id = parseInt(e.target.value)
                                 setFieldValue('product_category_id', id)
+                                setFieldValue('product_config_id', 0)
                                 setProductConfigOptions(productConfigs.filter((productConfig) => productConfig.product_categories_id === id))
                               }}
                             >
@@ -251,6 +319,24 @@ const ProductModal = ({
                           </Field>
                           {(submitCount && errors.type_of_work_id) ? <InputError message={errors.type_of_work_id} className="mt-2" /> : ''}
                         </div>
+                        <div>
+                          <label htmlFor="calculated_unit_price">Unit Price</label>
+                          <input
+                            id="calculated_unit_price"
+                            className="form-input text-right bg-slate-50"
+                            value={formatPrice(calculatedUnitPrice)}
+                            readOnly
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="calculated_total_price">Total Price</label>
+                          <input
+                            id="calculated_total_price"
+                            className="form-input text-right bg-slate-50"
+                            value={formatPrice(calculatedTotalPrice + calculatedExtraWorkPrice)}
+                            readOnly
+                          />
+                        </div>
 
                         <div className='col-span-3'>
                             <label htmlFor="notes">Notes</label>
@@ -297,7 +383,7 @@ const ProductModal = ({
                           </div>
                           </>
                         )}
-                          {(values.product_config_id === 30 && service === SERVICES.DELIVERY_AND_INSTALLATION) && (
+                          {(values.product_config_id === PIVOT_CONFIG && service === SERVICES.DELIVERY_AND_INSTALLATION) && (
                           <div className={submitCount ? (errors.pivot_cost) ? 'has-error' : 'has-success' : ''}>
                             <label htmlFor="pivot_cost">Pivot Cost</label>
                             <Field
@@ -393,7 +479,7 @@ const ProductModal = ({
                       onClose(false)
                     }}>Cancel</button>
                     <PrimaryButton className="btn btn-primary" type='submit'>
-                      Add Product
+                      {isEditing ? 'Update Product' : 'Add Product'}
                     </PrimaryButton>
                   </div>
                 </Form>

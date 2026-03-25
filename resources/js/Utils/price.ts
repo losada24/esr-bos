@@ -35,8 +35,10 @@ export const getProductPrice = (
   product: OrderProduct,
   productCost: ProductCost[]
 ) => {
+  const productConfigId = Number(product.product_config_id)
+  const typeOfWorkId = Number(product.type_of_work_id)
   const productCostPrice = productCost.find((productCost) =>
-    productCost.product_config_id === product.product_config_id && productCost.type_of_work_id === product.type_of_work_id
+    Number(productCost.product_config_id) === productConfigId && Number(productCost.type_of_work_id) === typeOfWorkId
   )
 
   let price: number = parseFloat(productCostPrice?.price.toString() ?? '0')

@@ -102,8 +102,8 @@ const ProductTable = ({
               const isExpanded = expandedRows.includes(index)
               const storefrontBasePrice = product_costs.find(
                 (productCost) =>
-                  productCost.product_config_id === product.product_config_id &&
-                  productCost.type_of_work_id === product.type_of_work_id
+                  Number(productCost.product_config_id) === Number(product.product_config_id) &&
+                  Number(productCost.type_of_work_id) === Number(product.type_of_work_id)
               )?.price
               const storefrontBasePriceLabel = storefrontBasePrice !== undefined ? formatPrice(storefrontBasePrice) : null
               const parsedStorefrontPrice = Number(product.new_price_storefront ?? 0) || 0
@@ -152,6 +152,15 @@ const ProductTable = ({
 
         <td className="border-t px-6 py-4 align-top">
         <div className="flex items-center space-x-2">
+          <button
+            onClick={(e) => {
+              e.preventDefault()
+              updateOrderProduct(index)
+            }}
+            title="Edit Product"
+          >
+            <EditIcon />
+          </button>
           <button
             onClick={(e) => {
               e.preventDefault()
