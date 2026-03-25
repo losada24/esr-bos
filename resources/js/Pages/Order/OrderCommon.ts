@@ -275,30 +275,31 @@ type OrderProductFormValues = OrderProduct & {
 export const getOrderProducts = (orderProduct: OrderProductFormValues) => {
   return {
     id: orderProduct.id,
-    order_id: orderProduct.order_id,
-    qty: orderProduct.qty,
-    height: orderProduct.height,
-    width: orderProduct.width,
-    unit_price: orderProduct.unit_price,
-    total_price: orderProduct.total_price,
-    total_price_with_extraworks: orderProduct.total_price_with_extraworks,
-    unit_price_with_extraworks: orderProduct.unit_price_with_extraworks,
-    extra_work_price: orderProduct.extra_work_price,
+    order_id: Number(orderProduct.order_id),
+    qty: Number(orderProduct.qty),
+    height: Number(orderProduct.height),
+    width: Number(orderProduct.width),
+    unit_price: Number(orderProduct.unit_price),
+    total_price: Number(orderProduct.total_price),
+    total_price_with_extraworks: Number(orderProduct.total_price_with_extraworks),
+    unit_price_with_extraworks: Number(orderProduct.unit_price_with_extraworks),
+    extra_work_price: Number(orderProduct.extra_work_price),
     notes: orderProduct.notes,
-    product_config_id: orderProduct.product_config_id,
-    type_of_work_id: orderProduct.type_of_work_id,
-    storefront_area: orderProduct.storefront_area,
-    new_price_storefront: orderProduct.new_price_storefront,
-    installation_other_level: orderProduct.installation_other_level,
-    product_category_id: orderProduct.product_category_id,
-    type_of_product_id: orderProduct.type_of_product_id,
+    product_config_id: Number(orderProduct.product_config_id),
+    type_of_work_id: Number(orderProduct.type_of_work_id),
+    storefront_area: Number(orderProduct.storefront_area),
+    new_price_storefront: Number(orderProduct.new_price_storefront),
+    installation_other_level: Boolean(orderProduct.installation_other_level),
+    product_category_id: Number(orderProduct.product_category_id),
+    type_of_product_id: Number(orderProduct.type_of_product_id),
+    pivot_cost: Number(orderProduct.pivot_cost ?? 0),
     extra_works: orderProduct.order_product_extra_works?.map((extra_work: OrderProductEstraWorkPivot) => {
       return {
-        order_product_id: extra_work.pivot.order_product_id,
-        extra_work_id: extra_work.pivot.extra_work_id,
-        amount: extra_work.pivot.amount,
+        order_product_id: Number(extra_work.pivot.order_product_id),
+        extra_work_id: Number(extra_work.pivot.extra_work_id),
+        amount: Number(extra_work.pivot.amount),
         extra_work_name: extra_work.name,
-        price: extra_work.pivot.price
+        price: Number(extra_work.pivot.price)
       }
     })
   }

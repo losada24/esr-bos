@@ -217,7 +217,7 @@ const ServiceForm = ({
     values.order_products?.map((orderProduct) => getOrderProducts(orderProduct)) ?? []
   )
   const [showProductModal, setShowProductModal] = useState<boolean>(false)
-  const [isCreated] = useState<boolean>(true)
+  const [editingProductIndex, setEditingProductIndex] = useState<number | null>(null)
   const [attachmentsArray, setAttachmentsList] = useState<Attachment[]>(attachments ?? [])
   const pendingAttachmentFiles = Array.isArray(values.attachments)
     ? values.attachments.filter(isBrowserFile)
@@ -458,20 +458,32 @@ const ServiceForm = ({
     && values.payment_schedule_type
   const isProjectAmountLocked = !isCreate && Boolean(values.has_contract_signed)
 
-  const addOrderProduct = (orderProduct: OrderProduct) => {
-    const orderProductsList = [...orderProducts, orderProduct]
-    setOrderProducts(orderProductsList)
-    setFieldValue('orderProducts', orderProductsList)
-  }
-
   const removeOrderProduct = (index: number) => {
     const orderProductList = orderProducts.filter((_, i) => i !== index)
     setOrderProducts(orderProductList)
     setFieldValue('orderProducts', orderProductList)
+    setFieldValue('order_products', orderProductList)
+  }
+
+  const closeProductModal = () => {
+    setShowProductModal(false)
+    setEditingProductIndex(null)
+  }
+
+  const saveOrderProduct = (orderProduct: OrderProduct) => {
+    const nextOrderProducts = editingProductIndex === null
+      ? [...orderProducts, orderProduct]
+      : orderProducts.map((product, index) => (index === editingProductIndex ? orderProduct : product))
+
+    setOrderProducts(nextOrderProducts)
+    setFieldValue('orderProducts', nextOrderProducts)
+    setFieldValue('order_products', nextOrderProducts)
+    closeProductModal()
   }
 
   const updateOrderProduct = (index: number) => {
-    console.log('updateOrderProduct', index)
+    setEditingProductIndex(index)
+    setShowProductModal(true)
   }
 
   const runClientSearch = async (term: string) => {
@@ -559,6 +571,7 @@ const ServiceForm = ({
   }, [values.order_products])
   useEffect(() => {
     setFieldValue('orderProducts', orderProducts)
+    setFieldValue('order_products', orderProducts)
   }, [orderProducts, setFieldValue])
   useEffect(() => {
     if (!canSearchClient) {
@@ -1677,6 +1690,7 @@ const ServiceForm = ({
             <button
               onClick={(e) => {
                 e.preventDefault()
+                setEditingProductIndex(null)
                 setShowProductModal(true)
               }}
               className="btn btn-primary"
@@ -1720,9 +1734,9 @@ const ServiceForm = ({
         typeOfWork={values.type_of_work_id}
         listTypeOfWork={type_of_works}
         productCosts={product_costs}
-        onClose={(value: boolean) => { setShowProductModal(value) }}
-        isCreated={isCreated}
-        addOrderProduct={addOrderProduct}
+        editingProduct={editingProductIndex !== null ? orderProducts[editingProductIndex] : null}
+        onClose={() => { closeProductModal() }}
+        saveOrderProduct={saveOrderProduct}
         service={values.service ?? SERVICES.SERVICE}
       />
     </>
