@@ -155,6 +155,53 @@ test('mobile customer can request a temporary payment link', function () {
     );
 });
 
+test('mobile payment link returns a clear error when payment is already paid', function () {
+    $customer = User::factory()->create();
+    Role::findOrCreate(RoleEnum::CUSTOMER->value);
+    $customer->assignRole(RoleEnum::CUSTOMER->value);
+
+    $client = Client::factory()->create([
+        'mobile_user_id' => $customer->id,
+    ]);
+
+    $order = createHostedPaymentOrder($client);
+    $schedule = PaymentSchedule::create([
+        'order_id' => $order->id,
+        'schedule_type' => 'CUSTOMIZED',
+        'total_amount' => 100.00,
+    ]);
+
+    $installment = PaymentInstallment::create([
+        'payment_schedule_id' => $schedule->id,
+        'position' => 1,
+        'label' => 'Installment 1',
+        'percentage' => 100.00,
+        'amount' => 100.00,
+        'status' => 'PAID',
+        'paid_at' => now(),
+    ]);
+
+    $installment->movements()->create([
+        'amount' => 100.00,
+        'paid_at' => now(),
+        'paid_by' => null,
+        'method' => 'AUTHORIZE_NET',
+        'note' => 'Test full payment',
+    ]);
+
+    Sanctum::actingAs($customer, ['*']);
+
+    $response = $this->postJson('/api/mobile/payment-link', [
+        'payment_type' => 'quota',
+        'payment_id' => $installment->id,
+    ]);
+
+    $response->assertStatus(409)
+        ->assertJson([
+            'message' => "Payment installment [{$installment->id}] is already paid.",
+        ]);
+});
+
 test('temporary payment link opens the hosted payment form', function () {
     config()->set('authorize_net.api_login_id', 'login');
     config()->set('authorize_net.transaction_key', 'key');

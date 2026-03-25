@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Mobile;
 
 use App\Enum\RoleEnum;
+use App\Exceptions\AuthorizeNetPaymentNotPayableException;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\PaymentIntent;
@@ -32,11 +33,17 @@ class MobilePaymentLinkController extends Controller
             'payment_id' => ['required', 'integer', 'min:1'],
         ]);
 
-        $payment = $this->paymentResolver->resolve(
-            $validated['payment_type'],
-            (int) $validated['payment_id'],
-            'mobile'
-        );
+        try {
+            $payment = $this->paymentResolver->resolve(
+                $validated['payment_type'],
+                (int) $validated['payment_id'],
+                'mobile'
+            );
+        } catch (AuthorizeNetPaymentNotPayableException $exception) {
+            return response()->json([
+                'message' => $exception->getMessage(),
+            ], 409);
+        }
 
         /** @var Order $order */
         $order = $payment['order'];
