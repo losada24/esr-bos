@@ -53,6 +53,9 @@ Route::get('/payments/authorize-net/complete', [AuthorizeNetHostedPaymentControl
 Route::get('/payments/authorize-net/cancel', [AuthorizeNetHostedPaymentController::class, 'cancel'])
   ->name('authorize-net.payments.cancel');
 
+Route::get('/payments/authorize-net/intent/{token}', [AuthorizeNetHostedPaymentController::class, 'showIntent'])
+  ->name('authorize-net.payments.intent.show');
+
 Route::get('/payments/authorize-net/{paymentType}/{paymentId}', [AuthorizeNetHostedPaymentController::class, 'show'])
   ->middleware(['auth', 'role:admin'])
   ->whereIn('paymentType', ['quota', 'change-order'])
