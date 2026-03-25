@@ -9,6 +9,7 @@ return [
     'transaction_key' => env('AUTHORIZE_NET_TRANSACTION_KEY'),
     'signature_key' => env('AUTHORIZE_NET_SIGNATURE_KEY'),
     'merchant_name' => env('AUTHORIZE_NET_MERCHANT_NAME', env('APP_NAME', 'Reylos Glass')),
+    'payment_intent_ttl_minutes' => (int) env('AUTHORIZE_NET_PAYMENT_INTENT_TTL_MINUTES', 15),
     'api_url' => env(
         'AUTHORIZE_NET_API_URL',
         $isProduction

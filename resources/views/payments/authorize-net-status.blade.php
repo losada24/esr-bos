@@ -5,16 +5,35 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ $title }}</title>
     @php
-        $isCancelled = str_contains(strtolower($title), 'cancel');
-        $accent = $isCancelled ? '#b45309' : '#15803d';
-        $accentSoft = $isCancelled ? 'rgba(245, 158, 11, 0.16)' : 'rgba(34, 197, 94, 0.16)';
-        $badge = $isCancelled ? 'Cancelled' : 'Submitted';
-        $heroTitle = $isCancelled ? 'Payment Was Not Completed' : 'Payment Submitted Successfully';
-        $heroMessage = $isCancelled
-            ? 'Your payment was cancelled before it was completed. You can close this page and return whenever you are ready to try again.'
-            : 'Thank you. Your payment request was submitted successfully. You may close this page and return to the app or website.';
-        $statusLine = $isCancelled ? 'Payment cancelled' : 'Payment submitted';
-        $timeline = $isCancelled
+        $variant = $status_variant ?? (str_contains(strtolower($title), 'cancel') ? 'cancel' : 'complete');
+        $isCancelled = $variant === 'cancel';
+        $isNeutral = $variant === 'neutral';
+        $accent = $isNeutral ? '#1d4ed8' : ($isCancelled ? '#b45309' : '#15803d');
+        $accentSoft = $isNeutral ? 'rgba(59, 130, 246, 0.16)' : ($isCancelled ? 'rgba(245, 158, 11, 0.16)' : 'rgba(34, 197, 94, 0.16)');
+        $badge = $isNeutral ? 'Notice' : ($isCancelled ? 'Cancelled' : 'Submitted');
+        $heroTitle = $isNeutral ? $title : ($isCancelled ? 'Payment Was Not Completed' : 'Payment Submitted Successfully');
+        $heroMessage = $isNeutral
+            ? $message
+            : ($isCancelled
+                ? 'Your payment was cancelled before it was completed. You can close this page and return whenever you are ready to try again.'
+                : 'Thank you. Your payment request was submitted successfully. You may close this page and return to the app or website.');
+        $statusLine = $isNeutral ? 'Link unavailable' : ($isCancelled ? 'Payment cancelled' : 'Payment submitted');
+        $timeline = $isNeutral
+            ? [
+                [
+                    'title' => 'A new payment link is required',
+                    'text' => 'Please return to the app or website and request a fresh payment link before continuing.',
+                ],
+                [
+                    'title' => 'No payment was completed from this page',
+                    'text' => 'Your order remains unchanged until a valid payment process is started again.',
+                ],
+                [
+                    'title' => 'You may safely leave this page',
+                    'text' => 'Once you are back in the app or website, you can continue from there.',
+                ],
+            ]
+            : ($isCancelled
             ? [
                 [
                     'title' => 'No payment was completed',
@@ -42,7 +61,7 @@
                     'title' => 'You may close this page now',
                     'text' => 'You can safely return to the app or website after finishing here.',
                 ],
-            ];
+            ]);
     @endphp
     <style>
         :root {
