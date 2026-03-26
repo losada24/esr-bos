@@ -58,6 +58,93 @@ const initials = (name: string) =>
     .map((n) => n[0]?.toUpperCase())
     .join('')
 
+const LINKABLE_PATTERN = /([A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}|(?:https?:\/\/|www\.)[^\s]+|(?:[A-Z0-9-]+\.)+[A-Z]{2,}(?:\/[^\s]*)?)/gi
+const TRAILING_PUNCTUATION = /[.,!?;:]+$/
+
+const splitTrailingPunctuation = (value: string) => {
+  let linkText = value
+  let trailingText = ''
+
+  while (linkText.length > 0) {
+    const trimmed = linkText.replace(TRAILING_PUNCTUATION, '')
+    if (trimmed.length === linkText.length) {
+      break
+    }
+
+    trailingText = linkText.slice(trimmed.length) + trailingText
+    linkText = trimmed
+  }
+
+  while (linkText.endsWith(')')) {
+    const openCount = (linkText.match(/\(/g) ?? []).length
+    const closeCount = (linkText.match(/\)/g) ?? []).length
+    if (closeCount <= openCount) {
+      break
+    }
+
+    trailingText = `)${trailingText}`
+    linkText = linkText.slice(0, -1)
+  }
+
+  return { linkText, trailingText }
+}
+
+const getLinkHref = (value: string) => {
+  if (value.includes('@') && !value.startsWith('http')) {
+    return `mailto:${value}`
+  }
+
+  if (/^https?:\/\//i.test(value)) {
+    return value
+  }
+
+  return `https://${value}`
+}
+
+const renderLinkedText = (value: string) => {
+  const parts: React.ReactNode[] = []
+  let cursor = 0
+
+  for (const match of value.matchAll(LINKABLE_PATTERN)) {
+    const matchedText = match[0]
+    const start = match.index ?? 0
+
+    if (start > cursor) {
+      parts.push(value.slice(cursor, start))
+    }
+
+    const { linkText, trailingText } = splitTrailingPunctuation(matchedText)
+
+    if (linkText.length > 0) {
+      parts.push(
+        <a
+          key={`${start}-${linkText}`}
+          href={getLinkHref(linkText)}
+          target="_blank"
+          rel="noreferrer"
+          className="font-medium text-sky-600 underline decoration-sky-300 underline-offset-2 hover:text-sky-700"
+        >
+          {linkText}
+        </a>
+      )
+    } else {
+      parts.push(matchedText)
+    }
+
+    if (trailingText.length > 0) {
+      parts.push(trailingText)
+    }
+
+    cursor = start + matchedText.length
+  }
+
+  if (cursor < value.length) {
+    parts.push(value.slice(cursor))
+  }
+
+  return parts.length > 0 ? parts : value
+}
+
 const normalize = (n: NoteDTO): UiNote => ({
   id: n.id,
   body: n.content,
@@ -352,7 +439,9 @@ export default function OrderNotesForOrder({ orderId, canCreate = true, noteType
                       : (
                       <>
                         {n.title && <div className="text-sm font-semibold">{n.title}</div>}
-                        <p className="whitespace-pre-wrap text-slate-700">{n.body}</p>
+                        <div className="whitespace-pre-wrap break-words text-slate-700">
+                          {renderLinkedText(n.body)}
+                        </div>
                       </>
                         )}
                   </div>
