@@ -332,7 +332,7 @@ Route::middleware('auth')->group(function () {
         ->name('sales.assign_stand_by');
 
       Route::post('/sales/{order}/assign-request-reschedule', [SalesController::class, 'assignRequestReschedule'])
-        ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::FRONTDESK_ADMIN->value])
+        ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::FRONTDESK_ADMIN->value . '|'. RoleEnum::OWNER->value])
         ->name('sales.assign_request_reschedule');
 
       Route::post('/sales/{order}/assign-pre-contract', [SalesController::class, 'assignPreContract'])

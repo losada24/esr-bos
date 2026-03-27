@@ -47,11 +47,30 @@ use App\Support\OrderPipelineSort;
 use App\Support\QualifiedOrderDuplicateChecker;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class FrontdeskController extends Controller
 {   
     use OrderEmails, Snapshot;
     private const FRONTDESK_PAGE_SIZE = 20;
+
+    private function ensureRequestRescheduleTransitionAllowed(Order $order, string $targetStatus): void
+    {
+        if ($order->status !== OrderStatusEnum::REQUEST_RE_SCHEDULE->value) {
+            return;
+        }
+
+        if (in_array($targetStatus, [
+            OrderStatusEnum::ESTIMATE_APPT_SCHEDULE->value,
+            OrderStatusEnum::LOST_CONTRACT->value,
+        ], true)) {
+            return;
+        }
+
+        throw ValidationException::withMessages([
+            'status' => 'Orders in REQUEST RE-SCHEDULE can only move to ESTIMATE & APPT SCHEDULE or LOST CONTRACT.',
+        ]);
+    }
 
     private function frontdeskStatuses(): array
     {
@@ -466,6 +485,8 @@ class FrontdeskController extends Controller
       ? [$status, $finalStatus]
       : [$status];
     $confirmCustomerRole = (bool) ($validated['confirm_customer_role'] ?? false);
+
+    $this->ensureRequestRescheduleTransitionAllowed($order, $finalStatus);
 
     if ($finalStatus === OrderStatusEnum::REVIEW->value) {
       $order->loadMissing('client');

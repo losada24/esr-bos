@@ -16,6 +16,13 @@ class GmailService
     protected $client;
     protected $service;
 
+    private function encodeHeaderValue(string $value): string
+    {
+      return preg_match('/[^\x20-\x7E]/', $value)
+        ? '=?UTF-8?B?' . base64_encode($value) . '?='
+        : $value;
+    }
+
     public function __construct()
     {
         $this->client = new Client();
@@ -80,9 +87,11 @@ class GmailService
         $to = implode(', ', $to);
       }
 
+      $encodedSubject = $this->encodeHeaderValue((string) $subject);
+
       $email = "From: " . config('app.name') . "\r\n";
       $email .= "To: $to\r\n";
-      $email .= "Subject: $subject\r\n";
+      $email .= "Subject: $encodedSubject\r\n";
       $email .= "MIME-Version: 1.0\r\n";
       $email .= "Content-Type: multipart/mixed; boundary=\"$boundary\"\r\n\r\n";
       $email .= "--$boundary\r\n";

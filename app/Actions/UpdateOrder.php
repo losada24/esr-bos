@@ -15,6 +15,7 @@ use App\Models\OrderProduct;
 use App\Models\PaymentExtraField;
 use App\Models\PaymentSchedule;
 use App\Support\OrderFinancialEventLogger;
+use App\Support\OrderOwnerChangeNotifier;
 use App\Support\OrderPaymentInformationAuditLogger;
 use App\Support\PaymentScheduleCalculator;
 use App\Support\PaymentScheduleTemplates;
@@ -43,6 +44,11 @@ class UpdateOrder
 
   use OrderEmails, OrderStatus, Twilio, ComissionSupervisor;
 
+  public function __construct(
+    protected OrderOwnerChangeNotifier $orderOwnerChangeNotifier
+  ) {
+  }
+
   public function handle(Request $request, Order $order)
   {
     //dd($request->all());
@@ -62,6 +68,9 @@ class UpdateOrder
     try {
       $order = Order::with('comissions')->findOrFail($order->id);
       $order->loadMissing('paymentSchedule.installments');
+      $previousOwnerIds = $this->orderOwnerChangeNotifier->normalizeOwnerIds(
+        $order->owners()->pluck('users.id')->all()
+      );
       $beforePaymentInformation = OrderPaymentInformationAuditLogger::snapshot($order);
       $oldAmount = $order->project_amount;
       $newAmount = $request->project_amount;
@@ -528,7 +537,9 @@ class UpdateOrder
       $order->installationTeams()->sync($request->installation_teams ?? []);
       $order->load('installationTeams');
      
-      $order->owners()->sync($request->owners ?? []);
+      $nextOwnerIds = $this->orderOwnerChangeNotifier->normalizeOwnerIds($request->owners ?? []);
+      $order->owners()->sync($nextOwnerIds);
+      $this->orderOwnerChangeNotifier->notify($order, $previousOwnerIds, $nextOwnerIds);
       $order->syncFrameColors($request->frame_color ?? []);
       $order->orderProducts()->delete();
       $orderProductsPayload = $request->orderProducts ?? [];

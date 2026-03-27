@@ -40,19 +40,21 @@
 <p>Hello,</p>
 
 <p>
-    An estimate appointment has been scheduled for order
-    <strong>{{ $order->order_number ?? $order->name }}</strong>
-    @if($appointmentDate)
-        on <strong>{{ $appointmentDate }}</strong>
-    @endif
-    .
+    Order <strong>{{ $order->order_number ?? $order->name }}</strong> has been moved to
+    <strong>ESTIMATE &amp; APPT SCHEDULE</strong>.
 </p>
+
+@if($appointmentDate)
+    <p>The current appointment is set for <strong>{{ $appointmentDate }}</strong>.</p>
+@else
+    <p>An appointment date has not been added yet. Please review the attached sale form and the associated notes below.</p>
+@endif
 
 @if($googleCalendarUrl)
     <p><a href="{{ $googleCalendarUrl }}">Add to Google Calendar</a></p>
 @endif
 
-<p>The sale form for this appointment is attached for your review.</p>
+<p>The sale form is attached for your review.</p>
 
 @if($orderNotes->isNotEmpty())
     

@@ -164,6 +164,7 @@ const stampTaskAsUpdated = (task: Tasks): Tasks => ({
 
 const ESTIMATE_STATUS = 'ESTIMATE & APPT SCHEDULE'
 const REQUEST_RESCHEDULE_STATUS = 'REQUEST RE-SCHEDULE'
+const LOST_CONTRACT_STATUS = 'LOST CONTRACT'
 const FOLLOW_UP_STATUSES: string[] = ['FOLLOW UP', 'FOLLOW UP PROJECTS']
 const STAND_BY_STATUS = 'STAND BY'
 const DAY_IN_MS = 24 * 60 * 60 * 1000
@@ -1308,6 +1309,18 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
 
                         if (oldStatus === newStatus) return
 
+                        if (
+                          matchesStatus(oldStatus, REQUEST_RESCHEDULE_STATUS) &&
+                          !matchesStatus(newStatus, ESTIMATE_STATUS) &&
+                          !matchesStatus(newStatus, LOST_CONTRACT_STATUS)
+                        ) {
+                          setProjectList(prev =>
+                            prev.map(pipeline => ({ ...pipeline, tasks: [...pipeline.tasks] }))
+                          )
+                          window.alert('Orders in REQUEST RE-SCHEDULE can only move to ESTIMATE & APPT SCHEDULE or LOST CONTRACT.')
+                          return
+                        }
+
                         let movedTask!: Tasks
 
                         if (matchesStatus(newStatus, ESTIMATE_STATUS)) {
@@ -1454,7 +1467,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
                           return
                         }
 
-                        if (matchesStatus(newStatus, 'LOST CONTRACT')) {
+                        if (matchesStatus(newStatus, LOST_CONTRACT_STATUS)) {
                           const foundTask = projectList
                             .flatMap((pipeline) => pipeline.tasks)
                             .find((t) => Number(t.id) === Number(movedTaskId))
