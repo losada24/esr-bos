@@ -585,6 +585,35 @@ class SalesController extends Controller
     ]);
   }
 
+  private function ownerCanAccessOrder(?User $user, Order $order): bool
+  {
+    if (!$this->isOwnerRestricted($user)) {
+      return true;
+    }
+
+    return $order->owners()
+      ->where('users.id', $user->id)
+      ->exists();
+  }
+
+  private function ensureRequestRescheduleTransitionAllowed(Order $order, string $targetStatus): void
+  {
+    if ($order->status !== OrderStatusEnum::REQUEST_RE_SCHEDULE->value) {
+      return;
+    }
+
+    if (in_array($targetStatus, [
+      OrderStatusEnum::ESTIMATE_APPT_SCHEDULE->value,
+      OrderStatusEnum::LOST_CONTRACT->value,
+    ], true)) {
+      return;
+    }
+
+    throw ValidationException::withMessages([
+      'status' => 'Orders in REQUEST RE-SCHEDULE can only move to ESTIMATE & APPT SCHEDULE or LOST CONTRACT.',
+    ]);
+  }
+
   private function salesStatusColor(string $status): string
   {
     return [
@@ -763,6 +792,8 @@ class SalesController extends Controller
 
   public function updateStatus(Request $request, Order $order)
 {
+    $this->ensureRequestRescheduleTransitionAllowed($order, (string) $request->input('status'));
+
     $order->status = $request->input('status');
 
     $order->save();
@@ -778,6 +809,8 @@ class SalesController extends Controller
 
   public function assignEstimate(Request $request, Order $order)
   {
+    $this->ensureRequestRescheduleTransitionAllowed($order, OrderStatusEnum::ESTIMATE_APPT_SCHEDULE->value);
+
     $validated = $request->validate([
       'schedule_appointment' => ['nullable', 'date'],
       'owner_ids' => ['array'],
@@ -868,6 +901,8 @@ class SalesController extends Controller
           'attachments.*' => ['file', 'max:10240', 'mimes:pdf'],
         ]);
 
+        $this->ensureRequestRescheduleTransitionAllowed($order, $validated['status']);
+
         $noteContent = trim((string) ($validated['note'] ?? ''));
         $currentProjectAmount = (float) ($order->project_amount ?? 0);
         $incomingProjectAmount = (float) $validated['project_amount'];
@@ -949,6 +984,8 @@ class SalesController extends Controller
 
   public function assignStandBy(Request $request, Order $order)
   {
+    $this->ensureRequestRescheduleTransitionAllowed($order, OrderStatusEnum::STAND_BY->value);
+
     $validated = $request->validate([
       'note' => ['required', 'string'],
     ]);
@@ -1002,6 +1039,12 @@ class SalesController extends Controller
 
   public function assignRequestReschedule(Request $request, Order $order)
   {
+    if (!$this->ownerCanAccessOrder($request->user(), $order)) {
+      return response()->json([
+        'message' => 'You are not allowed to move this order to REQUEST RE-SCHEDULE.',
+      ], 403);
+    }
+
     $validated = $request->validate([
       'note' => ['required', 'string'],
     ]);
@@ -1041,7 +1084,7 @@ class SalesController extends Controller
     $order->load('owners', 'notes.user');
     // $order->load('owners', 'saleForm', 'notes.user');
 
-    $this->sendEmail($order);
+    $this->sendEmail($order, $noteContent);
 
     $schedule = $order->schedule_appointment
       ? Carbon::parse($order->schedule_appointment)
@@ -1064,6 +1107,8 @@ class SalesController extends Controller
 
   public function assignPreContract(Request $request, Order $order)
   {
+    $this->ensureRequestRescheduleTransitionAllowed($order, OrderStatusEnum::PRE_CONTRACT_APPOINTMENT->value);
+
     $validated = $request->validate([
       'note' => ['nullable', 'string'],
     ]);
@@ -1119,6 +1164,13 @@ class SalesController extends Controller
 
   public function assignContractSigned(Request $request, Order $order)
   {
+    $this->ensureRequestRescheduleTransitionAllowed(
+      $order,
+      $order->is_supply
+        ? OrderStatusEnum::ORDER_MATERIALS_AND_FILE_ORGANIZATION->value
+        : OrderStatusEnum::RECTIFICATION_OF_MEASURES_AND_HOA->value
+    );
+
     if ($request->has('type_of_financing') && trim((string) $request->input('type_of_financing')) === '') {
       $request->merge(['type_of_financing' => null]);
     }
@@ -1525,6 +1577,8 @@ class SalesController extends Controller
 
   public function assignLostContract(Request $request, Order $order)
   {
+    $this->ensureRequestRescheduleTransitionAllowed($order, OrderStatusEnum::LOST_CONTRACT->value);
+
     $validated = $request->validate([
       'loss_reason_frontdesk' => ['required', 'string', 'max:255'],
       'notes' => ['nullable', 'string'],

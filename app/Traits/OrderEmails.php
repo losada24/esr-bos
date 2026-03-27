@@ -8,6 +8,7 @@ use App\Enum\ServiceEnum;
 use App\Jobs\SendGmailEmail;
 use App\Mail\DeliveryConfirmed;
 use App\Mail\EmailAccounting;
+use App\Mail\EstimateAppointmentScheduledClient;
 use App\Mail\EstimateAppointmentScheduleSaleForm;
 use App\Mail\EstimateDeliveryInstallationDate;
 use App\Mail\EstimateMaterialArrivalDate;
@@ -21,7 +22,7 @@ use App\Models\User;
 
 trait OrderEmails {
 
-  public function sendEmail(Order $order) {
+  public function sendEmail(Order $order, ?string $requestRescheduleNote = null) {
     if ($order->status === OrderStatusEnum::PLANNED->value) {
       $users = [];
       foreach ($order->owners as $owner) {
@@ -58,21 +59,22 @@ trait OrderEmails {
         }
       }
     } else if ($order->status === OrderStatusEnum::ESTIMATE_APPT_SCHEDULE->value) {
-      if ($order->saleForm) {
+      $ownerEmails = $order->owners
+        ->pluck('email')
+        ->filter(fn ($email) => is_string($email) && trim($email) !== '')
+        ->map(fn ($email) => trim((string) $email))
+        ->unique(fn ($email) => mb_strtolower($email))
+        ->values();
 
-            $ownerEmails = [];
-          foreach ($order->owners as $owner) {
-            $ownerEmails[] = $owner->email;
-          }
-          $ownerEmails = array_merge($ownerEmails, [
-            'christian@reylosglass.com',
-          ]);
-          $ownerEmails = array_values(array_unique(array_filter($ownerEmails)));
+      foreach ($ownerEmails as $email) {
+        $mailable = new EstimateAppointmentScheduleSaleForm($order);
+        SendGmailEmail::dispatch($email, $mailable)->onQueue('emails');
+      }
 
-        foreach ($ownerEmails as $email) {
-          $mailable = new EstimateAppointmentScheduleSaleForm($order);
-          SendGmailEmail::dispatch($email, $mailable)->onQueue('emails');
-        }
+      $clientEmail = trim((string) optional($order->client)->email);
+      if ($clientEmail !== '' && !empty($order->schedule_appointment)) {
+        $mailable = new EstimateAppointmentScheduledClient($order);
+        SendGmailEmail::dispatch($clientEmail, $mailable)->onQueue('emails');
       }
     } else if ($order->status === OrderStatusEnum::PENDING_ASSIGNMENT->value || $order->status === OrderStatusEnum::COMMERCIAL_ASSIGNMENT->value) {
       if ($order->saleForm) {
@@ -95,14 +97,22 @@ trait OrderEmails {
       
     }
     else if ($order->status === OrderStatusEnum::REQUEST_RE_SCHEDULE->value) {
-      
-        $frontdeskAdminEmails = User::role([RoleEnum::FRONTDESK_ADMIN->value])->pluck('email')->toArray();
 
-        foreach ($frontdeskAdminEmails as $email) {
-          $mailable = new RequestReSchedule($order);
+        $recipientEmails = collect(array_merge(
+          $order->owners->pluck('email')->toArray(),
+          User::role([RoleEnum::OWNER_ADMIN->value])->pluck('email')->toArray(),
+          User::role([RoleEnum::FRONTDESK_ADMIN->value])->pluck('email')->toArray()
+        ))
+          ->filter(fn ($email) => is_string($email) && trim($email) !== '')
+          ->map(fn ($email) => trim((string) $email))
+          ->unique(fn ($email) => mb_strtolower($email))
+          ->values();
+
+        foreach ($recipientEmails as $email) {
+          $mailable = new RequestReSchedule($order, $requestRescheduleNote);
           SendGmailEmail::dispatch($email, $mailable)->onQueue('emails');
         }
-      
+
     }
     else if ($order->status === OrderStatusEnum::DELIVERY_CONFIRMED->value) {
       $users = [];

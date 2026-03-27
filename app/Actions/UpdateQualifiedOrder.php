@@ -12,6 +12,7 @@ use App\Models\OrderCompanyContact;
 use App\Models\PaymentSchedule;
 use App\Models\User;
 use App\Support\OrderFinancialEventLogger;
+use App\Support\OrderOwnerChangeNotifier;
 use App\Support\OrderPaymentInformationAuditLogger;
 use App\Support\PaymentScheduleCalculator;
 use App\Support\PaymentScheduleTemplates;
@@ -22,7 +23,8 @@ use Illuminate\Validation\ValidationException;
 class UpdateQualifiedOrder
 {
     public function __construct(
-        protected QualifiedOrderDuplicateChecker $qualifiedOrderDuplicateChecker
+        protected QualifiedOrderDuplicateChecker $qualifiedOrderDuplicateChecker,
+        protected OrderOwnerChangeNotifier $orderOwnerChangeNotifier
     ) {
     }
 
@@ -30,6 +32,9 @@ class UpdateQualifiedOrder
     {
         return DB::transaction(function () use ($request, $order) {
             $order->loadMissing('paymentSchedule.installments');
+            $previousOwnerIds = $this->orderOwnerChangeNotifier->normalizeOwnerIds(
+                $order->owners()->pluck('users.id')->all()
+            );
             $beforePaymentInformation = OrderPaymentInformationAuditLogger::snapshot($order);
             $payload = [
                 'client_id' => $request->client_id,
@@ -511,17 +516,15 @@ class UpdateQualifiedOrder
                     ->forceDelete();
             }
 
-            if ($request->filled('owner_ids')) {
-                $ownerIds = array_filter(
-                    array_map('intval', $request->input('owner_ids', [])),
-                    fn ($id) => $id > 0
-                );
+            if ($request->exists('owner_ids')) {
+                $ownerIds = $this->orderOwnerChangeNotifier->normalizeOwnerIds($request->input('owner_ids', []));
                 $validOwners = User::query()
                     ->whereIn('id', $ownerIds)
                     ->pluck('id')
                     ->toArray();
                 $order->owners()->sync($validOwners);
                 $order->owner_ids = $validOwners;
+                $this->orderOwnerChangeNotifier->notify($order, $previousOwnerIds, $validOwners);
             }
 
             $refreshedOrder = $order->refresh()->load(

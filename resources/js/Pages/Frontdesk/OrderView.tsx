@@ -219,6 +219,7 @@ const ORDER_STORAGE_TRANSITION_STATUSES = ['ACCOUNT RECEIPT', 'REVIEW'] as const
 
 const REQUEST_RESCHEDULE_STATUS = 'REQUEST RE-SCHEDULE'
 const ESTIMATE_STATUS = 'ESTIMATE & APPT SCHEDULE'
+const LOST_CONTRACT_STATUS = 'LOST CONTRACT'
 const FOLLOW_UP_STATUSES = ['FOLLOW UP', 'FOLLOW UP PROJECTS'] as const
 
 const pad = (value: number): string => value.toString().padStart(2, '0')
@@ -1213,7 +1214,15 @@ export default function ShowStatusOrder ({
         : (actualStatusValue ? [actualStatusValue] : [])
     }
 
-    if (orderInSalesFlow && isAdminOrOwnerAdmin) {
+    if (orderInSalesFlow && matchesStatus(actualStatusValue, REQUEST_RESCHEDULE_STATUS)) {
+      base = [REQUEST_RESCHEDULE_STATUS, ESTIMATE_STATUS, LOST_CONTRACT_STATUS]
+    }
+
+    if (
+      orderInSalesFlow &&
+      isAdminOrOwnerAdmin &&
+      !matchesStatus(actualStatusValue, REQUEST_RESCHEDULE_STATUS)
+    ) {
       for (const extraStatus of FRONTDESK_SALES_DROPDOWN_EXTRA_STATUSES) {
         if (!base.some((statusOption) => matchesStatus(statusOption, extraStatus))) {
           base.push(extraStatus)
@@ -1498,6 +1507,15 @@ export default function ShowStatusOrder ({
 
     setStatusChangeError(null)
 
+    if (
+      matchesStatus(actualStatusValue, REQUEST_RESCHEDULE_STATUS) &&
+      !matchesStatus(targetStatus, ESTIMATE_STATUS) &&
+      !matchesStatus(targetStatus, LOST_CONTRACT_STATUS)
+    ) {
+      setStatusChangeError('Orders in REQUEST RE-SCHEDULE can only move to ESTIMATE & APPT SCHEDULE or LOST CONTRACT.')
+      return
+    }
+
     if (orderInOrderStorageFlow) {
       if (!isOrderStorageTransitionStatus(actualStatusValue) || !isOrderStorageTransitionStatus(targetStatus)) {
         setStatusChangeError('Only ACCOUNT RECEIPT and REVIEW can be updated from this workflow.')
@@ -1609,7 +1627,7 @@ export default function ShowStatusOrder ({
       return
     }
 
-    if (matchesStatus(targetStatus, 'LOST CONTRACT')) {
+    if (matchesStatus(targetStatus, LOST_CONTRACT_STATUS)) {
       setPendingLostContract({ oldStatus: actualStatusValue, newStatus: targetStatus })
       setLostContractModalOpen(true)
       return
@@ -4222,6 +4240,7 @@ export default function ShowStatusOrder ({
         taskTitle={order.name ?? ''}
         initialScheduleDate={scheduleInitialValues.scheduleDate}
         initialOwnerIds={scheduleInitialValues.ownerIds}
+        initialOwners={order.owners ?? []}
         ownerOptions={safeOwnerOptions}
         error={scheduleError}
         saving={scheduleSaving}

@@ -112,7 +112,8 @@ const OrderQualifiedForm = ({
   showOwnerField = false,
   showPaymentInformationSection = false,
   showProjectAmountOnlySection = false,
-  projectAmountReadOnly = false
+  projectAmountReadOnly = false,
+  appointmentDateReadOnly = false
 }: {
   submitCount: number
   errors: FormikErrors<OrderFormValues>
@@ -144,6 +145,7 @@ const OrderQualifiedForm = ({
   showPaymentInformationSection?: boolean
   showProjectAmountOnlySection?: boolean
   projectAmountReadOnly?: boolean
+  appointmentDateReadOnly?: boolean
 }) => {
   const jobAddressInputRef = useRef<HTMLInputElement | null>(null)
   const autocompleteInstanceRef = useRef<google.maps.places.Autocomplete | null>(null)
@@ -781,13 +783,15 @@ const OrderQualifiedForm = ({
                            <Flatpickr
                              options={{
                                enableTime: true,
-                               dateFormat: 'Y-m-d H:i'
+                               dateFormat: 'Y-m-d H:i',
+                               clickOpens: !appointmentDateReadOnly
                              }}
                              name="schedule_appointment"
                              className="form-input"
                              value={values.schedule_appointment ?? ''}
+                             disabled={appointmentDateReadOnly}
                              onChange={([date]) => {
-                               if (!date) return
+                               if (appointmentDateReadOnly || !date) return
                                const year = date.getFullYear()
                                const month = String(date.getMonth() + 1).padStart(2, '0') // Meses empiezan en 0
                                const day = String(date.getDate()).padStart(2, '0')

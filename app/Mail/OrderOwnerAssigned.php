@@ -13,14 +13,17 @@ use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Storage;
 
-class EstimateAppointmentScheduleSaleForm extends Mailable implements ShouldQueue
+class OrderOwnerAssigned extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
     protected ?string $tempAttachmentPath = null;
 
-    public function __construct(protected Order $order)
-    {
+    public function __construct(
+        protected Order $order,
+        protected string $recipientName,
+        protected array $currentOwnerNames = []
+    ) {
     }
 
     protected function ensureRelationsLoaded(): void
@@ -36,23 +39,22 @@ class EstimateAppointmentScheduleSaleForm extends Mailable implements ShouldQueu
     public function envelope(): Envelope
     {
         $this->ensureRelationsLoaded();
-        $clientName = optional($this->order->client)->name ?? 'Unknown client';
 
         return new Envelope(
-            subject: "Estimate & appointment schedule assigned - {$clientName}",
+            subject: 'Order reassigned to you - ' . ($this->order->name ?? ('Order #' . $this->order->id)),
         );
     }
 
     public function content(): Content
     {
         $this->ensureRelationsLoaded();
-        $orderNotes = $this->order->orderNotes->sortBy('created_at');
 
         return new Content(
-            view: 'emails.estimate-appointment-schedule',
+            view: 'emails.order-owner-assigned',
             with: [
                 'order' => $this->order,
-                'orderNotes' => $orderNotes,
+                'recipientName' => $this->recipientName,
+                'currentOwnerNames' => $this->currentOwnerNames,
             ],
         );
     }
