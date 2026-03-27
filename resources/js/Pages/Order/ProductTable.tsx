@@ -42,7 +42,11 @@ const ProductTable = ({
   }
   const [expandedRows, setExpandedRows] = useState<number[]>([])
 
-  const getTypeOfWork = (id: number) => {
+  const getTypeOfWork = (id: number | null) => {
+    if (id == null) {
+      return '-'
+    }
+
     return type_of_works.find((type) => type.id === id)?.name
   }
   const getProductCategory = (id: number) => {

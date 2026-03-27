@@ -533,10 +533,15 @@ class UpdateOrder
       $order->orderProducts()->delete();
       $orderProductsPayload = $request->orderProducts ?? [];
       foreach ($orderProductsPayload as $product) {
+        $typeOfWorkId = $product['type_of_work_id'] ?? null;
+        if ($typeOfWorkId === 0 || $typeOfWorkId === '0' || $typeOfWorkId === '') {
+          $typeOfWorkId = null;
+        }
+
         $orderProduct = OrderProduct::create([
           'order_id' => $order->id,
           'product_config_id' => $product['product_config_id'],
-          'type_of_work_id' => $product['type_of_work_id'],
+          'type_of_work_id' => $typeOfWorkId,
           'height' => $product['height'],
           'width' => $product['width'],
           'qty' => $product['qty'],

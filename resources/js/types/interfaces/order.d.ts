@@ -32,7 +32,7 @@ export interface Order {
   user?: User
   client?: Client
   additional_travel_costs?: number
-  type_of_work_id: number
+  type_of_work_id: number | null
   typeOfWork?: TypeOfWork // TODO: Remove this line
   type_of_work?: TypeOfWork
   type_of_housing_id: number
@@ -165,7 +165,7 @@ export interface OrderProduct {
   order?: Order
   product_config_id: number
   productConfig?: ProductConfig
-  type_of_work_id: number
+  type_of_work_id: number | null
   typeOfWork?: TypeOfWork
   storefront_area: number
   installation_other_level: boolean

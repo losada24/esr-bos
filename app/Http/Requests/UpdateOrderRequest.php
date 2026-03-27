@@ -38,6 +38,18 @@ class UpdateOrderRequest extends FormRequest
         if ($this->input('order_type') === '') {
             $this->merge(['order_type' => null]);
         }
+
+        $orderProducts = $this->input('orderProducts');
+        if (is_array($orderProducts)) {
+            foreach ($orderProducts as $index => $product) {
+                $typeOfWorkId = $product['type_of_work_id'] ?? null;
+                if ($typeOfWorkId === 0 || $typeOfWorkId === '0' || $typeOfWorkId === '') {
+                    $orderProducts[$index]['type_of_work_id'] = null;
+                }
+            }
+
+            $this->merge(['orderProducts' => $orderProducts]);
+        }
     }
 
     private function shouldValidateUniquePhone(): bool
@@ -346,6 +358,7 @@ class UpdateOrderRequest extends FormRequest
           'orderProducts.*.type_of_product_id' => 'required_with:orderProducts|integer|exists:type_of_products,id',
           'orderProducts.*.product_category_id' => 'required_with:orderProducts|integer|exists:product_categories,id',
           'orderProducts.*.product_config_id' => 'required_with:orderProducts|integer|exists:product_configs,id',
+          'orderProducts.*.type_of_work_id' => 'nullable|integer|exists:type_of_works,id',
           'orderProducts.*.width' => 'nullable|numeric',
           'orderProducts.*.height' => 'nullable|numeric',
           'orderProducts.*.qty' => 'required_with:orderProducts|numeric',
