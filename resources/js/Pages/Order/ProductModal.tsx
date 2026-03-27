@@ -3,7 +3,7 @@ import Modal from '@/Components/Modal'
 import CloseIcon from '@/Components/Icons/CloseIcon'
 import { type OrderProduct, type ProductCategory, type ProductConfig, type TypeOfProduct, type ProductCost, TypeOfWork } from '@/types'
 import { Field, Form, Formik, type FormikHelpers } from 'formik'
-import { type OrderProductExtraWorksFormValues, orderProductSchema, getValueIdNotNull } from './OrderCommon'
+import { type OrderProductExtraWorksFormValues, orderProductSchema } from './OrderCommon'
 import InputError from '@/Components/InputError'
 import PrimaryButton from '@/Components/PrimaryButton'
 import { getProductPriceWithExtraWorks, getProductPrice, getProductExtraWorkPrice, formatPrice } from '@/Utils/price'
@@ -27,7 +27,7 @@ const ProductModal = ({
   typeOfProducts: TypeOfProduct[]
   productCategories: ProductCategory[]
   productConfigs: ProductConfig[]
-  typeOfWork: number
+  typeOfWork: number | null
   listTypeOfWork: TypeOfWork[]
   productCosts: ProductCost[]
   service: string
@@ -106,9 +106,12 @@ const ProductModal = ({
 
   const handleSubmit = async (values: any, _helpers: FormikHelpers<OrderProduct>) => {
     const plannedExtraWorks = plannedExtraWorksFormValues.filter((extraWork) => extraWork.checked)
+    const resolvedTypeOfWorkId = Number(values.type_of_work_id ?? 0) > 0
+      ? Number(values.type_of_work_id)
+      : null
     const product: OrderProduct = {
       ...values,
-      type_of_work_id: values.type_of_work_id !== 0 ? values.type_of_work_id : getValueIdNotNull(values.type_of_work_id),
+      type_of_work_id: resolvedTypeOfWorkId,
       extra_works: plannedExtraWorks
     }
     const unit_price = getProductPrice(product, productCosts)

@@ -43,6 +43,18 @@ class StoreOrderRequest extends FormRequest
         if ($this->input('down_payment') === '') {
             $this->merge(['down_payment' => null]);
         }
+
+        $orderProducts = $this->input('orderProducts');
+        if (is_array($orderProducts)) {
+            foreach ($orderProducts as $index => $product) {
+                $typeOfWorkId = $product['type_of_work_id'] ?? null;
+                if ($typeOfWorkId === 0 || $typeOfWorkId === '0' || $typeOfWorkId === '') {
+                    $orderProducts[$index]['type_of_work_id'] = null;
+                }
+            }
+
+            $this->merge(['orderProducts' => $orderProducts]);
+        }
     }
 
     /**
@@ -300,6 +312,7 @@ class StoreOrderRequest extends FormRequest
             'orderProducts.*.type_of_product_id' => 'required|integer|exists:type_of_products,id',
             'orderProducts.*.product_category_id' => 'required|integer|exists:product_categories,id',
             'orderProducts.*.product_config_id' => 'required|integer|exists:product_configs,id',
+            'orderProducts.*.type_of_work_id' => 'nullable|integer|exists:type_of_works,id',
             'orderProducts.*.width' => 'nullable|numeric',
             'orderProducts.*.height' => 'nullable|numeric',
             'orderProducts.*.qty' => 'required|numeric',

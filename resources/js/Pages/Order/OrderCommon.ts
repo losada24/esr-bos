@@ -286,7 +286,7 @@ export const getOrderProducts = (orderProduct: OrderProductFormValues) => {
     extra_work_price: Number(orderProduct.extra_work_price),
     notes: orderProduct.notes,
     product_config_id: Number(orderProduct.product_config_id),
-    type_of_work_id: Number(orderProduct.type_of_work_id),
+    type_of_work_id: orderProduct.type_of_work_id == null ? null : Number(orderProduct.type_of_work_id),
     storefront_area: Number(orderProduct.storefront_area),
     new_price_storefront: Number(orderProduct.new_price_storefront),
     installation_other_level: Boolean(orderProduct.installation_other_level),
