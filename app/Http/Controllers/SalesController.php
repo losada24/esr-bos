@@ -596,6 +596,19 @@ class SalesController extends Controller
       ->exists();
   }
 
+  private function canMoveOrderToEstimate(?User $user): bool
+  {
+    if (!$user) {
+      return false;
+    }
+
+    return $user->hasAnyRole([
+      RoleEnum::ADMIN->value,
+      RoleEnum::OWNER_ADMIN->value,
+      RoleEnum::FRONTDESK_ADMIN->value,
+    ]);
+  }
+
   private function ensureRequestRescheduleTransitionAllowed(Order $order, string $targetStatus): void
   {
     if ($order->status !== OrderStatusEnum::REQUEST_RE_SCHEDULE->value) {
@@ -809,6 +822,12 @@ class SalesController extends Controller
 
   public function assignEstimate(Request $request, Order $order)
   {
+    if (!$this->canMoveOrderToEstimate($request->user())) {
+      return response()->json([
+        'message' => 'You are not allowed to move this order to ESTIMATE & APPT SCHEDULE.',
+      ], 403);
+    }
+
     $this->ensureRequestRescheduleTransitionAllowed($order, OrderStatusEnum::ESTIMATE_APPT_SCHEDULE->value);
 
     $validated = $request->validate([

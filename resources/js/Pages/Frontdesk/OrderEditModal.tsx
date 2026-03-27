@@ -30,6 +30,7 @@ interface OrderEditModalProps {
   showPaymentInformationSection?: boolean
   showProjectAmountOnlySection?: boolean
   projectAmountReadOnly?: boolean
+  canManageOwners?: boolean
   attachments?: Attachment[]
   errorMessage?: string | null
 }
@@ -57,11 +58,12 @@ export default function OrderEditModal ({
   showPaymentInformationSection = false,
   showProjectAmountOnlySection = false,
   projectAmountReadOnly = false,
+  canManageOwners = false,
   attachments,
   errorMessage
 }: OrderEditModalProps) {
   const hasInitialOwners = Array.isArray(initialValues.owner_ids) && initialValues.owner_ids.length > 0
-  const shouldShowOwnerField = hasInitialOwners
+  const shouldShowOwnerField = hasInitialOwners && canManageOwners
   return (
     <Formik<OrderFormValues>
       initialValues={initialValues}

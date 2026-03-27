@@ -5,7 +5,7 @@ import type { RequestPayload } from '@inertiajs/core'
 import { ReactSortable } from 'react-sortablejs'
 import { type Role, type PageProps, type Pipelines, type Tasks } from '@/types'
 import AuthenticatedCalendarLayout from '@/Layouts/AuthenticatedCalendarLayout'
-import { isAccountManager, isAdmin, isServiceManager, isSupervisor, isInstaller, isPaymentCoordinator, isOwner } from '@/Utils/user'
+import { isAccountManager, isAdmin, isServiceManager, isSupervisor, isInstaller, isPaymentCoordinator, isOwner, isOwnerAdmin, isFrontdeskAdmin } from '@/Utils/user'
 
 import EditIcon from '@/Components/Icons/EditIcon'
 import { tagClasses, type TagColor } from '@/Utils/tags'
@@ -301,13 +301,15 @@ const normalizeStatusValue = (value: string): string => value.replace(/\s+/g, ' 
 const matchesStatus = (value: string, target: string): boolean => normalizeStatusValue(value) === normalizeStatusValue(target)
 
 export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order_types, statuses, owners, supervisors, created_by_users, tags, filters, sort, methods_of_payment, type_of_financing, payment_schedule_templates }: PageProps & { data: Pipelines[], lossReasonFrontdesk: string [], sources: string[], order_types: string[], statuses: string[], owners: OwnerOption[], supervisors: IdOption[], created_by_users: IdOption[], tags: TagOption[], filters: BoardFilters, sort: { sort_by?: string, sort_dir?: string }, methods_of_payment: string[], type_of_financing: string[], payment_schedule_templates: PaymentScheduleTemplates }) {
-  const IS_ADMIN = isAdmin(auth.user.roles.map((role: Role) => role.name))
-  const IS_ACCOUNT_MANAGER = isAccountManager(auth.user.roles.map((role: Role) => role.name))
-  const IS_SUPERVISOR = isSupervisor(auth.user.roles.map((role: Role) => role.name))
-  const IS_SERVICE_MANAGER = isServiceManager(auth.user.roles.map((role: Role) => role.name))
-  const IS_INSTALLER = isInstaller(auth.user.roles.map((role: Role) => role.name))
-  const IS_PAYMENT_COORDINATOR = isPaymentCoordinator(auth.user.roles.map((role: Role) => role.name))
-  const IS_OWNER = isOwner(auth.user.roles.map((role: Role) => role.name))
+  const roleNames = auth.user.roles.map((role: Role) => role.name)
+  const IS_ADMIN = isAdmin(roleNames)
+  const IS_ACCOUNT_MANAGER = isAccountManager(roleNames)
+  const IS_SUPERVISOR = isSupervisor(roleNames)
+  const IS_SERVICE_MANAGER = isServiceManager(roleNames)
+  const IS_INSTALLER = isInstaller(roleNames)
+  const IS_PAYMENT_COORDINATOR = isPaymentCoordinator(roleNames)
+  const IS_OWNER = isOwner(roleNames)
+  const CAN_MOVE_TO_ESTIMATE = isAdmin(roleNames) || isOwnerAdmin(roleNames) || isFrontdeskAdmin(roleNames)
 
   const [projectList, setProjectListState] = useState<Pipelines[]>(() => data)
   const [showModal, setShowModal] = useState(false)
@@ -1329,6 +1331,14 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
                             .find((t) => Number(t.id) === Number(movedTaskId))
 
                           if (!foundTask) {
+                            return
+                          }
+
+                          if (!CAN_MOVE_TO_ESTIMATE) {
+                            setProjectList(prev =>
+                              prev.map(pipeline => ({ ...pipeline, tasks: [...pipeline.tasks] }))
+                            )
+                            window.alert('Only Admin, Frontdesk Admin, or Owner Admin can move an order to ESTIMATE & APPT SCHEDULE.')
                             return
                           }
 
