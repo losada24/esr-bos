@@ -34,6 +34,18 @@ function createSalesAdmin(): User
     return $user;
 }
 
+function createSalesUserWithRoles(array $roles): User
+{
+    foreach ($roles as $role) {
+        Role::findOrCreate($role);
+    }
+
+    $user = User::factory()->create();
+    $user->assignRole($roles);
+
+    return $user;
+}
+
 function createSalesOrder(?string $status = null): Order
 {
     $status ??= OrderStatusEnum::REQUEST_RE_SCHEDULE->value;
@@ -144,6 +156,43 @@ test('request re-schedule orders can move back to estimate and appointment sched
         ->postJson(route('sales.assign_estimate', ['order' => $order->id]), [
             'schedule_appointment' => now()->addDay()->toDateTimeString(),
             'owner_ids' => [],
+        ]);
+
+    $response->assertOk();
+    $response->assertJsonPath('order.status', OrderStatusEnum::ESTIMATE_APPT_SCHEDULE->value);
+
+    expect($order->fresh()->status)->toBe(OrderStatusEnum::ESTIMATE_APPT_SCHEDULE->value);
+});
+
+test('owner without admin roles cannot move an order to estimate and appointment schedule', function () {
+    $owner = createSalesUserWithRoles([RoleEnum::OWNER->value]);
+    $order = createSalesOrder();
+    $order->owners()->sync([$owner->id]);
+
+    $response = $this
+        ->actingAs($owner)
+        ->postJson(route('sales.assign_estimate', ['order' => $order->id]), [
+            'schedule_appointment' => now()->addDay()->toDateTimeString(),
+            'owner_ids' => [$owner->id],
+        ]);
+
+    $response
+        ->assertStatus(403)
+        ->assertJsonPath('message', 'You are not allowed to move this order to ESTIMATE & APPT SCHEDULE.');
+
+    expect($order->fresh()->status)->toBe(OrderStatusEnum::REQUEST_RE_SCHEDULE->value);
+});
+
+test('owner admin can move an order to estimate and appointment schedule even if also owner', function () {
+    $ownerAdmin = createSalesUserWithRoles([RoleEnum::OWNER->value, RoleEnum::OWNER_ADMIN->value]);
+    $order = createSalesOrder();
+    $order->owners()->sync([$ownerAdmin->id]);
+
+    $response = $this
+        ->actingAs($ownerAdmin)
+        ->postJson(route('sales.assign_estimate', ['order' => $order->id]), [
+            'schedule_appointment' => now()->addDay()->toDateTimeString(),
+            'owner_ids' => [$ownerAdmin->id],
         ]);
 
     $response->assertOk();

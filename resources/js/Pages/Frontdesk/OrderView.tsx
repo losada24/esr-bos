@@ -527,6 +527,7 @@ export default function ShowStatusOrder ({
   const roleNames = Array.isArray(auth?.user?.roles)
     ? auth.user.roles.map((role: Role) => role.name)
     : []
+  const canMoveToEstimate = isAdmin(roleNames) || isOwnerAdmin(roleNames) || isFrontdeskAdmin(roleNames)
   const canViewPipeline = isAdmin(roleNames) || isAccountManager(roleNames) || isOwner(roleNames) || isOwnerAdmin(roleNames) || isFrontdeskAdmin(roleNames) || isAccounting(roleNames)
   const canEditPipeline = isAdmin(roleNames) || isAccountManager(roleNames) || isOwner(roleNames) || isOwnerAdmin(roleNames) || isFrontdeskAdmin(roleNames) || isAccounting(roleNames)
   const canEditPaymentInformationInModal = isAdmin(roleNames) || isAccountManager(roleNames) || isAccounting(roleNames) || isOwnerAdmin(roleNames)
@@ -1218,6 +1219,10 @@ export default function ShowStatusOrder ({
       base = [REQUEST_RESCHEDULE_STATUS, ESTIMATE_STATUS, LOST_CONTRACT_STATUS]
     }
 
+    if (!canMoveToEstimate) {
+      base = base.filter((statusOption) => !matchesStatus(statusOption, ESTIMATE_STATUS))
+    }
+
     if (
       orderInSalesFlow &&
       isAdminOrOwnerAdmin &&
@@ -1235,7 +1240,7 @@ export default function ShowStatusOrder ({
     }
 
     return base
-  }, [actualStatusValue, isAdminOrOwnerAdmin, orderInSalesFlow, orderInOrderStorageFlow, orderStorageTransitionsEnabled, pipelineStatuses])
+  }, [actualStatusValue, canMoveToEstimate, isAdminOrOwnerAdmin, orderInSalesFlow, orderInOrderStorageFlow, orderStorageTransitionsEnabled, pipelineStatuses])
   const pipelineStatusValue = mapStatusToPipeline(actualStatusValue)
   const calculatedStatusIndex = pipelineStatuses.findIndex(status => matchesStatus(status, pipelineStatusValue))
   const fallbackStatusIndex = pipelineStatuses.length > 0
@@ -1552,6 +1557,10 @@ export default function ShowStatusOrder ({
     }
 
     if (matchesStatus(targetStatus, ESTIMATE_STATUS)) {
+      if (!canMoveToEstimate) {
+        setStatusChangeError('Only Admin, Frontdesk Admin, or Owner Admin can move an order to ESTIMATE & APPT SCHEDULE.')
+        return
+      }
       setPendingMove({ oldStatus: actualStatusValue, newStatus: targetStatus })
       setScheduleInitialValues({
         scheduleDate: scheduleAppointmentIso ? normalizeScheduleValue(scheduleAppointmentIso) : '',
@@ -4192,6 +4201,7 @@ export default function ShowStatusOrder ({
         showPaymentInformationSection={canManagePaymentInformationForOrder}
         showProjectAmountOnlySection={showProjectAmountOnlyBeforeContract}
         projectAmountReadOnly={isProjectAmountReadOnlyBeforeContract}
+        canManageOwners={isAdmin(roleNames) || isOwnerAdmin(roleNames) || isFrontdeskAdmin(roleNames)}
         attachments={Array.isArray(order.attachments) ? order.attachments : []}
         errorMessage={orderEditError}
       />
