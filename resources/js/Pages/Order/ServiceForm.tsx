@@ -570,10 +570,6 @@ const ServiceForm = ({
     setOrderProducts(initialProducts)
   }, [values.order_products])
   useEffect(() => {
-    setFieldValue('orderProducts', orderProducts)
-    setFieldValue('order_products', orderProducts)
-  }, [orderProducts, setFieldValue])
-  useEffect(() => {
     if (!canSearchClient) {
       setClientSearchResults([])
       setClientSearchError('')
@@ -1485,14 +1481,19 @@ const ServiceForm = ({
               <label htmlFor="entry_date">Entry Date</label>
               <Flatpickr
                 id="entry_date"
+                name="entry_date"
                 value={values.entry_date ?? ''}
                 options={{
-                  dateFormat: 'Y-m-d'
+                  mode: 'single',
+                  dateFormat: 'Y-m-d',
+                  position: 'auto right'
                 }}
                 className="form-input"
-                onChange={(date: any) => {
-                  const formattedDate = date.length > 0 ? new Date(date[0]).toISOString().slice(0, 10) : ''
-                  setFieldValue('entry_date', formattedDate)
+                onValueUpdate={(_selectedDates, dateStr) => {
+                  const nextValue = dateStr || ''
+                  if ((values.entry_date ?? '') !== nextValue) {
+                    setFieldValue('entry_date', nextValue)
+                  }
                 }}
               />
               {(submitCount && errors.entry_date) ? <InputError message={errors.entry_date} className="mt-2" /> : ''}
@@ -1501,14 +1502,19 @@ const ServiceForm = ({
               <label htmlFor="delivery_date">Delivery / Pickup Date</label>
               <Flatpickr
                 id="delivery_date"
+                name="delivery_date"
                 value={values.delivery_date ?? ''}
                 options={{
-                  dateFormat: 'Y-m-d'
+                  mode: 'single',
+                  dateFormat: 'Y-m-d',
+                  position: 'auto right'
                 }}
                 className="form-input"
-                onChange={(date: any) => {
-                  const formattedDate = date.length > 0 ? new Date(date[0]).toISOString().slice(0, 10) : ''
-                  setFieldValue('delivery_date', formattedDate)
+                onValueUpdate={(_selectedDates, dateStr) => {
+                  const nextValue = dateStr || ''
+                  if ((values.delivery_date ?? '') !== nextValue) {
+                    setFieldValue('delivery_date', nextValue)
+                  }
                 }}
               />
               {(submitCount && errors.delivery_date) ? <InputError message={errors.delivery_date} className="mt-2" /> : ''}
@@ -1517,14 +1523,19 @@ const ServiceForm = ({
               <label htmlFor="installation_date">Installation Date</label>
               <Flatpickr
                 id="installation_date"
+                name="installation_date"
                 value={values.installation_date ?? ''}
                 options={{
-                  dateFormat: 'Y-m-d'
+                  mode: 'single',
+                  dateFormat: 'Y-m-d',
+                  position: 'auto right'
                 }}
                 className="form-input"
-                onChange={(date: any) => {
-                  const formattedDate = date.length > 0 ? new Date(date[0]).toISOString().slice(0, 10) : ''
-                  setFieldValue('installation_date', formattedDate)
+                onValueUpdate={(_selectedDates, dateStr) => {
+                  const nextValue = dateStr || ''
+                  if ((values.installation_date ?? '') !== nextValue) {
+                    setFieldValue('installation_date', nextValue)
+                  }
                 }}
               />
               {(submitCount && errors.installation_date) ? <InputError message={errors.installation_date} className="mt-2" /> : ''}
