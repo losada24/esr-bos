@@ -1,10 +1,10 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
 import { Head, router } from '@inertiajs/react'
 import { Formik, type FormikHelpers } from 'formik'
-import { userSchema, type UserPageProps, type User, type UserFormValues } from './UserCommon'
+import { userSchema, type UserPageProps, type UserFormValues } from './UserCommon'
 import UserForm from './UserForm'
 
-export default function Create ({ auth, roles, statuses }: UserPageProps) {
+export default function Create ({ auth, roles, statuses, owner_options }: UserPageProps) {
   // const IS_ADMIN = isAdmin(auth.user.roles.map((role: Role) => role.name)) || isAccountManager(auth.user.roles.map((role: Role) => role.name))
   const initialValues: UserFormValues = {
     name: '',
@@ -12,6 +12,7 @@ export default function Create ({ auth, roles, statuses }: UserPageProps) {
     password: '',
     password_confirmation: '',
     role: [],
+    delegated_owner_ids: [],
     featured_image: '',
     phone: '',
     status: statuses[0]?.value?.toString() ?? ''
@@ -20,7 +21,8 @@ export default function Create ({ auth, roles, statuses }: UserPageProps) {
   const handleSubmit = async (values: any, helpers: FormikHelpers<UserFormValues>) => {
     const userValues = {
       ...values,
-      role: values.role.map((role: any) => role.value)
+      role: values.role.map((role: any) => role.value),
+      delegated_owner_ids: values.delegated_owner_ids.map((owner: any) => owner.value),
     }
     router.post(route('user.store'), userValues, {
       forceFormData: true,
@@ -53,9 +55,10 @@ export default function Create ({ auth, roles, statuses }: UserPageProps) {
                 setFieldValue={setFieldValue}
                 modalProps={null}
                 values={values}
+                ownerOptions={owner_options}
               />
-            )}
-          </Formik>
+          )}
+        </Formik>
       </AuthenticatedLayout>
   )
 }

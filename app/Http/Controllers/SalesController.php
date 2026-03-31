@@ -138,7 +138,7 @@ class SalesController extends Controller
           ->orderBy('name');
 
       if ($this->isOwnerRestricted($user)) {
-          $ownerOptions->where('id', $user->id);
+          $ownerOptions->whereIn('id', $user->accessibleOwnerIds());
       }
 
       $supervisors = User::role(RoleEnum::SUPERVISOR->value)
@@ -304,9 +304,7 @@ class SalesController extends Controller
     }
 
     if ($this->isOwnerRestricted($user)) {
-      $query->whereHas('owners', function ($query) use ($user) {
-        $query->where('users.id', $user->id);
-      });
+      $query->accessibleToOwner($user);
     }
 
     return $query;
@@ -591,9 +589,7 @@ class SalesController extends Controller
       return true;
     }
 
-    return $order->owners()
-      ->where('users.id', $user->id)
-      ->exists();
+    return $user ? $order->isAccessibleToOwner($user) : false;
   }
 
   private function canMoveOrderToEstimate(?User $user): bool
@@ -651,7 +647,7 @@ class SalesController extends Controller
       ->orderBy('name');
 
     if ($this->isOwnerRestricted($user)) {
-      $ownerQuery->where('id', $user->id);
+      $ownerQuery->whereIn('id', $user->accessibleOwnerIds());
     }
 
     return $ownerQuery->get();
@@ -664,7 +660,7 @@ class SalesController extends Controller
       ->orderBy('name');
 
     if ($this->isOwnerRestricted($user)) {
-      $ownerQuery->where('id', $user->id);
+      $ownerQuery->whereIn('id', $user->accessibleOwnerIds());
     }
 
     return $ownerQuery->get();
@@ -909,6 +905,12 @@ class SalesController extends Controller
 
     public function assignFollowUp(Request $request, Order $order)
     {
+        if (!$this->ownerCanAccessOrder($request->user(), $order)) {
+          return response()->json([
+            'message' => 'You are not allowed to update this order.',
+          ], 403);
+        }
+
         $validated = $request->validate([
           'status' => ['required', Rule::in([
             OrderStatusEnum::FOLLOW_UP->value,
@@ -1003,6 +1005,12 @@ class SalesController extends Controller
 
   public function assignStandBy(Request $request, Order $order)
   {
+    if (!$this->ownerCanAccessOrder($request->user(), $order)) {
+      return response()->json([
+        'message' => 'You are not allowed to update this order.',
+      ], 403);
+    }
+
     $this->ensureRequestRescheduleTransitionAllowed($order, OrderStatusEnum::STAND_BY->value);
 
     $validated = $request->validate([
@@ -1126,6 +1134,12 @@ class SalesController extends Controller
 
   public function assignPreContract(Request $request, Order $order)
   {
+    if (!$this->ownerCanAccessOrder($request->user(), $order)) {
+      return response()->json([
+        'message' => 'You are not allowed to update this order.',
+      ], 403);
+    }
+
     $this->ensureRequestRescheduleTransitionAllowed($order, OrderStatusEnum::PRE_CONTRACT_APPOINTMENT->value);
 
     $validated = $request->validate([
@@ -1183,6 +1197,12 @@ class SalesController extends Controller
 
   public function assignContractSigned(Request $request, Order $order)
   {
+    if (!$this->ownerCanAccessOrder($request->user(), $order)) {
+      return response()->json([
+        'message' => 'You are not allowed to update this order.',
+      ], 403);
+    }
+
     $this->ensureRequestRescheduleTransitionAllowed(
       $order,
       $order->is_supply
@@ -1596,6 +1616,12 @@ class SalesController extends Controller
 
   public function assignLostContract(Request $request, Order $order)
   {
+    if (!$this->ownerCanAccessOrder($request->user(), $order)) {
+      return response()->json([
+        'message' => 'You are not allowed to update this order.',
+      ], 403);
+    }
+
     $this->ensureRequestRescheduleTransitionAllowed($order, OrderStatusEnum::LOST_CONTRACT->value);
 
     $validated = $request->validate([

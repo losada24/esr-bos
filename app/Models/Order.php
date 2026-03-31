@@ -7,6 +7,7 @@ use App\Enum\RoleEnum;
 use App\Enum\ServiceEnum;
 use App\Enum\SupervisorPaymentStatusEnum;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -280,23 +281,21 @@ class Order extends Model
       }
 
       if ($user->hasRole(RoleEnum::OWNER->value)) {
-        $query->whereHas('owners', function ($ownerQuery) use ($user) {
-          $ownerQuery->where('user_id', $user->id);
-        })
-        ->whereIn('status', [
-          OrderStatusEnum::PLANNED,
-          OrderStatusEnum::RESCHEDULE,
-          OrderStatusEnum::CONFIRMED,
-          OrderStatusEnum::EXECUTION,
-          OrderStatusEnum::SUPERVISION,
-          OrderStatusEnum::INSPECTION,
-          OrderStatusEnum::FINISH,
-          OrderStatusEnum::SERVICE,
-          OrderStatusEnum::ON_HOLD,
-          OrderStatusEnum::FINAL_INSPECTION,
-          OrderStatusEnum::FINAL_COLLECT,
-          OrderStatusEnum::COMPLETE,
-        ]);
+        $query->accessibleToOwner($user)
+          ->whereIn('status', [
+            OrderStatusEnum::PLANNED,
+            OrderStatusEnum::RESCHEDULE,
+            OrderStatusEnum::CONFIRMED,
+            OrderStatusEnum::EXECUTION,
+            OrderStatusEnum::SUPERVISION,
+            OrderStatusEnum::INSPECTION,
+            OrderStatusEnum::FINISH,
+            OrderStatusEnum::SERVICE,
+            OrderStatusEnum::ON_HOLD,
+            OrderStatusEnum::FINAL_INSPECTION,
+            OrderStatusEnum::FINAL_COLLECT,
+            OrderStatusEnum::COMPLETE,
+          ]);
       }
 
       if ($user->hasRole(RoleEnum::SERVICE_MANAGER->value) || $user->hasRole(RoleEnum::PAYMENT_COORDINATOR->value)) {
@@ -376,6 +375,32 @@ class Order extends Model
   {
     return $this->belongsToMany(User::class, 'owner_user')
       ->withTimestamps();
+  }
+
+  public function scopeAccessibleToOwner(Builder $query, User $user): Builder
+  {
+    $accessibleOwnerIds = $user->accessibleOwnerIds();
+
+    if ($accessibleOwnerIds === []) {
+      return $query->whereRaw('1 = 0');
+    }
+
+    return $query->whereHas('owners', function (Builder $ownerQuery) use ($accessibleOwnerIds) {
+      $ownerQuery->whereIn('users.id', $accessibleOwnerIds);
+    });
+  }
+
+  public function isAccessibleToOwner(User $user): bool
+  {
+    $accessibleOwnerIds = $user->accessibleOwnerIds();
+
+    if ($accessibleOwnerIds === []) {
+      return false;
+    }
+
+    return $this->owners()
+      ->whereIn('users.id', $accessibleOwnerIds)
+      ->exists();
   }
 
   public function orderProducts(): HasMany

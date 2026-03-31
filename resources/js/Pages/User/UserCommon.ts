@@ -50,6 +50,7 @@ export interface User {
   password: string
   password_confirmation: string
   role: Role[]
+  delegated_owner_ids?: number[]
   featured_image?: string
   phone: string
   status: string
@@ -62,10 +63,12 @@ interface UserResource {
 export type UserPageProps = PageProps & {
   roles: Role[]
   statuses: OptionType[]
+  owner_options: Array<{ id: number, name: string }>
   // companies: Company[]
   user?: UserResource
 }
 
-export type UserFormValues = Omit<User, 'role' > & {
+export type UserFormValues = Omit<User, 'role' | 'delegated_owner_ids'> & {
   role: MultiValue <OptionType>
+  delegated_owner_ids: MultiValue<OptionType>
 }

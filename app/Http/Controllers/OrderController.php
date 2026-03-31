@@ -511,6 +511,9 @@ class OrderController extends Controller
 
   public function updateFromModal(PartialOrderRequest $request, UpdateOrder $updateOrder, Order $order)
   {
+    if ($this->isRestrictedOwner(auth()->user()) && !$order->isAccessibleToOwner(auth()->user())) {
+      abort(403, 'You are not authorized to update this order.');
+    }
 
     $updateOrder->partialUpdate($request, $order);
 
@@ -728,5 +731,24 @@ class OrderController extends Controller
     return redirect()
       ->route('order.index')
       ->with('success', $message);
+  }
+
+  private function isRestrictedOwner(?User $user): bool
+  {
+    if (!$user) {
+      return false;
+    }
+
+    return $user->hasRole(RoleEnum::OWNER->value) && !$user->hasAnyRole([
+      RoleEnum::ADMIN->value,
+      RoleEnum::ACCOUNT_MANAGER->value,
+      RoleEnum::OWNER_ADMIN->value,
+      RoleEnum::FRONTDESK_ADMIN->value,
+      'FRONTDESK_ADMIN',
+      'frondesk_admin',
+      'frondestk_admin',
+      'FRONDESK_ADMIN',
+      'FRONDESTK_ADMIN',
+    ]);
   }
 }

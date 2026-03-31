@@ -39,6 +39,8 @@ class UpdateUserRequest extends FormRequest
           //'role' => 'required|exists:roles,id',
           'role' => 'required|array', // Debe ser un array
           'role.*' => 'exists:roles,id', // Cada rol debe existir en la tabla roles
+          'delegated_owner_ids' => 'nullable|array',
+          'delegated_owner_ids.*' => ['integer', 'exists:users,id', 'different:id'],
           'featured_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:512',
           'status' => ['required', new Enum(StatusUserEnum::class)],
         ];

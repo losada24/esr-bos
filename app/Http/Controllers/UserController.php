@@ -47,6 +47,11 @@ class UserController extends Controller
             'id' => $role->id,
             'name' => $role->name
           ]),
+          'owner_options' => User::role(RoleEnum::OWNER->value)
+            ->select('id', 'name')
+            ->where('status', StatusUserEnum::ACTIVE->value)
+            ->orderBy('name')
+            ->get(),
           'statuses' => collect(StatusUserEnum::cases())->map(fn (StatusUserEnum $status) => [
             'value' => $status->value,
             'label' => ucwords(strtolower(str_replace('_', ' ', $status->value))),
@@ -75,10 +80,16 @@ class UserController extends Controller
      */
     public function edit(User $user)
     {
-        $user->loadMissing('roles');
+        $user->loadMissing('roles', 'delegatedOwners');
         return Inertia::render('User/Edit', [
           'user' => new UserResource($user),
           'roles' => Role::orderBy('name')->get(),
+          'owner_options' => User::role(RoleEnum::OWNER->value)
+            ->select('id', 'name')
+            ->where('status', StatusUserEnum::ACTIVE->value)
+            ->where('id', '!=', $user->id)
+            ->orderBy('name')
+            ->get(),
           'statuses' => collect(StatusUserEnum::cases())->map(fn (StatusUserEnum $status) => [
             'value' => $status->value,
             'label' => ucwords(strtolower(str_replace('_', ' ', $status->value))),
