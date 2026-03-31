@@ -103,6 +103,11 @@ class OrderBoardFilter
                     });
                 }
                 break;
+            case 'loss_reason_frontdesk':
+                if (self::hasText($value) && strtolower(trim((string) $value)) !== 'all') {
+                    $query->where('orders.loss_reason_frontdesk', $value);
+                }
+                break;
             case 'company_name':
                 if (self::hasText($value)) {
                     $like = self::likeValue($value);

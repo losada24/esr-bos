@@ -1660,6 +1660,18 @@ class SalesController extends Controller
     ]);
   }
 
+  public function destroyOrder(Order $order): JsonResponse
+  {
+    $order->delete();
+
+    return response()->json([
+      'message' => 'Order deleted successfully.',
+      'order' => [
+        'id' => $order->id,
+      ],
+    ]);
+  }
+
   public function updateStatusLost(Request $request, Order $order)
 {
     //dd($request->all());

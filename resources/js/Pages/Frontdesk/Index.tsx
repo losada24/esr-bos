@@ -297,6 +297,7 @@ export default function Frontdesk ({
     { value: 'is_supply', label: 'Is Supply', type: 'select', options: [{ label: 'Yes', value: '1' }, { label: 'No', value: '0' }] },
     { value: 'owner', label: 'Owner', type: 'select', options: owners.map((owner) => ({ label: owner.name, value: owner.id.toString() })) },
     { value: 'source', label: 'Source', type: 'select', options: sources.map((source) => ({ label: source, value: source })) },
+    { value: 'loss_reason_frontdesk', label: 'Loss Reason', type: 'select', options: lossReasonFrontdesk.map((reason) => ({ label: reason, value: reason })) },
     { value: 'company_name', label: 'Company Name', type: 'text' },
     { value: 'client_name', label: 'Client Name', type: 'text' },
     { value: 'phone', label: 'Phone', type: 'text' },
@@ -305,7 +306,7 @@ export default function Frontdesk ({
     { value: 'created_by', label: 'Created By', type: 'select', options: created_by_users.map((user) => ({ label: user.name, value: user.id.toString() })) },
     { value: 'created_time', label: 'Created Time', type: 'date' },
     { value: 'project_amount', label: 'Project Amount', type: 'amount' }
-  ]), [statuses, order_types, owners, sources, tagFilterOptions, supervisors, created_by_users])
+  ]), [statuses, order_types, owners, sources, lossReasonFrontdesk, tagFilterOptions, supervisors, created_by_users])
 
   useEffect(() => {
     setProjectListState(data)
