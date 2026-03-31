@@ -4,17 +4,18 @@ import PrimaryButton from '@/Components/PrimaryButton'
 import { Link } from '@inertiajs/react'
 import { type Role, type ModalProps, type OptionType } from '@/types'
 import { type FormikErrors } from 'formik'
-import { type UserFormValues, type User } from './UserCommon'
+import { type UserFormValues } from './UserCommon'
 import FeaturedImageModal from '@/Components/FeaturedImageModal'
 import { useState } from 'react'
 import { capitalizeWords } from '@/Utils/string'
 import Select from 'react-select'
 
-const UserForm = ({ submitCount, errors, roles, statuses, isCreate, /* companies, isAdmin, */ featured_image, setFieldValue, modalProps, values }: {
+const UserForm = ({ submitCount, errors, roles, statuses, ownerOptions, isCreate, /* companies, isAdmin, */ featured_image, setFieldValue, modalProps, values }: {
   submitCount: number
   errors: FormikErrors<UserFormValues>
   roles: Role[]
   statuses: OptionType[]
+  ownerOptions: Array<{ id: number, name: string }>
   isCreate: boolean
   values: UserFormValues
   featured_image?: string
@@ -22,8 +23,13 @@ const UserForm = ({ submitCount, errors, roles, statuses, isCreate, /* companies
   setFieldValue: (field: string, value: any, shouldValidate?: boolean | undefined) => void
 }) => {
   const [showModal, setShowModal] = useState(false)
+  const ownerRoleIds = new Set(
+    roles
+      .filter((role) => role.name === 'owner')
+      .map((role) => role.id)
+  )
+  const hasOwnerRoleSelected = values.role.some((role) => ownerRoleIds.has(Number(role.value)))
 
-  const imagePath = featured_image ?? null
   return (
     <Form className='space-y-5'>
       <div className={submitCount ? (errors.name) ? 'has-error' : 'has-success' : ''}>
@@ -94,6 +100,23 @@ const UserForm = ({ submitCount, errors, roles, statuses, isCreate, /* companies
           />
           {(submitCount && errors.role) ? <InputError message={errors.role.toString()} className="mt-2" /> : ''}
       </div>
+      {hasOwnerRoleSelected && (
+        <div className={submitCount ? (errors.delegated_owner_ids ? 'has-error' : 'has-success') : ''}>
+          <label htmlFor="delegated_owner_ids">Can Manage Orders From</label>
+          <Select
+            id="delegated_owner_ids"
+            placeholder="Select owners"
+            name="delegated_owner_ids"
+            value={values.delegated_owner_ids}
+            isMulti={true}
+            onChange={(selected) => {
+              setFieldValue('delegated_owner_ids', selected)
+            }}
+            options={ownerOptions.map((owner) => ({ label: owner.name, value: owner.id }))}
+          />
+          {(submitCount && errors.delegated_owner_ids) ? <InputError message={errors.delegated_owner_ids.toString()} className="mt-2" /> : ''}
+        </div>
+      )}
       <div className={`mb-3 ${submitCount ? (errors.password) ? 'has-error' : 'has-success' : ''}`}>
         <label htmlFor="password">Password</label>
         <Field

@@ -85,7 +85,7 @@ class OrderStorageController extends Controller
             ->orderBy('name');
 
         if ($this->isOwnerRestricted($user)) {
-            $ownerOptions->where('id', $user->id);
+            $ownerOptions->whereIn('id', $user->accessibleOwnerIds());
         }
 
         $supervisors = User::role(RoleEnum::SUPERVISOR->value)
@@ -249,9 +249,7 @@ class OrderStorageController extends Controller
         $query = Order::query()->where('status', $status);
 
         if ($this->isOwnerRestricted($user)) {
-            $query->whereHas('owners', function ($query) use ($user) {
-                $query->where('users.id', $user->id);
-            });
+            $query->accessibleToOwner($user);
         }
 
         return $query;

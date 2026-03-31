@@ -49,8 +49,9 @@ class OrderSearchController extends Controller
 
         $restrictionContext = $module !== 'all' ? $module : $origin;
         if ($this->shouldRestrictOwner($request->user(), $restrictionContext)) {
-            $query->whereHas('owners', function (Builder $builder) use ($request) {
-                $builder->where('users.id', $request->user()?->id);
+            $accessibleOwnerIds = $request->user()?->accessibleOwnerIds() ?? [];
+            $query->whereHas('owners', function (Builder $builder) use ($accessibleOwnerIds) {
+                $builder->whereIn('users.id', $accessibleOwnerIds);
             });
         }
 

@@ -9,6 +9,7 @@ use App\Enum\RoleEnum;
 use App\Jobs\SendGmailEmail;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
+use Spatie\Permission\Models\Role;
 
 class UpdateUser {
 
@@ -47,7 +48,32 @@ class UpdateUser {
       }
 
       $user->update($userData);
-      $user->syncRoles([$request->role]);
+      $roleIds = collect($request->input('role', []))
+        ->map(fn ($roleId) => (int) $roleId)
+        ->filter(fn (int $roleId) => $roleId > 0)
+        ->values()
+        ->all();
+
+      $user->syncRoles($roleIds);
+
+      $selectedRoleNames = Role::query()
+        ->whereIn('id', $roleIds)
+        ->pluck('name')
+        ->all();
+
+      $delegatedOwnerIds = [];
+      if (in_array(RoleEnum::OWNER->value, $selectedRoleNames, true)) {
+        $delegatedOwnerIds = User::role(RoleEnum::OWNER->value)
+          ->whereIn('id', collect($request->input('delegated_owner_ids', []))
+            ->map(fn ($ownerId) => (int) $ownerId)
+            ->filter(fn (int $ownerId) => $ownerId > 0 && $ownerId !== (int) $user->id)
+            ->values()
+            ->all())
+          ->pluck('id')
+          ->all();
+      }
+
+      $user->delegatedOwners()->sync($delegatedOwnerIds);
     });
   }
 }

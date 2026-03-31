@@ -526,6 +526,10 @@ class DashboardController extends Controller
 
   public function getEvent(Order $order)
   {
+    if ($this->isRestrictedOwner(auth()->user()) && !$order->isAccessibleToOwner(auth()->user())) {
+      abort(403, 'You are not authorized to access this order.');
+    }
+
     $order->load([
       'client',
       'typeOfWork',
@@ -572,6 +576,21 @@ class DashboardController extends Controller
       ->first();
 
     return is_array($statusRecord?->replanned_reasons) ? $statusRecord->replanned_reasons : [];
+  }
+
+  private function isRestrictedOwner(?User $user): bool
+  {
+    if (!$user) {
+      return false;
+    }
+
+    return $user->hasRole(RoleEnum::OWNER->value) && !$user->hasAnyRole([
+      RoleEnum::ADMIN->value,
+      RoleEnum::ACCOUNT_MANAGER->value,
+      RoleEnum::OWNER_ADMIN->value,
+      RoleEnum::FRONTDESK_ADMIN->value,
+      'FRONTDESK_ADMIN',
+    ]);
   }
 
   public function getPaymentList(Order $order)

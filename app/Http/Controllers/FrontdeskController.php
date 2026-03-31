@@ -815,10 +815,16 @@ public function showQuantifiedModal(Order $order)
     $clientOrders = collect();
 
     if ($order->client) {
-      $clientOrders = $order->client->orders()
+      $clientOrdersQuery = $order->client->orders()
         ->where('id', '!=', $order->id)
         ->with(['owners:id,name', 'orderCompanyContacts.companyContact', 'orderCompanyContacts.client'])
-        ->orderByDesc('created_at')
+        ->orderByDesc('created_at');
+
+      if ($this->isOwnerRestricted(auth()->user())) {
+        $clientOrdersQuery->accessibleToOwner(auth()->user());
+      }
+
+      $clientOrders = $clientOrdersQuery
         ->get(['id', 'order_number', 'name', 'status', 'order_type'])
         ->map(fn ($clientOrder) => [
           'id' => $clientOrder->id,
@@ -891,7 +897,7 @@ public function showQuantifiedModal(Order $order)
       ->orderBy('name');
 
     if ($this->isOwnerRestricted(auth()->user())) {
-      $ownerOptionsQuery->where('id', auth()->id());
+      $ownerOptionsQuery->whereIn('id', auth()->user()->accessibleOwnerIds());
     }
 
     $ownerOptions = $ownerOptionsQuery->get();
@@ -1061,6 +1067,10 @@ public function showQuantifiedModal(Order $order)
     UpdateQualifiedOrder $updateQualifiedOrder,
     Order $order
   ) {
+    if (!$this->ownerCanAccessOrder($request->user(), $order)) {
+      return response()->json(['message' => 'You are not authorized to update this order.'], 403);
+    }
+
     $updatedOrder = $updateQualifiedOrder->handle($request, $order);
     $orderData = $updatedOrder->toArray();
     $orderData['payment_schedule'] = PaymentInstallmentPresenter::schedule($updatedOrder->paymentSchedule);
@@ -1074,6 +1084,10 @@ public function showQuantifiedModal(Order $order)
 
   public function updateOrderContact(Request $request, Order $order)
   {
+    if (!$this->ownerCanAccessOrder($request->user(), $order)) {
+      return response()->json(['message' => 'You are not authorized to update this order.'], 403);
+    }
+
     $mode = $request->input('mode');
     $frontdeskStatuses = [
       OrderStatusEnum::NEW_CUSTOMER_REQUEST->value,
@@ -1256,6 +1270,10 @@ public function showQuantifiedModal(Order $order)
 
   public function saleFormPdf(Request $request, Order $order)
   {
+    if (!$this->ownerCanAccessOrder($request->user(), $order)) {
+      abort(403, 'You are not authorized to access this order.');
+    }
+
     $order->load(['client.companyContact', 'owners', 'saleForm']);
 
     if (!$order->saleForm) {
@@ -1365,9 +1383,7 @@ public function showQuantifiedModal(Order $order)
           return true;
       }
 
-      return $order->owners()
-          ->where('users.id', $user->id)
-          ->exists();
+      return $user ? $order->isAccessibleToOwner($user) : false;
   }
 }
 
