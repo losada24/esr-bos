@@ -367,6 +367,10 @@ Route::middleware('auth')->group(function () {
         ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value. '|'. RoleEnum::FRONTDESK_ADMIN->value. '|'. RoleEnum::OWNER->value])
         ->name('sales.assign_lost_contract');
 
+      Route::delete('/sales/{order}/delete-order', [SalesController::class, 'destroyOrder'])
+        ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::OWNER_ADMIN->value])
+        ->name('sales.destroy_order');
+
     Route::resource('source', SourceController::class)
         ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::FRONTDESK_ADMIN->value ]);
 

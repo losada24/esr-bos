@@ -7,10 +7,10 @@ import { type Role, type PageProps, type Pipelines, type Tasks } from '@/types'
 import AuthenticatedCalendarLayout from '@/Layouts/AuthenticatedCalendarLayout'
 import { isAccountManager, isAdmin, isServiceManager, isSupervisor, isInstaller, isPaymentCoordinator, isOwner, isOwnerAdmin, isFrontdeskAdmin } from '@/Utils/user'
 
-import EditIcon from '@/Components/Icons/EditIcon'
 import { tagClasses, type TagColor } from '@/Utils/tags'
 import { PAYMENT_METHODS } from '@/Utils/constants'
 import EyeIcon from '@/Components/Icons/EyeIcon'
+import DeleteIcon from '@/Components/Icons/DeleteIcon'
 import InfoTooltip from '@/Components/InfoTooltip'
 import OrderBoardFilter, { type BoardFilters, type FilterFieldConfig } from '@/Components/OrderBoardFilter'
 import OrderGlobalSearch from '@/Components/OrderGlobalSearch'
@@ -303,13 +303,15 @@ const matchesStatus = (value: string, target: string): boolean => normalizeStatu
 export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order_types, statuses, owners, supervisors, created_by_users, tags, filters, sort, methods_of_payment, type_of_financing, payment_schedule_templates }: PageProps & { data: Pipelines[], lossReasonFrontdesk: string [], sources: string[], order_types: string[], statuses: string[], owners: OwnerOption[], supervisors: IdOption[], created_by_users: IdOption[], tags: TagOption[], filters: BoardFilters, sort: { sort_by?: string, sort_dir?: string }, methods_of_payment: string[], type_of_financing: string[], payment_schedule_templates: PaymentScheduleTemplates }) {
   const roleNames = auth.user.roles.map((role: Role) => role.name)
   const IS_ADMIN = isAdmin(roleNames)
+  const IS_OWNER_ADMIN = isOwnerAdmin(roleNames)
   const IS_ACCOUNT_MANAGER = isAccountManager(roleNames)
   const IS_SUPERVISOR = isSupervisor(roleNames)
   const IS_SERVICE_MANAGER = isServiceManager(roleNames)
   const IS_INSTALLER = isInstaller(roleNames)
   const IS_PAYMENT_COORDINATOR = isPaymentCoordinator(roleNames)
   const IS_OWNER = isOwner(roleNames)
-  const CAN_MOVE_TO_ESTIMATE = isAdmin(roleNames) || isOwnerAdmin(roleNames) || isFrontdeskAdmin(roleNames)
+  const CAN_MOVE_TO_ESTIMATE = IS_ADMIN || IS_OWNER_ADMIN || isFrontdeskAdmin(roleNames)
+  const CAN_DELETE_ORDER = IS_ADMIN || IS_OWNER_ADMIN
 
   const [projectList, setProjectListState] = useState<Pipelines[]>(() => data)
   const [showModal, setShowModal] = useState(false)
@@ -354,6 +356,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
   const [pendingLostContract, setPendingLostContract] = useState<{ task: Tasks, oldStatus: string, newStatus: string } | null>(null)
   const [statusPagination, setStatusPagination] = useState<Record<string, StatusPaginationState>>(() => buildPaginationState(data))
   const [isFilterOpen, setIsFilterOpen] = useState(false)
+  const [deletingTaskId, setDeletingTaskId] = useState<number | null>(null)
   const sortHydratedRef = useRef(false)
   const appliedFilters = filters ?? {}
   const filterQueryParams = useMemo(() => buildFilterQuery(appliedFilters), [appliedFilters])
@@ -399,6 +402,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
     { value: 'is_supply', label: 'Is Supply', type: 'select', options: [{ label: 'Yes', value: '1' }, { label: 'No', value: '0' }] },
     { value: 'owner', label: 'Owner', type: 'select', options: owners.map((owner) => ({ label: owner.name, value: owner.id.toString() })) },
     { value: 'source', label: 'Source', type: 'select', options: sources.map((source) => ({ label: source, value: source })) },
+    { value: 'loss_reason_frontdesk', label: 'Loss Reason', type: 'select', options: lossReasonFrontdesk.map((reason) => ({ label: reason, value: reason })) },
     { value: 'company_name', label: 'Company Name', type: 'text' },
     { value: 'client_name', label: 'Client Name', type: 'text' },
     { value: 'phone', label: 'Phone', type: 'text' },
@@ -407,7 +411,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
     { value: 'created_by', label: 'Created By', type: 'select', options: created_by_users.map((user) => ({ label: user.name, value: user.id.toString() })) },
     { value: 'created_time', label: 'Created Time', type: 'date' },
     { value: 'project_amount', label: 'Project Amount', type: 'amount' }
-  ]), [statuses, order_types, owners, sources, tagFilterOptions, supervisors, created_by_users])
+  ]), [statuses, order_types, owners, sources, lossReasonFrontdesk, tagFilterOptions, supervisors, created_by_users])
 
   useEffect(() => {
     setProjectListState(data)
@@ -520,6 +524,55 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
         ...(amountChanged ? { total_project_amount: nextProjectAmount } : {})
       }
     }))
+  }
+
+  const removeTaskFromBoard = (taskId: number) => {
+    setProjectList(prev => prev.map((pipeline) => {
+      const taskToRemove = pipeline.tasks.find((task) => Number(task.id) === Number(taskId))
+      if (!taskToRemove) return pipeline
+
+      const removedAmount = toNumericAmount(taskToRemove.project_amount)
+      const nextTasks = pipeline.tasks.filter((task) => Number(task.id) !== Number(taskId))
+      const nextTotal = Math.max(0, (pipeline.total_tasks ?? pipeline.tasks.length) - 1)
+      const nextAmount = Math.max(0, getPipelineTotalProjectAmount(pipeline) - removedAmount)
+
+      return {
+        ...pipeline,
+        tasks: nextTasks,
+        total_tasks: nextTotal,
+        total_project_amount: nextAmount
+      }
+    }))
+  }
+
+  const handleDeleteOrder = async (task: Tasks) => {
+    if (!CAN_DELETE_ORDER || deletingTaskId !== null) return
+    if (!window.confirm(`Are you sure you want to delete order "${task.title}"?`)) return
+
+    setDeletingTaskId(task.id)
+
+    try {
+      const response = await fetch(route('sales.destroy_order', task.id), {
+        method: 'DELETE',
+        headers: {
+          Accept: 'application/json',
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? ''
+        }
+      })
+
+      const payload = await response.json().catch(() => null)
+
+      if (!response.ok) {
+        throw new Error(payload?.message ?? 'Unable to delete order.')
+      }
+
+      removeTaskFromBoard(task.id)
+    } catch (error: any) {
+      console.error('delete-order error', error)
+      window.alert(error?.message ?? 'Unable to delete order.')
+    } finally {
+      setDeletingTaskId(null)
+    }
   }
 
   const loadMoreTasks = useCallback(async (statusKey: string, nextPage: number) => {
@@ -1588,13 +1641,17 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
                                   >
                                     <EyeIcon />
                                   </Link>
-                                  <button
-                                    onClick={() => ' '}
-                                    type="button"
-                                    className="flex items-center gap-1 hover:text-info"
-                                  >
-                                    <EditIcon />
-                                  </button>
+                                  {CAN_DELETE_ORDER && (
+                                    <button
+                                      type="button"
+                                      title="Delete Order"
+                                      disabled={deletingTaskId === task.id}
+                                      onClick={() => { void handleDeleteOrder(task) }}
+                                      className="flex items-center gap-1 hover:text-danger disabled:cursor-not-allowed disabled:opacity-50"
+                                    >
+                                      <DeleteIcon className="h-4 w-4" />
+                                    </button>
+                                  )}
                                   <InfoTooltip
                                     side="left"
                                     width={220}
