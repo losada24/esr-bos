@@ -24,6 +24,7 @@ use App\Exports\AccountingStatusSummaryExport;
 use App\Exports\SalesAppointmentsBySellerExport;
 use App\Exports\MarketingReportExport;
 use App\Exports\OwnerAssignedSummaryExport;
+use App\Exports\OverdueStageOrdersExport;
 use App\Exports\ReplannedOrdersSummaryExport;
 use App\Exports\StatusTransitionAverageExport;
 use App\Exports\SupervisorExport;
@@ -899,6 +900,30 @@ class ReportController extends Controller
     return Excel::download(
       new DailyOrderStatusSummaryExport($data),
       'Daily Order Status Summary.xlsx',
+      \Maatwebsite\Excel\Excel::XLSX
+    );
+  }
+
+  public function overdueStageOrders()
+  {
+    return Inertia::render('Report/OverdueStageOrders', $this->buildOverdueStageOrdersData());
+  }
+
+  public function overdueStageOrdersPdf()
+  {
+    $data = $this->buildOverdueStageOrdersData();
+    $pdf = Pdf::loadView('pdf.overdue-stage-orders', $data)->setPaper('A4', 'landscape');
+
+    return $pdf->stream('overdue-stage-orders.pdf');
+  }
+
+  public function overdueStageOrdersExcel()
+  {
+    $data = $this->buildOverdueStageOrdersData();
+
+    return Excel::download(
+      new OverdueStageOrdersExport($data),
+      'Overdue Stage Orders.xlsx',
       \Maatwebsite\Excel\Excel::XLSX
     );
   }
@@ -2037,6 +2062,224 @@ class ReportController extends Controller
       'startDate' => $startDate->toDateString(),
       'endDate' => $endDate->toDateString(),
     ];
+  }
+
+  private function buildOverdueStageOrdersData(): array
+  {
+    $now = Carbon::now();
+    $statusConfigs = $this->overdueStageStatusConfigs();
+    $trackedStatuses = collect($statusConfigs)->pluck('status')->all();
+
+    $orders = Order::query()
+      ->with([
+        'owners:id,name',
+        'user:id,name',
+        'orderStatus' => function ($query) use ($trackedStatuses) {
+          $query
+            ->select('id', 'order_id', 'status', 'user_id', 'created_at')
+            ->whereIn('status', array_values(array_unique(array_merge($trackedStatuses, [OrderStatusEnum::FOLLOW_UP->value]))))
+            ->with('user:id,name')
+            ->orderBy('created_at');
+        },
+      ])
+      ->whereIn('status', $trackedStatuses)
+      ->get([
+        'id',
+        'name',
+        'status',
+        'order_type',
+        'schedule_appointment',
+        'created_at',
+      ]);
+
+    $groups = collect($statusConfigs)
+      ->map(function (array $config) use ($orders, $now) {
+        $rows = $orders
+          ->filter(fn (Order $order) => $order->status === $config['status'])
+          ->map(fn (Order $order) => $this->mapOverdueStageOrderRow($order, $config, $now))
+          ->filter(fn (array $row) => $row['is_overdue'])
+          ->sortByDesc('days_in_stage')
+          ->map(function (array $row) {
+            unset($row['is_overdue']);
+            return $row;
+          });
+
+        $sellerGroups = $rows
+          ->groupBy('group_label')
+          ->map(function (Collection $groupRows, string $groupLabel) {
+            $firstRow = $groupRows->first();
+
+            return [
+              'label' => $groupLabel,
+              'source' => $firstRow['group_source'] ?? 'seller',
+              'count' => $groupRows->count(),
+              'rows' => $groupRows
+                ->sortByDesc('days_in_stage')
+                ->values()
+                ->map(function (array $row) {
+                  unset($row['group_label'], $row['group_source']);
+                  return $row;
+                }),
+            ];
+          })
+          ->sortBy(function (array $group) {
+            $sourceRank = ($group['source'] ?? 'seller') === 'seller' ? '0' : '1';
+            return $sourceRank . '|' . mb_strtolower((string) ($group['label'] ?? ''));
+          })
+          ->values();
+
+        return [
+          'status' => $config['status'],
+          'threshold_label' => $config['threshold_label'],
+          'note' => $config['note'],
+          'is_configured' => $config['is_configured'],
+          'count' => $sellerGroups->sum('count'),
+          'seller_groups' => $sellerGroups,
+        ];
+      })
+      ->values();
+
+    return [
+      'generatedAt' => $now->toDateTimeString(),
+      'totals' => [
+        'statuses' => $groups->count(),
+        'configured_statuses' => $groups->where('is_configured', true)->count(),
+        'orders' => $groups->sum('count'),
+      ],
+      'groups' => $groups,
+    ];
+  }
+
+  private function overdueStageStatusConfigs(): array
+  {
+    return [
+      [
+        'status' => OrderStatusEnum::NEW_CUSTOMER_REQUEST->value,
+        'is_configured' => true,
+        'hours' => 24,
+        'threshold_label' => '24 hours',
+        'note' => 'Overdue after 24 hours from when the order entered NEW REQUEST.',
+      ],
+      [
+        'status' => OrderStatusEnum::NEW_CUSTOMER_REQUEST_FOLLOW_UP->value,
+        'is_configured' => true,
+        'hours' => 72,
+        'threshold_label' => '72 hours (3 days)',
+        'note' => 'Overdue after 72 hours from when the order entered REQUEST FOLLOW UP.',
+      ],
+      [
+        'status' => OrderStatusEnum::NEW_CUSTOMER_REQUEST_STAND_BY->value,
+        'is_configured' => true,
+        'hours' => 14 * 24,
+        'threshold_label' => '14 days',
+        'note' => 'Overdue after 14 days from when the order entered REQUEST STAND BY.',
+      ],
+      [
+        'status' => OrderStatusEnum::ESTIMATE_APPT_SCHEDULE->value,
+        'is_configured' => true,
+        'hours' => null,
+        'threshold_label' => 'Residential: 2 days. Commercial: 7 days.',
+        'note' => 'Residential uses appointment date when available; otherwise status entry date. Commercial uses status entry date.',
+      ],
+      [
+        'status' => OrderStatusEnum::FOLLOW_UP->value,
+        'is_configured' => true,
+        'hours' => 45 * 24,
+        'threshold_label' => '45 days',
+        'note' => 'Overdue is calculated from the first FOLLOW UP date, matching the board color rule.',
+      ],
+      [
+        'status' => OrderStatusEnum::FOLLOW_UP_PROJECTS->value,
+        'is_configured' => true,
+        'hours' => 45 * 24,
+        'threshold_label' => '45 days',
+        'note' => 'Overdue is calculated from the first FOLLOW UP date, matching the board color rule.',
+      ],
+      [
+        'status' => OrderStatusEnum::STAND_BY->value,
+        'is_configured' => true,
+        'hours' => 120 * 24,
+        'threshold_label' => '120 days',
+        'note' => 'Overdue after 120 days from when the order entered STAND BY.',
+      ],
+    ];
+  }
+
+  private function mapOverdueStageOrderRow(Order $order, array $config, Carbon $now): array
+  {
+    $stageEnteredAt = $this->resolveOrderCurrentStatusEnteredAt($order);
+    [$referenceAt, $thresholdHours] = $this->resolveOverdueStageReference($order, $config, $stageEnteredAt);
+    $isOverdue = $referenceAt !== null
+      && $thresholdHours !== null
+      && $referenceAt->copy()->addHours($thresholdHours)->lessThanOrEqualTo($now);
+    $sellerNames = $order->owners->pluck('name')->filter()->implode(', ');
+    $creatorStatusEntry = $order->orderStatus
+      ->sortBy('created_at')
+      ->first();
+    $creatorName = trim((string) ($creatorStatusEntry?->user?->name ?? $order->user?->name ?? ''));
+    $groupLabel = $sellerNames !== '' ? $sellerNames : ($creatorName !== '' ? $creatorName : 'Unassigned');
+    $groupSource = $sellerNames !== '' ? 'seller' : 'creator';
+
+    return [
+      'id' => $order->id,
+      'order_name' => $order->name,
+      'order_label' => $order->name ? "#{$order->id} - {$order->name}" : "#{$order->id}",
+      'seller_name' => $sellerNames,
+      'created_by_name' => $creatorName,
+      'group_label' => $groupLabel,
+      'group_source' => $groupSource,
+      'days_in_stage' => $stageEnteredAt?->diffInDays($now) ?? 0,
+      'created_at' => $order->created_at?->toDateTimeString(),
+      'stage_entered_at' => $stageEnteredAt?->toDateTimeString(),
+      'is_overdue' => $isOverdue,
+    ];
+  }
+
+  private function resolveOrderCurrentStatusEnteredAt(Order $order): ?Carbon
+  {
+    $statusHistoryEntry = $order->orderStatus
+      ->where('status', $order->status)
+      ->sortByDesc('created_at')
+      ->first();
+
+    return $statusHistoryEntry?->created_at
+      ? Carbon::parse($statusHistoryEntry->created_at)
+      : ($order->created_at ? Carbon::parse($order->created_at) : null);
+  }
+
+  private function resolveOverdueStageReference(Order $order, array $config, ?Carbon $stageEnteredAt): array
+  {
+    if ($config['status'] === OrderStatusEnum::ESTIMATE_APPT_SCHEDULE->value) {
+      $orderType = strtoupper(trim((string) $order->order_type));
+
+      if ($orderType === OrderTypeEnum::RESIDENTIAL->value) {
+        $appointmentAt = $order->schedule_appointment
+          ? Carbon::parse($order->schedule_appointment)
+          : null;
+
+        return [$appointmentAt ?? $stageEnteredAt, 48];
+      }
+
+      if ($orderType === OrderTypeEnum::COMMERCIAL->value) {
+        return [$stageEnteredAt, 168];
+      }
+
+      return [$stageEnteredAt, null];
+    }
+
+    if (in_array($config['status'], [OrderStatusEnum::FOLLOW_UP->value, OrderStatusEnum::FOLLOW_UP_PROJECTS->value], true)) {
+      $followUpStartedAt = $order->orderStatus
+        ->where('status', OrderStatusEnum::FOLLOW_UP->value)
+        ->sortBy('created_at')
+        ->first()?->created_at;
+
+      return [
+        $followUpStartedAt ? Carbon::parse($followUpStartedAt) : null,
+        $config['hours'],
+      ];
+    }
+
+    return [$stageEnteredAt, $config['hours']];
   }
 
   private function buildInstallerConfirmedSummaryData(Carbon $startDate, Carbon $endDate): array

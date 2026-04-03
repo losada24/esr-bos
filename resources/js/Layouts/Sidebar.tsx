@@ -52,6 +52,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
   const CAN_VIEW_SUPERVISOR_ASSIGNED = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER
   const CAN_VIEW_REPLANNED_SUMMARY = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER || IS_OWNER_ADMIN || HAS_FRONTDESK_ADMIN_ROLE
   const CAN_VIEW_DAILY_ORDER_STATUS = IS_ADMIN || HAS_FRONTDESK_ADMIN_ROLE || IS_OWNER_ADMIN
+  const CAN_VIEW_OVERDUE_STAGE_REPORT = IS_ADMIN || IS_ACCOUNT_MANAGER || HAS_FRONTDESK_ADMIN_ROLE || IS_OWNER_ADMIN
   const CAN_VIEW_MARKETING_REPORT = IS_ADMIN || HAS_FRONTDESK_ADMIN_ROLE || IS_OWNER_ADMIN
   const CAN_VIEW_SALES_APPOINTMENTS = IS_ADMIN || IS_ACCOUNT_MANAGER || HAS_FRONTDESK_ADMIN_ROLE || IS_OWNER_ADMIN
   const CAN_VIEW_ORDER_STORAGE = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_ACCOUNTING || HAS_FRONTDESK_ADMIN_ROLE
@@ -69,6 +70,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
     || CAN_VIEW_SUPERVISOR_ASSIGNED
     || CAN_VIEW_REPLANNED_SUMMARY
     || CAN_VIEW_DAILY_ORDER_STATUS
+    || CAN_VIEW_OVERDUE_STAGE_REPORT
     || CAN_VIEW_MARKETING_REPORT
     || CAN_VIEW_SALES_APPOINTMENTS
 
@@ -365,6 +367,16 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                         <div className="flex items-center">
                                           <ReferralIcon/>
                                           <SidebarLinkLabel>Daily Order Status</SidebarLinkLabel>
+                                        </div>
+                                      </NavLink>
+                                    </li>
+                                  )}
+                                  {CAN_VIEW_OVERDUE_STAGE_REPORT && (
+                                    <li className="menu nav-item">
+                                      <NavLink href={route('report.overdue-stage-orders')} active={route().current('report.overdue-stage-orders')} className="group">
+                                        <div className="flex items-center">
+                                          <ReferralIcon/>
+                                          <SidebarLinkLabel>Overdue Stage Orders</SidebarLinkLabel>
                                         </div>
                                       </NavLink>
                                     </li>
