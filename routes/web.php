@@ -508,6 +508,18 @@ Route::middleware('auth')->group(function () {
     ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::FRONTDESK_ADMIN->value . '|'. RoleEnum::OWNER_ADMIN->value] )
     ->name('report.daily-order-status-summary-excel');
 
+    Route::get('/report/overdue-stage-orders', [ReportController::class, 'overdueStageOrders'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::FRONTDESK_ADMIN->value] )
+    ->name('report.overdue-stage-orders');
+
+    Route::get('/report/overdue-stage-orders/pdf', [ReportController::class, 'overdueStageOrdersPdf'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::FRONTDESK_ADMIN->value] )
+    ->name('report.overdue-stage-orders-pdf');
+
+    Route::get('/report/overdue-stage-orders/excel', [ReportController::class, 'overdueStageOrdersExcel'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::FRONTDESK_ADMIN->value] )
+    ->name('report.overdue-stage-orders-excel');
+
     Route::get('/report/marketing', [ReportController::class, 'marketingReport'])
     ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::FRONTDESK_ADMIN->value . '|'. RoleEnum::OWNER_ADMIN->value] )
     ->name('report.marketing');

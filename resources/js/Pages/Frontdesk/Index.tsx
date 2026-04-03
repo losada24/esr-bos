@@ -164,6 +164,7 @@ const formatDateForDisplay = (date: Date): string => {
 
 const TWENTY_FOUR_HOURS_IN_MS = 24 * 60 * 60 * 1000
 const SEVENTY_TWO_HOURS_IN_MS = 72 * 60 * 60 * 1000
+const FOURTEEN_DAYS_IN_MS = 14 * TWENTY_FOUR_HOURS_IN_MS
 
 const normalizePipelineIdentifier = (pipeline: Pick<Pipelines, 'id' | 'title'>): string => {
   const normalizedTitle = pipeline.title?.toUpperCase() ?? ''
@@ -178,6 +179,10 @@ const STALE_STATUS_RULES: Record<string, { threshold: number, className: string 
   },
   'REQUEST FOLLOW UP': {
     threshold: SEVENTY_TWO_HOURS_IN_MS,
+    className: 'bg-red-200 dark:bg-red-500/40'
+  },
+  'REQUEST STAND BY': {
+    threshold: FOURTEEN_DAYS_IN_MS,
     className: 'bg-red-200 dark:bg-red-500/40'
   }
 }

@@ -5,7 +5,10 @@ export {}
 
 export const clientSchema = Yup.object({
   name: Yup.string().required('Name is required'),
-  email: Yup.string().email('Invalid email address'),
+  email: Yup.string()
+    .nullable()
+    .transform((value, originalValue) => (originalValue == null ? '' : value))
+    .email('Invalid email address'),
   order_type: Yup.string().optional(),
   phone: Yup.string()
     .max(20, 'Phone number must be 10 digits')
@@ -23,12 +26,12 @@ export const clientSchema = Yup.object({
 export interface Client {
   id: number
   name: string
-  email: string
-  phone: string
-  contact_type: string
-  other_phone: string
-  secondary_email: string
-  source: string
+  email: string | null
+  phone: string | null
+  contact_type: string | null
+  other_phone: string | null
+  secondary_email: string | null
+  source: string | null
   vip_clients: boolean
   vip_notes?: string
   refer_name?: string

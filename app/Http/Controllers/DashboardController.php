@@ -242,6 +242,9 @@ class DashboardController extends Controller
   public function getEvents($year, $month, $service, $status, $name = null)
   {
     $user = auth()->user();
+    $canHideOnWeekends = $user->hasRole(RoleEnum::ACCOUNT_MANAGER->value)
+      || $user->hasRole(RoleEnum::ADMIN->value)
+      || $user->hasRole(RoleEnum::INSTALLER->value);
 
     if (empty($name) || $name === 'all') {
       $name = null; // Deja en null si no se quiere filtrar por cliente
@@ -429,7 +432,7 @@ class DashboardController extends Controller
             $color = StatusColorEnum::DELAY_PERMITS->value;
           }
 
-          if ($order->hide_on_weekends) {
+          if ($order->hide_on_weekends && $canHideOnWeekends) {
             $blockStart = null;
             while ($startInstallationDateCarbon <= $endInstallationDateCarbon) {
               $dayOfWeek = $startInstallationDateCarbon->format('N'); // 1 = Monday, 7 = Sunday
