@@ -11,6 +11,7 @@ use App\Models\Order;
 use App\Models\OrderCompanyContact;
 use App\Models\PaymentSchedule;
 use App\Models\User;
+use App\Support\ClientCompanyContactManager;
 use App\Support\OrderFinancialEventLogger;
 use App\Support\OrderOwnerChangeNotifier;
 use App\Support\OrderPaymentInformationAuditLogger;
@@ -24,7 +25,8 @@ class UpdateQualifiedOrder
 {
     public function __construct(
         protected QualifiedOrderDuplicateChecker $qualifiedOrderDuplicateChecker,
-        protected OrderOwnerChangeNotifier $orderOwnerChangeNotifier
+        protected OrderOwnerChangeNotifier $orderOwnerChangeNotifier,
+        protected ClientCompanyContactManager $clientCompanyContactManager
     ) {
     }
 
@@ -560,18 +562,6 @@ class UpdateQualifiedOrder
             return;
         }
 
-        if ($force) {
-            $client->update(['company_contact_id' => $companyId]);
-            return;
-        }
-
-        if (empty($client->company_contact_id) || (int) $client->company_contact_id === (int) $companyId) {
-            $client->update(['company_contact_id' => $companyId]);
-            return;
-        }
-
-        throw ValidationException::withMessages([
-            $fieldForError => 'This client is already associated with another company.',
-        ]);
+        $this->clientCompanyContactManager->attach($client, $companyId, $force && empty($client->company_contact_id));
     }
 }

@@ -1,5 +1,5 @@
 import { Field, Form } from 'formik'
-import { useRef, useMemo, useState } from 'react'
+import { useRef, useMemo, useState, type Dispatch, type SetStateAction } from 'react'
 import { useJsApiLoader, StandaloneSearchBox } from '@react-google-maps/api'
 import InputError from '@/Components/InputError'
 import PrimaryButton from '@/Components/PrimaryButton'
@@ -20,12 +20,22 @@ const CompanyContactForm = ({ submitCount, errors, isCreate, setFieldValue, valu
   values: CompanyContact
   clients: Client[]
   sources: string[]
-  setClients: (clients: Client[]) => void
+  setClients: Dispatch<SetStateAction<Client[]>>
 }) => {
   const [showClientModal, setShowClientModal] = useState<boolean>(false)
 
   const addClient = (client: Client) => {
-    setClients([...clients, client])
+    setClients((prevClients) => {
+      if (client.id && prevClients.some((item) => item.id === client.id)) {
+        return prevClients
+      }
+
+      if (!client.id && client.phone && prevClients.some((item) => !item.id && item.phone === client.phone)) {
+        return prevClients
+      }
+
+      return [...prevClients, client]
+    })
   }
   const removeClient = (client: Client, index: number) => {
     if (client.id) {
@@ -202,8 +212,8 @@ const CompanyContactForm = ({ submitCount, errors, isCreate, setFieldValue, valu
         }}
         addClient={addClient }
         sources={sources}
-        // clients={clients}
-        //  setClients={setClients}
+        allowExistingSelection={!isCreate}
+        selectedClients={clients}
       />
     </Form>
   )

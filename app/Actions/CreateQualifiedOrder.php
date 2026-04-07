@@ -18,9 +18,9 @@ use App\Models\SupervisorComissionOrder;
 use App\Traits\ComissionSupervisor;
 use App\Traits\OrderEmails;
 use App\Traits\OrderStatus;
+use App\Support\ClientCompanyContactManager;
 use App\Support\QualifiedOrderDuplicateChecker;
 use Illuminate\Support\Str;
-use Illuminate\Validation\ValidationException;
 
 class CreateQualifiedOrder
 {
@@ -28,7 +28,8 @@ class CreateQualifiedOrder
   use OrderEmails, OrderStatus, ComissionSupervisor;
 
   public function __construct(
-    protected QualifiedOrderDuplicateChecker $qualifiedOrderDuplicateChecker
+    protected QualifiedOrderDuplicateChecker $qualifiedOrderDuplicateChecker,
+    protected ClientCompanyContactManager $clientCompanyContactManager
   ) {
   }
  
@@ -226,50 +227,12 @@ class CreateQualifiedOrder
                       'client_id'=> (int) $request->associate_client_id_2,
                   ]);
               }*/
-                  // Helper para imponer: un cliente solo puede tener UNA compañía
-            $applyCompanyToClient = function (?int $clientId, ?int $companyId, string $fieldForError, bool $force = false) {
-                if (!$clientId || !$companyId) return; // 0/null → ignorar
-                $client = Client::find($clientId);
-                if (!$client) return;
-
-                if ($force) {
-                    $client->update(['company_contact_id' => $companyId]);
-                    return;
+            foreach ($companyClientPairs as $pair) {
+                $client = Client::find((int) $pair['client_id']);
+                if ($client) {
+                    $this->clientCompanyContactManager->attach($client, (int) $pair['company_contact_id']);
                 }
-
-                // Si no tenía compañía, se fija ahora
-                if (empty($client->company_contact_id)) {
-                    $client->update(['company_contact_id' => $companyId]);
-                    return;
-                }
-
-                // Si ya tenía y es otra, error
-                if ((int)$client->company_contact_id !== (int)$companyId) {
-                    throw ValidationException::withMessages([
-                        $fieldForError => 'Este cliente ya está asociado a otra compañía y no puede cambiarse.',
-                    ]);
-                }
-            };
-
-            // Aplica reglas para: principal y asociados
-            $applyCompanyToClient(
-                (int)$request->client_id,
-                (int)$request->company_contact_id,
-                'company_contact_id',
-                true
-            );
-            $applyCompanyToClient(
-                (int)$request->associate_client_id_1,
-                (int)$request->associate_company_contact_id_1,
-                'associate_company_contact_id_1',
-                true
-            );
-            $applyCompanyToClient(
-                (int)$request->associate_client_id_2,
-                (int)$request->associate_company_contact_id_2,
-                'associate_company_contact_id_2',
-                true
-            );
+            }
 
             $hasSingleCompany = count($companyClientPairs) === 1;
             foreach ($companyClientPairs as $pair) {

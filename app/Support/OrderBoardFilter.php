@@ -111,7 +111,7 @@ class OrderBoardFilter
             case 'company_name':
                 if (self::hasText($value)) {
                     $like = self::likeValue($value);
-                    $query->whereHas('client.companyContact', function ($query) use ($like) {
+                    $query->whereHas('client.companyContacts', function ($query) use ($like) {
                         $query->where('name', 'like', $like);
                     });
                 }

@@ -27,6 +27,10 @@ class UpdateCompanyContactRequest extends FormRequest
     public function rules()
     {
         $clients = $this->input('clients', []);
+        $sources = array_map(
+            static fn (ContactSourceEnum $source): string => $source->value,
+            ContactSourceEnum::cases()
+        );
 
         $rules = [
             'name' => 'required|string|max:255',
@@ -42,21 +46,7 @@ class UpdateCompanyContactRequest extends FormRequest
             'clients.*.source' => [
                 'nullable',
                 'string',
-                Rule::in(
-                    ContactSourceEnum::TIK_TOK->value,
-                    ContactSourceEnum::INSTAGRAM_FACEBOOK->value,
-                    ContactSourceEnum::EXTERNAL_REFERAL->value,
-                    ContactSourceEnum::INTERNAL_REFERAL->value,
-                    ContactSourceEnum::SIGNS->value,
-                    ContactSourceEnum::WALK_IN->value,
-                    ContactSourceEnum::ESW_REFER->value,
-                    ContactSourceEnum::ESR_REFER->value,
-                    ContactSourceEnum::YOUTUBE->value,
-                    ContactSourceEnum::NEW_ORDER->value,
-                    ContactSourceEnum::GOOGLE_ADS->value,
-                    ContactSourceEnum::SAME_AS_ORDER->value,
-                    ContactSourceEnum::DIRECT_CALL->value,
-                ),
+                Rule::in($sources),
             ],
             'clients.*.refer_name' => 'nullable|string|max:255',
             'clients.*.refer_phone' => 'nullable|string|max:50',

@@ -62,7 +62,9 @@ export interface Client {
     }
   }
   company_contact_id?: number
-  company_contact?: CompanyContact[]
+  company_contact_ids?: number[]
+  company_contact?: CompanyContact
+  company_contacts?: CompanyContact[]
   tags?: TagItem[]
   is_contact?: boolean
 }

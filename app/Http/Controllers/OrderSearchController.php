@@ -71,7 +71,7 @@ class OrderSearchController extends Controller
                         ->orWhere('other_phone', 'like', $like)
                         ->orWhere('secondary_email', 'like', $like);
                 })
-                ->orWhereHas('client.companyContact', function (Builder $companyQuery) use ($like) {
+                ->orWhereHas('client.companyContacts', function (Builder $companyQuery) use ($like) {
                     $companyQuery->where('name', 'like', $like)
                         ->orWhere('email', 'like', $like)
                         ->orWhere('phone', 'like', $like);
