@@ -49,7 +49,9 @@ export interface Client {
     }
   }
   company_contact_id?: number
+  company_contact_ids?: number[]
   company_contact?: CompanyContact
+  company_contacts?: CompanyContact[]
   is_contact?: boolean
 }
 

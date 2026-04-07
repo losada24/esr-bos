@@ -20,6 +20,14 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 class CompanyContactController extends Controller
 {
+    private function contactSources(): array
+    {
+        return array_map(
+            static fn (ContactSourceEnum $source): string => $source->value,
+            ContactSourceEnum::cases()
+        );
+    }
+
     /**
      * Display a listing of the resource.
      *
@@ -47,21 +55,7 @@ class CompanyContactController extends Controller
             ContactTypeEnum::RESIDENTIAL_CONTACT->value,
             ContactTypeEnum::COMMERCIAL_CONTACT->value,
           ],
-          'sources' => [
-            ContactSourceEnum::TIK_TOK->value,
-            ContactSourceEnum::INSTAGRAM_FACEBOOK->value,
-            ContactSourceEnum::EXTERNAL_REFERAL->value,
-            ContactSourceEnum::INTERNAL_REFERAL->value,
-            ContactSourceEnum::SIGNS->value,
-            ContactSourceEnum::WALK_IN->value,
-            ContactSourceEnum::ESW_REFER->value,
-            ContactSourceEnum::ESR_REFER->value,
-            ContactSourceEnum::YOUTUBE->value,
-            ContactSourceEnum::NEW_ORDER ->value,
-            ContactSourceEnum::GOOGLE_ADS->value,
-            ContactSourceEnum::SAME_AS_ORDER->value,
-            ContactSourceEnum::DIRECT_CALL->value,
-          ],
+          'sources' => $this->contactSources(),
         ] );
     }
 
@@ -96,22 +90,7 @@ class CompanyContactController extends Controller
             ContactTypeEnum::RESIDENTIAL_CONTACT->value,
             ContactTypeEnum::COMMERCIAL_CONTACT->value,
           ],
-          'sources' => [
-            ContactSourceEnum::TIK_TOK->value,
-            ContactSourceEnum::INSTAGRAM_FACEBOOK->value,
-            ContactSourceEnum::EXTERNAL_REFERAL->value,
-            ContactSourceEnum::INTERNAL_REFERAL->value,
-            ContactSourceEnum::SIGNS->value,
-            ContactSourceEnum::WALK_IN->value,
-            ContactSourceEnum::ESW_REFER->value,
-            ContactSourceEnum::ESR_REFER->value,
-            ContactSourceEnum::YOUTUBE->value,
-            ContactSourceEnum::NEW_ORDER ->value,
-            ContactSourceEnum::PICHY_BOYS->value,
-            ContactSourceEnum::GOOGLE_ADS->value,
-            ContactSourceEnum::SAME_AS_ORDER->value,
-            ContactSourceEnum::DIRECT_CALL->value,
-          ],
+          'sources' => $this->contactSources(),
           'companyContact' => $companyContact,
           'clientslist' => $companyContact->clients()->with([
             'referral',

@@ -4,6 +4,7 @@ namespace App\Actions;
 use App\Enum\ContactTypeEnum;
 use App\Models\Client;
 use App\Models\CompanyContact;
+use App\Support\ClientCompanyContactManager;
 use App\Support\ReferralResolver;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -11,7 +12,8 @@ use Illuminate\Support\Facades\DB;
 class UpdateCompanyContact {
 
   public function __construct(
-    private readonly ReferralResolver $referralResolver
+    private readonly ReferralResolver $referralResolver,
+    private readonly ClientCompanyContactManager $clientCompanyContactManager
   ) {}
 
   public function handle(Request $request, CompanyContact $companyContact) {
@@ -23,9 +25,9 @@ class UpdateCompanyContact {
                 ->map(fn($id) => (int) $id)
                 ->toArray();
 
-        $removedClientsQuery = Client::where('company_contact_id', $companyContact->id);
+        $removedClientsQuery = $companyContact->clients();
         if (!empty($clientIdsFromRequest)) {
-            $removedClientsQuery->whereNotIn('id', $clientIdsFromRequest);
+            $removedClientsQuery->whereNotIn('clients.id', $clientIdsFromRequest);
         }
 
         $removedClients = $removedClientsQuery->get();
@@ -83,17 +85,18 @@ class UpdateCompanyContact {
                 ->map(fn($id) => (int) $id)
                 ->toArray();
 
-        $removedClientsQuery = Client::where('company_contact_id', $companyContact->id);
+        $removedClientsQuery = $companyContact->clients();
         if (!empty($clientIdsFromRequest)) {
-            $removedClientsQuery->whereNotIn('id', $clientIdsFromRequest);
+            $removedClientsQuery->whereNotIn('clients.id', $clientIdsFromRequest);
         }
 
-        $removedClientsQuery->update(['company_contact_id' => null]);
+        $removedClientsQuery->get()->each(function (Client $client) use ($companyContact) {
+            $this->clientCompanyContactManager->detach($client, $companyContact->id);
+        });
 
         // 4. Recorrer los clientes del request
         foreach ($request->input('clients', []) as $clientData) {
        
-            $clientData['company_contact_id'] = $companyContact->id;
             $clientData['user_id'] = auth()->id(); // por si querés registrar al usuario
 
             if (!empty($clientData['id'])) {
@@ -102,7 +105,13 @@ class UpdateCompanyContact {
                 if ($client) {
                     $referral = $this->referralResolver->resolve($clientData);
                     $clientData['referral_id'] = $referral?->id;
+                    if (!empty($client->company_contact_id)) {
+                        unset($clientData['company_contact_id']);
+                    } else {
+                        $clientData['company_contact_id'] = $companyContact->id;
+                    }
                     $client->update($clientData);
+                    $this->clientCompanyContactManager->attach($client, $companyContact->id);
                 }
             } else {
                 $referral = $this->referralResolver->resolve($clientData);
@@ -122,6 +131,11 @@ class UpdateCompanyContact {
                     'source' => $clientData['source'] ?? null,
                     'referral_id' => $referral?->id, // null si no aplica
                 ]);
+                $this->clientCompanyContactManager->sync(
+                    $client,
+                    [$companyContact->id],
+                    $companyContact->id
+                );
                 //dd( $client);
             }
         }

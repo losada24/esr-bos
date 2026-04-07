@@ -1003,7 +1003,21 @@ export default function ShowStatusOrder ({
             const companyId = item?.company_contact_id ?? item?.company_contact?.id ?? item?.companyContact?.id ?? null
             const idx = next.findIndex(c => Number(c.id) === Number(clientId))
             if (idx >= 0) {
-              next[idx] = { ...next[idx], company_contact_id: companyId ?? next[idx].company_contact_id }
+              const currentClient = next[idx]
+              if (!currentClient) {
+                continue
+              }
+              const currentCompanyIds = Array.isArray(currentClient.company_contact_ids)
+                ? currentClient.company_contact_ids.map((id) => Number(id))
+                : (currentClient.company_contact_id != null ? [Number(currentClient.company_contact_id)] : [])
+              const nextCompanyIds = companyId != null && !currentCompanyIds.includes(Number(companyId))
+                ? [...currentCompanyIds, Number(companyId)]
+                : currentCompanyIds
+              next[idx] = {
+                ...currentClient,
+                company_contact_id: companyId ?? currentClient.company_contact_id,
+                company_contact_ids: nextCompanyIds
+              }
             }
           }
           return next

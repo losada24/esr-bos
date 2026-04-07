@@ -390,7 +390,10 @@ class FrontdeskController extends Controller
    public function createQualified()
   {
     return Inertia::render('Frontdesk/CreateQualified', [
-      'clients' => Client::all(),
+      'clients' => Client::with(['companyContact:id,name', 'companyContacts:id,name'])
+        ->select('id', 'name', 'phone', 'email', 'other_phone', 'secondary_email', 'source', 'vip_clients', 'vip_notes', 'company_contact_id')
+        ->orderBy('name')
+        ->get(),
       'owners' => User::role(RoleEnum::OWNER->value)
         ->where('status', StatusUserEnum::ACTIVE->value)
         ->get(),
@@ -970,7 +973,7 @@ public function showQuantifiedModal(Order $order)
     ));
     $typeOfFinancing = array_map(fn (TypeOfFinancing $financing) => $financing->value, TypeOfFinancing::cases());
 
-    $clients = Client::with(['companyContact'])
+    $clients = Client::with(['companyContact:id,name', 'companyContacts:id,name'])
       ->select('id', 'name', 'phone', 'email', 'other_phone', 'secondary_email', 'source', 'vip_clients', 'vip_notes', 'company_contact_id')
       ->orderBy('name')
       ->get();

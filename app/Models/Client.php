@@ -17,6 +17,10 @@ class Client extends Model
 {
     use HasFactory, SoftDeletes;
 
+    protected $appends = [
+        'company_contact_ids',
+    ];
+
     protected $fillable = [
       'name',
       'phone',
@@ -70,6 +74,19 @@ class Client extends Model
 
     public function companyContact(): BelongsTo {
       return $this->belongsTo(CompanyContact::class);
+    }
+
+    public function companyContacts(): BelongsToMany
+    {
+      return $this->belongsToMany(CompanyContact::class, 'client_company_contacts')
+        ->wherePivotNull('deleted_at')
+        ->withPivot(['is_primary', 'deleted_at', 'deleted_by_user_id'])
+        ->withTimestamps();
+    }
+
+    public function clientCompanyContacts(): HasMany
+    {
+        return $this->hasMany(ClientCompanyContact::class);
     }
     
     public function orders(): HasMany {
@@ -127,6 +144,23 @@ class Client extends Model
     public function notes(): MorphMany
     {
         return $this->morphMany(Note::class, 'noteable');
+    }
+
+    public function getCompanyContactIdsAttribute(): array
+    {
+        if ($this->relationLoaded('companyContacts')) {
+            return $this->companyContacts
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id)
+                ->values()
+                ->all();
+        }
+
+        if (!empty($this->company_contact_id)) {
+            return [(int) $this->company_contact_id];
+        }
+
+        return [];
     }
 
 }

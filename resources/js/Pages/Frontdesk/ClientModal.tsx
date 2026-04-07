@@ -1,4 +1,4 @@
-import { type ChangeEvent, type ReactNode } from 'react'
+import { type ChangeEvent, type ReactNode, useEffect, useState } from 'react'
 import Modal from '@/Components/Modal'
 import CloseIcon from '@/Components/Icons/CloseIcon'
 import { type Client } from '@/Pages/Client/ClientCommon'
@@ -38,6 +38,10 @@ const ClientModal = ({
   orderType?: string
 }) => {
   type ClientFormValues = Client & { order_type?: string }
+  const [existingClientQuery, setExistingClientQuery] = useState('')
+  const [existingClientResults, setExistingClientResults] = useState<Client[]>([])
+  const [existingClientLoading, setExistingClientLoading] = useState(false)
+  const [existingClientError, setExistingClientError] = useState<string | null>(null)
   const initialValues: ClientFormValues = {
     id: 0,
     name: '',
@@ -59,6 +63,60 @@ const ClientModal = ({
   }
 
   const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? ''
+  useEffect(() => {
+    if (!showModal) {
+      setExistingClientQuery('')
+      setExistingClientResults([])
+      setExistingClientLoading(false)
+      setExistingClientError(null)
+      return
+    }
+
+    const trimmedQuery = existingClientQuery.trim()
+    if (trimmedQuery.length < 2) {
+      setExistingClientResults([])
+      setExistingClientError(null)
+      return
+    }
+
+    let ignore = false
+    setExistingClientLoading(true)
+    setExistingClientError(null)
+
+    const timeoutId = window.setTimeout(async () => {
+      try {
+        const response = await fetch(route('client.search', { q: trimmedQuery }), {
+          headers: {
+            Accept: 'application/json'
+          }
+        })
+
+        if (!response.ok) {
+          throw new Error('Search failed')
+        }
+
+        const data = await response.json()
+        if (!ignore) {
+          setExistingClientResults(Array.isArray(data?.data) ? data.data : [])
+        }
+      } catch (error) {
+        if (!ignore) {
+          setExistingClientError('No se pudo buscar clientes existentes.')
+          setExistingClientResults([])
+        }
+      } finally {
+        if (!ignore) {
+          setExistingClientLoading(false)
+        }
+      }
+    }, 250)
+
+    return () => {
+      ignore = true
+      window.clearTimeout(timeoutId)
+    }
+  }, [existingClientQuery, showModal])
+
   const submitClient = async (
     values: ClientFormValues,
     helpers: FormikHelpers<ClientFormValues>,
@@ -134,6 +192,54 @@ const ClientModal = ({
         </div>
         <div className="p-5">
           <div className="max-h-[70vh] overflow-y-auto pr-1">
+            <div className="mb-6 rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <div className="mb-2 text-sm font-semibold text-slate-700">Link Existing Client</div>
+              <div className="mb-3 text-xs text-slate-500">Search an existing client and use it in this order.</div>
+              <input
+                type="text"
+                value={existingClientQuery}
+                onChange={(event) => {
+                  setExistingClientQuery(event.target.value)
+                }}
+                className="form-input"
+                placeholder="Search by name, email or phone"
+              />
+              {existingClientLoading && (
+                <div className="mt-3 text-xs text-slate-500">Searching clients...</div>
+              )}
+              {!existingClientLoading && existingClientError && (
+                <InputError message={existingClientError} className="mt-3" />
+              )}
+              {!existingClientLoading && !existingClientError && existingClientQuery.trim().length >= 2 && (
+                <div className="mt-3 max-h-48 overflow-y-auto rounded border border-slate-200 bg-white">
+                  {existingClientResults.length > 0
+                    ? existingClientResults.map((client) => (
+                      <button
+                        key={client.id}
+                        type="button"
+                        className="flex w-full items-center justify-between border-b border-slate-100 px-3 py-2 text-left last:border-b-0 hover:bg-slate-50"
+                        onClick={() => {
+                          onConfirm(client)
+                          onClose()
+                        }}
+                      >
+                        <div>
+                          <div className="text-sm font-medium text-slate-700">{client.name}</div>
+                          <div className="text-xs text-slate-500">
+                            {[client.phone, client.email].filter(Boolean).join(' · ') || 'No contact info'}
+                          </div>
+                        </div>
+                        <span className="text-xs font-semibold text-slate-600">Use Client</span>
+                      </button>
+                    ))
+                    : (
+                      <div className="px-3 py-2 text-xs text-slate-500">No existing clients found.</div>
+                      )}
+                </div>
+              )}
+            </div>
+
+            <div className="mb-4 text-sm font-semibold text-slate-700">Create New Client</div>
             <Formik<ClientFormValues>
               initialValues={initialValues}
               validationSchema={clientSchema}

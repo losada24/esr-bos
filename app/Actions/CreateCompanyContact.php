@@ -4,6 +4,7 @@ namespace App\Actions;
 use App\Enum\ContactTypeEnum;
 use App\Models\Client;
 use App\Models\CompanyContact;
+use App\Support\ClientCompanyContactManager;
 use App\Traits\Bigin;
 use App\Support\ReferralResolver;
 use Illuminate\Http\Request;
@@ -14,7 +15,8 @@ class CreateCompanyContact {
   use Bigin;
 
   public function __construct(
-    private readonly ReferralResolver $referralResolver
+    private readonly ReferralResolver $referralResolver,
+    private readonly ClientCompanyContactManager $clientCompanyContactManager
   ) {}
   
   public function handle(Request $request) {
@@ -43,7 +45,7 @@ class CreateCompanyContact {
         foreach ($request->clients as $client) {
           $referral = $this->referralResolver->resolve($client);
 
-          Client::create([
+          $createdClient = Client::create([
             'company_contact_id' => $existingCompany->id,
             'name' =>$client['name'],
             'phone' => $client['phone'],
@@ -57,6 +59,12 @@ class CreateCompanyContact {
             'source' => $client['source'] ?? null,
             'referral_id' => $referral?->id, // null si no aplica
           ]);
+
+          $this->clientCompanyContactManager->sync(
+            $createdClient,
+            [$existingCompany->id],
+            $existingCompany->id
+          );
 
         }
       } 

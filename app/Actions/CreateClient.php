@@ -3,6 +3,7 @@ namespace App\Actions;
 
 use App\Enum\OrderTypeEnum;
 use App\Models\Client;
+use App\Support\ClientCompanyContactManager;
 use App\Traits\Bigin;
 use App\Support\ReferralResolver;
 use Illuminate\Http\Request;
@@ -14,7 +15,8 @@ class CreateClient {
   use Bigin;
 
   public function __construct(
-    private readonly ReferralResolver $referralResolver
+    private readonly ReferralResolver $referralResolver,
+    private readonly ClientCompanyContactManager $clientCompanyContactManager
   ) {}
   
   public function handle(Request $request) {
@@ -43,6 +45,8 @@ class CreateClient {
         }
       }
         //dd($request);
+      $createdNewClient = false;
+
       if( !$existingClient )
       {
           $referral = $this->referralResolver->resolve($request->all());
@@ -59,6 +63,8 @@ class CreateClient {
             'referral_id' => $referral?->id, // null si no aplica
             'company_contact_id' => $request->company_contact_id ? $request->company_contact_id : null,
           ]);
+
+          $createdNewClient = true;
 
 
           /*$tag = new \stdClass();
@@ -95,9 +101,52 @@ class CreateClient {
       {
           throw new \Exception('Client not created');
       }
-        //dd($existingClient);
+
+      $requestedCompanyIds = $this->extractRequestedCompanyIds($request);
+      if (!empty($requestedCompanyIds)) {
+        if ($createdNewClient) {
+          $this->clientCompanyContactManager->sync(
+            $existingClient,
+            $requestedCompanyIds,
+            $request->filled('company_contact_id') ? (int) $request->input('company_contact_id') : null
+          );
+        } else {
+          foreach ($requestedCompanyIds as $companyId) {
+            $this->clientCompanyContactManager->attach(
+              $existingClient,
+              $companyId,
+              empty($existingClient->company_contact_id)
+            );
+          }
+        }
+      }
+
       return $existingClient;
 
     });
+  }
+
+  protected function extractRequestedCompanyIds(Request $request): array
+  {
+    $companyIds = [];
+
+    if ($request->filled('company_contact_id')) {
+      $companyIds[] = (int) $request->input('company_contact_id');
+    }
+
+    $requestCompanyIds = $request->input('company_contact_ids', []);
+    if (is_array($requestCompanyIds)) {
+      foreach ($requestCompanyIds as $companyId) {
+        if (!empty($companyId)) {
+          $companyIds[] = (int) $companyId;
+        }
+      }
+    }
+
+    return collect($companyIds)
+      ->filter(fn ($companyId) => $companyId > 0)
+      ->unique()
+      ->values()
+      ->all();
   }
 }

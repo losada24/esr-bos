@@ -82,6 +82,40 @@ const buildCustomSchedule = (items?: Array<{ label?: string | null, amount?: num
   return normalized.slice(0, 6)
 }
 
+const clientBelongsToCompany = (client: Client, companyId: number | null) => {
+  if (!companyId) return false
+
+  const companyIds = Array.isArray(client.company_contact_ids)
+    ? client.company_contact_ids.map((id) => Number(id))
+    : []
+
+  if (companyIds.includes(Number(companyId))) {
+    return true
+  }
+
+  return client.company_contact_id != null && Number(client.company_contact_id) === Number(companyId)
+}
+
+const withClientCompanyLink = (client: Client, companyId: number | null): Client => {
+  if (!companyId) {
+    return client
+  }
+
+  const nextCompanyIds = Array.isArray(client.company_contact_ids)
+    ? [...client.company_contact_ids.map((id) => Number(id))]
+    : []
+
+  if (!nextCompanyIds.includes(Number(companyId))) {
+    nextCompanyIds.push(Number(companyId))
+  }
+
+  return {
+    ...client,
+    company_contact_id: client.company_contact_id ?? Number(companyId),
+    company_contact_ids: nextCompanyIds
+  }
+}
+
 const OrderQualifiedForm = ({
   submitCount,
   errors,
@@ -268,13 +302,18 @@ const OrderQualifiedForm = ({
   const onClientCreated = (client: Client) => {
     if (isCommercial && clientModalTargetIndex != null) {
       const targetCompanyId = commercialPairs[clientModalTargetIndex]?.companyId ?? null
-      const clientWithCompany = targetCompanyId
-        ? { ...client, company_contact_id: targetCompanyId }
-        : client
+      const clientWithCompany = withClientCompanyLink(client, targetCompanyId)
 
-      setClientsList(prev =>
-        prev.some(c => c.id === clientWithCompany.id) ? prev : [...prev, clientWithCompany]
-      )
+      setClientsList(prev => {
+        const existingIndex = prev.findIndex(c => c.id === clientWithCompany.id)
+        if (existingIndex === -1) {
+          return [...prev, clientWithCompany]
+        }
+
+        const next = [...prev]
+        next[existingIndex] = withClientCompanyLink(next[existingIndex], targetCompanyId)
+        return next
+      })
       setCommercialPairs(prev => {
         const next = [...prev]
         const current = next[clientModalTargetIndex]
@@ -858,7 +897,7 @@ const OrderQualifiedForm = ({
                       ? companyOptions.find(o => o.value === pair.companyId) ?? null
                       : null
                     const rowClients = pair.companyId
-                      ? clientsList.filter(c => Number(c.company_contact_id) === pair.companyId)
+                      ? clientsList.filter(c => clientBelongsToCompany(c, pair.companyId))
                       : []
                     const rowClientOptions = rowClients.map(c => ({ value: c.id, label: c.name }))
                     const rowClient = pair.clientId

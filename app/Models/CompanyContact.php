@@ -57,8 +57,16 @@ class CompanyContact extends Model
       return $this->belongsTo(User::class);
     }
     
-    public function clients(): HasMany {
-      return $this->hasMany(Client::class);
+    public function clients(): BelongsToMany {
+      return $this->belongsToMany(Client::class, 'client_company_contacts')
+        ->wherePivotNull('deleted_at')
+        ->withPivot(['is_primary', 'deleted_at', 'deleted_by_user_id'])
+        ->withTimestamps();
+    }
+
+    public function clientCompanyContacts(): HasMany
+    {
+      return $this->hasMany(ClientCompanyContact::class);
     }
 
     public function clientAddress(): HasMany {
