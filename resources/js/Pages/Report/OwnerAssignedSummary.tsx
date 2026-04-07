@@ -14,6 +14,8 @@ interface OwnerSummaryItem {
   estimate_amount: number
   closed_won_orders: number
   closed_won_amount: number
+  closed_won_orders_percentage: number
+  closed_won_amount_percentage: number
 }
 
 type OwnerAssignedSummaryProps = PageProps & {
@@ -22,8 +24,14 @@ type OwnerAssignedSummaryProps = PageProps & {
   totalEstimateAmount: number
   totalClosedWonOrders: number
   totalClosedWonAmount: number
+  totalClosedWonOrdersPercentage: number
+  totalClosedWonAmountPercentage: number
   startDate: string
   endDate: string
+}
+
+function formatPercentage(value: number) {
+  return `${Number(value || 0).toFixed(2)}%`
 }
 
 export default function OwnerAssignedSummary({
@@ -32,6 +40,8 @@ export default function OwnerAssignedSummary({
   totalEstimateAmount,
   totalClosedWonOrders,
   totalClosedWonAmount,
+  totalClosedWonOrdersPercentage,
+  totalClosedWonAmountPercentage,
   startDate,
   endDate,
   auth
@@ -133,7 +143,9 @@ export default function OwnerAssignedSummary({
             <th className="p-2 border">Total Assigned Clients</th>
             <th className="p-2 border">Estimate Amount (Project Amount)</th>
             <th className="p-2 border">Closed Won Orders</th>
+            <th className="p-2 border">% Closed Won Orders</th>
             <th className="p-2 border">Closed Won Amount</th>
+            <th className="p-2 border">% Closed Won Amount</th>
           </tr>
         </thead>
         <tbody>
@@ -143,7 +155,9 @@ export default function OwnerAssignedSummary({
               <td className="p-2 border">{item.estimate_orders}</td>
               <td className="p-2 border">{formatPrice(Number(item.estimate_amount || 0))}</td>
               <td className="p-2 border">{item.closed_won_orders}</td>
+              <td className="p-2 border">{formatPercentage(item.closed_won_orders_percentage)}</td>
               <td className="p-2 border">{formatPrice(Number(item.closed_won_amount || 0))}</td>
+              <td className="p-2 border">{formatPercentage(item.closed_won_amount_percentage)}</td>
             </tr>
           ))}
         </tbody>
@@ -153,7 +167,9 @@ export default function OwnerAssignedSummary({
             <td className="p-2 border">{totalEstimateOrders}</td>
             <td className="p-2 border">{formatPrice(Number(totalEstimateAmount))}</td>
             <td className="p-2 border">{totalClosedWonOrders}</td>
+            <td className="p-2 border">{formatPercentage(totalClosedWonOrdersPercentage)}</td>
             <td className="p-2 border">{formatPrice(Number(totalClosedWonAmount))}</td>
+            <td className="p-2 border">{formatPercentage(totalClosedWonAmountPercentage)}</td>
           </tr>
         </tfoot>
       </table>
