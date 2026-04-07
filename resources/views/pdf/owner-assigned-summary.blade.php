@@ -1,3 +1,7 @@
+@php
+    $formatPercentage = static fn ($value) => number_format((float) $value, 2, '.', ',') . '%';
+@endphp
+
 <style>
     table {
         width: 100%;
@@ -31,7 +35,7 @@
 <table>
     <thead>
         <tr>
-            <td class="header" colspan="5">
+            <td class="header" colspan="7">
                 Owner Report ({{ $startDate }} to {{ $endDate }})
             </td>
         </tr>
@@ -39,14 +43,18 @@
             <td colspan="2">Total Assigned Clients: {{ $totalEstimateOrders }}</td>
             <td>Total Estimate Amount (Project Amount): {{ '$' . number_format($totalEstimateAmount, 2, '.', ',') }}</td>
             <td>Total Closed Won Orders: {{ $totalClosedWonOrders }}</td>
+            <td>% Closed Won Orders: {{ $formatPercentage($totalClosedWonOrdersPercentage) }}</td>
             <td>Total Closed Won Amount: {{ '$' . number_format($totalClosedWonAmount, 2, '.', ',') }}</td>
+            <td>% Closed Won Amount: {{ $formatPercentage($totalClosedWonAmountPercentage) }}</td>
         </tr>
         <tr>
             <th>Salesperson</th>
             <th>Total Assigned Clients</th>
             <th>Estimate Amount (Project Amount)</th>
             <th>Closed Won Orders</th>
+            <th>% Closed Won Orders</th>
             <th>Closed Won Amount</th>
+            <th>% Closed Won Amount</th>
         </tr>
     </thead>
     <tbody>
@@ -56,7 +64,9 @@
                 <td>{{ $item->estimate_orders }}</td>
                 <td>{{ '$' . number_format($item->estimate_amount ?? 0, 2, '.', ',') }}</td>
                 <td>{{ $item->closed_won_orders }}</td>
+                <td>{{ $formatPercentage($item->closed_won_orders_percentage ?? 0) }}</td>
                 <td>{{ '$' . number_format($item->closed_won_amount ?? 0, 2, '.', ',') }}</td>
+                <td>{{ $formatPercentage($item->closed_won_amount_percentage ?? 0) }}</td>
             </tr>
         @endforeach
         <tr class="totals">
@@ -64,7 +74,9 @@
             <td><strong>{{ $totalEstimateOrders }}</strong></td>
             <td><strong>{{ '$' . number_format($totalEstimateAmount, 2, '.', ',') }}</strong></td>
             <td><strong>{{ $totalClosedWonOrders }}</strong></td>
+            <td><strong>{{ $formatPercentage($totalClosedWonOrdersPercentage) }}</strong></td>
             <td><strong>{{ '$' . number_format($totalClosedWonAmount, 2, '.', ',') }}</strong></td>
+            <td><strong>{{ $formatPercentage($totalClosedWonAmountPercentage) }}</strong></td>
         </tr>
     </tbody>
 </table>

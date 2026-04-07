@@ -2480,12 +2480,37 @@ class ReportController extends Controller
       ->select(DB::raw('SUM(' . $amountExpression . ') as total_closed_won_amount'))
       ->value('total_closed_won_amount') ?? 0;
 
+    $summary = $summary->map(function ($item) {
+      $estimateOrders = (int) $item->estimate_orders;
+      $estimateAmount = (float) $item->estimate_amount;
+      $closedWonOrders = (int) $item->closed_won_orders;
+      $closedWonAmount = (float) $item->closed_won_amount;
+
+      $item->closed_won_orders_percentage = $estimateOrders > 0
+        ? round(($closedWonOrders / $estimateOrders) * 100, 2)
+        : 0.0;
+      $item->closed_won_amount_percentage = $estimateAmount > 0
+        ? round(($closedWonAmount / $estimateAmount) * 100, 2)
+        : 0.0;
+
+      return $item;
+    });
+
+    $totalClosedWonOrdersPercentage = $totalEstimateOrders > 0
+      ? round(($totalClosedWonOrders / $totalEstimateOrders) * 100, 2)
+      : 0.0;
+    $totalClosedWonAmountPercentage = $totalEstimateAmount > 0
+      ? round(($totalClosedWonAmount / $totalEstimateAmount) * 100, 2)
+      : 0.0;
+
     return [
       'summary' => $summary,
       'totalEstimateOrders' => $totalEstimateOrders,
       'totalEstimateAmount' => $totalEstimateAmount,
       'totalClosedWonOrders' => $totalClosedWonOrders,
       'totalClosedWonAmount' => $totalClosedWonAmount,
+      'totalClosedWonOrdersPercentage' => $totalClosedWonOrdersPercentage,
+      'totalClosedWonAmountPercentage' => $totalClosedWonAmountPercentage,
       'startDate' => $startDate->toDateString(),
       'endDate' => $endDate->toDateString(),
     ];

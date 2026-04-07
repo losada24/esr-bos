@@ -1,7 +1,11 @@
+@php
+    $formatPercentage = static fn ($value) => number_format((float) $value, 2, '.', ',') . '%';
+@endphp
+
 <table>
     <thead>
       <tr>
-        <td colspan="5" style="font-weight: bold; font-size: 16px; text-align: left; background-color: #f0f0f0;">
+        <td colspan="7" style="font-weight: bold; font-size: 16px; text-align: left; background-color: #f0f0f0;">
             Owner Report ({{ $startDate }} to {{ $endDate }})
         </td>
       </tr>
@@ -9,7 +13,9 @@
         <td colspan="2" style="font-weight: bold;">Total Assigned Clients: {{ $totalEstimateOrders }}</td>
         <td style="font-weight: bold;">Total Estimate Amount (Project Amount): {{ '$' . number_format($totalEstimateAmount, 2, '.', ',') }}</td>
         <td style="font-weight: bold;">Total Closed Won Orders: {{ $totalClosedWonOrders }}</td>
+        <td style="font-weight: bold;">% Closed Won Orders: {{ $formatPercentage($totalClosedWonOrdersPercentage) }}</td>
         <td style="font-weight: bold;">Total Closed Won Amount: {{ '$' . number_format($totalClosedWonAmount, 2, '.', ',') }}</td>
+        <td style="font-weight: bold;">% Closed Won Amount: {{ $formatPercentage($totalClosedWonAmountPercentage) }}</td>
       </tr>
       <tr></tr>
       <tr></tr>
@@ -18,7 +24,9 @@
           <th width="20">Total Assigned Clients</th>
           <th width="30">Estimate Amount (Project Amount)</th>
           <th width="20">Closed Won Orders</th>
+          <th width="20">% Closed Won Orders</th>
           <th width="30">Closed Won Amount</th>
+          <th width="20">% Closed Won Amount</th>
       </tr>
     </thead>
     <tbody>
@@ -36,8 +44,14 @@
             <td width="20" height="25" text-align="center" valign="middle">
               {{ $item->closed_won_orders }}
             </td>
+            <td width="20" height="25" text-align="center" valign="middle">
+              {{ $formatPercentage($item->closed_won_orders_percentage ?? 0) }}
+            </td>
             <td width="30" height="25" text-align="right" valign="middle">
               {{ '$' . number_format($item->closed_won_amount ?? 0, 2, '.', ',') }}
+            </td>
+            <td width="20" height="25" text-align="center" valign="middle">
+              {{ $formatPercentage($item->closed_won_amount_percentage ?? 0) }}
             </td>
         </tr>
       @endforeach
@@ -50,8 +64,14 @@
               <strong>{{ '$' . number_format($totalEstimateAmount, 2, '.', ',') }}</strong>
             </td>
             <td width="20" height="25" text-align="center" valign="middle"><strong>{{ $totalClosedWonOrders }}</strong></td>
+            <td width="20" height="25" text-align="center" valign="middle">
+              <strong>{{ $formatPercentage($totalClosedWonOrdersPercentage) }}</strong>
+            </td>
             <td width="30" height="25" text-align="right" valign="middle">
               <strong>{{ '$' . number_format($totalClosedWonAmount, 2, '.', ',') }}</strong>
+            </td>
+            <td width="20" height="25" text-align="center" valign="middle">
+              <strong>{{ $formatPercentage($totalClosedWonAmountPercentage) }}</strong>
             </td>
         </tr>
     </tfoot>
