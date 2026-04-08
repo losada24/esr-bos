@@ -212,7 +212,7 @@ const CompanyContactForm = ({ submitCount, errors, isCreate, setFieldValue, valu
         }}
         addClient={addClient }
         sources={sources}
-        allowExistingSelection={!isCreate}
+        allowExistingSelection={true}
         selectedClients={clients}
       />
     </Form>

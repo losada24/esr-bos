@@ -43,6 +43,22 @@ class CreateCompanyContact {
       }
       if (!empty($request->clients)) {
         foreach ($request->clients as $client) {
+          if (!empty($client['id'])) {
+            $existingClient = Client::find((int) $client['id']);
+
+            if ($existingClient) {
+              if (empty($existingClient->company_contact_id)) {
+                $existingClient->update([
+                  'company_contact_id' => $existingCompany->id,
+                ]);
+              }
+
+              $this->clientCompanyContactManager->attach($existingClient, $existingCompany->id);
+            }
+
+            continue;
+          }
+
           $referral = $this->referralResolver->resolve($client);
 
           $createdClient = Client::create([
