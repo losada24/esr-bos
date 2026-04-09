@@ -13,6 +13,15 @@ interface ScheduleTemplateItem {
   percentage: number
 }
 
+export interface ClientEmailOption {
+  value: string
+  label: string
+  is_primary?: boolean
+}
+
+export const PRIMARY_CLIENT_EMAIL_SELECTION = '__PRIMARY__'
+export const NO_CLIENT_EMAIL_SELECTION = '__NONE__'
+
 interface ContractSignedFormValues {
   projectName: string
   projectAmount: string
@@ -23,7 +32,7 @@ interface ContractSignedFormValues {
   jobZip: string
   methodOfPayment: string
   typeOfFinancing: string
-  contactEmail: string
+  clientEmailSelection: string
   orderCompanyContactId: string
   nameCheck: boolean
   addressCheck: boolean
@@ -54,7 +63,7 @@ type ContractSignedSubmitValues = {
   jobZip: string
   methodOfPayment: string
   typeOfFinancing: string
-  contactEmail: string
+  clientEmailSelection: string
   orderCompanyContactId?: number | null
   attachments: File[]
   nameCheck: boolean
@@ -79,7 +88,8 @@ export interface ContractSignedModalProps {
   initialJobZip: string
   initialMethodOfPayment: string
   initialTypeOfFinancing: string
-  initialContactEmail: string
+  initialClientEmailSelection: string
+  clientEmailOptions?: ClientEmailOption[]
   initialNameCheck: boolean
   initialAddressCheck: boolean
   initialAmountCheck: boolean
@@ -87,7 +97,7 @@ export interface ContractSignedModalProps {
   initialCityPermits: boolean
   initialAssociationPermits: boolean
   orderType?: string | null
-  companyOptions?: Array<{ id: number, label: string, client_email?: string | null }>
+  companyOptions?: Array<{ id: number, label: string, client_email?: string | null, clientEmailOptions?: ClientEmailOption[] }>
   initialOrderCompanyContactId?: number | null
   initialPaymentScheduleType?: string
   initialCustomSchedule?: CustomScheduleItem[]
@@ -115,7 +125,8 @@ export default function ContractSignedModal ({
   initialJobZip,
   initialMethodOfPayment,
   initialTypeOfFinancing,
-  initialContactEmail,
+  initialClientEmailSelection,
+  clientEmailOptions = [],
   initialNameCheck,
   initialAddressCheck,
   initialAmountCheck,
@@ -218,7 +229,7 @@ export default function ContractSignedModal ({
             jobZip: initialJobZip ?? '',
             methodOfPayment: initialMethodOfPayment ?? '',
             typeOfFinancing: initialTypeOfFinancing ?? '',
-            contactEmail: initialContactEmail ?? '',
+            clientEmailSelection: initialClientEmailSelection ?? PRIMARY_CLIENT_EMAIL_SELECTION,
             orderCompanyContactId: initialOrderCompanyContactId ? String(initialOrderCompanyContactId) : (companyOptions.length === 1 ? String(companyOptions[0].id) : ''),
             nameCheck: initialNameCheck ?? true,
             addressCheck: initialAddressCheck ?? true,
@@ -243,6 +254,10 @@ export default function ContractSignedModal ({
             const projectAmountValue = Number(String(values.projectAmount ?? '').replace(/,/g, ''))
             const hasValidProjectAmount = Number.isFinite(projectAmountValue) && projectAmountValue > 0
             const cashAmountValue = Number(String(values.downPayment ?? '').replace(/,/g, ''))
+            const selectedCompanyOption = companyOptions.find((option) => String(option.id) === String(values.orderCompanyContactId))
+            const activeEmailOptions = (selectedCompanyOption?.clientEmailOptions ?? clientEmailOptions) ?? []
+            const primaryEmailOption = activeEmailOptions.find((option) => option.is_primary)
+            const allowedEmailValues = new Set(activeEmailOptions.map((option) => option.value.trim().toLowerCase()))
 
             if (!values.projectName || values.projectName.trim() === '') {
               issues.projectName = 'Project name is required.'
@@ -254,11 +269,15 @@ export default function ContractSignedModal ({
               issues.projectAmount = 'Enter a valid number.'
             }
 
-            const trimmedEmail = values.contactEmail?.trim() ?? ''
-            if (!trimmedEmail) {
-              issues.contactEmail = 'Contact email is required.'
-            } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
-              issues.contactEmail = 'Enter a valid email address.'
+            const normalizedClientEmailSelection = values.clientEmailSelection?.trim() ?? ''
+            if (!normalizedClientEmailSelection) {
+              issues.clientEmailSelection = 'Select how client emails should be handled for this order.'
+            } else if (normalizedClientEmailSelection === PRIMARY_CLIENT_EMAIL_SELECTION) {
+              if (!primaryEmailOption?.value) {
+                issues.clientEmailSelection = 'Primary client email is not available. Select another associated email or choose not to send client emails.'
+              }
+            } else if (normalizedClientEmailSelection !== NO_CLIENT_EMAIL_SELECTION && !allowedEmailValues.has(normalizedClientEmailSelection.toLowerCase())) {
+              issues.clientEmailSelection = 'Select one of the available client emails.'
             }
 
             if (values.jobAddress && values.jobAddress.length > 255) {
@@ -382,7 +401,7 @@ export default function ContractSignedModal ({
               jobZip: values.jobZip.trim(),
               methodOfPayment: values.methodOfPayment,
               typeOfFinancing: values.typeOfFinancing,
-              contactEmail: values.contactEmail.trim(),
+              clientEmailSelection: values.clientEmailSelection.trim(),
               orderCompanyContactId: values.orderCompanyContactId ? Number(values.orderCompanyContactId) : null,
               nameCheck: values.nameCheck,
               addressCheck: values.addressCheck,
@@ -474,7 +493,15 @@ export default function ContractSignedModal ({
               : buildPreviewItems(selectedTemplateItems)
 
             const selectedCompanyOption = companyOptions.find((option) => String(option.id) === String(values.orderCompanyContactId))
-            const selectedEmail = selectedCompanyOption?.client_email ?? ''
+            const activeEmailOptions = (selectedCompanyOption?.clientEmailOptions ?? clientEmailOptions) ?? []
+            const primaryEmailOption = activeEmailOptions.find((option) => option.is_primary)
+            const alternateEmailOptions = activeEmailOptions.filter((option) => !option.is_primary)
+            const selectedAlternateEmail = alternateEmailOptions.find((option) => option.value === values.clientEmailSelection)
+            const recipientPreview = values.clientEmailSelection === NO_CLIENT_EMAIL_SELECTION
+              ? 'Client emails disabled for this order.'
+              : values.clientEmailSelection === PRIMARY_CLIENT_EMAIL_SELECTION
+                ? (primaryEmailOption?.value ?? 'Primary client email is not available.')
+                : (selectedAlternateEmail?.value ?? values.clientEmailSelection)
 
             return (
             <Form className="mt-4 space-y-4" encType="multipart/form-data">
@@ -491,8 +518,14 @@ export default function ContractSignedModal ({
                           handleChange(event)
                           const nextId = event.target.value
                           const nextOption = companyOptions.find((option) => String(option.id) === String(nextId))
-                          const nextEmail = nextOption?.client_email ?? ''
-                          setFieldValue('contactEmail', nextEmail)
+                          const nextEmailOptions = (nextOption?.clientEmailOptions ?? clientEmailOptions) ?? []
+                          const nextAllowedValues = new Set(nextEmailOptions.map((option) => option.value.trim().toLowerCase()))
+                          const currentSelection = values.clientEmailSelection?.trim() ?? ''
+                          const isReservedSelection = currentSelection === PRIMARY_CLIENT_EMAIL_SELECTION || currentSelection === NO_CLIENT_EMAIL_SELECTION
+
+                          if (!isReservedSelection && !nextAllowedValues.has(currentSelection.toLowerCase())) {
+                            setFieldValue('clientEmailSelection', PRIMARY_CLIENT_EMAIL_SELECTION)
+                          }
                         }}
                         onBlur={handleBlur}
                         className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 outline-none focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
@@ -545,20 +578,27 @@ export default function ContractSignedModal ({
                     </div>
                   </div>
 
-                  <div className={submitCount ? (errors.contactEmail ? 'has-error' : 'has-success') : ''}>
-                    <label className="mb-1 block text-sm font-medium text-slate-600">Contact Email</label>
-                    <input
-                      name="contactEmail"
-                      type="email"
-                      value={values.contactEmail || selectedEmail}
+                  <div className={submitCount ? (errors.clientEmailSelection ? 'has-error' : 'has-success') : ''}>
+                    <label className="mb-1 block text-sm font-medium text-slate-600">Client Email Delivery</label>
+                    <select
+                      name="clientEmailSelection"
+                      value={values.clientEmailSelection}
                       onChange={handleChange}
                       onBlur={handleBlur}
                       className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 outline-none focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
-                      placeholder="name@example.com"
                       disabled={loading}
-                    />
-                    {submitCount && errors.contactEmail
-                      ? <InputError message={errors.contactEmail} className="mt-2" />
+                    >
+                      <option value={PRIMARY_CLIENT_EMAIL_SELECTION}>
+                        {primaryEmailOption?.label ?? 'Primary client email not available'}
+                      </option>
+                      {alternateEmailOptions.map((option) => (
+                        <option key={option.value} value={option.value}>{option.label}</option>
+                      ))}
+                      <option value={NO_CLIENT_EMAIL_SELECTION}>Do not send client emails</option>
+                    </select>
+                    <p className="mt-2 text-xs text-slate-500">{recipientPreview}</p>
+                    {submitCount && errors.clientEmailSelection
+                      ? <InputError message={errors.clientEmailSelection} className="mt-2" />
                       : null}
                   </div>
 

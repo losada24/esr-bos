@@ -19,17 +19,20 @@ use App\Mail\RequestReSchedule;
 use App\Mail\RequestStandBy;
 use App\Models\Order;
 use App\Models\User;
+use App\Support\OrderClientEmailManager;
 
 trait OrderEmails {
 
   public function sendEmail(Order $order, ?string $requestRescheduleNote = null) {
+    $clientEmailManager = app(OrderClientEmailManager::class);
+
     if ($order->status === OrderStatusEnum::PLANNED->value) {
       $users = [];
       foreach ($order->owners as $owner) {
         $users[] = $owner->email;
       }
       if ($order->do_not_send_email != 1) {
-        $clientEmail = optional($order->client)->email;
+        $clientEmail = $clientEmailManager->resolveRecipient($order);
         if (!empty($clientEmail)) {
           $users[] = $clientEmail;
         }
@@ -71,7 +74,7 @@ trait OrderEmails {
         SendGmailEmail::dispatch($email, $mailable)->onQueue('emails');
       }
 
-      $clientEmail = trim((string) optional($order->client)->email);
+      $clientEmail = trim((string) ($clientEmailManager->resolveRecipient($order) ?? ''));
       if ($clientEmail !== '' && !empty($order->schedule_appointment)) {
         $mailable = new EstimateAppointmentScheduledClient($order);
         SendGmailEmail::dispatch($clientEmail, $mailable)->onQueue('emails');
@@ -117,7 +120,7 @@ trait OrderEmails {
     else if ($order->status === OrderStatusEnum::DELIVERY_CONFIRMED->value) {
       $users = [];
       if ($order->do_not_send_email != 1) {
-        $clientEmail = optional($order->client)->email;
+        $clientEmail = $clientEmailManager->resolveRecipient($order);
         if (!empty($clientEmail)) {
           $users[] = $clientEmail;
         }
@@ -143,7 +146,7 @@ trait OrderEmails {
         }
 
         if ($order->do_not_send_email != 1) {
-          $clientEmail = optional($order->client)->email;
+          $clientEmail = $clientEmailManager->resolveRecipient($order);
           if (!empty($clientEmail)) {
             $users[] = $clientEmail;
           }
@@ -195,7 +198,7 @@ trait OrderEmails {
       } else if ($order->service === ServiceEnum::DELIVERY->value || $order->service === ServiceEnum::PICKUP->value) {
         $users = [];
         if ($order->do_not_send_email != 1) {
-          $clientEmail = optional($order->client)->email;
+          $clientEmail = $clientEmailManager->resolveRecipient($order);
           if (!empty($clientEmail)) {
             $users[] = $clientEmail;
           }

@@ -159,6 +159,14 @@ export interface Order {
   down_payment?: number | null
   type_of_financing?: string | null
   contact_email?: string | null
+  client_email_selection?: string | null
+  client_email_override?: string | null
+  do_not_send_email?: boolean
+  client_email_options?: Array<{
+    value: string
+    label: string
+    is_primary?: boolean
+  }>
   loss_reason_frontdesk?: string | null
   attachments?: Attachment[]
   method_of_payment?: string | null
@@ -304,6 +312,7 @@ export const orderFormObj: OrderFormValues = {
   payment_schedule_type: '',
   custom_schedule: Array.from({ length: 6 }, () => ({ label: '', amount: '' })),
   contact_email: '',
+  client_email_selection: '__PRIMARY__',
   loss_reason_frontdesk: '',
   name_check: false,
   address_check: false,
@@ -421,6 +430,7 @@ export const loadOrderFormObj = (order: Order): OrderFormValues => {
     payment_schedule_type: scheduleType,
     custom_schedule: customSchedule,
     contact_email: order.contact_email ?? order.client?.email ?? '',
+    client_email_selection: order.client_email_selection ?? '__PRIMARY__',
     loss_reason_frontdesk: order.loss_reason_frontdesk ?? '',
     name_check: order.name_check ?? false,
     address_check: order.address_check ?? false,

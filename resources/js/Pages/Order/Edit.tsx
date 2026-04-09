@@ -142,6 +142,7 @@ export default function Edit ({
         ? values.type_of_financing
         : null,
       down_payment: isCashAndFinanced ? values.down_payment : null,
+      do_not_send_email: values.client_email_selection === '__NONE__',
       frame_color: (values.frame_color || []).map((color: { label: string, value: string }) => color.label),
       complete_date: values.status.value === 'COMPLETE' ? new Date().toLocaleDateString('en-CA') : null,
       pending_collect: values.status.value === 'PENDING COLLECT' ? new Date().toLocaleDateString('en-CA') : null,

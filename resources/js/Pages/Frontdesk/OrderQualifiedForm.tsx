@@ -22,6 +22,7 @@ import CompanyModal from './CompanyModal'
 import { type Source } from '@/types/interfaces/order'
 import ClientModal from './ClientModal'
 import { type Client } from '../Client/ClientCommon'
+import { NO_CLIENT_EMAIL_SELECTION, PRIMARY_CLIENT_EMAIL_SELECTION } from '@/Pages/Sales/ContractSignedModal'
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
 const GOOGLE_MAPS_LIBRARIES: Array<'places'> = ['places']
@@ -114,6 +115,80 @@ const withClientCompanyLink = (client: Client, companyId: number | null): Client
     company_contact_id: client.company_contact_id ?? Number(companyId),
     company_contact_ids: nextCompanyIds
   }
+}
+
+type ClientEmailOption = {
+  value: string
+  label: string
+  is_primary?: boolean
+}
+
+const normalizeEmail = (email?: string | null) => {
+  if (typeof email !== 'string') return null
+  const normalized = email.trim()
+  return normalized !== '' ? normalized : null
+}
+
+const pushClientEmailOption = (options: ClientEmailOption[], seen: Set<string>, email: string | null, label: string, isPrimary = false) => {
+  const normalizedEmail = normalizeEmail(email)
+  if (!normalizedEmail) return
+
+  const key = normalizedEmail.toLowerCase()
+  if (seen.has(key)) {
+    const existing = options.find(option => option.value.toLowerCase() === key)
+    if (existing && isPrimary) {
+      existing.is_primary = true
+      existing.label = `${label}: ${normalizedEmail}`
+    }
+    return
+  }
+
+  seen.add(key)
+  options.push({
+    value: normalizedEmail,
+    label: `${label}: ${normalizedEmail}`,
+    is_primary: isPrimary
+  })
+}
+
+const buildClientEmailOptions = (
+  client: Client | null,
+  selectedCompany: CompanyContact | null,
+  companies: CompanyContact[]
+) => {
+  const options: ClientEmailOption[] = []
+  const seen = new Set<string>()
+
+  pushClientEmailOption(options, seen, client?.email ?? null, 'Primary client email', true)
+  pushClientEmailOption(options, seen, client?.secondary_email ?? null, 'Secondary client email')
+
+  if (selectedCompany) {
+    pushClientEmailOption(
+      options,
+      seen,
+      selectedCompany.email ?? null,
+      selectedCompany.name ? `Selected company email: ${selectedCompany.name}` : 'Selected company email'
+    )
+  }
+
+  const clientCompanyIds = client?.company_contact_ids
+  const linkedCompanyIds = Array.isArray(clientCompanyIds)
+    ? clientCompanyIds.map((id) => Number(id))
+    : (client?.company_contact_id != null ? [Number(client.company_contact_id)] : [])
+
+  linkedCompanyIds.forEach((companyId) => {
+    const linkedCompany = companies.find((item) => Number(item.id) === Number(companyId))
+    if (!linkedCompany) return
+
+    pushClientEmailOption(
+      options,
+      seen,
+      linkedCompany.email ?? null,
+      linkedCompany.name ? `Associated company email: ${linkedCompany.name}` : 'Associated company email'
+    )
+  })
+
+  return options
 }
 
 const OrderQualifiedForm = ({
@@ -343,10 +418,44 @@ const OrderQualifiedForm = ({
   const selectedClient = values.client_id
     ? clientsOptions.find(o => o.value === values.client_id) ?? null
     : null
+  const primaryCommercialPair = commercialPairs[0] ?? null
+  const emailContextClientId = isCommercial
+    ? (primaryCommercialPair?.clientId ?? null)
+    : (values.client_id ? Number(values.client_id) : null)
+  const emailContextCompanyId = isCommercial
+    ? (primaryCommercialPair?.companyId ?? null)
+    : (values.company_contact_id ? Number(values.company_contact_id) : null)
+  const emailContextClient = emailContextClientId != null
+    ? clientsList.find((client) => Number(client.id) === Number(emailContextClientId)) ?? null
+    : null
+  const emailContextCompany = emailContextCompanyId != null
+    ? companiesList.find((company) => Number(company.id) === Number(emailContextCompanyId)) ?? null
+    : null
+  const clientEmailOptions = useMemo(
+    () => buildClientEmailOptions(emailContextClient, emailContextCompany, companiesList),
+    [emailContextClient, emailContextCompany, companiesList]
+  )
+  const primaryClientEmailOption = clientEmailOptions.find((option) => option.is_primary)
 
   const ownerOptions = Array.isArray(owners) ? owners.map(owner => ({ value: owner.id, label: owner.name })) : []
   const ownerIds = Array.isArray(values.owner_ids) ? values.owner_ids : []
   const selectedOwners = ownerOptions.filter(option => ownerIds.includes(option.value))
+
+  useEffect(() => {
+    if (values.client_email_selection === NO_CLIENT_EMAIL_SELECTION) {
+      return
+    }
+
+    if (values.client_email_selection === PRIMARY_CLIENT_EMAIL_SELECTION) {
+      return
+    }
+
+    const normalizedSelection = String(values.client_email_selection ?? '').trim().toLowerCase()
+    const isStillAvailable = clientEmailOptions.some((option) => option.value.trim().toLowerCase() === normalizedSelection)
+    if (!isStillAvailable) {
+      setFieldValue('client_email_selection', PRIMARY_CLIENT_EMAIL_SELECTION)
+    }
+  }, [clientEmailOptions, setFieldValue, values.client_email_selection])
 
   /* const selectedClient = values.client_id
     ? {
@@ -603,6 +712,7 @@ const OrderQualifiedForm = ({
                 setFieldValue('associate_client_id_2', null) // Reset associate client 2 when order type changes
                 setFieldValue('associate_source_id_1', null) // Reset associate source 1 when order type changes
                 setFieldValue('associate_source_id_2', null) // Reset associate source 2 when order type changes
+                setFieldValue('client_email_selection', PRIMARY_CLIENT_EMAIL_SELECTION)
               }}
             >
               <option value="">Order Type</option>
@@ -876,7 +986,7 @@ const OrderQualifiedForm = ({
               {(submitCount && errors.source) ? <InputError message={errors.source} className="mt-2" /> : ''}
             </div> */}
                {(values.order_type === ORDER_TYPES.COMMERCIAL) && (
-                <div className="col-span-4 space-y-4 rounded-lg border border-slate-200 bg-slate-50/50 p-4">
+               <div className="col-span-4 space-y-4 rounded-lg border border-slate-200 bg-slate-50/50 p-4">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
                       <div className="text-sm font-semibold text-slate-700">Companies</div>
@@ -1039,6 +1149,36 @@ const OrderQualifiedForm = ({
                   })}
                 </div>
                )}
+
+               <div className={`col-span-4 md:col-span-2 ${submitCount ? (errors.client_email_selection ? 'has-error' : 'has-success') : ''}`}>
+                 <label htmlFor="client_email_selection">Client Email Delivery</label>
+                 <Field
+                   as="select"
+                   id="client_email_selection"
+                   name="client_email_selection"
+                   className="form-select"
+                 >
+                   <option value={PRIMARY_CLIENT_EMAIL_SELECTION}>
+                     {primaryClientEmailOption
+                       ? `Primary client email (${primaryClientEmailOption.value})`
+                       : 'Primary client email'}
+                   </option>
+                   {clientEmailOptions
+                     .filter((option) => !option.is_primary)
+                     .map((option) => (
+                       <option key={option.value} value={option.value}>
+                         {option.label}
+                       </option>
+                     ))}
+                   <option value={NO_CLIENT_EMAIL_SELECTION}>Do not send client emails</option>
+                 </Field>
+                 {(submitCount && errors.client_email_selection)
+                   ? <InputError message={errors.client_email_selection} className="mt-2" />
+                   : null}
+                 <div className="mt-1 text-xs text-slate-500">
+                   If no alternate address is selected, emails for this order go to the client&apos;s primary email.
+                 </div>
+               </div>
 
                {/* <div className={submitCount ? ((errors as any).associate_company_contact_id_1 ? 'has-error' : 'has-success') : ''}>
                   <label htmlFor="associate_company_contact_id_1">Other Company Associate 1</label>

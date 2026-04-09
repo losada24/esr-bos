@@ -12,6 +12,14 @@ export interface Tasks {
   schedule_appointment_iso?: string | null
   phone: string | null
   contact_email?: string | null
+  client_email_selection?: string | null
+  client_email_override?: string | null
+  client_email_options?: Array<{
+    value: string
+    label: string
+    is_primary?: boolean
+  }>
+  do_not_send_email?: boolean
   image?: string | null
   created_by?: string | null
   name_check?: boolean
@@ -34,10 +42,17 @@ export interface Tasks {
   order_company_contacts?: Array<{
     id: number
     company_name?: string | null
+    company_email?: string | null
     client_id?: number | null
     client_name?: string | null
     client_email?: string | null
+    client_secondary_email?: string | null
     is_selected?: boolean
+    client_email_options?: Array<{
+      value: string
+      label: string
+      is_primary?: boolean
+    }>
   }>
   owner_ids?: number[]
   owners?: Array<{ id: number, name: string }>

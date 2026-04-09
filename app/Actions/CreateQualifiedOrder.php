@@ -6,6 +6,7 @@ use App\Enum\OrderStatusEnum;
 use App\Enum\OrderTypeEnum;
 use App\Enum\PlaningDateSupervisorEnum;
 use App\Models\Client;
+use App\Models\CompanyContact;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Enum\ServiceEnum;
@@ -19,8 +20,11 @@ use App\Traits\ComissionSupervisor;
 use App\Traits\OrderEmails;
 use App\Traits\OrderStatus;
 use App\Support\ClientCompanyContactManager;
+use App\Support\OrderClientEmailDeliveryLogger;
+use App\Support\OrderClientEmailManager;
 use App\Support\QualifiedOrderDuplicateChecker;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class CreateQualifiedOrder
 {
@@ -29,7 +33,9 @@ class CreateQualifiedOrder
 
   public function __construct(
     protected QualifiedOrderDuplicateChecker $qualifiedOrderDuplicateChecker,
-    protected ClientCompanyContactManager $clientCompanyContactManager
+    protected ClientCompanyContactManager $clientCompanyContactManager,
+    protected OrderClientEmailManager $orderClientEmailManager,
+    protected OrderClientEmailDeliveryLogger $orderClientEmailDeliveryLogger
   ) {
   }
  
@@ -46,6 +52,24 @@ class CreateQualifiedOrder
     );
 
     DB::transaction(function () use ($request) {
+      $primaryClient = $request->filled('client_id')
+        ? Client::with('companyContacts')->find((int) $request->input('client_id'))
+        : null;
+      $primaryCompany = $request->order_type === OrderTypeEnum::COMMERCIAL->value && $request->filled('company_contact_id')
+        ? CompanyContact::find((int) $request->input('company_contact_id'))
+        : null;
+      $clientEmailSelection = (string) $request->input('client_email_selection', OrderClientEmailManager::PRIMARY_SELECTION);
+      $selectionError = $this->orderClientEmailManager->validateSelectionForContext(
+        $primaryClient,
+        $clientEmailSelection,
+        $primaryCompany
+      );
+      if ($selectionError !== null) {
+        throw ValidationException::withMessages([
+          'client_email_selection' => $selectionError,
+        ]);
+      }
+
       /*$client = Client::create([
         'name' => $request->client_name,
         'phone' => $request->phone,
@@ -184,10 +208,6 @@ class CreateQualifiedOrder
         'user_id' => auth()->user()->id,
         'notes' => "$status created by " . auth()->user()->name,
       ]);
-
-       $order->load('saleForm', 'client');
-
-      $this->sendEmail($order);
       if (!$order) {
         throw new \Exception('Order not created');
       }
@@ -260,6 +280,21 @@ class CreateQualifiedOrder
                 ]);
             }
         }
+
+      $this->orderClientEmailManager->applySelection($order, $clientEmailSelection);
+      $order->save();
+      $order->load(
+        'saleForm',
+        'client.companyContacts',
+        'orderCompanyContacts.client.companyContacts',
+        'orderCompanyContacts.companyContact'
+      );
+      $this->orderClientEmailDeliveryLogger->logIfConfiguredDifferentlyFromDefault(
+        $order,
+        $primaryClient?->email
+      );
+
+      $this->sendEmail($order);
     });
   }
 }

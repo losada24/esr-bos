@@ -43,6 +43,7 @@ use App\Traits\Snapshot;
 use App\Support\PaymentScheduleTemplates;
 use App\Support\PaymentInstallmentPresenter;
 use App\Support\OrderBoardFilter;
+use App\Support\OrderClientEmailManager;
 use App\Support\OrderPipelineSort;
 use App\Support\QualifiedOrderDuplicateChecker;
 use Illuminate\Support\Str;
@@ -151,6 +152,35 @@ class FrontdeskController extends Controller
         }
 
         return $bidDueDate ? Carbon::parse($bidDueDate)->format('Y-m-d') : null;
+    }
+
+    private function clientEmailManager(): OrderClientEmailManager
+    {
+        return app(OrderClientEmailManager::class);
+    }
+
+    private function appendClientEmailData(Order $order): array
+    {
+        $orderData = $order->toArray();
+        $selectedContact = $order->orderCompanyContacts
+            ->firstWhere('is_selected', true)
+            ?? ($order->orderCompanyContacts->count() === 1 ? $order->orderCompanyContacts->first() : null);
+
+        $orderData['contact_email'] = $this->clientEmailManager()->resolveRecipient($order);
+        $orderData['client_email_selection'] = $this->clientEmailManager()->selectionForOrder($order);
+        $orderData['client_email_override'] = $order->client_email_override;
+        $orderData['client_email_options'] = $this->clientEmailManager()->optionsForOrder($order, $selectedContact);
+        $orderData['order_company_contacts'] = $order->orderCompanyContacts
+            ->map(function ($item) use ($order) {
+                $data = $item->toArray();
+                $data['client_email_options'] = $this->clientEmailManager()->optionsForOrder($order, $item);
+
+                return $data;
+            })
+            ->values()
+            ->all();
+
+        return $orderData;
     }
 
     public function index(Request $request)
@@ -390,7 +420,7 @@ class FrontdeskController extends Controller
    public function createQualified()
   {
     return Inertia::render('Frontdesk/CreateQualified', [
-      'clients' => Client::with(['companyContact:id,name', 'companyContacts:id,name'])
+      'clients' => Client::with(['companyContact:id,name,email', 'companyContacts:id,name,email'])
         ->select('id', 'name', 'phone', 'email', 'other_phone', 'secondary_email', 'source', 'vip_clients', 'vip_notes', 'company_contact_id')
         ->orderBy('name')
         ->get(),
@@ -798,6 +828,7 @@ public function showQuantifiedModal(Order $order)
     $order->load(
       'tags:id,name,color,taggable_id,taggable_type',
       'client.companyContact',
+      'client.companyContacts',
       'client.referral',
       'client.referral.referrerClient:id,name,phone,email',
       'client.referral.referrerUser:id,name,phone,email,status',
@@ -811,7 +842,7 @@ public function showQuantifiedModal(Order $order)
       'changeOrderPayment.paidBy',
       'financialEvents.user',
       'orderCompanyContacts.companyContact',
-      'orderCompanyContacts.client',
+      'orderCompanyContacts.client.companyContacts',
       'orderCompanyContacts.source'
     );
 
@@ -973,12 +1004,12 @@ public function showQuantifiedModal(Order $order)
     ));
     $typeOfFinancing = array_map(fn (TypeOfFinancing $financing) => $financing->value, TypeOfFinancing::cases());
 
-    $clients = Client::with(['companyContact:id,name', 'companyContacts:id,name'])
+    $clients = Client::with(['companyContact:id,name,email', 'companyContacts:id,name,email'])
       ->select('id', 'name', 'phone', 'email', 'other_phone', 'secondary_email', 'source', 'vip_clients', 'vip_notes', 'company_contact_id')
       ->orderBy('name')
       ->get();
 
-    $companies = CompanyContact::select('id', 'name')->orderBy('name')->get();
+    $companies = CompanyContact::select('id', 'name', 'email')->orderBy('name')->get();
 
     $qualifiedSources = Source::select('id', 'name')->orderBy('name')->get();
 
@@ -1006,7 +1037,7 @@ public function showQuantifiedModal(Order $order)
         OrderStatusEnum::QUALIFIED->value,
     ];
 
-    $orderData = $order->toArray();
+    $orderData = $this->appendClientEmailData($order);
     $orderData['payment_schedule'] = PaymentInstallmentPresenter::schedule($order->paymentSchedule);
     $orderData['financial_events'] = $order->financialEvents
       ->take(200)
@@ -1075,7 +1106,7 @@ public function showQuantifiedModal(Order $order)
     }
 
     $updatedOrder = $updateQualifiedOrder->handle($request, $order);
-    $orderData = $updatedOrder->toArray();
+    $orderData = $this->appendClientEmailData($updatedOrder);
     $orderData['payment_schedule'] = PaymentInstallmentPresenter::schedule($updatedOrder->paymentSchedule);
     $orderData['has_contract_signed'] = $updatedOrder->hasReachedContractSigned();
 

@@ -79,6 +79,7 @@ class Order extends Model
     'final_inspection_date',
     'complete_date',
     'do_not_send_email',
+    'client_email_override',
     'service_date',
     'pending_collect',
     'pre_inspection',

@@ -70,6 +70,8 @@ export interface Order {
   initial_payment_percentage?: number
   hide_on_weekends?: boolean
   do_not_send_email?: boolean
+  client_email_selection?: string | null
+  client_email_override?: string | null
   pending_collect?: Date
   payment_extra_fields?: PaymentExtraFields
   installation_payment?: InstallationPayment[]
