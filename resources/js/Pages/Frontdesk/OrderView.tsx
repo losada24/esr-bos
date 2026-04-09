@@ -36,7 +36,7 @@ import FollowUpModal from '@/Pages/Sales/FollowUpModal'
 import StandByNoteModal from '@/Pages/Sales/StandByNoteModal'
 import RequestRescheduleModal from '@/Pages/Sales/RequestRescheduleModal'
 import PreContractNoteModal from '@/Pages/Sales/PreContractNoteModal'
-import ContractSignedModal from '@/Pages/Sales/ContractSignedModal'
+import ContractSignedModal, { PRIMARY_CLIENT_EMAIL_SELECTION } from '@/Pages/Sales/ContractSignedModal'
 import LostContractModal from '@/Pages/Sales/LostContractModal'
 import QuantifiedModal from '@/Pages/Frontdesk/QuantifiedModal'
 import { ContactEditModal, type ContactFormValues } from '@/Pages/Frontdesk/ContactEditModals'
@@ -404,6 +404,12 @@ const financialEventDetailText = (event: OrderFinancialEvent): string | undefine
     parts.push(`Status: ${beforeStatus ?? '—'} → ${afterStatus ?? '—'}`)
   }
 
+  const beforeDelivery = (details as any).before_delivery
+  const afterDelivery = (details as any).after_delivery
+  if (beforeDelivery || afterDelivery) {
+    parts.push(`Delivery: ${beforeDelivery ?? '—'} → ${afterDelivery ?? '—'}`)
+  }
+
   if ((details as any).amount != null) {
     const amount = formatFinancialAmount((details as any).amount)
     if (amount) parts.push(`Amount: ${amount}`)
@@ -599,7 +605,7 @@ export default function ShowStatusOrder ({
     jobZip: order.job_zip ?? '',
     methodOfPayment: order.method_of_payment ?? '',
     typeOfFinancing: order.type_of_financing ?? '',
-    contactEmail: order.client?.email ?? '',
+    clientEmailSelection: order.client_email_selection ?? PRIMARY_CLIENT_EMAIL_SELECTION,
     orderCompanyContactId: null as number | null,
     nameCheck: Boolean(order.name_check),
     addressCheck: Boolean(order.address_check),
@@ -1052,16 +1058,25 @@ export default function ShowStatusOrder ({
     }
   }
 
-  const contactDetails: Array<{ label: string, value?: string | null, fallback: string, Icon: DetailIcon }> = [
-    { label: 'Contact Name', value: order.client?.name, fallback: 'No contact assigned', Icon: UserIcon },
-    { label: 'Phone', value: order.client?.phone, fallback: 'No phone available', Icon: PhoneIcon },
-    { label: 'Email', value: order.client?.email, fallback: 'No email available', Icon: EmailIcon }
-  ]
   const normalizeDetailValue = (value?: string | null) => {
     if (typeof value !== 'string') return null
     const normalized = value.trim()
     return normalized === '' ? null : normalized
   }
+  const primaryContactEmail = normalizeDetailValue(order.client?.email)
+  const orderRecipientEmail = normalizeDetailValue(order.contact_email)
+  const orderEmailDeliveryValue = order.do_not_send_email
+    ? 'Client emails will not be sent'
+    : orderRecipientEmail
+  const orderEmailDeliveryFallback = order.do_not_send_email
+    ? 'Client emails will not be sent'
+    : 'No delivery email configured for this order'
+  const contactDetails: Array<{ label: string, value?: string | null, fallback: string, Icon: DetailIcon }> = [
+    { label: 'Contact Name', value: order.client?.name, fallback: 'No contact assigned', Icon: UserIcon },
+    { label: 'Phone', value: order.client?.phone, fallback: 'No phone available', Icon: PhoneIcon },
+    { label: 'Primary Email', value: primaryContactEmail, fallback: 'No primary email available', Icon: EmailIcon },
+    { label: 'Order Email Delivery', value: orderEmailDeliveryValue, fallback: orderEmailDeliveryFallback, Icon: EmailIcon }
+  ]
 
   const jobLocation = [order.job_address, order.city, order.job_state, order.job_zip].filter(Boolean).join(', ')
   const sourceName = order.client?.source
@@ -1125,7 +1140,8 @@ export default function ShowStatusOrder ({
   const commercialCompanyOptions = sortedOrderCompanyContacts.map((item: any) => ({
     id: item.id,
     label: [item.company_contact?.name ?? item.companyContact?.name ?? 'Company', item.client?.name ? `- ${item.client?.name}` : ''].join(' ').trim(),
-    client_email: item.client?.email ?? null
+    client_email: item.client?.email ?? null,
+    clientEmailOptions: item.client_email_options ?? []
   }))
   const selectedCommercialCompanyId = sortedOrderCompanyContacts.find((item: any) => item.is_selected)?.id
     ?? (sortedOrderCompanyContacts.length === 1 ? sortedOrderCompanyContacts[0]?.id : null)
@@ -1633,7 +1649,7 @@ export default function ShowStatusOrder ({
         jobZip: order.job_zip ?? prev.jobZip,
         methodOfPayment: order.method_of_payment ?? prev.methodOfPayment,
         typeOfFinancing: order.type_of_financing ?? prev.typeOfFinancing,
-        contactEmail: order.client?.email ?? prev.contactEmail,
+        clientEmailSelection: order.client_email_selection ?? prev.clientEmailSelection ?? PRIMARY_CLIENT_EMAIL_SELECTION,
         orderCompanyContactId: selectedCommercialCompanyId ?? prev.orderCompanyContactId ?? null,
         nameCheck: Boolean(order.name_check),
         addressCheck: Boolean(order.address_check),
@@ -2037,7 +2053,7 @@ export default function ShowStatusOrder ({
         jobZip: 'job_zip',
         methodOfPayment: 'method_of_payment',
         typeOfFinancing: 'type_of_financing',
-        contactEmail: 'contact_email',
+        clientEmailSelection: 'client_email_selection',
         paymentScheduleType: 'payment_schedule_type',
         nameCheck: 'name_check',
         addressCheck: 'address_check',
@@ -2119,15 +2135,16 @@ export default function ShowStatusOrder ({
         method_of_payment: data.method_of_payment ?? prev.method_of_payment,
         type_of_financing: data.type_of_financing ?? prev.type_of_financing,
         contact_email: data.contact_email ?? prev.contact_email,
+        client_email_selection: data.client_email_selection ?? prev.client_email_selection,
+        client_email_override: data.client_email_override ?? prev.client_email_override,
+        client_email_options: data.client_email_options ?? prev.client_email_options,
+        do_not_send_email: data.do_not_send_email ?? prev.do_not_send_email,
         name_check: data.name_check ?? prev.name_check,
         address_check: data.address_check ?? prev.address_check,
         amount_check: data.amount_check ?? prev.amount_check,
         email_check: data.email_check ?? prev.email_check,
         city_permits: data.city_permits ?? prev.city_permits,
         association_permits: data.association_permits ?? prev.association_permits,
-        client: prev.client
-          ? { ...prev.client, email: data.contact_email ?? prev.client.email }
-          : prev.client,
         order_company_contacts: data.order_company_contacts ?? (prev as any).order_company_contacts
       }))
 
@@ -3226,6 +3243,10 @@ export default function ShowStatusOrder ({
                   <div className="space-y-3">
                     {sortedOrderCompanyContacts.map((item: any, index: number) => {
                       const isSelected = Boolean(item.is_selected)
+                      const commercialPrimaryEmail = normalizeDetailValue(item.client?.email)
+                      const commercialOrderEmailDelivery = order.do_not_send_email
+                        ? 'Client emails will not be sent'
+                        : (isSelected ? orderRecipientEmail : 'Not selected for order emails')
                       return (
                       <div
                         key={item.id ?? index}
@@ -3285,9 +3306,15 @@ export default function ShowStatusOrder ({
                             </div>
                           </div>
                           <div className="rounded-lg bg-slate-50 px-3 py-2">
-                            <span className="uppercase tracking-wide text-slate-400">Email</span>
+                            <span className="uppercase tracking-wide text-slate-400">Primary Email</span>
                             <div className="mt-0.5 break-all font-medium text-slate-700">
-                              {item.client?.email ?? '—'}
+                              {commercialPrimaryEmail ?? '—'}
+                            </div>
+                          </div>
+                          <div className="rounded-lg bg-slate-50 px-3 py-2">
+                            <span className="uppercase tracking-wide text-slate-400">Order Email Delivery</span>
+                            <div className="mt-0.5 break-all font-medium text-slate-700">
+                              {commercialOrderEmailDelivery ?? 'No delivery email configured for this order'}
                             </div>
                           </div>
                           <div className="rounded-lg bg-slate-100 px-3 py-2">
@@ -4326,7 +4353,8 @@ export default function ShowStatusOrder ({
         initialJobZip={contractSignedInitialValues.jobZip}
         initialMethodOfPayment={contractSignedInitialValues.methodOfPayment}
         initialTypeOfFinancing={contractSignedInitialValues.typeOfFinancing}
-        initialContactEmail={contractSignedInitialValues.contactEmail}
+        initialClientEmailSelection={contractSignedInitialValues.clientEmailSelection}
+        clientEmailOptions={order.client_email_options ?? []}
         initialOrderCompanyContactId={contractSignedInitialValues.orderCompanyContactId}
         orderType={order.order_type}
         companyOptions={commercialCompanyOptions}

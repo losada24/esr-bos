@@ -7,12 +7,15 @@ use App\Enum\OrderTypeEnum;
 use App\Enum\PaymentScheduleTypeEnum;
 use App\Http\Requests\UpdateQualifiedOrderRequest;
 use App\Models\Client;
+use App\Models\CompanyContact;
 use App\Models\Order;
 use App\Models\OrderCompanyContact;
 use App\Models\PaymentSchedule;
 use App\Models\User;
 use App\Support\ClientCompanyContactManager;
+use App\Support\OrderClientEmailDeliveryLogger;
 use App\Support\OrderFinancialEventLogger;
+use App\Support\OrderClientEmailManager;
 use App\Support\OrderOwnerChangeNotifier;
 use App\Support\OrderPaymentInformationAuditLogger;
 use App\Support\PaymentScheduleCalculator;
@@ -26,7 +29,9 @@ class UpdateQualifiedOrder
     public function __construct(
         protected QualifiedOrderDuplicateChecker $qualifiedOrderDuplicateChecker,
         protected OrderOwnerChangeNotifier $orderOwnerChangeNotifier,
-        protected ClientCompanyContactManager $clientCompanyContactManager
+        protected ClientCompanyContactManager $clientCompanyContactManager,
+        protected OrderClientEmailManager $orderClientEmailManager,
+        protected OrderClientEmailDeliveryLogger $orderClientEmailDeliveryLogger
     ) {
     }
 
@@ -34,6 +39,7 @@ class UpdateQualifiedOrder
     {
         return DB::transaction(function () use ($request, $order) {
             $order->loadMissing('paymentSchedule.installments');
+            $beforeClientEmailDelivery = $this->orderClientEmailDeliveryLogger->capture($order);
             $previousOwnerIds = $this->orderOwnerChangeNotifier->normalizeOwnerIds(
                 $order->owners()->pluck('users.id')->all()
             );
@@ -119,6 +125,24 @@ class UpdateQualifiedOrder
                 $addPair((int) $request->company_contact_id, (int) $request->client_id, (int) $request->company_source_id);
                 $addPair((int) $request->associate_company_contact_id_1, (int) $request->associate_client_id_1, (int) $request->associate_source_id_1);
                 $addPair((int) $request->associate_company_contact_id_2, (int) $request->associate_client_id_2, (int) $request->associate_source_id_2);
+            }
+
+            $primaryClient = $request->filled('client_id')
+                ? Client::with('companyContacts')->find((int) $request->input('client_id'))
+                : null;
+            $primaryCompany = $request->order_type === OrderTypeEnum::COMMERCIAL->value && $request->filled('company_contact_id')
+                ? CompanyContact::find((int) $request->input('company_contact_id'))
+                : null;
+            $clientEmailSelection = (string) $request->input('client_email_selection', OrderClientEmailManager::PRIMARY_SELECTION);
+            $selectionError = $this->orderClientEmailManager->validateSelectionForContext(
+                $primaryClient,
+                $clientEmailSelection,
+                $primaryCompany
+            );
+            if ($selectionError !== null) {
+                throw ValidationException::withMessages([
+                    'client_email_selection' => $selectionError,
+                ]);
             }
 
             if ($request->order_type === OrderTypeEnum::COMMERCIAL->value) {
@@ -518,6 +542,10 @@ class UpdateQualifiedOrder
                     ->forceDelete();
             }
 
+            $this->orderClientEmailManager->applySelection($order, $clientEmailSelection);
+            $order->save();
+            $this->orderClientEmailDeliveryLogger->logIfChanged($order, $beforeClientEmailDelivery);
+
             if ($request->exists('owner_ids')) {
                 $ownerIds = $this->orderOwnerChangeNotifier->normalizeOwnerIds($request->input('owner_ids', []));
                 $validOwners = User::query()
@@ -532,6 +560,7 @@ class UpdateQualifiedOrder
             $refreshedOrder = $order->refresh()->load(
                 'tags:id,name,color,taggable_id,taggable_type',
                 'client.companyContact',
+                'client.companyContacts',
                 'user',
                 'owners',
                 'saleForm',
@@ -542,7 +571,7 @@ class UpdateQualifiedOrder
                 'paymentSchedule.installments.paidBy',
                 'paymentSchedule.installments.movements.paidBy',
                 'orderCompanyContacts.companyContact',
-                'orderCompanyContacts.client',
+                'orderCompanyContacts.client.companyContacts',
                 'orderCompanyContacts.source'
             );
             $refreshedOrder->setAttribute('has_contract_signed', $refreshedOrder->hasReachedContractSigned());

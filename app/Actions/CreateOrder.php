@@ -14,6 +14,8 @@ use App\Models\Order;
 use App\Models\OrderProduct;
 use App\Models\PaymentSchedule;
 use App\Models\SupervisorComissionOrder;
+use App\Support\OrderClientEmailDeliveryLogger;
+use App\Support\OrderClientEmailManager;
 use App\Support\OrderFinancialEventLogger;
 use App\Support\PaymentScheduleCalculator;
 use App\Support\PaymentScheduleTemplates;
@@ -21,17 +23,24 @@ use App\Traits\ComissionSupervisor;
 use App\Traits\OrderEmails;
 use App\Traits\OrderStatus;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class CreateOrder
 {
 
   use OrderEmails, OrderStatus, ComissionSupervisor;
+
+  public function __construct(
+    protected OrderClientEmailManager $orderClientEmailManager,
+    protected OrderClientEmailDeliveryLogger $orderClientEmailDeliveryLogger
+  ) {
+  }
  
   public function handle(Request $request)
   {
     DB::transaction(function () use ($request) {
       if ($request->filled('client_id')) {
-        $client = Client::findOrFail($request->client_id);
+        $client = Client::with('companyContact')->findOrFail($request->client_id);
       } else {
         $client = Client::create([
           'name' => $request->client_name,
@@ -41,6 +50,21 @@ class CreateOrder
           'vip_notes' => $request->vip_notes,
           'contact_type' => $request->contact_type,
           'user_id' => auth()->user()->id,
+        ]);
+      }
+
+      $clientEmailSelection = (string) ($request->input('client_email_selection')
+        ?: ($request->boolean('do_not_send_email')
+          ? OrderClientEmailManager::NONE_SELECTION
+          : OrderClientEmailManager::PRIMARY_SELECTION));
+      $selectionError = $this->orderClientEmailManager->validateSelectionForContext(
+        $client,
+        $clientEmailSelection,
+        $client->companyContact
+      );
+      if ($selectionError !== null) {
+        throw ValidationException::withMessages([
+          'client_email_selection' => $selectionError,
         ]);
       }
 
@@ -133,6 +157,8 @@ class CreateOrder
         'is_send_email' => true,
         
       ]);
+      $this->orderClientEmailManager->applySelection($order, $clientEmailSelection);
+      $order->save();
 
       $paymentScheduleType = $request->payment_schedule_type;
       $isCashAndFinanced = $request->method_of_payment === MethodOfPayment::FINANCEDCASH->value;
@@ -330,6 +356,11 @@ class CreateOrder
         $orderProduct->orderProductExtraWorks()->attach($extraWorks);
       }
 
+      $order->load('client.companyContact', 'client.companyContacts');
+      $this->orderClientEmailDeliveryLogger->logIfConfiguredDifferentlyFromDefault(
+        $order,
+        $client->email
+      );
       $this->sendEmail($order);
      
       if (!$order) {

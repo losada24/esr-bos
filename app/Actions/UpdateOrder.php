@@ -15,6 +15,8 @@ use App\Models\OrderProduct;
 use App\Models\PaymentExtraField;
 use App\Models\PaymentSchedule;
 use App\Support\OrderFinancialEventLogger;
+use App\Support\OrderClientEmailDeliveryLogger;
+use App\Support\OrderClientEmailManager;
 use App\Support\OrderOwnerChangeNotifier;
 use App\Support\OrderPaymentInformationAuditLogger;
 use App\Support\PaymentScheduleCalculator;
@@ -45,7 +47,9 @@ class UpdateOrder
   use OrderEmails, OrderStatus, Twilio, ComissionSupervisor;
 
   public function __construct(
-    protected OrderOwnerChangeNotifier $orderOwnerChangeNotifier
+    protected OrderOwnerChangeNotifier $orderOwnerChangeNotifier,
+    protected OrderClientEmailManager $orderClientEmailManager,
+    protected OrderClientEmailDeliveryLogger $orderClientEmailDeliveryLogger
   ) {
   }
 
@@ -68,6 +72,7 @@ class UpdateOrder
     try {
       $order = Order::with('comissions')->findOrFail($order->id);
       $order->loadMissing('paymentSchedule.installments');
+      $beforeClientEmailDelivery = $this->orderClientEmailDeliveryLogger->capture($order);
       $previousOwnerIds = $this->orderOwnerChangeNotifier->normalizeOwnerIds(
         $order->owners()->pluck('users.id')->all()
       );
@@ -148,6 +153,21 @@ class UpdateOrder
           ]
         );
         $clientId = (int) $client->id;
+      }
+      $clientForEmailSelection = Client::with('companyContact')->find($clientId);
+      $clientEmailSelection = (string) ($request->input('client_email_selection')
+        ?: ($request->boolean('do_not_send_email')
+          ? OrderClientEmailManager::NONE_SELECTION
+          : OrderClientEmailManager::PRIMARY_SELECTION));
+      $selectionError = $this->orderClientEmailManager->validateSelectionForContext(
+        $clientForEmailSelection,
+        $clientEmailSelection,
+        $clientForEmailSelection?->companyContact
+      );
+      if ($selectionError !== null) {
+        throw ValidationException::withMessages([
+          'client_email_selection' => $selectionError,
+        ]);
       }
       $type_of_work_id = $request->type_of_work_id;
       $type_of_housing_id = $request->type_of_housing_id;
@@ -236,6 +256,11 @@ class UpdateOrder
       //dd( $orderData);
       //dd($request->frame_color);
       $order->update($orderData);
+      $this->orderClientEmailManager->applySelection($order, $clientEmailSelection);
+      $order->save();
+      $order->unsetRelation('client');
+      $order->load('client.companyContact', 'client.companyContacts');
+      $this->orderClientEmailDeliveryLogger->logIfChanged($order, $beforeClientEmailDelivery);
 
       $isCashAndFinanced = $request->method_of_payment === MethodOfPayment::FINANCEDCASH->value;
       $requiresSchedule = in_array(
@@ -609,11 +634,10 @@ class UpdateOrder
        
       }
       else if (($installationTeamsChanged || $supervisorChanged) && $request->status== OrderStatusEnum::CONFIRMED->value) {
-            $order->update([
-              'do_not_send_email' => true,
-            ]);
+            $originalDoNotSendEmail = $order->do_not_send_email;
+            $order->do_not_send_email = true;
             $this->sendEmail($order);
-             //dd( $order->toArray());
+            $order->do_not_send_email = $originalDoNotSendEmail;
         
       }
 
@@ -742,10 +766,10 @@ class UpdateOrder
       $this->sendEmail($order);
       //$this->whatsapp($order);
     }  else if (($installationTeamsChanged || $supervisorChanged) && $request->status== OrderStatusEnum::CONFIRMED->value) {
-      $order->update([
-        'do_not_send_email' => true,
-      ]);
+      $originalDoNotSendEmail = $order->do_not_send_email;
+      $order->do_not_send_email = true;
       $this->sendEmail($order);
+      $order->do_not_send_email = $originalDoNotSendEmail;
   
     }else {
       $orderStatus = $order->orderStatus()->where('status', $request->status)->first(); // Busca el registro relacionado

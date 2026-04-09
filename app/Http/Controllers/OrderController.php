@@ -125,7 +125,7 @@ class OrderController extends Controller
   protected function getOrderFormData(array $services = null): array
   {
     return [
-      'clients' => Client::all(),
+      'clients' => Client::with(['companyContact:id,name,email'])->get(),
       'type_of_works' => TypeOfWork::all(),
       'types_of_housing' => TypeOfHousing::all(),
       'owners' => User::role(RoleEnum::OWNER->value)
@@ -398,6 +398,7 @@ class OrderController extends Controller
     return Inertia::render('Order/Edit', [
       'order' => $orderData,
       //dd($order),
+      'clients' => Client::with(['companyContact:id,name,email'])->get(),
 
       'extraWorks' => ExtraWork::select('id', 'name')->get(),
       

@@ -88,6 +88,7 @@ class StoreOrderRequest extends FormRequest
               )
             ],
             'email' => 'nullable|email|max:255',
+            'client_email_selection' => 'nullable|string|max:255',
             'is_send_email' => 'boolean',
             'is_new_travel_cost' => 'boolean',
             'vip_clients' => 'boolean',

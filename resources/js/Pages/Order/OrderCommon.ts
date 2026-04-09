@@ -71,6 +71,7 @@ export type OrderFormValues = Omit<Order, 'installation_date' | 'delivery_date' 
   is_supply?: boolean
   has_contract_signed?: boolean
   client_company_name?: string
+  client_email_selection?: string
   down_payment?: number | null
   payment_schedule?: PaymentSchedule | null
   payment_schedule_type?: string
@@ -139,6 +140,7 @@ export const orderFormObj: OrderFormValues = {
   is_supply: false,
   has_contract_signed: false,
   client_company_name: '',
+  client_email_selection: '__PRIMARY__',
   down_payment: null,
   payment_schedule: null,
   payment_schedule_type: '',
@@ -165,6 +167,9 @@ export interface OrderProductExtraWorksFormValues {
 
 export const loadOrderFormObj = (order: Order): OrderFormValues => {
   const scheduleType = order.payment_schedule?.schedule_type ?? ''
+  const clientEmailSelection = order.do_not_send_email
+    ? '__NONE__'
+    : (order.client_email_selection ?? order.client_email_override ?? '__PRIMARY__')
   const attachmentRoleTargetsByRole = order.attachment_role_targets_by_role ?? {}
   const getAttachmentRoleTargetIds = (role: string): number[] => {
     const ids = attachmentRoleTargetsByRole[role]
@@ -236,6 +241,7 @@ export const loadOrderFormObj = (order: Order): OrderFormValues => {
     initial_payment_percentage: order.initial_payment_percentage,
     hide_on_weekends: order.hide_on_weekends ?? false,
     do_not_send_email: order.do_not_send_email ?? false,
+    client_email_selection: clientEmailSelection,
     is_send_email: order.is_send_email ?? false,
     is_new_travel_cost: !!order.is_new_travel_cost,
     new_travel_cost: order.new_travel_cost,

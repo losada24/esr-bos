@@ -115,6 +115,7 @@ export default function Create ({
         ? values.type_of_financing
         : null,
       down_payment: isCashAndFinanced ? values.down_payment : null,
+      do_not_send_email: values.client_email_selection === '__NONE__',
       payment_schedule_type: resolvedPaymentScheduleType,
       custom_schedule: requiresSchedule && resolvedPaymentScheduleType === 'CUSTOMIZED'
         ? (values.custom_schedule ?? [])

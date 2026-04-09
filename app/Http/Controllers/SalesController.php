@@ -39,12 +39,19 @@ use App\Support\OrderFinancialEventLogger;
 use App\Support\OrderPaymentInformationAuditLogger;
 use App\Support\PaymentScheduleTemplates;
 use App\Support\OrderBoardFilter;
+use App\Support\OrderClientEmailDeliveryLogger;
+use App\Support\OrderClientEmailManager;
 use App\Support\OrderPipelineSort;
 
 class SalesController extends Controller
 {
     use OrderEmails;
     private const SALES_PAGE_SIZE = 20;
+
+    private function orderClientEmailDeliveryLogger(): OrderClientEmailDeliveryLogger
+    {
+        return app(OrderClientEmailDeliveryLogger::class);
+    }
 
   public function index(Request $request)
   {
@@ -274,12 +281,13 @@ class SalesController extends Controller
   {
     return [
       'client.companyContact',
+      'client.companyContacts',
       'user',
       'owners',
       'orderStatus',
       'tags:id,name,color,taggable_id,taggable_type',
       'orderCompanyContacts.companyContact',
-      'orderCompanyContacts.client',
+      'orderCompanyContacts.client.companyContacts',
       'orderCompanyContacts.source',
     ];
   }
@@ -312,6 +320,7 @@ class SalesController extends Controller
 
   private function mapSalesOrderToTask(Order $order, string $status): array
   {
+    $clientEmailManager = $this->clientEmailManager();
     $statusHistoryEntry = $order->orderStatus
       ->where('status', $status)
       ->sortByDesc('created_at')
@@ -323,6 +332,9 @@ class SalesController extends Controller
         ->sortBy('created_at')
         ->first()
     )->created_at;
+    $selectedContact = $order->orderCompanyContacts
+      ->firstWhere('is_selected', true)
+      ?? ($order->orderCompanyContacts->count() === 1 ? $order->orderCompanyContacts->first() : null);
 
     return [
       'id' => $order->id,
@@ -339,7 +351,11 @@ class SalesController extends Controller
       'schedule_appointment_iso' => $order->schedule_appointment ? Carbon::parse($order->schedule_appointment)->format('Y-m-d\TH:i') : null,
       'phone'=> optional($order->client)->phone,
       'vip_clients' => (bool) (optional($order->client)->vip_clients ?? false),
-      'contact_email' => optional($order->client)->email,
+      'contact_email' => $clientEmailManager->resolveRecipient($order),
+      'client_email_selection' => $clientEmailManager->selectionForOrder($order),
+      'client_email_override' => $order->client_email_override,
+      'client_email_options' => $clientEmailManager->optionsForOrder($order, $selectedContact),
+      'do_not_send_email' => (bool) ($order->do_not_send_email ?? false),
       'created_by' => $order->user->name ?? null,
       'is_supply' => (bool) ($order->is_supply ?? false),
       'name_check' => (bool) ($order->name_check ?? false),
@@ -363,14 +379,9 @@ class SalesController extends Controller
       ])->values(),
       'order_type' => $order->order_type,
       'bid_due_date' => $this->resolveBidDueDate($order),
-      'order_company_contacts' => $order->orderCompanyContacts->map(fn ($item) => [
-        'id' => $item->id,
-        'company_name' => $item->companyContact?->name,
-        'client_id' => $item->client_id,
-        'client_name' => $item->client?->name,
-        'client_email' => $item->client?->email,
-        'is_selected' => (bool) ($item->is_selected ?? false),
-      ])->values(),
+      'order_company_contacts' => $order->orderCompanyContacts
+        ->map(fn ($item) => $this->mapOrderCompanyContactForResponse($order, $item))
+        ->values(),
       'tags'       => ($order->tags ?? collect())->map(function ($t) {
         return [
           'name'  => $t->name,
@@ -393,6 +404,26 @@ class SalesController extends Controller
     }
 
     return $bidDueDate ? Carbon::parse($bidDueDate)->format('Y-m-d') : null;
+  }
+
+    private function clientEmailManager(): OrderClientEmailManager
+    {
+        return app(OrderClientEmailManager::class);
+    }
+
+  private function mapOrderCompanyContactForResponse(Order $order, OrderCompanyContact $item): array
+  {
+    return [
+      'id' => $item->id,
+      'company_name' => $item->companyContact?->name,
+      'company_email' => $item->companyContact?->email,
+      'client_id' => $item->client_id,
+      'client_name' => $item->client?->name,
+      'client_email' => $item->client?->email,
+      'client_secondary_email' => $item->client?->secondary_email,
+      'is_selected' => (bool) ($item->is_selected ?? false),
+      'client_email_options' => $this->clientEmailManager()->optionsForOrder($order, $item),
+    ];
   }
   private function determineSalesBoardStatus(Order $order): ?string
   {
@@ -1232,7 +1263,7 @@ class SalesController extends Controller
       'city' => ['nullable', 'string', 'max:255'],
       'job_state' => ['nullable', 'string', 'max:255'],
       'job_zip' => ['nullable', 'string', 'max:50'],
-      'contact_email' => ['required', 'email', 'max:255'],
+      'client_email_selection' => ['required', 'string', 'max:255'],
       'name_check' => ['nullable', 'boolean'],
       'address_check' => ['nullable', 'boolean'],
       'amount_check' => ['nullable', 'boolean'],
@@ -1265,7 +1296,7 @@ class SalesController extends Controller
     }
 
     $validator = Validator::make($request->all(), $rules);
-    $validator->after(function ($validator) use ($request) {
+    $validator->after(function ($validator) use ($request, $order, $orderCompanyContacts, $companyCount) {
       $cashMethod = MethodOfPayment::CASH->value;
       $cashAndFinancedMethod = MethodOfPayment::FINANCEDCASH->value;
       $methodOfPayment = (string) $request->input('method_of_payment');
@@ -1311,6 +1342,26 @@ class SalesController extends Controller
           );
         }
       }
+
+      $selectedContact = null;
+      if ($order->order_type === OrderTypeEnum::COMMERCIAL->value && $companyCount > 0) {
+        $selectedId = $request->input('order_company_contact_id')
+          ?: ($companyCount === 1 ? $orderCompanyContacts->first()?->id : null);
+
+        if ($selectedId) {
+          $selectedContact = $orderCompanyContacts->firstWhere('id', (int) $selectedId);
+        }
+      }
+
+      $selectionError = $this->clientEmailManager()->validateSelection(
+        $order,
+        (string) $request->input('client_email_selection'),
+        $selectedContact
+      );
+
+      if ($selectionError !== null) {
+        $validator->errors()->add('client_email_selection', $selectionError);
+      }
     });
 
     $validated = $validator->validate();
@@ -1331,6 +1382,7 @@ class SalesController extends Controller
 
     DB::transaction(function () use ($order, $validated, $request, $orderCompanyContacts, $companyCount) {
       $order->loadMissing('paymentSchedule.installments');
+      $beforeClientEmailDelivery = $this->orderClientEmailDeliveryLogger()->capture($order);
       $beforePaymentInformation = OrderPaymentInformationAuditLogger::snapshot($order);
       $oldProjectAmount = (float) ($order->project_amount ?? 0);
       $newPipelineStatus = $order->is_supply
@@ -1397,12 +1449,10 @@ class SalesController extends Controller
         }
       }
 
-      $contactEmail = trim($validated['contact_email']);
-      $clientForEmail = $selectedContact?->client ?? $order->client;
-      if ($clientForEmail && $contactEmail !== '') {
-        $clientForEmail->email = $contactEmail;
-        $clientForEmail->save();
-      }
+      $this->clientEmailManager()->applySelection($order, (string) $validated['client_email_selection']);
+      $order->save();
+      $this->orderClientEmailDeliveryLogger()->logIfChanged($order, $beforeClientEmailDelivery);
+
       $order->orderStatus()->create([
         'status' => OrderStatusEnum::CONTRACT_SIGNED_BY_CLIENT->value,
         'user_id' => auth()->id(),
@@ -1567,7 +1617,10 @@ class SalesController extends Controller
       );
     });
 
-    $order->load('owners', 'client', 'paymentSchedule.installments.paidBy', 'paymentSchedule.installments.movements.paidBy', 'orderCompanyContacts.companyContact', 'orderCompanyContacts.client', 'orderCompanyContacts.source');
+    $order->load('owners', 'client.companyContacts', 'paymentSchedule.installments.paidBy', 'paymentSchedule.installments.movements.paidBy', 'orderCompanyContacts.companyContact', 'orderCompanyContacts.client.companyContacts', 'orderCompanyContacts.source', 'financialEvents.user');
+    $selectedContact = $order->orderCompanyContacts
+      ->firstWhere('is_selected', true)
+      ?? ($order->orderCompanyContacts->count() === 1 ? $order->orderCompanyContacts->first() : null);
 
     $schedule = $order->schedule_appointment
       ? Carbon::parse($order->schedule_appointment)
@@ -1593,7 +1646,11 @@ class SalesController extends Controller
           'id' => $owner->id,
           'name' => $owner->name,
         ])->values(),
-        'contact_email' => $order->client?->email,
+        'contact_email' => $this->clientEmailManager()->resolveRecipient($order),
+        'client_email_selection' => $this->clientEmailManager()->selectionForOrder($order),
+        'client_email_override' => $order->client_email_override,
+        'client_email_options' => $this->clientEmailManager()->optionsForOrder($order, $selectedContact),
+        'do_not_send_email' => (bool) ($order->do_not_send_email ?? false),
         'name_check' => (bool) ($order->name_check ?? false),
         'address_check' => (bool) ($order->address_check ?? false),
         'amount_check' => (bool) ($order->amount_check ?? false),
@@ -1602,14 +1659,23 @@ class SalesController extends Controller
         'association_permits' => (bool) ($order->association_permits ?? false),
         'has_contract_signed' => true,
         'payment_schedule' => PaymentInstallmentPresenter::schedule($order->paymentSchedule),
-        'order_company_contacts' => $order->orderCompanyContacts->map(fn ($item) => [
-          'id' => $item->id,
-          'company_name' => $item->companyContact?->name,
-          'client_id' => $item->client_id,
-          'client_name' => $item->client?->name,
-          'client_email' => $item->client?->email,
-          'is_selected' => (bool) ($item->is_selected ?? false),
-        ])->values(),
+        'financial_events' => $order->financialEvents
+          ->take(200)
+          ->map(fn ($event) => [
+            'id' => $event->id,
+            'event_type' => $event->event_type,
+            'summary' => $event->summary,
+            'details' => $event->details,
+            'created_at' => optional($event->created_at)->toISOString(),
+            'user' => $event->user ? [
+              'id' => $event->user->id,
+              'name' => $event->user->name,
+            ] : null,
+          ])
+          ->values(),
+        'order_company_contacts' => $order->orderCompanyContacts
+          ->map(fn ($item) => $this->mapOrderCompanyContactForResponse($order, $item))
+          ->values(),
       ],
     ]);
   }
