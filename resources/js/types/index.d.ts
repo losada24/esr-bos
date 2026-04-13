@@ -15,6 +15,7 @@ import { type Status } from './interfaces/status'
 import { type OptionType } from './interfaces/optionType'
 import { type Pipelines, type Tasks } from './interfaces/pipelines'
 import { type CompanyContact } from './interfaces/companyContact'
+import { type ServiceControl, type ServiceControlHistory, type ServiceControlOrderSummary } from './interfaces/serviceControl'
 
 export type {
   User,
@@ -46,5 +47,8 @@ export type {
   BiweeklyInstaller,
   Pipelines,
   CompanyContact,
+  ServiceControl,
+  ServiceControlHistory,
+  ServiceControlOrderSummary,
   Tasks
 }
