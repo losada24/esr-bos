@@ -2284,6 +2284,12 @@ class ReportController extends Controller
 
   private function buildInstallerConfirmedSummaryData(Carbon $startDate, Carbon $endDate): array
   {
+    $plannedOrders = OrderStatus::query()
+      ->select('order_id')
+      ->where('order_status.status', OrderStatusEnum::PLANNED->value)
+      ->whereBetween('created_at', [$startDate, $endDate])
+      ->distinct();
+
     $confirmedOrders = OrderStatus::query()
       ->select('order_id')
       ->where('order_status.status', OrderStatusEnum::CONFIRMED->value)
@@ -2309,6 +2315,13 @@ class ReportController extends Controller
     $amountExpression = 'COALESCE(order_products_totals.products_total, 0)'
       . ' + COALESCE(orders.additional_travel_costs, 0)'
       . ' + COALESCE(CASE WHEN orders.is_new_travel_cost = 1 THEN orders.new_travel_cost ELSE travel_costs.price END, 0)';
+
+    $pickupOrDeliveryQualifiedOrders = DB::query()
+      ->fromSub(
+        (clone $plannedOrders)->union(clone $confirmedOrders),
+        'pickup_or_delivery_qualified_orders'
+      )
+      ->select('pickup_or_delivery_qualified_orders.order_id');
 
     $summary = OrderStatus::query()
       ->leftJoinSub($completedOrders, 'completed_orders', function ($join) {
@@ -2344,30 +2357,12 @@ class ReportController extends Controller
       ->orderBy('users.name')
       ->get();
 
-    $totalConfirmed = OrderStatus::query()
-      ->join('orders', 'orders.id', '=', 'order_status.order_id')
-      ->where('order_status.status', OrderStatusEnum::CONFIRMED->value)
-      ->whereBetween('order_status.created_at', [$startDate, $endDate])
-      ->whereNull('orders.deleted_at')
-      ->count();
-
-    $totalCompleted = OrderStatus::query()
-      ->joinSub($completedOrders, 'completed_orders', function ($join) {
-        $join->on('completed_orders.order_id', '=', 'order_status.order_id');
-      })
-      ->join('orders', 'orders.id', '=', 'order_status.order_id')
-      ->where('order_status.status', OrderStatusEnum::CONFIRMED->value)
-      ->whereBetween('order_status.created_at', [$startDate, $endDate])
-      ->whereNull('orders.deleted_at')
-      ->distinct()
-      ->count('order_status.order_id');
-
     $pickupOrDeliverySummary = Order::query()
+      ->joinSub($pickupOrDeliveryQualifiedOrders, 'pickup_or_delivery_qualified_orders', function ($join) {
+        $join->on('pickup_or_delivery_qualified_orders.order_id', '=', 'orders.id');
+      })
       ->leftJoinSub($firstInstallationTeam, 'first_installation_team', function ($join) {
         $join->on('first_installation_team.order_id', '=', 'orders.id');
-      })
-      ->joinSub($confirmedOrders, 'confirmed_orders', function ($join) {
-        $join->on('confirmed_orders.order_id', '=', 'orders.id');
       })
       ->leftJoinSub($completedOrders, 'completed_orders', function ($join) {
         $join->on('completed_orders.order_id', '=', 'orders.id');
@@ -2396,17 +2391,9 @@ class ReportController extends Controller
       ]);
     }
 
-    $totalAssigned = OrderStatus::query()
-      ->join('orders', 'orders.id', '=', 'order_status.order_id')
-      ->leftJoin('travel_costs', 'travel_costs.id', '=', 'orders.travel_cost_id')
-      ->leftJoinSub($orderProductsTotals, 'order_products_totals', function ($join) {
-        $join->on('order_products_totals.order_id', '=', 'orders.id');
-      })
-      ->where('order_status.status', OrderStatusEnum::CONFIRMED->value)
-      ->whereBetween('order_status.created_at', [$startDate, $endDate])
-      ->whereNull('orders.deleted_at')
-      ->select(DB::raw('SUM(' . $amountExpression . ') as total_assigned'))
-      ->value('total_assigned') ?? 0;
+    $totalConfirmed = (int) $summary->sum('confirmed_orders');
+    $totalCompleted = (int) $summary->sum('completed_orders');
+    $totalAssigned = (float) $summary->sum('assigned_amount');
 
     return [
       'summary' => $summary,
@@ -2543,17 +2530,13 @@ class ReportController extends Controller
 
   private function buildSupervisorAssignedSummaryData(Carbon $startDate, Carbon $endDate): array
   {
-    $confirmedOrderIdsForTotals = $this->resolveUniqueOrderIdsByStatus(
-      OrderStatusEnum::CONFIRMED->value,
-      $startDate,
-      $endDate
-    );
-
-    $completedOrderIdsForTotals = $this->resolveUniqueOrderIdsByStatus(
-      OrderStatusEnum::COMPLETE->value,
-      $startDate,
-      $endDate
-    );
+    $plannedOrders = OrderStatus::query()
+      ->select('order_status.order_id')
+      ->join('orders', 'orders.id', '=', 'order_status.order_id')
+      ->whereNull('orders.deleted_at')
+      ->where('order_status.status', OrderStatusEnum::PLANNED->value)
+      ->whereBetween('order_status.created_at', [$startDate, $endDate])
+      ->distinct();
 
     $confirmedOrders = OrderStatus::query()
       ->select('order_status.order_id')
@@ -2605,6 +2588,13 @@ class ReportController extends Controller
       ->whereNull('completed.order_id')
       ->select('inspection.order_id');
 
+    $pickupOrDeliveryQualifiedOrders = DB::query()
+      ->fromSub(
+        (clone $plannedOrders)->union(clone $confirmedOrders),
+        'pickup_or_delivery_qualified_orders'
+      )
+      ->select('pickup_or_delivery_qualified_orders.order_id');
+
     $summary = Order::query()
       ->leftJoin('users', 'users.id', '=', 'orders.supervisor_id')
       ->leftJoinSub($confirmedOrders, 'confirmed_orders', function ($join) {
@@ -2644,15 +2634,9 @@ class ReportController extends Controller
       ->orderBy('users.name')
       ->get();
 
-    $totalConfirmed = $confirmedOrderIdsForTotals->count();
-
-    $totalConfirmedCompleted = $confirmedOrderIdsForTotals
-      ->intersect($completedOrderIdsForTotals)
-      ->count();
-
     $pickupOrDeliverySummary = Order::query()
-      ->joinSub($confirmedOrders, 'confirmed_orders', function ($join) {
-        $join->on('confirmed_orders.order_id', '=', 'orders.id');
+      ->joinSub($pickupOrDeliveryQualifiedOrders, 'pickup_or_delivery_qualified_orders', function ($join) {
+        $join->on('pickup_or_delivery_qualified_orders.order_id', '=', 'orders.id');
       })
       ->leftJoinSub($completedOrders, 'completed_orders', function ($join) {
         $join->on('completed_orders.order_id', '=', 'orders.id');
@@ -2708,6 +2692,9 @@ class ReportController extends Controller
 
       return $item;
     });
+
+    $totalConfirmed = (int) $summary->sum('confirmed_orders');
+    $totalConfirmedCompleted = (int) $summary->sum('confirmed_completed_orders');
 
     $totalExecutionNotCompleted = Order::query()
       ->leftJoin('users', 'users.id', '=', 'orders.supervisor_id')
