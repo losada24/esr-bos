@@ -703,6 +703,12 @@ class ReportController extends Controller
     }
 
     $buildCounts = function (Carbon $rangeStart, Carbon $rangeEnd) use ($statuses) {
+      $plannedOrderIds = $this->resolveUniqueOrderIdsByStatus(
+        OrderStatusEnum::PLANNED->value,
+        $rangeStart,
+        $rangeEnd
+      );
+
       $confirmedOrderIds = $this->resolveUniqueOrderIdsByStatus(
         OrderStatusEnum::CONFIRMED->value,
         $rangeStart,
@@ -715,18 +721,56 @@ class ReportController extends Controller
         $rangeEnd
       );
 
-      $confirmedCount = $confirmedOrderIds->count();
-      $confirmedCompletedCount = $confirmedOrderIds->intersect($completedOrderIds)->count();
+      $pickupOrDeliveryQualifiedOrderIds = $plannedOrderIds
+        ->merge($confirmedOrderIds)
+        ->unique()
+        ->values();
 
-      $unassignedCompletedWithoutConfirmedCount = Order::query()
-        ->whereNull('deleted_at')
-        ->whereNull('supervisor_id')
-        ->whereIn('id', $completedOrderIds)
-        ->whereNotIn('id', $confirmedOrderIds)
-        ->count();
+      $confirmedCompletedOrderIds = $confirmedOrderIds
+        ->intersect($completedOrderIds)
+        ->values();
 
-      $confirmedCount += $unassignedCompletedWithoutConfirmedCount;
-      $confirmedCompletedCount += $unassignedCompletedWithoutConfirmedCount;
+      $confirmedCount = $confirmedOrderIds->isEmpty()
+        ? 0
+        : Order::query()
+          ->join('users', 'users.id', '=', 'orders.supervisor_id')
+          ->whereNull('orders.deleted_at')
+          ->whereNotNull('orders.supervisor_id')
+          ->where('users.status', StatusUserEnum::ACTIVE->value)
+          ->whereIn('orders.id', $confirmedOrderIds->all())
+          ->count();
+
+      $confirmedCompletedCount = $confirmedCompletedOrderIds->isEmpty()
+        ? 0
+        : Order::query()
+          ->join('users', 'users.id', '=', 'orders.supervisor_id')
+          ->whereNull('orders.deleted_at')
+          ->whereNotNull('orders.supervisor_id')
+          ->where('users.status', StatusUserEnum::ACTIVE->value)
+          ->whereIn('orders.id', $confirmedCompletedOrderIds->all())
+          ->count();
+
+      $pickupOrDeliveryConfirmedCount = $pickupOrDeliveryQualifiedOrderIds->isEmpty()
+        ? 0
+        : Order::query()
+          ->whereNull('deleted_at')
+          ->whereNull('supervisor_id')
+          ->whereIn('service', [ServiceEnum::PICKUP->value, ServiceEnum::DELIVERY->value])
+          ->whereIn('id', $pickupOrDeliveryQualifiedOrderIds->all())
+          ->count();
+
+      $pickupOrDeliveryCompletedCount = $pickupOrDeliveryQualifiedOrderIds->isEmpty()
+        ? 0
+        : Order::query()
+          ->whereNull('deleted_at')
+          ->whereNull('supervisor_id')
+          ->whereIn('service', [ServiceEnum::PICKUP->value, ServiceEnum::DELIVERY->value])
+          ->whereIn('id', $pickupOrDeliveryQualifiedOrderIds->all())
+          ->whereIn('id', $completedOrderIds->all())
+          ->count();
+
+      $confirmedCount += $pickupOrDeliveryConfirmedCount;
+      $confirmedCompletedCount += $pickupOrDeliveryCompletedCount;
 
       $counts = collect($statuses)->mapWithKeys(function ($status) use ($rangeStart, $rangeEnd, $confirmedCompletedCount, $confirmedCount) {
         if ($status === OrderStatusEnum::COMPLETE->value) {
