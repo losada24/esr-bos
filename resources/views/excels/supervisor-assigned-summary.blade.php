@@ -24,11 +24,11 @@
     <tbody>
       @foreach ($summary as $item)
         @php
-          $isPickupOrDeliveryOnly = empty($item->supervisor_name) || $item->supervisor_name === 'PICKUP OR DELIVERY ONLY';
+          $isPickupOrDeliveryOnly = $item->supervisor_name === 'PICKUP OR DELIVERY ONLY';
         @endphp
         <tr>
             <td width="50" height="25" text-align="left" valign="middle">
-              {{ $item->supervisor_name ?? 'PICKUP OR DELIVERY ONLY' }}
+              {{ $item->supervisor_name ?? 'UNASSIGNED' }}
             </td>
             <td width="20" height="25" text-align="center" valign="middle">
               {{ $item->confirmed_orders }}
