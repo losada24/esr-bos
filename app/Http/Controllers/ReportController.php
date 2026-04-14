@@ -2311,6 +2311,9 @@ class ReportController extends Controller
       . ' + COALESCE(CASE WHEN orders.is_new_travel_cost = 1 THEN orders.new_travel_cost ELSE travel_costs.price END, 0)';
 
     $summary = OrderStatus::query()
+      ->leftJoinSub($completedOrders, 'completed_orders', function ($join) {
+        $join->on('completed_orders.order_id', '=', 'order_status.order_id');
+      })
       ->leftJoinSub($firstInstallationTeam, 'first_installation_team', function ($join) {
         $join->on('first_installation_team.order_id', '=', 'order_status.order_id');
       })
@@ -2329,6 +2332,7 @@ class ReportController extends Controller
         'installation_teams.company_name',
         'users.name as installer_name',
         DB::raw('COUNT(order_status.id) as confirmed_orders'),
+        DB::raw('COUNT(DISTINCT completed_orders.order_id) as completed_orders'),
         DB::raw('SUM(' . $amountExpression . ') as assigned_amount')
       )
       ->groupBy('installation_teams.id', 'installation_teams.company_name', 'users.name')
@@ -2338,6 +2342,15 @@ class ReportController extends Controller
     $totalConfirmed = OrderStatus::where('status', OrderStatusEnum::CONFIRMED->value)
       ->whereBetween('created_at', [$startDate, $endDate])
       ->count();
+
+    $totalCompleted = OrderStatus::query()
+      ->joinSub($completedOrders, 'completed_orders', function ($join) {
+        $join->on('completed_orders.order_id', '=', 'order_status.order_id');
+      })
+      ->where('order_status.status', OrderStatusEnum::CONFIRMED->value)
+      ->whereBetween('order_status.created_at', [$startDate, $endDate])
+      ->distinct()
+      ->count('order_status.order_id');
 
     $unassignedCompletedWithoutConfirmed = Order::query()
       ->leftJoinSub($firstInstallationTeam, 'first_installation_team', function ($join) {
@@ -2366,6 +2379,7 @@ class ReportController extends Controller
           'company_name' => null,
           'installer_name' => null,
           'confirmed_orders' => $unassignedCompletedWithoutConfirmed,
+          'completed_orders' => 0,
           'assigned_amount' => 0,
         ]);
       }
@@ -2387,6 +2401,7 @@ class ReportController extends Controller
     return [
       'summary' => $summary,
       'totalConfirmed' => $totalConfirmed,
+      'totalCompleted' => $totalCompleted,
       'totalAssigned' => $totalAssigned,
       'startDate' => $startDate->toDateString(),
       'endDate' => $endDate->toDateString(),

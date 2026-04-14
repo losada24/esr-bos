@@ -34,18 +34,20 @@
 <table>
     <thead>
         <tr>
-            <td class="header" colspan="4">
+            <td class="header" colspan="5">
                 Installer Confirmed Orders ({{ $startDate }} to {{ $endDate }})
             </td>
         </tr>
         <tr class="totals">
             <td colspan="2">Total Confirmed Orders: {{ $totalConfirmed }}</td>
+            <td>Total Completed Orders: {{ $totalCompleted }}</td>
             <td colspan="2">Total Project Payment: {{ '$' . number_format($totalAssigned, 2, '.', ',') }}</td>
         </tr>
         <tr>
             <th>Installer</th>
             <th>Company</th>
             <th>Confirmed Orders</th>
+            <th>Completed Orders</th>
             <th>Total Project Payment</th>
         </tr>
     </thead>
@@ -55,6 +57,7 @@
                 <td>{{ $item->installer_name ?? 'PICKUP OR DELIVERY ONLY' }}</td>
                 <td>{{ $item->company_name ?? '-' }}</td>
                 <td>{{ $item->confirmed_orders }}</td>
+                <td>{{ $item->completed_orders }}</td>
                 <td>{{ '$' . number_format($item->assigned_amount ?? 0, 2, '.', ',') }}</td>
             </tr>
         @endforeach
@@ -62,6 +65,7 @@
             <td><strong>Totals</strong></td>
             <td></td>
             <td><strong>{{ $totalConfirmed }}</strong></td>
+            <td><strong>{{ $totalCompleted }}</strong></td>
             <td><strong>{{ '$' . number_format($totalAssigned, 2, '.', ',') }}</strong></td>
         </tr>
     </tbody>
