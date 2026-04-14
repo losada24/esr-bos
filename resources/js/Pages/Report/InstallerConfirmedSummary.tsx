@@ -12,18 +12,20 @@ interface InstallerSummaryItem {
   company_name: string | null
   installer_name: string | null
   confirmed_orders: number
+  completed_orders: number
   assigned_amount: number
 }
 
 type InstallerConfirmedSummaryProps = PageProps & {
   summary: InstallerSummaryItem[]
   totalConfirmed: number
+  totalCompleted: number
   totalAssigned: number
   startDate: string
   endDate: string
 }
 
-export default function InstallerConfirmedSummary({ summary, totalConfirmed, totalAssigned, startDate, endDate, auth }: InstallerConfirmedSummaryProps) {
+export default function InstallerConfirmedSummary({ summary, totalConfirmed, totalCompleted, totalAssigned, startDate, endDate, auth }: InstallerConfirmedSummaryProps) {
   const exportQuery = `?start_date=${startDate || ''}&end_date=${endDate || ''}`
 
   return (
@@ -108,6 +110,9 @@ export default function InstallerConfirmedSummary({ summary, totalConfirmed, tot
         Total Confirmed Orders: {totalConfirmed}
       </div>
       <div className="mt-2 text-left font-semibold text-gray-700">
+        Total Completed Orders: {totalCompleted}
+      </div>
+      <div className="mt-2 text-left font-semibold text-gray-700">
         Total Project Payment: {formatPrice(Number(totalAssigned))}
       </div>
 
@@ -117,6 +122,7 @@ export default function InstallerConfirmedSummary({ summary, totalConfirmed, tot
             <th className="p-2 border">Installer</th>
             <th className="p-2 border">Company</th>
             <th className="p-2 border">Confirmed Orders</th>
+            <th className="p-2 border">Completed Orders</th>
             <th className="p-2 border">Total Project Payment</th>
           </tr>
         </thead>
@@ -128,6 +134,7 @@ export default function InstallerConfirmedSummary({ summary, totalConfirmed, tot
                 <td className="p-2 border">{item.installer_name || 'PICKUP OR DELIVERY ONLY'}</td>
                 <td className="p-2 border">{item.company_name || '-'}</td>
                 <td className="p-2 border">{item.confirmed_orders}</td>
+                <td className="p-2 border">{item.completed_orders}</td>
                 <td className="p-2 border">{formatPrice(Number(item.assigned_amount || 0))}</td>
               </tr>
             )
