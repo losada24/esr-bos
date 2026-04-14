@@ -2328,6 +2328,10 @@ class ReportController extends Controller
       ->where('order_status.status', OrderStatusEnum::CONFIRMED->value)
       ->whereBetween('order_status.created_at', [$startDate, $endDate])
       ->whereNull('orders.deleted_at')
+      ->where(function ($query) {
+        $query->whereNotNull('first_installation_team.first_installation_team_order_id')
+          ->orWhereNotIn('orders.service', [ServiceEnum::PICKUP->value, ServiceEnum::DELIVERY->value]);
+      })
       ->select(
         'installation_teams.id',
         'installation_teams.company_name',
@@ -2358,39 +2362,38 @@ class ReportController extends Controller
       ->distinct()
       ->count('order_status.order_id');
 
-    $unassignedCompletedWithoutConfirmed = Order::query()
+    $pickupOrDeliverySummary = Order::query()
       ->leftJoinSub($firstInstallationTeam, 'first_installation_team', function ($join) {
         $join->on('first_installation_team.order_id', '=', 'orders.id');
       })
-      ->joinSub($completedOrders, 'completed_orders', function ($join) {
-        $join->on('completed_orders.order_id', '=', 'orders.id');
-      })
-      ->leftJoinSub($confirmedOrders, 'confirmed_orders', function ($join) {
+      ->joinSub($confirmedOrders, 'confirmed_orders', function ($join) {
         $join->on('confirmed_orders.order_id', '=', 'orders.id');
       })
+      ->leftJoinSub($completedOrders, 'completed_orders', function ($join) {
+        $join->on('completed_orders.order_id', '=', 'orders.id');
+      })
+      ->leftJoin('travel_costs', 'travel_costs.id', '=', 'orders.travel_cost_id')
+      ->leftJoinSub($orderProductsTotals, 'order_products_totals', function ($join) {
+        $join->on('order_products_totals.order_id', '=', 'orders.id');
+      })
+      ->whereIn('orders.service', [ServiceEnum::PICKUP->value, ServiceEnum::DELIVERY->value])
       ->whereNull('first_installation_team.first_installation_team_order_id')
-      ->whereNull('confirmed_orders.order_id')
-      ->count();
+      ->select(
+        DB::raw('COUNT(*) as confirmed_orders'),
+        DB::raw('SUM(CASE WHEN completed_orders.order_id IS NOT NULL THEN 1 ELSE 0 END) as completed_orders'),
+        DB::raw('SUM(' . $amountExpression . ') as assigned_amount')
+      )
+      ->first();
 
-    if ($unassignedCompletedWithoutConfirmed > 0) {
-      $unassignedSummaryRow = $summary->first(function ($row) {
-        return $row->id === null;
-      });
-
-      if ($unassignedSummaryRow) {
-        $unassignedSummaryRow->confirmed_orders += $unassignedCompletedWithoutConfirmed;
-      } else {
-        $summary->push((object) [
-          'id' => null,
-          'company_name' => null,
-          'installer_name' => null,
-          'confirmed_orders' => $unassignedCompletedWithoutConfirmed,
-          'completed_orders' => 0,
-          'assigned_amount' => 0,
-        ]);
-      }
-
-      $totalConfirmed += $unassignedCompletedWithoutConfirmed;
+    if ($pickupOrDeliverySummary && (int) $pickupOrDeliverySummary->confirmed_orders > 0) {
+      $summary->push((object) [
+        'id' => null,
+        'company_name' => null,
+        'installer_name' => 'PICKUP OR DELIVERY ONLY',
+        'confirmed_orders' => (int) $pickupOrDeliverySummary->confirmed_orders,
+        'completed_orders' => (int) $pickupOrDeliverySummary->completed_orders,
+        'assigned_amount' => (float) ($pickupOrDeliverySummary->assigned_amount ?? 0),
+      ]);
     }
 
     $totalAssigned = OrderStatus::query()

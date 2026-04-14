@@ -53,8 +53,8 @@
     </thead>
     <tbody>
         @foreach ($summary as $item)
-            <tr class="{{ empty($item->installer_name) ? 'unassigned' : '' }}">
-                <td>{{ $item->installer_name ?? 'PICKUP OR DELIVERY ONLY' }}</td>
+            <tr class="{{ empty($item->installer_name) || $item->installer_name === 'PICKUP OR DELIVERY ONLY' ? 'unassigned' : '' }}">
+                <td>{{ $item->installer_name ?? 'UNASSIGNED' }}</td>
                 <td>{{ $item->company_name ?? '-' }}</td>
                 <td>{{ $item->confirmed_orders }}</td>
                 <td>{{ $item->completed_orders }}</td>

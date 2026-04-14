@@ -24,7 +24,7 @@
       @foreach ($summary as $item)
         <tr>
             <td width="50" height="25" text-align="left" valign="middle">
-              {{ $item->installer_name ?? 'PICKUP OR DELIVERY ONLY' }}
+              {{ $item->installer_name ?? 'UNASSIGNED' }}
             </td>
             <td width="50" height="25" text-align="left" valign="middle">
               {{ $item->company_name ?? '-' }}
