@@ -128,10 +128,10 @@ export default function InstallerConfirmedSummary({ summary, totalConfirmed, tot
         </thead>
         <tbody>
           {summary.map((item) => {
-            const isUnassigned = !item.installer_name
+            const isPickupOrDeliveryOnly = item.installer_name === 'PICKUP OR DELIVERY ONLY'
             return (
-              <tr key={item.id ?? 'unassigned'} className={isUnassigned ? 'bg-gray-100' : ''}>
-                <td className="p-2 border">{item.installer_name || 'PICKUP OR DELIVERY ONLY'}</td>
+              <tr key={item.id ?? item.installer_name ?? 'unassigned'} className={isPickupOrDeliveryOnly ? 'bg-gray-100' : ''}>
+                <td className="p-2 border">{item.installer_name || 'UNASSIGNED'}</td>
                 <td className="p-2 border">{item.company_name || '-'}</td>
                 <td className="p-2 border">{item.confirmed_orders}</td>
                 <td className="p-2 border">{item.completed_orders}</td>
