@@ -2558,6 +2558,7 @@ class ReportController extends Controller
       OrderStatusEnum::CONFIRMED->value,
       OrderStatusEnum::PLANNED->value,
       OrderStatusEnum::RESCHEDULE->value,
+      OrderStatusEnum::REPLANNED->value,
       OrderStatusEnum::COMPLETE->value,
       OrderStatusEnum::MATERIALS_RECEIVED->value,
     ];
