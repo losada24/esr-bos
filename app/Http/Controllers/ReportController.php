@@ -2615,13 +2615,8 @@ class ReportController extends Controller
           ->orWhereNotNull('execution_not_completed_orders.order_id')
           ->orWhereNotNull('inspection_not_completed_orders.order_id');
       })
-      ->where(function ($query) {
-        $query->where(function ($subQuery) {
-          $subQuery->whereNull('orders.supervisor_id')
-            ->whereNotIn('orders.service', [ServiceEnum::PICKUP->value, ServiceEnum::DELIVERY->value]);
-        })
-          ->orWhere('users.status', StatusUserEnum::ACTIVE->value);
-      })
+      ->whereNotNull('orders.supervisor_id')
+      ->where('users.status', StatusUserEnum::ACTIVE->value)
       ->select(
         'orders.supervisor_id',
         'users.name as supervisor_name',
@@ -2664,13 +2659,8 @@ class ReportController extends Controller
       ->leftJoin('users', 'users.id', '=', 'orders.supervisor_id')
       ->whereNull('orders.deleted_at')
       ->where('orders.status', OrderStatusEnum::INSPECTION->value)
-      ->where(function ($query) {
-        $query->where(function ($subQuery) {
-          $subQuery->whereNull('orders.supervisor_id')
-            ->whereNotIn('orders.service', [ServiceEnum::PICKUP->value, ServiceEnum::DELIVERY->value]);
-        })
-          ->orWhere('users.status', StatusUserEnum::ACTIVE->value);
-      })
+      ->whereNotNull('orders.supervisor_id')
+      ->where('users.status', StatusUserEnum::ACTIVE->value)
       ->select('orders.supervisor_id', DB::raw('COUNT(*) as total'))
       ->groupBy('orders.supervisor_id')
       ->get()
