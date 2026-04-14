@@ -2323,23 +2323,23 @@ class ReportController extends Controller
       )
       ->select('pickup_or_delivery_qualified_orders.order_id');
 
-    $summary = OrderStatus::query()
+    $summary = Order::query()
+      ->joinSub($confirmedOrders, 'confirmed_orders', function ($join) {
+        $join->on('confirmed_orders.order_id', '=', 'orders.id');
+      })
       ->leftJoinSub($completedOrders, 'completed_orders', function ($join) {
-        $join->on('completed_orders.order_id', '=', 'order_status.order_id');
+        $join->on('completed_orders.order_id', '=', 'orders.id');
       })
       ->leftJoinSub($firstInstallationTeam, 'first_installation_team', function ($join) {
-        $join->on('first_installation_team.order_id', '=', 'order_status.order_id');
+        $join->on('first_installation_team.order_id', '=', 'orders.id');
       })
       ->leftJoin('installation_teams_orders as first_installation_team_order', 'first_installation_team_order.id', '=', 'first_installation_team.first_installation_team_order_id')
       ->leftJoin('installation_teams', 'installation_teams.id', '=', 'first_installation_team_order.installation_team_id')
       ->leftJoin('users', 'users.id', '=', 'installation_teams.user_id')
-      ->join('orders', 'orders.id', '=', 'order_status.order_id')
       ->leftJoin('travel_costs', 'travel_costs.id', '=', 'orders.travel_cost_id')
       ->leftJoinSub($orderProductsTotals, 'order_products_totals', function ($join) {
         $join->on('order_products_totals.order_id', '=', 'orders.id');
       })
-      ->where('order_status.status', OrderStatusEnum::CONFIRMED->value)
-      ->whereBetween('order_status.created_at', [$startDate, $endDate])
       ->whereNull('orders.deleted_at')
       ->where(function ($query) {
         $query->whereNotNull('first_installation_team.first_installation_team_order_id')
@@ -2349,7 +2349,7 @@ class ReportController extends Controller
         'installation_teams.id',
         'installation_teams.company_name',
         'users.name as installer_name',
-        DB::raw('COUNT(order_status.id) as confirmed_orders'),
+        DB::raw('COUNT(*) as confirmed_orders'),
         DB::raw('COUNT(DISTINCT completed_orders.order_id) as completed_orders'),
         DB::raw('SUM(' . $amountExpression . ') as assigned_amount')
       )
