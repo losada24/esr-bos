@@ -55,10 +55,10 @@
     <tbody>
         @foreach ($summary as $item)
             @php
-                $isPickupOrDeliveryOnly = empty($item->supervisor_name) || $item->supervisor_name === 'PICKUP OR DELIVERY ONLY';
+                $isPickupOrDeliveryOnly = $item->supervisor_name === 'PICKUP OR DELIVERY ONLY';
             @endphp
             <tr class="{{ $isPickupOrDeliveryOnly ? 'unassigned' : '' }}">
-                <td>{{ $item->supervisor_name ?? 'PICKUP OR DELIVERY ONLY' }}</td>
+                <td>{{ $item->supervisor_name ?? 'UNASSIGNED' }}</td>
                 <td>{{ $item->confirmed_orders }}</td>
                 <td>{{ $item->confirmed_completed_orders }}</td>
                 <td>{{ $isPickupOrDeliveryOnly ? 0 : $item->execution_not_completed_orders }}</td>

@@ -2626,14 +2626,17 @@ class ReportController extends Controller
           ->orWhereNotNull('inspection_not_completed_orders.order_id');
       })
       ->where(function ($query) {
-        $query->whereNull('orders.supervisor_id')
+        $query->where(function ($subQuery) {
+          $subQuery->whereNull('orders.supervisor_id')
+            ->whereNotIn('orders.service', [ServiceEnum::PICKUP->value, ServiceEnum::DELIVERY->value]);
+        })
           ->orWhere('users.status', StatusUserEnum::ACTIVE->value);
       })
       ->select(
         'orders.supervisor_id',
         'users.name as supervisor_name',
-        DB::raw('SUM(CASE WHEN confirmed_orders.order_id IS NOT NULL OR (orders.supervisor_id IS NULL AND completed_orders.order_id IS NOT NULL) THEN 1 ELSE 0 END) as confirmed_orders'),
-        DB::raw('SUM(CASE WHEN completed_orders.order_id IS NOT NULL AND (confirmed_orders.order_id IS NOT NULL OR orders.supervisor_id IS NULL) THEN 1 ELSE 0 END) as confirmed_completed_orders'),
+        DB::raw('SUM(CASE WHEN confirmed_orders.order_id IS NOT NULL THEN 1 ELSE 0 END) as confirmed_orders'),
+        DB::raw('SUM(CASE WHEN completed_orders.order_id IS NOT NULL AND confirmed_orders.order_id IS NOT NULL THEN 1 ELSE 0 END) as confirmed_completed_orders'),
         DB::raw('COUNT(execution_not_completed_orders.order_id) as execution_not_completed_orders'),
         DB::raw('COUNT(inspection_not_completed_orders.order_id) as inspection_not_completed_orders')
       )
@@ -2647,61 +2650,41 @@ class ReportController extends Controller
       ->intersect($completedOrderIdsForTotals)
       ->count();
 
-    $confirmedCompletedIntersectionIds = $confirmedOrderIdsForTotals
-      ->intersect($completedOrderIdsForTotals)
-      ->values();
-
-    $confirmedCompletedBySupervisor = $confirmedCompletedIntersectionIds->isEmpty()
-      ? collect()
-      : Order::query()
-        ->leftJoin('users', 'users.id', '=', 'orders.supervisor_id')
-        ->whereIn('orders.id', $confirmedCompletedIntersectionIds->all())
-        ->where(function ($query) {
-          $query->whereNull('orders.supervisor_id')
-            ->orWhere('users.status', StatusUserEnum::ACTIVE->value);
-        })
-        ->select('orders.supervisor_id', DB::raw('COUNT(*) as total'))
-        ->groupBy('orders.supervisor_id')
-        ->get()
-        ->mapWithKeys(function ($row) {
-          $key = $row->supervisor_id === null ? 'null' : (string) $row->supervisor_id;
-
-          return [$key => (int) $row->total];
-        });
-
-    $unassignedCompletedWithoutConfirmed = Order::query()
-      ->leftJoinSub($confirmedOrders, 'confirmed_orders', function ($join) {
+    $pickupOrDeliverySummary = Order::query()
+      ->joinSub($confirmedOrders, 'confirmed_orders', function ($join) {
         $join->on('confirmed_orders.order_id', '=', 'orders.id');
       })
-      ->joinSub($completedOrders, 'completed_orders', function ($join) {
+      ->leftJoinSub($completedOrders, 'completed_orders', function ($join) {
         $join->on('completed_orders.order_id', '=', 'orders.id');
       })
       ->whereNull('orders.supervisor_id')
-      ->whereNull('confirmed_orders.order_id')
-      ->count();
+      ->whereIn('orders.service', [ServiceEnum::PICKUP->value, ServiceEnum::DELIVERY->value])
+      ->select(
+        DB::raw('COUNT(*) as confirmed_orders'),
+        DB::raw('SUM(CASE WHEN completed_orders.order_id IS NOT NULL THEN 1 ELSE 0 END) as confirmed_completed_orders')
+      )
+      ->first();
 
-    $totalConfirmed += $unassignedCompletedWithoutConfirmed;
-    $totalConfirmedCompleted += $unassignedCompletedWithoutConfirmed;
-
-    $summary = $summary->map(function ($item) use ($confirmedCompletedBySupervisor, $unassignedCompletedWithoutConfirmed) {
-      $key = $item->supervisor_id === null ? 'null' : (string) $item->supervisor_id;
-      $confirmedCompleted = (int) ($confirmedCompletedBySupervisor->get($key, 0));
-
-      if ($item->supervisor_id === null) {
-        $confirmedCompleted += $unassignedCompletedWithoutConfirmed;
-      }
-
-      $item->confirmed_completed_orders = $confirmedCompleted;
-
-      return $item;
-    });
+    if ($pickupOrDeliverySummary && (int) $pickupOrDeliverySummary->confirmed_orders > 0) {
+      $summary->push((object) [
+        'supervisor_id' => null,
+        'supervisor_name' => 'PICKUP OR DELIVERY ONLY',
+        'confirmed_orders' => (int) $pickupOrDeliverySummary->confirmed_orders,
+        'confirmed_completed_orders' => (int) $pickupOrDeliverySummary->confirmed_completed_orders,
+        'execution_not_completed_orders' => 0,
+        'inspection_not_completed_orders' => 0,
+      ]);
+    }
 
     $currentInspectionBySupervisor = Order::query()
       ->leftJoin('users', 'users.id', '=', 'orders.supervisor_id')
       ->whereNull('orders.deleted_at')
       ->where('orders.status', OrderStatusEnum::INSPECTION->value)
       ->where(function ($query) {
-        $query->whereNull('orders.supervisor_id')
+        $query->where(function ($subQuery) {
+          $subQuery->whereNull('orders.supervisor_id')
+            ->whereNotIn('orders.service', [ServiceEnum::PICKUP->value, ServiceEnum::DELIVERY->value]);
+        })
           ->orWhere('users.status', StatusUserEnum::ACTIVE->value);
       })
       ->select('orders.supervisor_id', DB::raw('COUNT(*) as total'))
@@ -2714,6 +2697,12 @@ class ReportController extends Controller
       });
 
     $summary = $summary->map(function ($item) use ($currentInspectionBySupervisor) {
+      if (($item->supervisor_name ?? null) === 'PICKUP OR DELIVERY ONLY') {
+        $item->inspection_not_completed_orders = 0;
+
+        return $item;
+      }
+
       $key = $item->supervisor_id === null ? 'null' : (string) $item->supervisor_id;
       $item->inspection_not_completed_orders = (int) ($currentInspectionBySupervisor->get($key, 0));
 

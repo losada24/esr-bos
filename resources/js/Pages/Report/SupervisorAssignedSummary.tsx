@@ -134,10 +134,10 @@ export default function SupervisorAssignedSummary({ summary, totalConfirmed, tot
         </thead>
         <tbody>
           {summary.map((item) => {
-            const isPickupOrDeliveryOnly = !item.supervisor_name || item.supervisor_name === 'PICKUP OR DELIVERY ONLY'
+            const isPickupOrDeliveryOnly = item.supervisor_name === 'PICKUP OR DELIVERY ONLY'
             return (
-              <tr key={item.supervisor_id ?? 'unassigned'} className={isPickupOrDeliveryOnly ? 'bg-gray-100' : ''}>
-                <td className="p-2 border">{item.supervisor_name || 'PICKUP OR DELIVERY ONLY'}</td>
+              <tr key={item.supervisor_id ?? item.supervisor_name ?? 'unassigned'} className={isPickupOrDeliveryOnly ? 'bg-gray-100' : ''}>
+                <td className="p-2 border">{item.supervisor_name || 'UNASSIGNED'}</td>
                 <td className="p-2 border">{item.confirmed_orders}</td>
                 <td className="p-2 border">{item.confirmed_completed_orders}</td>
                 <td className="p-2 border">{isPickupOrDeliveryOnly ? 0 : item.execution_not_completed_orders}</td>
