@@ -47,6 +47,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
   const CAN_VIEW_PLANNED_TO_COMPLETE_AVERAGE = !HAS_FRONTDESK_ADMIN_ROLE && (IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER || IS_OWNER_ADMIN)
   const HAS_PLANNED_TO_COMPLETE_AVERAGE_ROUTE = route().has('report.planned-to-complete-average')
   const CAN_VIEW_ACCOUNTING_STATUS_SUMMARY = IS_ADMIN || IS_ACCOUNTING
+  const CAN_VIEW_COMMISSIONS = IS_ADMIN || IS_ACCOUNTING || IS_PAYMENT_COORDINATOR
   const CAN_VIEW_INSTALLER_CONFIRMED = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER
   const CAN_VIEW_OWNER_ASSIGNED = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER || IS_OWNER_ADMIN
   const CAN_VIEW_SUPERVISOR_ASSIGNED = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER
@@ -65,6 +66,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
     || CAN_VIEW_ORDER_STATUS_SUMMARY
     || CAN_VIEW_PLANNED_TO_COMPLETE_AVERAGE
     || CAN_VIEW_ACCOUNTING_STATUS_SUMMARY
+    || CAN_VIEW_COMMISSIONS
     || CAN_VIEW_INSTALLER_CONFIRMED
     || CAN_VIEW_OWNER_ASSIGNED
     || CAN_VIEW_SUPERVISOR_ASSIGNED
@@ -360,6 +362,26 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                         </div>
                                       </NavLink>
                                     </li>
+                                  )}
+                                  {CAN_VIEW_COMMISSIONS && (
+                                    <>
+                                      <li className="menu nav-item">
+                                        <NavLink href={route('report.commissions')} active={route().current('report.commissions') || route().current('report.commissions.edit-order')} className="group">
+                                          <div className="flex items-center">
+                                            <ReferralIcon/>
+                                            <SidebarLinkLabel>Commissions</SidebarLinkLabel>
+                                          </div>
+                                        </NavLink>
+                                      </li>
+                                      <li className="menu nav-item">
+                                        <NavLink href={route('commission-periods.index')} active={route().current('commission-periods.index') || route().current('commission-periods.show')} className="group">
+                                          <div className="flex items-center">
+                                            <CalendarIcon/>
+                                            <SidebarLinkLabel>Commission Periods</SidebarLinkLabel>
+                                          </div>
+                                        </NavLink>
+                                      </li>
+                                    </>
                                   )}
                                   {CAN_VIEW_DAILY_ORDER_STATUS && (
                                     <li className="menu nav-item">

@@ -4,6 +4,8 @@ use App\Enum\RoleEnum;
 use App\Http\Controllers\BiginController;
 use App\Http\Controllers\BiweeklyController;
 use App\Http\Controllers\ClientController;
+use App\Http\Controllers\Commission\CommissionPeriodController;
+use App\Http\Controllers\Commission\CommissionReportController;
 use App\Http\Controllers\CompanyContactController;
 use App\Http\Controllers\AuthorizeNetHostedPaymentController;
 use App\Http\Controllers\AuthorizeNetWebhookController;
@@ -495,6 +497,54 @@ Route::middleware('auth')->group(function () {
     Route::get('/report/accounting-status-summary/excel', [ReportController::class, 'accountingStatusSummaryExcel'])
     ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNTING->value] )
     ->name('report.accounting-status-summary-excel');
+
+    Route::get('/report/commissions', [CommissionReportController::class, 'index'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNTING->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value])
+    ->name('report.commissions');
+
+    Route::get('/report/commissions/pdf', [CommissionReportController::class, 'pdf'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNTING->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value])
+    ->name('report.commissions.pdf');
+
+    Route::get('/report/commissions/excel', [CommissionReportController::class, 'excel'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNTING->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value])
+    ->name('report.commissions.excel');
+
+    Route::get('/report/commissions/order/{order}', [CommissionReportController::class, 'editOrder'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNTING->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value])
+    ->name('report.commissions.edit-order');
+
+    Route::post('/report/commissions', [CommissionReportController::class, 'storeCommission'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNTING->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value])
+    ->name('report.commissions.store');
+
+    Route::patch('/report/commissions/{commission}', [CommissionReportController::class, 'updateCommission'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNTING->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value])
+    ->name('report.commissions.update');
+
+    Route::post('/report/commissions/{commission}/payments', [CommissionReportController::class, 'storePayment'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNTING->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value])
+    ->name('report.commissions.payments.store');
+
+    Route::patch('/report/commission-payments/{payment}', [CommissionReportController::class, 'updatePayment'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNTING->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value])
+    ->name('report.commissions.payments.update');
+
+    Route::get('/commission-periods', [CommissionPeriodController::class, 'index'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNTING->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value])
+    ->name('commission-periods.index');
+
+    Route::post('/commission-periods', [CommissionPeriodController::class, 'store'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNTING->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value])
+    ->name('commission-periods.store');
+
+    Route::get('/commission-periods/{commissionPeriod}', [CommissionPeriodController::class, 'show'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNTING->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value])
+    ->name('commission-periods.show');
+
+    Route::post('/commission-periods/{commissionPeriod}/close', [CommissionPeriodController::class, 'close'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNTING->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value])
+    ->name('commission-periods.close');
 
     Route::get('/report/daily-order-status-summary', [ReportController::class, 'dailyOrderStatusSummary'])
     ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::FRONTDESK_ADMIN->value . '|'. RoleEnum::OWNER_ADMIN->value] )

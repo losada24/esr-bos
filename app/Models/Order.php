@@ -424,6 +424,11 @@ class Order extends Model
     return $this->hasMany(InstallationPayment::class);
   }
 
+  public function orderCommissions(): HasMany
+  {
+    return $this->hasMany(OrderCommission::class);
+  }
+
   /*public function paymentExtraFields()
     {
         return $this->hasMany(PaymentExtraField::class);
