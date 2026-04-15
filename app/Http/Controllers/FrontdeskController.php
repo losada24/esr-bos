@@ -841,6 +841,7 @@ public function showQuantifiedModal(Order $order)
       'paymentSchedule.installments.movements.paidBy',
       'changeOrderPayment.paidBy',
       'financialEvents.user',
+      'serviceControls.creator:id,name',
       'orderCompanyContacts.companyContact',
       'orderCompanyContacts.client.companyContacts',
       'orderCompanyContacts.source'
@@ -1054,11 +1055,28 @@ public function showQuantifiedModal(Order $order)
       ])
       ->values();
     $orderData['has_contract_signed'] = $order->hasReachedContractSigned();
+    $serviceControls = $order->serviceControls
+      ->map(fn ($serviceControl) => [
+        'id' => $serviceControl->id,
+        'service_name' => $serviceControl->service_name,
+        'service_id' => $serviceControl->service_id,
+        'service_type' => $serviceControl->service_type,
+        'service_status' => $serviceControl->service_status,
+        'priority' => $serviceControl->priority,
+        'open_days' => $serviceControl->open_days,
+        'updated_at' => optional($serviceControl->updated_at)->toISOString(),
+        'creator' => $serviceControl->creator ? [
+          'id' => $serviceControl->creator->id,
+          'name' => $serviceControl->creator->name,
+        ] : null,
+      ])
+      ->values();
 
     // Obtener los parámetros de filtro de la solicitud (request)
     return Inertia::render('Frontdesk/OrderView', [
       //'orderStatuses' => $orderStatuses,
       'order' => $orderData,
+      'serviceControls' => $serviceControls,
       'snapshots' => $orderSnapshots,
       'clientOrders' => $clientOrders,
        'tags' => $order->tags->map(fn($t) => [

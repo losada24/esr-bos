@@ -29,7 +29,7 @@ import EditIcon from '@/Components/Icons/EditIcon'
 import MessageIcon from '@/Components/Icons/MessageIcon'
 import StarIcon from '@/Components/Icons/StarIcon'
 import PlusIcon from '@/Components/Icons/PlusIcon'
-import { isAccountManager, isAccounting, isAdmin, isFrontdeskAdmin, isFrontdeskEsr, isOwner, isOwnerAdmin } from '@/Utils/user'
+import { isAccountManager, isAccounting, isAdmin, isFrontdeskAdmin, isFrontdeskEsr, isOwner, isOwnerAdmin, isServiceManager } from '@/Utils/user'
 import { PAYMENT_METHODS, SOURCES } from '@/Utils/constants'
 import EstimateScheduleModal from '@/Pages/Sales/EstimateScheduleModal'
 import FollowUpModal from '@/Pages/Sales/FollowUpModal'
@@ -50,6 +50,7 @@ type IndexOrderProps = PageProps & {
   tags: TagItem[]
   usedTags: TagItem[]
   clientOrders?: ClientOrderSummary[]
+  serviceControls?: LinkedServiceControl[]
   ownerOptions?: ClientOrderOwner[]
   lossReasonFrontdesk?: string[]
   sources?: string[]
@@ -86,6 +87,21 @@ export interface ClientOrderSummary {
   status?: string | null
   order_type?: string | null
   owners?: ClientOrderOwner[]
+}
+
+type LinkedServiceControl = {
+  id: number
+  service_name?: string | null
+  service_id?: string | null
+  service_type?: string | null
+  service_status?: string | null
+  priority?: string | null
+  open_days?: number | null
+  updated_at?: string | null
+  creator?: {
+    id?: number | null
+    name?: string | null
+  } | null
 }
 
 type SnapshotActor = {
@@ -489,6 +505,7 @@ export default function ShowStatusOrder ({
   order: initialOrder,
   usedTags = [],
   clientOrders = [],
+  serviceControls = [],
   ownerOptions = [],
   lossReasonFrontdesk = [],
   sources = [],
@@ -518,6 +535,7 @@ export default function ShowStatusOrder ({
   const safeTags = Array.isArray(tags) ? tags : []
   const safeUsedTags = Array.isArray(usedTags) ? usedTags : []
   const relatedClientOrders = Array.isArray(clientOrders) ? clientOrders : []
+  const linkedServiceControls = Array.isArray(serviceControls) ? serviceControls : []
   const associatedOrdersCount = relatedClientOrders.length
   const safeOwnerOptions = Array.isArray(ownerOptions) ? ownerOptions : []
   const modalOwnerOptions = safeOwnerOptions as unknown as User[]
@@ -536,6 +554,7 @@ export default function ShowStatusOrder ({
   const canMoveToEstimate = isAdmin(roleNames) || isOwnerAdmin(roleNames) || isFrontdeskAdmin(roleNames)
   const canViewPipeline = isAdmin(roleNames) || isAccountManager(roleNames) || isOwner(roleNames) || isOwnerAdmin(roleNames) || isFrontdeskAdmin(roleNames) || isAccounting(roleNames)
   const canEditPipeline = isAdmin(roleNames) || isAccountManager(roleNames) || isOwner(roleNames) || isOwnerAdmin(roleNames) || isFrontdeskAdmin(roleNames) || isAccounting(roleNames)
+  const canManageServiceControl = isAdmin(roleNames) || isAccountManager(roleNames) || isOwner(roleNames) || isOwnerAdmin(roleNames) || isFrontdeskAdmin(roleNames) || isServiceManager(roleNames)
   const canEditPaymentInformationInModal = isAdmin(roleNames) || isAccountManager(roleNames) || isAccounting(roleNames) || isOwnerAdmin(roleNames)
   const hasReachedContractSigned = Boolean(order.has_contract_signed)
   const hasAssignedPaymentMethod = String(order.method_of_payment ?? '').trim() !== ''
@@ -3352,6 +3371,70 @@ export default function ShowStatusOrder ({
                   </div>
                 </div>
               )}
+
+              <div className="panel space-y-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">Service Controls</h2>
+                    <p className="text-xs text-slate-400">Post-sale services associated with this order.</p>
+                  </div>
+                  {canManageServiceControl && (
+                    <Link
+                      href={route('service-control.create', { order_id: order.id })}
+                      className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-500 transition hover:border-sky-400 hover:text-sky-600"
+                    >
+                      New Service
+                    </Link>
+                  )}
+                </div>
+
+                {linkedServiceControls.length > 0
+                  ? (
+                    <div className="space-y-3">
+                      {linkedServiceControls.map((serviceControl) => {
+                        const content = (
+                          <>
+                            <div className="flex items-start justify-between gap-3">
+                              <div>
+                                <p className="text-sm font-semibold text-slate-700">{serviceControl.service_name ?? serviceControl.service_type ?? 'Service Control'}</p>
+                                <p className="text-xs text-slate-400">
+                                  {serviceControl.creator?.name ?? 'System'} · {serviceControl.updated_at ? new Date(serviceControl.updated_at).toLocaleString() : 'No update'}
+                                </p>
+                              </div>
+                              <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                                {serviceControl.service_status ?? 'N/A'}
+                              </span>
+                            </div>
+                            <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                              <span className="rounded-full bg-slate-100 px-2.5 py-1">Service ID: {serviceControl.service_id ?? 'N/A'}</span>
+                              <span className="rounded-full bg-slate-100 px-2.5 py-1">Priority: {serviceControl.priority ?? 'N/A'}</span>
+                              <span className="rounded-full bg-slate-100 px-2.5 py-1">Open Days: {serviceControl.open_days ?? 0}</span>
+                            </div>
+                          </>
+                        )
+
+                        if (!canManageServiceControl) {
+                          return (
+                            <div key={serviceControl.id} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                              {content}
+                            </div>
+                          )
+                        }
+
+                        return (
+                          <Link key={serviceControl.id} href={route('service-control.edit', serviceControl.id)} className="block rounded-xl border border-slate-200 bg-slate-50 p-4 transition hover:border-sky-300 hover:bg-white">
+                            {content}
+                          </Link>
+                        )
+                      })}
+                    </div>
+                    )
+                  : (
+                    <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-5 text-sm text-slate-400">
+                      No service controls linked to this order yet.
+                    </div>
+                    )}
+              </div>
 
               {/* Sales timeline component will render elsewhere */}
 
