@@ -29,6 +29,7 @@ type DailyOrderStatusSummaryProps = PageProps & {
   totals: {
     total: number
     qualified: number
+    qualified_by_status_date: number
     estimate_appt_schedule: number
     lost_request: number
     total_orders: number
@@ -36,6 +37,7 @@ type DailyOrderStatusSummaryProps = PageProps & {
   orderLists: {
     total: OrderListItem[]
     qualified: OrderListItem[]
+    qualified_by_status_date: OrderListItem[]
     estimate_appt_schedule: OrderListItem[]
     lost_request: OrderListItem[]
   }
@@ -190,6 +192,9 @@ export default function DailyOrderStatusSummary({ dailySummary, totals, orderLis
         Total Qualified: {totals.qualified}
       </div>
       <div className="mt-2 text-left font-semibold text-gray-700">
+        Total Qualified by Status Date: {totals.qualified_by_status_date}
+      </div>
+      <div className="mt-2 text-left font-semibold text-gray-700">
         Total Estimate &amp; Appt Schedule: {totals.estimate_appt_schedule}
       </div>
       <div className="mt-2 text-left font-semibold text-gray-700">
@@ -199,6 +204,15 @@ export default function DailyOrderStatusSummary({ dailySummary, totals, orderLis
       <div className="mt-6 grid grid-cols-1 gap-4">
         {renderOrderListTable('Total Orders List', orderLists.total, 'No orders for the selected dates.')}
         {renderOrderListTable('Qualified Orders List', orderLists.qualified, 'No qualified orders for the selected dates.')}
+        {renderOrderListTable(
+          'Qualified by Status Date Orders List',
+          orderLists.qualified_by_status_date,
+          'No qualified by status date orders for the selected dates.',
+          {
+            showStatusDate: true,
+            statusDateLabel: 'Qualified Date',
+          }
+        )}
         {renderOrderListTable('Estimate & Appt Schedule Orders List', orderLists.estimate_appt_schedule, 'No estimate & appt schedule orders for the selected dates.')}
         {renderOrderListTable(
           'Lost Request Orders List',

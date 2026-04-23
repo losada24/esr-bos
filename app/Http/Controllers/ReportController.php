@@ -1476,6 +1476,18 @@ class ReportController extends Controller
       ->get()
       ->keyBy('summary_date');
 
+    $qualifiedStatusDateTransitions = DB::table('order_status')
+      ->join('orders', 'orders.id', '=', 'order_status.order_id')
+      ->whereNull('orders.deleted_at')
+      ->where('order_status.status', OrderStatusEnum::QUALIFIED->value)
+      ->whereBetween('order_status.created_at', [$startDate, $endDate])
+      ->where(function ($query) {
+        $query->whereNull('orders.order_type')
+          ->orWhere('orders.order_type', '!=', OrderTypeEnum::COMMERCIAL->value);
+      })
+      ->selectRaw('order_status.order_id, MAX(order_status.created_at) as qualified_at')
+      ->groupBy('order_status.order_id');
+
     $lostRequestTransitions = DB::table('order_status')
       ->join('orders', 'orders.id', '=', 'order_status.order_id')
       ->whereNull('orders.deleted_at')
@@ -1519,6 +1531,25 @@ class ReportController extends Controller
       ->select('cohort_schedule.order_id')
       ->distinct()
       ->pluck('cohort_schedule.order_id');
+
+    $qualifiedStatusDateRows = DB::query()
+      ->fromSub($qualifiedStatusDateTransitions, 'qualified_status_date_transitions')
+      ->select('order_id', 'qualified_at')
+      ->orderBy('qualified_at')
+      ->orderBy('order_id')
+      ->get();
+
+    $qualifiedStatusDateOrderIds = $qualifiedStatusDateRows->pluck('order_id');
+    $qualifiedStatusDateMetadata = $qualifiedStatusDateRows
+      ->keyBy(static fn ($row) => (int) $row->order_id)
+      ->map(static function ($row) {
+        return [
+          'status_date' => $row->qualified_at
+            ? Carbon::parse($row->qualified_at)->toDateString()
+            : null,
+        ];
+      })
+      ->all();
 
     $lostRequestRows = DB::query()
       ->fromSub($lostRequestTransitions, 'lost_request_transitions')
@@ -1590,6 +1621,7 @@ class ReportController extends Controller
     $totals = [
       'total' => $dailySummary->sum('new_request_qualified'),
       'qualified' => $dailySummary->sum('qualified'),
+      'qualified_by_status_date' => $qualifiedStatusDateRows->count(),
       'estimate_appt_schedule' => $dailySummary->sum('estimate_appt_schedule'),
       'lost_request' => $dailySummary->sum('lost_request'),
     ];
@@ -1597,6 +1629,13 @@ class ReportController extends Controller
     $orderLists = [
       'total' => $this->buildOrderReferenceList($totalOrderIds)->values(),
       'qualified' => $this->buildOrderReferenceList($qualifiedOrderIds)->values(),
+      'qualified_by_status_date' => $this->buildOrderReferenceList($qualifiedStatusDateOrderIds, $qualifiedStatusDateMetadata)
+        ->sortBy(static fn (array $order) => sprintf(
+          '%s-%010d',
+          $order['status_date'] ?? '9999-12-31',
+          (int) $order['id']
+        ))
+        ->values(),
       'estimate_appt_schedule' => $this->buildOrderReferenceList($estimateOrderIds)->values(),
       'lost_request' => $this->buildOrderReferenceList($lostRequestOrderIds, $lostRequestMetadata)
         ->sortBy(static fn (array $order) => sprintf(

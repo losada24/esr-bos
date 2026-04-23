@@ -251,10 +251,9 @@ class DashboardController extends Controller
     }
     $showOnlyInstallation = $service === ServiceEnum::INSTALLATION_ONLY->value;
     $showOnlyDeliveries = $service === ServiceEnum::DELIVERY->value;
-    $service_filter = $service === ServiceEnum::INSTALLATION_ONLY->value ? ServiceEnum::INSTALLATION->value : $service;
-    if ($service === ServiceEnum::SERVICE->value) {
-      $service_filter = ServiceEnum::SERVICE->value;
-    }
+    $service_filter = $showOnlyInstallation
+      ? [ServiceEnum::INSTALLATION->value, ServiceEnum::SERVICE->value]
+      : $service;
 
     $currentPassingDate = Carbon::parse($year . '-' . $month . '-01');
     $previewMonth = $currentPassingDate->copy()->subMonth()->startOfMonth();
@@ -515,7 +514,10 @@ class DashboardController extends Controller
   public function updateEvent(Request $request, $id)
   {
     $order = Order::find($id);
-    if ($request->type_of_event === ServiceEnum::INSTALLATION->value) {
+    if (in_array($request->type_of_event, [
+      ServiceEnum::INSTALLATION->value,
+      ServiceEnum::SERVICE->value,
+    ], true)) {
       $order->installation_date = $request->start;
       $order->installation_end_date = $request->end;
     } else {

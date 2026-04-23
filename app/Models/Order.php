@@ -208,7 +208,9 @@ class Order extends Model
       }*/
     if (isset($filters['service']) && $filters['service'] != 'all') {
       $query->where(function ($query) use ($filters) {
-        if ($filters['service'] === ServiceEnum::DELIVERY->value) {
+        if (is_array($filters['service'])) {
+          $query->whereIn('service', $filters['service']);
+        } else if ($filters['service'] === ServiceEnum::DELIVERY->value) {
           $query->where('service', ServiceEnum::DELIVERY->value)
             ->orWhere('service', ServiceEnum::INSTALLATION->value);
         } else {
