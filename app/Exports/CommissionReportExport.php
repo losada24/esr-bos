@@ -14,6 +14,10 @@ class CommissionReportExport implements FromView
 
     public function view(): View
     {
-        return view('excels.commissions', $this->data);
+        $view = ($this->data['selectedView'] ?? 'commissions') === 'payments'
+            ? 'excels.commission-payments'
+            : 'excels.commissions';
+
+        return view($view, $this->data);
     }
 }

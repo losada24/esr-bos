@@ -5,6 +5,7 @@ namespace App\Http\Requests\Commission;
 use App\Enum\CommissionBeneficiaryRelationEnum;
 use App\Enum\CommissionBeneficiarySourceEnum;
 use App\Enum\CommissionCalculationTypeEnum;
+use App\Enum\CommissionPaymentKindEnum;
 use App\Enum\CommissionPaymentStatusEnum;
 use App\Enum\CommissionSplitTypeEnum;
 use Illuminate\Foundation\Http\FormRequest;
@@ -33,6 +34,7 @@ class StoreOrderCommissionRequest extends FormRequest
             'beneficiary_relation' => ['required', 'string', Rule::in(array_column(CommissionBeneficiaryRelationEnum::cases(), 'value'))],
             'calculation_type' => ['required', 'string', Rule::in(array_column(CommissionCalculationTypeEnum::cases(), 'value'))],
             'fee_amount_snapshot' => ['nullable', 'numeric', 'min:0'],
+            'financing_fee_amount' => ['nullable', 'numeric', 'min:0'],
             'percentage_value' => [
                 Rule::requiredIf($calculationType === CommissionCalculationTypeEnum::PERCENTAGE->value),
                 'nullable',
@@ -63,6 +65,7 @@ class StoreOrderCommissionRequest extends FormRequest
             'payments' => ['nullable', 'array', 'min:1'],
             'payments.*.split_type' => ['required_with:payments', 'string', Rule::in(array_column(CommissionSplitTypeEnum::cases(), 'value'))],
             'payments.*.split_value' => ['required_with:payments', 'numeric'],
+            'payments.*.payment_kind' => ['nullable', 'string', Rule::in(array_column(CommissionPaymentKindEnum::cases(), 'value'))],
             'payments.*.status' => ['required_with:payments', 'string', Rule::in(array_column(CommissionPaymentStatusEnum::cases(), 'value'))],
             'payments.*.other_cost_amount' => ['nullable', 'numeric'],
             'payments.*.other_cost_notes' => ['nullable', 'string'],

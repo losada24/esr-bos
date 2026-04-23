@@ -25,6 +25,7 @@ class OrderCommission extends Model
         'fixed_amount',
         'project_amount_snapshot',
         'fee_amount_snapshot',
+        'financing_fee_amount',
         'base_amount_snapshot',
         'commission_amount',
         'other_cost_amount',
@@ -45,6 +46,11 @@ class OrderCommission extends Model
     public function payments(): HasMany
     {
         return $this->hasMany(OrderCommissionPayment::class)->orderBy('sequence');
+    }
+
+    public function audits(): HasMany
+    {
+        return $this->hasMany(OrderCommissionAudit::class, 'order_commission_id');
     }
 
     public function nextPayment(): BelongsTo

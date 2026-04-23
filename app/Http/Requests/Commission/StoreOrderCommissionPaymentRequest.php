@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Commission;
 
+use App\Enum\CommissionPaymentKindEnum;
 use App\Enum\CommissionPaymentStatusEnum;
 use App\Enum\CommissionSplitTypeEnum;
 use Illuminate\Foundation\Http\FormRequest;
@@ -17,6 +18,7 @@ class StoreOrderCommissionPaymentRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'payment_kind' => ['nullable', 'string', Rule::in(array_column(CommissionPaymentKindEnum::cases(), 'value'))],
             'split_type' => ['required', 'string', Rule::in(array_column(CommissionSplitTypeEnum::cases(), 'value'))],
             'split_value' => ['required', 'numeric'],
             'status' => ['required', 'string', Rule::in(array_column(CommissionPaymentStatusEnum::cases(), 'value'))],

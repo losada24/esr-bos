@@ -19,6 +19,7 @@ use App\Support\OrderClientEmailDeliveryLogger;
 use App\Support\OrderClientEmailManager;
 use App\Support\OrderOwnerChangeNotifier;
 use App\Support\OrderPaymentInformationAuditLogger;
+use App\Support\Commissions\CommissionCalculator;
 use App\Support\PaymentScheduleCalculator;
 use App\Support\PaymentScheduleTemplates;
 use App\Traits\ComissionSupervisor;
@@ -49,7 +50,8 @@ class UpdateOrder
   public function __construct(
     protected OrderOwnerChangeNotifier $orderOwnerChangeNotifier,
     protected OrderClientEmailManager $orderClientEmailManager,
-    protected OrderClientEmailDeliveryLogger $orderClientEmailDeliveryLogger
+    protected OrderClientEmailDeliveryLogger $orderClientEmailDeliveryLogger,
+    protected CommissionCalculator $commissionCalculator
   ) {
   }
 
@@ -526,6 +528,8 @@ class UpdateOrder
           );
           $changeOrderPayment->delete();
         }
+
+        $this->commissionCalculator->refreshOrderCommissions($order->fresh());
       }
 
       $currentWorkTeamNotes = trim((string) ($request->work_team_notes ?? ''));

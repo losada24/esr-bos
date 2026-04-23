@@ -3,28 +3,34 @@
 namespace App\Http\Controllers\Commission;
 
 use App\Exports\CommissionReportExport;
+use App\Enum\CommissionPeriodStatusEnum;
 use App\Enum\CommissionBeneficiaryRelationEnum;
 use App\Enum\CommissionBeneficiarySourceEnum;
 use App\Enum\CommissionCalculationTypeEnum;
+use App\Enum\CommissionPaymentKindEnum;
 use App\Enum\CommissionPaymentStatusEnum;
 use App\Enum\CommissionSplitTypeEnum;
 use App\Enum\CommissionStatusEnum;
 use App\Enum\OrderStatusEnum;
 use App\Enum\StatusUserEnum;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Commission\BulkPayCommissionPaymentsRequest;
 use App\Http\Requests\Commission\StoreOrderCommissionPaymentRequest;
 use App\Http\Requests\Commission\StoreOrderCommissionRequest;
 use App\Http\Requests\Commission\UpdateOrderCommissionPaymentRequest;
 use App\Http\Requests\Commission\UpdateOrderCommissionRequest;
+use App\Models\CommissionPeriod;
 use App\Models\ExternalCommissionBeneficiary;
 use App\Models\Order;
 use App\Models\OrderCommission;
+use App\Models\OrderCommissionAudit;
 use App\Models\OrderCommissionPayment;
 use App\Models\OrderStatus;
 use App\Models\Referral;
 use App\Models\User;
 use App\Support\Commissions\CommissionAuditLogger;
 use App\Support\Commissions\CommissionCalculator;
+use App\Support\Commissions\CommissionHistoryPresenter;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
@@ -47,7 +53,10 @@ class CommissionReportController extends Controller
     public function pdf(Request $request)
     {
         $data = $this->buildIndexData($request);
-        $pdf = Pdf::loadView('pdf.commissions', $data)->setPaper('A4', 'landscape');
+        $view = ($data['selectedView'] ?? 'commissions') === 'payments'
+            ? 'pdf.commission-payments'
+            : 'pdf.commissions';
+        $pdf = Pdf::loadView($view, $data)->setPaper('A4', 'landscape');
 
         return $pdf->stream('commissions-report.pdf');
     }
@@ -63,10 +72,50 @@ class CommissionReportController extends Controller
         );
     }
 
-    public function editOrder(Order $order): Response
+    public function bulkPay(BulkPayCommissionPaymentsRequest $request): RedirectResponse
+    {
+        $data = $request->validated();
+        $period = CommissionPeriod::query()->findOrFail($data['commission_period_id']);
+
+        if ($period->status !== CommissionPeriodStatusEnum::OPEN->value) {
+            return back()->with('error', 'Only open commission periods can receive payments.');
+        }
+
+        $payments = OrderCommissionPayment::query()
+            ->with('commission')
+            ->whereIn('id', $data['payment_ids'])
+            ->where('status', CommissionPaymentStatusEnum::REVIEW->value)
+            ->whereNull('commission_period_id')
+            ->get();
+
+        if ($payments->isEmpty()) {
+            return back()->with('error', 'No review payments were selected.');
+        }
+
+        DB::transaction(function () use ($payments, $period) {
+            foreach ($payments as $payment) {
+                $before = $payment->toArray();
+
+                $payment->update([
+                    'commission_period_id' => $period->id,
+                    'updated_by' => Auth::id(),
+                ]);
+
+                CommissionAuditLogger::log('payment.assigned_to_period', [
+                    'before' => $before,
+                    'after' => $payment->fresh()->toArray(),
+                ], $payment->commission, $payment, $period);
+            }
+        });
+
+        return back()->with('success', 'Selected review payments were assigned to the period.');
+    }
+
+    public function editOrder(Order $order, CommissionHistoryPresenter $historyPresenter): Response
     {
         $order->load([
             'owners:id,name,email',
+            'changeOrderPayment:id,order_id,amount',
             'orderCommissions' => fn ($query) => $query
                 ->with(['payments' => fn ($paymentQuery) => $paymentQuery->orderBy('sequence'), 'nextPayment'])
                 ->orderBy('id'),
@@ -92,12 +141,38 @@ class CommissionReportController extends Controller
             ->limit(500)
             ->get();
 
+        $historyEntries = OrderCommissionAudit::query()
+            ->with([
+                'user:id,name',
+                'payment' => fn ($paymentQuery) => $paymentQuery->withTrashed()->with([
+                    'commission' => fn ($commissionQuery) => $commissionQuery->withTrashed()->with([
+                        'order' => fn ($orderQuery) => $orderQuery->withTrashed(),
+                    ]),
+                ]),
+                'commission' => fn ($commissionQuery) => $commissionQuery->withTrashed()->with([
+                    'order' => fn ($orderQuery) => $orderQuery->withTrashed(),
+                ]),
+                'period',
+            ])
+            ->whereHas('commission', function ($commissionQuery) use ($order) {
+                $commissionQuery->where('order_id', $order->id);
+            })
+            ->orderByDesc('changed_at')
+            ->orderByDesc('id')
+            ->limit(100)
+            ->get()
+            ->map(fn (OrderCommissionAudit $audit) => $historyPresenter->serializeAudit($audit))
+            ->values();
+
         return Inertia::render('Commission/EditOrder', [
             'order' => [
                 'id' => $order->id,
                 'name' => $order->name,
                 'status' => $order->status,
                 'project_amount' => (float) ($order->project_amount ?? 0),
+                'change_order_amount' => (float) ($order->changeOrderPayment?->amount ?? 0),
+                'commission_project_amount' => $this->resolveProjectAmountForNewCommission($order),
+                'has_paid_regular_commission_payment' => $this->orderHasAnyPaidRegularCommissionPayment($order),
                 'cost_city_fee' => (float) ($order->cost_city_fee ?? 0),
                 'owners' => $order->owners->map(fn (User $user) => [
                     'id' => $user->id,
@@ -106,6 +181,7 @@ class CommissionReportController extends Controller
                 ])->values(),
             ],
             'commissions' => $order->orderCommissions->map(fn (OrderCommission $commission) => $this->serializeCommission($commission))->values(),
+            'historyEntries' => $historyEntries,
             'activeUsers' => $activeUsers,
             'referrals' => $referrals,
             'externalBeneficiaries' => $externals,
@@ -113,6 +189,7 @@ class CommissionReportController extends Controller
                 'beneficiarySourceTypes' => array_column(CommissionBeneficiarySourceEnum::cases(), 'value'),
                 'beneficiaryRelations' => array_column(CommissionBeneficiaryRelationEnum::cases(), 'value'),
                 'calculationTypes' => array_column(CommissionCalculationTypeEnum::cases(), 'value'),
+                'paymentKinds' => array_column(CommissionPaymentKindEnum::cases(), 'value'),
                 'paymentStatuses' => array_column(CommissionPaymentStatusEnum::cases(), 'value'),
                 'splitTypes' => array_column(CommissionSplitTypeEnum::cases(), 'value'),
                 'commissionStatuses' => array_column(CommissionStatusEnum::cases(), 'value'),
@@ -148,6 +225,7 @@ class CommissionReportController extends Controller
                 'status' => $data['status'] ?? CommissionStatusEnum::OPEN->value,
                 'calculation_type' => $data['calculation_type'],
                 'fee_amount_snapshot' => $data['fee_amount_snapshot'] ?? (float) ($order->cost_city_fee ?? 0),
+                'financing_fee_amount' => $data['financing_fee_amount'] ?? 0,
                 'percentage_value' => $data['percentage_value'] ?? null,
                 'fixed_amount' => $data['fixed_amount'] ?? null,
                 'other_cost_amount' => $data['other_cost_amount'] ?? 0,
@@ -180,10 +258,18 @@ class CommissionReportController extends Controller
             $payments->values()->each(function (array $payment, int $index) use ($commission) {
                 $status = $payment['status'] ?? CommissionPaymentStatusEnum::OPEN->value;
 
+                if (
+                    $commission->status === CommissionStatusEnum::CANCELED->value
+                    && $status !== CommissionPaymentStatusEnum::PAID->value
+                ) {
+                    $status = CommissionPaymentStatusEnum::CANCELED->value;
+                }
+
                 OrderCommissionPayment::create([
                     'order_commission_id' => $commission->id,
                     'sequence' => $index + 1,
                     'status' => $status,
+                    'payment_kind' => CommissionPaymentKindEnum::REGULAR->value,
                     'split_type' => $payment['split_type'],
                     'split_value' => $payment['split_value'],
                     'other_cost_amount' => $payment['other_cost_amount'] ?? 0,
@@ -211,6 +297,13 @@ class CommissionReportController extends Controller
     {
         $data = $request->validated();
 
+        if (
+            $commission->status === CommissionStatusEnum::FULLY_PAID->value
+            && round((float) ($data['other_cost_amount'] ?? 0), 2) !== round((float) $commission->other_cost_amount, 2)
+        ) {
+            return back()->with('error', 'Other Cost cannot be changed after the commission is fully paid. Use an extra adjustment payment instead.');
+        }
+
         return DB::transaction(function () use ($data, $commission, $calculator) {
             [$beneficiarySourceType, $beneficiarySourceId, $name, $email] = $this->resolveBeneficiaryPayload($data, $commission->order);
 
@@ -226,6 +319,7 @@ class CommissionReportController extends Controller
             }
 
             $before = $commission->fresh()->toArray();
+            $nextStatus = $data['status'] ?? $commission->status;
 
             $commission->update([
                 'beneficiary_source_type' => $beneficiarySourceType,
@@ -233,15 +327,30 @@ class CommissionReportController extends Controller
                 'beneficiary_relation' => $data['beneficiary_relation'],
                 'beneficiary_name_snapshot' => $name,
                 'beneficiary_email_snapshot' => $email,
-                'status' => $data['status'] ?? $commission->status,
+                'status' => $nextStatus,
                 'calculation_type' => $data['calculation_type'],
                 'fee_amount_snapshot' => $data['fee_amount_snapshot'] ?? $commission->fee_amount_snapshot,
+                'financing_fee_amount' => $data['financing_fee_amount'] ?? $commission->financing_fee_amount,
                 'percentage_value' => $data['percentage_value'] ?? null,
                 'fixed_amount' => $data['fixed_amount'] ?? null,
                 'other_cost_amount' => $data['other_cost_amount'] ?? 0,
                 'other_cost_notes' => $data['other_cost_notes'] ?? null,
                 'updated_by' => Auth::id(),
             ]);
+
+            if ($nextStatus === CommissionStatusEnum::CANCELED->value) {
+                $commission->payments()
+                    ->where('status', '!=', CommissionPaymentStatusEnum::PAID->value)
+                    ->where('status', '!=', CommissionPaymentStatusEnum::CANCELED->value)
+                    ->get()
+                    ->each(function (OrderCommissionPayment $payment) {
+                        $payment->update([
+                            'status' => CommissionPaymentStatusEnum::CANCELED->value,
+                            'paid_at' => null,
+                            'updated_by' => Auth::id(),
+                        ]);
+                    });
+            }
 
             $calculator->refreshCommission($commission);
 
@@ -254,11 +363,52 @@ class CommissionReportController extends Controller
         });
     }
 
+    public function destroyCommission(OrderCommission $commission): RedirectResponse
+    {
+        $commission->load('payments');
+
+        if (! $this->canDeleteCommission($commission)) {
+            return back()->with('error', 'Only commissions without paid payments or assigned periods can be deleted.');
+        }
+
+        return DB::transaction(function () use ($commission) {
+            $before = $commission->fresh('payments')->toArray();
+
+            $commission->payments->each(function (OrderCommissionPayment $payment) {
+                $payment->delete();
+            });
+
+            $commission->delete();
+
+            CommissionAuditLogger::log('commission.deleted', [
+                'before' => $before,
+                'deleted_commission_id' => $commission->id,
+            ], $commission);
+
+            return back()->with('success', 'Commission deleted successfully.');
+        });
+    }
+
     public function storePayment(StoreOrderCommissionPaymentRequest $request, OrderCommission $commission, CommissionCalculator $calculator): RedirectResponse
     {
         $data = $request->validated();
+        $paymentKind = $this->normalizePaymentKind($data['payment_kind'] ?? null);
 
-        return DB::transaction(function () use ($data, $commission, $calculator) {
+        if (
+            $paymentKind === CommissionPaymentKindEnum::EXTRA_ADJUSTMENT->value
+            && $commission->status !== CommissionStatusEnum::FULLY_PAID->value
+        ) {
+            return back()->with('error', 'Extra adjustment payments can only be added after the commission is fully paid.');
+        }
+
+        if (
+            $paymentKind === CommissionPaymentKindEnum::REGULAR->value
+            && $commission->status === CommissionStatusEnum::FULLY_PAID->value
+        ) {
+            return back()->with('error', 'Fully paid commissions only allow extra adjustment payments.');
+        }
+
+        return DB::transaction(function () use ($data, $commission, $calculator, $paymentKind) {
             $sequence = ((int) $commission->payments()->max('sequence')) + 1;
             $status = $data['status'];
 
@@ -266,7 +416,10 @@ class CommissionReportController extends Controller
                 'order_commission_id' => $commission->id,
                 'sequence' => $sequence,
                 'status' => $status,
-                'split_type' => $data['split_type'],
+                'payment_kind' => $paymentKind,
+                'split_type' => $paymentKind === CommissionPaymentKindEnum::EXTRA_ADJUSTMENT->value
+                    ? CommissionSplitTypeEnum::FIXED->value
+                    : $data['split_type'],
                 'split_value' => $data['split_value'],
                 'other_cost_amount' => $data['other_cost_amount'] ?? 0,
                 'other_cost_notes' => $data['other_cost_notes'] ?? null,
@@ -296,10 +449,13 @@ class CommissionReportController extends Controller
         return DB::transaction(function () use ($data, $payment, $commission, $calculator) {
             $before = $payment->fresh()->toArray();
             $status = $data['status'];
+            $paymentKind = $this->paymentKindValue($payment);
 
             $payment->update([
                 'status' => $status,
-                'split_type' => $data['split_type'],
+                'split_type' => $paymentKind === CommissionPaymentKindEnum::EXTRA_ADJUSTMENT->value
+                    ? CommissionSplitTypeEnum::FIXED->value
+                    : $data['split_type'],
                 'split_value' => $data['split_value'],
                 'other_cost_amount' => $data['other_cost_amount'] ?? 0,
                 'other_cost_notes' => $data['other_cost_notes'] ?? null,
@@ -321,6 +477,41 @@ class CommissionReportController extends Controller
         });
     }
 
+    public function destroyPayment(OrderCommissionPayment $payment, CommissionCalculator $calculator): RedirectResponse
+    {
+        $commission = $payment->commission()->with('payments')->firstOrFail();
+
+        if (! $this->canDeletePayment($payment, $commission)) {
+            return back()->with('error', 'Only payments that are not paid or assigned to a period can be deleted, and the commission must keep at least one regular payment.');
+        }
+
+        return DB::transaction(function () use ($payment, $commission, $calculator) {
+            $before = $payment->fresh()->toArray();
+
+            $payment->delete();
+
+            $commission->payments()
+                ->orderBy('sequence')
+                ->get()
+                ->values()
+                ->each(function (OrderCommissionPayment $remainingPayment, int $index) {
+                    $remainingPayment->update([
+                        'sequence' => $index + 1,
+                        'updated_by' => Auth::id(),
+                    ]);
+                });
+
+            $calculator->refreshCommission($commission->fresh());
+
+            CommissionAuditLogger::log('payment.deleted', [
+                'before' => $before,
+                'deleted_payment_id' => $payment->id,
+            ], $commission);
+
+            return back()->with('success', 'Payment deleted successfully.');
+        });
+    }
+
     private function resolveDateRange(Request $request): array
     {
         $startDate = $request->start_date
@@ -336,6 +527,7 @@ class CommissionReportController extends Controller
     private function buildIndexData(Request $request): array
     {
         [$startDate, $endDate] = $this->resolveDateRange($request);
+        $selectedView = $request->input('view') === 'payments' ? 'payments' : 'commissions';
         $selectedStatus = $request->filled('status') ? $request->input('status') : null;
         $commissionStatus = $request->filled('commission_status') ? $request->input('commission_status') : null;
         $beneficiarySearch = trim((string) $request->input('beneficiary', ''));
@@ -349,7 +541,7 @@ class CommissionReportController extends Controller
             ->with([
                 'order' => fn ($query) => $query
                     ->with(['owners:id,name', 'orderCommissions.payments', 'orderCommissions.nextPayment'])
-                    ->select('id', 'name', 'status', 'project_amount', 'cost_city_fee'),
+                    ->select('id', 'order_number', 'invoice_number', 'name', 'status', 'project_amount', 'cost_city_fee', 'method_of_payment', 'type_of_financing'),
             ])
             ->whereBetween('created_at', [$startDate, $endDate])
             ->whereIn('status', $selectedStatus ? [$selectedStatus] : $availableStatuses)
@@ -391,6 +583,7 @@ class CommissionReportController extends Controller
 
                 return $commissions->map(function (OrderCommission $commission) use ($order, $owners, $statusRow) {
                     $nextPayment = $commission->nextPayment;
+                    $commissionTotal = $this->resolveCommissionTotal($commission);
 
                     return [
                         'key' => 'commission:' . $commission->id,
@@ -404,7 +597,7 @@ class CommissionReportController extends Controller
                         'beneficiary_relation' => $commission->beneficiary_relation,
                         'commission_id' => $commission->id,
                         'commission_status' => $commission->status,
-                        'commission_total' => (float) $commission->total_amount,
+                        'commission_total' => $commissionTotal,
                         'paid_amount' => (float) $commission->paid_amount,
                         'pending_amount' => (float) $commission->pending_amount,
                         'next_payment_amount' => (float) ($nextPayment?->total_to_pay ?? 0),
@@ -417,6 +610,16 @@ class CommissionReportController extends Controller
                     return false;
                 }
 
+                if (
+                    ! $commissionStatus
+                    && in_array($row['commission_status'], [
+                        CommissionStatusEnum::FULLY_PAID->value,
+                        CommissionStatusEnum::CANCELED->value,
+                    ], true)
+                ) {
+                    return false;
+                }
+
                 if ($beneficiarySearch !== '') {
                     return str_contains(strtolower((string) ($row['beneficiary_name'] ?? '')), strtolower($beneficiarySearch));
                 }
@@ -425,8 +628,89 @@ class CommissionReportController extends Controller
             })
             ->values();
 
+        $reviewPayments = $statusRows
+            ->flatMap(function (OrderStatus $statusRow) {
+                $order = $statusRow->order;
+                if (! $order) {
+                    return [];
+                }
+
+                $owners = $order->owners->pluck('name')->filter()->implode(', ');
+
+                return $order->orderCommissions->flatMap(function (OrderCommission $commission) use ($order, $owners, $statusRow) {
+                    if ($commission->status === CommissionStatusEnum::CANCELED->value) {
+                        return [];
+                    }
+
+                    $commissionTotal = $this->resolveCommissionTotal($commission);
+
+                    return $commission->payments
+                        ->where('status', CommissionPaymentStatusEnum::REVIEW->value)
+                        ->where('commission_period_id', null)
+                        ->map(function (OrderCommissionPayment $payment) use ($commission, $commissionTotal, $order, $owners, $statusRow) {
+                    return [
+                                'id' => $payment->id,
+                                'order_id' => $order->id,
+                                'order_status' => $order->status,
+                                'order_name' => $order->name,
+                                'order_number' => $order->order_number,
+                                'invoice_number' => $order->invoice_number,
+                                'owner_names' => $owners,
+                                'accounting_status' => $statusRow->status,
+                                'accounting_status_date' => $statusRow->created_at?->toDateTimeString(),
+                                'project_payment_method' => $order->method_of_payment,
+                                'type_of_financing' => $order->type_of_financing,
+                                'project_amount' => $commission->project_amount_snapshot !== null
+                                    ? (float) $commission->project_amount_snapshot
+                                    : (float) ($order->project_amount ?? 0),
+                                'commission_id' => $commission->id,
+                                'commission_status' => $commission->status,
+                                'commission_total' => $commissionTotal,
+                                'commission_fee' => (float) $commission->fee_amount_snapshot,
+                                'commission_financing_fee' => (float) $commission->financing_fee_amount,
+                                'commission_base' => (float) $commission->base_amount_snapshot,
+                                'commission_percentage' => $commission->percentage_value !== null ? (float) $commission->percentage_value : null,
+                                'commission_paid' => (float) $commission->paid_amount,
+                                'commission_pending' => (float) $commission->pending_amount,
+                                'beneficiary_name' => $commission->beneficiary_name_snapshot,
+                                'beneficiary_relation' => $commission->beneficiary_relation,
+                                'sequence' => $payment->sequence,
+                                'payment_kind' => $this->paymentKindValue($payment),
+                                'payment_status' => $payment->status,
+                                'payment_amount' => (float) $payment->total_to_pay,
+                                'payment_base_amount' => (float) $payment->payment_base_amount,
+                                'payment_other_cost_amount' => (float) $payment->other_cost_amount,
+                                'paid_at' => $this->formatDateValue($payment->paid_at),
+                                'commission_period_id' => $payment->commission_period_id,
+                            ];
+                        });
+                });
+            })
+            ->filter(function (array $row) use ($beneficiarySearch) {
+                if ($beneficiarySearch !== '') {
+                    return str_contains(strtolower((string) ($row['beneficiary_name'] ?? '')), strtolower($beneficiarySearch));
+                }
+
+                return true;
+            })
+            ->values();
+
+        $periods = CommissionPeriod::query()
+            ->where('status', CommissionPeriodStatusEnum::OPEN->value)
+            ->orderByDesc('start_date')
+            ->get(['id', 'label', 'start_date', 'end_date'])
+            ->map(fn (CommissionPeriod $period) => [
+                'id' => $period->id,
+                'label' => $period->label,
+                'start_date' => optional($period->start_date)->toDateString(),
+                'end_date' => optional($period->end_date)->toDateString(),
+            ])
+            ->values();
+
         return [
             'rows' => $rows,
+            'reviewPayments' => $reviewPayments,
+            'periods' => $periods,
             'totals' => [
                 'orders' => $statusRows->count(),
                 'commissions' => $rows->whereNotNull('commission_id')->count(),
@@ -438,10 +722,35 @@ class CommissionReportController extends Controller
             'availableStatuses' => $availableStatuses,
             'selectedCommissionStatus' => $commissionStatus,
             'availableCommissionStatuses' => array_column(CommissionStatusEnum::cases(), 'value'),
+            'selectedView' => $selectedView,
             'beneficiarySearch' => $beneficiarySearch,
             'startDate' => $startDate->toDateString(),
             'endDate' => $endDate->toDateString(),
         ];
+    }
+
+    private function resolveCommissionTotal(OrderCommission $commission): float
+    {
+        $storedTotal = round((float) ($commission->total_amount ?? 0), 2);
+        if ($storedTotal > 0) {
+            return $storedTotal;
+        }
+
+        $calculatedTotal = round(
+            (float) ($commission->commission_amount ?? 0) + (float) ($commission->other_cost_amount ?? 0),
+            2
+        );
+
+        if ($calculatedTotal > 0) {
+            return $calculatedTotal;
+        }
+
+        return round(
+            $commission->payments
+                ->where('status', '!=', CommissionPaymentStatusEnum::CANCELED->value)
+                ->sum(fn (OrderCommissionPayment $payment) => (float) $payment->total_to_pay),
+            2
+        );
     }
 
     private function resolveBeneficiaryPayload(array $data, ?Order $order = null): array
@@ -503,9 +812,26 @@ class CommissionReportController extends Controller
         return [$sourceType, $external->id, $external->name, $external->email];
     }
 
+    private function formatDateValue(mixed $value): ?string
+    {
+        if (empty($value)) {
+            return null;
+        }
+
+        if ($value instanceof Carbon) {
+            return $value->toDateString();
+        }
+
+        return Carbon::parse((string) $value)->toDateString();
+    }
+
     private function serializeCommission(OrderCommission $commission): array
     {
         $commission->loadMissing(['payments', 'nextPayment']);
+        $extraPayments = $commission->payments->filter(
+            fn (OrderCommissionPayment $payment) => $this->paymentKindValue($payment) === CommissionPaymentKindEnum::EXTRA_ADJUSTMENT->value
+        );
+        $activeExtraPayments = $extraPayments->where('status', '!=', CommissionPaymentStatusEnum::CANCELED->value);
 
         return [
             'id' => $commission->id,
@@ -520,6 +846,7 @@ class CommissionReportController extends Controller
             'fixed_amount' => $commission->fixed_amount !== null ? (float) $commission->fixed_amount : null,
             'project_amount_snapshot' => (float) $commission->project_amount_snapshot,
             'fee_amount_snapshot' => (float) $commission->fee_amount_snapshot,
+            'financing_fee_amount' => (float) $commission->financing_fee_amount,
             'base_amount_snapshot' => (float) $commission->base_amount_snapshot,
             'commission_amount' => (float) $commission->commission_amount,
             'other_cost_amount' => (float) $commission->other_cost_amount,
@@ -528,10 +855,28 @@ class CommissionReportController extends Controller
             'paid_amount' => (float) $commission->paid_amount,
             'pending_amount' => (float) $commission->pending_amount,
             'next_payment_id' => $commission->next_payment_id,
+            'can_delete' => $this->canDeleteCommission($commission),
+            'change_order_amount_applied' => round(
+                (float) $commission->project_amount_snapshot - (float) ($commission->order?->project_amount ?? 0),
+                2
+            ),
+            'extra_payments_count' => $extraPayments->count(),
+            'extra_payments_total' => round($activeExtraPayments->sum(fn (OrderCommissionPayment $payment) => (float) $payment->total_to_pay), 2),
+            'extra_paid_amount' => round(
+                $extraPayments->where('status', CommissionPaymentStatusEnum::PAID->value)
+                    ->sum(fn (OrderCommissionPayment $payment) => (float) $payment->total_to_pay),
+                2
+            ),
+            'extra_pending_amount' => round(
+                $activeExtraPayments->where('status', '!=', CommissionPaymentStatusEnum::PAID->value)
+                    ->sum(fn (OrderCommissionPayment $payment) => (float) $payment->total_to_pay),
+                2
+            ),
             'payments' => $commission->payments->map(fn (OrderCommissionPayment $payment) => [
                 'id' => $payment->id,
                 'sequence' => $payment->sequence,
                 'status' => $payment->status,
+                'payment_kind' => $this->paymentKindValue($payment),
                 'split_type' => $payment->split_type,
                 'split_value' => (float) $payment->split_value,
                 'payment_base_amount' => (float) $payment->payment_base_amount,
@@ -539,9 +884,77 @@ class CommissionReportController extends Controller
                 'other_cost_notes' => $payment->other_cost_notes,
                 'total_to_pay' => (float) $payment->total_to_pay,
                 'commission_period_id' => $payment->commission_period_id,
-                'paid_at' => optional($payment->paid_at)->toDateString(),
+                'paid_at' => $this->formatDateValue($payment->paid_at),
                 'notes' => $payment->notes,
+                'can_delete' => $this->canDeletePayment($payment, $commission),
             ])->values(),
         ];
+    }
+
+    private function canDeletePayment(OrderCommissionPayment $payment, OrderCommission $commission): bool
+    {
+        $commission->loadMissing('payments');
+
+        if (
+            $payment->status === CommissionPaymentStatusEnum::PAID->value
+            || ! empty($payment->commission_period_id)
+        ) {
+            return false;
+        }
+
+        if ($this->paymentKindValue($payment) === CommissionPaymentKindEnum::EXTRA_ADJUSTMENT->value) {
+            return true;
+        }
+
+        $remainingRegularPayments = $commission->payments
+            ->reject(fn (OrderCommissionPayment $candidate) => (int) $candidate->id === (int) $payment->id)
+            ->filter(fn (OrderCommissionPayment $candidate) => $this->paymentKindValue($candidate) === CommissionPaymentKindEnum::REGULAR->value);
+
+        return $remainingRegularPayments->isNotEmpty();
+    }
+
+    private function canDeleteCommission(OrderCommission $commission): bool
+    {
+        $commission->loadMissing('payments');
+
+        return ! $commission->payments->contains(fn (OrderCommissionPayment $payment) => $payment->status === CommissionPaymentStatusEnum::PAID->value)
+            && ! $commission->payments->contains(fn (OrderCommissionPayment $payment) => ! empty($payment->commission_period_id));
+    }
+
+    private function normalizePaymentKind(?string $paymentKind): string
+    {
+        return $paymentKind === CommissionPaymentKindEnum::EXTRA_ADJUSTMENT->value
+            ? CommissionPaymentKindEnum::EXTRA_ADJUSTMENT->value
+            : CommissionPaymentKindEnum::REGULAR->value;
+    }
+
+    private function paymentKindValue(OrderCommissionPayment $payment): string
+    {
+        return $this->normalizePaymentKind($payment->payment_kind);
+    }
+
+    private function resolveProjectAmountForNewCommission(Order $order): float
+    {
+        $order->loadMissing([
+            'changeOrderPayment:id,order_id,amount',
+            'orderCommissions.payments',
+        ]);
+
+        if ($this->orderHasAnyPaidRegularCommissionPayment($order)) {
+            return round((float) ($order->project_amount ?? 0), 2);
+        }
+
+        return round(
+            (float) ($order->project_amount ?? 0) + (float) ($order->changeOrderPayment?->amount ?? 0),
+            2
+        );
+    }
+
+    private function orderHasAnyPaidRegularCommissionPayment(Order $order): bool
+    {
+        return $order->orderCommissions
+            ->flatMap(fn (OrderCommission $commission) => $commission->payments)
+            ->contains(fn (OrderCommissionPayment $payment) => $this->paymentKindValue($payment) === CommissionPaymentKindEnum::REGULAR->value
+                && $payment->status === CommissionPaymentStatusEnum::PAID->value);
     }
 }

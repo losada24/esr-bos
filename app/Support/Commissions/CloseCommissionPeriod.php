@@ -28,7 +28,7 @@ class CloseCommissionPeriod
             }
 
             $payments = OrderCommissionPayment::query()
-                ->whereNull('commission_period_id')
+                ->where('commission_period_id', $period->id)
                 ->whereIn('status', [
                     CommissionPaymentStatusEnum::REVIEW->value,
                     CommissionPaymentStatusEnum::PAID->value,

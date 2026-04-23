@@ -28,17 +28,17 @@ class OrderCommissionAudit extends Model
 
     public function commission(): BelongsTo
     {
-        return $this->belongsTo(OrderCommission::class, 'order_commission_id');
+        return $this->belongsTo(OrderCommission::class, 'order_commission_id')->withTrashed();
     }
 
     public function payment(): BelongsTo
     {
-        return $this->belongsTo(OrderCommissionPayment::class, 'order_commission_payment_id');
+        return $this->belongsTo(OrderCommissionPayment::class, 'order_commission_payment_id')->withTrashed();
     }
 
     public function period(): BelongsTo
     {
-        return $this->belongsTo(CommissionPeriod::class, 'commission_period_id');
+        return $this->belongsTo(CommissionPeriod::class, 'commission_period_id')->withTrashed();
     }
 
     public function user(): BelongsTo

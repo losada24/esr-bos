@@ -15,6 +15,7 @@ class OrderCommissionPayment extends Model
         'order_commission_id',
         'sequence',
         'status',
+        'payment_kind',
         'split_type',
         'split_value',
         'payment_base_amount',
@@ -28,8 +29,8 @@ class OrderCommissionPayment extends Model
         'updated_by',
     ];
 
-    protected $dates = [
-        'paid_at',
+    protected $casts = [
+        'paid_at' => 'date',
     ];
 
     public function commission(): BelongsTo
