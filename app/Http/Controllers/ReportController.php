@@ -1488,6 +1488,14 @@ class ReportController extends Controller
       ->selectRaw('order_status.order_id, MAX(order_status.created_at) as qualified_at')
       ->groupBy('order_status.order_id');
 
+    $qualifiedStatusDateCounts = DB::query()
+      ->fromSub($qualifiedStatusDateTransitions, 'qualified_status_date_transitions')
+      ->selectRaw('DATE(qualified_at) as summary_date, COUNT(DISTINCT order_id) as total')
+      ->groupBy('summary_date')
+      ->orderBy('summary_date')
+      ->get()
+      ->keyBy('summary_date');
+
     $lostRequestTransitions = DB::table('order_status')
       ->join('orders', 'orders.id', '=', 'order_status.order_id')
       ->whereNull('orders.deleted_at')
@@ -1569,6 +1577,7 @@ class ReportController extends Controller
       $daily[$dateKey] = [
         'date' => $dateKey,
         'qualified' => 0,
+        'qualified_by_status_date' => 0,
         'estimate_appt_schedule' => 0,
         'lost_request' => 0,
         'total' => 0,
@@ -1582,6 +1591,14 @@ class ReportController extends Controller
       }
 
       $daily[$dateKey]['qualified'] = (int) $row->total;
+    }
+
+    foreach ($qualifiedStatusDateCounts as $dateKey => $row) {
+      if (!isset($daily[$dateKey])) {
+        continue;
+      }
+
+      $daily[$dateKey]['qualified_by_status_date'] = (int) $row->total;
     }
 
     foreach ($cohortCounts as $dateKey => $row) {
@@ -1613,6 +1630,7 @@ class ReportController extends Controller
         'date' => $row['date'],
         'new_request_qualified' => $row['total'],
         'qualified' => $row['qualified'],
+        'qualified_by_status_date' => $row['qualified_by_status_date'],
         'estimate_appt_schedule' => $row['estimate_appt_schedule'],
         'lost_request' => $row['lost_request'],
       ];

@@ -10,6 +10,7 @@ interface DailySummaryRow {
   date: string
   new_request_qualified: number
   qualified: number
+  qualified_by_status_date: number
   estimate_appt_schedule: number
   lost_request: number
 }
@@ -232,6 +233,7 @@ export default function DailyOrderStatusSummary({ dailySummary, totals, orderLis
             <th className="p-2 border">Date</th>
             <th className="p-2 border">Total</th>
             <th className="p-2 border">Qualified</th>
+            <th className="p-2 border">Qualified by Status Date</th>
             <th className="p-2 border">Estimate &amp; Appt Schedule</th>
             <th className="p-2 border">Lost Request</th>
           </tr>
@@ -239,7 +241,7 @@ export default function DailyOrderStatusSummary({ dailySummary, totals, orderLis
         <tbody>
           {dailySummary.length === 0 ? (
             <tr>
-              <td className="p-2 border text-center" colSpan={5}>No data for the selected dates.</td>
+              <td className="p-2 border text-center" colSpan={6}>No data for the selected dates.</td>
             </tr>
           ) : (
             dailySummary.map((row) => (
@@ -247,6 +249,7 @@ export default function DailyOrderStatusSummary({ dailySummary, totals, orderLis
                 <td className="p-2 border">{row.date}</td>
                 <td className="p-2 border">{row.new_request_qualified}</td>
                 <td className="p-2 border">{row.qualified}</td>
+                <td className="p-2 border">{row.qualified_by_status_date}</td>
                 <td className="p-2 border">{row.estimate_appt_schedule}</td>
                 <td className="p-2 border">{row.lost_request}</td>
               </tr>
