@@ -1,0 +1,11 @@
+resources/js/Pages/Commission/EditOrder.tsx:702:                          <span className="sr-only">Edit payment</span>
+resources/js/Pages/Commission/EditOrder.tsx:726:                            <span className="sr-only">Delete payment</span>
+resources/js/Pages/Frontdesk/ClientModal.tsx:190:            <span className="sr-only">Close</span>
+resources/js/Pages/Frontdesk/ContactEditModals.tsx:82:            <span className="sr-only">Close</span>
+resources/js/Pages/Frontdesk/ContactEditModals.tsx:274:            <span className="sr-only">Close</span>
+resources/js/Pages/Frontdesk/OrderEditModal.tsx:91:                <span className="sr-only">Close</span>
+resources/js/Pages/Frontdesk/RequestEditModal.tsx:50:            <span className="sr-only">Close</span>
+resources/js/Pages/Frontdesk/OrderView.tsx:3205:                          <span className="sr-only">Edit contact</span>
+resources/js/Pages/Frontdesk/OrderView.tsx:4405:                <span className="sr-only">Close</span>
+resources/js/Pages/Frontdesk/OrderView.tsx:4503:                <span className="sr-only">Close</span>
+resources/js/Pages/Frontdesk/OrderView.tsx:4557:                <span className="sr-only">Close</span>

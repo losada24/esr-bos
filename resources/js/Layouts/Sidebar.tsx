@@ -10,12 +10,12 @@ import CompanyIcon from '@/Components/Icons/CompanyIcon'
 import { isAdmin, isAccountManager, isAccounting, isFrontdesk, isFrontdeskAdmin, isOwner, isSupervisor, isServiceManager, isPaymentCoordinator, isOwnerAdmin, isFrontdeskEsr } from '@/Utils/user'
 import { type Role, type Auth } from '@/types'
 import WindowsIcon from '@/Components/Icons/WindowsIcon'
-import PrintIcon from '@/Components/Icons/PrintIcon'
 import CodeIcon from '@/Components/Icons/CodeIcon'
 import CalendarIcon from '@/Components/Icons/CalendarIcon'
 import FolderIcon from '@/Components/Icons/FolderIcon'
 import RoundIcon from '@/Components/Icons/RoundIcon'
 import BuildingIcon from '@/Components/Icons/BuildingIcon'
+import BookIcon from '@/Components/Icons/BookIcon'
 
 const Sidebar = ({ auth }: { auth: Auth }) => {
   const [themeState, toggleSidebar] = useStore((state: ThemeState) => [
@@ -47,6 +47,8 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
   const CAN_VIEW_PLANNED_TO_COMPLETE_AVERAGE = !HAS_FRONTDESK_ADMIN_ROLE && (IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER || IS_OWNER_ADMIN)
   const HAS_PLANNED_TO_COMPLETE_AVERAGE_ROUTE = route().has('report.planned-to-complete-average')
   const CAN_VIEW_ACCOUNTING_STATUS_SUMMARY = IS_ADMIN || IS_ACCOUNTING
+  const CAN_VIEW_COMMISSIONS = IS_ADMIN || IS_ACCOUNTING || IS_PAYMENT_COORDINATOR
+  const CAN_VIEW_ACCOUNTING_SECTION = IS_ADMIN || IS_ACCOUNTING
   const CAN_VIEW_INSTALLER_CONFIRMED = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER
   const CAN_VIEW_OWNER_ASSIGNED = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER || IS_OWNER_ADMIN
   const CAN_VIEW_SUPERVISOR_ASSIGNED = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER
@@ -65,7 +67,6 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
     || CAN_VIEW_PRODUCT_SUMMARY
     || CAN_VIEW_ORDER_STATUS_SUMMARY
     || CAN_VIEW_PLANNED_TO_COMPLETE_AVERAGE
-    || CAN_VIEW_ACCOUNTING_STATUS_SUMMARY
     || CAN_VIEW_INSTALLER_CONFIRMED
     || CAN_VIEW_OWNER_ASSIGNED
     || CAN_VIEW_SUPERVISOR_ASSIGNED
@@ -374,16 +375,6 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                       </NavLink>
                                     </li>
                                   )}
-                                  {CAN_VIEW_ACCOUNTING_STATUS_SUMMARY && (
-                                    <li className="menu nav-item">
-                                      <NavLink href={route('report.accounting-status-summary')} active={route().current('report.accounting-status-summary')} className="group">
-                                        <div className="flex items-center">
-                                          <ReferralIcon/>
-                                          <SidebarLinkLabel>Accounting Status</SidebarLinkLabel>
-                                        </div>
-                                      </NavLink>
-                                    </li>
-                                  )}
                                   {CAN_VIEW_DAILY_ORDER_STATUS && (
                                     <li className="menu nav-item">
                                       <NavLink href={route('report.daily-order-status-summary')} active={route().current('report.daily-order-status-summary')} className="group">
@@ -466,6 +457,62 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                   )}
                                 </>
                               )}
+                            {CAN_VIEW_ACCOUNTING_SECTION && (
+                              <>
+                                <h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">
+                                    <svg className="w-4 h-5 flex-none hidden" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                                    </svg>
+                                    <span>ACCOUNTING</span>
+                                </h2>
+                                {CAN_VIEW_ACCOUNTING_STATUS_SUMMARY && (
+                                  <li className="menu nav-item">
+                                    <NavLink href={route('report.accounting-status-summary')} active={route().current('report.accounting-status-summary')} className="group">
+                                      <div className="flex items-center">
+                                        <ReferralIcon/>
+                                        <SidebarLinkLabel>Accounting Status</SidebarLinkLabel>
+                                      </div>
+                                    </NavLink>
+                                  </li>
+                                )}
+                                {IS_ADMIN || IS_ACCOUNTING ? (
+                                  <>
+                                    <li className="menu nav-item">
+                                      <NavLink href={route('report.commissions')} active={route().current('report.commissions') || route().current('report.commissions.edit-order')} className="group">
+                                        <div className="flex items-center">
+                                          <ReferralIcon/>
+                                          <SidebarLinkLabel>Commissions</SidebarLinkLabel>
+                                        </div>
+                                      </NavLink>
+                                    </li>
+                                    <li className="menu nav-item">
+                                      <NavLink href={route('report.commissions.history')} active={route().current('report.commissions.history')} className="group">
+                                        <div className="flex items-center">
+                                          <BookIcon />
+                                          <SidebarLinkLabel>Commission History</SidebarLinkLabel>
+                                        </div>
+                                      </NavLink>
+                                    </li>
+                                    <li className="menu nav-item">
+                                      <NavLink href={route('report.commissions.paid-history')} active={route().current('report.commissions.paid-history')} className="group">
+                                        <div className="flex items-center">
+                                          <BookIcon />
+                                          <SidebarLinkLabel>Paid Commission History</SidebarLinkLabel>
+                                        </div>
+                                      </NavLink>
+                                    </li>
+                                    <li className="menu nav-item">
+                                      <NavLink href={route('commission-periods.index')} active={route().current('commission-periods.index') || route().current('commission-periods.show')} className="group">
+                                        <div className="flex items-center">
+                                          <CalendarIcon/>
+                                          <SidebarLinkLabel>Commission Periods</SidebarLinkLabel>
+                                        </div>
+                                      </NavLink>
+                                    </li>
+                                  </>
+                                ) : null}
+                              </>
+                            )}
                             {CAN_VIEW_ADMINISTRATION && (
                               <>
                                 <h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">
