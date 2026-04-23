@@ -15,6 +15,9 @@
         <td colspan="5" style="font-weight: bold;">Total Qualified: {{ $totals['qualified'] }}</td>
       </tr>
       <tr>
+        <td colspan="5" style="font-weight: bold;">Total Qualified by Status Date: {{ $totals['qualified_by_status_date'] ?? count($orderLists['qualified_by_status_date'] ?? []) }}</td>
+      </tr>
+      <tr>
         <td colspan="5" style="font-weight: bold;">Total Estimate &amp; Appt Schedule: {{ $totals['estimate_appt_schedule'] }}</td>
       </tr>
       <tr>
@@ -65,6 +68,7 @@
 @php
     $totalList = collect($orderLists['total'] ?? []);
     $qualifiedList = collect($orderLists['qualified'] ?? []);
+    $qualifiedByStatusDateList = collect($orderLists['qualified_by_status_date'] ?? []);
     $estimateList = collect($orderLists['estimate_appt_schedule'] ?? []);
     $lostRequestList = collect($orderLists['lost_request'] ?? []);
 @endphp
@@ -118,6 +122,36 @@
         <tr>
           <td>{{ !empty($order['name']) ? '#' . $order['id'] . ' - ' . $order['name'] : '#' . $order['id'] }}</td>
           <td>{{ $order['created_date'] ?? '-' }}</td>
+          <td>{{ $order['current_status'] ?? '-' }}</td>
+        </tr>
+      @endforeach
+    @endif
+  </tbody>
+</table>
+
+<table>
+  <thead>
+    <tr>
+      <td colspan="4" style="font-weight: bold; font-size: 14px; background-color: #f0f0f0;">Qualified by Status Date Orders List</td>
+    </tr>
+    <tr>
+      <th width="35">Order</th>
+      <th width="20">Created Date</th>
+      <th width="20">Qualified Date</th>
+      <th width="25">Current Status</th>
+    </tr>
+  </thead>
+  <tbody>
+    @if ($qualifiedByStatusDateList->isEmpty())
+      <tr>
+        <td colspan="4">No qualified by status date orders for the selected dates.</td>
+      </tr>
+    @else
+      @foreach ($qualifiedByStatusDateList as $order)
+        <tr>
+          <td>{{ !empty($order['name']) ? '#' . $order['id'] . ' - ' . $order['name'] : '#' . $order['id'] }}</td>
+          <td>{{ $order['created_date'] ?? '-' }}</td>
+          <td>{{ $order['status_date'] ?? '-' }}</td>
           <td>{{ $order['current_status'] ?? '-' }}</td>
         </tr>
       @endforeach
