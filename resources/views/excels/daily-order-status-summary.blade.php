@@ -1,27 +1,27 @@
 <table>
     <thead>
       <tr>
-        <td colspan="5" style="font-weight: bold; font-size: 16px; text-align: left; background-color: #f0f0f0;">
+        <td colspan="6" style="font-weight: bold; font-size: 16px; text-align: left; background-color: #f0f0f0;">
             Daily Order Status ({{ $startDate }} to {{ $endDate }})
         </td>
       </tr>
       <tr>
-        <td colspan="5" style="font-weight: bold;">Total: {{ $totals['total'] }}</td>
+        <td colspan="6" style="font-weight: bold;">Total: {{ $totals['total'] }}</td>
       </tr>
       <tr>
-        <td colspan="5" style="font-weight: bold;">Total Orders: {{ $totals['total_orders'] ?? count($orderLists['total'] ?? []) }}</td>
+        <td colspan="6" style="font-weight: bold;">Total Orders: {{ $totals['total_orders'] ?? count($orderLists['total'] ?? []) }}</td>
       </tr>
       <tr>
-        <td colspan="5" style="font-weight: bold;">Total Qualified: {{ $totals['qualified'] }}</td>
+        <td colspan="6" style="font-weight: bold;">Total Qualified: {{ $totals['qualified'] }}</td>
       </tr>
       <tr>
-        <td colspan="5" style="font-weight: bold;">Total Qualified by Status Date: {{ $totals['qualified_by_status_date'] ?? count($orderLists['qualified_by_status_date'] ?? []) }}</td>
+        <td colspan="6" style="font-weight: bold;">Total Qualified by Status Date: {{ $totals['qualified_by_status_date'] ?? count($orderLists['qualified_by_status_date'] ?? []) }}</td>
       </tr>
       <tr>
-        <td colspan="5" style="font-weight: bold;">Total Estimate &amp; Appt Schedule: {{ $totals['estimate_appt_schedule'] }}</td>
+        <td colspan="6" style="font-weight: bold;">Total Estimate &amp; Appt Schedule: {{ $totals['estimate_appt_schedule'] }}</td>
       </tr>
       <tr>
-        <td colspan="5" style="font-weight: bold;">Total Lost Request: {{ $totals['lost_request'] }}</td>
+        <td colspan="6" style="font-weight: bold;">Total Lost Request: {{ $totals['lost_request'] }}</td>
       </tr>
       <tr></tr>
       <tr></tr>
@@ -29,6 +29,7 @@
           <th width="25">Date</th>
           <th width="20">Total</th>
           <th width="20">Qualified</th>
+          <th width="25">Qualified by Status Date</th>
           <th width="25">Estimate &amp; Appt Schedule</th>
           <th width="20">Lost Request</th>
       </tr>
@@ -46,6 +47,9 @@
               {{ $row['qualified'] }}
             </td>
             <td width="25" height="25" text-align="center" valign="middle">
+              {{ $row['qualified_by_status_date'] }}
+            </td>
+            <td width="25" height="25" text-align="center" valign="middle">
               {{ $row['estimate_appt_schedule'] }}
             </td>
             <td width="20" height="25" text-align="center" valign="middle">
@@ -59,6 +63,7 @@
             <td width="25" height="25" text-align="left" valign="middle"><strong>Totals</strong></td>
             <td width="20" height="25" text-align="center" valign="middle"><strong>{{ $totals['total'] }}</strong></td>
             <td width="20" height="25" text-align="center" valign="middle"><strong>{{ $totals['qualified'] }}</strong></td>
+            <td width="25" height="25" text-align="center" valign="middle"><strong>{{ $totals['qualified_by_status_date'] ?? count($orderLists['qualified_by_status_date'] ?? []) }}</strong></td>
             <td width="25" height="25" text-align="center" valign="middle"><strong>{{ $totals['estimate_appt_schedule'] }}</strong></td>
             <td width="20" height="25" text-align="center" valign="middle"><strong>{{ $totals['lost_request'] }}</strong></td>
         </tr>

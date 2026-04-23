@@ -31,32 +31,33 @@
 <table>
     <thead>
         <tr>
-            <td class="header" colspan="5">
+            <td class="header" colspan="6">
                 Daily Order Status ({{ $startDate }} to {{ $endDate }})
             </td>
         </tr>
         <tr class="totals">
-            <td colspan="5">Total: {{ $totals['total'] }}</td>
+            <td colspan="6">Total: {{ $totals['total'] }}</td>
         </tr>
         <tr class="totals">
-            <td colspan="5">Total Orders: {{ $totals['total_orders'] ?? count($orderLists['total'] ?? []) }}</td>
+            <td colspan="6">Total Orders: {{ $totals['total_orders'] ?? count($orderLists['total'] ?? []) }}</td>
         </tr>
         <tr class="totals">
-            <td colspan="5">Total Qualified: {{ $totals['qualified'] }}</td>
+            <td colspan="6">Total Qualified: {{ $totals['qualified'] }}</td>
         </tr>
         <tr class="totals">
-            <td colspan="5">Total Qualified by Status Date: {{ $totals['qualified_by_status_date'] ?? count($orderLists['qualified_by_status_date'] ?? []) }}</td>
+            <td colspan="6">Total Qualified by Status Date: {{ $totals['qualified_by_status_date'] ?? count($orderLists['qualified_by_status_date'] ?? []) }}</td>
         </tr>
         <tr class="totals">
-            <td colspan="5">Total Estimate &amp; Appt Schedule: {{ $totals['estimate_appt_schedule'] }}</td>
+            <td colspan="6">Total Estimate &amp; Appt Schedule: {{ $totals['estimate_appt_schedule'] }}</td>
         </tr>
         <tr class="totals">
-            <td colspan="5">Total Lost Request: {{ $totals['lost_request'] }}</td>
+            <td colspan="6">Total Lost Request: {{ $totals['lost_request'] }}</td>
         </tr>
         <tr>
             <th>Date</th>
             <th>Total</th>
             <th>Qualified</th>
+            <th>Qualified by Status Date</th>
             <th>Estimate &amp; Appt Schedule</th>
             <th>Lost Request</th>
         </tr>
@@ -67,6 +68,7 @@
                 <td>{{ $row['date'] }}</td>
                 <td>{{ $row['new_request_qualified'] }}</td>
                 <td>{{ $row['qualified'] }}</td>
+                <td>{{ $row['qualified_by_status_date'] }}</td>
                 <td>{{ $row['estimate_appt_schedule'] }}</td>
                 <td>{{ $row['lost_request'] }}</td>
             </tr>
@@ -75,6 +77,7 @@
             <td><strong>Totals</strong></td>
             <td><strong>{{ $totals['total'] }}</strong></td>
             <td><strong>{{ $totals['qualified'] }}</strong></td>
+            <td><strong>{{ $totals['qualified_by_status_date'] ?? count($orderLists['qualified_by_status_date'] ?? []) }}</strong></td>
             <td><strong>{{ $totals['estimate_appt_schedule'] }}</strong></td>
             <td><strong>{{ $totals['lost_request'] }}</strong></td>
         </tr>
