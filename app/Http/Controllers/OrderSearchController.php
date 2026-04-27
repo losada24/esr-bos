@@ -25,8 +25,14 @@ class OrderSearchController extends Controller
         }
 
         $moduleStatuses = $this->moduleStatuses();
+        $globalModuleStatuses = array_filter(
+            $moduleStatuses,
+            fn (string $moduleName) => $moduleName !== 'commissions',
+            ARRAY_FILTER_USE_KEY
+        );
+
         if ($module === '' || $module === 'all') {
-            $statuses = array_values(array_unique(array_merge(...array_values($moduleStatuses))));
+            $statuses = array_values(array_unique(array_merge(...array_values($globalModuleStatuses))));
         } elseif (array_key_exists($module, $moduleStatuses)) {
             $statuses = $moduleStatuses[$module];
         } else {
@@ -167,6 +173,7 @@ class OrderSearchController extends Controller
                 OrderStatusEnum::FINAL_COLLECT->value,
                 OrderStatusEnum::COMPLETE->value,
             ],
+            'commissions' => array_column(OrderStatusEnum::cases(), 'value'),
         ];
     }
 

@@ -23,6 +23,10 @@ export const isInstaller = (roles: string[]): boolean => {
   return roles.find((role) => role === ROLES.INSTALLER) !== undefined
 }
 
+export const isRemeasurer = (roles: string[]): boolean => {
+  return roles.find((role) => role === ROLES.REMEASURER) !== undefined
+}
+
 export const isSupervisor = (roles: string[]): boolean => {
   return roles.find((role) => role === ROLES.SUPERVISOR) !== undefined
 }
@@ -72,6 +76,8 @@ export const getRoleName = (roles: string[]): string => {
     return 'Accounting'
   } else if (isInstaller(roles)) {
     return 'Installer'
+  } else if (isRemeasurer(roles)) {
+    return 'Remeasurer'
   } else if (isSupervisor(roles)) {
     return 'Supervisor'
   } else if (isOwner(roles)) {

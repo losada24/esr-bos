@@ -62,6 +62,15 @@ interface PeriodOption {
   end_date: string
 }
 
+interface OrderSearchResult {
+  id: number
+  name: string | null
+  status: string | null
+  client: string | null
+  company: string | null
+  owner: string | null
+}
+
 type CommissionFilterState = {
   view: 'commissions' | 'payments'
   status: string
@@ -162,6 +171,140 @@ function hasExplicitFilterParams(): boolean {
   })
 }
 
+function SearchAnyOrderPanel() {
+  const [query, setQuery] = useState('')
+  const [results, setResults] = useState<OrderSearchResult[]>([])
+  const [loading, setLoading] = useState(false)
+  const hasQuery = query.trim().length > 0
+
+  useEffect(() => {
+    const search = query.trim()
+
+    if (search === '') {
+      setResults([])
+      setLoading(false)
+      return
+    }
+
+    const controller = new AbortController()
+    let ignore = false
+    setLoading(true)
+
+    const handle = window.setTimeout(async () => {
+      try {
+        const response = await fetch(route('order.search', {
+          q: search,
+          module: 'commissions',
+          origin: 'commissions',
+          limit: 8
+        }), {
+          headers: {
+            Accept: 'application/json'
+          },
+          signal: controller.signal
+        })
+
+        if (!response.ok) {
+          throw new Error('Order search request failed')
+        }
+
+        const payload = await response.json()
+        if (ignore) return
+
+        setResults(Array.isArray(payload?.results) ? payload.results : [])
+      } catch (error) {
+        if (!ignore && error instanceof Error && error.name !== 'AbortError') {
+          console.error(error)
+          setResults([])
+        }
+      } finally {
+        if (!ignore) {
+          setLoading(false)
+        }
+      }
+    }, 250)
+
+    return () => {
+      ignore = true
+      controller.abort()
+      window.clearTimeout(handle)
+    }
+  }, [query])
+
+  return (
+    <div className="mb-6 rounded border bg-white p-4">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h2 className="text-lg font-semibold">Search Any Order</h2>
+          <p className="text-sm text-slate-500">
+            Open any order here to create or manage commissions without changing the current report filters.
+          </p>
+        </div>
+        <div className="rounded border bg-slate-50 px-3 py-2 text-sm text-slate-600">
+          This search includes all order statuses.
+        </div>
+      </div>
+
+      <div className="mt-4">
+        <label htmlFor="order-search" className="mb-1 block font-semibold">Order Search</label>
+        <input
+          id="order-search"
+          className="form-input"
+          value={query}
+          placeholder="Search by order name, order #, client, company, owner, or address"
+          onChange={(event) => { setQuery(event.target.value) }}
+        />
+        <p className="mt-2 text-xs text-slate-500">
+          Select a result to open that order in the commission manager.
+        </p>
+      </div>
+
+      {hasQuery && (
+        <div className="mt-4 overflow-hidden rounded border">
+          {loading && (
+            <div className="px-4 py-3 text-sm text-slate-500">Searching orders...</div>
+          )}
+
+          {!loading && results.length === 0 && (
+            <div className="px-4 py-3 text-sm text-slate-500">No orders found.</div>
+          )}
+
+          {!loading && results.length > 0 && (
+            <div className="divide-y">
+              {results.map((result) => (
+                <button
+                  key={result.id}
+                  type="button"
+                  className="flex w-full items-start justify-between gap-4 px-4 py-3 text-left transition hover:bg-slate-50"
+                  onClick={() => { router.visit(route('report.commissions.edit-order', result.id)) }}
+                >
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-semibold text-slate-800">{result.name ?? `Order #${result.id}`}</span>
+                      <span className="rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-slate-600">
+                        {result.status ?? 'Unknown'}
+                      </span>
+                    </div>
+                    <div className="mt-1 text-sm text-slate-500">
+                      Client: {result.client ?? 'No client'}
+                    </div>
+                    <div className="text-xs text-slate-500">
+                      Company: {result.company ?? 'No company'} · Owner: {result.owner ?? 'No owner'}
+                    </div>
+                  </div>
+                  <span className="shrink-0 rounded bg-primary px-3 py-1 text-sm font-semibold text-white">
+                    Manage
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function CommissionIndex ({
   auth,
   rows,
@@ -257,6 +400,8 @@ export default function CommissionIndex ({
   return (
     <AuthenticatedLayout auth={auth} pageTitle="Commissions">
       <Head title="Commissions" />
+
+      <SearchAnyOrderPanel />
 
       <form
         className="mb-6 grid gap-4 md:grid-cols-5"

@@ -95,6 +95,7 @@ type EditOrderCommissionProps = PageProps & {
     }>
   }>
   activeUsers: BeneficiaryOption[]
+  remeasurers: BeneficiaryOption[]
   referrals: BeneficiaryOption[]
   externalBeneficiaries: BeneficiaryOption[]
   enums: {
@@ -118,6 +119,16 @@ type CreatePaymentDraft = {
   notes: string
   paid_at: string
 }
+
+const USER_SOURCE_TYPE = 'USER'
+const REFERRAL_SOURCE_TYPE = 'REFERRAL'
+const EXTERNAL_SOURCE_TYPE = 'EXTERNAL'
+const OWNER_RELATION = 'OWNER'
+const EMPLOYEE_RELATION = 'EMPLOYEE'
+const REMEASURER_RELATION = 'REMEASURER'
+const REFERRAL_RELATION = 'REFERRAL'
+const EXTERNAL_RELATION = 'EXTERNAL'
+const DEFAULT_REMEASURER_PERCENTAGE = '0.50'
 
 type PaymentFormData = {
   id: number
@@ -190,17 +201,32 @@ function blankPaymentForm(paymentStatuses: string[], splitTypes: string[], payme
   }
 }
 
-function blankCreatePayment(paymentStatuses: string[], splitTypes: string[]): CreatePaymentDraft {
+function blankCreatePayment(paymentStatuses: string[], splitTypes: string[], splitValue = 50): CreatePaymentDraft {
   return {
     payment_kind: 'REGULAR',
     split_type: splitTypes[0] ?? 'PERCENTAGE',
-    split_value: 50,
+    split_value: splitValue,
     status: paymentStatuses[0] ?? 'OPEN',
     other_cost_amount: 0,
     other_cost_notes: '',
     notes: '',
     paid_at: ''
   }
+}
+
+function defaultCreatePaymentsForRelation(
+  relation: string,
+  paymentStatuses: string[],
+  splitTypes: string[]
+): CreatePaymentDraft[] {
+  if (relation === REMEASURER_RELATION) {
+    return [blankCreatePayment(paymentStatuses, splitTypes, 100)]
+  }
+
+  return [
+    blankCreatePayment(paymentStatuses, splitTypes),
+    blankCreatePayment(paymentStatuses, splitTypes)
+  ]
 }
 
 function updateDraftPayment(
@@ -218,13 +244,22 @@ function beneficiaryOptionsBySource(
   relation: string,
   orderOwners: BeneficiaryOption[],
   activeUsers: BeneficiaryOption[],
+  remeasurers: BeneficiaryOption[],
   referrals: BeneficiaryOption[]
 ): BeneficiaryOption[] {
-  if (sourceType === 'USER') {
-    return relation === 'OWNER' ? orderOwners : activeUsers
+  if (sourceType === USER_SOURCE_TYPE) {
+    if (relation === OWNER_RELATION) {
+      return orderOwners
+    }
+
+    if (relation === REMEASURER_RELATION) {
+      return remeasurers
+    }
+
+    return activeUsers
   }
 
-  if (sourceType === 'REFERRAL') {
+  if (sourceType === REFERRAL_SOURCE_TYPE) {
     return referrals
   }
 
@@ -232,16 +267,16 @@ function beneficiaryOptionsBySource(
 }
 
 function relationOptionsBySource(sourceType: string, relations: string[]): string[] {
-  if (sourceType === 'USER') {
-    return relations.filter((item) => item === 'OWNER' || item === 'EMPLOYEE')
+  if (sourceType === USER_SOURCE_TYPE) {
+    return relations.filter((item) => item === OWNER_RELATION || item === EMPLOYEE_RELATION || item === REMEASURER_RELATION)
   }
 
-  if (sourceType === 'REFERRAL') {
-    return relations.filter((item) => item === 'REFERRAL')
+  if (sourceType === REFERRAL_SOURCE_TYPE) {
+    return relations.filter((item) => item === REFERRAL_RELATION)
   }
 
-  if (sourceType === 'EXTERNAL') {
-    return relations.filter((item) => item === 'EXTERNAL')
+  if (sourceType === EXTERNAL_SOURCE_TYPE) {
+    return relations.filter((item) => item === EXTERNAL_RELATION)
   }
 
   return relations
@@ -327,6 +362,7 @@ function CommissionCard ({
   commission,
   order,
   activeUsers,
+  remeasurers,
   referrals,
   externalBeneficiaries,
   enums
@@ -334,6 +370,7 @@ function CommissionCard ({
   commission: CommissionRecord
   order: EditOrderCommissionProps['order']
   activeUsers: BeneficiaryOption[]
+  remeasurers: BeneficiaryOption[]
   referrals: BeneficiaryOption[]
   externalBeneficiaries: BeneficiaryOption[]
   enums: EditOrderCommissionProps['enums']
@@ -376,6 +413,7 @@ function CommissionCard ({
     commissionForm.data.beneficiary_relation,
     order.owners,
     activeUsers,
+    remeasurers,
     referrals
   )
   const currentRelationOptions = relationOptionsBySource(commissionForm.data.beneficiary_source_type, enums.beneficiaryRelations)
@@ -493,7 +531,7 @@ function CommissionCard ({
         >
           <FormSection
             title="Beneficiary"
-            description="Choose who gets this commission. If the relation is OWNER, only the owners assigned to this order should be selected."
+            description="Choose who gets this commission. If the relation is OWNER, only the owners assigned to this order should be selected. Use REMEASURER for users with that role."
           >
             <div className="grid gap-4 md:grid-cols-4">
               <div>
@@ -971,6 +1009,7 @@ export default function EditOrder ({
   commissions,
   historyEntries,
   activeUsers,
+  remeasurers,
   referrals,
   externalBeneficiaries,
   enums
@@ -980,9 +1019,9 @@ export default function EditOrder ({
 
   const createForm = useForm({
     order_id: order.id,
-    beneficiary_source_type: 'USER',
+    beneficiary_source_type: USER_SOURCE_TYPE,
     beneficiary_source_id: 0,
-    beneficiary_relation: 'OWNER',
+    beneficiary_relation: OWNER_RELATION,
     calculation_type: 'PERCENTAGE',
     fee_amount_snapshot: order.cost_city_fee,
     financing_fee_amount: 0,
@@ -996,10 +1035,7 @@ export default function EditOrder ({
     external_email: '',
     external_phone: '',
     external_company_name: '',
-    payments: [
-      blankCreatePayment(enums.paymentStatuses, enums.splitTypes),
-      blankCreatePayment(enums.paymentStatuses, enums.splitTypes)
-    ] as CreatePaymentDraft[]
+    payments: defaultCreatePaymentsForRelation(OWNER_RELATION, enums.paymentStatuses, enums.splitTypes) as CreatePaymentDraft[]
   })
 
   const createBeneficiaryOptions = beneficiaryOptionsBySource(
@@ -1007,6 +1043,7 @@ export default function EditOrder ({
     createForm.data.beneficiary_relation,
     order.owners,
     activeUsers,
+    remeasurers,
     referrals
   )
   const createRelationOptions = relationOptionsBySource(createForm.data.beneficiary_source_type, enums.beneficiaryRelations)
@@ -1123,7 +1160,7 @@ export default function EditOrder ({
             >
               <FormSection
                 title="1. Beneficiary"
-                description="Use OWNER for one of the owners already assigned to the order. Use USER, REFERRAL, or EXTERNAL for everybody else."
+                description="Use OWNER for one of the owners already assigned to the order. Use REMEASURER for users with that role. Use USER, REFERRAL, or EXTERNAL for everybody else."
               >
                 <div className="grid gap-4 md:grid-cols-4">
                   <div>
@@ -1139,11 +1176,16 @@ export default function EditOrder ({
                           beneficiary_source_type: value,
                           beneficiary_relation: nextRelation,
                           beneficiary_source_id: 0,
+                          calculation_type: nextRelation === REMEASURER_RELATION ? 'PERCENTAGE' : data.calculation_type,
+                          percentage_value: nextRelation === REMEASURER_RELATION ? DEFAULT_REMEASURER_PERCENTAGE : data.percentage_value,
                           external_beneficiary_id: '',
                           external_name: '',
                           external_email: '',
                           external_phone: '',
-                          external_company_name: ''
+                          external_company_name: '',
+                          payments: nextRelation === REMEASURER_RELATION
+                            ? defaultCreatePaymentsForRelation(nextRelation, enums.paymentStatuses, enums.splitTypes)
+                            : data.payments
                         }))
                       }}
                     >
@@ -1159,10 +1201,16 @@ export default function EditOrder ({
                       className="form-select"
                       value={createForm.data.beneficiary_relation}
                       onChange={(event) => {
+                        const nextRelation = event.target.value
                         createForm.setData((data) => ({
                           ...data,
-                          beneficiary_relation: event.target.value,
-                          beneficiary_source_id: 0
+                          beneficiary_relation: nextRelation,
+                          beneficiary_source_id: 0,
+                          calculation_type: nextRelation === REMEASURER_RELATION ? 'PERCENTAGE' : data.calculation_type,
+                          percentage_value: nextRelation === REMEASURER_RELATION ? DEFAULT_REMEASURER_PERCENTAGE : data.percentage_value,
+                          payments: nextRelation === REMEASURER_RELATION
+                            ? defaultCreatePaymentsForRelation(nextRelation, enums.paymentStatuses, enums.splitTypes)
+                            : data.payments
                         }))
                       }}
                     >
@@ -1492,6 +1540,7 @@ export default function EditOrder ({
               commission={commission}
               order={order}
               activeUsers={activeUsers}
+              remeasurers={remeasurers}
               referrals={referrals}
               externalBeneficiaries={externalBeneficiaries}
               enums={enums}
