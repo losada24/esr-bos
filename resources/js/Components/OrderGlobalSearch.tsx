@@ -2,15 +2,18 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { router } from '@inertiajs/react'
 import SearchIcon from '@/Components/Icons/SearchIcon'
 
-const MODULE_OPTIONS = [
+type ModuleOption = {
+  value: string
+  label: string
+}
+
+const MODULE_OPTIONS: ModuleOption[] = [
   { value: 'all', label: 'All' },
   { value: 'frontdesk', label: 'Frontdesk' },
   { value: 'sales', label: 'Sales' },
   { value: 'order_processing', label: 'Order Processing' },
   { value: 'order_storage', label: 'Order Storage' }
-] as const
-
-type ModuleValue = typeof MODULE_OPTIONS[number]['value']
+]
 
 export type OrderSearchResult = {
   id: number
@@ -22,8 +25,11 @@ export type OrderSearchResult = {
 }
 
 type OrderGlobalSearchProps = {
-  origin: ModuleValue
+  origin: string
   className?: string
+  modules?: ModuleOption[]
+  defaultModule?: string
+  onSelectOrder?: (orderId: number) => void
 }
 
 const STATUS_SHORT_LABELS: Record<string, string> = {
@@ -37,9 +43,15 @@ const formatStatusLabel = (status: string | null): string => {
   return STATUS_SHORT_LABELS[normalized] ?? status
 }
 
-const OrderGlobalSearch = ({ origin, className = '' }: OrderGlobalSearchProps) => {
+const OrderGlobalSearch = ({
+  origin,
+  className = '',
+  modules = MODULE_OPTIONS,
+  defaultModule,
+  onSelectOrder
+}: OrderGlobalSearchProps) => {
   const [query, setQuery] = useState('')
-  const [module, setModule] = useState<ModuleValue>('all')
+  const [module, setModule] = useState<string>(defaultModule ?? modules[0]?.value ?? 'all')
   const [results, setResults] = useState<OrderSearchResult[]>([])
   const [loading, setLoading] = useState(false)
   const [open, setOpen] = useState(false)
@@ -50,8 +62,14 @@ const OrderGlobalSearch = ({ origin, className = '' }: OrderGlobalSearchProps) =
   const hasQuery = query.trim().length > 0
 
   const moduleLabel = useMemo(() => {
-    return MODULE_OPTIONS.find((option) => option.value === module)?.label ?? 'All'
-  }, [module])
+    return modules.find((option) => option.value === module)?.label ?? 'All'
+  }, [module, modules])
+
+  useEffect(() => {
+    if (!modules.some((option) => option.value === module)) {
+      setModule(defaultModule ?? modules[0]?.value ?? 'all')
+    }
+  }, [defaultModule, module, modules])
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -114,6 +132,12 @@ const OrderGlobalSearch = ({ origin, className = '' }: OrderGlobalSearchProps) =
 
   const goToOrder = (orderId: number) => {
     if (!orderId) return
+    if (onSelectOrder) {
+      onSelectOrder(orderId)
+      setOpen(false)
+      return
+    }
+
     router.visit(route('frontdesk.order_view', { id: orderId }))
     setOpen(false)
   }
@@ -148,25 +172,27 @@ const OrderGlobalSearch = ({ origin, className = '' }: OrderGlobalSearchProps) =
   return (
     <div ref={containerRef} className={`relative ${className}`}>
       <div className="flex items-stretch overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 dark:border-white-dark/20 dark:bg-[#0b1220]">
-        <div className="relative">
-          <select
-            value={module}
-            onChange={(event) => {
-              const value = event.target.value as ModuleValue
-              setModule(value)
-              if (hasQuery) setOpen(true)
-            }}
-            className="h-full cursor-pointer appearance-none border-0 border-r border-slate-200 bg-transparent px-3 py-2 text-sm font-semibold text-slate-700 focus:outline-none dark:border-white-dark/20 dark:text-white"
-            aria-label="Search module"
-          >
-            {MODULE_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>{option.label}</option>
-            ))}
-          </select>
-          <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-500 dark:text-white/60">
-            v
-          </span>
-        </div>
+        {modules.length > 1 && (
+          <div className="relative">
+            <select
+              value={module}
+              onChange={(event) => {
+                const value = event.target.value
+                setModule(value)
+                if (hasQuery) setOpen(true)
+              }}
+              className="h-full cursor-pointer appearance-none border-0 border-r border-slate-200 bg-transparent px-3 py-2 text-sm font-semibold text-slate-700 focus:outline-none dark:border-white-dark/20 dark:text-white"
+              aria-label="Search module"
+            >
+              {modules.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </select>
+            <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-500 dark:text-white/60">
+              v
+            </span>
+          </div>
+        )}
         <div className="relative flex-1">
           <input
             type="text"

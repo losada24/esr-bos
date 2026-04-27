@@ -174,6 +174,27 @@ class OrderSearchController extends Controller
                 OrderStatusEnum::COMPLETE->value,
             ],
             'commissions' => array_column(OrderStatusEnum::cases(), 'value'),
+            'service_control' => [
+                OrderStatusEnum::CONTRACT_SIGNED_BY_CLIENT->value,
+                OrderStatusEnum::CLOSED_WON->value,
+                OrderStatusEnum::RECTIFICATION_OF_MEASURES_AND_HOA->value,
+                OrderStatusEnum::ORDER_MATERIALS_AND_FILE_ORGANIZATION->value,
+                OrderStatusEnum::FILE_REVIEW->value,
+                OrderStatusEnum::ACCOUNT_RECEIPT->value,
+                OrderStatusEnum::REVIEW->value,
+                OrderStatusEnum::PLANNED->value,
+                OrderStatusEnum::MATERIALS_RECEIVED->value,
+                OrderStatusEnum::CONFIRMED->value,
+                OrderStatusEnum::DELIVERY_CONFIRMED->value,
+                OrderStatusEnum::EXECUTION->value,
+                OrderStatusEnum::ON_HOLD->value,
+                OrderStatusEnum::SUPERVISION->value,
+                OrderStatusEnum::INSPECTION->value,
+                OrderStatusEnum::FINISH->value,
+                OrderStatusEnum::FINAL_INSPECTION->value,
+                OrderStatusEnum::FINAL_COLLECT->value,
+                OrderStatusEnum::COMPLETE->value,
+            ],
         ];
     }
 
@@ -189,12 +210,13 @@ class OrderSearchController extends Controller
 
         $context = strtolower($context);
 
-        if ($context === 'sales' || $context === 'order_processing') {
+        if ($context === 'sales' || $context === 'order_processing' || $context === 'service_control') {
             return !$user->hasAnyRole([
                 RoleEnum::ADMIN->value,
                 RoleEnum::ACCOUNT_MANAGER->value,
                 RoleEnum::OWNER_ADMIN->value,
                 RoleEnum::FRONTDESK_ADMIN->value,
+                RoleEnum::SERVICE_MANAGER->value,
             ]);
         }
 
