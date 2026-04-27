@@ -12,6 +12,7 @@ use App\Enum\CommissionPaymentStatusEnum;
 use App\Enum\CommissionSplitTypeEnum;
 use App\Enum\CommissionStatusEnum;
 use App\Enum\OrderStatusEnum;
+use App\Enum\RoleEnum;
 use App\Enum\StatusUserEnum;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Commission\BulkPayCommissionPaymentsRequest;
@@ -128,6 +129,13 @@ class CommissionReportController extends Controller
             ->limit(500)
             ->get();
 
+        $remeasurers = User::role(RoleEnum::REMEASURER->value)
+            ->select('id', 'name', 'email')
+            ->where('status', StatusUserEnum::ACTIVE->value)
+            ->orderBy('name')
+            ->limit(500)
+            ->get();
+
         $referrals = Referral::query()
             ->select('id', 'name', 'email', 'phone', 'type')
             ->orderBy('name')
@@ -183,6 +191,7 @@ class CommissionReportController extends Controller
             'commissions' => $order->orderCommissions->map(fn (OrderCommission $commission) => $this->serializeCommission($commission))->values(),
             'historyEntries' => $historyEntries,
             'activeUsers' => $activeUsers,
+            'remeasurers' => $remeasurers,
             'referrals' => $referrals,
             'externalBeneficiaries' => $externals,
             'enums' => [
@@ -234,26 +243,7 @@ class CommissionReportController extends Controller
                 'updated_by' => Auth::id(),
             ]);
 
-            $payments = collect($data['payments'] ?? [
-                [
-                    'split_type' => CommissionSplitTypeEnum::PERCENTAGE->value,
-                    'split_value' => 50,
-                    'status' => CommissionPaymentStatusEnum::OPEN->value,
-                    'other_cost_amount' => 0,
-                    'other_cost_notes' => null,
-                    'notes' => null,
-                    'paid_at' => null,
-                ],
-                [
-                    'split_type' => CommissionSplitTypeEnum::PERCENTAGE->value,
-                    'split_value' => 50,
-                    'status' => CommissionPaymentStatusEnum::OPEN->value,
-                    'other_cost_amount' => 0,
-                    'other_cost_notes' => null,
-                    'notes' => null,
-                    'paid_at' => null,
-                ],
-            ]);
+            $payments = collect($data['payments'] ?? $this->defaultPaymentsForRelation($data['beneficiary_relation']));
 
             $payments->values()->each(function (array $payment, int $index) use ($commission) {
                 $status = $payment['status'] ?? CommissionPaymentStatusEnum::OPEN->value;
@@ -782,6 +772,22 @@ class CommissionReportController extends Controller
             }
         }
 
+        if (($data['beneficiary_relation'] ?? null) === CommissionBeneficiaryRelationEnum::REMEASURER->value) {
+            if ($sourceType !== CommissionBeneficiarySourceEnum::USER->value) {
+                throw ValidationException::withMessages([
+                    'beneficiary_source_type' => 'Remeasurer commissions must use a user with the remeasurer role.',
+                ]);
+            }
+
+            $remeasurer = User::findOrFail((int) $sourceId);
+
+            if (! $remeasurer->hasRole(RoleEnum::REMEASURER->value)) {
+                throw ValidationException::withMessages([
+                    'beneficiary_source_id' => 'The selected user does not have the remeasurer role.',
+                ]);
+            }
+        }
+
         if ($sourceType === CommissionBeneficiarySourceEnum::USER->value) {
             $user = User::findOrFail((int) $sourceId);
 
@@ -931,6 +937,42 @@ class CommissionReportController extends Controller
     private function paymentKindValue(OrderCommissionPayment $payment): string
     {
         return $this->normalizePaymentKind($payment->payment_kind);
+    }
+
+    private function defaultPaymentsForRelation(string $relation): array
+    {
+        if ($relation === CommissionBeneficiaryRelationEnum::REMEASURER->value) {
+            return [[
+                'split_type' => CommissionSplitTypeEnum::PERCENTAGE->value,
+                'split_value' => 100,
+                'status' => CommissionPaymentStatusEnum::OPEN->value,
+                'other_cost_amount' => 0,
+                'other_cost_notes' => null,
+                'notes' => null,
+                'paid_at' => null,
+            ]];
+        }
+
+        return [
+            [
+                'split_type' => CommissionSplitTypeEnum::PERCENTAGE->value,
+                'split_value' => 50,
+                'status' => CommissionPaymentStatusEnum::OPEN->value,
+                'other_cost_amount' => 0,
+                'other_cost_notes' => null,
+                'notes' => null,
+                'paid_at' => null,
+            ],
+            [
+                'split_type' => CommissionSplitTypeEnum::PERCENTAGE->value,
+                'split_value' => 50,
+                'status' => CommissionPaymentStatusEnum::OPEN->value,
+                'other_cost_amount' => 0,
+                'other_cost_notes' => null,
+                'notes' => null,
+                'paid_at' => null,
+            ],
+        ];
     }
 
     private function resolveProjectAmountForNewCommission(Order $order): float

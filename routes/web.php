@@ -146,7 +146,7 @@ Route::middleware('auth')->group(function () {
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value .'|'. RoleEnum::SERVICE_MANAGER->value .'|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::FRONTDESK_ADMIN->value . '|FRONTDESK_ADMIN|frondesk_admin|frondestk_admin|FRONDESK_ADMIN|FRONDESTK_ADMIN'] );
 
     Route::get('orders/search', [OrderSearchController::class, 'index'])
-      ->middleware(["role:" . RoleEnum::ADMIN->value . '|' . RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::ACCOUNTING->value . '|' . RoleEnum::SERVICE_MANAGER->value . '|' . RoleEnum::OWNER_ADMIN->value . '|' . RoleEnum::OWNER->value . '|' . RoleEnum::FRONTDESK_ADMIN->value . '|' . RoleEnum::FRONTDESK_ESR->value])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|' . RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::ACCOUNTING->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value . '|' . RoleEnum::OWNER_ADMIN->value . '|' . RoleEnum::OWNER->value . '|' . RoleEnum::FRONTDESK_ADMIN->value . '|' . RoleEnum::FRONTDESK_ESR->value . '|' . RoleEnum::SERVICE_MANAGER->value])
       ->name('order.search');
 
     Route::get('order/get_delivery_and_installation_date/{payment_factory_date}/{type_of_housing}/{county_id}/{service}/{hasPermit}', [OrderController::class, 'getDeliveryAndInstallationDate'])

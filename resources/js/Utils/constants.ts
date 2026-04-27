@@ -193,6 +193,7 @@ export const ROLES = {
   ACCOUNT_MANAGER: 'account_manager',
   ACCOUNTING: 'accounting',
   INSTALLER: 'installer',
+  REMEASURER: 'remeasurer',
   SUPERVISOR: 'supervisor',
   OWNER: 'owner',
   FRONTDESK: 'frontdesk',
