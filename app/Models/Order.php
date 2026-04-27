@@ -508,10 +508,16 @@ class Order extends Model
     return $this->notes();
   }
 
-    public function saleForm()
+  public function saleForm()
     {
         return $this->hasOne(SaleForm::class, 'order_id', 'id');
     }
+
+    public function serviceControls(): HasMany
+    {
+        return $this->hasMany(ServiceControl::class)->latest();
+    }
+
      public function snapshots(): HasMany
     {
         return $this->hasMany(OrderSnapshot::class);
