@@ -61,6 +61,10 @@ class UpdateQualifiedOrder
                 'is_supply' => (bool) $request->is_supply,
                 'schedule_appointment' => $request->schedule_appointment ?: null,
             ];
+            if ($request->exists('invoice_number')) {
+                $invoiceNumber = trim((string) $request->input('invoice_number'));
+                $payload['invoice_number'] = $invoiceNumber !== '' ? $invoiceNumber : null;
+            }
             $projectAmount = $request->exists('project_amount')
                 ? $request->input('project_amount')
                 : $order->project_amount;

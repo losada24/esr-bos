@@ -240,6 +240,7 @@ export type OrderFormValues = Order & {
 export const orderFormObj: OrderFormValues = {
   id: 0,
   name: '',
+  invoice_number: '',
   client_name: '',
   phone: '',
   client_id: 0,
@@ -364,6 +365,7 @@ export const loadOrderFormObj = (order: Order): OrderFormValues => {
     client_name: order.client?.name ?? '',
     phone: order.client?.phone ?? '',
     name: order.name,
+    invoice_number: order.invoice_number ?? '',
     source: order.client?.source ?? '',
     client_id: getClientId(primaryCompany) ?? order.client_id,
     associate_client_id_1: getClientId(assocCompany1) ?? order.associate_client_id_1 ?? null,

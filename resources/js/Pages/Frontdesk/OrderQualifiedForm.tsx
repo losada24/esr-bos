@@ -18,6 +18,7 @@ import DeleteIcon from '@/Components/Icons/DeleteIcon'
 import { type OrderFormValues } from './OrderCommon'
 import PlusIcon from '@/Components/Icons/PlusIcon'
 import { ORDER_TYPES, PAYMENT_METHODS } from '@/Utils/constants'
+import { formatDateOnlyValue } from '@/Utils/dateOnly'
 import CompanyModal from './CompanyModal'
 import { type Source } from '@/types/interfaces/order'
 import ClientModal from './ClientModal'
@@ -219,6 +220,7 @@ const OrderQualifiedForm = ({
   showNotesField = true,
   useModalLayout = false,
   showOwnerField = false,
+  showInvoiceField = false,
   showPaymentInformationSection = false,
   showProjectAmountOnlySection = false,
   projectAmountReadOnly = false,
@@ -251,6 +253,7 @@ const OrderQualifiedForm = ({
   showNotesField?: boolean
   useModalLayout?: boolean
   showOwnerField?: boolean
+  showInvoiceField?: boolean
   showPaymentInformationSection?: boolean
   showProjectAmountOnlySection?: boolean
   projectAmountReadOnly?: boolean
@@ -738,6 +741,20 @@ const OrderQualifiedForm = ({
                 />
                 {(submitCount && errors.name) ? <InputError message={errors.name} className="mt-2" /> : ''}
               </div>
+              {showInvoiceField && (
+                <div className={submitCount ? (errors.invoice_number ? 'has-error' : 'has-success') : ''}>
+                  <label htmlFor="invoice_number">Invoice Number</label>
+                  <Field
+                    id="invoice_number"
+                    name="invoice_number"
+                    type="text"
+                    className="form-input"
+                    autoComplete="invoice_number"
+                    placeholder="Invoice Number"
+                  />
+                  {(submitCount && errors.invoice_number) ? <InputError message={errors.invoice_number as string} className="mt-2" /> : ''}
+                </div>
+              )}
               {showProjectAmountField && (
                 <div className={`col-span-2 ${submitCount ? (errors.project_amount ? 'has-error' : 'has-success') : ''}`}>
                   <label htmlFor="project_amount" className="mb-1">Project Amount</label>
@@ -966,7 +983,7 @@ const OrderQualifiedForm = ({
                         value={values.bid_due_date ?? ''}
                         className="form-input"
                         onChange={([date]) => {
-                          setFieldValue('bid_due_date', date.toISOString().slice(0, 10))
+                          setFieldValue('bid_due_date', date ? formatDateOnlyValue(date) : null)
                         }}
                       />
                       {(submitCount && errors.bid_due_date) ? <InputError message={errors.bid_due_date.toString()} className="mt-2" /> : ''}

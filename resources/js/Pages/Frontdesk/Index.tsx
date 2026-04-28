@@ -17,6 +17,7 @@ import InfoTooltip from '@/Components/InfoTooltip'
 import OrderBoardFilter, { type BoardFilters, type FilterFieldConfig } from '@/Components/OrderBoardFilter'
 import OrderGlobalSearch from '@/Components/OrderGlobalSearch'
 import OrderPipelineSort from '@/Components/OrderPipelineSort'
+import { formatDateOnlyDisplay, isDateOnlyPast } from '@/Utils/dateOnly'
 import {
   type PipelineSortBy,
   type PipelineSortDir,
@@ -89,24 +90,11 @@ const sortPipelinesByRecentActivity = (pipelines: Pipelines[] = []): Pipelines[]
 }
 
 const formatBidDueDate = (value?: string | null): string | null => {
-  if (!value) return null
-  const date = new Date(value)
-  return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString()
-}
-
-const parseBidDueDate = (value?: string | null): Date | null => {
-  if (!value) return null
-  const normalized = /^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T00:00:00` : value
-  const date = new Date(normalized)
-  return Number.isNaN(date.getTime()) ? null : date
+  return formatDateOnlyDisplay(value)
 }
 
 const isBidDuePast = (value?: string | null): boolean => {
-  const date = parseBidDueDate(value)
-  if (!date) return false
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  return date.getTime() < today.getTime()
+  return isDateOnlyPast(value)
 }
 
 const INFINITE_SCROLL_STATUSES = new Set(['LOST REQUEST', 'QUALIFIED'])

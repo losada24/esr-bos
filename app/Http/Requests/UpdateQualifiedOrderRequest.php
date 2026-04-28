@@ -88,6 +88,7 @@ class UpdateQualifiedOrderRequest extends FormRequest
               )
             ],*/
             'notes' => 'nullable|string|max:1000',
+            'invoice_number' => 'nullable|string|max:255',
             'project_amount' => ['nullable', 'numeric', 'min:0'],
             'method_of_payment' => [
                 'nullable',
