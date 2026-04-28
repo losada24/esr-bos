@@ -31,6 +31,7 @@ import StarIcon from '@/Components/Icons/StarIcon'
 import PlusIcon from '@/Components/Icons/PlusIcon'
 import { isAccountManager, isAccounting, isAdmin, isFrontdeskAdmin, isFrontdeskEsr, isOwner, isOwnerAdmin, isServiceManager } from '@/Utils/user'
 import { PAYMENT_METHODS, SOURCES } from '@/Utils/constants'
+import { formatDateOnlyDisplay } from '@/Utils/dateOnly'
 import EstimateScheduleModal from '@/Pages/Sales/EstimateScheduleModal'
 import FollowUpModal from '@/Pages/Sales/FollowUpModal'
 import StandByNoteModal from '@/Pages/Sales/StandByNoteModal'
@@ -266,9 +267,7 @@ const formatScheduleDisplay = (value?: string | null): string | null => {
 }
 
 const formatDateOnly = (value?: string | Date | null): string | null => {
-  if (!value) return null
-  const date = value instanceof Date ? value : new Date(value)
-  return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleDateString()
+  return formatDateOnlyDisplay(value)
 }
 
 const toScheduleString = (value?: Date | string | null): string | null => {
@@ -1082,7 +1081,39 @@ export default function ShowStatusOrder ({
     const normalized = value.trim()
     return normalized === '' ? null : normalized
   }
+  const formatPhoneForDisplay = (value?: string | null) => {
+    const normalized = normalizeDetailValue(value)
+    if (!normalized) return null
+
+    const formatDigits = (digits: string) => {
+      if (digits.length === 10) {
+        return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`
+      }
+
+      if (digits.length === 11 && digits.startsWith('1')) {
+        const localNumber = digits.slice(1)
+        return `+1 (${localNumber.slice(0, 3)}) ${localNumber.slice(3, 6)}-${localNumber.slice(6)}`
+      }
+
+      return null
+    }
+
+    const fullyNormalizedDigits = normalized.replace(/\D/g, '')
+    const fullyFormatted = formatDigits(fullyNormalizedDigits)
+    if (fullyFormatted) return fullyFormatted
+
+    return normalized.replace(/\+?[\d().\-\s]{10,}/g, (segment) => {
+      const leadingWhitespace = segment.match(/^\s*/)?.[0] ?? ''
+      const trailingWhitespace = segment.match(/\s*$/)?.[0] ?? ''
+      const segmentDigits = segment.replace(/\D/g, '')
+      const formattedSegment = formatDigits(segmentDigits)
+
+      return formattedSegment ? `${leadingWhitespace}${formattedSegment}${trailingWhitespace}` : segment
+    })
+  }
   const primaryContactEmail = normalizeDetailValue(order.client?.email)
+  const primaryContactPhone = formatPhoneForDisplay(order.client?.phone)
+  const secondaryContactPhone = formatPhoneForDisplay(order.client?.other_phone)
   const orderRecipientEmail = normalizeDetailValue(order.contact_email)
   const orderEmailDeliveryValue = order.do_not_send_email
     ? 'Client emails will not be sent'
@@ -1092,7 +1123,8 @@ export default function ShowStatusOrder ({
     : 'No delivery email configured for this order'
   const contactDetails: Array<{ label: string, value?: string | null, fallback: string, Icon: DetailIcon }> = [
     { label: 'Contact Name', value: order.client?.name, fallback: 'No contact assigned', Icon: UserIcon },
-    { label: 'Phone', value: order.client?.phone, fallback: 'No phone available', Icon: PhoneIcon },
+    { label: 'Phone', value: primaryContactPhone, fallback: 'No phone available', Icon: PhoneIcon },
+    ...(secondaryContactPhone ? [{ label: 'Other Phone', value: secondaryContactPhone, fallback: 'No other phone available', Icon: PhoneIcon }] : []),
     { label: 'Primary Email', value: primaryContactEmail, fallback: 'No primary email available', Icon: EmailIcon },
     { label: 'Order Email Delivery', value: orderEmailDeliveryValue, fallback: orderEmailDeliveryFallback, Icon: EmailIcon }
   ]
@@ -1136,7 +1168,7 @@ export default function ShowStatusOrder ({
     ?? referralRecord?.referrerUser
   const referralDetails: Array<{ label: string, value?: string | null, fallback: string, Icon: DetailIcon }> = [
     { label: 'Referral Name', value: normalizeDetailValue(referralRecord?.name) ?? normalizeDetailValue(linkedReferrer?.name), fallback: 'No referral name available', Icon: UserIcon },
-    { label: 'Referral Phone', value: normalizeDetailValue(referralRecord?.phone) ?? normalizeDetailValue(linkedReferrer?.phone), fallback: 'No referral phone available', Icon: PhoneIcon },
+    { label: 'Referral Phone', value: formatPhoneForDisplay(referralRecord?.phone) ?? formatPhoneForDisplay(linkedReferrer?.phone), fallback: 'No referral phone available', Icon: PhoneIcon },
     { label: 'Referral Email', value: normalizeDetailValue(referralRecord?.email) ?? normalizeDetailValue(linkedReferrer?.email), fallback: 'No referral email available', Icon: EmailIcon }
   ]
   const descriptionText = order.description?.trim()
@@ -3321,7 +3353,19 @@ export default function ShowStatusOrder ({
                             </div>
                             <div className="mt-1 text-slate-500">
                               Phone:{' '}
-                              <span className="font-medium text-slate-600">{item.client?.phone ?? '—'}</span>
+                              <span className="font-medium text-slate-600">{formatPhoneForDisplay(item.client?.phone) ?? '—'}</span>
+                            </div>
+                            {formatPhoneForDisplay(item.client?.other_phone) && (
+                              <div className="mt-1 text-slate-500">
+                                Other Phone:{' '}
+                                <span className="font-medium text-slate-600">{formatPhoneForDisplay(item.client?.other_phone)}</span>
+                              </div>
+                            )}
+                          </div>
+                          <div className="rounded-lg bg-slate-50 px-3 py-2">
+                            <span className="uppercase tracking-wide text-slate-400">Company Phone</span>
+                            <div className="mt-0.5 font-medium text-slate-700">
+                              {formatPhoneForDisplay(item.company_contact?.phone ?? item.companyContact?.phone) ?? '—'}
                             </div>
                           </div>
                           <div className="rounded-lg bg-slate-50 px-3 py-2">
@@ -3358,11 +3402,15 @@ export default function ShowStatusOrder ({
                     {companyContacts.map((company, index) => (
                       <div key={company.id ?? index} className="space-y-2 rounded-lg bg-white/70 p-3 shadow">
                         <p className="text-sm font-semibold text-slate-700">{company.name}</p>
+                        <p className="text-xs text-slate-500">
+                          Phone:{' '}
+                          <span className="font-medium text-slate-600">{formatPhoneForDisplay(company.phone) ?? '—'}</span>
+                        </p>
                         {company.bid_due_date && (
                           <div className="flex items-center justify-between rounded-md bg-slate-100 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
                             <span>Bid Due Date</span>
                             <span className="text-slate-700 normal-case">
-                              {new Date(company.bid_due_date).toLocaleDateString()}
+                              {formatDateOnly(company.bid_due_date)}
                             </span>
                           </div>
                         )}

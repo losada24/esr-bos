@@ -126,6 +126,7 @@ export default function OrderEditModal ({
                   showNotesField={false}
                   useModalLayout
                   showOwnerField={shouldShowOwnerField}
+                  showInvoiceField
                   showPaymentInformationSection={showPaymentInformationSection}
                   showProjectAmountOnlySection={showProjectAmountOnlySection}
                   projectAmountReadOnly={projectAmountReadOnly}

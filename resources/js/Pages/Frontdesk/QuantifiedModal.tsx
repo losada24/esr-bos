@@ -13,6 +13,7 @@ import { router } from '@inertiajs/react'
 import { ORDER_TYPES } from '@/Utils/constants'
 import { capitalizeWords } from '@/Utils/string'
 import { useJsApiLoader } from '@react-google-maps/api'
+import { formatDateOnlyValue } from '@/Utils/dateOnly'
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
 const GOOGLE_MAPS_LIBRARIES: Array<'places'> = ['places']
@@ -518,7 +519,7 @@ const QuantifiedModal = ({
                         value={values.bid_due_date ?? ''}
                         className="form-input"
                         onChange={([date]) => {
-                          setFieldValue('bid_due_date', date.toISOString().slice(0, 10))
+                          setFieldValue('bid_due_date', date ? formatDateOnlyValue(date) : null)
                         }}
                       />
                       {(submitCount && errors.bid_due_date) ? <InputError message={errors.bid_due_date.toString()} className="mt-2" /> : ''}

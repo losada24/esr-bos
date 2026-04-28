@@ -36,6 +36,10 @@
 </p>
 
 <p>
+    Please do not reply to this email, as this inbox is not monitored. If you need assistance, please contact us at <a href="mailto:christian@reylosglass.com">christian@reylosglass.com</a> or call <a href="tel:+17867320362">(786) 732-0362</a>.
+</p>
+
+<p>
     Thank you again for the opportunity to earn your business. We look forward to meeting you.
 </p>
 
@@ -65,6 +69,10 @@
 
 <p>
     Si necesita hacer algún cambio o tiene preguntas antes de su cita, no dude en comunicarse con nosotros.
+</p>
+
+<p>
+    Por favor, no responda a este correo, ya que esta bandeja de entrada no es monitoreada. Si necesita ayuda, puede escribirnos a <a href="mailto:christian@reylosglass.com">christian@reylosglass.com</a> o llamarnos al <a href="tel:+17867320362">(786) 732-0362</a>.
 </p>
 
 <p>

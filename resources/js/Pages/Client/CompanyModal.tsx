@@ -8,6 +8,7 @@ import PrimaryButton from '@/Components/PrimaryButton'
 import Flatpickr from 'react-flatpickr'
 import { companyContactSchema } from '../CompanyContact/CompanyContactCommon'
 import { router } from '@inertiajs/react'
+import { formatDateOnlyValue, toDateOnlyString } from '@/Utils/dateOnly'
 
 const CompanyModal = ({
   showModal,
@@ -46,9 +47,7 @@ const CompanyModal = ({
         body: JSON.stringify({
           ...values,
           from_modal: true,
-          bid_due_date: values.bid_due_date
-            ? new Date(values.bid_due_date).toISOString().slice(0, 10)
-            : null
+          bid_due_date: toDateOnlyString(values.bid_due_date)
         })
       })
 
@@ -194,7 +193,7 @@ const CompanyModal = ({
                           value={values.bid_due_date ?? ''}
                           className="form-input"
                           onChange={([date]) => {
-                            setFieldValue('bid_due_date', date.toISOString().slice(0, 10))
+                            setFieldValue('bid_due_date', date ? formatDateOnlyValue(date) : null)
                           }}
                         />
                         {(submitCount && errors.bid_due_date) ? <InputError message={errors.bid_due_date.toString()} className="mt-2" /> : ''}

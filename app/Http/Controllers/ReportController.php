@@ -1476,6 +1476,27 @@ class ReportController extends Controller
       ->get()
       ->keyBy('summary_date');
 
+    $estimateStatusDateTransitions = DB::table('order_status')
+      ->join('orders', 'orders.id', '=', 'order_status.order_id')
+      ->whereNull('orders.deleted_at')
+      ->where('order_status.status', OrderStatusEnum::ESTIMATE_APPT_SCHEDULE->value)
+      ->whereBetween('order_status.created_at', [$startDate, $endDate])
+      ->whereNotNull('orders.schedule_appointment')
+      ->where(function ($query) {
+        $query->whereNull('orders.order_type')
+          ->orWhere('orders.order_type', '!=', OrderTypeEnum::COMMERCIAL->value);
+      })
+      ->selectRaw('order_status.order_id, MAX(order_status.created_at) as estimate_appt_schedule_at')
+      ->groupBy('order_status.order_id');
+
+    $estimateStatusDateCounts = DB::query()
+      ->fromSub($estimateStatusDateTransitions, 'estimate_status_date_transitions')
+      ->selectRaw('DATE(estimate_appt_schedule_at) as summary_date, COUNT(DISTINCT order_id) as total')
+      ->groupBy('summary_date')
+      ->orderBy('summary_date')
+      ->get()
+      ->keyBy('summary_date');
+
     $qualifiedStatusDateTransitions = DB::table('order_status')
       ->join('orders', 'orders.id', '=', 'order_status.order_id')
       ->whereNull('orders.deleted_at')
@@ -1540,6 +1561,25 @@ class ReportController extends Controller
       ->distinct()
       ->pluck('cohort_schedule.order_id');
 
+    $estimateStatusDateRows = DB::query()
+      ->fromSub($estimateStatusDateTransitions, 'estimate_status_date_transitions')
+      ->select('order_id', 'estimate_appt_schedule_at')
+      ->orderBy('estimate_appt_schedule_at')
+      ->orderBy('order_id')
+      ->get();
+
+    $estimateStatusDateOrderIds = $estimateStatusDateRows->pluck('order_id');
+    $estimateStatusDateMetadata = $estimateStatusDateRows
+      ->keyBy(static fn ($row) => (int) $row->order_id)
+      ->map(static function ($row) {
+        return [
+          'status_date' => $row->estimate_appt_schedule_at
+            ? Carbon::parse($row->estimate_appt_schedule_at)->toDateString()
+            : null,
+        ];
+      })
+      ->all();
+
     $qualifiedStatusDateRows = DB::query()
       ->fromSub($qualifiedStatusDateTransitions, 'qualified_status_date_transitions')
       ->select('order_id', 'qualified_at')
@@ -1579,6 +1619,7 @@ class ReportController extends Controller
         'qualified' => 0,
         'qualified_by_status_date' => 0,
         'estimate_appt_schedule' => 0,
+        'estimate_appt_schedule_by_status_date' => 0,
         'lost_request' => 0,
         'total' => 0,
       ];
@@ -1617,6 +1658,14 @@ class ReportController extends Controller
       $daily[$dateKey]['estimate_appt_schedule'] = (int) $row->total;
     }
 
+    foreach ($estimateStatusDateCounts as $dateKey => $row) {
+      if (!isset($daily[$dateKey])) {
+        continue;
+      }
+
+      $daily[$dateKey]['estimate_appt_schedule_by_status_date'] = (int) $row->total;
+    }
+
     foreach ($lostRequestCounts as $dateKey => $row) {
       if (!isset($daily[$dateKey])) {
         continue;
@@ -1632,6 +1681,7 @@ class ReportController extends Controller
         'qualified' => $row['qualified'],
         'qualified_by_status_date' => $row['qualified_by_status_date'],
         'estimate_appt_schedule' => $row['estimate_appt_schedule'],
+        'estimate_appt_schedule_by_status_date' => $row['estimate_appt_schedule_by_status_date'],
         'lost_request' => $row['lost_request'],
       ];
     });
@@ -1641,6 +1691,7 @@ class ReportController extends Controller
       'qualified' => $dailySummary->sum('qualified'),
       'qualified_by_status_date' => $qualifiedStatusDateRows->count(),
       'estimate_appt_schedule' => $dailySummary->sum('estimate_appt_schedule'),
+      'estimate_appt_schedule_by_status_date' => $estimateStatusDateRows->count(),
       'lost_request' => $dailySummary->sum('lost_request'),
     ];
 
@@ -1655,6 +1706,13 @@ class ReportController extends Controller
         ))
         ->values(),
       'estimate_appt_schedule' => $this->buildOrderReferenceList($estimateOrderIds)->values(),
+      'estimate_appt_schedule_by_status_date' => $this->buildOrderReferenceList($estimateStatusDateOrderIds, $estimateStatusDateMetadata)
+        ->sortBy(static fn (array $order) => sprintf(
+          '%s-%010d',
+          $order['status_date'] ?? '9999-12-31',
+          (int) $order['id']
+        ))
+        ->values(),
       'lost_request' => $this->buildOrderReferenceList($lostRequestOrderIds, $lostRequestMetadata)
         ->sortBy(static fn (array $order) => sprintf(
           '%s-%010d',
