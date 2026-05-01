@@ -58,7 +58,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
   const CAN_VIEW_MARKETING_REPORT = IS_ADMIN || HAS_FRONTDESK_ADMIN_ROLE || IS_OWNER_ADMIN
   const CAN_VIEW_SALES_APPOINTMENTS = IS_ADMIN || IS_ACCOUNT_MANAGER || HAS_FRONTDESK_ADMIN_ROLE || IS_OWNER_ADMIN
   const CAN_VIEW_ORDER_STORAGE = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_ACCOUNTING || HAS_FRONTDESK_ADMIN_ROLE
-  const CAN_VIEW_SERVICE_CONTROL = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER || IS_OWNER_ADMIN || HAS_FRONTDESK_ADMIN_ROLE || IS_OWNER
+  const CAN_VIEW_SERVICE_CONTROL = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER
   const CAN_VIEW_MY_REFERRED_CLIENTS = true
   const CAN_VIEW_ADMINISTRATION = IS_ADMIN || IS_ACCOUNT_MANAGER || CAN_VIEW_MY_REFERRED_CLIENTS
   const CAN_VIEW_REPORTS = CAN_VIEW_REPORT_SUPERVISOR
@@ -302,6 +302,18 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                       <div className="flex items-center">
                                         <FolderIcon />
                                         <SidebarLinkLabel>Service Control</SidebarLinkLabel>
+                                      </div>
+                                    </NavLink>
+                                  </li>
+                                  <li className="menu nav-item">
+                                    <NavLink
+                                      href={route('stock-material.index')}
+                                      active={route().current('stock-material.index') || route().current('stock-material.create') || route().current('stock-material.edit')}
+                                      className="group"
+                                    >
+                                      <div className="flex items-center">
+                                        <FolderIcon />
+                                        <SidebarLinkLabel>Stock Materials</SidebarLinkLabel>
                                       </div>
                                     </NavLink>
                                   </li>
