@@ -151,6 +151,9 @@ class OrderProcessingController extends Controller
             ContactSourceEnum::GOOGLE_ADS->value,
             ContactSourceEnum::SAME_AS_ORDER->value,
             ContactSourceEnum::DIRECT_CALL->value,
+            ContactSourceEnum::CANVASS->value,
+            ContactSourceEnum::TRUCK_LED->value,
+            ContactSourceEnum::COSTCO->value,
         ];
 
         $orderTypes = [

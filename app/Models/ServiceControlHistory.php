@@ -20,13 +20,10 @@ class ServiceControlHistory extends Model
         'comment',
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'old_values' => 'array',
-            'new_values' => 'array',
-        ];
-    }
+    protected $casts = [
+        'old_values' => 'array',
+        'new_values' => 'array',
+    ];
 
     public function serviceControl(): BelongsTo
     {

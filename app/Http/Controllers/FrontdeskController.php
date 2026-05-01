@@ -221,6 +221,9 @@ class FrontdeskController extends Controller
             ContactSourceEnum::GOOGLE_ADS->value,
             ContactSourceEnum::SAME_AS_ORDER->value,
             ContactSourceEnum::DIRECT_CALL->value,
+            ContactSourceEnum::CANVASS->value,
+            ContactSourceEnum::TRUCK_LED->value,
+            ContactSourceEnum::COSTCO->value,
     ];
 
     $order_types = [
@@ -411,6 +414,9 @@ class FrontdeskController extends Controller
             ContactSourceEnum::GOOGLE_ADS->value,
             ContactSourceEnum::SAME_AS_ORDER->value,
             ContactSourceEnum::DIRECT_CALL->value,
+            ContactSourceEnum::CANVASS->value,
+            ContactSourceEnum::TRUCK_LED->value,
+            ContactSourceEnum::COSTCO->value,
       ],
        
       
@@ -448,7 +454,10 @@ class FrontdeskController extends Controller
           ContactSourceEnum::NEW_ORDER ->value,
           ContactSourceEnum::GOOGLE_ADS->value,
           ContactSourceEnum::SAME_AS_ORDER->value,
-          ContactSourceEnum::DIRECT_CALL->value,
+            ContactSourceEnum::DIRECT_CALL->value,
+            ContactSourceEnum::CANVASS->value,
+            ContactSourceEnum::TRUCK_LED->value,
+            ContactSourceEnum::COSTCO->value,
       ],
       'frame_colors' => [
         FrameColorEnum::BLACK->value,
@@ -960,6 +969,9 @@ public function showQuantifiedModal(Order $order)
             ContactSourceEnum::GOOGLE_ADS->value,
             ContactSourceEnum::SAME_AS_ORDER->value,
             ContactSourceEnum::DIRECT_CALL->value,
+            ContactSourceEnum::CANVASS->value,
+            ContactSourceEnum::TRUCK_LED->value,
+            ContactSourceEnum::COSTCO->value,
     ];
 
     $order_types = [
@@ -1028,6 +1040,9 @@ public function showQuantifiedModal(Order $order)
             ContactSourceEnum::GOOGLE_ADS->value,
             ContactSourceEnum::SAME_AS_ORDER->value,
             ContactSourceEnum::DIRECT_CALL->value,
+            ContactSourceEnum::CANVASS->value,
+            ContactSourceEnum::TRUCK_LED->value,
+            ContactSourceEnum::COSTCO->value,
     ];
 
     $statusOptions = [
@@ -1162,6 +1177,9 @@ public function showQuantifiedModal(Order $order)
             ContactSourceEnum::GOOGLE_ADS->value,
             ContactSourceEnum::SAME_AS_ORDER->value,
             ContactSourceEnum::DIRECT_CALL->value,
+            ContactSourceEnum::CANVASS->value,
+            ContactSourceEnum::TRUCK_LED->value,
+            ContactSourceEnum::COSTCO->value,
     ];
 
     $rules = [

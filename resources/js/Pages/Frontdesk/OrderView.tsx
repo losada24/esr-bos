@@ -553,7 +553,7 @@ export default function ShowStatusOrder ({
   const canMoveToEstimate = isAdmin(roleNames) || isOwnerAdmin(roleNames) || isFrontdeskAdmin(roleNames)
   const canViewPipeline = isAdmin(roleNames) || isAccountManager(roleNames) || isOwner(roleNames) || isOwnerAdmin(roleNames) || isFrontdeskAdmin(roleNames) || isAccounting(roleNames)
   const canEditPipeline = isAdmin(roleNames) || isAccountManager(roleNames) || isOwner(roleNames) || isOwnerAdmin(roleNames) || isFrontdeskAdmin(roleNames) || isAccounting(roleNames)
-  const canManageServiceControl = isAdmin(roleNames) || isAccountManager(roleNames) || isOwner(roleNames) || isOwnerAdmin(roleNames) || isFrontdeskAdmin(roleNames) || isServiceManager(roleNames)
+  const canManageServiceControl = isAdmin(roleNames) || isAccountManager(roleNames) || isServiceManager(roleNames)
   const canEditPaymentInformationInModal = isAdmin(roleNames) || isAccountManager(roleNames) || isAccounting(roleNames) || isOwnerAdmin(roleNames)
   const hasReachedContractSigned = Boolean(order.has_contract_signed)
   const hasAssignedPaymentMethod = String(order.method_of_payment ?? '').trim() !== ''

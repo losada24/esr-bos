@@ -64,6 +64,9 @@ class UpdateClientRequest extends FormRequest
             ContactSourceEnum::GOOGLE_ADS->value,
             ContactSourceEnum::SAME_AS_ORDER->value,
             ContactSourceEnum::DIRECT_CALL->value,
+            ContactSourceEnum::CANVASS->value,
+            ContactSourceEnum::TRUCK_LED->value,
+            ContactSourceEnum::COSTCO->value,
               )
             ],
             'other_phone' => 'nullable|string|max:20',
