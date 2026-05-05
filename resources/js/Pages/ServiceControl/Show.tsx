@@ -1,5 +1,5 @@
 import { useForm } from '@inertiajs/react'
-import ServiceControlForm from './ServiceControlForm'
+import ServiceControlForm, { type ServiceControlFormData } from './ServiceControlForm'
 import { type PageProps, type ServiceControl } from '@/types'
 
 type ShowProps = PageProps & {
@@ -27,8 +27,16 @@ export default function Show ({
   requesterOptions,
   assigneeOptions,
 }: ShowProps) {
-  const { data, setData } = useForm({
-    order_id: Number(serviceControl.order?.id ?? 0),
+  const { data, setData } = useForm<ServiceControlFormData>({
+    order_id: serviceControl.order?.id ?? null,
+    client_id: serviceControl.client_id ?? serviceControl.client?.id ?? '',
+    new_client: {
+      name: '',
+      phone: '',
+      email: '',
+      other_phone: '',
+      secondary_email: '',
+    },
     service_name: serviceControl.service_name ?? '',
     service_id: serviceControl.service_id ?? '',
     is_bm: Boolean(serviceControl.is_bm),

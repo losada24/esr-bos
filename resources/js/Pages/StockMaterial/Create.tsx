@@ -11,7 +11,7 @@ export default function Create ({ auth, flash, areaOptions }: Props) {
     name: '',
     description: '',
     cost: '',
-    area: '',
+    area: 'Stock',
     requested_date: '',
     quote_id: '',
     quote_id_received_date: '',

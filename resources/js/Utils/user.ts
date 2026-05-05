@@ -57,6 +57,9 @@ export const isFrontdeskAdmin = (roles: string[]): boolean => {
 export const isServiceManager = (roles: string[]): boolean => {
   return roles.find((role) => role === ROLES.SERVICE_MANAGER) !== undefined
 }
+export const isService = (roles: string[]): boolean => {
+  return roles.find((role) => role === ROLES.SERVICE) !== undefined
+}
 export const isPaymentCoordinator = (roles: string[]): boolean => {
   return roles.find((role) => role === ROLES.PAYMENT_COORDINATOR) !== undefined
 }
@@ -86,6 +89,8 @@ export const getRoleName = (roles: string[]): string => {
     return 'Owner Admin'
   } else if (isServiceManager(roles)) {
     return 'Service Manager'
+  } else if (isService(roles)) {
+    return 'Service'
   } else if (isFrontdesk(roles)) {
     return 'Frontdesk'
   } else if (isPaymentCoordinator(roles)) {

@@ -18,6 +18,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 
@@ -26,10 +27,28 @@ class DashboardController extends Controller
 
   use OrderStatus, Twilio;
 
-  public function index(Request $request): Response
+  public function index(Request $request): Response|RedirectResponse
   {
 
     $user = auth()->user();
+
+    if ($user->hasRole(RoleEnum::SERVICE->value) && !$user->hasAnyRole([
+      RoleEnum::ADMIN->value,
+      RoleEnum::ACCOUNT_MANAGER->value,
+      RoleEnum::ACCOUNTING->value,
+      RoleEnum::INSTALLER->value,
+      RoleEnum::SUPERVISOR->value,
+      RoleEnum::OWNER->value,
+      RoleEnum::OWNER_ADMIN->value,
+      RoleEnum::FRONTDESK->value,
+      RoleEnum::FRONTDESK_ADMIN->value,
+      RoleEnum::FRONTDESK_ESR->value,
+      RoleEnum::SERVICE_MANAGER->value,
+      RoleEnum::PAYMENT_COORDINATOR->value,
+    ])) {
+      return redirect()->route('service-control.calendar');
+    }
+
     $status = [];
     $legend = [];
     $statusmodal = [];

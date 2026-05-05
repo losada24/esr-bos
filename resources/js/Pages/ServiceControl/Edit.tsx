@@ -1,5 +1,5 @@
-import { useForm } from '@inertiajs/react'
-import ServiceControlForm from './ServiceControlForm'
+import { router, useForm } from '@inertiajs/react'
+import ServiceControlForm, { type ServiceControlFormData } from './ServiceControlForm'
 import { type PageProps, type ServiceControl } from '@/types'
 
 type EditProps = PageProps & {
@@ -27,8 +27,16 @@ export default function Edit ({
   requesterOptions,
   assigneeOptions,
 }: EditProps) {
-  const { data, setData, put, processing, errors } = useForm({
-    order_id: Number(serviceControl.order?.id ?? 0),
+  const { data, setData, put, processing, errors } = useForm<ServiceControlFormData>({
+    order_id: serviceControl.order?.id ?? null,
+    client_id: serviceControl.client_id ?? serviceControl.client?.id ?? '',
+    new_client: {
+      name: '',
+      phone: '',
+      email: '',
+      other_phone: '',
+      secondary_email: '',
+    },
     service_name: serviceControl.service_name ?? '',
     service_id: serviceControl.service_id ?? '',
     is_bm: Boolean(serviceControl.is_bm),
@@ -65,6 +73,14 @@ export default function Edit ({
     bm_invoice_status: serviceControl.bm_invoice_status ?? 'PENDING',
   })
 
+  const destroy = () => {
+    if (!window.confirm('Are you sure you want to delete this service control?')) return
+
+    router.delete(route('service-control.destroy', serviceControl.id), {
+      preserveScroll: true,
+    })
+  }
+
   return (
     <ServiceControlForm
       auth={auth}
@@ -85,6 +101,7 @@ export default function Edit ({
       bmInvoiceStatusOptions={bmInvoiceStatusOptions}
       requesterOptions={requesterOptions}
       assigneeOptions={assigneeOptions}
+      onDelete={destroy}
       onSubmit={(event) => {
         event.preventDefault()
         put(route('service-control.update', serviceControl.id))

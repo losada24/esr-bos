@@ -49,6 +49,13 @@ class OrderSearchController extends Controller
                 'owners:id,name',
             ]);
 
+        if ($origin === 'service_control' || $module === 'service_control') {
+            $query->withCount([
+                'serviceControls as assigned_services_count' => fn (Builder $builder) => $builder->where('is_bm', false),
+                'serviceControls as assigned_bm_count' => fn (Builder $builder) => $builder->where('is_bm', true),
+            ]);
+        }
+
         if (!empty($statuses)) {
             $query->whereIn('orders.status', $statuses);
         }
@@ -119,6 +126,8 @@ class OrderSearchController extends Controller
                 'client' => $this->resolveClientName($order),
                 'company' => $this->resolveCompanyName($order),
                 'owner' => $this->resolveOwnerName($order),
+                'assigned_services_count' => (int) ($order->assigned_services_count ?? 0),
+                'assigned_bm_count' => (int) ($order->assigned_bm_count ?? 0),
             ];
         })->values();
 

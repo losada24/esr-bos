@@ -2,6 +2,9 @@ import { Head, Link, router } from '@inertiajs/react'
 import { useEffect, useMemo, useState } from 'react'
 import AuthenticatedCalendarLayout from '@/Layouts/AuthenticatedCalendarLayout'
 import OrderGlobalSearch from '@/Components/OrderGlobalSearch'
+import EditIcon from '@/Components/Icons/EditIcon'
+import EyeIcon from '@/Components/Icons/EyeIcon'
+import DeleteIcon from '@/Components/Icons/DeleteIcon'
 import { type PageProps, type ServiceControl } from '@/types'
 
 type IndexProps = PageProps & {
@@ -151,6 +154,14 @@ export default function Index ({
     visitType(activeType)
   }
 
+  const destroy = (serviceControl: ServiceControl) => {
+    if (!window.confirm('Are you sure you want to delete this service control?')) return
+
+    router.delete(route('service-control.destroy', serviceControl.id), {
+      preserveScroll: true,
+    })
+  }
+
   return (
     <AuthenticatedCalendarLayout
       auth={auth}
@@ -162,8 +173,19 @@ export default function Index ({
           modules={MODULE_OPTIONS}
           defaultModule="service_control"
           className="w-full max-w-[520px]"
-          onSelectOrder={(orderId) => {
-            router.visit(route('service-control.create', { order_id: orderId }))
+          onSelectOrder={(orderId, order) => {
+            const assignedCount = isBmView
+              ? Number(order?.assigned_bm_count ?? 0)
+              : Number(order?.assigned_services_count ?? 0)
+            const message = isBmView
+              ? 'This order already has an assigned BM. Do you want to associate another BM?'
+              : 'This order already has an assigned service. Do you want to associate another service?'
+
+            if (assignedCount > 0 && !window.confirm(message)) {
+              return
+            }
+
+            router.visit(route('service-control.create', { order_id: orderId, type: activeType }))
           }}
         />
       }
@@ -222,6 +244,9 @@ export default function Index ({
           >
             Export Excel
           </a>
+          <Link href={route('service-control.create', { type: activeType })} className="btn btn-outline-primary">
+            New Standalone Service
+          </Link>
         </div>
       }
     >
@@ -229,7 +254,7 @@ export default function Index ({
 
       <div className="space-y-6">
         <div className="rounded-2xl border border-sky-200 bg-sky-50 px-5 py-4 text-sm text-sky-900">
-          Search a sold order above to create a new service control associated with that order. Existing modules keep their current order view behavior.
+          Search a sold order above to create a new service control associated with that order, or use New Standalone Service for an unlinked service.
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -296,67 +321,79 @@ export default function Index ({
                 </tr>
               </thead>
               <tbody>
-                {serviceControls.map((serviceControl) => (
-                  <tr key={serviceControl.id} className="border-t border-slate-200 text-sm text-slate-600">
-                    {!isBmView && (
-                      <>
-                        <td className="px-4 py-4 align-top">
-                          <div className="font-semibold text-slate-700">{serviceControl.order?.name ?? 'Order'}</div>
-                          <div className="text-xs text-slate-400">#{serviceControl.order?.order_number ?? 'N/A'}</div>
-                        </td>
-                        <td className="px-4 py-4 align-top">
-                          <div>{serviceControl.order?.client?.name ?? 'No client'}</div>
-                          <div className="text-xs text-slate-400">{serviceControl.order?.client?.phone ?? 'No phone'}</div>
-                        </td>
-                        <td className="px-4 py-4 align-top">
-                          <div className="font-semibold text-slate-700">{serviceControl.service_name ?? 'N/A'}</div>
-                          <div className="text-xs text-slate-400">{serviceControl.service_id ?? 'No service ID'}</div>
-                        </td>
-                      </>
-                    )}
-                    {isBmView
-                      ? (
+                {serviceControls.map((serviceControl) => {
+                  const isOverdue = !isBmView && (serviceControl.is_missing_service_id_overdue || serviceControl.is_missing_eta_overdue)
+
+                  return (
+                    <tr key={serviceControl.id} className={`border-t text-sm ${isOverdue ? 'border-rose-200 bg-rose-50 text-rose-900' : 'border-slate-200 text-slate-600'}`}>
+                      {!isBmView && (
                         <>
-                          <td className="px-4 py-4 align-top">{serviceControl.order?.name ?? 'N/A'}</td>
-                          <td className="px-4 py-4 align-top">{serviceControl.order?.supervisor?.name ?? 'N/A'}</td>
-                          <td className="px-4 py-4 align-top">{serviceControl.bm_quantity ?? 'N/A'}</td>
-                          <td className="px-4 py-4 align-top">{serviceControl.bm_requested_date ?? 'N/A'}</td>
-                          <td className="px-4 py-4 align-top">{serviceControl.bm_picked_up_by ?? 'N/A'}</td>
-                          <td className="px-4 py-4 align-top">{serviceControl.bm_invoice_number ?? 'N/A'}</td>
                           <td className="px-4 py-4 align-top">
-                            <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                              {humanize(serviceControl.bm_invoice_status)}
-                            </span>
+                            <div className={isOverdue ? 'font-semibold text-rose-900' : 'font-semibold text-slate-700'}>{serviceControl.order?.name ?? 'Order'}</div>
+                            <div className={isOverdue ? 'text-xs text-rose-600' : 'text-xs text-slate-400'}>#{serviceControl.order?.order_number ?? 'N/A'}</div>
+                            {isOverdue && (
+                              <div className="mt-1 text-[11px] font-semibold text-rose-700">
+                                {serviceControl.is_missing_service_id_overdue ? 'Missing Service ID over 5 days' : 'Missing ETA Date over 5 days'}
+                              </div>
+                            )}
+                          </td>
+                          <td className="px-4 py-4 align-top">
+                            <div>{serviceControl.order?.client?.name ?? 'No client'}</div>
+                            <div className={isOverdue ? 'text-xs text-rose-600' : 'text-xs text-slate-400'}>{serviceControl.order?.client?.phone ?? 'No phone'}</div>
+                          </td>
+                          <td className="px-4 py-4 align-top">
+                            <div className={isOverdue ? 'font-semibold text-rose-900' : 'font-semibold text-slate-700'}>{serviceControl.service_name ?? 'N/A'}</div>
+                            <div className={isOverdue ? 'text-xs text-rose-600' : 'text-xs text-slate-400'}>{serviceControl.service_id ?? 'No service ID'}</div>
                           </td>
                         </>
-                        )
-                      : (
-                        <>
-                          <td className="px-4 py-4 align-top">{humanize(serviceControl.service_type)}</td>
-                          <td className="px-4 py-4 align-top">
-                            <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                              {humanize(serviceControl.service_status)}
-                            </span>
-                          </td>
-                          <td className="px-4 py-4 align-top">{humanize(serviceControl.priority)}</td>
-                        </>
-                        )}
-                    {!isBmView && <td className="px-4 py-4 align-top">{serviceControl.open_days ?? 0}</td>}
-                    <td className="px-4 py-4 align-top">
-                      <div className="text-xs text-slate-400">{serviceControl.updated_at ? new Date(serviceControl.updated_at).toLocaleString() : 'N/A'}</div>
-                    </td>
-                    <td className="px-4 py-4 align-top">
-                      <div className="flex items-center gap-2">
-                        <Link href={route('service-control.show', serviceControl.id)} className="btn btn-sm btn-outline-info">
-                          View
-                        </Link>
-                        <Link href={route('service-control.edit', serviceControl.id)} className="btn btn-sm btn-outline-primary">
-                          Edit
-                        </Link>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      )}
+                      {isBmView
+                        ? (
+                          <>
+                            <td className="px-4 py-4 align-top">{serviceControl.order?.name ?? 'N/A'}</td>
+                            <td className="px-4 py-4 align-top">{serviceControl.order?.supervisor?.name ?? 'N/A'}</td>
+                            <td className="px-4 py-4 align-top">{serviceControl.bm_quantity ?? 'N/A'}</td>
+                            <td className="px-4 py-4 align-top">{serviceControl.bm_requested_date ?? 'N/A'}</td>
+                            <td className="px-4 py-4 align-top">{serviceControl.bm_picked_up_by ?? 'N/A'}</td>
+                            <td className="px-4 py-4 align-top">{serviceControl.bm_invoice_number ?? 'N/A'}</td>
+                            <td className="px-4 py-4 align-top">
+                              <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                                {humanize(serviceControl.bm_invoice_status)}
+                              </span>
+                            </td>
+                          </>
+                          )
+                        : (
+                          <>
+                            <td className="px-4 py-4 align-top">{humanize(serviceControl.service_type)}</td>
+                            <td className="px-4 py-4 align-top">
+                              <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                                {humanize(serviceControl.service_status)}
+                              </span>
+                            </td>
+                            <td className="px-4 py-4 align-top">{humanize(serviceControl.priority)}</td>
+                          </>
+                          )}
+                      {!isBmView && <td className="px-4 py-4 align-top">{serviceControl.open_days ?? 0}</td>}
+                      <td className="px-4 py-4 align-top">
+                        <div className="text-xs text-slate-400">{serviceControl.updated_at ? new Date(serviceControl.updated_at).toLocaleString() : 'N/A'}</div>
+                      </td>
+                      <td className="px-4 py-4 align-top">
+                        <div className="flex items-center gap-2">
+                          <Link href={route('service-control.show', serviceControl.id)} title="View">
+                            <EyeIcon />
+                          </Link>
+                          <Link href={route('service-control.edit', serviceControl.id)} title="Edit">
+                            <EditIcon />
+                          </Link>
+                          <button type="button" title="Delete" onClick={() => { destroy(serviceControl) }}>
+                            <DeleteIcon />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
                 {serviceControls.length === 0 && (
                   <tr>
                     <td colSpan={isBmView ? 9 : 9} className="px-4 py-10 text-center text-sm text-slate-400">

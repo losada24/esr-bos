@@ -30,9 +30,24 @@ const FieldError = ({ message }: { message?: string }) => {
   return <p className="mt-1 text-xs font-medium text-rose-600">{message}</p>
 }
 
+const formatDate = (date: Date) => {
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+
+  return `${date.getFullYear()}-${month}-${day}`
+}
+
 export default function StockMaterialForm ({ auth, title, data, setData, areaOptions, processing = false, errors = {}, onSubmit }: Props) {
   const setDate = (key: keyof StockMaterialFormData, dates: Date[]) => {
-    setData(key, dates[0] ? dates[0].toISOString().slice(0, 10) : '')
+    setData(key, dates[0] ? formatDate(dates[0]) : '')
+  }
+
+  const setQuoteId = (value: string) => {
+    setData('quote_id', value)
+
+    if (value.trim() !== '' && data.quote_id_received_date === '') {
+      setData('quote_id_received_date', formatDate(new Date()))
+    }
   }
 
   return (
@@ -69,7 +84,7 @@ export default function StockMaterialForm ({ auth, title, data, setData, areaOpt
           </div>
           <div>
             <label htmlFor="quote_id" className="text-sm font-semibold text-slate-700">Quote ID</label>
-            <input id="quote_id" type="text" value={data.quote_id} onChange={(event) => { setData('quote_id', event.target.value) }} className="form-input mt-1" />
+            <input id="quote_id" type="text" value={data.quote_id} onChange={(event) => { setQuoteId(event.target.value) }} className="form-input mt-1" />
             <FieldError message={errors.quote_id} />
           </div>
           <div>

@@ -1,5 +1,5 @@
 import { useForm } from '@inertiajs/react'
-import ServiceControlForm from './ServiceControlForm'
+import ServiceControlForm, { type ServiceControlFormData } from './ServiceControlForm'
 import { type PageProps, type ServiceControlOrderSummary } from '@/types'
 
 type CreateProps = PageProps & {
@@ -12,6 +12,7 @@ type CreateProps = PageProps & {
   bmInvoiceStatusOptions: string[]
   requesterOptions: any[]
   assigneeOptions: any[]
+  defaultType?: 'services' | 'bm'
 }
 
 export default function Create ({
@@ -26,12 +27,23 @@ export default function Create ({
   bmInvoiceStatusOptions,
   requesterOptions,
   assigneeOptions,
+  defaultType = 'services',
 }: CreateProps) {
-  const { data, setData, post, processing, errors } = useForm({
-    order_id: order.id,
-    service_name: `${order.name ?? 'Order'} Services`,
+  const isStandalone = !order.id
+  const isBm = defaultType === 'bm' && !isStandalone
+  const { data, setData, post, processing, errors } = useForm<ServiceControlFormData>({
+    order_id: order.id ?? null,
+    client_id: order.client?.id ?? '',
+    new_client: {
+      name: '',
+      phone: '',
+      email: '',
+      other_phone: '',
+      secondary_email: '',
+    },
+    service_name: `${order.name ?? 'Order'} ${isBm ? 'BM' : 'Services'}`,
     service_id: '',
-    is_bm: false,
+    is_bm: isBm,
     service_type: 'OTHER',
     description: '',
     requires_part: false,

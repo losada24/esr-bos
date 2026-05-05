@@ -12,5 +12,6 @@ enum ServiceControlStatusEnum: string
     case SCHEDULED = 'SCHEDULED';
     case IN_EXECUTION = 'IN EXECUTION';
     case COMPLETED = 'COMPLETED';
+    case CANCELED = 'CANCELED';
     case CLOSED = 'CLOSED';
 }

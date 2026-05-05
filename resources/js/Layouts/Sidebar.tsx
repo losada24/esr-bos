@@ -7,7 +7,7 @@ import ReferralIcon from '@/Components/Icons/ReferralIcon'
 import SidebarLinkLabel from '@/Components/SidebarLinkLabel'
 import DashboardIcon from '@/Components/Icons/DashboardIcon'
 import CompanyIcon from '@/Components/Icons/CompanyIcon'
-import { isAdmin, isAccountManager, isAccounting, isFrontdesk, isFrontdeskAdmin, isOwner, isSupervisor, isServiceManager, isPaymentCoordinator, isOwnerAdmin, isFrontdeskEsr } from '@/Utils/user'
+import { isAdmin, isAccountManager, isAccounting, isFrontdesk, isFrontdeskAdmin, isOwner, isSupervisor, isServiceManager, isService, isPaymentCoordinator, isOwnerAdmin, isFrontdeskEsr } from '@/Utils/user'
 import { type Role, type Auth } from '@/types'
 import WindowsIcon from '@/Components/Icons/WindowsIcon'
 import CodeIcon from '@/Components/Icons/CodeIcon'
@@ -33,6 +33,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
   const IS_OWNER = isOwner(roleNames)
   const IS_SUPERVISOR = isSupervisor(roleNames)
   const IS_SERVICE_MANAGER = isServiceManager(roleNames)
+  const IS_SERVICE = isService(roleNames)
   const IS_PAYMENT_COORDINATOR = isPaymentCoordinator(roleNames)
   const IS_OWNER_ADMIN = isOwnerAdmin(roleNames)
   const IS_FRONTDESK_ESR = isFrontdeskEsr(roleNames)
@@ -59,7 +60,9 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
   const CAN_VIEW_SALES_APPOINTMENTS = IS_ADMIN || IS_ACCOUNT_MANAGER || HAS_FRONTDESK_ADMIN_ROLE || IS_OWNER_ADMIN
   const CAN_VIEW_ORDER_STORAGE = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_ACCOUNTING || HAS_FRONTDESK_ADMIN_ROLE
   const CAN_VIEW_SERVICE_CONTROL = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER
-  const CAN_VIEW_MY_REFERRED_CLIENTS = true
+  const CAN_VIEW_SERVICE_CALENDAR = CAN_VIEW_SERVICE_CONTROL || IS_SERVICE
+  const IS_SERVICE_ONLY = IS_SERVICE && !IS_ADMIN && !IS_ACCOUNT_MANAGER && !IS_ACCOUNTING && !IS_FRONTDESK && !IS_FRONTDESK_ADMIN && !IS_OWNER && !IS_SUPERVISOR && !IS_SERVICE_MANAGER && !IS_PAYMENT_COORDINATOR && !IS_OWNER_ADMIN && !IS_FRONTDESK_ESR
+  const CAN_VIEW_MY_REFERRED_CLIENTS = !IS_SERVICE_ONLY
   const CAN_VIEW_ADMINISTRATION = IS_ADMIN || IS_ACCOUNT_MANAGER || CAN_VIEW_MY_REFERRED_CLIENTS
   const CAN_VIEW_REPORTS = CAN_VIEW_REPORT_SUPERVISOR
     || CAN_VIEW_REPORT_INSTALLER
@@ -285,7 +288,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                               )}
                               </>
                              ) }
-                              {CAN_VIEW_SERVICE_CONTROL && (
+                              {CAN_VIEW_SERVICE_CALENDAR && (
                                 <>
                                   <h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">
                                       <svg className="w-4 h-5 flex-none hidden" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
@@ -293,30 +296,46 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                       </svg>
                                       <span>SERVICES CONTROL</span>
                                   </h2>
+                                  {CAN_VIEW_SERVICE_CONTROL && (
+                                    <li className="menu nav-item">
+                                      <NavLink
+                                        href={route('service-control.index')}
+                                        active={route().current('service-control.index') || route().current('service-control.create') || route().current('service-control.edit') || route().current('service-control.show')}
+                                        className="group"
+                                      >
+                                        <div className="flex items-center">
+                                          <FolderIcon />
+                                          <SidebarLinkLabel>Service Control</SidebarLinkLabel>
+                                        </div>
+                                      </NavLink>
+                                    </li>
+                                  )}
                                   <li className="menu nav-item">
                                     <NavLink
-                                      href={route('service-control.index')}
-                                      active={route().current('service-control.index') || route().current('service-control.create') || route().current('service-control.edit') || route().current('service-control.show')}
+                                      href={route('service-control.calendar')}
+                                      active={route().current('service-control.calendar')}
                                       className="group"
                                     >
                                       <div className="flex items-center">
-                                        <FolderIcon />
-                                        <SidebarLinkLabel>Service Control</SidebarLinkLabel>
+                                        <CalendarIcon />
+                                        <SidebarLinkLabel>Service Calendar</SidebarLinkLabel>
                                       </div>
                                     </NavLink>
                                   </li>
-                                  <li className="menu nav-item">
-                                    <NavLink
-                                      href={route('stock-material.index')}
-                                      active={route().current('stock-material.index') || route().current('stock-material.create') || route().current('stock-material.edit')}
-                                      className="group"
-                                    >
-                                      <div className="flex items-center">
-                                        <FolderIcon />
-                                        <SidebarLinkLabel>Stock Materials</SidebarLinkLabel>
-                                      </div>
-                                    </NavLink>
-                                  </li>
+                                  {CAN_VIEW_SERVICE_CONTROL && (
+                                    <li className="menu nav-item">
+                                      <NavLink
+                                        href={route('stock-material.index')}
+                                        active={route().current('stock-material.index') || route().current('stock-material.create') || route().current('stock-material.edit')}
+                                        className="group"
+                                      >
+                                        <div className="flex items-center">
+                                          <FolderIcon />
+                                          <SidebarLinkLabel>Stock Materials</SidebarLinkLabel>
+                                        </div>
+                                      </NavLink>
+                                    </li>
+                                  )}
                                 </>
                               )}
                               {CAN_VIEW_REPORTS && (
