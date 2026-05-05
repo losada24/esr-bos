@@ -18,10 +18,38 @@ class StoreServiceControlRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $newClient = $this->input('new_client', []);
+
+        if (! is_array($newClient) || ! array_key_exists('phone', $newClient)) {
+            return;
+        }
+
+        $newClient['phone'] = preg_replace('/\D+/', '', (string) $newClient['phone']);
+
+        $this->merge([
+            'new_client' => $newClient,
+        ]);
+    }
+
     public function rules(): array
     {
+        $requiresStandaloneClient = fn () => ! $this->filled('order_id') && ! $this->filled('client_id');
+
         return [
-            'order_id' => ['required', 'integer', 'exists:orders,id'],
+            'order_id' => ['nullable', 'integer', 'exists:orders,id'],
+            'client_id' => ['nullable', 'integer', 'exists:clients,id'],
+            'new_client.name' => ['nullable', Rule::requiredIf($requiresStandaloneClient), 'string', 'max:255'],
+            'new_client.phone' => [
+                'nullable',
+                Rule::requiredIf($requiresStandaloneClient),
+                'regex:/^\d{10}$/',
+                Rule::unique('clients', 'phone'),
+            ],
+            'new_client.email' => ['nullable', 'email', 'max:255'],
+            'new_client.other_phone' => ['nullable', 'string', 'max:20'],
+            'new_client.secondary_email' => ['nullable', 'email', 'max:255'],
             'service_name' => ['required', 'string', 'max:255'],
             'service_id' => ['nullable', 'string', 'max:255'],
             'is_bm' => ['boolean'],

@@ -15,8 +15,26 @@ type PartyOption = {
   role: string
 }
 
-type ServiceControlFormData = {
-  order_id: number
+type ClientOption = {
+  id: number
+  name?: string | null
+  phone?: string | null
+  email?: string | null
+  other_phone?: string | null
+  secondary_email?: string | null
+  label: string
+}
+
+export type ServiceControlFormData = {
+  order_id: number | null
+  client_id: number | string | null
+  new_client: {
+    name: string
+    phone: string
+    email: string
+    other_phone: string
+    secondary_email: string
+  }
   service_name: string
   service_id: string
   is_bm: boolean
@@ -59,9 +77,11 @@ type Props = PageProps & {
   order: ServiceControlOrderSummary
   serviceControl?: ServiceControl | null
   data: ServiceControlFormData
-  setData: (key: keyof ServiceControlFormData, value: ServiceControlFormData[keyof ServiceControlFormData]) => void
+  setData: ((data: ServiceControlFormData) => void)
+    & ((callback: (data: ServiceControlFormData) => ServiceControlFormData) => void)
+    & (<K extends keyof ServiceControlFormData>(key: K, value: ServiceControlFormData[K]) => void)
   processing?: boolean
-  errors?: Partial<Record<keyof ServiceControlFormData, string>>
+  errors?: Partial<Record<string, string>>
   serviceTypeOptions: string[]
   serviceStatusOptions: string[]
   priorityOptions: string[]
@@ -71,6 +91,7 @@ type Props = PageProps & {
   requesterOptions: PartyOption[]
   assigneeOptions: PartyOption[]
   onSubmit?: (event: FormEvent<HTMLFormElement>) => void
+  onDelete?: () => void
 }
 
 const humanize = (value: string | null | undefined): string => {
@@ -89,6 +110,13 @@ const ReadonlyItem = ({ label, value }: { label: string, value?: string | number
     <p className="mt-1 text-sm font-medium text-slate-700">{value !== null && value !== undefined && String(value).trim() !== '' ? value : 'N/A'}</p>
   </div>
 )
+
+const formatDate = (date: Date) => {
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+
+  return `${date.getFullYear()}-${month}-${day}`
+}
 
 export default function ServiceControlForm ({
   auth,
@@ -109,9 +137,11 @@ export default function ServiceControlForm ({
   requesterOptions = [],
   assigneeOptions = [],
   onSubmit,
+  onDelete,
 }: Props) {
   const isReadOnly = mode === 'show'
   const currentRecord = serviceControl ?? null
+  const isStandalone = !order.id
   const relatedServices = Array.isArray(order.service_controls) ? order.service_controls : []
   const fallbackRequesterOptions: PartyOption[] = [
     order.client?.id ? { value: `client:${order.client.id}:client`, label: `${order.client.name ?? 'Client'} - Client`, type: 'client', id: Number(order.client.id), role: 'client' } : null,
@@ -125,16 +155,130 @@ export default function ServiceControlForm ({
   ].filter(Boolean) as PartyOption[]
   const effectiveRequesterOptions = requesterOptions.length > 0 ? requesterOptions : fallbackRequesterOptions
   const effectiveAssigneeOptions = assigneeOptions.length > 0 ? assigneeOptions : fallbackAssigneeOptions
+  const [clientSearch, setClientSearch] = useState('')
+  const [clientResults, setClientResults] = useState<ClientOption[]>([])
+  const [clientLoading, setClientLoading] = useState(false)
+  const [selectedClientLabel, setSelectedClientLabel] = useState(
+    order.client?.id ? `${order.client.name ?? 'Client'} - ${order.client.phone ?? order.client.email ?? 'No contact'}` : ''
+  )
+  const selectedStandaloneClientOption = isStandalone && data.client_id && selectedClientLabel
+    ? {
+        value: `client:${data.client_id}:client`,
+        label: selectedClientLabel,
+        type: 'client' as const,
+        id: Number(data.client_id),
+        role: 'client',
+      }
+    : null
+  const requesterOptionsWithStandaloneClient = selectedStandaloneClientOption
+    ? [selectedStandaloneClientOption, ...effectiveRequesterOptions].filter((option, index, options) => options.findIndex((item) => item.value === option.value) === index)
+    : effectiveRequesterOptions
 
   useEffect(() => {
     if (isReadOnly) return
     const suffix = data.is_bm ? 'BM' : 'Services'
-    setData('service_name', `${order.name ?? 'Order'} ${suffix}`)
+    if (data.service_name.trim() === '' || data.service_name === `${order.name ?? 'Order'} Services` || data.service_name === `${order.name ?? 'Order'} BM`) {
+      setData('service_name', `${order.name ?? 'Standalone Service'} ${suffix}`)
+    }
   }, [data.is_bm, order.name])
 
+  useEffect(() => {
+    if (!isStandalone || isReadOnly || !data.is_bm) return
+    setData('is_bm', false)
+  }, [isStandalone, isReadOnly, data.is_bm])
+
+  useEffect(() => {
+    if (!isStandalone || isReadOnly) return
+
+    const search = clientSearch.trim()
+    if (search.length < 2) {
+      setClientResults([])
+      setClientLoading(false)
+      return
+    }
+
+    const timeout = window.setTimeout(() => {
+      setClientLoading(true)
+      fetch(`${route('service-control.clients.search')}?q=${encodeURIComponent(search)}`)
+        .then(async (response) => await response.json())
+        .then((payload: { results?: ClientOption[] }) => {
+          setClientResults(Array.isArray(payload.results) ? payload.results : [])
+        })
+        .catch(() => {
+          setClientResults([])
+        })
+        .finally(() => {
+          setClientLoading(false)
+        })
+    }, 250)
+
+    return () => {
+      window.clearTimeout(timeout)
+    }
+  }, [isStandalone, isReadOnly, clientSearch])
+
   const setDate = (key: keyof ServiceControlFormData, dates: Date[]) => {
-    const value = dates[0] ? dates[0].toISOString().slice(0, 10) : ''
+    const value = dates[0] ? formatDate(dates[0]) : ''
     setData(key, value)
+  }
+
+  const setServiceId = (value: string) => {
+    if (data.service_id_requested_date !== '' || value.trim() === '') {
+      setData('service_id', value)
+      return
+    }
+
+    setData((currentData) => ({
+      ...currentData,
+      service_id: value,
+      service_id_requested_date: formatDate(new Date()),
+    }))
+  }
+
+  const setNewClient = (key: keyof ServiceControlFormData['new_client'], value: string) => {
+    setData((currentData) => ({
+      ...currentData,
+      client_id: '',
+      requester_type: currentData.requester_type === 'client' && String(currentData.requester_id) === String(currentData.client_id) ? '' : currentData.requester_type,
+      requester_id: currentData.requester_type === 'client' && String(currentData.requester_id) === String(currentData.client_id) ? '' : currentData.requester_id,
+      requester_role: currentData.requester_type === 'client' && String(currentData.requester_id) === String(currentData.client_id) ? '' : currentData.requester_role,
+      new_client: {
+        ...currentData.new_client,
+        [key]: value,
+      },
+    }))
+    setSelectedClientLabel('')
+  }
+
+  const selectClient = (client: ClientOption) => {
+    setData((currentData) => ({
+      ...currentData,
+      client_id: client.id,
+      requester_type: 'client',
+      requester_id: client.id,
+      requester_role: 'client',
+      new_client: {
+        name: '',
+        phone: '',
+        email: '',
+        other_phone: '',
+        secondary_email: '',
+      },
+    }))
+    setSelectedClientLabel(client.label)
+    setClientSearch('')
+    setClientResults([])
+  }
+
+  const clearSelectedClient = () => {
+    setData((currentData) => ({
+      ...currentData,
+      client_id: '',
+      requester_type: currentData.requester_type === 'client' && String(currentData.requester_id) === String(currentData.client_id) ? '' : currentData.requester_type,
+      requester_id: currentData.requester_type === 'client' && String(currentData.requester_id) === String(currentData.client_id) ? '' : currentData.requester_id,
+      requester_role: currentData.requester_type === 'client' && String(currentData.requester_id) === String(currentData.client_id) ? '' : currentData.requester_role,
+    }))
+    setSelectedClientLabel('')
   }
 
   const dateField = (key: keyof ServiceControlFormData, label: string) => (
@@ -158,7 +302,7 @@ export default function ServiceControlForm ({
   const assigneeValue = data.assignee_type && data.assignee_id && data.assignee_role
     ? `${data.assignee_type}:${data.assignee_id}:${data.assignee_role}`
     : ''
-  const selectedRequester = effectiveRequesterOptions.find((option) => option.value === requesterValue) ?? null
+  const selectedRequester = requesterOptionsWithStandaloneClient.find((option) => option.value === requesterValue) ?? null
   const selectedAssignee = effectiveAssigneeOptions.find((option) => option.value === assigneeValue) ?? null
   const [localRequester, setLocalRequester] = useState<PartyOption | null>(selectedRequester)
   const [localAssignee, setLocalAssignee] = useState<PartyOption | null>(selectedAssignee)
@@ -179,9 +323,23 @@ export default function ServiceControlForm ({
 
   const applyParty = (prefix: 'requester' | 'assignee', option: PartyOption | null) => {
     const [type = '', id = '', role = ''] = option?.value?.split(':') ?? []
-    setData(`${prefix}_type` as keyof ServiceControlFormData, type)
-    setData(`${prefix}_id` as keyof ServiceControlFormData, id)
-    setData(`${prefix}_role` as keyof ServiceControlFormData, role)
+
+    if (prefix === 'requester') {
+      setData((currentData) => ({
+        ...currentData,
+        requester_type: type,
+        requester_id: id,
+        requester_role: role,
+      }))
+      return
+    }
+
+    setData((currentData) => ({
+      ...currentData,
+      assignee_type: type,
+      assignee_id: id,
+      assignee_role: role,
+    }))
   }
 
   return (
@@ -191,7 +349,10 @@ export default function ServiceControlForm ({
       actions={
         <div className="flex flex-wrap items-center gap-2">
           <Link href={route('service-control.index')} className="btn btn-outline-primary">Back</Link>
-          <Link href={route('frontdesk.order_view', { id: order.id })} className="btn btn-outline-info">View Order</Link>
+          {order.id && <Link href={route('frontdesk.order_view', { id: order.id })} className="btn btn-outline-info">View Order</Link>}
+          {mode === 'edit' && onDelete && (
+            <button type="button" className="btn btn-outline-danger" onClick={onDelete}>Delete</button>
+          )}
           {mode === 'show' && currentRecord && (
             <Link href={route('service-control.edit', currentRecord.id)} className="btn btn-primary">Edit Service Control</Link>
           )}
@@ -205,7 +366,9 @@ export default function ServiceControlForm ({
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <h2 className="text-lg font-semibold text-slate-800">{order.name}</h2>
-              <p className="text-sm text-slate-500">Order #{order.order_number ?? 'N/A'}{order.order_type ? ` · ${humanize(order.order_type)}` : ''}</p>
+              <p className="text-sm text-slate-500">
+                {order.id ? `Order #${order.order_number ?? 'N/A'}${order.order_type ? ` · ${humanize(order.order_type)}` : ''}` : 'Unlinked service'}
+              </p>
             </div>
             <div className="flex flex-wrap gap-2">
               <span className="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-sky-700">Today {order.today_date ?? 'N/A'}</span>
@@ -247,10 +410,95 @@ export default function ServiceControlForm ({
         </div>
 
         <form onSubmit={onSubmit} className="panel space-y-6">
-          <label className="inline-flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
-            <input type="checkbox" checked={Boolean(data.is_bm)} onChange={(event) => { setData('is_bm', event.target.checked) }} disabled={isReadOnly} className="form-checkbox" />
-            <span className="text-sm font-medium text-slate-700">BM</span>
-          </label>
+          {isStandalone && (
+            <div className="space-y-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
+              <div>
+                <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Client</h3>
+                <p className="mt-1 text-xs text-slate-400">Search an existing client or enter the client data below.</p>
+              </div>
+
+              {selectedClientLabel ? (
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-emerald-200 bg-white px-4 py-3">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600">Selected Client</p>
+                    <p className="mt-1 text-sm font-medium text-slate-700">{selectedClientLabel}</p>
+                  </div>
+                  {!isReadOnly && (
+                    <button type="button" onClick={clearSelectedClient} className="btn btn-outline-secondary">
+                      Change
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <>
+                  {!isReadOnly && (
+                    <div className="relative">
+                      <label htmlFor="client_search" className="text-sm font-semibold text-slate-700">Search Client</label>
+                      <input
+                        id="client_search"
+                        type="text"
+                        value={clientSearch}
+                        onChange={(event) => { setClientSearch(event.target.value) }}
+                        className="form-input mt-1"
+                        placeholder="Name, phone, or email"
+                      />
+                      {(clientLoading || clientResults.length > 0) && (
+                        <div className="absolute z-30 mt-1 max-h-64 w-full overflow-auto rounded-lg border border-slate-200 bg-white shadow-lg">
+                          {clientLoading && <div className="px-4 py-3 text-sm text-slate-500">Searching...</div>}
+                          {!clientLoading && clientResults.map((client) => (
+                            <button
+                              key={client.id}
+                              type="button"
+                              onClick={() => { selectClient(client) }}
+                              className="block w-full px-4 py-3 text-left text-sm hover:bg-slate-50"
+                            >
+                              <span className="font-medium text-slate-700">{client.name ?? 'Client'}</span>
+                              <span className="block text-xs text-slate-400">{client.phone ?? client.email ?? 'No contact'}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                    <div>
+                      <label htmlFor="new_client_name" className="text-sm font-semibold text-slate-700">Client Name</label>
+                      <input id="new_client_name" type="text" value={data.new_client.name} onChange={(event) => { setNewClient('name', event.target.value) }} disabled={isReadOnly} className="form-input mt-1" />
+                      <FieldError message={errors['new_client.name']} />
+                    </div>
+                    <div>
+                      <label htmlFor="new_client_phone" className="text-sm font-semibold text-slate-700">Client Phone</label>
+                      <input id="new_client_phone" type="text" value={data.new_client.phone} onChange={(event) => { setNewClient('phone', event.target.value) }} disabled={isReadOnly} className="form-input mt-1" />
+                      <FieldError message={errors['new_client.phone']} />
+                    </div>
+                    <div>
+                      <label htmlFor="new_client_email" className="text-sm font-semibold text-slate-700">Client Email</label>
+                      <input id="new_client_email" type="email" value={data.new_client.email} onChange={(event) => { setNewClient('email', event.target.value) }} disabled={isReadOnly} className="form-input mt-1" />
+                      <FieldError message={errors['new_client.email']} />
+                    </div>
+                    <div>
+                      <label htmlFor="new_client_other_phone" className="text-sm font-semibold text-slate-700">Other Phone</label>
+                      <input id="new_client_other_phone" type="text" value={data.new_client.other_phone} onChange={(event) => { setNewClient('other_phone', event.target.value) }} disabled={isReadOnly} className="form-input mt-1" />
+                      <FieldError message={errors['new_client.other_phone']} />
+                    </div>
+                    <div>
+                      <label htmlFor="new_client_secondary_email" className="text-sm font-semibold text-slate-700">Secondary Email</label>
+                      <input id="new_client_secondary_email" type="email" value={data.new_client.secondary_email} onChange={(event) => { setNewClient('secondary_email', event.target.value) }} disabled={isReadOnly} className="form-input mt-1" />
+                      <FieldError message={errors['new_client.secondary_email']} />
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {!isStandalone && (
+            <label className="inline-flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+              <input type="checkbox" checked={Boolean(data.is_bm)} onChange={(event) => { setData('is_bm', event.target.checked) }} disabled={isReadOnly} className="form-checkbox" />
+              <span className="text-sm font-medium text-slate-700">BM</span>
+            </label>
+          )}
 
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             <div>
@@ -262,7 +510,7 @@ export default function ServiceControlForm ({
               <>
                 <div>
                   <label htmlFor="service_id" className="text-sm font-semibold text-slate-700">Service ID</label>
-                  <input id="service_id" type="text" value={data.service_id} onChange={(event) => { setData('service_id', event.target.value) }} disabled={isReadOnly} className="form-input mt-1" />
+                  <input id="service_id" type="text" value={data.service_id} onChange={(event) => { setServiceId(event.target.value) }} disabled={isReadOnly} className="form-input mt-1" />
                   <FieldError message={errors.service_id} />
                 </div>
                 <div>
@@ -348,7 +596,7 @@ export default function ServiceControlForm ({
                         setLocalRequester(option)
                         applyParty('requester', option)
                       }}
-                      options={effectiveRequesterOptions}
+                      options={requesterOptionsWithStandaloneClient}
                       menuPortalTarget={selectPortalTarget}
                       menuPosition="fixed"
                       styles={selectStyles}

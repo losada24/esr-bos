@@ -2,7 +2,7 @@ import { type Order } from '@/types/interfaces/order'
 import { type User } from '@/types/interfaces/user'
 
 export interface ServiceControlOrderSummary {
-  id: number
+  id?: number | null
   name: string
   order_number?: string | number | null
   order_type?: string | null
@@ -68,6 +68,7 @@ export interface ServiceControlHistory {
 
 export interface ServiceControl {
   id: number
+  client_id?: number | string | null
   service_name?: string | null
   service_id?: string | null
   is_bm?: boolean
@@ -107,8 +108,11 @@ export interface ServiceControl {
   bm_invoice_status?: string | null
   created_at?: string | null
   updated_at?: string | null
+  is_missing_service_id_overdue?: boolean
+  is_missing_eta_overdue?: boolean
   creator?: User | null
   updater?: User | null
   order?: ServiceControlOrderSummary | Order | null
+  client?: ServiceControlOrderSummary['client'] | null
   histories?: ServiceControlHistory[]
 }

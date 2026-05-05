@@ -15,6 +15,7 @@ class ServiceControl extends Model
 
     protected $fillable = [
         'order_id',
+        'client_id',
         'service_name',
         'service_id',
         'is_bm',
@@ -59,32 +60,34 @@ class ServiceControl extends Model
         'open_days',
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'requires_part' => 'boolean',
-            'requested_parts' => 'boolean',
-            'parts_available' => 'boolean',
-            'is_bm' => 'boolean',
-            'cost' => 'decimal:2',
-            'target_date' => 'date:Y-m-d',
-            'service_created_date' => 'date:Y-m-d',
-            'service_id_requested_date' => 'date:Y-m-d',
-            'eta_date' => 'date:Y-m-d',
-            'parts_received_date' => 'date:Y-m-d',
-            'part_delivered_date' => 'date:Y-m-d',
-            'scheduled_date' => 'date:Y-m-d',
-            'executed_date' => 'date:Y-m-d',
-            'opened_at' => 'date:Y-m-d',
-            'closed_at' => 'date:Y-m-d',
-            'bm_requested_date' => 'date:Y-m-d',
-            'bm_pickup_date' => 'date:Y-m-d',
-        ];
-    }
+    protected $casts = [
+        'requires_part' => 'boolean',
+        'requested_parts' => 'boolean',
+        'parts_available' => 'boolean',
+        'is_bm' => 'boolean',
+        'cost' => 'decimal:2',
+        'target_date' => 'date:Y-m-d',
+        'service_created_date' => 'date:Y-m-d',
+        'service_id_requested_date' => 'date:Y-m-d',
+        'eta_date' => 'date:Y-m-d',
+        'parts_received_date' => 'date:Y-m-d',
+        'part_delivered_date' => 'date:Y-m-d',
+        'scheduled_date' => 'date:Y-m-d',
+        'executed_date' => 'date:Y-m-d',
+        'opened_at' => 'date:Y-m-d',
+        'closed_at' => 'date:Y-m-d',
+        'bm_requested_date' => 'date:Y-m-d',
+        'bm_pickup_date' => 'date:Y-m-d',
+    ];
 
     public function order(): BelongsTo
     {
         return $this->belongsTo(Order::class);
+    }
+
+    public function client(): BelongsTo
+    {
+        return $this->belongsTo(Client::class);
     }
 
     public function creator(): BelongsTo

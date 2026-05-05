@@ -1,5 +1,7 @@
 import { Head, Link, router } from '@inertiajs/react'
 import { useState } from 'react'
+import EditIcon from '@/Components/Icons/EditIcon'
+import DeleteIcon from '@/Components/Icons/DeleteIcon'
 import AuthenticatedCalendarLayout from '@/Layouts/AuthenticatedCalendarLayout'
 import { type PageProps } from '@/types'
 
@@ -22,9 +24,20 @@ type Props = PageProps & {
 
 export default function Index ({ auth, materials, filters }: Props) {
   const [search, setSearch] = useState(filters.search ?? '')
+  const exportQuery = search.trim() !== ''
+    ? `?${new URLSearchParams({ search }).toString()}`
+    : ''
 
   const applyFilters = () => {
     router.get(route('stock-material.index'), { search }, { preserveState: true, replace: true })
+  }
+
+  const destroy = (material: Material) => {
+    if (!window.confirm('Are you sure you want to delete this stock material?')) return
+
+    router.delete(route('stock-material.destroy', material.id), {
+      preserveScroll: true,
+    })
   }
 
   return (
@@ -36,6 +49,22 @@ export default function Index ({ auth, materials, filters }: Props) {
         <div className="flex flex-wrap items-center gap-2">
           <input type="text" value={search} onChange={(event) => { setSearch(event.target.value) }} placeholder="Search materials..." className="form-input w-56" />
           <button type="button" className="btn btn-primary" onClick={applyFilters}>Apply</button>
+          <a
+            className="btn btn-outline-primary"
+            href={route('stock-material.pdf') + exportQuery}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Print PDF
+          </a>
+          <a
+            className="btn btn-outline-primary"
+            href={route('stock-material.excel') + exportQuery}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Export Excel
+          </a>
           <Link href={route('stock-material.create')} className="btn btn-outline-primary">New Material</Link>
         </div>
       }
@@ -75,7 +104,14 @@ export default function Index ({ auth, materials, filters }: Props) {
                   <td className="px-4 py-4 align-top">{material.quote_id ?? 'N/A'}</td>
                   <td className="px-4 py-4 align-top">{material.quote_id_received_date ?? 'N/A'}</td>
                   <td className="px-4 py-4 align-top">
-                    <Link href={route('stock-material.edit', material.id)} className="btn btn-sm btn-outline-primary">Edit</Link>
+                    <div className="flex items-center gap-2">
+                      <Link href={route('stock-material.edit', material.id)} title="Edit">
+                        <EditIcon />
+                      </Link>
+                      <button type="button" title="Delete" onClick={() => { destroy(material) }}>
+                        <DeleteIcon />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

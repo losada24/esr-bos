@@ -22,6 +22,8 @@ export type OrderSearchResult = {
   client: string | null
   company: string | null
   owner: string | null
+  assigned_services_count?: number
+  assigned_bm_count?: number
 }
 
 type OrderGlobalSearchProps = {
@@ -29,7 +31,7 @@ type OrderGlobalSearchProps = {
   className?: string
   modules?: ModuleOption[]
   defaultModule?: string
-  onSelectOrder?: (orderId: number) => void
+  onSelectOrder?: (orderId: number, order?: OrderSearchResult) => void
 }
 
 const STATUS_SHORT_LABELS: Record<string, string> = {
@@ -130,10 +132,10 @@ const OrderGlobalSearch = ({
     }
   }, [query, module, origin, hasQuery])
 
-  const goToOrder = (orderId: number) => {
+  const goToOrder = (orderId: number, order?: OrderSearchResult) => {
     if (!orderId) return
     if (onSelectOrder) {
-      onSelectOrder(orderId)
+      onSelectOrder(orderId, order)
       setOpen(false)
       return
     }
@@ -157,7 +159,7 @@ const OrderGlobalSearch = ({
     if (event.key === 'Enter') {
       if (activeIndex >= 0 && results[activeIndex]) {
         event.preventDefault()
-        goToOrder(results[activeIndex].id)
+        goToOrder(results[activeIndex].id, results[activeIndex])
       }
       return
     }
@@ -226,7 +228,7 @@ const OrderGlobalSearch = ({
                 <button
                   key={result.id}
                   type="button"
-                  onClick={() => { goToOrder(result.id) }}
+                  onClick={() => { goToOrder(result.id, result) }}
                   className={`grid w-full grid-cols-[minmax(0,1fr)_auto] items-start gap-3 px-4 py-2 text-left transition hover:bg-slate-50 dark:hover:bg-white/5 ${index === activeIndex ? 'bg-slate-50 dark:bg-white/5' : ''}`}
                 >
                   <div className="min-w-0">

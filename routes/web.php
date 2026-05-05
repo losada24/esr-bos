@@ -147,12 +147,31 @@ Route::middleware('auth')->group(function () {
       ->name('service-control.excel')
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value .'|'. RoleEnum::SERVICE_MANAGER->value]);
 
-    Route::resource('service-control', ServiceControlController::class)
-      ->except(['destroy'])
+    Route::get('service-control/calendar', [ServiceControlController::class, 'calendar'])
+      ->name('service-control.calendar')
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value .'|'. RoleEnum::SERVICE_MANAGER->value .'|'. RoleEnum::SERVICE->value]);
+
+    Route::get('service-control/calendar/events/{year}/{month}', [ServiceControlController::class, 'calendarEvents'])
+      ->name('service-control.calendar.events')
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value .'|'. RoleEnum::SERVICE_MANAGER->value .'|'. RoleEnum::SERVICE->value]);
+
+    Route::get('service-control/clients/search', [ServiceControlController::class, 'searchClients'])
+      ->name('service-control.clients.search')
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value .'|'. RoleEnum::SERVICE_MANAGER->value]);
 
+    Route::resource('service-control', ServiceControlController::class)
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value .'|'. RoleEnum::SERVICE_MANAGER->value]);
+
+    Route::get('stock-material/pdf', [StockMaterialController::class, 'pdf'])
+      ->name('stock-material.pdf')
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value .'|'. RoleEnum::SERVICE_MANAGER->value .'|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::FRONTDESK_ADMIN->value]);
+
+    Route::get('stock-material/excel', [StockMaterialController::class, 'excel'])
+      ->name('stock-material.excel')
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value .'|'. RoleEnum::SERVICE_MANAGER->value .'|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::FRONTDESK_ADMIN->value]);
+
     Route::resource('stock-material', StockMaterialController::class)
-      ->except(['show', 'destroy'])
+      ->except(['show'])
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value .'|'. RoleEnum::SERVICE_MANAGER->value .'|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::FRONTDESK_ADMIN->value]);
 
     Route::resource('order', OrderController::class)

@@ -23,14 +23,11 @@ class StockMaterial extends Model
         'updated_by',
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'cost' => 'decimal:2',
-            'requested_date' => 'date:Y-m-d',
-            'quote_id_received_date' => 'date:Y-m-d',
-        ];
-    }
+    protected $casts = [
+        'cost' => 'decimal:2',
+        'requested_date' => 'date:Y-m-d',
+        'quote_id_received_date' => 'date:Y-m-d',
+    ];
 
     public function creator(): BelongsTo
     {
