@@ -70,12 +70,12 @@
 <table>
     <thead>
         <tr>
-            <td class="header" colspan="16">
+            <td class="header" colspan="18">
                 Commission Period {{ $period['label'] }} ({{ $period['start_date'] }} to {{ $period['end_date'] }})
             </td>
         </tr>
         <tr class="meta">
-            <td colspan="16">
+            <td colspan="18">
                 Status: {{ $period['status'] }} |
                 Closed At: {{ $period['closed_at'] ?? '-' }} |
                 Payments: {{ $summary['payments_count'] ?? 0 }} |
@@ -87,7 +87,7 @@
         </tr>
         @if ($selectedBeneficiary)
             <tr class="meta">
-                <td colspan="16">
+                <td colspan="18">
                     Beneficiary Filter: {{ $selectedBeneficiary['beneficiary_name'] ?? '-' }}
                     ({{ $selectedBeneficiary['beneficiary_relation'] ?? '-' }})
                 </td>
@@ -104,8 +104,10 @@
             <th>Base</th>
             <th>Percentage</th>
             <th>Total Commission</th>
+            <th>Pending</th>
             <th>Payment Type</th>
-            <th>Payment</th>
+            <th>Paid Accumulated</th>
+            <th>Payment To Pay</th>
             <th>Other Cost</th>
             <th>Total Payment</th>
             <th>Payment Status</th>
@@ -133,7 +135,9 @@
                 <td>{{ '$' . number_format((float) ($payment['commission']['base_amount_snapshot'] ?? 0), 2, '.', ',') }}</td>
                 <td>{{ isset($payment['commission']['percentage_value']) ? number_format((float) $payment['commission']['percentage_value'], 2, '.', ',') . '%' : '-' }}</td>
                 <td>{{ '$' . number_format((float) ($payment['commission']['commission_total_amount'] ?? 0), 2, '.', ',') }}</td>
+                <td>{{ '$' . number_format((float) ($payment['commission']['commission_pending_amount'] ?? 0), 2, '.', ',') }}</td>
                 <td>{{ ($payment['payment_kind'] ?? 'REGULAR') === 'EXTRA_ADJUSTMENT' ? 'Extra Adjustment' : 'Regular' }}</td>
+                <td>{{ '$' . number_format((float) ($payment['commission']['commission_paid_amount'] ?? 0), 2, '.', ',') }}</td>
                 <td>{{ '$' . number_format((float) ($payment['payment_base_amount'] ?? 0), 2, '.', ',') }}</td>
                 <td>{{ '$' . number_format((float) ($payment['payment_other_cost_amount'] ?? 0), 2, '.', ',') }}</td>
                 <td>{{ '$' . number_format((float) ($payment['payment_total_to_pay'] ?? 0), 2, '.', ',') }}</td>
@@ -142,8 +146,25 @@
             </tr>
         @empty
             <tr>
-                <td colspan="16">No payments snapshot available for this period.</td>
+                <td colspan="18">No payments snapshot available for this period.</td>
             </tr>
         @endforelse
     </tbody>
+    <tfoot>
+        <tr class="meta">
+            <td colspan="5" style="text-align: right;">Total</td>
+            <td>{{ '$' . number_format((float) collect($payments)->sum(fn ($payment) => (float) ($payment['order']['project_amount'] ?? 0)), 2, '.', ',') }}</td>
+            <td>{{ '$' . number_format((float) collect($payments)->sum(fn ($payment) => (float) ($payment['commission']['fee_amount_snapshot'] ?? 0)), 2, '.', ',') }}</td>
+            <td>{{ '$' . number_format((float) collect($payments)->sum(fn ($payment) => (float) ($payment['commission']['base_amount_snapshot'] ?? 0)), 2, '.', ',') }}</td>
+            <td></td>
+            <td>{{ '$' . number_format((float) collect($payments)->sum(fn ($payment) => (float) ($payment['commission']['commission_total_amount'] ?? 0)), 2, '.', ',') }}</td>
+            <td>{{ '$' . number_format((float) collect($payments)->sum(fn ($payment) => (float) ($payment['commission']['commission_pending_amount'] ?? 0)), 2, '.', ',') }}</td>
+            <td></td>
+            <td>{{ '$' . number_format((float) collect($payments)->sum(fn ($payment) => (float) ($payment['commission']['commission_paid_amount'] ?? 0)), 2, '.', ',') }}</td>
+            <td>{{ '$' . number_format((float) collect($payments)->sum(fn ($payment) => (float) ($payment['payment_base_amount'] ?? 0)), 2, '.', ',') }}</td>
+            <td>{{ '$' . number_format((float) collect($payments)->sum(fn ($payment) => (float) ($payment['payment_other_cost_amount'] ?? 0)), 2, '.', ',') }}</td>
+            <td>{{ '$' . number_format((float) collect($payments)->sum(fn ($payment) => (float) ($payment['payment_total_to_pay'] ?? 0)), 2, '.', ',') }}</td>
+            <td colspan="2"></td>
+        </tr>
+    </tfoot>
 </table>

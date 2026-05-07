@@ -46,6 +46,11 @@
     .left-cell {
         text-align: left;
     }
+
+    .totals {
+        font-weight: bold;
+        background-color: #f7f7f7;
+    }
 </style>
 
 <table>
@@ -85,4 +90,11 @@
             </tr>
         @endforelse
     </tbody>
+    <tfoot>
+        <tr class="totals">
+            <td colspan="3" style="text-align: right;">Total</td>
+            <td>{{ '$' . number_format((float) collect($materials)->sum(fn ($material) => (float) ($material['cost'] ?? 0)), 2, '.', ',') }}</td>
+            <td colspan="3"></td>
+        </tr>
+    </tfoot>
 </table>

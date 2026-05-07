@@ -22,6 +22,10 @@
     background-color: #f0f0f0;
     font-weight: bold;
   }
+  .totals {
+    font-weight: bold;
+    background-color: #f7f7f7;
+  }
 </style>
 
 <div class="meta">Replanned Orders Summary</div>
@@ -47,6 +51,12 @@
       </tr>
     @endforelse
   </tbody>
+  <tfoot>
+    <tr class="totals">
+      <td>Total</td>
+      <td>{{ $totals['total'] }}</td>
+    </tr>
+  </tfoot>
 </table>
 
 <table>

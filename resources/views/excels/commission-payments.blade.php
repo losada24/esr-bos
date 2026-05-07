@@ -1,17 +1,17 @@
 <table>
     <thead>
       <tr>
-        <td colspan="18" style="font-weight: bold; font-size: 16px; text-align: left; background-color: #f0f0f0;">
+        <td colspan="19" style="font-weight: bold; font-size: 16px; text-align: left; background-color: #f0f0f0;">
             Commission Payments Report ({{ $startDate }} to {{ $endDate }})
         </td>
       </tr>
       <tr>
-        <td colspan="18" style="font-weight: bold;">
+        <td colspan="19" style="font-weight: bold;">
           Accounting Status: {{ $selectedStatus ?? 'ALL' }} | Commission Status: {{ $selectedCommissionStatus ?? 'ALL' }} | Beneficiary: {{ $beneficiarySearch !== '' ? $beneficiarySearch : 'ALL' }}
         </td>
       </tr>
       <tr>
-        <td colspan="18" style="font-weight: bold;">
+        <td colspan="19" style="font-weight: bold;">
           Review Payments: {{ count($reviewPayments) }} | Total Review Amount: {{ '$' . number_format((float) collect($reviewPayments)->sum('payment_amount'), 2, '.', ',') }}
         </td>
       </tr>
@@ -31,7 +31,8 @@
           <th>Total Commission</th>
           <th>Pending</th>
           <th>Payment Type</th>
-          <th>Payment</th>
+          <th>Paid Accumulated</th>
+          <th>Payment To Pay</th>
           <th>Other Cost</th>
           <th>Total Payment</th>
           <th>Payment Status</th>
@@ -54,6 +55,7 @@
             <td>{{ '$' . number_format((float) $payment['commission_total'], 2, '.', ',') }}</td>
             <td>{{ '$' . number_format((float) $payment['commission_pending'], 2, '.', ',') }}</td>
             <td>{{ ($payment['payment_kind'] ?? 'REGULAR') === 'EXTRA_ADJUSTMENT' ? 'Extra Adjustment' : 'Regular' }}</td>
+            <td>{{ '$' . number_format((float) $payment['commission_paid'], 2, '.', ',') }}</td>
             <td>{{ '$' . number_format((float) $payment['payment_base_amount'], 2, '.', ',') }}</td>
             <td>{{ '$' . number_format((float) $payment['payment_other_cost_amount'], 2, '.', ',') }}</td>
             <td>{{ '$' . number_format((float) $payment['payment_amount'], 2, '.', ',') }}</td>
@@ -61,7 +63,7 @@
         </tr>
       @empty
         <tr>
-          <td colspan="18">No review payments found for the selected filters.</td>
+          <td colspan="19">No review payments found for the selected filters.</td>
         </tr>
       @endforelse
     </tbody>

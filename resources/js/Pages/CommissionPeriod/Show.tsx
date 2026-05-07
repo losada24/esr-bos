@@ -58,6 +58,7 @@ type PeriodShowProps = PageProps & {
           financing_fee_amount?: number
           base_amount_snapshot?: number
           commission_total_amount?: number
+          commission_paid_amount?: number
           commission_pending_amount?: number
           beneficiary_name: string
           beneficiary_relation: string
@@ -223,7 +224,8 @@ export default function CommissionPeriodShow ({ auth, period }: PeriodShowProps)
                 <th className="px-4 py-3">Total Commission</th>
                 <th className="px-4 py-3">Pending</th>
                 <th className="px-4 py-3">Payment Type</th>
-                <th className="px-4 py-3">Payment</th>
+                <th className="px-4 py-3">Paid Accumulated</th>
+                <th className="px-4 py-3">Payment To Pay</th>
                 <th className="px-4 py-3">Other Cost</th>
                 <th className="px-4 py-3">Total Payment</th>
                 <th className="px-4 py-3">Payment Status</th>
@@ -236,7 +238,7 @@ export default function CommissionPeriodShow ({ auth, period }: PeriodShowProps)
             <tbody>
               {payments.length === 0 && (
                 <tr>
-                  <td className="border-t px-4 py-4 text-center" colSpan={showPaymentActions ? 20 : 19}>
+                  <td className="border-t px-4 py-4 text-center" colSpan={showPaymentActions ? 21 : 20}>
                     No payments available for this period.
                   </td>
                 </tr>
@@ -271,6 +273,7 @@ export default function CommissionPeriodShow ({ auth, period }: PeriodShowProps)
                   <td className="border-t px-4 py-4">{formatCurrency(payment.commission.commission_total_amount ?? 0)}</td>
                   <td className="border-t px-4 py-4">{formatCurrency(payment.commission.commission_pending_amount ?? 0)}</td>
                   <td className="border-t px-4 py-4">{paymentKindLabel(payment.payment_kind)}</td>
+                  <td className="border-t px-4 py-4">{formatCurrency(payment.commission.commission_paid_amount ?? 0)}</td>
                   <td className="border-t px-4 py-4">{formatCurrency(payment.payment_base_amount ?? 0)}</td>
                   <td className="border-t px-4 py-4">{formatCurrency(payment.payment_other_cost_amount ?? 0)}</td>
                   <td className="border-t px-4 py-4">{formatCurrency(payment.payment_total_to_pay)}</td>
