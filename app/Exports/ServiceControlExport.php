@@ -5,6 +5,7 @@ namespace App\Exports;
 use Illuminate\Contracts\View\View;
 use Maatwebsite\Excel\Concerns\FromView;
 use Maatwebsite\Excel\Concerns\WithStyles;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
@@ -25,8 +26,13 @@ class ServiceControlExport implements FromView, WithStyles
     {
         $isBm = ($this->data['filters']['type'] ?? 'services') === 'bm';
         $lastColumn = $isBm ? 'I' : 'T';
+        $lastColumnIndex = Coordinate::columnIndexFromString($lastColumn);
 
         $sheet->setAutoFilter("A4:{$lastColumn}4");
+
+        for ($column = 1; $column <= $lastColumnIndex; $column++) {
+            $sheet->getColumnDimension(Coordinate::stringFromColumnIndex($column))->setAutoSize(true);
+        }
 
         return [
             "A1:{$lastColumn}1" => [

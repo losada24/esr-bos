@@ -2,11 +2,15 @@
 
 namespace App\Exports;
 
+use App\Exports\Concerns\AppliesServiceExcelStyle;
 use Illuminate\Contracts\View\View;
 use Maatwebsite\Excel\Concerns\FromView;
+use Maatwebsite\Excel\Concerns\WithEvents;
 
-class OverdueStageOrdersExport implements FromView
+class OverdueStageOrdersExport implements FromView, WithEvents
 {
+    use AppliesServiceExcelStyle;
+
     public array $data;
 
     public function __construct(array $data)

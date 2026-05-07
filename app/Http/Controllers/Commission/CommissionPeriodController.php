@@ -174,12 +174,14 @@ class CommissionPeriodController extends Controller
     public function excel(Request $request, CommissionPeriod $commissionPeriod)
     {
         [$beneficiarySourceType, $beneficiarySourceId] = $this->resolveBeneficiaryFilter($request);
+        $periodPayload = $this->buildShowPayload($commissionPeriod, $beneficiarySourceType, $beneficiarySourceId);
+        $selectedBeneficiaryName = $periodPayload['selected_beneficiary']['beneficiary_name'] ?? null;
 
         return Excel::download(
             new CommissionPeriodExport([
-                'period' => $this->buildShowPayload($commissionPeriod, $beneficiarySourceType, $beneficiarySourceId),
+                'period' => $periodPayload,
             ]),
-            $this->buildExportFileName('xlsx', $commissionPeriod, $beneficiarySourceType, $beneficiarySourceId),
+            $this->buildExportFileName('xlsx', $commissionPeriod, $beneficiarySourceType, $beneficiarySourceId, $selectedBeneficiaryName),
             \Maatwebsite\Excel\Excel::XLSX
         );
     }
@@ -590,15 +592,27 @@ class CommissionPeriodController extends Controller
         string $extension,
         CommissionPeriod $commissionPeriod,
         ?string $beneficiarySourceType,
-        ?string $beneficiarySourceId
+        ?string $beneficiarySourceId,
+        ?string $beneficiaryName = null
     ): string {
-        $fileName = 'commission-period-' . $commissionPeriod->id;
+        if ($beneficiarySourceType !== null && $beneficiarySourceId !== null && $beneficiaryName !== null) {
+            return $this->sanitizeExportFileName($commissionPeriod->label . ' - ' . $beneficiaryName) . '.' . $extension;
+        }
 
+        $fileName = 'commission-period-' . $commissionPeriod->id;
         if ($beneficiarySourceType !== null && $beneficiarySourceId !== null) {
             $fileName .= '-beneficiary-' . strtolower($beneficiarySourceType) . '-' . $beneficiarySourceId;
         }
 
         return $fileName . '.' . $extension;
+    }
+
+    private function sanitizeExportFileName(string $fileName): string
+    {
+        $fileName = trim((string) preg_replace('/[\\\\\/:*?"<>|]+/', '-', $fileName));
+        $fileName = trim((string) preg_replace('/\s+/', ' ', $fileName));
+
+        return $fileName !== '' ? $fileName : 'commission-period';
     }
 
     private function resolveAccountingStatusValue(Order $order): ?string

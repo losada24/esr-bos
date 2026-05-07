@@ -2,15 +2,20 @@
 
 namespace App\Exports;
 
+use App\Exports\Concerns\AppliesServiceExcelStyle;
 use Illuminate\Contracts\View\View;
 use Maatwebsite\Excel\Concerns\FromView;
+use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Concerns\WithStyles;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class StockMaterialExport implements FromView, WithStyles
+class StockMaterialExport implements FromView, WithStyles, WithEvents
 {
+    use AppliesServiceExcelStyle;
+
     public function __construct(
         private readonly array $data
     ) {
@@ -24,6 +29,10 @@ class StockMaterialExport implements FromView, WithStyles
     public function styles(Worksheet $sheet): array
     {
         $sheet->setAutoFilter('A4:G4');
+
+        for ($column = 1; $column <= Coordinate::columnIndexFromString('G'); $column++) {
+            $sheet->getColumnDimension(Coordinate::stringFromColumnIndex($column))->setAutoSize(true);
+        }
 
         return [
             'A1:G1' => [
@@ -47,7 +56,7 @@ class StockMaterialExport implements FromView, WithStyles
                 ],
             ],
             'A5:G1000' => [
-                'font' => ['name' => 'Tahoma', 'size' => 9],
+                'font' => ['name' => 'Tahoma', 'size' => 8],
                 'alignment' => [
                     'vertical' => Alignment::VERTICAL_CENTER,
                     'wrapText' => true,
