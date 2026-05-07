@@ -453,21 +453,14 @@ class SalesController extends Controller
   {
     $user = auth()->user();
 
-    $activeOwners = $this->ownerListForCalendar($user);
     $allOwners = $this->ownerListForCalendarAll($user);
-    $ownerColors = $this->ownerColorMapFromList($activeOwners);
-
-    $legend = $activeOwners->map(fn ($owner) => [
-      'label' => $owner->name,
-      'color' => $ownerColors[$owner->id] ?? '#6b7280',
-    ])->values();
 
     return Inertia::render('Sales/Calendar', [
       'owners' => $allOwners->map(fn ($owner) => [
         'id' => $owner->id,
         'name' => $owner->name,
       ])->values(),
-      'legend' => $legend,
+      'legend' => $this->salesCalendarLegend(),
     ]);
   }
 
@@ -476,11 +469,6 @@ class SalesController extends Controller
     $user = auth()->user();
     $ownerFilter = $request->query('owner');
     $calendarTimezone = (string) config('app.timezone', 'UTC');
-
-    $allowedStatuses = $this->salesStatuses();
-    if ($this->isOwnerRestricted($user)) {
-      $allowedStatuses = $this->ownerVisibleSalesStatuses();
-    }
 
     $rangeStart = Carbon::createFromDate($year, $month, 1, $calendarTimezone)
       ->startOfMonth()
@@ -491,13 +479,13 @@ class SalesController extends Controller
       ->addWeek()
       ->endOfDay();
 
-    $ordersQuery = Order::with(['client', 'owners', 'user', 'orderCompanyContacts.companyContact'])
+    $ordersQuery = Order::with(['client', 'owners', 'user', 'orderCompanyContacts.companyContact', 'orderStatus'])
       ->whereNotNull('schedule_appointment')
       ->whereBetween('schedule_appointment', [
         $rangeStart->format('Y-m-d H:i:s'),
         $rangeEnd->format('Y-m-d H:i:s'),
       ])
-      ->whereIn('status', $allowedStatuses);
+      ->whereHas('owners');
 
     if (!empty($ownerFilter) && $ownerFilter !== 'all') {
       $allowedOwnerIds = $this->ownerListForCalendarAll($user)->pluck('id')->map(fn ($id) => (string) $id)->values();
@@ -515,9 +503,7 @@ class SalesController extends Controller
       });
     }
 
-    $ownerColors = $this->ownerColorMapFromList($this->ownerListForCalendar($user));
-
-    $events = $ordersQuery->get()->map(function (Order $order) use ($ownerColors, $calendarTimezone) {
+    $events = $ordersQuery->get()->map(function (Order $order) use ($calendarTimezone) {
       $appointmentStart = Carbon::parse($order->schedule_appointment, $calendarTimezone);
       $appointmentEnd = (clone $appointmentStart)->addHour();
 
@@ -540,8 +526,6 @@ class SalesController extends Controller
       }
       $tooltip = implode(' | ', $tooltipParts);
 
-      $ownerColor = $this->colorForOwners($order->owners, $ownerColors);
-
       return [
         'order_id' => $order->id,
         'title' => $primaryLine,
@@ -549,7 +533,7 @@ class SalesController extends Controller
         // Include timezone offset to avoid DST/local parsing ambiguities in the browser.
         'start' => $appointmentStart->format(\DateTimeInterface::ATOM),
         'end' => $appointmentEnd->format(\DateTimeInterface::ATOM),
-        'color' => $ownerColor ?? $this->salesStatusColor($order->status),
+        'color' => $this->salesCalendarEventColor($order),
         'type_of_event' => $order->status,
         'text' => $order->name ?? 'Order',
         'order_name' => $order->name ?? 'Order',
@@ -601,6 +585,66 @@ class SalesController extends Controller
         OrderStatusEnum::PENDING_ASSIGNMENT->value,
       ], true)
     ));
+  }
+
+  private function salesCalendarLegend(): Collection
+  {
+    return collect([
+      [
+        'label' => 'Assigned Appointments',
+        'color' => '#facc15',
+      ],
+      [
+        'label' => 'Completed Appointments',
+        'color' => '#2563eb',
+      ],
+      [
+        'label' => 'Closed Appointments',
+        'color' => '#22c55e',
+      ],
+      [
+        'label' => 'Canceled Appointments',
+        'color' => '#ef4444',
+      ],
+    ]);
+  }
+
+  private function salesCalendarEventColor(Order $order): string
+  {
+    if ($this->salesCalendarHasReachedContractSigned($order)) {
+      return '#22c55e';
+    }
+
+    if ($order->status === OrderStatusEnum::ESTIMATE_APPT_SCHEDULE->value) {
+      return '#facc15';
+    }
+
+    if ($order->status === OrderStatusEnum::LOST_CONTRACT->value) {
+      return (float) ($order->project_amount ?? 0) > 0.0 ? '#22c55e' : '#ef4444';
+    }
+
+    return [
+      OrderStatusEnum::FOLLOW_UP->value => '#2563eb',
+      OrderStatusEnum::FOLLOW_UP_PROJECTS->value => '#2563eb',
+      OrderStatusEnum::STAND_BY->value => '#2563eb',
+      OrderStatusEnum::PRE_CONTRACT_APPOINTMENT->value => '#2563eb',
+      OrderStatusEnum::REQUEST_RE_SCHEDULE->value => '#f97316',
+    ][$order->status] ?? '#6b7280';
+  }
+
+  private function salesCalendarHasReachedContractSigned(Order $order): bool
+  {
+    if ($order->status === OrderStatusEnum::CONTRACT_SIGNED_BY_CLIENT->value) {
+      return true;
+    }
+
+    if ($order->relationLoaded('orderStatus')) {
+      return $order->orderStatus->contains(
+        fn ($status) => $status->status === OrderStatusEnum::CONTRACT_SIGNED_BY_CLIENT->value
+      );
+    }
+
+    return $order->hasReachedContractSigned();
   }
 
   private function isOwnerRestricted(?User $user): bool

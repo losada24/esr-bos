@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Head } from '@inertiajs/react'
+import { Head, router } from '@inertiajs/react'
 import '@mobiscroll/react/dist/css/mobiscroll.min.css'
 import { Eventcalendar, getJson, setOptions } from '@mobiscroll/react'
 import type { MbscEventcalendarView, MbscCalendarEventData } from '@mobiscroll/react'
 import AuthenticatedCalendarLayout from '@/Layouts/AuthenticatedCalendarLayout'
 import { type PageProps } from '@/types'
-import CalendarEventModal from './CalendarEventModal'
 
 setOptions({
   theme: 'ios',
@@ -34,8 +33,6 @@ export default function SalesCalendar ({ auth, owners, legend }: SalesCalendarPr
   const [eventsPerDay, setEventsPerDay] = useState<number | 'all'>(10)
   const [viewMode, setViewMode] = useState<'month' | 'week' | 'day'>('month')
   const [legendExpanded, setLegendExpanded] = useState(false)
-  const [selectedEvent, setSelectedEvent] = useState<Record<string, any> | null>(null)
-  const [showEventModal, setShowEventModal] = useState(false)
 
   const loadEvents = useCallback((date: Date) => {
     const year = date.getFullYear()
@@ -89,8 +86,9 @@ export default function SalesCalendar ({ auth, owners, legend }: SalesCalendarPr
   const handleEventClick = useCallback((args: any) => {
     const eventData = args?.event ?? null
     if (!eventData) return
-    setSelectedEvent(eventData)
-    setShowEventModal(true)
+    const orderId = eventData.order_id ?? eventData.original?.order_id
+    if (!orderId) return
+    router.visit(route('frontdesk.order_view', { id: orderId }))
   }, [])
 
   const renderEventLabelContent = useCallback((eventData: MbscCalendarEventData) => {
@@ -269,14 +267,6 @@ export default function SalesCalendar ({ auth, owners, legend }: SalesCalendarPr
           onEventClick={handleEventClick}
           renderLabelContent={renderEventLabelContent}
           renderScheduleEventContent={renderScheduleEventContent}
-        />
-        <CalendarEventModal
-          show={showEventModal}
-          event={selectedEvent}
-          onClose={() => {
-            setShowEventModal(false)
-            setSelectedEvent(null)
-          }}
         />
       </div>
     </AuthenticatedCalendarLayout>
