@@ -57,4 +57,12 @@
         </tr>
       @endforelse
     </tbody>
+    <tfoot>
+      <tr>
+        <td colspan="8" style="font-weight: bold; text-align: right; background-color: #f0f0f0;">Total</td>
+        <td style="font-weight: bold; background-color: #f0f0f0;">{{ '$' . number_format((float) $totals['total_paid'], 2, '.', ',') }}</td>
+        <td style="font-weight: bold; background-color: #f0f0f0;">{{ '$' . number_format((float) $totals['total_pending'], 2, '.', ',') }}</td>
+        <td style="font-weight: bold; background-color: #f0f0f0;">{{ '$' . number_format((float) $totals['total_commission'], 2, '.', ',') }}</td>
+      </tr>
+    </tfoot>
 </table>

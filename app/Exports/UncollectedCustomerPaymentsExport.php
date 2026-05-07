@@ -2,6 +2,7 @@
 
 namespace App\Exports;
 
+use App\Exports\Concerns\AppliesServiceExcelStyle;
 use App\Models\Biweekly;
 use App\Models\HistoryPendingPayment;
 use App\Support\UncollectedCustomerPaymentsReportBuilder;
@@ -9,9 +10,12 @@ use Carbon\Carbon;
 use Illuminate\Contracts\View\View;
 use Maatwebsite\Excel\Concerns\FromView;
 use Maatwebsite\Excel\Concerns\WithColumnFormatting;
+use Maatwebsite\Excel\Concerns\WithEvents;
 
-class UncollectedCustomerPaymentsExport implements FromView, WithColumnFormatting
+class UncollectedCustomerPaymentsExport implements FromView, WithColumnFormatting, WithEvents
 {
+    use AppliesServiceExcelStyle;
+
     public function __construct(private int $biweeklyId)
     {
     }
