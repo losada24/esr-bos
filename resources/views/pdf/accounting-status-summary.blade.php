@@ -70,4 +70,11 @@
             </tr>
         @endforelse
     </tbody>
+    <tfoot>
+        <tr class="totals">
+            <td colspan="3" style="text-align: right;">Total</td>
+            <td>{{ '$' . number_format((float) collect($rows)->sum(fn ($row) => (float) ($row['amount'] ?? 0)), 2, '.', ',') }}</td>
+            <td></td>
+        </tr>
+    </tfoot>
 </table>

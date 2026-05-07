@@ -82,4 +82,12 @@
             </tr>
         @endforelse
     </tbody>
+    <tfoot>
+        <tr class="totals">
+            <td colspan="8" style="text-align: right;">Total</td>
+            <td>{{ '$' . number_format((float) $totals['total_paid'], 2, '.', ',') }}</td>
+            <td>{{ '$' . number_format((float) $totals['total_pending'], 2, '.', ',') }}</td>
+            <td>{{ '$' . number_format((float) $totals['total_commission'], 2, '.', ',') }}</td>
+        </tr>
+    </tfoot>
 </table>

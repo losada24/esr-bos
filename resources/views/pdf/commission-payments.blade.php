@@ -31,15 +31,15 @@
 <table>
     <thead>
         <tr>
-            <td class="header" colspan="18">
+            <td class="header" colspan="19">
                 Commission Payments Report ({{ $startDate }} to {{ $endDate }})
             </td>
         </tr>
         <tr class="totals">
-            <td colspan="18">Accounting Status: {{ $selectedStatus ?? 'ALL' }} | Commission Status: {{ $selectedCommissionStatus ?? 'ALL' }} | Beneficiary: {{ $beneficiarySearch !== '' ? $beneficiarySearch : 'ALL' }}</td>
+            <td colspan="19">Accounting Status: {{ $selectedStatus ?? 'ALL' }} | Commission Status: {{ $selectedCommissionStatus ?? 'ALL' }} | Beneficiary: {{ $beneficiarySearch !== '' ? $beneficiarySearch : 'ALL' }}</td>
         </tr>
         <tr class="totals">
-            <td colspan="18">Review Payments: {{ count($reviewPayments) }} | Total Review Amount: {{ '$' . number_format((float) collect($reviewPayments)->sum('payment_amount'), 2, '.', ',') }}</td>
+            <td colspan="19">Review Payments: {{ count($reviewPayments) }} | Total Review Amount: {{ '$' . number_format((float) collect($reviewPayments)->sum('payment_amount'), 2, '.', ',') }}</td>
         </tr>
         <tr>
             <th>Accounting Status</th>
@@ -56,7 +56,8 @@
             <th>Total Commission</th>
             <th>Pending</th>
             <th>Payment Type</th>
-            <th>Payment</th>
+            <th>Paid Accumulated</th>
+            <th>Payment To Pay</th>
             <th>Other Cost</th>
             <th>Total Payment</th>
             <th>Payment Status</th>
@@ -79,6 +80,7 @@
                 <td>{{ '$' . number_format((float) $payment['commission_total'], 2, '.', ',') }}</td>
                 <td>{{ '$' . number_format((float) $payment['commission_pending'], 2, '.', ',') }}</td>
                 <td>{{ ($payment['payment_kind'] ?? 'REGULAR') === 'EXTRA_ADJUSTMENT' ? 'Extra Adjustment' : 'Regular' }}</td>
+                <td>{{ '$' . number_format((float) $payment['commission_paid'], 2, '.', ',') }}</td>
                 <td>{{ '$' . number_format((float) $payment['payment_base_amount'], 2, '.', ',') }}</td>
                 <td>{{ '$' . number_format((float) $payment['payment_other_cost_amount'], 2, '.', ',') }}</td>
                 <td>{{ '$' . number_format((float) $payment['payment_amount'], 2, '.', ',') }}</td>
@@ -86,8 +88,25 @@
             </tr>
         @empty
             <tr>
-                <td colspan="18">No review payments found for the selected filters.</td>
+                <td colspan="19">No review payments found for the selected filters.</td>
             </tr>
         @endforelse
     </tbody>
+    <tfoot>
+        <tr class="totals">
+            <td colspan="7" style="text-align: right;">Total</td>
+            <td>{{ '$' . number_format((float) collect($reviewPayments)->sum('project_amount'), 2, '.', ',') }}</td>
+            <td>{{ '$' . number_format((float) collect($reviewPayments)->sum('commission_fee'), 2, '.', ',') }}</td>
+            <td>{{ '$' . number_format((float) collect($reviewPayments)->sum('commission_base'), 2, '.', ',') }}</td>
+            <td></td>
+            <td>{{ '$' . number_format((float) collect($reviewPayments)->sum('commission_total'), 2, '.', ',') }}</td>
+            <td>{{ '$' . number_format((float) collect($reviewPayments)->sum('commission_pending'), 2, '.', ',') }}</td>
+            <td></td>
+            <td>{{ '$' . number_format((float) collect($reviewPayments)->sum('commission_paid'), 2, '.', ',') }}</td>
+            <td>{{ '$' . number_format((float) collect($reviewPayments)->sum('payment_base_amount'), 2, '.', ',') }}</td>
+            <td>{{ '$' . number_format((float) collect($reviewPayments)->sum('payment_other_cost_amount'), 2, '.', ',') }}</td>
+            <td>{{ '$' . number_format((float) collect($reviewPayments)->sum('payment_amount'), 2, '.', ',') }}</td>
+            <td></td>
+        </tr>
+    </tfoot>
 </table>
