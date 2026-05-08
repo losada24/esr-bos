@@ -2580,9 +2580,11 @@ class ReportController extends Controller
     $closedWonOrders = OrderStatus::query()
       ->select('order_id')
       ->where('status', OrderStatusEnum::CLOSED_WON->value)
+      ->whereBetween('created_at', [$startDate, $endDate])
       ->distinct();
 
     $amountExpression = 'COALESCE(orders.project_amount, 0)';
+    $estimatedCondition = $amountExpression . ' > 0';
 
     $summary = DB::query()
       ->fromSub($ownerAssignments, 'owner_assignments')
@@ -2599,9 +2601,10 @@ class ReportController extends Controller
         'users.id as owner_id',
         'users.name as owner_name',
         DB::raw('COUNT(owner_assignments.order_id) as estimate_orders'),
-        DB::raw('SUM(' . $amountExpression . ') as estimate_amount'),
-        DB::raw('SUM(CASE WHEN closed_won_orders.order_id IS NOT NULL THEN 1 ELSE 0 END) as closed_won_orders'),
-        DB::raw('SUM(CASE WHEN closed_won_orders.order_id IS NOT NULL THEN (' . $amountExpression . ') ELSE 0 END) as closed_won_amount')
+        DB::raw('SUM(CASE WHEN ' . $estimatedCondition . ' THEN 1 ELSE 0 END) as estimated_clients'),
+        DB::raw('SUM(CASE WHEN ' . $estimatedCondition . ' THEN ' . $amountExpression . ' ELSE 0 END) as estimate_amount'),
+        DB::raw('SUM(CASE WHEN ' . $estimatedCondition . ' AND closed_won_orders.order_id IS NOT NULL THEN 1 ELSE 0 END) as closed_won_orders'),
+        DB::raw('SUM(CASE WHEN ' . $estimatedCondition . ' AND closed_won_orders.order_id IS NOT NULL THEN (' . $amountExpression . ') ELSE 0 END) as closed_won_amount')
       )
       ->groupBy('users.id', 'users.name')
       ->orderBy('users.name')
@@ -2616,6 +2619,16 @@ class ReportController extends Controller
       ->whereNull('orders.deleted_at')
       ->count();
 
+    $totalEstimatedClients = DB::query()
+      ->fromSub($ownerAssignments, 'owner_assignments')
+      ->joinSub($estimateOrdersInRange, 'estimate_orders_in_range', function ($join) {
+        $join->on('estimate_orders_in_range.order_id', '=', 'owner_assignments.order_id');
+      })
+      ->join('orders', 'orders.id', '=', 'owner_assignments.order_id')
+      ->whereNull('orders.deleted_at')
+      ->whereRaw($estimatedCondition)
+      ->count();
+
     $totalEstimateAmount = DB::query()
       ->fromSub($ownerAssignments, 'owner_assignments')
       ->joinSub($estimateOrdersInRange, 'estimate_orders_in_range', function ($join) {
@@ -2623,6 +2636,7 @@ class ReportController extends Controller
       })
       ->join('orders', 'orders.id', '=', 'owner_assignments.order_id')
       ->whereNull('orders.deleted_at')
+      ->whereRaw($estimatedCondition)
       ->select(DB::raw('SUM(' . $amountExpression . ') as total_estimate_amount'))
       ->value('total_estimate_amount') ?? 0;
 
@@ -2636,6 +2650,7 @@ class ReportController extends Controller
         $join->on('closed_won_orders.order_id', '=', 'orders.id');
       })
       ->whereNull('orders.deleted_at')
+      ->whereRaw($estimatedCondition)
       ->count();
 
     $totalClosedWonAmount = DB::query()
@@ -2648,17 +2663,18 @@ class ReportController extends Controller
         $join->on('closed_won_orders.order_id', '=', 'orders.id');
       })
       ->whereNull('orders.deleted_at')
+      ->whereRaw($estimatedCondition)
       ->select(DB::raw('SUM(' . $amountExpression . ') as total_closed_won_amount'))
       ->value('total_closed_won_amount') ?? 0;
 
     $summary = $summary->map(function ($item) {
-      $estimateOrders = (int) $item->estimate_orders;
+      $estimatedClients = (int) $item->estimated_clients;
       $estimateAmount = (float) $item->estimate_amount;
       $closedWonOrders = (int) $item->closed_won_orders;
       $closedWonAmount = (float) $item->closed_won_amount;
 
-      $item->closed_won_orders_percentage = $estimateOrders > 0
-        ? round(($closedWonOrders / $estimateOrders) * 100, 2)
+      $item->closed_won_orders_percentage = $estimatedClients > 0
+        ? round(($closedWonOrders / $estimatedClients) * 100, 2)
         : 0.0;
       $item->closed_won_amount_percentage = $estimateAmount > 0
         ? round(($closedWonAmount / $estimateAmount) * 100, 2)
@@ -2667,8 +2683,8 @@ class ReportController extends Controller
       return $item;
     });
 
-    $totalClosedWonOrdersPercentage = $totalEstimateOrders > 0
-      ? round(($totalClosedWonOrders / $totalEstimateOrders) * 100, 2)
+    $totalClosedWonOrdersPercentage = $totalEstimatedClients > 0
+      ? round(($totalClosedWonOrders / $totalEstimatedClients) * 100, 2)
       : 0.0;
     $totalClosedWonAmountPercentage = $totalEstimateAmount > 0
       ? round(($totalClosedWonAmount / $totalEstimateAmount) * 100, 2)
@@ -2677,6 +2693,7 @@ class ReportController extends Controller
     return [
       'summary' => $summary,
       'totalEstimateOrders' => $totalEstimateOrders,
+      'totalEstimatedClients' => $totalEstimatedClients,
       'totalEstimateAmount' => $totalEstimateAmount,
       'totalClosedWonOrders' => $totalClosedWonOrders,
       'totalClosedWonAmount' => $totalClosedWonAmount,

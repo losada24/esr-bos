@@ -5,12 +5,13 @@
 <table>
     <thead>
       <tr>
-        <td colspan="7" style="font-weight: bold; font-size: 16px; text-align: left; background-color: #f0f0f0;">
+        <td colspan="8" style="font-weight: bold; font-size: 16px; text-align: left; background-color: #f0f0f0;">
             Owner Report ({{ $startDate }} to {{ $endDate }})
         </td>
       </tr>
       <tr>
         <td colspan="2" style="font-weight: bold;">Total Assigned Clients: {{ $totalEstimateOrders }}</td>
+        <td style="font-weight: bold;">Total Estimated Clients: {{ $totalEstimatedClients }}</td>
         <td style="font-weight: bold;">Total Estimate Amount (Project Amount): {{ '$' . number_format($totalEstimateAmount, 2, '.', ',') }}</td>
         <td style="font-weight: bold;">Total Closed Won Orders: {{ $totalClosedWonOrders }}</td>
         <td style="font-weight: bold;">% Closed Won Orders: {{ $formatPercentage($totalClosedWonOrdersPercentage) }}</td>
@@ -22,6 +23,7 @@
       <tr>
           <th width="45">Salesperson</th>
           <th width="20">Total Assigned Clients</th>
+          <th width="20">Estimated Clients</th>
           <th width="30">Estimate Amount (Project Amount)</th>
           <th width="20">Closed Won Orders</th>
           <th width="20">% Closed Won Orders</th>
@@ -37,6 +39,9 @@
             </td>
             <td width="20" height="25" text-align="center" valign="middle">
               {{ $item->estimate_orders }}
+            </td>
+            <td width="20" height="25" text-align="center" valign="middle">
+              {{ $item->estimated_clients }}
             </td>
             <td width="30" height="25" text-align="right" valign="middle">
               {{ '$' . number_format($item->estimate_amount ?? 0, 2, '.', ',') }}
@@ -60,6 +65,7 @@
         <tr>
             <td width="45" height="25" text-align="left" valign="middle"><strong>Totals</strong></td>
             <td width="20" height="25" text-align="center" valign="middle"><strong>{{ $totalEstimateOrders }}</strong></td>
+            <td width="20" height="25" text-align="center" valign="middle"><strong>{{ $totalEstimatedClients }}</strong></td>
             <td width="30" height="25" text-align="right" valign="middle">
               <strong>{{ '$' . number_format($totalEstimateAmount, 2, '.', ',') }}</strong>
             </td>

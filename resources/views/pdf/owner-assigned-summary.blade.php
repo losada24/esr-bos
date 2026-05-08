@@ -35,12 +35,13 @@
 <table>
     <thead>
         <tr>
-            <td class="header" colspan="7">
+            <td class="header" colspan="8">
                 Owner Report ({{ $startDate }} to {{ $endDate }})
             </td>
         </tr>
         <tr class="totals">
             <td colspan="2">Total Assigned Clients: {{ $totalEstimateOrders }}</td>
+            <td>Total Estimated Clients: {{ $totalEstimatedClients }}</td>
             <td>Total Estimate Amount (Project Amount): {{ '$' . number_format($totalEstimateAmount, 2, '.', ',') }}</td>
             <td>Total Closed Won Orders: {{ $totalClosedWonOrders }}</td>
             <td>% Closed Won Orders: {{ $formatPercentage($totalClosedWonOrdersPercentage) }}</td>
@@ -50,6 +51,7 @@
         <tr>
             <th>Salesperson</th>
             <th>Total Assigned Clients</th>
+            <th>Estimated Clients</th>
             <th>Estimate Amount (Project Amount)</th>
             <th>Closed Won Orders</th>
             <th>% Closed Won Orders</th>
@@ -62,6 +64,7 @@
             <tr>
                 <td>{{ $item->owner_name ?? 'UNASSIGNED OWNER' }}</td>
                 <td>{{ $item->estimate_orders }}</td>
+                <td>{{ $item->estimated_clients }}</td>
                 <td>{{ '$' . number_format($item->estimate_amount ?? 0, 2, '.', ',') }}</td>
                 <td>{{ $item->closed_won_orders }}</td>
                 <td>{{ $formatPercentage($item->closed_won_orders_percentage ?? 0) }}</td>
@@ -72,6 +75,7 @@
         <tr class="totals">
             <td><strong>Totals</strong></td>
             <td><strong>{{ $totalEstimateOrders }}</strong></td>
+            <td><strong>{{ $totalEstimatedClients }}</strong></td>
             <td><strong>{{ '$' . number_format($totalEstimateAmount, 2, '.', ',') }}</strong></td>
             <td><strong>{{ $totalClosedWonOrders }}</strong></td>
             <td><strong>{{ $formatPercentage($totalClosedWonOrdersPercentage) }}</strong></td>
