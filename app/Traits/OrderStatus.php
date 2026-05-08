@@ -63,6 +63,9 @@ trait OrderStatus {
       case OrderStatusEnum::ON_HOLD->value:
           $color = StatusColorEnum::ON_HOLD->value;
       break;
+      case OrderStatusEnum::REPLANNED->value:
+        $color = StatusColorEnum::REPLANNED->value;
+      break;
       case OrderStatusEnum::RESCHEDULE->value:
         $color = StatusColorEnum::RESCHEDULE->value;
       break;
