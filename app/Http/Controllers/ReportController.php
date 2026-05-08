@@ -2579,7 +2579,7 @@ class ReportController extends Controller
 
     $closedWonOrders = OrderStatus::query()
       ->select('order_id')
-      ->where('status', OrderStatusEnum::CLOSED_WON->value)
+      ->where('status', OrderStatusEnum::CONTRACT_SIGNED_BY_CLIENT->value)
       ->whereBetween('created_at', [$startDate, $endDate])
       ->distinct();
 
