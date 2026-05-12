@@ -2477,7 +2477,7 @@ class ReportController extends Controller
 
     $pickupOrDeliveryQualifiedOrders = DB::query()
       ->fromSub(
-        (clone $plannedOrders)->union(clone $confirmedOrders),
+        (clone $plannedOrders)->union(clone $confirmedOrders)->union(clone $completedOrders),
         'pickup_or_delivery_qualified_orders'
       )
       ->select('pickup_or_delivery_qualified_orders.order_id');
