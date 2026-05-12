@@ -620,7 +620,7 @@ class SalesController extends Controller
     }
 
     if ($order->status === OrderStatusEnum::LOST_CONTRACT->value) {
-      return (float) ($order->project_amount ?? 0) > 0.0 ? '#22c55e' : '#ef4444';
+      return (float) ($order->project_amount ?? 0) > 0.0 ? '#2563eb' : '#ef4444';
     }
 
     return [
