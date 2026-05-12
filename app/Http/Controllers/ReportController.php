@@ -2477,7 +2477,7 @@ class ReportController extends Controller
 
     $pickupOrDeliveryQualifiedOrders = DB::query()
       ->fromSub(
-        (clone $plannedOrders)->union(clone $confirmedOrders)->union(clone $completedOrders),
+        (clone $confirmedOrders)->union(clone $completedOrders),
         'pickup_or_delivery_qualified_orders'
       )
       ->select('pickup_or_delivery_qualified_orders.order_id');
@@ -2533,7 +2533,7 @@ class ReportController extends Controller
       ->whereIn('orders.service', [ServiceEnum::PICKUP->value, ServiceEnum::DELIVERY->value])
       ->whereNull('first_installation_team.first_installation_team_order_id')
       ->select(
-        DB::raw('COUNT(*) as confirmed_orders'),
+        DB::raw('COUNT(DISTINCT orders.id) as confirmed_orders'),
         DB::raw('SUM(CASE WHEN completed_orders.order_id IS NOT NULL THEN 1 ELSE 0 END) as completed_orders'),
         DB::raw('SUM(' . $amountExpression . ') as assigned_amount')
       )
