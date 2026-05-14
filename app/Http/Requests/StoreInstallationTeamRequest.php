@@ -30,6 +30,7 @@ class StoreInstallationTeamRequest extends FormRequest
             'liability_expiration_date' => 'required|date_format:Y-m-d',
             'annual_w9_expiration_date' => 'required|date_format:Y-m-d',
             'worker_compensation_attach' => 'required|file|mimes:jpeg,png,jpg,pdf,docx,doc,xlsx|max:10240',
+            'worker_compensation_exception_attach' => 'nullable|file|mimes:jpeg,png,jpg,pdf,docx,doc,xlsx|max:10240',
             'liability_expiration_attach' => 'required|file|mimes:jpeg,png,jpg,pdf,docx,doc,xlsx|max:10240',
             'installer_agrement_attach' => 'required|file|mimes:jpeg,png,jpg,pdf,docx,doc,xlsx|max:10240',
             'annual_w9_attach' => 'required|file|mimes:jpeg,png,jpg,pdf,docx,doc,xlsx|max:10240',

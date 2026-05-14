@@ -595,6 +595,10 @@ class SalesController extends Controller
         'color' => '#facc15',
       ],
       [
+        'label' => 'Reschedule Appointments',
+        'color' => '#f97316',
+      ],
+      [
         'label' => 'Completed Appointments',
         'color' => '#2563eb',
       ],
@@ -611,16 +615,16 @@ class SalesController extends Controller
 
   private function salesCalendarEventColor(Order $order): string
   {
+    if ($order->status === OrderStatusEnum::LOST_CONTRACT->value) {
+      return (float) ($order->project_amount ?? 0) > 0.0 ? '#2563eb' : '#ef4444';
+    }
+
     if ($this->salesCalendarHasReachedContractSigned($order)) {
       return '#22c55e';
     }
 
     if ($order->status === OrderStatusEnum::ESTIMATE_APPT_SCHEDULE->value) {
       return '#facc15';
-    }
-
-    if ($order->status === OrderStatusEnum::LOST_CONTRACT->value) {
-      return (float) ($order->project_amount ?? 0) > 0.0 ? '#2563eb' : '#ef4444';
     }
 
     return [
