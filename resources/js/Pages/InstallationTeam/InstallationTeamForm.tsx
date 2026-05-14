@@ -196,6 +196,20 @@ const InstallationTeamForm = ({
         />
         {(submitCount && errors.worker_compensation_attach) ? <InputError message={errors.worker_compensation_attach} className="mt-2" /> : ''}
       </div>
+      <div className={submitCount ? (errors.worker_compensation_exception_attach) ? 'has-error' : 'has-success' : ''}>
+        <label htmlFor="worker_compensation_exception_attach">Worker Compensation Exception</label>
+        <input
+          id="worker_compensation_exception_attach"
+          name="worker_compensation_exception_attach"
+          type="file"
+          accept="*"
+          className="form-input file:py-2 file:px-4 file:border-0 file:font-semibold p-0 file:bg-primary/90 ltr:file:mr-5 rtl:file:ml-5 file:text-white file:hover:bg-primary"
+          onChange={(event: any) => {
+            setFieldValue('worker_compensation_exception_attach', event.currentTarget.files[0])
+          }}
+        />
+        {(submitCount && errors.worker_compensation_exception_attach) ? <InputError message={errors.worker_compensation_exception_attach} className="mt-2" /> : ''}
+      </div>
       <div className={submitCount ? (errors.installer_agrement_attach) ? 'has-error' : 'has-success' : ''}>
         <label htmlFor="installer_agrement_attach">Installer Agrement</label>
         <input

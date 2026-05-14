@@ -92,6 +92,9 @@ export default function Index ({ auth, installation_teams }: IndexCompanyProps) 
                           case 'worker_compensation_attach':
                             label = 'Worker Compensation'
                             break
+                          case 'worker_compensation_exception_attach':
+                            label = 'Worker Compensation Exception'
+                            break
                           case 'liability_expiration_attach':
                             label = 'Liability Expiration'
                             break

@@ -38,6 +38,7 @@ const ProductModal = ({
   const [productConfigOptions, setProductConfigOptions] = useState<ProductConfig[]>([])
   const [plannedExtraWorksFormValues, setPlannedExtraWorksFormValues] = useState<OrderProductExtraWorksFormValues[]>([])
   const isEditing = editingProduct !== null && editingProduct !== undefined
+  const canUseStorefrontFields = service === SERVICES.DELIVERY_AND_INSTALLATION || service === SERVICES.SERVICE
 
   const buildExtraWorkFormValues = useCallback((
     typeOfProductId: number,
@@ -353,7 +354,7 @@ const ProductModal = ({
                               />
                                {(submitCount && errors.notes) ? <InputError message={errors.notes} className="mt-2" /> : ''}
                         </div>
-                        {(values.type_of_product_id === 3 && service === SERVICES.DELIVERY_AND_INSTALLATION) && (
+                        {(values.type_of_product_id === 3 && canUseStorefrontFields) && (
                           <>
                           <div className={submitCount ? (errors.storefront_area) ? 'has-error' : 'has-success' : ''}>
                             <label htmlFor="storefront_area">Storefront Area</label>

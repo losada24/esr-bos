@@ -268,6 +268,7 @@ class Order extends Model
         $query->where('supervisor_id', $user->id)
           ->whereIn('status', [
             OrderStatusEnum::PLANNED,        // Solo órdenes en "PLANNED"
+            OrderStatusEnum::REPLANNED,
             OrderStatusEnum::RESCHEDULE,   // Solo órdenes en "EXECUTION"
             OrderStatusEnum::CONFIRMED,   // Solo órdenes en "EXECUTION"
             OrderStatusEnum::EXECUTION,
