@@ -756,7 +756,7 @@ const OrderQualifiedForm = ({
                 </div>
               )}
               {showProjectAmountField && (
-                <div className={`col-span-2 ${submitCount ? (errors.project_amount ? 'has-error' : 'has-success') : ''}`}>
+                <div className={`${useModalLayout ? '' : 'col-span-2'} ${submitCount ? (errors.project_amount ? 'has-error' : 'has-success') : ''}`}>
                   <label htmlFor="project_amount" className="mb-1">Project Amount</label>
                   <div className="flex items-center gap-3">
                     <Field
@@ -851,7 +851,7 @@ const OrderQualifiedForm = ({
                   </div>
                 </>
               )}
-              <div className={submitCount ? (errors.job_address ? 'has-error' : 'has-success') : ''}>
+              <div className={`${useModalLayout ? 'col-span-2' : ''} ${submitCount ? (errors.job_address ? 'has-error' : 'has-success') : ''}`}>
                   <label htmlFor="job_address"> Job Address</label>
                     <Field
                       id="job_address"
