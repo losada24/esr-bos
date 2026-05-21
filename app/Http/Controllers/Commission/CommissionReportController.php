@@ -530,18 +530,29 @@ class CommissionReportController extends Controller
         $statusRows = OrderStatus::query()
             ->with([
                 'order' => fn ($query) => $query
-                    ->with(['owners:id,name', 'orderCommissions.payments', 'orderCommissions.nextPayment'])
+                    ->with([
+                        'owners:id,name',
+                        'orderCommissions.payments',
+                        'orderCommissions.nextPayment',
+                        'orderStatus' => fn ($query) => $query
+                            ->whereIn('status', $availableStatuses)
+                            ->orderByDesc('created_at'),
+                    ])
                     ->select('id', 'order_number', 'invoice_number', 'name', 'status', 'project_amount', 'cost_city_fee', 'method_of_payment', 'type_of_financing'),
             ])
             ->whereBetween('created_at', [$startDate, $endDate])
-            ->whereIn('status', $selectedStatus ? [$selectedStatus] : $availableStatuses)
+            ->when(
+                $selectedStatus,
+                fn ($query) => $query->where('status', $selectedStatus),
+                fn ($query) => $query->whereHas('order.orderCommissions')
+            )
             ->orderByDesc('created_at')
             ->get(['id', 'order_id', 'status', 'created_at'])
             ->unique('order_id')
             ->values();
 
         $rows = $statusRows
-            ->flatMap(function (OrderStatus $statusRow) {
+            ->flatMap(function (OrderStatus $statusRow) use ($selectedStatus) {
                 $order = $statusRow->order;
                 if (! $order) {
                     return [];
@@ -549,6 +560,7 @@ class CommissionReportController extends Controller
 
                 $owners = $order->owners->pluck('name')->filter()->implode(', ');
                 $commissions = $order->orderCommissions;
+                $accountingStatus = $this->resolveAccountingStatus($statusRow, $selectedStatus);
 
                 if ($commissions->isEmpty()) {
                     return [[
@@ -557,8 +569,8 @@ class CommissionReportController extends Controller
                         'order_status' => $order->status,
                         'order_name' => $order->name,
                         'owner_names' => $owners,
-                        'accounting_status' => $statusRow->status,
-                        'accounting_status_date' => $statusRow->created_at?->toDateTimeString(),
+                        'accounting_status' => $accountingStatus['status'],
+                        'accounting_status_date' => $accountingStatus['date'],
                         'beneficiary_name' => null,
                         'beneficiary_relation' => null,
                         'commission_id' => null,
@@ -571,7 +583,7 @@ class CommissionReportController extends Controller
                     ]];
                 }
 
-                return $commissions->map(function (OrderCommission $commission) use ($order, $owners, $statusRow) {
+                return $commissions->map(function (OrderCommission $commission) use ($order, $owners, $accountingStatus) {
                     $nextPayment = $commission->nextPayment;
                     $commissionTotal = $this->resolveCommissionTotal($commission);
 
@@ -581,8 +593,8 @@ class CommissionReportController extends Controller
                         'order_status' => $order->status,
                         'order_name' => $order->name,
                         'owner_names' => $owners,
-                        'accounting_status' => $statusRow->status,
-                        'accounting_status_date' => $statusRow->created_at?->toDateTimeString(),
+                        'accounting_status' => $accountingStatus['status'],
+                        'accounting_status_date' => $accountingStatus['date'],
                         'beneficiary_name' => $commission->beneficiary_name_snapshot,
                         'beneficiary_relation' => $commission->beneficiary_relation,
                         'commission_id' => $commission->id,
@@ -619,15 +631,16 @@ class CommissionReportController extends Controller
             ->values();
 
         $reviewPayments = $statusRows
-            ->flatMap(function (OrderStatus $statusRow) {
+            ->flatMap(function (OrderStatus $statusRow) use ($selectedStatus) {
                 $order = $statusRow->order;
                 if (! $order) {
                     return [];
                 }
 
                 $owners = $order->owners->pluck('name')->filter()->implode(', ');
+                $accountingStatus = $this->resolveAccountingStatus($statusRow, $selectedStatus);
 
-                return $order->orderCommissions->flatMap(function (OrderCommission $commission) use ($order, $owners, $statusRow) {
+                return $order->orderCommissions->flatMap(function (OrderCommission $commission) use ($order, $owners, $accountingStatus) {
                     if ($commission->status === CommissionStatusEnum::CANCELED->value) {
                         return [];
                     }
@@ -637,7 +650,7 @@ class CommissionReportController extends Controller
                     return $commission->payments
                         ->where('status', CommissionPaymentStatusEnum::REVIEW->value)
                         ->where('commission_period_id', null)
-                        ->map(function (OrderCommissionPayment $payment) use ($commission, $commissionTotal, $order, $owners, $statusRow) {
+                        ->map(function (OrderCommissionPayment $payment) use ($commission, $commissionTotal, $order, $owners, $accountingStatus) {
                     return [
                                 'id' => $payment->id,
                                 'order_id' => $order->id,
@@ -646,8 +659,8 @@ class CommissionReportController extends Controller
                                 'order_number' => $order->order_number,
                                 'invoice_number' => $order->invoice_number,
                                 'owner_names' => $owners,
-                                'accounting_status' => $statusRow->status,
-                                'accounting_status_date' => $statusRow->created_at?->toDateTimeString(),
+                                'accounting_status' => $accountingStatus['status'],
+                                'accounting_status_date' => $accountingStatus['date'],
                                 'project_payment_method' => $order->method_of_payment,
                                 'type_of_financing' => $order->type_of_financing,
                                 'project_amount' => $commission->project_amount_snapshot !== null
@@ -716,6 +729,23 @@ class CommissionReportController extends Controller
             'beneficiarySearch' => $beneficiarySearch,
             'startDate' => $startDate->toDateString(),
             'endDate' => $endDate->toDateString(),
+        ];
+    }
+
+    private function resolveAccountingStatus(OrderStatus $statusRow, ?string $selectedStatus): array
+    {
+        if ($selectedStatus) {
+            return [
+                'status' => $statusRow->status,
+                'date' => $statusRow->created_at?->toDateTimeString(),
+            ];
+        }
+
+        $accountingStatus = $statusRow->order?->orderStatus->first();
+
+        return [
+            'status' => $accountingStatus?->status ?? 'N/A',
+            'date' => $accountingStatus?->created_at?->toDateTimeString(),
         ];
     }
 
