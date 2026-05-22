@@ -1186,6 +1186,7 @@ class ReportController extends Controller
   {
     $allowedServices = [
       'all',
+      'SUPPLY',
       ServiceEnum::PICKUP->value,
       ServiceEnum::SERVICE->value,
       ServiceEnum::INSTALLATION->value,
@@ -1253,7 +1254,12 @@ class ReportController extends Controller
       });
     }
 
-    if ($serviceType !== 'all') {
+    if ($serviceType === 'SUPPLY') {
+      $rowsQuery->whereIn('orders.service', [
+        ServiceEnum::PICKUP->value,
+        ServiceEnum::DELIVERY->value,
+      ]);
+    } elseif ($serviceType !== 'all') {
       $rowsQuery->where('orders.service', $serviceType);
     }
 
@@ -1297,6 +1303,7 @@ class ReportController extends Controller
       'serviceTypeLabel' => $serviceType === 'all' ? 'ALL SERVICES' : $serviceType,
       'serviceOptions' => [
         ['label' => 'ALL', 'value' => 'all'],
+        ['label' => 'SUPPLY', 'value' => 'SUPPLY'],
         ['label' => ServiceEnum::PICKUP->value, 'value' => ServiceEnum::PICKUP->value],
         ['label' => ServiceEnum::SERVICE->value, 'value' => ServiceEnum::SERVICE->value],
         ['label' => ServiceEnum::INSTALLATION->value, 'value' => ServiceEnum::INSTALLATION->value],
