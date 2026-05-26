@@ -756,20 +756,20 @@ const OrderQualifiedForm = ({
                 </div>
               )}
               {showProjectAmountField && (
-                <div className={`${useModalLayout ? '' : 'col-span-2'} ${submitCount ? (errors.project_amount ? 'has-error' : 'has-success') : ''}`}>
+                <div className={`col-span-2 ${submitCount ? (errors.project_amount ? 'has-error' : 'has-success') : ''}`}>
                   <label htmlFor="project_amount" className="mb-1">Project Amount</label>
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-wrap items-center gap-3 sm:flex-nowrap">
                     <Field
                       id="project_amount"
                       name="project_amount"
-                      className="form-input text-right"
+                      className="form-input min-w-[14rem] flex-1 text-right"
                       autoComplete="project_amount"
                       placeholder="Project Amount"
                       type="number"
                       disabled={isProjectAmountLocked}
                     />
                     {showPaymentInformationSection && !isCreate && values.has_contract_signed && (
-                      <div className="inline-flex items-center whitespace-nowrap">
+                      <div className="inline-flex shrink-0 items-center whitespace-nowrap">
                         <Field
                           id="change_order_enabled"
                           name="change_order_enabled"
