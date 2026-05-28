@@ -22,6 +22,7 @@ export interface NoteDTO {
   id: number | string
   content: string
   type?: string | null
+  context_label?: string | null
   created_at: string
   user?: { name: string } | null
   can?: { update?: boolean, delete?: boolean } | null
@@ -32,6 +33,7 @@ export interface UiNote {
   body: string
   title?: string | null
   type?: string | null
+  contextLabel?: string | null
   authorName: string
   createdAt: string
   can?: { update?: boolean, delete?: boolean } | null
@@ -39,9 +41,14 @@ export interface UiNote {
 
 interface OrderNotesForOrderProps {
   orderId?: number | string | null
+  endpointBase?: string | null
   canCreate?: boolean
   noteType?: string
   refreshKey?: number
+  includeRelatedActivities?: boolean
+  listTitle?: string
+  emptyMessage?: string
+  disabledMessage?: string
 }
 
 // ===== UI utils =====
@@ -148,14 +155,25 @@ const renderLinkedText = (value: string) => {
 const normalize = (n: NoteDTO): UiNote => ({
   id: n.id,
   body: n.content,
-  title: n.type && n.type !== 'work_team_note' ? n.type : undefined,
+  title: n.type && !['work_team_note', 'event_note', 'call_note'].includes(n.type) ? n.type : undefined,
   type: n.type ?? null,
+  contextLabel: n.context_label ?? null,
   authorName: n.user?.name ?? 'Unknown',
   createdAt: n.created_at,
   can: n.can ?? null
 })
 
-export default function OrderNotesForOrder({ orderId, canCreate = true, noteType, refreshKey = 0 }: OrderNotesForOrderProps) {
+export default function OrderNotesForOrder({
+  orderId,
+  endpointBase,
+  canCreate = true,
+  noteType,
+  refreshKey = 0,
+  includeRelatedActivities = false,
+  listTitle,
+  emptyMessage,
+  disabledMessage
+}: OrderNotesForOrderProps) {
   const [notes, setNotes] = useState<UiNote[] | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -173,11 +191,13 @@ export default function OrderNotesForOrder({ orderId, canCreate = true, noteType
 
   // GET list
   const resolvedOrderId = orderId ?? null
-  const canActuallyCreate = canCreate && resolvedOrderId !== null
+  const resolvedEndpoint = endpointBase ?? (resolvedOrderId !== null ? `/order/${resolvedOrderId}/notes` : null)
+  const listEndpoint = resolvedEndpoint && includeRelatedActivities ? `${resolvedEndpoint}?include_related=1` : resolvedEndpoint
+  const canActuallyCreate = canCreate && resolvedEndpoint !== null
   const showTitleInput = !noteType
 
   useEffect(() => {
-    if (resolvedOrderId === null) {
+    if (listEndpoint === null) {
       setNotes([])
       setLoading(false)
       return
@@ -188,7 +208,7 @@ export default function OrderNotesForOrder({ orderId, canCreate = true, noteType
       try {
         setLoading(true)
         setError(null)
-        const res = await fetch(`/order/${resolvedOrderId}/notes`, {
+        const res = await fetch(listEndpoint, {
           credentials: 'include',
           headers: { 'X-Requested-With': 'XMLHttpRequest' }
         })
@@ -210,12 +230,12 @@ export default function OrderNotesForOrder({ orderId, canCreate = true, noteType
     return () => {
       alive = false
     }
-  }, [resolvedOrderId, refreshKey])
+  }, [listEndpoint, noteType, refreshKey])
 
   // CREATE
   const onSave = async (e?: React.MouseEvent | React.FormEvent) => {
     e?.preventDefault?.()
-    if (!body.trim() || resolvedOrderId === null) return
+    if (!body.trim() || resolvedEndpoint === null) return
     setSaving(true)
     setError(null)
 
@@ -232,7 +252,7 @@ export default function OrderNotesForOrder({ orderId, canCreate = true, noteType
     setNotes((prev) => (prev ? [optimistic, ...prev] : [optimistic]))
 
     try {
-      const res = await fetch(`/order/${resolvedOrderId}/notes`, {
+      const res = await fetch(resolvedEndpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -272,7 +292,7 @@ export default function OrderNotesForOrder({ orderId, canCreate = true, noteType
   }
 
   const saveEdit = async () => {
-    if (!editingId || !editBody.trim() || resolvedOrderId === null) return
+    if (!editingId || !editBody.trim() || resolvedEndpoint === null) return
     setSavingEdit(true)
     setError(null)
 
@@ -282,7 +302,7 @@ export default function OrderNotesForOrder({ orderId, canCreate = true, noteType
     )
 
     try {
-      const res = await fetch(`/order/${resolvedOrderId}/notes/${editingId}`, {
+      const res = await fetch(`${resolvedEndpoint}/${editingId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -307,7 +327,7 @@ export default function OrderNotesForOrder({ orderId, canCreate = true, noteType
 
   // DELETE
   const deleteNote = async (id: string | number) => {
-    if (!confirm('¿Eliminar esta nota?') || resolvedOrderId === null) return
+    if (!confirm('¿Eliminar esta nota?') || resolvedEndpoint === null) return
     setDeletingId(id)
     setError(null)
 
@@ -315,7 +335,7 @@ export default function OrderNotesForOrder({ orderId, canCreate = true, noteType
     setNotes((p) => (p ?? []).filter((n) => n.id !== id))
 
     try {
-      const res = await fetch(`/order/${resolvedOrderId}/notes/${id}`, {
+      const res = await fetch(`${resolvedEndpoint}/${id}`, {
         method: 'DELETE',
         headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': getCsrf() },
         credentials: 'include'
@@ -329,10 +349,10 @@ export default function OrderNotesForOrder({ orderId, canCreate = true, noteType
     }
   }
 
-  if (resolvedOrderId === null) {
+  if (resolvedEndpoint === null) {
     const placeholder = noteType === 'work_team_note'
       ? 'Save the order first to add and view work team notes.'
-      : 'Save the order first to add and view notes.'
+      : (disabledMessage ?? 'Save the record first to add and view notes.')
     return (
       <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
         {placeholder}
@@ -394,13 +414,13 @@ export default function OrderNotesForOrder({ orderId, canCreate = true, noteType
       {/* Lista */}
       <div className="space-y-4">
         <h4 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
-          {noteType === 'work_team_note' ? 'Work Team Notes' : 'All Notes'}
+          {listTitle ?? (noteType === 'work_team_note' ? 'Work Team Notes' : 'All Notes')}
         </h4>
 
         {loading && <div className="text-sm text-slate-500">Cargando notas…</div>}
 
         {!loading && (notes?.length ?? 0) === 0 && (
-          <div className="text-sm text-slate-500">No hay notas para esta orden.</div>
+          <div className="text-sm text-slate-500">{emptyMessage ?? 'No hay notas para esta orden.'}</div>
         )}
 
         {!loading && notes && notes.length > 0 && (
@@ -442,6 +462,9 @@ export default function OrderNotesForOrder({ orderId, canCreate = true, noteType
                         <div className="whitespace-pre-wrap break-words text-slate-700">
                           {renderLinkedText(n.body)}
                         </div>
+                        {n.contextLabel && (
+                          <div className="mt-1 text-xs font-medium text-sky-600">{n.contextLabel}</div>
+                        )}
                       </>
                         )}
                   </div>

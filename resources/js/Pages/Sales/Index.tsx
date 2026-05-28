@@ -11,6 +11,8 @@ import { tagClasses, type TagColor } from '@/Utils/tags'
 import { PAYMENT_METHODS } from '@/Utils/constants'
 import EyeIcon from '@/Components/Icons/EyeIcon'
 import DeleteIcon from '@/Components/Icons/DeleteIcon'
+import CalendarIcon from '@/Components/Icons/CalendarIcon'
+import PhoneIcon from '@/Components/Icons/PhoneIcon'
 import InfoTooltip from '@/Components/InfoTooltip'
 import OrderBoardFilter, { type BoardFilters, type FilterFieldConfig } from '@/Components/OrderBoardFilter'
 import OrderGlobalSearch from '@/Components/OrderGlobalSearch'
@@ -35,6 +37,7 @@ import {
 export interface OwnerOption { id: number, name: string }
 type IdOption = { id: number, name: string }
 type TagOption = { name: string | null }
+type ActivityMenuState = { orderId: number, x: number, y: number } | null
 
 type PaymentScheduleTemplateItem = { label: string, percentage: number }
 type PaymentScheduleTemplates = Record<string, PaymentScheduleTemplateItem[]>
@@ -163,6 +166,15 @@ const ESTIMATE_COMMERCIAL_THRESHOLD_MS = 7 * DAY_IN_MS
 const INFINITE_SCROLL_STATUSES = new Set(['CONTRACT SIGNED BY CLIENT', 'LOST CONTRACT'])
 const TASKS_PAGE_SIZE = 20
 const SCROLL_THRESHOLD_PX = 120
+
+const activityMenuPosition = (element: HTMLElement) => {
+  const rect = element.getBoundingClientRect()
+
+  return {
+    x: Math.min(rect.left + rect.width - 8, window.innerWidth - 190),
+    y: Math.min(rect.top + rect.height + 4, window.innerHeight - 140)
+  }
+}
 const CUSTOM_SCHEDULE_TYPE = 'CUSTOMIZED'
 type StatusPaginationState = { nextPage: number, loading: boolean }
 
@@ -345,6 +357,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
   const [statusPagination, setStatusPagination] = useState<Record<string, StatusPaginationState>>(() => buildPaginationState(data))
   const [isFilterOpen, setIsFilterOpen] = useState(false)
   const [deletingTaskId, setDeletingTaskId] = useState<number | null>(null)
+  const [activityMenu, setActivityMenu] = useState<ActivityMenuState>(null)
   const sortHydratedRef = useRef(false)
   const appliedFilters = filters ?? {}
   const filterQueryParams = useMemo(() => buildFilterQuery(appliedFilters), [appliedFilters])
@@ -1634,6 +1647,23 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
                                   >
                                     <EyeIcon />
                                   </Link>
+                                  <button
+                                    type="button"
+                                    title="Add Activity"
+                                    className="flex h-5 w-5 items-center justify-center rounded-full text-base font-bold leading-none text-sky-600 hover:bg-sky-50 hover:text-sky-700"
+                                    onClick={(event) => {
+                                      event.preventDefault()
+                                      event.stopPropagation()
+                                      const position = activityMenuPosition(event.currentTarget)
+                                      setActivityMenu({
+                                        orderId: task.id,
+                                        x: position.x,
+                                        y: position.y
+                                      })
+                                    }}
+                                  >
+                                    +
+                                  </button>
                                   {CAN_DELETE_ORDER && (
                                     <button
                                       type="button"
@@ -1869,6 +1899,36 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
         onCancel={() => { closeLostContractModal(true) }}
         onSubmit={handleLostContractSubmit}
       />
+
+      {activityMenu && (
+        <>
+          <button
+            type="button"
+            className="fixed inset-0 z-40 cursor-default bg-transparent"
+            aria-label="Close activity actions"
+            onClick={() => { setActivityMenu(null) }}
+          />
+          <div
+            className="fixed z-50 w-[180px] overflow-hidden rounded-md border border-slate-200 bg-white py-1 shadow-xl"
+            style={{ left: activityMenu.x, top: activityMenu.y }}
+          >
+            <Link
+              href={route('activities.index', { mode: 'event', order_id: activityMenu.orderId })}
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-sky-50 hover:text-sky-700"
+            >
+              <CalendarIcon />
+              Create Event
+            </Link>
+            <Link
+              href={route('activities.index', { mode: 'call', order_id: activityMenu.orderId })}
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-emerald-50 hover:text-emerald-700"
+            >
+              <PhoneIcon />
+              Log Call
+            </Link>
+          </div>
+        </>
+      )}
 
       {/* <LostRequestModal
         lostTask={lostTask}

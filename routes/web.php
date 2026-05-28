@@ -10,6 +10,7 @@ use App\Http\Controllers\Commission\CommissionReportController;
 use App\Http\Controllers\CompanyContactController;
 use App\Http\Controllers\AuthorizeNetHostedPaymentController;
 use App\Http\Controllers\AuthorizeNetWebhookController;
+use App\Http\Controllers\ActivityController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\OrderController;
@@ -272,6 +273,29 @@ Route::middleware('auth')->group(function () {
     Route::get('client/document/{id}', [ClientController::class, 'document'])
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::FRONTDESK->value . '|' . RoleEnum::OWNER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|' . RoleEnum::FRONTDESK_ADMIN->value ])
       ->name('client.document');
+
+    Route::prefix('activities')->name('activities.')->middleware(["role:" . RoleEnum::ADMIN->value . '|' . RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::FRONTDESK->value . '|' . RoleEnum::OWNER->value . '|' . RoleEnum::OWNER_ADMIN->value . '|' . RoleEnum::FRONTDESK_ADMIN->value . '|' . RoleEnum::SUPERVISOR->value])->group(function () {
+      Route::get('/', [ActivityController::class, 'index'])->name('index');
+      Route::get('calendar/events/{year}/{month}', [ActivityController::class, 'calendarEvents'])->name('calendar.events');
+      Route::get('context', [ActivityController::class, 'context'])->name('context');
+      Route::get('orders/search', [ActivityController::class, 'searchOrders'])->name('orders.search');
+      Route::get('clients/search', [ActivityController::class, 'searchClients'])->name('clients.search');
+      Route::get('users/search', [ActivityController::class, 'searchUsers'])->name('users.search');
+      Route::get('events/{event}', [ActivityController::class, 'showEvent'])->name('events.show');
+      Route::get('events/{event}/notes', [ActivityController::class, 'eventNotes'])->name('events.notes.index');
+      Route::post('events/{event}/notes', [ActivityController::class, 'storeEventNote'])->name('events.notes.store');
+      Route::put('events/{event}/notes/{note}', [ActivityController::class, 'updateEventNote'])->name('events.notes.update');
+      Route::delete('events/{event}/notes/{note}', [ActivityController::class, 'destroyEventNote'])->name('events.notes.destroy');
+      Route::post('events', [ActivityController::class, 'storeEvent'])->name('events.store');
+      Route::put('events/{event}', [ActivityController::class, 'updateEvent'])->name('events.update');
+      Route::get('calls/{call}', [ActivityController::class, 'showCall'])->name('calls.show');
+      Route::get('calls/{call}/notes', [ActivityController::class, 'callNotes'])->name('calls.notes.index');
+      Route::post('calls/{call}/notes', [ActivityController::class, 'storeCallNote'])->name('calls.notes.store');
+      Route::put('calls/{call}/notes/{note}', [ActivityController::class, 'updateCallNote'])->name('calls.notes.update');
+      Route::delete('calls/{call}/notes/{note}', [ActivityController::class, 'destroyCallNote'])->name('calls.notes.destroy');
+      Route::post('calls', [ActivityController::class, 'storeCall'])->name('calls.store');
+      Route::put('calls/{call}', [ActivityController::class, 'updateCall'])->name('calls.update');
+    });
 
     //BIGIN
     Route::get('/bigin/callback', [BiginController::class, 'callback'])

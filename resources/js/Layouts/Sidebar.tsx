@@ -61,6 +61,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
   const CAN_VIEW_ORDER_STORAGE = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_ACCOUNTING || HAS_FRONTDESK_ADMIN_ROLE
   const CAN_VIEW_SERVICE_CONTROL = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER
   const CAN_VIEW_SERVICE_CALENDAR = CAN_VIEW_SERVICE_CONTROL || IS_SERVICE
+  const CAN_VIEW_ACTIVITIES = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_FRONTDESK || IS_OWNER || IS_OWNER_ADMIN || HAS_FRONTDESK_ADMIN_ROLE || IS_SUPERVISOR
   const IS_SERVICE_ONLY = IS_SERVICE && !IS_ADMIN && !IS_ACCOUNT_MANAGER && !IS_ACCOUNTING && !IS_FRONTDESK && !IS_FRONTDESK_ADMIN && !IS_OWNER && !IS_SUPERVISOR && !IS_SERVICE_MANAGER && !IS_PAYMENT_COORDINATOR && !IS_OWNER_ADMIN && !IS_FRONTDESK_ESR
   const CAN_VIEW_MY_REFERRED_CLIENTS = !IS_SERVICE_ONLY
   const CAN_VIEW_ADMINISTRATION = IS_ADMIN || IS_ACCOUNT_MANAGER || CAN_VIEW_MY_REFERRED_CLIENTS
@@ -184,6 +185,24 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                 </NavLink>
                             </li>
                                </>
+                           )}
+                           {CAN_VIEW_ACTIVITIES && (
+                            <>
+                              <h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">
+                                <svg className="w-4 h-5 flex-none hidden" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                </svg>
+                                <span>Activities</span>
+                              </h2>
+                              <li className="menu nav-item">
+                                <NavLink href={route('activities.index')} active={route().current('activities.*')} className="group">
+                                  <div className="flex items-center">
+                                    <CalendarIcon />
+                                    <SidebarLinkLabel>Activities</SidebarLinkLabel>
+                                  </div>
+                                </NavLink>
+                              </li>
+                            </>
                            )}
                            {(IS_ADMIN || IS_OWNER || IS_OWNER_ADMIN || IS_ACCOUNT_MANAGER || IS_ACCOUNTING || HAS_FRONTDESK_ADMIN_ROLE) && (
                             <>

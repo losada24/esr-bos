@@ -3076,6 +3076,18 @@ export default function ShowStatusOrder ({
                         Edit Order
                       </button>
                     )}
+                    <Link
+                      href={route('activities.index', { mode: 'event', order_id: order.id })}
+                      className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-500 transition hover:border-emerald-400 hover:text-emerald-600"
+                    >
+                      Create Event
+                    </Link>
+                    <Link
+                      href={route('activities.index', { mode: 'call', order_id: order.id })}
+                      className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-500 transition hover:border-emerald-400 hover:text-emerald-600"
+                    >
+                      Log Call
+                    </Link>
                   </div>
                   <div className="flex flex-wrap items-center gap-2 text-sm text-slate-500">
                     {order.order_type && (
@@ -3647,7 +3659,7 @@ export default function ShowStatusOrder ({
               <div className="flex-1 overflow-hidden rounded-xl border border-slate-200/70 bg-white">
                 {tab === 'home' && (
                   <div id="panel-home" role="tabpanel" aria-labelledby="tab-home" className="h-full">
-                    <OrderNotesForOrder orderId={order.id} canCreate refreshKey={activityRefreshKey} />
+                    <OrderNotesForOrder orderId={order.id} canCreate includeRelatedActivities refreshKey={activityRefreshKey} />
                   </div>
                 )}
 

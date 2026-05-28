@@ -8,6 +8,8 @@ import AuthenticatedCalendarLayout from '@/Layouts/AuthenticatedCalendarLayout'
 import { isAccountManager, isAdmin, isServiceManager, isSupervisor, isInstaller, isPaymentCoordinator, isOwner, isFrontdeskEsr } from '@/Utils/user'
 
 import DeleteIcon from '@/Components/Icons/DeleteIcon'
+import CalendarIcon from '@/Components/Icons/CalendarIcon'
+import PhoneIcon from '@/Components/Icons/PhoneIcon'
 import LostRequestModal from './LostRequestModal'
 import QuantifiedModal from './QuantifiedModal'
 import RequestStandByModal from './RequestStandByModal'
@@ -103,6 +105,11 @@ const SCROLL_THRESHOLD_PX = 120
 type StatusPaginationState = { nextPage: number, loading: boolean }
 type IdOption = { id: number, name: string }
 type TagOption = { name: string | null }
+type ActivityMenuState = {
+  orderId: number
+  x: number
+  y: number
+} | null
 
 const buildFilterQuery = (filters?: BoardFilters): Record<string, unknown> => {
   if (!filters) return {}
@@ -191,6 +198,15 @@ const getStaleStatusClass = (pipeline: Pick<Pipelines, 'id' | 'title'>, task: Ta
   return (Date.now() - createdTimestamp) >= rule.threshold ? rule.className : null
 }
 
+const activityMenuPosition = (element: HTMLElement) => {
+  const rect = element.getBoundingClientRect()
+
+  return {
+    x: Math.min(rect.left + rect.width - 8, window.innerWidth - 190),
+    y: Math.min(rect.top + rect.height + 4, window.innerHeight - 140)
+  }
+}
+
 export default function Frontdesk ({
   auth,
   data,
@@ -245,6 +261,7 @@ export default function Frontdesk ({
   const [previousStatusId, setPreviousStatusId] = useState<string | null>(null)
   const [statusPagination, setStatusPagination] = useState<Record<string, StatusPaginationState>>(() => buildPaginationState(data))
   const [isFilterOpen, setIsFilterOpen] = useState(false)
+  const [activityMenu, setActivityMenu] = useState<ActivityMenuState>(null)
   const sortHydratedRef = useRef(false)
   const appliedFilters = filters ?? {}
   const filterQueryParams = useMemo(() => buildFilterQuery(appliedFilters), [appliedFilters])
@@ -738,6 +755,23 @@ export default function Frontdesk ({
                                                 >
                                                   <EyeIcon />
                                                 </Link>
+                                                    <button
+                                                      type="button"
+                                                      title="Add Activity"
+                                                      className="flex h-5 w-5 items-center justify-center rounded-full text-base font-bold leading-none text-sky-600 hover:bg-sky-50 hover:text-sky-700"
+                                                      onClick={(event) => {
+                                                        event.preventDefault()
+                                                        event.stopPropagation()
+                                                        const position = activityMenuPosition(event.currentTarget)
+                                                        setActivityMenu({
+                                                          orderId: task.id,
+                                                          x: position.x,
+                                                          y: position.y
+                                                        })
+                                                      }}
+                                                    >
+                                                      +
+                                                    </button>
                                                     {canDeleteTasks && (
                                                       <button
                                                         onClick={(event) => {
@@ -894,6 +928,35 @@ export default function Frontdesk ({
           setPreviousStatusId(null)
         }}
       />
+      {activityMenu && (
+        <>
+          <button
+            type="button"
+            className="fixed inset-0 z-40 cursor-default bg-transparent"
+            aria-label="Close activity actions"
+            onClick={() => { setActivityMenu(null) }}
+          />
+          <div
+            className="fixed z-50 w-[180px] overflow-hidden rounded-md border border-slate-200 bg-white py-1 shadow-xl"
+            style={{ left: activityMenu.x, top: activityMenu.y }}
+          >
+            <Link
+              href={route('activities.index', { mode: 'event', order_id: activityMenu.orderId })}
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-sky-50 hover:text-sky-700"
+            >
+              <CalendarIcon />
+              Create Event
+            </Link>
+            <Link
+              href={route('activities.index', { mode: 'call', order_id: activityMenu.orderId })}
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-emerald-50 hover:text-emerald-700"
+            >
+              <PhoneIcon />
+              Log Call
+            </Link>
+          </div>
+        </>
+      )}
     </AuthenticatedCalendarLayout>
   )
 }
