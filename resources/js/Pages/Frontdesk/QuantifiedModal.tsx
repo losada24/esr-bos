@@ -526,7 +526,7 @@ const QuantifiedModal = ({
                     </div>
                     </>
                     )}
-                    <div className={submitCount ? (errors.job_address ? 'has-error' : 'has-success') : ''}>
+                    <div className={`col-span-3 ${submitCount ? (errors.job_address ? 'has-error' : 'has-success') : ''}`}>
                       <label htmlFor="job_address"> Job Address</label>
                         <Field
                           id="job_address"
