@@ -2,6 +2,8 @@
 
     namespace App\Http\Controllers;
 
+    use App\Models\CrmCall;
+    use App\Models\CrmEvent;
     use App\Models\Note;
     use App\Models\Order;
     use App\Traits\Snapshot;
@@ -15,25 +17,38 @@ class OrderNoteController extends Controller
     // GET /order/{order}/notes
     public function index(Order $order)
     {
-        $notes = $order->notes()
+        $directNotes = $order->notes()
             ->with(['user:id,name'])
-            ->latest()
             ->get();
 
-        return $notes->map(function (Note $n) {
-            return [
-                'id'         => $n->id,
-                'content'    => $n->content,
-                'type'       => $n->type,
-                'created_at' => optional($n->created_at)->toISOString(),
-                'user'       => $n->user ? ['name' => $n->user->name] : null,
-                // Solo el autor puede editar/borrar
-                'can'        => [
-                    'update' => $n->user_id === auth()->id(),
-                    'delete' => $n->user_id === auth()->id(),
-                ],
-            ];
-        })->values();
+        if (!request()->boolean('include_related')) {
+            return $directNotes
+                ->sortByDesc('created_at')
+                ->map(fn (Note $note) => $this->notePayload($note))
+                ->values();
+        }
+
+        $callIds = CrmCall::query()->where('order_id', $order->id)->pluck('id');
+        $eventIds = CrmEvent::query()->where('order_id', $order->id)->pluck('id');
+
+        $activityNotes = Note::query()
+            ->with(['user:id,name', 'noteable'])
+            ->where(function ($query) use ($callIds, $eventIds) {
+                $query->where(function ($callQuery) use ($callIds) {
+                    $callQuery->where('noteable_type', CrmCall::class)
+                        ->whereIn('noteable_id', $callIds);
+                })->orWhere(function ($eventQuery) use ($eventIds) {
+                    $eventQuery->where('noteable_type', CrmEvent::class)
+                        ->whereIn('noteable_id', $eventIds);
+                });
+            })
+            ->get();
+
+        return $directNotes
+            ->concat($activityNotes)
+            ->sortByDesc('created_at')
+            ->map(fn (Note $note) => $this->notePayload($note, $this->noteContextLabel($note)))
+            ->values();
     }
 
     // POST /order/{order}/notes
@@ -54,17 +69,7 @@ class OrderNoteController extends Controller
 
         $note->load('user:id,name');
 
-        return response()->json([
-            'id'         => $note->id,
-            'content'    => $note->content,
-            'type'       => $note->type,
-            'created_at' => optional($note->created_at)->toISOString(),
-            'user'       => $note->user ? ['name' => $note->user->name] : null,
-            'can'        => [
-                'update' => true, // el autor es el usuario actual
-                'delete' => true,
-            ],
-        ], Response::HTTP_CREATED);
+        return response()->json($this->notePayload($note), Response::HTTP_CREATED);
     }
 
     // PUT /order/{order}/notes/{note}
@@ -87,17 +92,7 @@ class OrderNoteController extends Controller
         $note->update($data);
         $note->load('user:id,name');
 
-        return [
-            'id'         => $note->id,
-            'content'    => $note->content,
-            'type'       => $note->type,
-            'created_at' => optional($note->created_at)->toISOString(),
-            'user'       => $note->user ? ['name' => $note->user->name] : null,
-            'can'        => [
-                'update' => true,
-                'delete' => true,
-            ],
-        ];
+        return $this->notePayload($note);
     }
 
     // DELETE /order/{order}/notes/{note}
@@ -114,5 +109,37 @@ class OrderNoteController extends Controller
 
         $note->delete();
         return response()->noContent();
+    }
+
+    private function notePayload(Note $note, ?string $contextLabel = null): array
+    {
+        $isOrderNote = $note->noteable_type === Order::class;
+        $isAuthor = $note->user_id === auth()->id();
+
+        return [
+            'id'         => $note->id,
+            'content'    => $note->content,
+            'type'       => $note->type,
+            'context_label' => $contextLabel,
+            'created_at' => optional($note->created_at)->toISOString(),
+            'user'       => $note->user ? ['name' => $note->user->name] : null,
+            'can'        => [
+                'update' => $isOrderNote && $isAuthor,
+                'delete' => $isOrderNote && $isAuthor,
+            ],
+        ];
+    }
+
+    private function noteContextLabel(Note $note): ?string
+    {
+        if ($note->noteable instanceof CrmCall) {
+            return trim('Call - Call scheduled with ' . $note->noteable->to_from);
+        }
+
+        if ($note->noteable instanceof CrmEvent) {
+            return trim('Event - ' . $note->noteable->title);
+        }
+
+        return null;
     }
 }

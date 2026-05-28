@@ -8,6 +8,8 @@ import AuthenticatedCalendarLayout from '@/Layouts/AuthenticatedCalendarLayout'
 import { tagClasses, type TagColor } from '@/Utils/tags'
 import EyeIcon from '@/Components/Icons/EyeIcon'
 import EditIcon from '@/Components/Icons/EditIcon'
+import CalendarIcon from '@/Components/Icons/CalendarIcon'
+import PhoneIcon from '@/Components/Icons/PhoneIcon'
 import InfoTooltip from '@/Components/InfoTooltip'
 import OrderBoardFilter, { type BoardFilters, type FilterFieldConfig } from '@/Components/OrderBoardFilter'
 import OrderGlobalSearch from '@/Components/OrderGlobalSearch'
@@ -24,6 +26,7 @@ import {
 export interface OwnerOption { id: number, name: string }
 type IdOption = { id: number, name: string }
 type TagOption = { name: string | null }
+type ActivityMenuState = { orderId: number, x: number, y: number } | null
 
 const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const
 
@@ -137,6 +140,15 @@ const INFINITE_SCROLL_STATUSES = new Set(['CLOSED WON'])
 const TASKS_PAGE_SIZE = 20
 const SCROLL_THRESHOLD_PX = 120
 
+const activityMenuPosition = (element: HTMLElement) => {
+  const rect = element.getBoundingClientRect()
+
+  return {
+    x: Math.min(rect.left + rect.width - 8, window.innerWidth - 190),
+    y: Math.min(rect.top + rect.height + 4, window.innerHeight - 140)
+  }
+}
+
 type StatusPaginationState = { nextPage: number, loading: boolean }
 
 const toNumericAmount = (value?: number | string | null): number => {
@@ -192,6 +204,7 @@ const OrderProcessing = ({ auth, data, statuses, owners, supervisors, created_by
   const [pipelines, setPipelinesState] = useState<Pipelines[]>(() => data)
   const [statusPagination, setStatusPagination] = useState<Record<string, StatusPaginationState>>(() => buildPaginationState(data))
   const [isFilterOpen, setIsFilterOpen] = useState(false)
+  const [activityMenu, setActivityMenu] = useState<ActivityMenuState>(null)
   const dragSnapshotRef = useRef<Pipelines[] | null>(null)
   const sortHydratedRef = useRef(false)
   const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? ''
@@ -608,6 +621,23 @@ const OrderProcessing = ({ auth, data, statuses, owners, supervisors, created_by
                                     <EyeIcon />
                                   </Link>
                                   <button
+                                    type="button"
+                                    title="Add Activity"
+                                    className="flex h-5 w-5 items-center justify-center rounded-full text-base font-bold leading-none text-sky-600 hover:bg-sky-50 hover:text-sky-700"
+                                    onClick={(event) => {
+                                      event.preventDefault()
+                                      event.stopPropagation()
+                                      const position = activityMenuPosition(event.currentTarget)
+                                      setActivityMenu({
+                                        orderId: task.id,
+                                        x: position.x,
+                                        y: position.y
+                                      })
+                                    }}
+                                  >
+                                    +
+                                  </button>
+                                  <button
                                     onClick={() => {}}
                                     type="button"
                                     className="flex items-center gap-1 hover:text-info"
@@ -716,6 +746,35 @@ const OrderProcessing = ({ auth, data, statuses, owners, supervisors, created_by
           </div>
         </div>
       </div>
+      {activityMenu && (
+        <>
+          <button
+            type="button"
+            className="fixed inset-0 z-40 cursor-default bg-transparent"
+            aria-label="Close activity actions"
+            onClick={() => { setActivityMenu(null) }}
+          />
+          <div
+            className="fixed z-50 w-[180px] overflow-hidden rounded-md border border-slate-200 bg-white py-1 shadow-xl"
+            style={{ left: activityMenu.x, top: activityMenu.y }}
+          >
+            <Link
+              href={route('activities.index', { mode: 'event', order_id: activityMenu.orderId })}
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-sky-50 hover:text-sky-700"
+            >
+              <CalendarIcon />
+              Create Event
+            </Link>
+            <Link
+              href={route('activities.index', { mode: 'call', order_id: activityMenu.orderId })}
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-emerald-50 hover:text-emerald-700"
+            >
+              <PhoneIcon />
+              Log Call
+            </Link>
+          </div>
+        </>
+      )}
     </AuthenticatedCalendarLayout>
   )
 }
