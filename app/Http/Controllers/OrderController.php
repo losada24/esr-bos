@@ -516,6 +516,13 @@ class OrderController extends Controller
       abort(403, 'You are not authorized to update this order.');
     }
 
+    if ($request->user()->hasRole(RoleEnum::SUPERVISOR->value)) {
+      $request->merge([
+        'installation_date' => $order->installation_date,
+        'installation_end_date' => $order->installation_end_date,
+      ]);
+    }
+
     $updateOrder->partialUpdate($request, $order);
 
     return redirect()->route('dashboard')
