@@ -754,7 +754,7 @@ const EventModal = ({
                         }}
                         name="installation_date"
                         value={editableData.installation_date ?? ''}
-                        disabled={!isAdminOrAccountManager && !isSupervisor}
+                        disabled={isSupervisor || !isAdminOrAccountManager}
                         className="form-input"
                         onChange={([date]) => {
                           if (date) {
@@ -774,7 +774,7 @@ const EventModal = ({
                           }}
                           name="installation_end_date"
                           value={editableData.installation_end_date ?? ''}
-                          disabled={!isAdminOrAccountManager}
+                          disabled={isSupervisor || !isAdminOrAccountManager}
                           className="form-input"
                           onChange={([date]) => {
                             if (date) {
