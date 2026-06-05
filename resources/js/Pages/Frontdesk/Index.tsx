@@ -19,6 +19,7 @@ import InfoTooltip from '@/Components/InfoTooltip'
 import OrderBoardFilter, { type BoardFilters, type FilterFieldConfig } from '@/Components/OrderBoardFilter'
 import OrderGlobalSearch from '@/Components/OrderGlobalSearch'
 import OrderPipelineSort from '@/Components/OrderPipelineSort'
+import ProductLineBadge from '@/Components/ProductLineBadge'
 import { formatDateOnlyDisplay, isDateOnlyPast } from '@/Utils/dateOnly'
 import {
   type PipelineSortBy,
@@ -213,6 +214,7 @@ export default function Frontdesk ({
   lossReasonFrontdesk,
   sources,
   order_types,
+  product_lines,
   statuses,
   owners,
   supervisors,
@@ -230,6 +232,7 @@ export default function Frontdesk ({
   lossReasonFrontdesk: string[]
   sources: string[]
   order_types: string[]
+  product_lines: string[]
   statuses: string[]
   owners: IdOption[]
   supervisors: IdOption[]
@@ -304,6 +307,7 @@ export default function Frontdesk ({
     { value: 'job_state', label: 'Job State', type: 'text' },
     { value: 'job_zip', label: 'Job Zip', type: 'text' },
     { value: 'order_type', label: 'Order Type', type: 'select', options: order_types.map((type) => ({ label: type, value: type })) },
+    { value: 'product_line', label: 'Product Line', type: 'select', options: product_lines.map((line) => ({ label: line, value: line })) },
     { value: 'is_supply', label: 'Is Supply', type: 'select', options: [{ label: 'Yes', value: '1' }, { label: 'No', value: '0' }] },
     { value: 'owner', label: 'Owner', type: 'select', options: owners.map((owner) => ({ label: owner.name, value: owner.id.toString() })) },
     { value: 'source', label: 'Source', type: 'select', options: sources.map((source) => ({ label: source, value: source })) },
@@ -316,7 +320,7 @@ export default function Frontdesk ({
     { value: 'created_by', label: 'Created By', type: 'select', options: created_by_users.map((user) => ({ label: user.name, value: user.id.toString() })) },
     { value: 'created_time', label: 'Created Time', type: 'date' },
     { value: 'project_amount', label: 'Project Amount', type: 'amount' }
-  ]), [statuses, order_types, owners, sources, lossReasonFrontdesk, tagFilterOptions, supervisors, created_by_users])
+  ]), [statuses, order_types, product_lines, owners, sources, lossReasonFrontdesk, tagFilterOptions, supervisors, created_by_users])
 
   useEffect(() => {
     setProjectListState(data)
@@ -739,12 +743,12 @@ export default function Frontdesk ({
                                                 <div className="flex items-center justify-between w-full">
                                                   <p className="flex items-center gap-2 break-all text-sm font-semibold text-slate-700">
                                                     {task.title}
-                                                    {isVipClient && (
-                                                      <span className="inline-flex items-center rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-rose-700 ring-1 ring-rose-200 dark:bg-rose-500/20 dark:text-rose-200 dark:ring-rose-400/40">
-                                                        VIP
-                                                      </span>
-                                                    )}
-                                                  </p>
+                                  {isVipClient && (
+                                    <span className="inline-flex items-center rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-rose-700 ring-1 ring-rose-200 dark:bg-rose-500/20 dark:text-rose-200 dark:ring-rose-400/40">
+                                      VIP
+                                    </span>
+                                  )}
+                                </p>
 
                                                   {/* Botones a la derecha */}
                                                 <div className="flex items-center gap-2 text-[11px]">
@@ -804,6 +808,7 @@ export default function Frontdesk ({
                                                   </div>
                                                 </div>
                                          <div className="flex gap-2 items-center flex-wrap">
+                                        <ProductLineBadge productLine={task.product_line} />
                                         {(() => {
                                           const tagsArr = Array.isArray(task.tags)
                                             ? task.tags

@@ -59,6 +59,8 @@ class CreateClient {
             'other_phone' => $request->other_phone,
             'secondary_email' => $request->secondary_email,
             'source' => $request->source,
+            'vip_clients' => $request->boolean('vip_clients'),
+            'vip_notes' => $request->vip_notes,
             'user_id' => auth()->user()->id,
             'referral_id' => $referral?->id, // null si no aplica
             'company_contact_id' => $request->company_contact_id ? $request->company_contact_id : null,

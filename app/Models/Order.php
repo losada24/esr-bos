@@ -94,6 +94,7 @@ class Order extends Model
     'loss_reason_frontdesk',
     'description',
     'order_type',
+    'product_line',
     'bid_due_date',
     'is_supply',
     'schedule_appointment',

@@ -12,6 +12,7 @@ use App\Enum\PaymentScheduleTypeEnum;
 use App\Enum\SupervisorPaymentStatusEnum;
 use App\Enum\TypeOfFinancing;
 use App\Enum\OrderTypeEnum;
+use App\Enum\ProductLineEnum;
 use App\Models\Client;
 use App\Models\Order;
 use App\Rules\ValidateOrderStatus;
@@ -272,6 +273,11 @@ class UpdateOrderRequest extends FormRequest
                 OrderTypeEnum::COMMERCIAL->value,
                 OrderTypeEnum::SUPPLY->value,
               )
+            ],
+            'product_line' => [
+              'nullable',
+              'string',
+              Rule::enum(ProductLineEnum::class),
             ],
             'supervisor_payment_status' => [
               'nullable',

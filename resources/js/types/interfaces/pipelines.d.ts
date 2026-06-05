@@ -37,6 +37,7 @@ export interface Tasks {
   method_of_payment?: string | null
   type_of_financing?: string | null
   order_type?: string | null
+  product_line?: string | null
   bid_due_date?: string | null
   vip_clients?: boolean
   order_company_contacts?: Array<{

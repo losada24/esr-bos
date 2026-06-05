@@ -7,6 +7,7 @@ use Illuminate\Validation\Rule;
 use App\Enum\MethodOfPayment;
 use App\Enum\OrderStatusEnum;
 use App\Enum\PaymentScheduleTypeEnum;
+use App\Enum\ProductLineEnum;
 use App\Enum\ServiceEnum;
 use App\Enum\TypeOfFinancing;
 use App\Models\Client;
@@ -78,6 +79,7 @@ class UpdateServiceRequest extends FormRequest
                 'string',
                 Rule::in([ServiceEnum::SERVICE->value]),
             ],
+            'product_line' => ['nullable', 'string', Rule::enum(ProductLineEnum::class)],
             'vip_clients' => 'boolean',
             'vip_notes' => 'nullable|string|max:1000',
             'do_not_send_email' => 'boolean',

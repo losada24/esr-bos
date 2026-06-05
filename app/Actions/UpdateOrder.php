@@ -201,6 +201,7 @@ class UpdateOrder
         'order_number' => $request->order_number,
         'invoice_number' => $request->invoice_number,
         'order_type' => $request->order_type,
+        'product_line' => $request->product_line,
         'type_of_work_id' => $type_of_work_id,
         'type_of_housing_id' => $type_of_housing_id,
         'supervisor_id' => $request->supervisor_id,

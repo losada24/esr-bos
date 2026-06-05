@@ -1398,6 +1398,32 @@ export default function ActivitiesIndex ({ auth, events: initialEvents, calls: i
     const mode = params.get('mode')
     const orderId = params.get('order_id')
     const clientId = params.get('client_id')
+    const eventId = params.get('event_id')
+    const callId = params.get('call_id')
+
+    if (eventId) {
+      fetchJson<{ event: ActivityEventRow }>(route('activities.events.show', { event: eventId }))
+        .then((json) => {
+          setEvents((prev) => prev.some((event) => event.id === json.event.id)
+            ? prev.map((event) => event.id === json.event.id ? json.event : event)
+            : [json.event, ...prev])
+          openEventEditor(json.event)
+        })
+        .catch(() => {})
+      return
+    }
+
+    if (callId) {
+      fetchJson<{ call: ActivityCallRow }>(route('activities.calls.show', { call: callId }))
+        .then((json) => {
+          setCalls((prev) => prev.some((call) => call.id === json.call.id)
+            ? prev.map((call) => call.id === json.call.id ? json.call : call)
+            : [json.call, ...prev])
+          openCallEditor(json.call)
+        })
+        .catch(() => {})
+      return
+    }
 
     if (!mode || (!orderId && !clientId)) return
 
@@ -1427,7 +1453,7 @@ export default function ActivitiesIndex ({ auth, events: initialEvents, calls: i
     return () => {
       alive = false
     }
-  }, [])
+  }, [openCallEditor, openEventEditor])
 
   return (
     <AuthenticatedCalendarLayout

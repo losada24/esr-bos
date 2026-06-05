@@ -162,6 +162,8 @@ export const ORDER_TYPES = {
   SUPPLY: 'SUPPLY'
 }
 
+export const PRODUCT_LINES = ['ESR', 'ESW', 'MIXED'] as const
+
 export interface ThemeConfig {
   locale: Locale
   theme: Theme

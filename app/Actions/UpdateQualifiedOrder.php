@@ -49,6 +49,7 @@ class UpdateQualifiedOrder
             $payload = [
                 'client_id' => $request->client_id,
                 'order_type' => $request->order_type,
+                'product_line' => $request->product_line,
                 'name' => $request->name,
                 'job_address' => $request->job_address,
                 'city' => $request->city,

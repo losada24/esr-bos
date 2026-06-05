@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enum\ContactSourceEnum;
 use App\Enum\OrderStatusEnum;
 use App\Enum\OrderTypeEnum;
+use App\Enum\ProductLineEnum;
 use App\Enum\RoleEnum;
 use App\Enum\StatusUserEnum;
 use App\Models\Order;
@@ -136,6 +137,7 @@ class OrderStorageController extends Controller
             OrderTypeEnum::COMMERCIAL->value,
             OrderTypeEnum::SUPPLY->value,
         ];
+        $productLines = array_map(fn (ProductLineEnum $productLine) => $productLine->value, ProductLineEnum::cases());
 
         return Inertia::render('OrderStorage/Index', [
             'data' => $data,
@@ -146,6 +148,7 @@ class OrderStorageController extends Controller
             'tags' => $tags,
             'sources' => $sources,
             'order_types' => $orderTypes,
+            'product_lines' => $productLines,
             'filters' => $filters,
             'sort' => $sort,
         ]);
@@ -303,6 +306,7 @@ class OrderStorageController extends Controller
                 'name' => $owner->name,
             ])->values(),
             'order_type' => $order->order_type,
+            'product_line' => $order->product_line,
             'bid_due_date' => $this->resolveBidDueDate($order),
             'tags' => ($order->tags ?? collect())->map(function ($tag) {
                 return [

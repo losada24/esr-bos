@@ -8,6 +8,7 @@ use App\Enum\LanguageEnum;
 use App\Enum\MethodOfPayment;
 use App\Enum\OrderStatusEnum;
 use App\Enum\OrderTypeEnum;
+use App\Enum\ProductLineEnum;
 use App\Enum\PlaningDateSupervisorEnum;
 use Illuminate\Foundation\Http\FormRequest;
 use App\Enum\ServiceEnum;
@@ -48,6 +49,7 @@ class StoreQualifiedOrderRequest extends FormRequest
                 OrderTypeEnum::COMMERCIAL->value,
               )
             ],
+            'product_line' => ['nullable', 'string', Rule::enum(ProductLineEnum::class)],
             'status' =>  [
             'nullable',
             'string',

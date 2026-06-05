@@ -148,6 +148,7 @@ export interface Order {
   city?: string
   description?: string
   order_type?: string
+  product_line?: string
   bid_due_date?: Date | null
   user: User
   owners?: User[]
@@ -275,6 +276,7 @@ export const orderFormObj: OrderFormValues = {
   city: '',
   description: '',
   order_type: '',
+  product_line: '',
   bid_due_date: null,
   user: null as unknown as User,
   is_supply: false,
@@ -392,6 +394,7 @@ export const loadOrderFormObj = (order: Order): OrderFormValues => {
     city: order.city ?? '',
     description: order.description ?? '',
     order_type: order.order_type ?? '',
+    product_line: order.product_line ?? '',
     bid_due_date: order.bid_due_date ?? null,
     user: order.user,
     is_supply: order.is_supply ?? false,

@@ -12,6 +12,7 @@ import InfoTooltip from '@/Components/InfoTooltip'
 import OrderBoardFilter, { type BoardFilters, type FilterFieldConfig } from '@/Components/OrderBoardFilter'
 import OrderGlobalSearch from '@/Components/OrderGlobalSearch'
 import OrderPipelineSort from '@/Components/OrderPipelineSort'
+import ProductLineBadge from '@/Components/ProductLineBadge'
 import { formatDateOnlyDisplay, isDateOnlyPast } from '@/Utils/dateOnly'
 import {
   type PipelineSortBy,
@@ -176,7 +177,7 @@ const buildPaginationState = (pipelines: Pipelines[] = []): Record<string, Statu
   }, {})
 }
 
-const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_users, tags, sources, order_types, filters, sort }: PageProps & { data: Pipelines[], statuses: string[], owners: OwnerOption[], supervisors: IdOption[], created_by_users: IdOption[], tags: TagOption[], sources: string[], order_types: string[], filters: BoardFilters, sort: { sort_by?: string, sort_dir?: string } }) => {
+const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_users, tags, sources, order_types, product_lines, filters, sort }: PageProps & { data: Pipelines[], statuses: string[], owners: OwnerOption[], supervisors: IdOption[], created_by_users: IdOption[], tags: TagOption[], sources: string[], order_types: string[], product_lines: string[], filters: BoardFilters, sort: { sort_by?: string, sort_dir?: string } }) => {
   const [pipelines, setPipelinesState] = useState<Pipelines[]>(() => data)
   const [statusPagination, setStatusPagination] = useState<Record<string, StatusPaginationState>>(() => buildPaginationState(data))
   const [isFilterOpen, setIsFilterOpen] = useState(false)
@@ -224,6 +225,7 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
     { value: 'job_state', label: 'Job State', type: 'text' },
     { value: 'job_zip', label: 'Job Zip', type: 'text' },
     { value: 'order_type', label: 'Order Type', type: 'select', options: order_types.map((type) => ({ label: type, value: type })) },
+    { value: 'product_line', label: 'Product Line', type: 'select', options: product_lines.map((line) => ({ label: line, value: line })) },
     { value: 'is_supply', label: 'Is Supply', type: 'select', options: [{ label: 'Yes', value: '1' }, { label: 'No', value: '0' }] },
     { value: 'owner', label: 'Owner', type: 'select', options: owners.map((owner) => ({ label: owner.name, value: owner.id.toString() })) },
     { value: 'source', label: 'Source', type: 'select', options: sources.map((source) => ({ label: source, value: source })) },
@@ -235,7 +237,7 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
     { value: 'created_by', label: 'Created By', type: 'select', options: created_by_users.map((user) => ({ label: user.name, value: user.id.toString() })) },
     { value: 'created_time', label: 'Created Time', type: 'date' },
     { value: 'project_amount', label: 'Project Amount', type: 'amount' }
-  ]), [statuses, order_types, owners, sources, tagFilterOptions, supervisors, created_by_users])
+  ]), [statuses, order_types, product_lines, owners, sources, tagFilterOptions, supervisors, created_by_users])
 
   useEffect(() => {
     setPipelinesState(data)
@@ -619,6 +621,7 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
                                 </div>
                               </div>
                               <div className="flex gap-2 items-center flex-wrap">
+                                <ProductLineBadge productLine={task.product_line} />
                                 {task.tags?.length
                                   ? (
                                       task.tags.map((tag, index) => (

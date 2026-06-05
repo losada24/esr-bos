@@ -96,6 +96,7 @@ export interface Order {
   amount_check?: boolean
   email_check?: boolean
   order_type?: string
+  product_line?: string
 }
 
 export interface TypeOfWork {

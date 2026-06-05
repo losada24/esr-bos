@@ -10,6 +10,7 @@ use App\Enum\OrderStatusEnum;
 use App\Enum\OrderTypeEnum;
 use App\Enum\MethodOfPayment;
 use App\Enum\PaymentScheduleTypeEnum;
+use App\Enum\ProductLineEnum;
 use App\Enum\TypeOfFinancing;
 use App\Enum\RoleEnum;
 use App\Enum\StatusUserEnum;
@@ -32,6 +33,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use App\Traits\OrderEmails;
+use App\Traits\Snapshot;
 use Illuminate\Http\JsonResponse;
 use App\Support\PaymentScheduleCalculator;
 use App\Support\PaymentInstallmentPresenter;
@@ -45,7 +47,7 @@ use App\Support\OrderPipelineSort;
 
 class SalesController extends Controller
 {
-    use OrderEmails;
+    use OrderEmails, Snapshot;
     private const SALES_PAGE_SIZE = 20;
 
     private function orderClientEmailDeliveryLogger(): OrderClientEmailDeliveryLogger
@@ -180,6 +182,7 @@ class SalesController extends Controller
       'lossReasonFrontdesk' => $lossReasonFrontdesk,
       'sources' => $sources,
       'order_types' => $order_types,
+      'product_lines' => array_map(fn (ProductLineEnum $productLine) => $productLine->value, ProductLineEnum::cases()),
       'statuses' => $visibleStatuses,
       'owners' => $ownerOptions->get(),
       'supervisors' => $supervisors,
@@ -381,6 +384,7 @@ class SalesController extends Controller
         'name' => $owner->name,
       ])->values(),
       'order_type' => $order->order_type,
+      'product_line' => $order->product_line,
       'bid_due_date' => $this->resolveBidDueDate($order),
       'order_company_contacts' => $order->orderCompanyContacts
         ->map(fn ($item) => $this->mapOrderCompanyContactForResponse($order, $item))
@@ -1002,6 +1006,11 @@ class SalesController extends Controller
             OrderStatusEnum::FOLLOW_UP_PROJECTS->value,
           ])],
           'project_amount' => ['required', 'numeric', 'min:1'],
+          'product_line' => [
+            Rule::requiredIf($order->status === OrderStatusEnum::ESTIMATE_APPT_SCHEDULE->value),
+            'nullable',
+            Rule::enum(ProductLineEnum::class),
+          ],
           'note' => ['nullable', 'string'],
           'attachments' => ['required', 'array'],
           'attachments.*' => ['file', 'max:10240', 'mimes:pdf'],
@@ -1022,6 +1031,7 @@ class SalesController extends Controller
         DB::transaction(function () use ($order, $validated, $request, $noteContent) {
           $oldProjectAmount = (float) ($order->project_amount ?? 0);
           $order->project_amount = $validated['project_amount'];
+          $order->product_line = $validated['product_line'] ?? $order->product_line;
           $order->status = $validated['status'];
           $order->save();
 
@@ -1066,6 +1076,7 @@ class SalesController extends Controller
           }
         });
 
+        $this->createSnapshot($order->fresh());
         $order->load('owners');
 
         $schedule = $order->schedule_appointment
@@ -1079,6 +1090,7 @@ class SalesController extends Controller
             'schedule_appointment' => $schedule ? $schedule->format('M d, Y h:i A') : null,
             'schedule_appointment_iso' => $schedule ? $schedule->format('Y-m-d\TH:i') : null,
             'project_amount' => $order->project_amount,
+            'product_line' => $order->product_line,
             'owner_ids' => $order->owners->pluck('id')->values(),
             'owners' => $order->owners->map(fn ($owner) => [
               'id' => $owner->id,
@@ -1100,6 +1112,11 @@ class SalesController extends Controller
 
     $validated = $request->validate([
       'note' => ['required', 'string'],
+      'product_line' => [
+        Rule::requiredIf($order->status === OrderStatusEnum::ESTIMATE_APPT_SCHEDULE->value),
+        'nullable',
+        Rule::enum(ProductLineEnum::class),
+      ],
     ]);
 
     $noteContent = trim($validated['note']);
@@ -1111,7 +1128,8 @@ class SalesController extends Controller
       ], 422);
     }
 
-    DB::transaction(function () use ($order, $noteContent) {
+    DB::transaction(function () use ($order, $noteContent, $validated) {
+      $order->product_line = $validated['product_line'] ?? $order->product_line;
       $order->status = OrderStatusEnum::STAND_BY->value;
       $order->save();
 
@@ -1128,6 +1146,7 @@ class SalesController extends Controller
       ]);
     });
 
+    $this->createSnapshot($order->fresh());
     $order->load('owners');
 
     $schedule = $order->schedule_appointment
@@ -1138,6 +1157,7 @@ class SalesController extends Controller
       'order' => [
         'id' => $order->id,
         'status' => $order->status,
+        'product_line' => $order->product_line,
         'schedule_appointment' => $schedule ? $schedule->format('M d, Y h:i A') : null,
         'schedule_appointment_iso' => $schedule ? $schedule->format('Y-m-d\\TH:i') : null,
         'owner_ids' => $order->owners->pluck('id')->values(),
@@ -1229,6 +1249,11 @@ class SalesController extends Controller
 
     $validated = $request->validate([
       'note' => ['nullable', 'string'],
+      'product_line' => [
+        Rule::requiredIf($order->status === OrderStatusEnum::ESTIMATE_APPT_SCHEDULE->value),
+        'nullable',
+        Rule::enum(ProductLineEnum::class),
+      ],
     ]);
 
     $noteContent = trim($validated['note']);
@@ -1240,7 +1265,8 @@ class SalesController extends Controller
       ], 422);
     }*/
 
-    DB::transaction(function () use ($order, $noteContent) {
+    DB::transaction(function () use ($order, $noteContent, $validated) {
+      $order->product_line = $validated['product_line'] ?? $order->product_line;
       $order->status = OrderStatusEnum::PRE_CONTRACT_APPOINTMENT->value;
       $order->save();
 
@@ -1259,6 +1285,7 @@ class SalesController extends Controller
       }
     });
 
+    $this->createSnapshot($order->fresh());
     $order->load('owners');
 
     $schedule = $order->schedule_appointment
@@ -1269,6 +1296,7 @@ class SalesController extends Controller
       'order' => [
         'id' => $order->id,
         'status' => $order->status,
+        'product_line' => $order->product_line,
         'schedule_appointment' => $schedule ? $schedule->format('M d, Y h:i A') : null,
         'schedule_appointment_iso' => $schedule ? $schedule->format('Y-m-d\\TH:i') : null,
         'owner_ids' => $order->owners->pluck('id')->values(),
@@ -1312,6 +1340,11 @@ class SalesController extends Controller
 
     $rules = [
       'project_name' => ['required', 'string', 'max:255'],
+      'product_line' => [
+        Rule::requiredIf($order->status === OrderStatusEnum::ESTIMATE_APPT_SCHEDULE->value),
+        'nullable',
+        Rule::enum(ProductLineEnum::class),
+      ],
       'project_amount' => ['required', 'numeric', 'min:1'],
       'job_address' => ['nullable', 'string'],
       'city' => ['nullable', 'string', 'max:255'],
@@ -1445,6 +1478,7 @@ class SalesController extends Controller
 
       $order->name = $validated['project_name'];
       $order->project_amount = $validated['project_amount'];
+      $order->product_line = $validated['product_line'] ?? $order->product_line;
       $order->job_address = isset($validated['job_address']) && $validated['job_address'] !== ''
         ? $validated['job_address']
         : null;
@@ -1671,6 +1705,7 @@ class SalesController extends Controller
       );
     });
 
+    $this->createSnapshot($order->fresh());
     $order->load('owners', 'client.companyContacts', 'paymentSchedule.installments.paidBy', 'paymentSchedule.installments.movements.paidBy', 'orderCompanyContacts.companyContact', 'orderCompanyContacts.client.companyContacts', 'orderCompanyContacts.source', 'financialEvents.user');
     $selectedContact = $order->orderCompanyContacts
       ->firstWhere('is_selected', true)
@@ -1685,6 +1720,7 @@ class SalesController extends Controller
         'id' => $order->id,
         'name' => $order->name,
         'status' => $order->status,
+        'product_line' => $order->product_line,
         'project_amount' => $order->project_amount,
         'down_payment' => $order->down_payment,
         'job_address' => $order->job_address,

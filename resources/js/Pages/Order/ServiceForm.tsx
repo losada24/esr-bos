@@ -24,7 +24,7 @@ import { getOrderProducts, type OrderFormValues } from './OrderCommon'
 import { capitalizeWords } from '@/Utils/string'
 import ProductTable from './ProductTable'
 import ProductModal from './ProductModal'
-import { SERVICES, PAYMENT_METHODS } from '@/Utils/constants'
+import { SERVICES, PAYMENT_METHODS, PRODUCT_LINES } from '@/Utils/constants'
 import OrderNotesForOrder from '@/Components/OrderNotesForOrder'
 import DeleteIcon from '@/Components/Icons/DeleteIcon'
 import ExportIcon from '@/Components/Icons/ExportIcon'
@@ -936,6 +936,16 @@ const ServiceForm = ({
                 placeholder='Order Number'
               />
               {(submitCount && errors.order_number) ? <InputError message={errors.order_number} className="mt-2" /> : ''}
+            </div>
+            <div className={submitCount ? (errors.product_line ? 'has-error' : 'has-success') : ''}>
+              <label htmlFor="product_line">Product Line</label>
+              <Field id="product_line" name="product_line" className="form-select" as="select">
+                <option value="">Product Line</option>
+                {PRODUCT_LINES.map((productLine) => (
+                  <option key={productLine} value={productLine}>{productLine}</option>
+                ))}
+              </Field>
+              {(submitCount && errors.product_line) ? <InputError message={errors.product_line} className="mt-2" /> : ''}
             </div>
             <div className={submitCount ? (errors.job_address ? 'has-error' : 'has-success') : ''}>
               <label htmlFor="job_address">Job Address</label>

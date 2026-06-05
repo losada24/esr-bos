@@ -10,6 +10,7 @@ import { COMPANY_NAME } from '@/Utils/constants'
 import ProfileImage from '@/Components/ProfileImage'
 import ProfileIcon from '@/Components/Icons/ProfileIcon'
 import { ellipse } from '@/Utils/string'
+import CrmNotificationsDropdown from '@/Components/CrmNotificationsDropdown'
 
 const Header = ({ auth }: { auth: Auth }) => {
   const [themeState, toggleSidebar] = useStore((state: ThemeState) => [
@@ -42,6 +43,7 @@ const Header = ({ auth }: { auth: Auth }) => {
                         </button>
                     </div>
                     <div className="sm:flex-1 ltr:sm:ml-0 ltr:ml-auto sm:rtl:mr-0 rtl:mr-auto flex justify-end items-center space-x-1.5 lg:space-x-2 rtl:space-x-reverse dark:text-[#d0d2d6]">
+                        <CrmNotificationsDropdown />
                         <div className="dropdown shrink-0 flex">
                             <Dropdown
                                 offset={[0, 8]}

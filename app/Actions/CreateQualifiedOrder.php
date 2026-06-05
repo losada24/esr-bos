@@ -115,6 +115,7 @@ class CreateQualifiedOrder
         'client_id' => $orderClientId,
         'user_id' => auth()->user()->id,
         'order_type' => $request->order_type,
+        'product_line' => $request->product_line,
         'name' => $request->name,
         'job_address' => $request->job_address,
         'city' => $request->city,

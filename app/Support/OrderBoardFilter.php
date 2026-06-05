@@ -82,6 +82,11 @@ class OrderBoardFilter
                     $query->where('orders.order_type', $value);
                 }
                 break;
+            case 'product_line':
+                if (self::hasText($value) && strtolower(trim((string) $value)) !== 'all') {
+                    $query->where('orders.product_line', $value);
+                }
+                break;
             case 'is_supply':
                 $boolValue = self::parseBoolean($value);
                 if ($boolValue !== null) {
