@@ -9,9 +9,11 @@ use App\Mail\CrmEventInvitation;
 use App\Models\Client;
 use App\Models\CrmCall;
 use App\Models\CrmEvent;
+use App\Models\CrmNotification;
 use App\Models\Note;
 use App\Models\Order;
 use App\Models\User;
+use App\Services\CrmNotificationService;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -152,6 +154,7 @@ class ActivityController extends Controller
             'online_meeting' => (bool) ($data['online_meeting'] ?? false),
         ]);
         $event = $event->fresh(['host', 'order', 'client']);
+        $this->recordEventNotifications($request, $event, 'created');
         $this->sendEventInvitationsIfRequested($event, $sendInvitation);
 
         return response()->json(['event' => $this->eventRow($event)], 201);
@@ -233,6 +236,7 @@ class ActivityController extends Controller
             'online_meeting' => (bool) ($data['online_meeting'] ?? false),
         ]);
         $event = $event->fresh(['host', 'order', 'client']);
+        $this->recordEventNotifications($request, $event, 'updated');
         $this->sendEventInvitationsIfRequested($event, $sendInvitation);
 
         return response()->json(['event' => $this->eventRow($event)]);
@@ -257,8 +261,10 @@ class ActivityController extends Controller
             'client_id' => $order?->client_id ?? $client?->id ?? ($data['client_id'] ?? null),
             'reminder_enabled' => (bool) ($data['reminder_enabled'] ?? false),
         ]);
+        $call = $call->fresh(['owner', 'order', 'client']);
+        $this->recordCallNotifications($request, $call, 'created');
 
-        return response()->json(['call' => $this->callRow($call->fresh(['owner', 'order', 'client']))], 201);
+        return response()->json(['call' => $this->callRow($call)], 201);
     }
 
     public function showCall(Request $request, CrmCall $call): JsonResponse
@@ -334,8 +340,10 @@ class ActivityController extends Controller
             'client_id' => $order?->client_id ?? $client?->id ?? ($data['client_id'] ?? null),
             'reminder_enabled' => (bool) ($data['reminder_enabled'] ?? false),
         ]);
+        $call = $call->fresh(['owner', 'order', 'client']);
+        $this->recordCallNotifications($request, $call, 'updated');
 
-        return response()->json(['call' => $this->callRow($call->fresh(['owner', 'order', 'client']))]);
+        return response()->json(['call' => $this->callRow($call)]);
     }
 
     public function context(Request $request): JsonResponse
@@ -761,6 +769,211 @@ class ActivityController extends Controller
         foreach ($emails as $email) {
             SendGmailEmail::dispatch($email, new CrmEventInvitation($event))->onQueue('emails');
         }
+    }
+
+    private function recordEventNotifications(Request $request, CrmEvent $event, string $action): void
+    {
+        $actor = $request->user();
+        $event->loadMissing(['host:id,name,email', 'order:id,name', 'client:id,name']);
+        $title = $event->title ?: 'Event';
+        $url = route('activities.index', ['mode' => 'event', 'event_id' => $event->id]);
+
+        $this->createNotification(
+            $event->host_id,
+            $actor?->id,
+            CrmNotification::TYPE_FEED,
+            $action === 'created' ? 'Event created' : 'Event updated',
+            trim(($actor?->name ?? 'Someone') . ' ' . $action . ' event ' . $title),
+            $event,
+            ['url' => $url]
+        );
+
+        foreach ($this->eventParticipantUsers($event) as $participant) {
+            if ((int) $participant->id === (int) $event->host_id && $action === 'created') {
+                continue;
+            }
+
+            $this->createNotification(
+                $participant->id,
+                $actor?->id,
+                CrmNotification::TYPE_SYSTEM,
+                $action === 'created' ? 'You were invited to an event' : 'Event updated',
+                trim(($actor?->name ?? 'Someone') . ' ' . ($action === 'created' ? 'invited you to ' : 'updated ') . $title),
+                $event,
+                ['url' => $url]
+            );
+        }
+
+        $this->syncEventReminderNotifications($event, $url);
+
+        if ($event->order) {
+            app(CrmNotificationService::class)->recordOrderFeed(
+                $event->order,
+                $actor,
+                $action === 'created' ? 'Event added to order' : 'Order event updated',
+                trim(($actor?->name ?? 'Someone') . ' ' . $action . ' event ' . $title . ' on order ' . ($event->order?->name ?? ('#' . $event->order_id)))
+            );
+        }
+    }
+
+    private function recordCallNotifications(Request $request, CrmCall $call, string $action): void
+    {
+        $actor = $request->user();
+        $call->loadMissing(['owner:id,name,email', 'order:id,name', 'client:id,name']);
+        $title = 'Call: ' . $call->to_from;
+        $url = route('activities.index', ['mode' => 'call', 'call_id' => $call->id]);
+
+        $this->createNotification(
+            $call->owner_id,
+            $actor?->id,
+            CrmNotification::TYPE_FEED,
+            $action === 'created' ? 'Call created' : 'Call updated',
+            trim(($actor?->name ?? 'Someone') . ' ' . $action . ' ' . $title),
+            $call,
+            ['url' => $url]
+        );
+
+        $this->syncCallReminderNotifications($call, $url);
+
+        if ($call->order) {
+            app(CrmNotificationService::class)->recordOrderFeed(
+                $call->order,
+                $actor,
+                $action === 'created' ? 'Call added to order' : 'Order call updated',
+                trim(($actor?->name ?? 'Someone') . ' ' . $action . ' ' . $title . ' on order ' . ($call->order?->name ?? ('#' . $call->order_id)))
+            );
+        }
+    }
+
+    private function syncEventReminderNotifications(CrmEvent $event, string $url): void
+    {
+        CrmNotification::query()
+            ->where('type', CrmNotification::TYPE_REMINDER)
+            ->where('notifiable_type', CrmEvent::class)
+            ->where('notifiable_id', $event->id)
+            ->whereNull('read_at')
+            ->delete();
+
+        if (!$event->reminder_enabled || !$event->starts_at) {
+            return;
+        }
+
+        $dueAt = $this->asCarbon($event->starts_at)?->copy()->subMinutes((int) ($event->reminder_minutes_before ?? 15));
+        if (!$dueAt) {
+            return;
+        }
+
+        $startsAt = $this->formatReminderStartsAt($event->starts_at);
+        $body = trim($event->title . ' starts' . ($startsAt ? ' on ' . $startsAt : ''));
+
+        foreach ($this->eventReminderUsers($event) as $user) {
+            $this->createNotification(
+                $user->id,
+                $event->host_id,
+                CrmNotification::TYPE_REMINDER,
+                'Event reminder',
+                $body,
+                $event,
+                ['url' => $url],
+                $dueAt
+            );
+        }
+    }
+
+    private function syncCallReminderNotifications(CrmCall $call, string $url): void
+    {
+        CrmNotification::query()
+            ->where('type', CrmNotification::TYPE_REMINDER)
+            ->where('notifiable_type', CrmCall::class)
+            ->where('notifiable_id', $call->id)
+            ->whereNull('read_at')
+            ->delete();
+
+        if (!$call->reminder_enabled || !$call->call_start_time) {
+            return;
+        }
+
+        $dueAt = $this->asCarbon($call->call_start_time)?->copy()->subMinutes((int) ($call->reminder_minutes_before ?? 15));
+        if (!$dueAt) {
+            return;
+        }
+
+        $startsAt = $this->formatReminderStartsAt($call->call_start_time);
+        $body = trim('Call with ' . $call->to_from . ' starts' . ($startsAt ? ' on ' . $startsAt : ''));
+
+        $this->createNotification(
+            $call->owner_id,
+            $call->owner_id,
+            CrmNotification::TYPE_REMINDER,
+            'Call reminder',
+            $body,
+            $call,
+            ['url' => $url],
+            $dueAt
+        );
+    }
+
+    private function formatReminderStartsAt($value): ?string
+    {
+        $startsAt = $this->asCarbon($value);
+
+        return $startsAt
+            ? $startsAt->copy()->timezone((string) config('app.timezone', 'UTC'))->format('M d, Y h:i A')
+            : null;
+    }
+
+    private function createNotification(
+        ?int $userId,
+        ?int $actorId,
+        string $type,
+        string $title,
+        ?string $body,
+        CrmEvent|CrmCall $activity,
+        array $data = [],
+        ?Carbon $dueAt = null
+    ): void {
+        if (!$userId) {
+            return;
+        }
+
+        CrmNotification::create([
+            'user_id' => $userId,
+            'actor_id' => $actorId,
+            'type' => $type,
+            'title' => $title,
+            'body' => $body,
+            'data' => $data,
+            'notifiable_type' => $activity::class,
+            'notifiable_id' => $activity->id,
+            'due_at' => $dueAt,
+        ]);
+    }
+
+    private function eventReminderUsers(CrmEvent $event)
+    {
+        return collect([$event->host])
+            ->merge($this->eventParticipantUsers($event))
+            ->filter()
+            ->unique('id')
+            ->values();
+    }
+
+    private function eventParticipantUsers(CrmEvent $event)
+    {
+        $emails = collect($event->participants ?? [])
+            ->filter(fn ($email) => is_string($email) && filter_var($email, FILTER_VALIDATE_EMAIL))
+            ->map(fn (string $email) => strtolower(trim($email)))
+            ->unique()
+            ->values();
+
+        if ($emails->isEmpty()) {
+            return collect();
+        }
+
+        return User::query()
+            ->select('id', 'name', 'email')
+            ->whereIn(DB::raw('LOWER(email)'), $emails)
+            ->get();
     }
 
     private function shouldSendEventInvitation(array $data, bool $sendByDefault = false): bool

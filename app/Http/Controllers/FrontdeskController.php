@@ -15,6 +15,7 @@ use App\Enum\LanguageEnum;
 use App\Enum\LostReasonfrontdeskEnum;
 use App\Enum\OrderStatusEnum;
 use App\Enum\OrderTypeEnum;
+use App\Enum\ProductLineEnum;
 use App\Enum\RoleEnum;
 use App\Events\OrderStatusChanged;
 use App\Enum\MethodOfPayment;
@@ -46,6 +47,7 @@ use App\Support\OrderBoardFilter;
 use App\Support\OrderClientEmailManager;
 use App\Support\OrderPipelineSort;
 use App\Support\QualifiedOrderDuplicateChecker;
+use App\Services\CrmNotificationService;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -131,6 +133,7 @@ class FrontdeskController extends Controller
                 'name' => $owner->name,
             ])->values(),
             'order_type'  => $order->order_type,
+            'product_line' => $order->product_line,
             'bid_due_date' => $this->resolveBidDueDate($order),
             'tags'        => ($order->tags ?? collect())->map(fn($t) => [
                 'name'  => $t->name,
@@ -297,6 +300,7 @@ class FrontdeskController extends Controller
         'lossReasonFrontdesk' => $lossReasonFrontdesk,
         'sources' => $sources,
         'order_types' => $order_types,
+        'product_lines' => array_map(fn (ProductLineEnum $productLine) => $productLine->value, ProductLineEnum::cases()),
         'owners' => $owners,
         'supervisors' => $supervisors,
         'created_by_users' => $createdByUsers,
@@ -510,6 +514,20 @@ class FrontdeskController extends Controller
 
     $validated = $request->validate([
       'status' => ['required', 'string'],
+      'product_line' => [
+        Rule::requiredIf(
+          $order->status === OrderStatusEnum::ESTIMATE_APPT_SCHEDULE->value
+          && in_array($request->input('status'), [
+            OrderStatusEnum::FOLLOW_UP->value,
+            OrderStatusEnum::FOLLOW_UP_PROJECTS->value,
+            OrderStatusEnum::STAND_BY->value,
+            OrderStatusEnum::PRE_CONTRACT_APPOINTMENT->value,
+            OrderStatusEnum::CONTRACT_SIGNED_BY_CLIENT->value,
+          ], true)
+        ),
+        'nullable',
+        Rule::enum(ProductLineEnum::class),
+      ],
       'note' => ['nullable', 'string', 'max:4000'],
       'invoice_number' => ['nullable', 'string', 'max:255'],
       'confirm_customer_role' => ['nullable', 'boolean'],
@@ -553,8 +571,9 @@ class FrontdeskController extends Controller
       }
     }
 
-    DB::transaction(function () use ($order, $request, $finalStatus, $historyStatuses, $noteContent, $invoiceNumber, $status, $confirmCustomerRole) {
+    DB::transaction(function () use ($order, $request, $validated, $finalStatus, $historyStatuses, $noteContent, $invoiceNumber, $status, $confirmCustomerRole) {
       $order->status = $finalStatus;
+      $order->product_line = $validated['product_line'] ?? $order->product_line;
       if ($invoiceNumber !== '' && $status === OrderStatusEnum::REVIEW->value) {
         $order->invoice_number = $invoiceNumber;
       }
@@ -594,6 +613,13 @@ class FrontdeskController extends Controller
         }
       }
     });
+    $this->createSnapshot($order->fresh());
+    app(CrmNotificationService::class)->recordOrderFeed(
+      $order->fresh(),
+      $request->user(),
+      'Order status updated',
+      ($request->user()?->name ?? 'Someone') . ' moved order ' . ($order->name ?? ('#' . $order->id)) . ' to ' . $finalStatus
+    );
 
     return response()->json(['success' => true, 'order' => $order]);
   }
@@ -625,6 +651,12 @@ class FrontdeskController extends Controller
       $order->load('user'); // Relación con User
       $this->sendEmail($order);
       $order->refresh();
+      app(CrmNotificationService::class)->recordOrderFeed(
+        $order,
+        $user,
+        'Order status updated',
+        ($user?->name ?? 'Someone') . ' moved order ' . ($order->name ?? ('#' . $order->id)) . ' to ' . $status
+      );
       
 
       return response()->json(['success' => true, 'order' => $order]);
@@ -666,6 +698,12 @@ class FrontdeskController extends Controller
     });
 
     $order->refresh();
+    app(CrmNotificationService::class)->recordOrderFeed(
+      $order,
+      $request->user(),
+      'Order status updated',
+      ($request->user()?->name ?? 'Someone') . ' moved order ' . ($order->name ?? ('#' . $order->id)) . ' to ' . $data['status']
+    );
 
     return response()->json(['success' => true, 'order' => $order]);
 }
@@ -689,6 +727,7 @@ public function showQuantifiedModal(Order $order)
             Rule::unique('clients', 'phone')->ignore($order->client_id),
           ],
           'notes' => ['nullable', 'string', 'max:2000'],
+          'product_line' => ['nullable', 'string', Rule::enum(ProductLineEnum::class)],
           'force_duplicate' => ['nullable', 'boolean'],
           'language' => [
             'required',
@@ -723,6 +762,7 @@ public function showQuantifiedModal(Order $order)
         $orderPayload = [
           'name' => $request['name'],
           'order_type' => $request['order_type'],
+          'product_line' => $request['product_line'] ?? null,
           'job_address' => $request['job_address'],
           'city' => $request['city'],
           'job_state' => $request['job_state'],
@@ -816,6 +856,12 @@ public function showQuantifiedModal(Order $order)
         $order->load('saleForm', 'client');
 
           $this->sendEmail($order);
+          app(CrmNotificationService::class)->recordOrderFeed(
+            $order,
+            $request->user(),
+            'Order qualified',
+            ($request->user()?->name ?? 'Someone') . ' qualified order ' . ($order->name ?? ('#' . $order->id)) . ' and moved it to ' . $status
+          );
 
         return response()->json(['success' => true, 'order' => $order]);
     }
@@ -1139,6 +1185,12 @@ public function showQuantifiedModal(Order $order)
     }
 
     $updatedOrder = $updateQualifiedOrder->handle($request, $order);
+    app(CrmNotificationService::class)->recordOrderFeed(
+      $updatedOrder,
+      $request->user(),
+      'Order updated',
+      ($request->user()?->name ?? 'Someone') . ' updated order ' . ($updatedOrder->name ?? ('#' . $updatedOrder->id))
+    );
     $orderData = $this->appendClientEmailData($updatedOrder);
     $orderData['payment_schedule'] = PaymentInstallmentPresenter::schedule($updatedOrder->paymentSchedule);
     $orderData['has_contract_signed'] = $updatedOrder->hasReachedContractSigned();
@@ -1223,8 +1275,9 @@ public function showQuantifiedModal(Order $order)
     $clientChanged = false;
     $orderChanged = false;
     $noteCreated = false;
+    $statusChanged = false;
 
-    DB::transaction(function () use ($data, $order, $request, $mode, &$clientChanged, &$orderChanged, &$noteCreated) {
+    DB::transaction(function () use ($data, $order, $request, $mode, &$clientChanged, &$orderChanged, &$noteCreated, &$statusChanged) {
       $targetClientId = isset($data['client_id']) ? (int) $data['client_id'] : (int) ($order->client_id ?? 0);
       $client = $targetClientId ? Client::find($targetClientId) : null;
       if ($targetClientId) {
@@ -1274,7 +1327,6 @@ public function showQuantifiedModal(Order $order)
         }
       }
 
-      $statusChanged = false;
       $orderPayload = [];
       if ($mode === 'frontdesk') {
         $currentOrderName = trim((string) ($order->name ?? ''));
@@ -1331,6 +1383,30 @@ public function showQuantifiedModal(Order $order)
       $this->createSnapshot($order);
     }
     $order->setAttribute('has_contract_signed', $order->hasReachedContractSigned());
+    if ($clientChanged) {
+      app(CrmNotificationService::class)->recordOrderFeed(
+        $order,
+        $request->user(),
+        'Order contact updated',
+        ($request->user()?->name ?? 'Someone') . ' updated the contact on order ' . ($order->name ?? ('#' . $order->id))
+      );
+    }
+    if ($statusChanged) {
+      app(CrmNotificationService::class)->recordOrderFeed(
+        $order,
+        $request->user(),
+        'Order status updated',
+        ($request->user()?->name ?? 'Someone') . ' moved order ' . ($order->name ?? ('#' . $order->id)) . ' to ' . $data['status']
+      );
+    }
+    if ($noteCreated) {
+      app(CrmNotificationService::class)->recordOrderFeed(
+        $order,
+        $request->user(),
+        'Order note added',
+        ($request->user()?->name ?? 'Someone') . ' added a note to order ' . ($order->name ?? ('#' . $order->id))
+      );
+    }
 
     return response()->json([
       'success' => true,

@@ -30,7 +30,7 @@ import ProductModal from './ProductModal'
 import ProductTable from './ProductTable'
 import DeleteIcon from '@/Components/Icons/DeleteIcon'
 import ExportIcon from '@/Components/Icons/ExportIcon'
-import { PAYMENT_METHODS, SERVICES, STOREFRONT_CATEGORY } from '@/Utils/constants'
+import { PAYMENT_METHODS, PRODUCT_LINES, SERVICES, STOREFRONT_CATEGORY } from '@/Utils/constants'
 import { capitalizeWords } from '@/Utils/string'
 import { getProductExtraWorkPrice, getProductPrice, getProductPriceWithExtraWorks } from '@/Utils/price'
 import { type OrderColor } from '@/types/interfaces/order'
@@ -1333,6 +1333,21 @@ const OrderForm = ({
                   ))}
               </Field>
               {(submitCount && errors.order_type) ? <InputError message={errors.order_type} className="mt-2" /> : ''}
+            </div>
+            <div className={submitCount ? (errors.product_line) ? 'has-error' : 'has-success' : ''}>
+              <label htmlFor="product_line">Product Line</label>
+              <Field
+                id="product_line"
+                name="product_line"
+                className="form-select"
+                as="select"
+              >
+                <option value="">Product Line</option>
+                {PRODUCT_LINES.map((productLine) => (
+                  <option key={productLine} value={productLine}>{productLine}</option>
+                ))}
+              </Field>
+              {(submitCount && errors.product_line) ? <InputError message={errors.product_line} className="mt-2" /> : ''}
             </div>
             <div className={submitCount ? (errors.name) ? 'has-error' : 'has-success' : ''}>
               <label htmlFor="name">Name</label>

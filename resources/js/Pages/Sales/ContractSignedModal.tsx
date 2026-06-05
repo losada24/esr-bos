@@ -1,7 +1,7 @@
 import InputError from '@/Components/InputError'
 import CloseIcon from '@/Components/Icons/CloseIcon'
 import { Formik, Form } from 'formik'
-import { PAYMENT_METHODS } from '@/Utils/constants'
+import { PAYMENT_METHODS, PRODUCT_LINES } from '@/Utils/constants'
 
 interface CustomScheduleItem {
   label: string
@@ -24,6 +24,7 @@ export const NO_CLIENT_EMAIL_SELECTION = '__NONE__'
 
 interface ContractSignedFormValues {
   projectName: string
+  productLine: string
   projectAmount: string
   downPayment: string
   jobAddress: string
@@ -55,6 +56,7 @@ type CustomSchedulePayload = { label: string, amount: number }
 
 type ContractSignedSubmitValues = {
   projectName: string
+  productLine: string
   projectAmount: string
   downPayment: string
   jobAddress: string
@@ -80,6 +82,8 @@ export interface ContractSignedModalProps {
   open: boolean
   taskTitle: string
   initialProjectName: string
+  initialProductLine: string
+  requireProductLine?: boolean
   initialProjectAmount: string
   initialDownPayment: string
   initialJobAddress: string
@@ -117,6 +121,8 @@ export default function ContractSignedModal ({
   open,
   taskTitle,
   initialProjectName,
+  initialProductLine,
+  requireProductLine = false,
   initialProjectAmount,
   initialDownPayment,
   initialJobAddress,
@@ -221,6 +227,7 @@ export default function ContractSignedModal ({
           enableReinitialize
           initialValues={{
             projectName: initialProjectName ?? '',
+            productLine: initialProductLine ?? '',
             projectAmount: initialProjectAmount ?? '',
             downPayment: initialDownPayment ?? '',
             jobAddress: initialJobAddress ?? '',
@@ -261,6 +268,9 @@ export default function ContractSignedModal ({
 
             if (!values.projectName || values.projectName.trim() === '') {
               issues.projectName = 'Project name is required.'
+            }
+            if (requireProductLine && !values.productLine) {
+              issues.productLine = 'Product Line is required.'
             }
 
             if (!values.projectAmount) {
@@ -393,6 +403,7 @@ export default function ContractSignedModal ({
 
             onSubmit({
               projectName: values.projectName.trim(),
+              productLine: values.productLine,
               projectAmount: values.projectAmount,
               downPayment: values.downPayment,
               jobAddress: values.jobAddress.trim(),
@@ -557,6 +568,22 @@ export default function ContractSignedModal ({
                       ? <InputError message={errors.projectName} className="mt-2" />
                       : null}
                   </div>
+
+                  {requireProductLine && <div className={submitCount ? (errors.productLine ? 'has-error' : 'has-success') : ''}>
+                    <label className="mb-1 block text-sm font-medium text-slate-600">Product Line</label>
+                    <select
+                      name="productLine"
+                      value={values.productLine}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 outline-none focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                      disabled={loading}
+                    >
+                      <option value="">Select Product Line</option>
+                      {PRODUCT_LINES.map((line) => <option key={line} value={line}>{line}</option>)}
+                    </select>
+                    {submitCount && errors.productLine ? <InputError message={errors.productLine} className="mt-2" /> : null}
+                  </div>}
 
                   <div className={`grid gap-4 md:grid-cols-2 ${submitCount ? (errors.projectAmount ? 'has-error' : 'has-success') : ''}`}>
                     <div className={submitCount ? (errors.projectAmount ? 'has-error' : 'has-success') : ''}>

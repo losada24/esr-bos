@@ -10,7 +10,7 @@ import 'flatpickr/dist/flatpickr.css'
 import { type Tasks } from '@/types/interfaces/pipelines'
 import { loadOrderFormObj, type Order, orderQuantifiedSchema, type OrderFormValues } from './OrderCommon'
 import { router } from '@inertiajs/react'
-import { ORDER_TYPES } from '@/Utils/constants'
+import { ORDER_TYPES, PRODUCT_LINES } from '@/Utils/constants'
 import { capitalizeWords } from '@/Utils/string'
 import { useJsApiLoader } from '@react-google-maps/api'
 import { formatDateOnlyValue } from '@/Utils/dateOnly'
@@ -488,6 +488,16 @@ const QuantifiedModal = ({
                       ))}
                     </Field>
                     {(submitCount && errors.order_type) ? <InputError message={errors.order_type} className="mt-2" /> : ''}
+                    </div>
+                    <div className={submitCount ? (errors.product_line) ? 'has-error' : 'has-success' : ''}>
+                      <label htmlFor="product_line">Product Line</label>
+                      <Field id="product_line" name="product_line" className="form-select" as="select">
+                        <option value="">Product Line</option>
+                        {PRODUCT_LINES.map((productLine) => (
+                          <option key={productLine} value={productLine}>{productLine}</option>
+                        ))}
+                      </Field>
+                      {(submitCount && errors.product_line) ? <InputError message={errors.product_line} className="mt-2" /> : ''}
                     </div>
                     <div className={submitCount ? (errors.name) ? 'has-error' : 'has-success' : ''}>
                       <label htmlFor="name">Order Name</label>

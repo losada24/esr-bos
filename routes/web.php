@@ -11,6 +11,7 @@ use App\Http\Controllers\CompanyContactController;
 use App\Http\Controllers\AuthorizeNetHostedPaymentController;
 use App\Http\Controllers\AuthorizeNetWebhookController;
 use App\Http\Controllers\ActivityController;
+use App\Http\Controllers\CrmNotificationController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\OrderController;
@@ -98,6 +99,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::get('/crm-notifications', [CrmNotificationController::class, 'index'])->name('crm-notifications.index');
+    Route::post('/crm-notifications/read-all', [CrmNotificationController::class, 'markAllRead'])->name('crm-notifications.read-all');
+    Route::post('/crm-notifications/{notification}/read', [CrmNotificationController::class, 'markRead'])->name('crm-notifications.read');
 
     // USERS
     /* Route::resource('user', UserController::class)

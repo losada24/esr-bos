@@ -365,6 +365,7 @@ const FIELD_LABELS: Record<string, string> = {
   status: 'Status',
   schedule_appointment: 'Schedule appointment',
   order_type: 'Order type',
+  product_line: 'Product Line',
   method_of_payment: 'Method of payment',
   project_amount: 'Project amount',
   down_payment: 'Cash amount',
@@ -1827,7 +1828,7 @@ export default function ShowStatusOrder ({
     setPendingFollowUp(null)
   }
 
-  const handleFollowUpSubmit = async (values: { projectAmount: string, note: string, attachments: File[] }) => {
+  const handleFollowUpSubmit = async (values: { projectAmount: string, note: string, attachments: File[], productLine: string }) => {
     if (!pendingFollowUp) return
 
     setFollowUpSaving(true)
@@ -1838,6 +1839,7 @@ export default function ShowStatusOrder ({
       formData.append('status', pendingFollowUp.newStatus)
       formData.append('project_amount', values.projectAmount)
       formData.append('note', values.note)
+      formData.append('product_line', values.productLine)
 
       values.attachments?.forEach((file) => {
         formData.append('attachments[]', file)
@@ -1877,6 +1879,7 @@ export default function ShowStatusOrder ({
         schedule_appointment_iso: data.schedule_appointment_iso ?? prev.schedule_appointment_iso,
         owner_ids: data.owner_ids ?? prev.owner_ids,
         owners: data.owners ?? prev.owners,
+        product_line: data.product_line ?? prev.product_line,
         project_amount: Number.isFinite(normalizedProjectAmount) ? normalizedProjectAmount : prev.project_amount
       }))
 
@@ -1898,7 +1901,7 @@ export default function ShowStatusOrder ({
     setPendingStandBy(null)
   }
 
-  const handleStandBySubmit = async (values: { note: string }) => {
+  const handleStandBySubmit = async (values: { note: string, productLine: string }) => {
     if (!pendingStandBy) return
 
     setStandBySaving(true)
@@ -1914,6 +1917,7 @@ export default function ShowStatusOrder ({
         },
         body: JSON.stringify({
           note: values.note,
+          product_line: values.productLine
         })
       })
 
@@ -1937,6 +1941,7 @@ export default function ShowStatusOrder ({
       setOrder(prev => ({
         ...prev,
         status: pendingStandBy.newStatus,
+        product_line: data.product_line ?? prev.product_line,
         schedule_appointment: data.schedule_appointment ?? prev.schedule_appointment,
         schedule_appointment_iso: data.schedule_appointment_iso ?? prev.schedule_appointment_iso,
         owner_ids: data.owner_ids ?? prev.owner_ids,
@@ -2024,7 +2029,7 @@ export default function ShowStatusOrder ({
     setPendingPreContract(null)
   }
 
-  const handlePreContractSubmit = async (values: { note: string }) => {
+  const handlePreContractSubmit = async (values: { note: string, productLine: string }) => {
     if (!pendingPreContract) return
 
     setPreContractSaving(true)
@@ -2039,7 +2044,8 @@ export default function ShowStatusOrder ({
           'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? ''
         },
         body: JSON.stringify({
-          note: values.note
+          note: values.note,
+          product_line: values.productLine
         })
       })
 
@@ -2063,6 +2069,7 @@ export default function ShowStatusOrder ({
       setOrder(prev => ({
         ...prev,
         status: pendingPreContract.newStatus,
+        product_line: data.product_line ?? prev.product_line,
         schedule_appointment: data.schedule_appointment ?? prev.schedule_appointment,
         schedule_appointment_iso: data.schedule_appointment_iso ?? prev.schedule_appointment_iso,
         owner_ids: data.owner_ids ?? prev.owner_ids,
@@ -2096,6 +2103,7 @@ export default function ShowStatusOrder ({
       const formData = new FormData()
       const fieldMap: Record<string, string> = {
         projectName: 'project_name',
+        productLine: 'product_line',
         projectAmount: 'project_amount',
         downPayment: 'down_payment',
         jobAddress: 'job_address',
@@ -2178,6 +2186,7 @@ export default function ShowStatusOrder ({
         owner_ids: data.owner_ids ?? prev.owner_ids,
         owners: data.owners ?? prev.owners,
         project_amount: data.project_amount ?? prev.project_amount,
+        product_line: data.product_line ?? prev.product_line,
         down_payment: data.down_payment ?? prev.down_payment,
         job_address: data.job_address ?? prev.job_address,
         city: data.city ?? prev.city,
@@ -2935,7 +2944,24 @@ export default function ShowStatusOrder ({
 
       const primitiveChanges = diffPrimitiveFields(data, previousData)
       const clientChanges = diffClientFields(data, previousData)
-      const allChanges = [...primitiveChanges, ...clientChanges]
+      const productLineChange = primitiveChanges.find((change) => change.key === 'product_line')
+      const allChanges = [
+        ...primitiveChanges.filter((change) => change.key !== 'product_line'),
+        ...clientChanges
+      ]
+
+      if (productLineChange) {
+        items.push({
+          id: `snapshot-${snapshot.id}-product-line`,
+          createdAt,
+          timeLabel: formatTimelineTime(createdAt),
+          dateLabel: formatTimelineDate(createdAt),
+          title: `Product Line updated by ${actorName}`,
+          description: `${trimValue(productLineChange.from)} → ${trimValue(productLineChange.to)}`,
+          icon: EditIcon,
+          iconTone: 'info'
+        })
+      }
 
       if (allChanges.length > 0) {
         const title = allChanges.length === 1
@@ -3098,6 +3124,10 @@ export default function ShowStatusOrder ({
                         ) : null}
                       </span>
                     )}
+                    <span className="inline-flex items-center gap-2 rounded-full bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700 ring-1 ring-sky-200">
+                      <span className="text-[10px] uppercase tracking-wide text-sky-600">Product Line</span>
+                      <span>{order.product_line ?? 'Not assigned'}</span>
+                    </span>
                     {primaryOwnerDisplay && (
                       <span className="inline-flex items-center gap-2 rounded-full bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
                         <UserIcon className="h-4 w-4 text-slate-400" />
@@ -4448,6 +4478,8 @@ export default function ShowStatusOrder ({
         targetStatus={followUpInitialValues.targetStatus}
         initialProjectAmount={followUpInitialValues.projectAmount}
         initialNote={followUpInitialValues.note}
+        initialProductLine={order.product_line ?? ''}
+        requireProductLine={matchesStatus(pendingFollowUp?.oldStatus ?? '', ESTIMATE_STATUS)}
         loading={followUpSaving}
         error={followUpError}
         onCancel={closeFollowUpModal}
@@ -4458,6 +4490,8 @@ export default function ShowStatusOrder ({
         open={standByModalOpen && !!pendingStandBy}
         taskTitle={order.name ?? ''}
         initialNote={standByInitialNote}
+        initialProductLine={order.product_line ?? ''}
+        requireProductLine={matchesStatus(pendingStandBy?.oldStatus ?? '', ESTIMATE_STATUS)}
         loading={standBySaving}
         error={standByError}
         onCancel={closeStandByModal}
@@ -4478,6 +4512,8 @@ export default function ShowStatusOrder ({
         open={preContractModalOpen && !!pendingPreContract}
         taskTitle={order.name ?? ''}
         initialNote={preContractInitialNote}
+        initialProductLine={order.product_line ?? ''}
+        requireProductLine={matchesStatus(pendingPreContract?.oldStatus ?? '', ESTIMATE_STATUS)}
         loading={preContractSaving}
         error={preContractError}
         onCancel={closePreContractModal}
@@ -4488,6 +4524,8 @@ export default function ShowStatusOrder ({
         open={contractSignedModalOpen && !!pendingContractSigned}
         taskTitle={order.name ?? ''}
         initialProjectName={contractSignedInitialValues.projectName}
+        initialProductLine={order.product_line ?? ''}
+        requireProductLine={matchesStatus(pendingContractSigned?.oldStatus ?? '', ESTIMATE_STATUS)}
         initialProjectAmount={contractSignedInitialValues.projectAmount}
         initialDownPayment={contractSignedInitialValues.downPayment}
         initialJobAddress={contractSignedInitialValues.jobAddress}

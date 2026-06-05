@@ -68,6 +68,7 @@ export type OrderFormValues = Omit<Order, 'installation_date' | 'delivery_date' 
   frame_color: string[] | DropdownOption[]
   contact_type: string
   order_type?: string
+  product_line?: string
   is_supply?: boolean
   has_contract_signed?: boolean
   client_company_name?: string
@@ -137,6 +138,7 @@ export const orderFormObj: OrderFormValues = {
   replanned_reasons: [],
   contact_type: '',
   order_type: '',
+  product_line: '',
   is_supply: false,
   has_contract_signed: false,
   client_company_name: '',
@@ -250,6 +252,7 @@ export const loadOrderFormObj = (order: Order): OrderFormValues => {
     order_colors: order.order_colors ?? [],
     contact_type: order.client?.contact_type ?? '',
     order_type: order.order_type ?? '',
+    product_line: order.product_line ?? '',
     is_supply: order.is_supply ?? false,
     has_contract_signed: Boolean(order.has_contract_signed ?? false),
     client_company_name: order.client?.company_contact?.name ?? '',

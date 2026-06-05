@@ -6,6 +6,7 @@
     use App\Models\CrmEvent;
     use App\Models\Note;
     use App\Models\Order;
+    use App\Services\CrmNotificationService;
     use App\Traits\Snapshot;
     use Illuminate\Http\Request;
     use Illuminate\Http\Response;
@@ -68,6 +69,12 @@ class OrderNoteController extends Controller
         $this->createSnapshot($order->fresh());
 
         $note->load('user:id,name');
+        app(CrmNotificationService::class)->recordOrderFeed(
+            $order->fresh(),
+            $request->user(),
+            'Order note added',
+            ($request->user()?->name ?? 'Someone') . ' added a note to order ' . ($order->name ?? ('#' . $order->id))
+        );
 
         return response()->json($this->notePayload($note), Response::HTTP_CREATED);
     }

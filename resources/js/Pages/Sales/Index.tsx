@@ -17,6 +17,7 @@ import InfoTooltip from '@/Components/InfoTooltip'
 import OrderBoardFilter, { type BoardFilters, type FilterFieldConfig } from '@/Components/OrderBoardFilter'
 import OrderGlobalSearch from '@/Components/OrderGlobalSearch'
 import OrderPipelineSort from '@/Components/OrderPipelineSort'
+import ProductLineBadge from '@/Components/ProductLineBadge'
 import { formatDateOnlyDisplay, isDateOnlyPast } from '@/Utils/dateOnly'
 import EstimateScheduleModal from './EstimateScheduleModal'
 import FollowUpModal from './FollowUpModal'
@@ -44,6 +45,7 @@ type PaymentScheduleTemplates = Record<string, PaymentScheduleTemplateItem[]>
 
 type ContractSignedSubmitValues = {
   projectName: string
+  productLine: string
   projectAmount: string
   downPayment: string
   jobAddress: string
@@ -300,7 +302,7 @@ const getEstimateStaleClass = (pipeline: Pipelines, task: Tasks): string | null 
 const normalizeStatusValue = (value: string): string => value.replace(/\s+/g, ' ').trim().toUpperCase()
 const matchesStatus = (value: string, target: string): boolean => normalizeStatusValue(value) === normalizeStatusValue(target)
 
-export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order_types, statuses, owners, supervisors, created_by_users, tags, filters, sort, methods_of_payment, type_of_financing, payment_schedule_templates }: PageProps & { data: Pipelines[], lossReasonFrontdesk: string [], sources: string[], order_types: string[], statuses: string[], owners: OwnerOption[], supervisors: IdOption[], created_by_users: IdOption[], tags: TagOption[], filters: BoardFilters, sort: { sort_by?: string, sort_dir?: string }, methods_of_payment: string[], type_of_financing: string[], payment_schedule_templates: PaymentScheduleTemplates }) {
+export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order_types, product_lines, statuses, owners, supervisors, created_by_users, tags, filters, sort, methods_of_payment, type_of_financing, payment_schedule_templates }: PageProps & { data: Pipelines[], lossReasonFrontdesk: string [], sources: string[], order_types: string[], product_lines: string[], statuses: string[], owners: OwnerOption[], supervisors: IdOption[], created_by_users: IdOption[], tags: TagOption[], filters: BoardFilters, sort: { sort_by?: string, sort_dir?: string }, methods_of_payment: string[], type_of_financing: string[], payment_schedule_templates: PaymentScheduleTemplates }) {
   const roleNames = auth.user.roles.map((role: Role) => role.name)
   const IS_ADMIN = isAdmin(roleNames)
   const IS_OWNER_ADMIN = isOwnerAdmin(roleNames)
@@ -400,6 +402,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
     { value: 'job_state', label: 'Job State', type: 'text' },
     { value: 'job_zip', label: 'Job Zip', type: 'text' },
     { value: 'order_type', label: 'Order Type', type: 'select', options: order_types.map((type) => ({ label: type, value: type })) },
+    { value: 'product_line', label: 'Product Line', type: 'select', options: product_lines.map((line) => ({ label: line, value: line })) },
     { value: 'is_supply', label: 'Is Supply', type: 'select', options: [{ label: 'Yes', value: '1' }, { label: 'No', value: '0' }] },
     { value: 'owner', label: 'Owner', type: 'select', options: owners.map((owner) => ({ label: owner.name, value: owner.id.toString() })) },
     { value: 'source', label: 'Source', type: 'select', options: sources.map((source) => ({ label: source, value: source })) },
@@ -412,7 +415,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
     { value: 'created_by', label: 'Created By', type: 'select', options: created_by_users.map((user) => ({ label: user.name, value: user.id.toString() })) },
     { value: 'created_time', label: 'Created Time', type: 'date' },
     { value: 'project_amount', label: 'Project Amount', type: 'amount' }
-  ]), [statuses, order_types, owners, sources, lossReasonFrontdesk, tagFilterOptions, supervisors, created_by_users])
+  ]), [statuses, order_types, product_lines, owners, sources, lossReasonFrontdesk, tagFilterOptions, supervisors, created_by_users])
 
   useEffect(() => {
     setProjectListState(data)
@@ -771,7 +774,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
     setPendingLostContract(null)
   }
 
-  const handleFollowUpSubmit = async (values: { projectAmount: string, note: string, attachments: File[] }) => {
+  const handleFollowUpSubmit = async (values: { projectAmount: string, note: string, attachments: File[], productLine: string }) => {
     if (!pendingFollowUp) return
 
     setFollowUpSaving(true)
@@ -782,6 +785,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
       formData.append('status', pendingFollowUp.newStatus)
       formData.append('project_amount', values.projectAmount)
       formData.append('note', values.note)
+      formData.append('product_line', values.productLine)
 
       values.attachments?.forEach((file) => {
         formData.append('attachments[]', file)
@@ -826,6 +830,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
         schedule_appointment_iso: data.order.schedule_appointment_iso ?? pendingFollowUp.task.schedule_appointment_iso,
         owner_ids: data.order.owner_ids ?? pendingFollowUp.task.owner_ids,
         owners: data.order.owners ?? pendingFollowUp.task.owners,
+        product_line: data.order.product_line ?? pendingFollowUp.task.product_line,
         project_amount: Number.isFinite(normalizedProjectAmount) ? normalizedProjectAmount : 0
       })
 
@@ -840,7 +845,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
     }
   }
 
-  const handleStandBySubmit = async (values: { note: string }) => {
+  const handleStandBySubmit = async (values: { note: string, productLine: string }) => {
     if (!pendingStandBy) return
 
     setStandBySaving(true)
@@ -856,6 +861,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
         },
         body: JSON.stringify({
           note: values.note,
+          product_line: values.productLine
         })
       })
 
@@ -881,7 +887,8 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
         schedule_appointment: data.order.schedule_appointment ?? pendingStandBy.task.schedule_appointment,
         schedule_appointment_iso: data.order.schedule_appointment_iso ?? pendingStandBy.task.schedule_appointment_iso,
         owner_ids: data.order.owner_ids ?? pendingStandBy.task.owner_ids,
-        owners: data.order.owners ?? pendingStandBy.task.owners
+        owners: data.order.owners ?? pendingStandBy.task.owners,
+        product_line: data.order.product_line ?? pendingStandBy.task.product_line
       })
 
       applyTaskMove(updatedTask, pendingStandBy.newStatus)
@@ -950,7 +957,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
     }
   }
 
-  const handlePreContractSubmit = async (values: { note: string }) => {
+  const handlePreContractSubmit = async (values: { note: string, productLine: string }) => {
     if (!pendingPreContract) return
 
     setPreContractSaving(true)
@@ -965,7 +972,8 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
           'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? ''
         },
         body: JSON.stringify({
-          note: values.note
+          note: values.note,
+          product_line: values.productLine
         })
       })
 
@@ -991,7 +999,8 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
         schedule_appointment: data.order.schedule_appointment ?? pendingPreContract.task.schedule_appointment,
         schedule_appointment_iso: data.order.schedule_appointment_iso ?? pendingPreContract.task.schedule_appointment_iso,
         owner_ids: data.order.owner_ids ?? pendingPreContract.task.owner_ids,
-        owners: data.order.owners ?? pendingPreContract.task.owners
+        owners: data.order.owners ?? pendingPreContract.task.owners,
+        product_line: data.order.product_line ?? pendingPreContract.task.product_line
       })
 
       applyTaskMove(updatedTask, pendingPreContract.newStatus)
@@ -1027,6 +1036,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
 
       const formData = new FormData()
       formData.append('project_name', values.projectName)
+      formData.append('product_line', values.productLine)
       formData.append('project_amount', values.projectAmount)
       formData.append('job_address', values.jobAddress.trim())
       formData.append('city', normalizedCity)
@@ -1117,6 +1127,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
       const updatedTask: Tasks = stampTaskAsUpdated({
         ...pendingContractSigned.task,
         title: data.order.name ?? values.projectName,
+        product_line: data.order.product_line ?? pendingContractSigned.task.product_line,
         project_amount: Number.isFinite(normalizedProjectAmount) ? normalizedProjectAmount : 0,
         down_payment: Number.isFinite(normalizedDownPaymentNumber ?? NaN) ? normalizedDownPaymentNumber : null,
         job_address: data.order.job_address ?? values.jobAddress.trim(),
@@ -1692,6 +1703,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
                                 </div>
                               </div>
                               <div className="flex gap-2 items-center flex-wrap">
+                                <ProductLineBadge productLine={task.product_line} />
                                 {task.tags?.length
                                   ? (
                                       task.tags.map((tag: any, i: number) => (
@@ -1806,6 +1818,8 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
         targetStatus={pendingFollowUp?.newStatus ?? ''}
         initialProjectAmount={followUpInitialValues.projectAmount}
         initialNote={followUpInitialValues.note}
+        initialProductLine={pendingFollowUp?.task.product_line ?? ''}
+        requireProductLine={matchesStatus(pendingFollowUp?.oldStatus ?? '', ESTIMATE_STATUS)}
         loading={followUpSaving}
         error={followUpError}
         onCancel={() => { closeFollowUpModal(true) }}
@@ -1816,6 +1830,8 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
         open={standByModalOpen && !!pendingStandBy}
         taskTitle={pendingStandBy?.task.title ?? ''}
         initialNote={standByInitialNote}
+        initialProductLine={pendingStandBy?.task.product_line ?? ''}
+        requireProductLine={matchesStatus(pendingStandBy?.oldStatus ?? '', ESTIMATE_STATUS)}
         loading={standBySaving}
         error={standByError}
         onCancel={() => { closeStandByModal(true) }}
@@ -1836,6 +1852,8 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
         open={preContractModalOpen && !!pendingPreContract}
         taskTitle={pendingPreContract?.task.title ?? ''}
         initialNote={preContractInitialNote}
+        initialProductLine={pendingPreContract?.task.product_line ?? ''}
+        requireProductLine={matchesStatus(pendingPreContract?.oldStatus ?? '', ESTIMATE_STATUS)}
         loading={preContractSaving}
         error={preContractError}
         onCancel={() => { closePreContractModal(true) }}
@@ -1846,6 +1864,8 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
         open={contractSignedModalOpen && !!pendingContractSigned}
         taskTitle={pendingContractSigned?.task.title ?? ''}
         initialProjectName={contractSignedInitialValues.projectName}
+        initialProductLine={pendingContractSigned?.task.product_line ?? ''}
+        requireProductLine={matchesStatus(pendingContractSigned?.oldStatus ?? '', ESTIMATE_STATUS)}
         initialProjectAmount={contractSignedInitialValues.projectAmount}
         initialDownPayment={contractSignedInitialValues.downPayment}
         initialJobAddress={contractSignedInitialValues.jobAddress}

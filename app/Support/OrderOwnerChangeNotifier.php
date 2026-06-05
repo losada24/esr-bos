@@ -6,6 +6,7 @@ use App\Jobs\SendGmailEmail;
 use App\Mail\OrderOwnerAdditionalOwnerAssigned;
 use App\Mail\OrderOwnerAssigned;
 use App\Mail\OrderOwnerUnassigned;
+use App\Models\CrmNotification;
 use App\Models\Order;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -64,12 +65,24 @@ class OrderOwnerChangeNotifier
                     $owner,
                     new OrderOwnerAssigned($freshOrder, $owner->name, $currentOwners->pluck('name')->filter()->values()->all())
                 );
+                $this->createOwnerNotification(
+                    $freshOrder,
+                    $owner,
+                    'Order assigned',
+                    'You were assigned to order ' . ($freshOrder->name ?? ('#' . $freshOrder->id))
+                );
             }
 
             foreach ($removedOwners as $owner) {
                 $this->dispatchUniqueEmail(
                     $owner,
                     new OrderOwnerUnassigned($freshOrder, $owner->name, $currentOwners->pluck('name')->filter()->values()->all())
+                );
+                $this->createOwnerNotification(
+                    $freshOrder,
+                    $owner,
+                    'Order unassigned',
+                    'You were removed from order ' . ($freshOrder->name ?? ('#' . $freshOrder->id))
                 );
             }
 
@@ -80,6 +93,12 @@ class OrderOwnerChangeNotifier
                     $this->dispatchUniqueEmail(
                         $owner,
                         new OrderOwnerAdditionalOwnerAssigned($freshOrder, $owner->name, $addedOwnerNames, $currentOwners->pluck('name')->filter()->values()->all())
+                    );
+                    $this->createOwnerNotification(
+                        $freshOrder,
+                        $owner,
+                        'Order owner added',
+                        implode(', ', $addedOwnerNames) . ' added to order ' . ($freshOrder->name ?? ('#' . $freshOrder->id))
                     );
                 }
             }
@@ -114,5 +133,25 @@ class OrderOwnerChangeNotifier
         SendGmailEmail::dispatch($email, $mailable)
             ->onQueue('emails')
             ->afterCommit();
+    }
+
+    private function createOwnerNotification(Order $order, ?User $owner, string $title, string $body): void
+    {
+        if (!$owner) {
+            return;
+        }
+
+        CrmNotification::create([
+            'user_id' => $owner->id,
+            'actor_id' => auth()->id(),
+            'type' => CrmNotification::TYPE_FEED,
+            'title' => $title,
+            'body' => $body,
+            'data' => [
+                'url' => route('frontdesk.order_view', $order->id),
+            ],
+            'notifiable_type' => Order::class,
+            'notifiable_id' => $order->id,
+        ]);
     }
 }

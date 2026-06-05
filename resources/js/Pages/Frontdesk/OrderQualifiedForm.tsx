@@ -17,7 +17,7 @@ import Select, { type SingleValue } from 'react-select'
 import DeleteIcon from '@/Components/Icons/DeleteIcon'
 import { type OrderFormValues } from './OrderCommon'
 import PlusIcon from '@/Components/Icons/PlusIcon'
-import { ORDER_TYPES, PAYMENT_METHODS } from '@/Utils/constants'
+import { ORDER_TYPES, PAYMENT_METHODS, PRODUCT_LINES } from '@/Utils/constants'
 import { formatDateOnlyValue } from '@/Utils/dateOnly'
 import CompanyModal from './CompanyModal'
 import { type Source } from '@/types/interfaces/order'
@@ -724,6 +724,16 @@ const OrderQualifiedForm = ({
               ))}
             </Field>
             {(submitCount && errors.order_type) ? <InputError message={errors.order_type} className="mt-2" /> : ''}
+            </div>
+            <div className={submitCount ? (errors.product_line) ? 'has-error' : 'has-success' : ''}>
+              <label htmlFor="product_line">Product Line</label>
+              <Field id="product_line" name="product_line" className="form-select" as="select">
+                <option value="">Product Line</option>
+                {PRODUCT_LINES.map((productLine) => (
+                  <option key={productLine} value={productLine}>{productLine}</option>
+                ))}
+              </Field>
+              {(submitCount && errors.product_line) ? <InputError message={errors.product_line} className="mt-2" /> : ''}
             </div>
              <div className={submitCount ? (errors.name) ? 'has-error' : 'has-success' : ''}>
                 <label htmlFor="name">Order Name</label>

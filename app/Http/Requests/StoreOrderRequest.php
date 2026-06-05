@@ -10,6 +10,7 @@ use App\Enum\PlaningDateSupervisorEnum;
 use Illuminate\Foundation\Http\FormRequest;
 use App\Enum\ServiceEnum;
 use App\Enum\OrderTypeEnum;
+use App\Enum\ProductLineEnum;
 use App\Enum\SupervisorPaymentStatusEnum;
 use App\Enum\TypeOfFinancing;
 use App\Support\PaymentScheduleTemplates;
@@ -222,6 +223,11 @@ class StoreOrderRequest extends FormRequest
                 OrderTypeEnum::COMMERCIAL->value,
                 OrderTypeEnum::SUPPLY->value,
               )
+            ],
+            'product_line' => [
+              'nullable',
+              'string',
+              Rule::enum(ProductLineEnum::class),
             ],
             'status' =>  [
             'required',
