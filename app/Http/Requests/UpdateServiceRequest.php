@@ -8,6 +8,7 @@ use App\Enum\MethodOfPayment;
 use App\Enum\OrderStatusEnum;
 use App\Enum\PaymentScheduleTypeEnum;
 use App\Enum\ProductLineEnum;
+use App\Enum\RoleEnum;
 use App\Enum\ServiceEnum;
 use App\Enum\TypeOfFinancing;
 use App\Models\Client;
@@ -188,6 +189,15 @@ class UpdateServiceRequest extends FormRequest
             }
 
             $incomingAmount = $this->input('project_amount');
+            if ($incomingAmount !== null && $incomingAmount !== '' && ($this->user()?->hasRole(RoleEnum::OWNER_ADMIN->value) ?? false)) {
+                $currentAmount = (float) ($order->project_amount ?? 0);
+                $newAmount = (float) $incomingAmount;
+                if (abs($newAmount - $currentAmount) > 0.01) {
+                    $validator->errors()->add('project_amount', 'Owner Admin cannot edit Project Amount.');
+                    return;
+                }
+            }
+
             $hasReachedContractSigned = $order->status === OrderStatusEnum::CONTRACT_SIGNED_BY_CLIENT->value
               || $order->orderStatus()
                 ->where('status', OrderStatusEnum::CONTRACT_SIGNED_BY_CLIENT->value)

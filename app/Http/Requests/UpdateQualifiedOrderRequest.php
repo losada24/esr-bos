@@ -214,6 +214,14 @@ class UpdateQualifiedOrderRequest extends FormRequest
                 : $order->project_amount;
             $projectAmount = (float) ($projectAmountRaw ?? 0);
 
+            if ($touchesProjectAmount && ($this->user()?->hasRole(RoleEnum::OWNER_ADMIN->value) ?? false)) {
+                $currentAmount = (float) ($order->project_amount ?? 0);
+                if (abs($projectAmount - $currentAmount) > 0.01) {
+                    $validator->errors()->add('project_amount', 'Owner Admin cannot edit Project Amount.');
+                    return;
+                }
+            }
+
             $methodOfPayment = (string) $this->input('method_of_payment', (string) $order->method_of_payment);
             $isCash = $methodOfPayment === MethodOfPayment::CASH->value;
             $isCashAndFinanced = $methodOfPayment === MethodOfPayment::FINANCEDCASH->value;
