@@ -214,14 +214,50 @@ class CommissionReportController extends Controller
         return DB::transaction(function () use ($data, $order, $calculator) {
             [$beneficiarySourceType, $beneficiarySourceId, $name, $email] = $this->resolveBeneficiaryPayload($data, $order);
 
-            $existing = OrderCommission::query()
+            $existing = OrderCommission::withTrashed()
                 ->where('order_id', $order->id)
                 ->where('beneficiary_source_type', $beneficiarySourceType)
                 ->where('beneficiary_source_id', $beneficiarySourceId)
-                ->exists();
+                ->first();
 
-            if ($existing) {
+            if ($existing && ! $existing->trashed()) {
                 return back()->with('error', 'This beneficiary already has a commission for the selected order.');
+            }
+
+            $payments = collect($data['payments'] ?? $this->defaultPaymentsForRelation($data['beneficiary_relation']));
+
+            if ($existing && $existing->trashed()) {
+                $before = $existing->load([
+                    'payments' => fn ($query) => $query->withTrashed(),
+                ])->toArray();
+                $existing->restore();
+
+                $existing->update([
+                    'beneficiary_relation' => $data['beneficiary_relation'],
+                    'beneficiary_name_snapshot' => $name,
+                    'beneficiary_email_snapshot' => $email,
+                    'status' => $data['status'] ?? CommissionStatusEnum::OPEN->value,
+                    'calculation_type' => $data['calculation_type'],
+                    'fee_amount_snapshot' => $data['fee_amount_snapshot'] ?? (float) ($order->cost_city_fee ?? 0),
+                    'financing_fee_amount' => $data['financing_fee_amount'] ?? 0,
+                    'percentage_value' => $data['percentage_value'] ?? null,
+                    'fixed_amount' => $data['fixed_amount'] ?? null,
+                    'other_cost_amount' => $data['other_cost_amount'] ?? 0,
+                    'other_cost_notes' => $data['other_cost_notes'] ?? null,
+                    'next_payment_id' => null,
+                    'updated_by' => Auth::id(),
+                ]);
+
+                $commission = $existing->fresh();
+                $this->createRegularCommissionPayments($commission, $payments);
+                $calculator->refreshCommission($commission);
+
+                CommissionAuditLogger::log('commission.restored', [
+                    'before' => $before,
+                    'after' => $commission->fresh()->toArray(),
+                ], $commission);
+
+                return back()->with('success', 'Commission created successfully.');
             }
 
             $commission = OrderCommission::create([
@@ -243,35 +279,7 @@ class CommissionReportController extends Controller
                 'updated_by' => Auth::id(),
             ]);
 
-            $payments = collect($data['payments'] ?? $this->defaultPaymentsForRelation($data['beneficiary_relation']));
-
-            $payments->values()->each(function (array $payment, int $index) use ($commission) {
-                $status = $payment['status'] ?? CommissionPaymentStatusEnum::OPEN->value;
-
-                if (
-                    $commission->status === CommissionStatusEnum::CANCELED->value
-                    && $status !== CommissionPaymentStatusEnum::PAID->value
-                ) {
-                    $status = CommissionPaymentStatusEnum::CANCELED->value;
-                }
-
-                OrderCommissionPayment::create([
-                    'order_commission_id' => $commission->id,
-                    'sequence' => $index + 1,
-                    'status' => $status,
-                    'payment_kind' => CommissionPaymentKindEnum::REGULAR->value,
-                    'split_type' => $payment['split_type'],
-                    'split_value' => $payment['split_value'],
-                    'other_cost_amount' => $payment['other_cost_amount'] ?? 0,
-                    'other_cost_notes' => $payment['other_cost_notes'] ?? null,
-                    'notes' => $payment['notes'] ?? null,
-                    'paid_at' => $status === CommissionPaymentStatusEnum::PAID->value
-                        ? ($payment['paid_at'] ?? now()->toDateString())
-                        : null,
-                    'created_by' => Auth::id(),
-                    'updated_by' => Auth::id(),
-                ]);
-            });
+            $this->createRegularCommissionPayments($commission, $payments);
 
             $calculator->refreshCommission($commission);
 
@@ -376,6 +384,37 @@ class CommissionReportController extends Controller
             ], $commission);
 
             return back()->with('success', 'Commission deleted successfully.');
+        });
+    }
+
+    private function createRegularCommissionPayments(OrderCommission $commission, Collection $payments): void
+    {
+        $payments->values()->each(function (array $payment, int $index) use ($commission) {
+            $status = $payment['status'] ?? CommissionPaymentStatusEnum::OPEN->value;
+
+            if (
+                $commission->status === CommissionStatusEnum::CANCELED->value
+                && $status !== CommissionPaymentStatusEnum::PAID->value
+            ) {
+                $status = CommissionPaymentStatusEnum::CANCELED->value;
+            }
+
+            OrderCommissionPayment::create([
+                'order_commission_id' => $commission->id,
+                'sequence' => $index + 1,
+                'status' => $status,
+                'payment_kind' => CommissionPaymentKindEnum::REGULAR->value,
+                'split_type' => $payment['split_type'],
+                'split_value' => $payment['split_value'],
+                'other_cost_amount' => $payment['other_cost_amount'] ?? 0,
+                'other_cost_notes' => $payment['other_cost_notes'] ?? null,
+                'notes' => $payment['notes'] ?? null,
+                'paid_at' => $status === CommissionPaymentStatusEnum::PAID->value
+                    ? ($payment['paid_at'] ?? now()->toDateString())
+                    : null,
+                'created_by' => Auth::id(),
+                'updated_by' => Auth::id(),
+            ]);
         });
     }
 

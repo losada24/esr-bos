@@ -78,6 +78,7 @@ class CommissionHistoryPresenter
     {
         return match ($action) {
             'commission.created' => 'Commission Created',
+            'commission.restored' => 'Commission Restored',
             'commission.updated' => 'Commission Updated',
             'commission.deleted' => 'Commission Deleted',
             'payment.created' => 'Payment Created',
@@ -127,6 +128,7 @@ class CommissionHistoryPresenter
 
         return match ($audit->action) {
             'commission.created' => 'Commission created',
+            'commission.restored' => 'Commission restored',
             'commission.deleted' => 'Commission deleted',
             'payment.created' => 'Payment created',
             'payment.deleted' => 'Payment deleted',
