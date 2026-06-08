@@ -758,6 +758,14 @@ public function showQuantifiedModal(Order $order)
         }
         
         $scheduleAppointment = $request->input('schedule_appointment');
+        $incomingProjectAmount = (float) ($request['project_amount'] ?? 0);
+        $currentProjectAmount = (float) ($order->project_amount ?? 0);
+
+        if ($request->user()?->hasRole(RoleEnum::OWNER_ADMIN->value) && abs($incomingProjectAmount - $currentProjectAmount) > 0.01) {
+          throw ValidationException::withMessages([
+            'project_amount' => 'Owner Admin cannot edit Project Amount.',
+          ]);
+        }
 
         $orderPayload = [
           'name' => $request['name'],

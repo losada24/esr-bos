@@ -1022,6 +1022,12 @@ class SalesController extends Controller
         $currentProjectAmount = (float) ($order->project_amount ?? 0);
         $incomingProjectAmount = (float) $validated['project_amount'];
 
+        if ($request->user()?->hasRole(RoleEnum::OWNER_ADMIN->value) && abs($incomingProjectAmount - $currentProjectAmount) > 0.01) {
+          throw ValidationException::withMessages([
+            'project_amount' => 'Owner Admin cannot edit Project Amount.',
+          ]);
+        }
+
         if ($order->hasReachedContractSigned() && abs($incomingProjectAmount - $currentProjectAmount) > 0.01) {
           throw ValidationException::withMessages([
             'project_amount' => 'Project amount cannot be edited after CONTRACT SIGNED BY CLIENT. Use Change Order instead.',
@@ -1465,6 +1471,14 @@ class SalesController extends Controller
           'project_amount' => 'Project amount cannot be changed after payments are recorded.',
         ]);
       }
+    }
+
+    $currentAmount = (float) ($order->project_amount ?? 0);
+    $incomingAmount = (float) ($validated['project_amount'] ?? 0);
+    if ($request->user()?->hasRole(RoleEnum::OWNER_ADMIN->value) && abs($incomingAmount - $currentAmount) > 0.01) {
+      throw ValidationException::withMessages([
+        'project_amount' => 'Owner Admin cannot edit Project Amount.',
+      ]);
     }
 
     DB::transaction(function () use ($order, $validated, $request, $orderCompanyContacts, $companyCount) {
