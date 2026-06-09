@@ -7,6 +7,8 @@ interface CrmNotificationRow {
   title: string
   body?: string | null
   actor?: string | null
+  owner?: string | null
+  is_supervised?: boolean
   read_at?: string | null
   created_at_label?: string | null
   due_at?: string | null
@@ -15,6 +17,7 @@ interface CrmNotificationRow {
 
 interface NotificationPayload {
   unread_count: number
+  supervising?: boolean
   feeds: CrmNotificationRow[]
   reminders: CrmNotificationRow[]
   system: CrmNotificationRow[]
@@ -140,6 +143,11 @@ export default function CrmNotificationsDropdown () {
               Mark all read
             </button>
           </div>
+          {payload.supervising && (
+            <div className="border-b border-slate-100 bg-slate-50 px-4 py-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+              Supervision mode
+            </div>
+          )}
           <div className="flex border-b border-slate-100 text-xs font-semibold">
             {(Object.keys(tabLabels) as NotificationType[]).map((tab) => (
               <button
@@ -169,6 +177,7 @@ export default function CrmNotificationsDropdown () {
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block text-sm font-semibold text-slate-900">{item.title}</span>
+                  {item.owner && <span className="mt-0.5 block text-[11px] font-semibold text-primary">Owner: {item.owner}</span>}
                   {item.body && <span className="mt-0.5 block text-xs text-slate-600">{item.body}</span>}
                   <span className="mt-1 block text-[11px] text-slate-400">{item.created_at_label}</span>
                 </span>
