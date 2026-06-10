@@ -17,6 +17,29 @@ const parseList = async (res: Response) => {
   return Array.isArray(data) ? data : []
 }
 
+const parseErrorMessage = async (res: Response, fallback: string) => {
+  try {
+    const json = await res.json()
+    const message = (json as { message?: unknown })?.message
+    if (typeof message === 'string' && message.trim() !== '') {
+      return message
+    }
+
+    const errors = (json as { errors?: Record<string, string[] | string> })?.errors
+    const firstError = errors ? Object.values(errors)[0] : null
+    if (Array.isArray(firstError) && typeof firstError[0] === 'string') {
+      return firstError[0]
+    }
+    if (typeof firstError === 'string') {
+      return firstError
+    }
+  } catch {
+    return fallback
+  }
+
+  return fallback
+}
+
 // ===== Tipos =====
 export interface NoteAudioDTO {
   id: number | string
@@ -320,7 +343,7 @@ export default function OrderNotesForOrder ({
       body: formData
     })
 
-    if (!res.ok) throw new Error('La nota se guardó, pero no se pudo subir el audio')
+    if (!res.ok) throw new Error(await parseErrorMessage(res, 'La nota se guardó, pero no se pudo subir el audio'))
     const json = await res.json()
 
     return (json as { audio?: NoteAudioDTO }).audio ?? json

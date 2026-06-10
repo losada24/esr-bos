@@ -14,8 +14,10 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Throwable;
 
 class NoteAudioController extends Controller
@@ -29,26 +31,40 @@ class NoteAudioController extends Controller
                 'required',
                 'file',
                 'max:10240',
-                'mimetypes:audio/webm,video/webm,audio/mpeg,audio/mp3,audio/mp4,audio/ogg,audio/wav,audio/x-wav',
             ],
             'duration_seconds' => ['nullable', 'integer', 'min:0', 'max:86400'],
         ]);
 
         $file = $data['audio'];
+        $this->validateAudioFile($file);
+
         $extension = $file->getClientOriginalExtension() ?: $this->extensionFromMime($file->getMimeType());
         $fileName = now()->format('YmdHis') . '_' . Str::uuid() . '.' . $extension;
-        $filePath = $file->storeAs('note_audio', $fileName, 'public');
 
-        $attachment = $note->attachments()->create([
-            'filename' => $file->getClientOriginalName() ?: $fileName,
-            'file_path' => $filePath,
-            'file_type' => AttachmentsFileTypeEnum::NOTE_AUDIO->value,
-            'mime_type' => $file->getMimeType() ?: $file->getClientMimeType(),
-            'size_bytes' => $file->getSize(),
-            'duration_seconds' => $data['duration_seconds'] ?? null,
-            'transcription_status' => 'pending',
-            'user_id' => $request->user()->id,
-        ]);
+        try {
+            $filePath = $file->storeAs('note_audio', $fileName, 'public');
+
+            if (!$filePath) {
+                throw new \RuntimeException('The audio file could not be stored.');
+            }
+
+            $attachment = $note->attachments()->create([
+                'filename' => $file->getClientOriginalName() ?: $fileName,
+                'file_path' => $filePath,
+                'file_type' => AttachmentsFileTypeEnum::NOTE_AUDIO->value,
+                'mime_type' => $file->getMimeType() ?: $file->getClientMimeType(),
+                'size_bytes' => $file->getSize(),
+                'duration_seconds' => $data['duration_seconds'] ?? null,
+                'transcription_status' => 'pending',
+                'user_id' => $request->user()->id,
+            ]);
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return response()->json([
+                'message' => 'The note was saved, but the audio could not be stored. Please verify production storage and the attachments migration.',
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
 
         return response()->json([
             'audio' => $this->audioPayload($attachment),
@@ -192,6 +208,31 @@ class NoteAudioController extends Controller
                 'delete' => $attachment->user_id === auth()->id(),
             ],
         ];
+    }
+
+    private function validateAudioFile(UploadedFile $file): void
+    {
+        $allowedExtensions = ['webm', 'mp3', 'mp4', 'm4a', 'ogg', 'wav'];
+        $allowedMimeTypes = [
+            'audio/webm',
+            'video/webm',
+            'audio/mpeg',
+            'audio/mp3',
+            'audio/mp4',
+            'audio/ogg',
+            'audio/wav',
+            'audio/x-wav',
+            'application/octet-stream',
+        ];
+
+        $extension = strtolower($file->getClientOriginalExtension());
+        $mimeType = strtolower((string) ($file->getMimeType() ?: $file->getClientMimeType()));
+
+        if (!in_array($extension, $allowedExtensions, true) && !in_array($mimeType, $allowedMimeTypes, true)) {
+            throw ValidationException::withMessages([
+                'audio' => ['The audio must be a webm, mp3, mp4, m4a, ogg, or wav file.'],
+            ]);
+        }
     }
 
     private function extensionFromMime(?string $mime): string
