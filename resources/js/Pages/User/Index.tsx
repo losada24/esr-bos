@@ -45,11 +45,12 @@ export default function Index ({ auth, users }: IndexUserProps) {
                 <th className="px-6 pt-5 pb-4">Name</th>
                 <th className="px-6 pt-5 pb-4">Email</th>
                 <th className="px-6 pt-5 pb-4">Role</th>
+                <th className="px-6 pt-5 pb-4">Status</th>
                 <th className="px-6 pt-5 pb-4 w-14">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {users.data.map(({ id, name, email, roles }) => {
+              {users.data.map(({ id, name, email, roles, status }) => {
                 return (
                   <tr
                     key={id}
@@ -63,6 +64,9 @@ export default function Index ({ auth, users }: IndexUserProps) {
                     </td>
                     <td className="border-t px-6 py-4 align-top">
                       {getRoleName(roles.map(({ name }) => name))}
+                    </td>
+                    <td className="border-t px-6 py-4 align-top capitalize">
+                      {status?.toLowerCase()}
                     </td>
                     <td className="border-t flex items-center px-6 py-4">
                         <Link

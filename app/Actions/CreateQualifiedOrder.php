@@ -1,0 +1,301 @@
+<?php
+
+namespace App\Actions;
+
+use App\Enum\OrderStatusEnum;
+use App\Enum\OrderTypeEnum;
+use App\Enum\PlaningDateSupervisorEnum;
+use App\Models\Client;
+use App\Models\CompanyContact;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use App\Enum\ServiceEnum;
+use App\Enum\SupervisorPaymentStatusEnum;
+use App\Models\Order;
+use App\Models\OrderCompanyContact;
+use App\Models\OrderClientTemps;
+use App\Models\OrderProduct;
+use App\Models\SupervisorComissionOrder;
+use App\Traits\ComissionSupervisor;
+use App\Traits\OrderEmails;
+use App\Traits\OrderStatus;
+use App\Support\ClientCompanyContactManager;
+use App\Support\OrderClientEmailDeliveryLogger;
+use App\Support\OrderClientEmailManager;
+use App\Support\QualifiedOrderDuplicateChecker;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
+
+class CreateQualifiedOrder
+{
+
+  use OrderEmails, OrderStatus, ComissionSupervisor;
+
+  public function __construct(
+    protected QualifiedOrderDuplicateChecker $qualifiedOrderDuplicateChecker,
+    protected ClientCompanyContactManager $clientCompanyContactManager,
+    protected OrderClientEmailManager $orderClientEmailManager,
+    protected OrderClientEmailDeliveryLogger $orderClientEmailDeliveryLogger
+  ) {
+  }
+ 
+  public function handle(Request $request)
+  {
+    $this->qualifiedOrderDuplicateChecker->ensureNoDuplicateUnlessForced(
+      $request->input('name'),
+      $request->filled('client_id') ? (int) $request->input('client_id') : null,
+      $request->boolean('force_duplicate'),
+      null,
+      $request->input('job_address'),
+      $request->input('city'),
+      $request->input('job_zip')
+    );
+
+    DB::transaction(function () use ($request) {
+      $primaryClient = $request->filled('client_id')
+        ? Client::with('companyContacts')->find((int) $request->input('client_id'))
+        : null;
+      $primaryCompany = $request->order_type === OrderTypeEnum::COMMERCIAL->value && $request->filled('company_contact_id')
+        ? CompanyContact::find((int) $request->input('company_contact_id'))
+        : null;
+      $clientEmailSelection = (string) $request->input('client_email_selection', OrderClientEmailManager::PRIMARY_SELECTION);
+      $selectionError = $this->orderClientEmailManager->validateSelectionForContext(
+        $primaryClient,
+        $clientEmailSelection,
+        $primaryCompany
+      );
+      if ($selectionError !== null) {
+        throw ValidationException::withMessages([
+          'client_email_selection' => $selectionError,
+        ]);
+      }
+
+      /*$client = Client::create([
+        'name' => $request->client_name,
+        'phone' => $request->phone,
+        'user_id' => auth()->user()->id,
+      ]);*/
+      $status = OrderStatusEnum::QUALIFIED->value;
+        if ($request->order_type === OrderTypeEnum::RESIDENTIAL->value || $request->order_type === OrderTypeEnum::SUPPLY->value) {
+          $status = OrderStatusEnum::PENDING_ASSIGNMENT->value;
+        } 
+        if ($request->order_type === OrderTypeEnum::COMMERCIAL->value) {
+          $status = OrderStatusEnum::COMMERCIAL_ASSIGNMENT->value;
+        }
+  
+      $primarySourceId = (int) $request->input('company_source_id', 0);
+      $associateSourceId1 = (int) $request->input('associate_source_id_1', 0);
+      $associateSourceId2 = (int) $request->input('associate_source_id_2', 0);
+      $companyClientPairs = [];
+      $addPair = function (?int $companyId, ?int $clientId, ?int $sourceId) use (&$companyClientPairs) {
+        if (!$companyId || !$clientId || !$sourceId) {
+          return;
+        }
+        $companyClientPairs[] = [
+          'company_contact_id' => $companyId,
+          'client_id' => $clientId,
+          'source_id' => $sourceId,
+        ];
+      };
+
+      if ($request->order_type === OrderTypeEnum::COMMERCIAL->value) {
+        $addPair((int) $request->company_contact_id, (int) $request->client_id, $primarySourceId);
+        $addPair((int) $request->associate_company_contact_id_1, (int) $request->associate_client_id_1, $associateSourceId1);
+        $addPair((int) $request->associate_company_contact_id_2, (int) $request->associate_client_id_2, $associateSourceId2);
+      }
+
+      $orderClientId = $request->client_id;
+      if ($request->order_type === OrderTypeEnum::COMMERCIAL->value) {
+        $orderClientId = count($companyClientPairs) === 1
+          ? (int) $companyClientPairs[0]['client_id']
+          : null;
+      }
+
+      $order = Order::create([
+        'client_id' => $orderClientId,
+        'user_id' => auth()->user()->id,
+        'order_type' => $request->order_type,
+        'product_line' => $request->product_line,
+        'name' => $request->name,
+        'job_address' => $request->job_address,
+        'city' => $request->city,
+        'job_state' => $request->job_state,
+        'job_zip' => $request->job_zip,
+        'description' => $request->description,
+        'notes' => $request->notes,
+        'status' => $status,
+        'bid_due_date' => $request->bid_due_date ? $request->bid_due_date : null,
+        'is_supply' => $request->is_supply ? $request->is_supply : false,
+        'schedule_appointment' => $request->schedule_appointment ? $request->schedule_appointment : null,
+        
+      ]);
+      
+      $hasAnySaleFormData =
+          $request->boolean('sale') ||
+          $request->boolean('installation') ||
+          $request->boolean('permit') ||
+          $request->boolean('replacement') ||
+          $request->boolean('new_construction') ||
+          $request->boolean('financing') ||
+          $request->boolean('screen') ||
+          $request->boolean('design') ||              // OJO con "door_design", ver nota abajo
+          $request->boolean('mountin') ||
+          $request->boolean('bar') ||
+          $request->boolean('shutter_hole') ||
+          $request->boolean('floor_cutting') ||
+          $request->boolean('interior_finish') ||
+          $request->boolean('hoa') ||
+          $request->filled('floor') ||
+          $request->filled('frame_color') ||
+          $request->filled('glass_color') ||
+          $request->filled('glass_type') ||
+          $request->filled('glass_coating') ||
+          $request->filled('language') ||
+          ((int)$request->input('door_quantity', 0) > 0) ||
+          ((int)$request->input('window_quantity', 0) > 0);
+
+          if ($hasAnySaleFormData) {
+          $payload = [
+              'sale'             => $request->boolean('sale'),
+              'installation'     => $request->boolean('installation'),
+              'permit'           => $request->boolean('permit'),
+              'replacement'      => $request->boolean('replacement'),
+              'new_construction' => $request->boolean('new_construction'),
+              'financing'        => $request->boolean('financing'),
+              'screen'           => $request->boolean('screen'),
+              // Si tu checkbox en la vista se llama "door_design", mapea así:
+              'design'           => $request->boolean('door_design') ?: $request->boolean('design'),
+              'mountin'          => $request->boolean('mountin'),
+              'bar'              => $request->boolean('bar'),
+              'shutter_hole'     => $request->boolean('shutter_hole'),
+              'floor_cutting'    => $request->boolean('floor_cutting'),
+              'interior_finish'  => $request->boolean('interior_finish'),
+              'hoa'              => $request->boolean('hoa'),
+
+              'floor'            => $request->input('floor', ''),
+              'frame_color'      => $request->input('frame_color', ''),
+              'glass_color'      => $request->input('glass_color', ''),
+              'glass_type'       => $request->input('glass_type', ''),
+              'glass_coating'    => $request->input('glass_coating', ''),
+              'language'         => $request->input('language', ''),
+
+              'door_quantity'    => (int)$request->input('door_quantity', 0),
+              'window_quantity'  => (int)$request->input('window_quantity', 0),
+          ];
+          $order->saleForm()->create($payload); 
+        }
+
+          // Crea la relación 1:1
+          
+
+
+
+      $order->orderStatus()->create([
+        'status' => OrderStatusEnum::QUALIFIED->value,
+        'user_id' => auth()->user()->id,
+        'notes' => "$status created by " . auth()->user()->name,
+      ]);
+
+      if ($request->filled('notes')) {
+        $order->notes()->create([
+          'content' => $request->notes,
+          'type' => 'order_note',
+          'user_id' => auth()->id(),
+        ]);
+      }
+
+      $order->orderStatus()->create([
+        'status' => $status,
+        'user_id' => auth()->user()->id,
+        'notes' => "$status created by " . auth()->user()->name,
+      ]);
+      if (!$order) {
+        throw new \Exception('Order not created');
+      }
+
+       if ($request->order_type === OrderTypeEnum::COMMERCIAL->value) {
+            // Mapea cliente ⇢ compañía a actualizar
+            /* $pairs = [
+                ['client' => (int) $request->client_id,               'company' => (int) $request->company_contact_id],
+                ['client' => (int) $request->associate_client_id_1,   'company' => (int) $request->associate_company_contact_id_1],
+                ['client' => (int) $request->associate_client_id_2,   'company' => (int) $request->associate_company_contact_id_2],
+            ];
+
+            //dd($pairs);
+
+            foreach ($pairs as $p) {
+                $clientId  = $p['client'];
+                $companyId = $p['company'];
+
+                // Saltar si viene 0/null
+                if ($clientId > 0 && $companyId > 0) {
+                    Client::whereKey($clientId)->update(['company_contact_id' => $companyId]);
+                }
+            }
+                      
+              // Asociado 1
+              if ((int) $request->associate_client_id_1 > 0) {
+                  OrderClientTemps::create([
+                      'order_id'=> $order->id,
+                      'client_id'=> (int) $request->associate_client_id_1,
+                  ]);
+              }
+
+              // Asociado 2
+              if ((int) $request->associate_client_id_2 > 0) {
+                  OrderClientTemps::create([
+                      'order_id'=> $order->id,
+                      'client_id'=> (int) $request->associate_client_id_2,
+                  ]);
+              }*/
+            foreach ($companyClientPairs as $pair) {
+                $client = Client::find((int) $pair['client_id']);
+                if ($client) {
+                    $this->clientCompanyContactManager->attach($client, (int) $pair['company_contact_id']);
+                }
+            }
+
+            $hasSingleCompany = count($companyClientPairs) === 1;
+            foreach ($companyClientPairs as $pair) {
+                OrderCompanyContact::create([
+                    'order_id' => $order->id,
+                    'company_contact_id' => $pair['company_contact_id'],
+                    'client_id' => $pair['client_id'],
+                    'source_id' => $pair['source_id'],
+                    'is_selected' => $hasSingleCompany,
+                    'selected_at' => $hasSingleCompany ? now() : null,
+                ]);
+            }
+
+            // Guarda SOLO los asociados en order_clients_temps (como ya haces)
+            if ((int)$request->associate_client_id_1 > 0) {
+                OrderClientTemps::create([
+                    'order_id'  => $order->id,
+                    'client_id' => (int)$request->associate_client_id_1,
+                ]);
+            }
+            if ((int)$request->associate_client_id_2 > 0) {
+                OrderClientTemps::create([
+                    'order_id'  => $order->id,
+                    'client_id' => (int)$request->associate_client_id_2,
+                ]);
+            }
+        }
+
+      $this->orderClientEmailManager->applySelection($order, $clientEmailSelection);
+      $order->save();
+      $order->load(
+        'saleForm',
+        'client.companyContacts',
+        'orderCompanyContacts.client.companyContacts',
+        'orderCompanyContacts.companyContact'
+      );
+      $this->orderClientEmailDeliveryLogger->logIfConfiguredDifferentlyFromDefault(
+        $order,
+        $primaryClient?->email
+      );
+
+      $this->sendEmail($order);
+    });
+  }
+}

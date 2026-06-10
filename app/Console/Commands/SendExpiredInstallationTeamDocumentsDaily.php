@@ -34,6 +34,9 @@ class SendExpiredInstallationTeamDocumentsDaily extends Command
     {
         $installationTeams = InstallationTeam::with('user')
           ->where('worker_compensation_expiration_date', '<=', Carbon::now()->addMonth(1))
+          ->whereHas('user', function ($query) {
+            $query->where('status', 'ACTIVE');
+          })
           ->get();
 
           $users = [];

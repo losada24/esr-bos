@@ -7,6 +7,7 @@ use App\Enum\RoleEnum;
 use App\Enum\ServiceEnum;
 use App\Enum\SupervisorPaymentStatusEnum;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -29,8 +30,10 @@ class Order extends Model
 
   protected $fillable = [
     'order_number',
+    'invoice_number',
     'name',
     'job_address',
+    'job_city',
     'city_permits',
     'association_permits',
     'equipment_rental',
@@ -57,7 +60,8 @@ class Order extends Model
     'frame_color',
     'cost_delivery',
     'cost_city_fee',
-    'project_amount',
+        'project_amount',
+        'down_payment',
     'city',
     'type_of_financing',
     'payment_definition',
@@ -75,6 +79,7 @@ class Order extends Model
     'final_inspection_date',
     'complete_date',
     'do_not_send_email',
+    'client_email_override',
     'service_date',
     'pending_collect',
     'pre_inspection',
@@ -107,6 +112,7 @@ class Order extends Model
     'service_date',
     'pending_collect',
     'material_received_date',
+    'bid_due_date',
     
   ];
 
@@ -124,15 +130,31 @@ class Order extends Model
       'final_payment_installation' => 'boolean',
       'is_send_email' => 'boolean',
       'is_new_travel_cost' => 'boolean',
+      'is_supply' => 'boolean',
+      'name_check' => 'boolean',
+      'address_check' => 'boolean',
+      'amount_check' => 'boolean',
+      'email_check' => 'boolean',
     ];
+  }
+
+  public function getNotesAttribute($value)
+  {
+    return $value;
   }
 
   public function scopeFilter($query, array $filters)
   {
     $query->when($filters['status'] ?? null, function ($query, $search) {
       $query->where('status', $search);
+    })->when(($filters['is_supply'] ?? false) === true, function ($query) {
+      $query->where('is_supply', true);
     })->when($filters['text'] ?? null, function ($query, $search) {
-      $query->where(DB::raw("CONCAT(name, ' ', order_number, ' ', job_address)"), 'like', '%' . $search . '%');
+      $query->where(function ($query) use ($search) {
+        $query->where('name', 'like', '%' . $search . '%')
+          ->orWhere('order_number', 'like', '%' . $search . '%')
+          ->orWhere('job_address', 'like', '%' . $search . '%');
+      });
     });
   }
   public function scopeSupervisorFilter($query, array $filters)
@@ -178,7 +200,9 @@ class Order extends Model
       }*/
     if (isset($filters['service']) && $filters['service'] != 'all') {
       $query->where(function ($query) use ($filters) {
-        if ($filters['service'] === ServiceEnum::DELIVERY->value) {
+        if (is_array($filters['service'])) {
+          $query->whereIn('service', $filters['service']);
+        } else if ($filters['service'] === ServiceEnum::DELIVERY->value) {
           $query->where('service', ServiceEnum::DELIVERY->value)
             ->orWhere('service', ServiceEnum::INSTALLATION->value);
         } else {
@@ -236,30 +260,29 @@ class Order extends Model
             //OrderStatusEnum::FINAL_INSPECTION,
             //OrderStatusEnum::FINAL_COLLECT,
             OrderStatusEnum::COMPLETE,
+            OrderStatusEnum::MATERIALS_RECEIVED,
           ]);
       }
 
-      if (auth()->user()->hasRole(RoleEnum::OWNER->value)) {
-        $query->whereHas('owners', function ($ownerQuery) {
-          $ownerQuery->where('user_id', auth()->user()->id);
-        })
-        ->whereIn('status', [
-          OrderStatusEnum::PLANNED,
-          OrderStatusEnum::RESCHEDULE,
-          OrderStatusEnum::CONFIRMED,
-          OrderStatusEnum::EXECUTION,
-          OrderStatusEnum::SUPERVISION,
-          OrderStatusEnum::INSPECTION,
-          OrderStatusEnum::FINISH,
-          OrderStatusEnum::SERVICE,
-          OrderStatusEnum::ON_HOLD,
-          OrderStatusEnum::FINAL_INSPECTION,
-          OrderStatusEnum::FINAL_COLLECT,
-          OrderStatusEnum::COMPLETE,
-        ]);
+      if ($user->hasRole(RoleEnum::OWNER->value)) {
+        $query->accessibleToOwner($user)
+          ->whereIn('status', [
+            OrderStatusEnum::PLANNED,
+            OrderStatusEnum::RESCHEDULE,
+            OrderStatusEnum::CONFIRMED,
+            OrderStatusEnum::EXECUTION,
+            OrderStatusEnum::SUPERVISION,
+            OrderStatusEnum::INSPECTION,
+            OrderStatusEnum::FINISH,
+            OrderStatusEnum::SERVICE,
+            OrderStatusEnum::ON_HOLD,
+            OrderStatusEnum::FINAL_INSPECTION,
+            OrderStatusEnum::FINAL_COLLECT,
+            OrderStatusEnum::COMPLETE,
+          ]);
       }
 
-      if (auth()->user()->hasRole(RoleEnum::SERVICE_MANAGER->value) || auth()->user()->hasRole(RoleEnum::PAYMENT_COORDINATOR->value)) {
+      if ($user->hasRole(RoleEnum::SERVICE_MANAGER->value) || $user->hasRole(RoleEnum::PAYMENT_COORDINATOR->value)) {
         $query->whereIn('status', [
           OrderStatusEnum::RESCHEDULE,   // Solo órdenes en "EXECUTION"
           OrderStatusEnum::CONFIRMED,   // Solo órdenes en "EXECUTION"
@@ -327,9 +350,41 @@ class Order extends Model
     return $this->morphMany(Attachment::class, 'attachable');
   }
 
+  public function attachmentRoleTargets(): HasMany
+  {
+    return $this->hasMany(OrderAttachmentRoleTarget::class);
+  }
+
   public function owners(): BelongsToMany
   {
-    return $this->belongsToMany(User::class, 'owner_user');
+    return $this->belongsToMany(User::class, 'owner_user')
+      ->withTimestamps();
+  }
+
+  public function scopeAccessibleToOwner(Builder $query, User $user): Builder
+  {
+    $accessibleOwnerIds = $user->accessibleOwnerIds();
+
+    if ($accessibleOwnerIds === []) {
+      return $query->whereRaw('1 = 0');
+    }
+
+    return $query->whereHas('owners', function (Builder $ownerQuery) use ($accessibleOwnerIds) {
+      $ownerQuery->whereIn('users.id', $accessibleOwnerIds);
+    });
+  }
+
+  public function isAccessibleToOwner(User $user): bool
+  {
+    $accessibleOwnerIds = $user->accessibleOwnerIds();
+
+    if ($accessibleOwnerIds === []) {
+      return false;
+    }
+
+    return $this->owners()
+      ->whereIn('users.id', $accessibleOwnerIds)
+      ->exists();
   }
 
   public function orderProducts(): HasMany
@@ -352,6 +407,11 @@ class Order extends Model
     return $this->hasMany(InstallationPayment::class);
   }
 
+  public function orderCommissions(): HasMany
+  {
+    return $this->hasMany(OrderCommission::class);
+  }
+
   /*public function paymentExtraFields()
     {
         return $this->hasMany(PaymentExtraField::class);
@@ -360,6 +420,31 @@ class Order extends Model
   public function paymentExtraFields()
   {
     return $this->hasOne(PaymentExtraField::class, 'order_id', 'id');
+  }
+
+  public function paymentSchedule(): HasOne
+  {
+    return $this->hasOne(PaymentSchedule::class);
+  }
+
+  public function orderPayments(): HasMany
+  {
+    return $this->hasMany(OrderPayment::class);
+  }
+
+  public function changeOrderPayment(): HasOne
+  {
+    return $this->hasOne(OrderPayment::class)->where('type', 'CHANGE_ORDER');
+  }
+
+  public function financialEvents(): HasMany
+  {
+    return $this->hasMany(OrderFinancialEvent::class)->latest();
+  }
+
+  public function paymentInformationAudits(): HasMany
+  {
+    return $this->hasMany(OrderPaymentInformationAudit::class)->latest('changed_at');
   }
 
   public function permit(): HasOne
@@ -371,6 +456,53 @@ class Order extends Model
   {
     return $this->hasMany(OrderColors::class, 'order_id', 'id');
   }
+
+  public function orderClientTemps()
+  {
+    return $this->hasMany(OrderClientTemps::class);
+  }
+
+  public function orderCompanyContacts(): HasMany
+  {
+    return $this->hasMany(OrderCompanyContact::class);
+  }
+
+  public function companyContacts(): BelongsToMany
+  {
+    return $this->belongsToMany(CompanyContact::class, 'order_company_contacts')
+      ->withPivot(['client_id', 'source_id', 'is_selected', 'selected_at'])
+      ->withTimestamps();
+  }
+
+  public function tags(): MorphMany
+  {
+    return $this->morphMany(Tag::class, 'taggable');
+  }
+
+  public function notes(): MorphMany
+  {
+    return $this->morphMany(Note::class, 'noteable');
+  }
+
+  public function orderNotes(): MorphMany
+  {
+    return $this->notes();
+  }
+
+  public function saleForm()
+    {
+        return $this->hasOne(SaleForm::class, 'order_id', 'id');
+    }
+
+    public function serviceControls(): HasMany
+    {
+        return $this->hasMany(ServiceControl::class)->latest();
+    }
+
+     public function snapshots(): HasMany
+    {
+        return $this->hasMany(OrderSnapshot::class);
+    }
 
   public function getGrandTotalPrice()
   {
@@ -392,6 +524,17 @@ class Order extends Model
       $this->orderColors()->createMany(
           collect($colors)->map(fn($color) => ['name' => $color])->toArray()
       );
+  }
+
+  public function hasReachedContractSigned(): bool
+  {
+    if ($this->status === OrderStatusEnum::CONTRACT_SIGNED_BY_CLIENT->value) {
+      return true;
+    }
+
+    return $this->orderStatus()
+      ->where('status', OrderStatusEnum::CONTRACT_SIGNED_BY_CLIENT->value)
+      ->exists();
   }
 
 }

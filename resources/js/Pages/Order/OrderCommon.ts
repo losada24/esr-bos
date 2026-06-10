@@ -1,4 +1,5 @@
 import { ExtraWorks, type InstallationTeam, type Order } from '@/types'
+import type { Attachment, PaymentSchedule } from '@/types/interfaces/order'
 import { type OrderProduct, type OrderProductsExtraWorks } from '@/types/interfaces/order'
 import * as Yup from 'yup'
 
@@ -48,14 +49,14 @@ interface DropdownOption {
   value: string
 }
 
-export type OrderFormValues = Omit<Order, 'installation_date' | 'delivery_date' | 'payment_factory_date' | 'contract_signing_date' | 'eta_date' | 'installation_end_date' | 'entry_date' | 'frame_color'> & {
+export type OrderFormValues = Omit<Order, 'installation_date' | 'delivery_date' | 'payment_factory_date' | 'contract_signing_date' | 'eta_date' | 'installation_end_date' | 'entry_date' | 'frame_color' | 'attachments'> & {
   client_name: string
   last_name: string
   phone: string
   email: string
   vip_clients: boolean
   vip_notes: string
-  attachments: any[]
+  attachments: Array<Attachment | File>
   installation_date: Date | null
   delivery_date: Date | null
   payment_factory_date: Date | null
@@ -65,6 +66,21 @@ export type OrderFormValues = Omit<Order, 'installation_date' | 'delivery_date' 
   entry_date: Date | null
   installation_end_date: Date | null
   frame_color: string[] | DropdownOption[]
+  contact_type: string
+  order_type?: string
+  product_line?: string
+  is_supply?: boolean
+  has_contract_signed?: boolean
+  client_company_name?: string
+  client_email_selection?: string
+  down_payment?: number | null
+  payment_schedule?: PaymentSchedule | null
+  payment_schedule_type?: string
+  custom_schedule?: Array<{ label: string, amount: string }>
+  change_order_enabled?: boolean
+  change_order_amount?: number | null
+  change_order_note?: string
+  attachment_role_targets?: Record<string, number[]>
 }
 
 export const orderFormObj: OrderFormValues = {
@@ -77,8 +93,8 @@ export const orderFormObj: OrderFormValues = {
   vip_notes: '',
   name: '',
   order_number: 0,
+  invoice_number: '',
   job_address: '',
-  job_city: '',
   job_state: '',
   job_zip: '',
   city_permits: false,
@@ -132,6 +148,28 @@ export interface OrderProductExtraWorksFormValues {
 }
 
 export const loadOrderFormObj = (order: Order): OrderFormValues => {
+  const scheduleType = order.payment_schedule?.schedule_type ?? ''
+  const clientEmailSelection = order.do_not_send_email
+    ? '__NONE__'
+    : (order.client_email_selection ?? order.client_email_override ?? '__PRIMARY__')
+  const attachmentRoleTargetsByRole = order.attachment_role_targets_by_role ?? {}
+  const getAttachmentRoleTargetIds = (role: string): number[] => {
+    const ids = attachmentRoleTargetsByRole[role]
+    return Array.isArray(ids) ? ids : []
+  }
+  const customScheduleFromOrder = scheduleType === 'CUSTOMIZED'
+    ? (order.payment_schedule?.installments ?? [])
+      .map((item) => ({
+        label: String(item.label ?? '').trim(),
+        amount: item.amount != null ? String(item.amount) : ''
+      }))
+      .filter((item) => item.label !== '' || item.amount !== '')
+    : []
+  const customSchedule = [
+    ...customScheduleFromOrder.slice(0, 6),
+    ...Array.from({ length: Math.max(0, 6 - customScheduleFromOrder.length) }, () => ({ label: '', amount: '' }))
+  ]
+
   return {
     id: order.id,
     last_name: order.client?.last_name ?? '',
@@ -142,6 +180,7 @@ export const loadOrderFormObj = (order: Order): OrderFormValues => {
     vip_notes: order.client?.vip_notes ?? '',
     name: order.name,
     order_number: order.order_number,
+    invoice_number: order.invoice_number ?? '',
     job_address: order.job_address,
     job_state: order.job_state,
     job_zip: order.job_zip,
@@ -184,6 +223,7 @@ export const loadOrderFormObj = (order: Order): OrderFormValues => {
     initial_payment_percentage: order.initial_payment_percentage,
     hide_on_weekends: order.hide_on_weekends ?? false,
     do_not_send_email: order.do_not_send_email ?? false,
+    client_email_selection: clientEmailSelection,
     is_send_email: order.is_send_email ?? false,
     is_new_travel_cost: !!order.is_new_travel_cost,
     new_travel_cost: order.new_travel_cost,
@@ -205,29 +245,31 @@ type OrderProductFormValues = OrderProduct & {
 export const getOrderProducts = (orderProduct: OrderProductFormValues) => {
   return {
     id: orderProduct.id,
-    order_id: orderProduct.order_id,
-    qty: orderProduct.qty,
-    height: orderProduct.height,
-    width: orderProduct.width,
-    unit_price: orderProduct.unit_price,
-    total_price: orderProduct.total_price,
-    total_price_with_extraworks: orderProduct.total_price_with_extraworks,
-    unit_price_with_extraworks: orderProduct.unit_price_with_extraworks,
-    extra_work_price: orderProduct.extra_work_price,
+    order_id: Number(orderProduct.order_id),
+    qty: Number(orderProduct.qty),
+    height: Number(orderProduct.height),
+    width: Number(orderProduct.width),
+    unit_price: Number(orderProduct.unit_price),
+    total_price: Number(orderProduct.total_price),
+    total_price_with_extraworks: Number(orderProduct.total_price_with_extraworks),
+    unit_price_with_extraworks: Number(orderProduct.unit_price_with_extraworks),
+    extra_work_price: Number(orderProduct.extra_work_price),
     notes: orderProduct.notes,
-    product_config_id: orderProduct.product_config_id,
-    type_of_work_id: orderProduct.type_of_work_id,
-    storefront_area: orderProduct.storefront_area,
-    installation_other_level: orderProduct.installation_other_level,
-    product_category_id: orderProduct.product_category_id,
-    type_of_product_id: orderProduct.type_of_product_id,
+    product_config_id: Number(orderProduct.product_config_id),
+    type_of_work_id: orderProduct.type_of_work_id == null ? null : Number(orderProduct.type_of_work_id),
+    storefront_area: Number(orderProduct.storefront_area),
+    new_price_storefront: Number(orderProduct.new_price_storefront),
+    installation_other_level: Boolean(orderProduct.installation_other_level),
+    product_category_id: Number(orderProduct.product_category_id),
+    type_of_product_id: Number(orderProduct.type_of_product_id),
+    pivot_cost: Number(orderProduct.pivot_cost ?? 0),
     extra_works: orderProduct.order_product_extra_works?.map((extra_work: OrderProductEstraWorkPivot) => {
       return {
-        order_product_id: extra_work.pivot.order_product_id,
-        extra_work_id: extra_work.pivot.extra_work_id,
-        amount: extra_work.pivot.amount,
+        order_product_id: Number(extra_work.pivot.order_product_id),
+        extra_work_id: Number(extra_work.pivot.extra_work_id),
+        amount: Number(extra_work.pivot.amount),
         extra_work_name: extra_work.name,
-        price: extra_work.pivot.price
+        price: Number(extra_work.pivot.price)
       }
     })
   }

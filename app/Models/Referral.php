@@ -5,8 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
 
 class Referral extends Model
@@ -14,10 +14,12 @@ class Referral extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-      'name',
-      'phone',
-      'type',
-
+        'name',
+        'phone',
+        'email',
+        'type',
+        'client_id',
+        'user_id',
     ];
 
     /**
@@ -33,12 +35,22 @@ class Referral extends Model
     public function scopeFilter($query, array $filters)
     {
         $query->when($filters['text'] ?? null, function ($query, $search) {
-          $query->where(DB::raw("CONCAT(name, ' ', email, ' ', phone)"), 'like', '%'.$search.'%');
+            $query->where(DB::raw("CONCAT_WS(' ', name, email, phone)"), 'like', '%'.$search.'%');
         });
     }
-    public function clients()
+
+    public function clients(): HasMany
     {
         return $this->hasMany(Client::class);
     }
 
+    public function referrerClient(): BelongsTo
+    {
+        return $this->belongsTo(Client::class, 'client_id');
+    }
+
+    public function referrerUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
 }

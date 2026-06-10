@@ -12,13 +12,17 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Models\Order;
 use App\Enum\OrderStatusEnum;
+use App\Enum\OrderTypeEnum;
 use App\Enum\RoleEnum;
 use App\Enum\ServiceEnum;
 use App\Enum\SupervisorPaymentStatusEnum;
+use App\Enum\StatusUserEnum;
 use App\Enum\TypeOfFinancing;
 use App\Http\Requests\PartialOrderRequest;
 use App\Http\Requests\StoreOrderRequest;
+use App\Http\Requests\StoreServiceRequest;
 use App\Http\Requests\UpdateOrderRequest;
+use App\Http\Requests\UpdateServiceRequest;
 use App\Models\Attachment;
 use App\Models\Client;
 use App\Models\DurationOfWork;
@@ -36,7 +40,10 @@ use App\Models\TypeOfWork;
 use App\Models\User;
 use App\Traits\OrderDates;
 use Carbon\Carbon;
+use Illuminate\Support\Str;
 use Doctrine\DBAL\Types\Type;
+use App\Support\PaymentInstallmentPresenter;
+use App\Support\PaymentScheduleTemplates;
 
 class OrderController extends Controller
 {
@@ -49,7 +56,7 @@ class OrderController extends Controller
    */
   public function index(Request $request)
   {
-    return Inertia::render('Order/Index', [
+    /*return Inertia::render('Order/Index', [
       'orders' => new OrderCollection(
         Order::with(['installationTeams.user'])->filter($request->only(['text', 'status']))
           ->orderBy('orders.updated_at', 'desc')
@@ -72,6 +79,41 @@ class OrderController extends Controller
         //OrderStatusEnum::RESCHEDULE->value,
         OrderStatusEnum::MATERIALS_RECEIVED->value,
       ]
+    ]);*/
+     $allowedStatuses = [
+        OrderStatusEnum::REVIEW->value,
+        OrderStatusEnum::PLANNED->value,
+        OrderStatusEnum::REPLANNED->value,
+        OrderStatusEnum::CONFIRMED->value,
+        OrderStatusEnum::DELIVERY_CONFIRMED->value,
+        OrderStatusEnum::EXECUTION->value,
+        OrderStatusEnum::SUPERVISION->value,
+        OrderStatusEnum::INSPECTION->value,
+        OrderStatusEnum::FINISH->value,
+        OrderStatusEnum::SERVICE->value,
+        OrderStatusEnum::FINAL_INSPECTION->value,
+        OrderStatusEnum::COMPLETE->value,
+        OrderStatusEnum::ON_HOLD->value,
+        OrderStatusEnum::RESCHEDULE->value,
+        OrderStatusEnum::MATERIALS_RECEIVED->value,
+        OrderStatusEnum::FINAL_COLLECT->value,
+        OrderStatusEnum::CANCELED->value
+    ];
+
+    $filters = $request->only(['text', 'status']);
+    $filters['is_supply'] = $request->boolean('is_supply');
+
+    $orders = Order::with(['installationTeams.user'])
+        ->whereIn('orders.status', $allowedStatuses)   // <- filtro duro por status permitidos
+        ->filter($filters)   // si viene un status fuera de la lista, igual quedará excluido
+        ->orderBy('orders.updated_at', 'desc')
+        ->orderBy('orders.id', 'desc')
+        ->paginate()
+        ->withQueryString();
+
+    return Inertia::render('Order/Index', [
+        'orders'   => new OrderCollection($orders),
+        'statuses' => $allowedStatuses, // reutiliza los mismos para el frontend (select/filtros)
     ]);
   }
 
@@ -80,15 +122,23 @@ class OrderController extends Controller
    *
    * @return \Illuminate\Http\Response
    */
-  public function create()
+  protected function getOrderFormData(array $services = null): array
   {
-    return Inertia::render('Order/Create', [
-      'clients' => Client::all(),
+    return [
+      'clients' => Client::with(['companyContact:id,name,email'])->get(),
       'type_of_works' => TypeOfWork::all(),
       'types_of_housing' => TypeOfHousing::all(),
-      'owners' => User::role(RoleEnum::OWNER->value)->get(),
-      'installation_teams' => InstallationTeam::with(['user', 'typeHousing'])->get(),
-      'supervisors' => User::role(RoleEnum::SUPERVISOR->value)->get(),
+      'owners' => User::role(RoleEnum::OWNER->value)
+        ->where('status', StatusUserEnum::ACTIVE->value)
+        ->get(),
+      'installation_teams' => InstallationTeam::with(['user', 'typeHousing'])
+        ->whereHas('user', function ($query) {
+          $query->where('status', StatusUserEnum::ACTIVE->value);
+        })
+        ->get(),
+      'supervisors' => User::role(RoleEnum::SUPERVISOR->value)
+        ->where('status', StatusUserEnum::ACTIVE->value)
+        ->get(),
       'methods_of_payment' => [
         MethodOfPayment::CASH->value,
         MethodOfPayment::FINANCED->value,
@@ -106,7 +156,7 @@ class OrderController extends Controller
       'services' => [
         //ServiceEnum::INSTALLATION->value,
         ServiceEnum::DELIVERY->value,
-        ServiceEnum::PICKUP->value
+        ServiceEnum::PICKUP->value,
       ],
       'frame_colors' => [
         FrameColorEnum::WHITE->value,
@@ -138,13 +188,47 @@ class OrderController extends Controller
       'extra_works' => ExtraWork::all(),
       'extraWorks' => ExtraWork::select('id', 'name')->get(),
       'product_costs' => ProductCost::all(),
+      'payment_schedule_types' => PaymentScheduleTemplates::types(),
+      'payment_schedule_templates' => PaymentScheduleTemplates::templates(),
+      'order_types' => [
+        OrderTypeEnum::RESIDENTIAL->value,
+        OrderTypeEnum::COMMERCIAL->value,
+        OrderTypeEnum::SUPPLY->value,
+      ],
       'status' => [
         OrderStatusEnum::REVIEW->value,
         OrderStatusEnum::PLANNED->value,
         OrderStatusEnum::CONFIRMED->value,
         OrderStatusEnum::DELIVERY_CONFIRMED->value,
       ]
-    ]);
+    ];
+  }
+
+  public function create()
+  {
+    return Inertia::render('Order/Create', $this->getOrderFormData());
+  }
+
+  public function createService()
+  {
+    $data = $this->getOrderFormData([ServiceEnum::SERVICE->value]);
+    $data['defaultService'] = ServiceEnum::SERVICE->value;
+    $data['status'] = [
+      OrderStatusEnum::PLANNED->value,
+      OrderStatusEnum::CONFIRMED->value,
+      OrderStatusEnum::EXECUTION->value,
+      OrderStatusEnum::SUPERVISION->value,
+      OrderStatusEnum::FINAL_COLLECT->value,
+      OrderStatusEnum::COMPLETE->value,
+    ];
+    $data['supervisors'] = $data['supervisors']->map(function ($supervisor) {
+      return [
+        'id' => $supervisor->id,
+        'name' => $supervisor->name,
+      ];
+    })->values();
+
+    return Inertia::render('Order/CreateService', $data);
   }
 
   public function getDeliveryAndInstallationDate($payment_factory_date, $type_of_housing, $county_id, $service, $hasPermit = false)
@@ -177,12 +261,29 @@ class OrderController extends Controller
    *
    * @param  \Illuminate\Http\Request  $request
    * @return \Illuminate\Http\Response
-   */
+  */
   public function store(StoreOrderRequest $storeOrderRequest, CreateOrder $createOrder)
   {
     $createOrder->handle($storeOrderRequest);
     return redirect()->route('order.index')
       ->with('success', 'Order created successfully.');
+  }
+
+  public function storeService(StoreServiceRequest $storeServiceRequest, CreateOrder $createOrder)
+  {
+    $createOrder->handle($storeServiceRequest);
+
+    return redirect()->route('order.index')
+      ->with('success', 'Service created successfully.');
+  }
+
+  public function updateService(UpdateServiceRequest $updateServiceRequest, UpdateOrder $updateOrder, Order $order)
+  {
+    // \\Log::info('UpdateService payload', $updateServiceRequest->all());
+    $updateOrder->handle($updateServiceRequest, $order);
+
+    return redirect()->route('order.index')
+      ->with('success', 'Service updated successfully.');
   }
 
   /**
@@ -192,10 +293,54 @@ class OrderController extends Controller
    */
   public function edit(Order $order)
   {
+    if ($order->service === ServiceEnum::SERVICE->value) {
+      $data = $this->getOrderFormData([ServiceEnum::SERVICE->value]);
+      $data['defaultService'] = ServiceEnum::SERVICE->value;
+      $data['status'] = [
+        OrderStatusEnum::PLANNED->value,
+        OrderStatusEnum::REPLANNED->value,
+        OrderStatusEnum::CONFIRMED->value,
+        OrderStatusEnum::EXECUTION->value,
+        OrderStatusEnum::SUPERVISION->value,
+        OrderStatusEnum::FINAL_COLLECT->value,
+        OrderStatusEnum::COMPLETE->value,
+      ];
+      $data['supervisors'] = $data['supervisors']->map(function ($supervisor) {
+        return [
+          'id' => $supervisor->id,
+          'name' => $supervisor->name,
+        ];
+      })->values();
+
+      $loadedOrder = $order->load([
+        'client.companyContact',
+        'installationTeams.user',
+        'orderProducts.productConfig',
+        'orderProducts.productCategory',
+        'orderProducts.orderProductExtraWorks',
+        'orderProducts.typeOfWork',
+        'paymentSchedule.installments.paidBy',
+        'paymentSchedule.installments.movements.paidBy',
+        'changeOrderPayment',
+        'owners',
+        'attachments',
+        'attachmentRoleTargets',
+      ]);
+      $orderData = $loadedOrder->toArray();
+      $orderData['attachment_role_targets_by_role'] = $this->attachmentRoleTargetsByRole($loadedOrder);
+      $orderData['payment_schedule'] = PaymentInstallmentPresenter::schedule($loadedOrder->paymentSchedule);
+      $orderData['has_contract_signed'] = $loadedOrder->hasReachedContractSigned();
+      $orderData['replanned_reasons'] = $this->currentReplannedReasons($loadedOrder);
+      $data['order'] = $orderData;
+
+      return Inertia::render('Order/EditService', $data);
+    }
+
     $status = [
       OrderStatusEnum::REVIEW->value,
       OrderStatusEnum::PLANNED->value,
       OrderStatusEnum::MATERIALS_RECEIVED->value,
+      OrderStatusEnum::REPLANNED->value,
       OrderStatusEnum::CONFIRMED->value,
       OrderStatusEnum::ON_HOLD->value,
       OrderStatusEnum::COMPLETE->value,
@@ -205,6 +350,7 @@ class OrderController extends Controller
       $status = [
         OrderStatusEnum::REVIEW->value,
         OrderStatusEnum::PLANNED->value,
+        OrderStatusEnum::REPLANNED->value,
         OrderStatusEnum::CONFIRMED->value,
         //OrderStatusEnum::EXECUTION->value,
         //OrderStatusEnum::SUPERVISION->value,
@@ -216,6 +362,7 @@ class OrderController extends Controller
         OrderStatusEnum::COMPLETE->value,
         OrderStatusEnum::ON_HOLD->value,
         OrderStatusEnum::MATERIALS_RECEIVED->value,
+        OrderStatusEnum::CANCELED->value,
 
       ];
       if ($order->status === OrderStatusEnum::CONFIRMED->value) {
@@ -225,20 +372,32 @@ class OrderController extends Controller
     $statusPaymentInstaller = PaymentExtraField::where('order_id', $order->id)->first();
     //dd($statusPaymentInstaller->installer_payment_status);
 
-    return Inertia::render('Order/Edit', [
-      'order' => $order->load([
-        'client',
+    $loadedOrder = $order->load([
+        'client.companyContact',
         'typeOfWork',
         'typeOfHousing',
         'user',
         'attachments',
+        'attachmentRoleTargets',
         'owners',
         'orderProducts.orderProductExtraWorks',
         'orderColors',
-        
+        'paymentSchedule.installments.paidBy',
+        'paymentSchedule.installments.movements.paidBy',
+        'changeOrderPayment',
+
         'installationTeams.user',
-      ]),
+      ]);
+    $orderData = $loadedOrder->toArray();
+    $orderData['attachment_role_targets_by_role'] = $this->attachmentRoleTargetsByRole($loadedOrder);
+    $orderData['payment_schedule'] = PaymentInstallmentPresenter::schedule($loadedOrder->paymentSchedule);
+    $orderData['has_contract_signed'] = $loadedOrder->hasReachedContractSigned();
+    $orderData['replanned_reasons'] = $this->currentReplannedReasons($loadedOrder);
+
+    return Inertia::render('Order/Edit', [
+      'order' => $orderData,
       //dd($order),
+      'clients' => Client::with(['companyContact:id,name,email'])->get(),
 
       'extraWorks' => ExtraWork::select('id', 'name')->get(),
       
@@ -248,9 +407,20 @@ class OrderController extends Controller
     : 'OPEN',
       'type_of_works' => TypeOfWork::all(),
       'types_of_housing' => TypeOfHousing::all(),
-      'owners' => User::role(RoleEnum::OWNER->value)->get(),
+      /*'owners' => User::role(RoleEnum::OWNER->value)->get(),
       'installation_teams' => InstallationTeam::with(['user', 'typeHousing'])->get(),
-      'supervisors' => User::role(RoleEnum::SUPERVISOR->value)->get(),
+      'supervisors' => User::role(RoleEnum::SUPERVISOR->value)->get(),*/
+      'owners' => User::role(RoleEnum::OWNER->value)
+        ->where('status', StatusUserEnum::ACTIVE->value)
+        ->get(),
+      'installation_teams' => InstallationTeam::with(['user', 'typeHousing'])
+        ->whereHas('user', function ($query) {
+          $query->where('status', StatusUserEnum::ACTIVE->value);
+        })
+        ->get(),
+      'supervisors' => User::role(RoleEnum::SUPERVISOR->value)
+        ->where('status', StatusUserEnum::ACTIVE->value)
+        ->get(),
       'methods_of_payment' => [
         MethodOfPayment::CASH->value,
         MethodOfPayment::FINANCED->value,
@@ -283,9 +453,46 @@ class OrderController extends Controller
       'type_of_products' => TypeOfProduct::with(['extraWorks'])->get(),
       'product_category' => ProductCategory::all(),
       'product_costs' => ProductCost::all(),
+      'payment_schedule_types' => PaymentScheduleTemplates::types(),
+      'payment_schedule_templates' => PaymentScheduleTemplates::templates(),
+      'order_types' => [
+        OrderTypeEnum::RESIDENTIAL->value,
+        OrderTypeEnum::COMMERCIAL->value,
+        OrderTypeEnum::SUPPLY->value,
+      ],
       'status' => $status
     ]);
    
+  }
+
+  private function attachmentRoleTargetsByRole(Order $order): array
+  {
+    $order->loadMissing('attachmentRoleTargets');
+
+    return $order->attachmentRoleTargets
+      ->groupBy('role')
+      ->map(function ($items) {
+        return $items->pluck('attachment_id')
+          ->map(fn ($id) => (int) $id)
+          ->unique()
+          ->values()
+          ->all();
+      })
+      ->toArray();
+  }
+
+  private function currentReplannedReasons(Order $order): array
+  {
+    if ($order->status !== OrderStatusEnum::REPLANNED->value) {
+      return [];
+    }
+
+    $statusRecord = $order->orderStatus()
+      ->where('status', OrderStatusEnum::REPLANNED->value)
+      ->latest('id')
+      ->first();
+
+    return is_array($statusRecord?->replanned_reasons) ? $statusRecord->replanned_reasons : [];
   }
 
   /**
@@ -304,6 +511,16 @@ class OrderController extends Controller
 
   public function updateFromModal(PartialOrderRequest $request, UpdateOrder $updateOrder, Order $order)
   {
+    if ($this->isRestrictedOwner(auth()->user()) && !$order->isAccessibleToOwner(auth()->user())) {
+      abort(403, 'You are not authorized to update this order.');
+    }
+
+    if ($request->user()->hasRole(RoleEnum::SUPERVISOR->value)) {
+      $request->merge([
+        'installation_date' => $order->installation_date,
+        'installation_end_date' => $order->installation_end_date,
+      ]);
+    }
 
     $updateOrder->partialUpdate($request, $order);
 
@@ -325,32 +542,87 @@ class OrderController extends Controller
       ->with('success', 'Order deleted successfully.');
   }
 
-  public function dropAttachment($id)
+  public function storeAttachment(Request $request, Order $order)
   {
+    $validated = $request->validate([
+      'attachments' => ['required', 'array'],
+      'attachments.*' => ['file', 'max:10240'],
+    ]);
 
-    // Buscar el attachment por ID
+    if ($request->hasFile('attachments')) {
+      foreach ($request->file('attachments') as $file) {
+        $fileName = time() . '_' . Str::replace(' ', '_', $file->getClientOriginalName());
+        $filePath = $file->storeAs('order_files', $fileName, 'public');
+
+        $order->attachments()->create([
+          'filename' => $file->getClientOriginalName(),
+          'file_path' => $filePath,
+          'file_type' => 'order_files',
+          'user_id' => auth()->id(),
+        ]);
+      }
+    }
+
+    $order->load('attachments.user');
+
+    return response()->json([
+      'attachments' => $order->attachments->map(fn ($attachment) => [
+        'id' => $attachment->id,
+        'filename' => $attachment->filename,
+        'file_path' => $attachment->file_path,
+        'file_type' => $attachment->file_type,
+        'created_at' => optional($attachment->created_at)->toIso8601String(),
+        'uploaded_by' => $attachment->user?->name,
+        'user_id' => $attachment->user_id,
+      ])->values(),
+      'message' => 'Attachments uploaded successfully.'
+    ], 201);
+  }
+
+  public function dropAttachment(Request $request, $id)
+  {
     $attachment = Attachment::find($id);
 
-    // Verificar si el attachment existe
     if (!$attachment) {
+      if ($request->expectsJson()) {
+        return response()->json(['message' => 'Attachment not found.'], 404);
+      }
+
       return redirect()
         ->back()
         ->with('error', 'Attachment not found');
     }
 
-    // Obtener el usuario autenticado
     $user = auth()->user();
 
-    if ($attachment->user_id === auth()->user()->id || $user->hasRole([RoleEnum::ADMIN->value, RoleEnum::ACCOUNT_MANAGER->value])) {
-      $attachment->delete();
-      return redirect()
-        ->back()
-        ->with('success', 'Order deleted successfully.');
-    } else {
+    $canDelete = $user && (
+      $attachment->user_id === $user->id ||
+      $user->hasRole([
+        RoleEnum::ADMIN->value,
+        RoleEnum::ACCOUNT_MANAGER->value,
+        RoleEnum::OWNER_ADMIN->value,
+      ])
+    );
+
+    if (!$canDelete) {
+      if ($request->expectsJson()) {
+        return response()->json(['message' => 'You do not have permission to delete this file.'], 403);
+      }
+
       return redirect()
         ->back()
         ->with('error', 'You do not have permission to delete the file.');
     }
+
+    $attachment->delete();
+
+    if ($request->expectsJson()) {
+      return response()->json(['message' => 'Attachment deleted.']);
+    }
+
+    return redirect()
+      ->back()
+      ->with('success', 'Attachment deleted successfully.');
   }
 
   public function updateDatePaid(Request $request)
@@ -426,10 +698,9 @@ class OrderController extends Controller
     $newEstimate->pre_inspection = false;
     $newEstimate->inspection = false;
     $newEstimate->walk_trough = false;
-
-    $client = $estimate->client->replicate();
-    $client->push(); // Guardar el nuevo cliente duplicado
-    $newEstimate->client_id = $client->id; // Asignar el nuevo cliente a la orden duplicada
+    $newEstimate->project_amount= 0;
+    // Reuse the same client to avoid creating duplicates on order duplication.
+    $newEstimate->client_id = $estimate->client_id;
     $newEstimate->push(); // Guardar la nueva orden duplicada
 
     // Duplicar los OrderProducts asociados
@@ -467,5 +738,24 @@ class OrderController extends Controller
     return redirect()
       ->route('order.index')
       ->with('success', $message);
+  }
+
+  private function isRestrictedOwner(?User $user): bool
+  {
+    if (!$user) {
+      return false;
+    }
+
+    return $user->hasRole(RoleEnum::OWNER->value) && !$user->hasAnyRole([
+      RoleEnum::ADMIN->value,
+      RoleEnum::ACCOUNT_MANAGER->value,
+      RoleEnum::OWNER_ADMIN->value,
+      RoleEnum::FRONTDESK_ADMIN->value,
+      'FRONTDESK_ADMIN',
+      'frondesk_admin',
+      'frondestk_admin',
+      'FRONDESK_ADMIN',
+      'FRONDESTK_ADMIN',
+    ]);
   }
 }

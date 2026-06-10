@@ -14,6 +14,7 @@ enum StatusColorEnum: string
     case COMPLETE = '#72cb10';
     case ON_HOLD = '#D3D3D3';
     case RESCHEDULE = '#cb4c08';
+    case REPLANNED = '#db2777';
     case INSPECTION = '#7409EC';
     case FINISH = '#F5F4F4';
     case SERVICE = '#052f88';
@@ -22,5 +23,6 @@ enum StatusColorEnum: string
     case SUPERVISION = '#9A4F08';
     case EXECUTION = '#E47207';
     case MATERIALS_RECEIVED = '#008080';
+    case CANCELED = '#700409';
     
 }

@@ -12,6 +12,10 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Enum\RoleEnum;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class User extends Authenticatable
 {
@@ -32,6 +36,7 @@ class User extends Authenticatable
         'created_by',
         'featured_image',
         'phone',
+        'status',
     ];
 
     /**
@@ -75,9 +80,31 @@ class User extends Authenticatable
         });
     }
 
-    public function clients()
+    public function clients(): HasMany
     {
         return $this->hasMany(Client::class);
+    }
+
+    public function mobileClients(): HasMany
+    {
+        return $this->hasMany(Client::class, 'mobile_user_id');
+    }
+
+    public function referralProfile(): HasOne
+    {
+        return $this->hasOne(Referral::class, 'user_id');
+    }
+
+    public function referredClients(): HasManyThrough
+    {
+        return $this->hasManyThrough(
+            Client::class,
+            Referral::class,
+            'user_id',
+            'referral_id',
+            'id',
+            'id'
+        );
     }
 
     public function isCreatedByLoggedUser() {
@@ -87,5 +114,40 @@ class User extends Authenticatable
     public function createdBy()
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function delegatedOwners(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            User::class,
+            'owner_delegate_access',
+            'viewer_owner_id',
+            'target_owner_id'
+        )->withTimestamps();
+    }
+
+    public function delegatedOwnerViewers(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            User::class,
+            'owner_delegate_access',
+            'target_owner_id',
+            'viewer_owner_id'
+        )->withTimestamps();
+    }
+
+    public function accessibleOwnerIds(): array
+    {
+        $delegatedOwnerIds = $this->relationLoaded('delegatedOwners')
+            ? $this->delegatedOwners->pluck('id')
+            : $this->delegatedOwners()->pluck('users.id');
+
+        return $delegatedOwnerIds
+            ->push($this->id)
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn (int $id) => $id > 0)
+            ->unique()
+            ->values()
+            ->all();
     }
   }

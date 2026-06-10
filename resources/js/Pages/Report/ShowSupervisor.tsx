@@ -163,6 +163,7 @@ export default function ShowSupervisor ({ auth, orders, supervisor, statuses, fi
               {tableOrders.map((order: OrderSupervisor, index) => {
                 const isSelected = selectedRows.includes(order.id)
                 return (
+                  console.log(tableOrders),
                   <tr key={order.id} className={isSelected ? 'bg-blue-200' : ''}>
                     <td className="px-4 py-4 border-t">
                     <input

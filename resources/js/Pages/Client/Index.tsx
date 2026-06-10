@@ -2,10 +2,11 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
 import { Head, Link, router } from '@inertiajs/react'
 import EditIcon from '@/Components/Icons/EditIcon'
 import DeleteIcon from '@/Components/Icons/DeleteIcon'
-import { type PageProps, type Client, type PaginatorLink } from '@/types'
+import { type PageProps, type Client, type PaginatorLink, type Role } from '@/types'
 import Pagination from '@/Components/Pagination'
 import ClientFilter from './ClientFilter'
 import ExportIcon from '@/Components/Icons/ExportIcon'
+import { isFrontdeskEsr } from '@/Utils/user'
 
 type IndexClientProps = PageProps & {
   clients: {
@@ -15,6 +16,11 @@ type IndexClientProps = PageProps & {
 }
 
 export default function Index ({ auth, clients }: IndexClientProps) {
+  const roleNames = Array.isArray(auth?.user?.roles)
+    ? auth.user.roles.map((role: Role) => role.name)
+    : []
+  const canManageClients = !isFrontdeskEsr(roleNames)
+
   const destroy = (id: number) => {
     if (confirm('Are you sure you want to delete this Client?')) {
       router.delete(route('client.destroy', id))
@@ -26,12 +32,16 @@ export default function Index ({ auth, clients }: IndexClientProps) {
           auth={auth}
           pageTitle='Contacts'
           actions={
-            <Link
-              className="btn btn-primary"
-              href={route('client.create')}
-            >
-              <span>Create Contact</span>
-            </Link>
+            canManageClients
+              ? (
+                <Link
+                  className="btn btn-primary"
+                  href={route('client.create')}
+                >
+                  <span>Create Contact</span>
+                </Link>
+                )
+              : null
           }
       >
         <Head title="Contacts" />
@@ -47,7 +57,7 @@ export default function Index ({ auth, clients }: IndexClientProps) {
                 <th className="px-6 pt-5 pb-4">Address</th>
                 <th className="px-6 pt-5 pb-4">Created By</th>
                 <th className="px-6 pt-5 pb-4">Updated At</th>
-                <th className="px-6 pt-5 pb-4 w-14">Actions</th>
+                {canManageClients && <th className="px-6 pt-5 pb-4 w-14">Actions</th>}
               </tr>
             </thead>
             <tbody>
@@ -83,8 +93,9 @@ export default function Index ({ auth, clients }: IndexClientProps) {
                     <td className="border-t px-6 py-4 align-top">
                       {updated_at.toString()}
                     </td>
-                    <td className="border-t flex items-center px-6 py-4">
-                    <Link
+                    {canManageClients && (
+                      <td className="border-t flex items-center px-6 py-4">
+                        <Link
                           href={route('client.edit', id)}
                         >
                           <EditIcon />
@@ -94,7 +105,8 @@ export default function Index ({ auth, clients }: IndexClientProps) {
                         >
                           <DeleteIcon />
                         </button>
-                    </td>
+                      </td>
+                    )}
                   </tr>
                 )
               })}

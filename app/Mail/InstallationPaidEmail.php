@@ -64,16 +64,16 @@ class InstallationPaidEmail extends Mailable implements ShouldQueue
           $numberorder = preg_replace('/[^A-Za-z0-9]/', '', $this->biweeklyTitle);
           $installerName = preg_replace('/[^A-Za-z0-9]/', '', $this->installerName);
           $pdfName = 'pdf.payment-list-orders-' . $numberorder.''. $installerName. '.pdf';
-          $pdfPath = storage_path('app/public/pdf/' . $pdfName);
-          if (Storage::disk('local')->exists($pdfPath)) {
-            Storage::disk('local')->delete($pdfPath);
+          $pdfPath = 'pdf/' . $pdfName;
+          if (Storage::disk('public')->exists($pdfPath)) {
+            Storage::disk('public')->delete($pdfPath);
           }
           
           $pdf = Pdf::loadView('pdf.payment-list-orders', ['orders' => $this->orders, 'installer' => $this->installerName, 'company' => $this->companyName,'biweeklyTitle' => $this->biweeklyTitle])->setPaper('A2', 'landscape');
-          $pdf->save($pdfPath);
-          $attachments[] = Attachment::fromPath($pdfPath);
+          Storage::disk('public')->put($pdfPath, $pdf->output());
+          $attachments[] = Attachment::fromStorageDisk('public', $pdfPath);
         
 
         return $attachments;
-    }
+    }   
 }

@@ -47,14 +47,21 @@ class ClientController extends Controller
           'sources' => [
             ContactSourceEnum::TIK_TOK->value,
             ContactSourceEnum::INSTAGRAM_FACEBOOK->value,
-            ContactSourceEnum::META->value,
-            ContactSourceEnum::DESTINO_TOLK->value,
-            ContactSourceEnum::RESOURCE_MAGAZINE->value,
-            ContactSourceEnum::BANNER_PUBLICITARIO->value,
             ContactSourceEnum::EXTERNAL_REFERAL->value,
             ContactSourceEnum::INTERNAL_REFERAL->value,
-            ContactSourceEnum::GOOGLE_MY_BUSINESS->value,
-            ContactSourceEnum::PICHY_BOYS->value,]]);
+            ContactSourceEnum::SIGNS->value,
+            ContactSourceEnum::WALK_IN->value,
+            ContactSourceEnum::ESW_REFER->value,
+            ContactSourceEnum::ESR_REFER->value,
+            ContactSourceEnum::YOUTUBE->value,
+            ContactSourceEnum::NEW_ORDER ->value,
+            ContactSourceEnum::GOOGLE_ADS->value,
+            ContactSourceEnum::SAME_AS_ORDER->value,
+            ContactSourceEnum::DIRECT_CALL->value,
+            ContactSourceEnum::CANVASS->value,
+            ContactSourceEnum::TRUCK_LED->value,
+            ContactSourceEnum::COSTCO->value,
+       ]]);
     }
 
     /**
@@ -65,7 +72,17 @@ class ClientController extends Controller
      */
     public function store(StoreClientRequest $storeClientRequest, CreateClient $createClient)
     {
-        $createClient->handle($storeClientRequest);
+        $client = $createClient->handle($storeClientRequest);
+            //dd($client);
+        if ($storeClientRequest->boolean('from_modal')) {
+            $client->load([
+                'referral',
+                'referral.referrerClient:id,name,phone,email',
+                'referral.referrerUser:id,name,phone,email,status',
+            ]);
+
+            return response()->json(['client' => $client]);
+        }
         return redirect()->route('client.index')
           ->with('success', 'Client created successfully.');
     }
@@ -78,7 +95,7 @@ class ClientController extends Controller
      */
     public function edit(Client $client)
     {    
-      
+        $client->load('tags:id,name,color,taggable_id,taggable_type');
         return Inertia::render('Client/Edit', [
           //'clients' => $client,
           'contact_type' => [
@@ -87,21 +104,35 @@ class ClientController extends Controller
           ],
           'companies' => CompanyContact::all(),
           'sources' => [
-            ContactSourceEnum::TIK_TOK->value,
+             ContactSourceEnum::TIK_TOK->value,
             ContactSourceEnum::INSTAGRAM_FACEBOOK->value,
-            ContactSourceEnum::META->value,
-            ContactSourceEnum::DESTINO_TOLK->value,
-            ContactSourceEnum::RESOURCE_MAGAZINE->value,
-            ContactSourceEnum::BANNER_PUBLICITARIO->value,
             ContactSourceEnum::EXTERNAL_REFERAL->value,
             ContactSourceEnum::INTERNAL_REFERAL->value,
-            ContactSourceEnum::GOOGLE_MY_BUSINESS->value,
-            ContactSourceEnum::PICHY_BOYS->value,
+            ContactSourceEnum::SIGNS->value,
+            ContactSourceEnum::WALK_IN->value,
+            ContactSourceEnum::ESW_REFER->value,
+            ContactSourceEnum::ESR_REFER->value,
+            ContactSourceEnum::YOUTUBE->value,
+            ContactSourceEnum::NEW_ORDER ->value,
+            ContactSourceEnum::GOOGLE_ADS->value,
+            ContactSourceEnum::SAME_AS_ORDER->value,
+            ContactSourceEnum::DIRECT_CALL->value,
+            ContactSourceEnum::CANVASS->value,
+            ContactSourceEnum::TRUCK_LED->value,
+            ContactSourceEnum::COSTCO->value,
           ],
           'clients' => $client->load([
               'clientAddress',
               'referral',
+              'referral.referrerClient:id,name,phone,email',
+              'referral.referrerUser:id,name,phone,email,status',
             ]),
+
+            'tags' => $client->tags->map(fn($t) => [
+                'name'  => $t->name,
+                'color' => $t->color,
+            ]),
+
            
             
         ]);
@@ -166,6 +197,57 @@ class ClientController extends Controller
         return response()->json(
           $addressList
         );
+    }
+
+    public function phoneExists(Request $request)
+    {
+        $data = $request->validate([
+            'phone' => ['required', 'string', 'max:20'],
+            'ignore_id' => ['nullable', 'integer', 'min:1'],
+        ]);
+
+        $query = Client::query()->where('phone', $data['phone']);
+        if (!empty($data['ignore_id'])) {
+            $query->where('id', '!=', (int) $data['ignore_id']);
+        }
+
+        return response()->json([
+            'exists' => $query->exists(),
+        ]);
+    }
+
+    public function search(Request $request)
+    {
+        $data = $request->validate([
+            'q' => ['required', 'string', 'min:2'],
+        ]);
+
+        $term = trim($data['q']);
+        if ($term === '') {
+            return response()->json(['data' => []]);
+        }
+
+        $digits = preg_replace('/\D+/', '', $term) ?? '';
+        $like = '%' . $term . '%';
+
+        $clients = Client::query()
+            ->select('id', 'name', 'phone', 'email', 'secondary_email', 'vip_clients', 'vip_notes', 'company_contact_id')
+            ->with(['companyContact:id,name,email', 'companyContacts:id,name,email'])
+            ->where(function ($query) use ($like, $digits) {
+                $query->where('name', 'like', $like)
+                    ->orWhere('email', 'like', $like);
+
+                if ($digits !== '') {
+                    $query->orWhere('phone', 'like', '%' . $digits . '%');
+                } else {
+                    $query->orWhere('phone', 'like', $like);
+                }
+            })
+            ->orderBy('name')
+            ->limit(10)
+            ->get();
+
+        return response()->json(['data' => $clients]);
     }
 
     public function document($id)

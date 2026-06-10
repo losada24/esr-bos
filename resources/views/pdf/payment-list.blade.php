@@ -19,13 +19,13 @@
       <div id="logo">
         <img src="{{ base_path('resources/assets/images/logo-reylos.jpg') }}">
       </div>
-      <h1>PAYMENT LIST {{ strtoupper($order->typeOfWork->name) }}</h1>
+      <h1>PAYMENT LIST {{ strtoupper(optional($order->typeOfWork)->name ?? $order->service) }}</h1>
       <div id="company" class="clearfix">
         <div><span>DATE</span> {{ Carbon\Carbon::parse($order->installation_date)->format('m/d/Y') }}</div>
       </div>
       <div id="project">
         <div><span>ORDER NAME</span> {{ $order->name }}</div>
-        <div><span>CLIENT PHONE</span> {{!empty($order->client->phone) ? ', ' . $order->client->phone : ''  }}</div>
+        <div><span>CLIENT PHONE</span> {{!empty(optional($order->client)->phone) ? ', ' . optional($order->client)->phone : ''  }}</div>
         <div><span>ADDRESS</span>{{ 
                         ($order->job_address ?? '') .
                         (!empty($order->city) ? ', ' . $order->city : '') .
@@ -54,21 +54,45 @@
               </tr>
               @foreach ($products as $product)
                 @php
-                //dd($product);
                   $extraWorksCollection = $extraWorksCollection->merge($product->orderProductExtraWorks);
                   $grandTotal += $product->total_price;
+                  $storefrontBasePrice = null;
+                  $parsedNewStorefrontPrice = floatval($product->new_price_storefront ?? 0);
+                  if ((int) $product->type_of_product_id === 3) {
+                    $productCosts = $product->productConfig?->productCosts ?? collect();
+                    $storefrontBasePrice = optional(
+                      $productCosts->firstWhere('type_of_work_id', $product->type_of_work_id)
+                    )->price;
+                  }
                 @endphp
                 <tr>
                   <td class="service">&nbsp;</td>
                   <td class="desc">
-                    {{ $product->productConfig->name }}
+                    {{ optional($product->productConfig)->name }}
                     @if ($product->installation_other_level) 
                        (Other Level) 
                     @endif
                   </td>
-                  <td >{{ $product->typeOfWork->name }}</td>
-                  <td class="qty">{{ $product->qty }}</td>
-                  <td class="unit">{{ '$' . number_format($product->unit_price, 2, '.', ',') /*$fmt->formatCurrency($product->unit_price, 'USD')*/ }}</td>
+                  <td >{{ optional($product->typeOfWork)->name }}</td>
+                  <td class="qty">
+                    {{ $product->qty }}
+                    @if ((int) $product->type_of_product_id === 3)
+                      ({{ $product->storefront_area }} SQFT)
+                    @endif
+                  </td>
+                  <td class="unit">
+                    @if ((int) $product->type_of_product_id === 3)
+                      @if ($parsedNewStorefrontPrice !== 0.0)
+                        {{ '$' . number_format($parsedNewStorefrontPrice, 2, '.', ',') }}
+                      @elseif (!is_null($storefrontBasePrice))
+                        {{ ' $' . number_format($storefrontBasePrice, 2, '.', ',') }}
+                      @else
+                        {{ ' N/A' }}
+                      @endif
+                    @else
+                      {{ '$' . number_format($product->unit_price, 2, '.', ',') }}
+                    @endif
+                  </td>
                   <td class="total">{{ '$' . number_format($product->total_price, 2, '.', ',') /* $fmt->formatCurrency($product->total_price, 'USD')*/ }}</td>
                 </tr>
               @endforeach
@@ -93,7 +117,7 @@
             @endforeach
             <tr>
             @php 
-              $travelCost = $order->travelCost->price;
+              $travelCost = optional($order->travelCost)->price ?? 0;
             @endphp
               @if ($order->is_new_travel_cost) 
                     @php 

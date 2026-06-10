@@ -22,6 +22,7 @@ class InstallationDateConfirmationClient extends Mailable implements ShouldQueue
       protected Order $order,
       //protected bool $displaySummary = false,
       protected bool $clientAttachments = false,
+      protected array $selectedOrderAttachmentIds = [],
       //protected bool $installationAttachments = false
     ){}
 
@@ -58,6 +59,22 @@ class InstallationDateConfirmationClient extends Mailable implements ShouldQueue
     public function attachments(): array
     {
         $attachments = [];
+        $attachmentIds = collect($this->selectedOrderAttachmentIds)
+          ->map(fn ($id) => (int) $id)
+          ->unique()
+          ->values()
+          ->all();
+
+        if (!empty($attachmentIds)) {
+          $orderAttachments = $this->order->attachments()
+            ->whereIn('attachments.id', $attachmentIds)
+            ->get();
+
+          foreach ($orderAttachments as $attachment) {
+            $attachments[] = Attachment::fromStorageDisk('public', $attachment->file_path);
+          }
+        }
+
         if ($this->clientAttachments) {
             $electronicTransferPath = resource_path('assets/files/ELECTRONIC_TRANSFER.pdf');
             $attachments[] = Attachment::fromPath($electronicTransferPath);

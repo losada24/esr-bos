@@ -6,6 +6,9 @@ export interface Order {
   id: number
   name: string
   order_number: number
+  invoice_number?: string
+  is_supply?: boolean
+  has_contract_signed?: boolean
   job_address?: string
   job_city?: string
   job_state?: string
@@ -29,7 +32,7 @@ export interface Order {
   user?: User
   client?: Client
   additional_travel_costs?: number
-  type_of_work_id: number
+  type_of_work_id: number | null
   typeOfWork?: TypeOfWork // TODO: Remove this line
   type_of_work?: TypeOfWork
   type_of_housing_id: number
@@ -49,22 +52,31 @@ export interface Order {
   owners: User[]
   order_products?: OrderProduct[]
   attachments?: Attachment[]
+  attachment_role_targets_by_role?: Record<string, number[]>
   eta_date?: Date
   installation_end_date?: Date
   frame_color: string []
   status?: string
+  replanned_reasons?: string[]
   cost_delivery?: number
   cost_city_fee?: number
   project_amount?: number
+  down_payment?: number | null
   city?: string
+  job_state?: string
+  job_zip?: string
   type_of_financing?: string
   payment_definition?: boolean
   initial_payment_percentage?: number
   hide_on_weekends?: boolean
   do_not_send_email?: boolean
+  client_email_selection?: string | null
+  client_email_override?: string | null
   pending_collect?: Date
   payment_extra_fields?: PaymentExtraFields
   installation_payment?: InstallationPayment[]
+  payment_schedule?: PaymentSchedule | null
+  change_order_payment?: OrderPayment | null
   pre_inspection?: boolean
   inspection?: boolean
   walk_trough?: boolean
@@ -151,7 +163,7 @@ export interface OrderProduct {
   order?: Order
   product_config_id: number
   productConfig?: ProductConfig
-  type_of_work_id: number
+  type_of_work_id: number | null
   typeOfWork?: TypeOfWork
   storefront_area: number
   installation_other_level: boolean
@@ -161,6 +173,7 @@ export interface OrderProduct {
   type_of_product_id: number
   typeOfProduct?: TypeOfProduct
   pivot_cost?: number
+  new_price_storefront?: number
 }
 
 export interface OrderProductsExtraWorks {
@@ -210,6 +223,9 @@ export interface Attachment {
   filename: string
   file_path: string
   file_type: string
+  created_at?: string
+  uploaded_by?: string | null
+  user_id?: number
 }
 
 export interface TravelCost {
@@ -245,6 +261,7 @@ export interface OrderStatus {
   final_inspection_date: Date
   complete_date: Date
   material_received_date?: Date
+  replanned_reasons?: string[] | null
 }
 
 export interface PaymentExtraFields {
@@ -273,9 +290,63 @@ export interface InstallationPayment {
 
 }
 
+export interface PaymentInstallment {
+  id: number
+  label: string
+  percentage: number
+  amount: number
+  paid_amount?: number
+  balance?: number
+  credit?: number
+  due_date?: string | null
+  status: string
+  paid_at?: string | null
+  paid_by?: { id: number, name: string } | null
+  position?: number | null
+  movements?: PaymentInstallmentMovement[]
+}
+
+export interface PaymentInstallmentMovement {
+  id: number
+  amount: number
+  paid_at?: string | null
+  method?: string | null
+  note?: string | null
+  paid_by?: { id: number, name: string } | null
+  created_at?: string | null
+  updated_at?: string | null
+}
+
+export interface PaymentSchedule {
+  id: number
+  schedule_type: string
+  total_amount: number
+  paid_amount?: number
+  remaining_amount?: number
+  credit_amount?: number
+  installments?: PaymentInstallment[]
+}
+
+export interface OrderPayment {
+  id: number
+  order_id: number
+  type: string
+  amount: number
+  note?: string | null
+  status?: string | null
+  paid_at?: string | null
+  paid_by?: { id: number, name: string } | null
+}
+
 export interface BiweeklyInstaller {
   id: number
   start_biweekly_period: Date | null
   end_biweekly_period: Date | null
   period: string[]
+}
+
+export interface Source {
+  id: number
+  name: string
+  description: string
 }

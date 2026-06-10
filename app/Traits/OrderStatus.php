@@ -22,9 +22,13 @@ trait OrderStatus {
 
   public function getColorByStatus($status, $service, $isInstallationEvent = false) {
     $color = '';
+    $isInstallationService = in_array($service, [
+      ServiceEnum::INSTALLATION->value,
+      ServiceEnum::SERVICE->value
+    ], true);
     switch ($status) {
       case OrderStatusEnum::PLANNED->value:
-        if ($service == ServiceEnum::INSTALLATION->value) {
+        if ($isInstallationService) {
           if ($isInstallationEvent) {
             $color = StatusColorEnum::PLANNED_INSTALLATION_EVENT->value;
           } else {
@@ -38,7 +42,7 @@ trait OrderStatus {
       break;
       case OrderStatusEnum::CONFIRMED->value:
         //$color = ;
-        if ($service == ServiceEnum::INSTALLATION->value) {
+        if ($isInstallationService) {
           if ($isInstallationEvent) {
             $color = StatusColorEnum::CONFIRMED_INSTALLATION->value;
           } else {
@@ -59,6 +63,9 @@ trait OrderStatus {
       case OrderStatusEnum::ON_HOLD->value:
           $color = StatusColorEnum::ON_HOLD->value;
       break;
+      case OrderStatusEnum::REPLANNED->value:
+        $color = StatusColorEnum::REPLANNED->value;
+      break;
       case OrderStatusEnum::RESCHEDULE->value:
         $color = StatusColorEnum::RESCHEDULE->value;
       break;
@@ -66,7 +73,11 @@ trait OrderStatus {
         $color = StatusColorEnum::FINISH->value;
       break;
       case OrderStatusEnum::SERVICE->value:
-        $color = StatusColorEnum::SERVICE->value;
+        if ($isInstallationService) {
+          $color = StatusColorEnum::SERVICE->value;
+        } else {
+          $color = StatusColorEnum::SERVICE->value;
+        }
       break;
       case OrderStatusEnum::INSPECTION->value:
         $color = StatusColorEnum::INSPECTION->value;
@@ -85,6 +96,9 @@ trait OrderStatus {
     break;
     case OrderStatusEnum::MATERIALS_RECEIVED->value:
       $color = StatusColorEnum::MATERIALS_RECEIVED->value;
+    break;
+      case OrderStatusEnum::CANCELED->value:
+      $color = StatusColorEnum::CANCELED->value;
     break;
     }
 
@@ -121,6 +135,7 @@ trait OrderStatus {
           $popover = $statusText . ' DELIVERY DATE';
         break;
       case ServiceEnum::INSTALLATION->value:
+      case ServiceEnum::SERVICE->value:
           if ($isInstallationEvent) {
             $popover = $statusText . ' INSTALLATION DATE';
           } else {

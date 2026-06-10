@@ -140,20 +140,29 @@ export const STATUS: Status[] = [
 export const SERVICES = {
   DELIVERY_AND_INSTALLATION: 'DELIVERY AND INSTALLATION',
   DELIVERY_ONLY: 'DELIVERY ONLY',
-  PICKUP: 'PICKUP'
+  PICKUP: 'PICKUP',
+  SERVICE: 'SERVICE'
 
 }
 
 export const SOURCES = {
-  EXTERNAL_REFERAL: 'EXTERNAL REFERAL',
-  INTERNAL_REFERAL: 'INTERNAL REFERAL'
-
+  EXTERNAL_REFERAL: 'CUSTOMER REFERAL',
+  INTERNAL_REFERAL: 'EMPLOYER REFERAL',
+  ESW_REFER: 'ESW REFER',
+  ESR_REFER: 'ESR REFER'
 }
 export const CONTACT_TYPES = {
   RESIDENTIAL_CONTACT: 'RESIDENTIAL CONTACT',
   COMMERCIAL_CONTACT: 'COMMERCIAL CONTACT'
 
 }
+export const ORDER_TYPES = {
+  RESIDENTIAL: 'RESIDENTIAL',
+  COMMERCIAL: 'COMMERCIAL',
+  SUPPLY: 'SUPPLY'
+}
+
+export const PRODUCT_LINES = ['ESR', 'ESW', 'MIXED'] as const
 
 export interface ThemeConfig {
   locale: Locale
@@ -184,13 +193,18 @@ export const THEME_CONFIG: ThemeConfig = {
 export const ROLES = {
   ADMIN: 'admin',
   ACCOUNT_MANAGER: 'account_manager',
+  ACCOUNTING: 'accounting',
   INSTALLER: 'installer',
+  REMEASURER: 'remeasurer',
   SUPERVISOR: 'supervisor',
   OWNER: 'owner',
   FRONTDESK: 'frontdesk',
   SERVICE_MANAGER: 'service_manager',
+  SERVICE: 'service',
   PAYMENT_COORDINATOR: 'payment_coordinator',
-  OWNER_ADMIN: 'owner_admin'
+  OWNER_ADMIN: 'owner_admin',
+  FRONTDESK_ADMIN: 'frontdesk_admin',
+  FRONTDESK_ESR: 'frontdesk_esr'
 
 }
 

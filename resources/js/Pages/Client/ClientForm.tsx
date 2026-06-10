@@ -3,9 +3,10 @@ import { useRef, useMemo, useState, useEffect } from 'react'
 import { useJsApiLoader, StandaloneSearchBox } from '@react-google-maps/api'
 import { SOURCES, CONTACT_TYPES } from '@/Utils/constants'
 import InputError from '@/Components/InputError'
+import ReferralFields from '@/Components/ReferralFields'
 import Select, { type SingleValue } from 'react-select'
 import PrimaryButton from '@/Components/PrimaryButton'
-import { Link } from '@inertiajs/react'
+import { Link, useForm } from '@inertiajs/react'
 import { type FormikErrors } from 'formik'
 import { type ClientFormType } from './ClientCommon'
 import Flatpickr from 'react-flatpickr'
@@ -14,10 +15,11 @@ import { type CompanyContact, type OptionType } from '@/types'
 import SearchIcon from '@/Components/Icons/SearchIcon'
 import PlusIcon from '@/Components/Icons/PlusIcon'
 import CompanyModal from './CompanyModal'
+import TagPicker, { type TagItem } from '@/Components/TagPicker'
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
 
-const ClientForm = ({ submitCount, errors, isCreate, setFieldValue, values, contact_type, sources, companies }: {
+const ClientForm = ({ submitCount, errors, isCreate, setFieldValue, values, contact_type, sources, companies, showContactType = true, showCompanyField = true }: {
   submitCount: number
   errors: FormikErrors<ClientFormType>
   setFieldValue: (field: string, value: any, shouldValidate?: boolean) => void
@@ -26,6 +28,9 @@ const ClientForm = ({ submitCount, errors, isCreate, setFieldValue, values, cont
   contact_type: string[]
   sources: string[]
   companies: CompanyContact[]
+  showContactType?: boolean
+  showCompanyField?: boolean
+  // tags: TagItem[]
 }) => {
   const inputRef = useRef<google.maps.places.SearchBox | null>(null)
   const libraries: any[] = ['places']
@@ -35,6 +40,9 @@ const ClientForm = ({ submitCount, errors, isCreate, setFieldValue, values, cont
     googleMapsApiKey: GOOGLE_MAPS_API_KEY,
     libraries: menoLibraries
   })
+  /* const { data, setData, processing,  patch } = useForm<{ tags: TagItem[] }>({
+    tags: tags ?? []
+  }) */
 
   /* const selectedCompany: SingleValue<OptionType> = {
     value: values.company_contact_id ?? 0,
@@ -46,9 +54,9 @@ const ClientForm = ({ submitCount, errors, isCreate, setFieldValue, values, cont
   /* useEffect(() => {
     setCompaniesList(companies)
   }, [companies]) */
- const addCompany = (company: CompanyContact) => {
-  setCompaniesList(prev => [...prev, company])
-  setFieldValue('company_contact_id', company.id)// Opcional: selecciona automáticamente la compañía creada
+  const addCompany = (company: CompanyContact) => {
+    setCompaniesList(prev => [...prev, company])
+    setFieldValue('company_contact_id', company.id)// Opcional: selecciona automáticamente la compañía creada
 }
 
   const selectedCompany = values.company_contact_id
@@ -73,29 +81,31 @@ const ClientForm = ({ submitCount, errors, isCreate, setFieldValue, values, cont
     console.log(values),
     <Form className='space-y-5'>
       <div className='grid gap-4 grid-cols-3'>
-      <div className={submitCount ? (errors.contact_type) ? 'has-error' : 'has-success' : ''}>
-        <label htmlFor="contact_type">Contact Type</label>
-        <Field
-          id="contact_type"
-          name="contact_type"
-          className="form-select"
-          autoComplete="contact_type"
-          placeholder='Contact Type'
-          as="select"
-          onChange={(e: { target: { value: string } }) => {
-            setFieldValue('contact_type', e.target.value)
-            setFieldValue('cost_delivery', 0)
-            setFieldValue('type_of_financing', '')
-            setFieldValue('company_contact_id', 0)
-          }}
-        >
-          <option value="">Contact Type</option>
-          {contact_type.map((contact_type, index) => (
-            <option key={index} value={contact_type}>{contact_type}</option>
-          ))}
-        </Field>
-        {(submitCount && errors.contact_type) ? <InputError message={errors.contact_type} className="mt-2" /> : ''}
+      {showContactType && (
+        <div className={submitCount ? (errors.contact_type) ? 'has-error' : 'has-success' : ''}>
+          <label htmlFor="contact_type">Contact Type</label>
+          <Field
+            id="contact_type"
+            name="contact_type"
+            className="form-select"
+            autoComplete="contact_type"
+            placeholder='Contact Type'
+            as="select"
+            onChange={(e: { target: { value: string } }) => {
+              setFieldValue('contact_type', e.target.value)
+              setFieldValue('cost_delivery', 0)
+              setFieldValue('type_of_financing', '')
+              setFieldValue('company_contact_id', 0)
+            }}
+          >
+            <option value="">Contact Type</option>
+            {contact_type.map((contact_type, index) => (
+              <option key={index} value={contact_type}>{contact_type}</option>
+            ))}
+          </Field>
+          {(submitCount && errors.contact_type) ? <InputError message={errors.contact_type} className="mt-2" /> : ''}
         </div>
+      )}
         <div className={submitCount ? (errors.name) ? 'has-error' : 'has-success' : ''}>
           <label htmlFor="name">Name</label>
           <Field
@@ -162,13 +172,17 @@ const ClientForm = ({ submitCount, errors, isCreate, setFieldValue, values, cont
           autoComplete="source"
           placeholder='Source'
           as="select"
-          onChange={(e: { target: { value: string } }) => {
-            setFieldValue('source', e.target.value)
-            setFieldValue('cost_delivery', 0)
-            setFieldValue('type_of_financing', '')
-            setFieldValue('refer_name', '')
-            setFieldValue('refer_phone', '')
-          }}
+            onChange={(e: { target: { value: string } }) => {
+              setFieldValue('source', e.target.value)
+              setFieldValue('cost_delivery', 0)
+              setFieldValue('type_of_financing', '')
+              setFieldValue('referral_id', null)
+              setFieldValue('referrer_client_id', null)
+              setFieldValue('referrer_user_id', null)
+              setFieldValue('refer_name', '')
+              setFieldValue('refer_phone', '')
+              setFieldValue('refer_email', '')
+            }}
         >
           <option value="">Source</option>
           {sources.map((source, index) => (
@@ -177,34 +191,13 @@ const ClientForm = ({ submitCount, errors, isCreate, setFieldValue, values, cont
         </Field>
         {(submitCount && errors.source) ? <InputError message={errors.source} className="mt-2" /> : ''}
         </div>
-        {(values.source === SOURCES.EXTERNAL_REFERAL || values.source === SOURCES.INTERNAL_REFERAL) && (
-        <>
-        <div className={submitCount ? (errors.refer_name) ? 'has-error' : 'has-success' : ''}>
-          <label htmlFor="refer_name">Refer Name</label>
-          <Field
-            id="refer_name"
-            name="refer_name"
-            className="form-input"
-            autoComplete={false}
-            placeholder='Refer Name'
-          />
-          {(submitCount && errors.refer_name) ? <InputError message={errors.refer_name} className="mt-2" /> : ''}
-        </div>
-
-        <div className={submitCount ? (errors.refer_phone) ? 'has-error' : 'has-success' : ''}>
-          <label htmlFor="refer_phone">Refer Phone</label>
-          <Field
-            id="refer_phone"
-            name="refer_phone"
-            className="form-input"
-            autoComplete={false}
-            placeholder='Refer Phone'
-          />
-          {(submitCount && errors.refer_phone) ? <InputError message={errors.refer_phone} className="mt-2" /> : ''}
-        </div>
-        </>
-        )}
-       {(values.contact_type === CONTACT_TYPES.COMMERCIAL_CONTACT) && (
+        <ReferralFields
+          values={values}
+          errors={errors as Record<string, any>}
+          submitCount={submitCount}
+          setFieldValue={setFieldValue}
+        />
+       {showCompanyField && (values.contact_type === CONTACT_TYPES.COMMERCIAL_CONTACT) && (
          <div className={submitCount ? (errors.company_contact_id) ? 'has-error' : 'has-success' : ''}>
               <label htmlFor="status">Company</label>
               <div className="flex items-center">
@@ -264,8 +257,18 @@ const ClientForm = ({ submitCount, errors, isCreate, setFieldValue, values, cont
             </div>
       )}
       </div>
+      {/* <div>
+        <label className="block text-sm font-medium text-slate-700">Tags</label>
+        <div className="mt-1">
+          <TagPicker
+            value={data.tags}
+            onChange={(t) => { setData('tags', t) }}
+            placeholder="Agregar tag"
+          />
+        </div>
+      </div> */}
       <div className='grid gap-4 grid-cols-2'>
-      <div className={submitCount ? (errors.address) ? 'has-error' : 'has-success' : ''}>
+      {/* <div className={submitCount ? (errors.address) ? 'has-error' : 'has-success' : ''}>
         <label htmlFor="address">Address</label>
           {isLoaded &&
             <StandaloneSearchBox
@@ -282,8 +285,8 @@ const ClientForm = ({ submitCount, errors, isCreate, setFieldValue, values, cont
             </StandaloneSearchBox>
           }
           {(submitCount && errors.address) ? <InputError message={errors.address} className="mt-2" /> : ''}
-        </div>
-        <div className={submitCount ? (errors.appointment_date) ? 'has-error' : 'has-success' : ''}>
+        </div> */}
+        {/* <div className={submitCount ? (errors.appointment_date) ? 'has-error' : 'has-success' : ''}>
           <label htmlFor="appointment_date">Appointment Date</label>
           <Flatpickr
             options={{
@@ -307,7 +310,7 @@ const ClientForm = ({ submitCount, errors, isCreate, setFieldValue, values, cont
             }}
           />
           {(submitCount && typeof errors.appointment_date === 'string') ? <InputError message={errors.appointment_date} className="mt-2" /> : ''}
-        </div>
+        </div> */}
       </div>
       <div className='col-span-4'>
         <label htmlFor="notes">Notes</label>

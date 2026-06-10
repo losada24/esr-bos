@@ -58,6 +58,7 @@ class PartialOrderRequest extends FormRequest
             'string',
             Rule::in(
               OrderStatusEnum::PLANNED->value,
+              OrderStatusEnum::REPLANNED->value,
               OrderStatusEnum::CONFIRMED->value,
               OrderStatusEnum::EXECUTION->value,
               OrderStatusEnum::SUPERVISION->value,
@@ -71,7 +72,18 @@ class PartialOrderRequest extends FormRequest
               OrderStatusEnum::COMPLETE->value,
               OrderStatusEnum::RESCHEDULE->value,
               OrderStatusEnum::MATERIALS_RECEIVED->value,
+              OrderStatusEnum::CANCELED->value
             ),
+          ],
+          'replanned_reasons' => [
+            'nullable',
+            'array',
+            Rule::requiredIf(fn () => $this->input('status') === OrderStatusEnum::REPLANNED->value),
+            'min:1',
+          ],
+          'replanned_reasons.*' => [
+            'string',
+            Rule::in(['CLIENT', 'PERMIT', 'MATERIALS']),
           ],
             'supervisor_payment_status' => [
               'nullable',
@@ -121,9 +133,27 @@ class PartialOrderRequest extends FormRequest
                 , ['required', 'date_format:Y-m-d',]
               ),
             ],
-          'contract_signing_date' => 'required|date_format:Y-m-d',
-          'payment_factory_date' => 'required|date_format:Y-m-d',
-          'eta_date' => 'required|date_format:Y-m-d',
+          'contract_signing_date' => [
+            Rule::when(
+              fn ($input) => ($input['service'] ?? null) !== ServiceEnum::SERVICE->value,
+              ['required', 'date_format:Y-m-d'],
+              ['nullable', 'date_format:Y-m-d']
+            )
+          ],
+          'payment_factory_date' => [
+            Rule::when(
+              fn ($input) => ($input['service'] ?? null) !== ServiceEnum::SERVICE->value,
+              ['required', 'date_format:Y-m-d'],
+              ['nullable', 'date_format:Y-m-d']
+            )
+          ],
+          'eta_date' => [
+            Rule::when(
+              fn ($input) => ($input['service'] ?? null) !== ServiceEnum::SERVICE->value,
+              ['required', 'date_format:Y-m-d'],
+              ['nullable', 'date_format:Y-m-d']
+            )
+          ],
           'installation_end_date' => 'nullable|date_format:Y-m-d',
           'delivery_date' => 'nullable|date_format:Y-m-d',
           'entry_date' => 'required|date_format:Y-m-d',
@@ -136,6 +166,9 @@ class PartialOrderRequest extends FormRequest
           'complete_date' => 'nullable|date_format:Y-m-d',
           'attachments' => 'nullable|array',
           'attachments.*' => 'file|mimes:jpeg,png,jpg,pdf,docx,doc,xlsx,heic|max:10240',
+          'attachment_role_targets' => 'nullable|array',
+          'attachment_role_targets.*' => 'nullable|array',
+          'attachment_role_targets.*.*' => 'integer|exists:attachments,id',
           //'walk_trough_attach.*'=> 'file|mimes:jpeg,png,jpg,pdf,docx,doc,xlsx|max:10240',
           'walk_trough_attach' => [
               'nullable',

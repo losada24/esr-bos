@@ -24,7 +24,7 @@
       </div>
       <div id="project">
         <div><span>ORDER NAME</span> {{ $order->name }}</div>
-        <div><span>CLIENT PHONE</span> {{!empty($order->client->phone) ? ', ' . $order->client->phone : '' }}</div>
+        <div><span>CLIENT PHONE</span> {{!empty(optional($order->client)->phone) ? ', ' . optional($order->client)->phone : '' }}</div>
         <div><span>ADDRESS</span> {{ 
                     ($order->job_address ?? '') .
                     (!empty($order->city) ? ', ' . $order->city : '') .
@@ -56,7 +56,7 @@
                 <tr>
                   <td class="service">&nbsp;</td>
                   <td class="desc">
-                    {{ $product->productConfig->name }}
+                    {{ optional($product->productConfig)->name }}
                     @if ($product->installation_other_level) 
                        (Other Level) 
                     @endif

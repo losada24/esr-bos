@@ -92,6 +92,9 @@ export default function Index ({ auth, installation_teams }: IndexCompanyProps) 
                           case 'worker_compensation_attach':
                             label = 'Worker Compensation'
                             break
+                          case 'worker_compensation_exception_attach':
+                            label = 'Worker Compensation Exception'
+                            break
                           case 'liability_expiration_attach':
                             label = 'Liability Expiration'
                             break
@@ -106,7 +109,7 @@ export default function Index ({ auth, installation_teams }: IndexCompanyProps) 
                         }
                         return (
                           <div key={attachment.id}>
-                            <a href={attachment.file_path} target="_blank" className="text-blue-500 hover:underline" rel="noreferrer">
+                            <a href={route('download.file', { id: attachment.id })} target="_blank" className="text-blue-500 hover:underline" rel="noreferrer">
                             {label}
                             </a>
                           </div>

@@ -15,8 +15,8 @@ import {
 } from '@/types'
 import Select, { type SingleValue } from 'react-select'
 import DeleteIcon from '@/Components/Icons/DeleteIcon'
-import { capitalizeWords } from '@/Utils/string'
 import { type OrderFormValues } from './OrderCommon'
+import ReferralFields from '@/Components/ReferralFields'
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
 
@@ -121,8 +121,7 @@ const OrderForm = ({
                 autoComplete="client_name"
                 placeholder='Client Name'
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                  const formattedValue = capitalizeWords(e.target.value)
-                  setFieldValue('client_name', formattedValue)
+                  setFieldValue('client_name', e.target.value)
                 }}
               />
               {(submitCount && errors.client_name) ? <InputError message={errors.client_name} className="mt-2" /> : ''}
@@ -138,7 +137,7 @@ const OrderForm = ({
               />
               {(submitCount && errors.phone) ? <InputError message={errors.phone} className="mt-2" /> : ''}
             </div>
-            <div className={submitCount ? (errors.status) ? 'has-error' : 'has-success' : ''}>
+             <div className={submitCount ? (errors.status) ? 'has-error' : 'has-success' : ''}>
               <label htmlFor="status">Status</label>
               <Select
                 id='status'
@@ -159,11 +158,25 @@ const OrderForm = ({
                 name='source'
                 defaultValue={selectedSource}
                 isMulti={false}
-                onChange={(value) => { setFieldValue('source', value) }}
+                onChange={(value) => {
+                  setFieldValue('source', value)
+                  setFieldValue('referral_id', null)
+                  setFieldValue('referrer_client_id', null)
+                  setFieldValue('referrer_user_id', null)
+                  setFieldValue('refer_name', '')
+                  setFieldValue('refer_phone', '')
+                  setFieldValue('refer_email', '')
+                }}
                 options={sources.map((source) => { return { label: source, value: source } })}
               />
               {(submitCount && errors.source) ? <InputError message={errors.source} className="mt-2" /> : ''}
             </div>
+            <ReferralFields
+              values={values as any}
+              errors={errors as Record<string, any>}
+              submitCount={submitCount}
+              setFieldValue={setFieldValue}
+            />
               <div className='col-span-3'>
               <label htmlFor="notes"> Notes</label>
               <Field

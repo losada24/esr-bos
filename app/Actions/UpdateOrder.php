@@ -2,26 +2,58 @@
 
 namespace App\Actions;
 
+use App\Enum\RoleEnum;
 use App\Enum\OrderStatusEnum;
+use App\Enum\PaymentScheduleTypeEnum;
 use App\Enum\ServiceEnum;
 use App\Enum\SupervisorPaymentStatusEnum;
+use App\Enum\MethodOfPayment;
+use App\Events\OrderStatusChanged;
 use App\Models\Client;
 use App\Models\Order;
 use App\Models\OrderProduct;
 use App\Models\PaymentExtraField;
+use App\Models\PaymentSchedule;
+use App\Support\OrderFinancialEventLogger;
+use App\Support\OrderClientEmailDeliveryLogger;
+use App\Support\OrderClientEmailManager;
+use App\Support\OrderOwnerChangeNotifier;
+use App\Support\OrderPaymentInformationAuditLogger;
+use App\Support\Commissions\CommissionCalculator;
+use App\Support\PaymentScheduleCalculator;
+use App\Support\PaymentScheduleTemplates;
 use App\Traits\ComissionSupervisor;
 use App\Traits\OrderEmails;
 use App\Traits\OrderStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use App\Traits\Twilio;
-use Twilio\TwiML\Voice\Pay;
 
 class UpdateOrder
 {
+  private const EMAIL_ATTACHMENT_ROLES = [
+    'supervisor',
+    'service_manager',
+    'installer',
+    'account_manager',
+  ];
+  private const REPLANNED_REASON_VALUES = [
+    'CLIENT',
+    'PERMIT',
+    'MATERIALS',
+  ];
 
   use OrderEmails, OrderStatus, Twilio, ComissionSupervisor;
+
+  public function __construct(
+    protected OrderOwnerChangeNotifier $orderOwnerChangeNotifier,
+    protected OrderClientEmailManager $orderClientEmailManager,
+    protected OrderClientEmailDeliveryLogger $orderClientEmailDeliveryLogger,
+    protected CommissionCalculator $commissionCalculator
+  ) {
+  }
 
   public function handle(Request $request, Order $order)
   {
@@ -40,25 +72,33 @@ class UpdateOrder
     //dd($order->supervisor_id, $request->supervisor_id);
     DB::beginTransaction();
     try {
-      $client = Client::find($request->client_id);
-      if ($client) {
-        $client->update([
-          'name' => $request->client_name,
-          'phone' => $request->phone,
-          'email' => $request->email,
-          'vip_clients' =>$request->vip_clients,
-          'vip_notes' => $request->vip_notes,
-        ]);
-      }
       $order = Order::with('comissions')->findOrFail($order->id);
+      $order->loadMissing('paymentSchedule.installments');
+      $beforeClientEmailDelivery = $this->orderClientEmailDeliveryLogger->capture($order);
+      $previousOwnerIds = $this->orderOwnerChangeNotifier->normalizeOwnerIds(
+        $order->owners()->pluck('users.id')->all()
+      );
+      $beforePaymentInformation = OrderPaymentInformationAuditLogger::snapshot($order);
       $oldAmount = $order->project_amount;
       $newAmount = $request->project_amount;
+      if (
+        $request->has('project_amount')
+        && $newAmount !== null
+        && $newAmount !== ''
+        && $request->user()?->hasRole(RoleEnum::OWNER_ADMIN->value)
+        && abs((float) $newAmount - (float) ($oldAmount ?? 0)) > 0.01
+      ) {
+        throw ValidationException::withMessages([
+          'project_amount' => 'Owner Admin cannot edit Project Amount.',
+        ]);
+      }
+
       $hasCommissions = $order->comissions()->exists();
   
      
        //dd( $oldAmount, $newAmount, $order);
 
-      if ($order->service == ServiceEnum::INSTALLATION->value || $order->service == ServiceEnum::INSTALLATION_ONLY->value) {
+      if ($order->service == ServiceEnum::INSTALLATION->value || $order->service == ServiceEnum::INSTALLATION_ONLY->value || $order->service == ServiceEnum::SERVICE->value) {
         $execution_planing_date = $order->execution_planing_date;
         if ($newAmount != $oldAmount && $hasCommissions) {
           // Eliminar comisiones previas
@@ -111,25 +151,83 @@ class UpdateOrder
       }
 
       $status = $request->status;
+      $replannedReasons = $this->resolveReplannedReasons($request, $status);
+      $requestedClientId = $request->filled('client_id') ? (int) $request->client_id : null;
+      $clientId = $requestedClientId;
+      if (!$clientId) {
+        $client = Client::query()->firstOrCreate(
+          ['phone' => (string) $request->phone],
+          [
+            'name' => (string) $request->client_name,
+            'email' => $request->email,
+            'vip_clients' => (bool) $request->vip_clients,
+            'vip_notes' => $request->vip_notes,
+            'contact_type' => $request->contact_type,
+            'user_id' => auth()->id(),
+          ]
+        );
+        $clientId = (int) $client->id;
+      }
+      $clientForEmailSelection = Client::with('companyContact')->find($clientId);
+      $clientEmailSelection = (string) ($request->input('client_email_selection')
+        ?: ($request->boolean('do_not_send_email')
+          ? OrderClientEmailManager::NONE_SELECTION
+          : OrderClientEmailManager::PRIMARY_SELECTION));
+      $selectionError = $this->orderClientEmailManager->validateSelectionForContext(
+        $clientForEmailSelection,
+        $clientEmailSelection,
+        $clientForEmailSelection?->companyContact
+      );
+      if ($selectionError !== null) {
+        throw ValidationException::withMessages([
+          'client_email_selection' => $selectionError,
+        ]);
+      }
       $type_of_work_id = $request->type_of_work_id;
+      $type_of_housing_id = $request->type_of_housing_id;
+      $travel_cost_id = $request->travel_cost_id;
+      $duration_of_work_id = $request->duration_of_work_id;
+
+      if ($type_of_work_id === 0 || $type_of_work_id === '0' || $type_of_work_id === '') {
+        $type_of_work_id = null;
+      }
+      if ($type_of_housing_id === 0 || $type_of_housing_id === '0' || $type_of_housing_id === '') {
+        $type_of_housing_id = null;
+      }
+      if ($travel_cost_id === 0 || $travel_cost_id === '0' || $travel_cost_id === '') {
+        $travel_cost_id = null;
+      }
+      if ($duration_of_work_id === 0 || $duration_of_work_id === '0' || $duration_of_work_id === '') {
+        $duration_of_work_id = null;
+      }
       
       //dd($request->pending_collect);
       $sendEmail = $status != $order->status;
       //dd($sendEmail,$status,$order->status);
       $orderData = [
-        'client_id' => $client->id,
+        'client_id' => $clientId,
         'user_id' => auth()->user()->id,
         'name' => $request->name,
         'job_address' => $request->job_address,
+        // 'job_city' => $request->job_city ?? $request->city,
         'order_number' => $request->order_number,
-        'type_of_work_id' => $request->type_of_work_id,
-        'type_of_housing_id' => $request->type_of_housing_id,
+        'invoice_number' => $request->invoice_number,
+        'order_type' => $request->order_type,
+        'product_line' => $request->product_line,
+        'type_of_work_id' => $type_of_work_id,
+        'type_of_housing_id' => $type_of_housing_id,
         'supervisor_id' => $request->supervisor_id,
-        'travel_cost_id' => $request->travel_cost_id,
-        'duration_of_work_id' => $request->duration_of_work_id,
-        'duration_of_work_id' => $request->duration_of_work_id,
+        'travel_cost_id' => $travel_cost_id,
+        'duration_of_work_id' => $duration_of_work_id,
+        'duration_of_work_id' => $duration_of_work_id,
         'method_of_payment' => $request->method_of_payment,
-        'type_of_financing' => $request->type_of_financing,
+        'type_of_financing' => in_array(
+          $request->method_of_payment,
+          [MethodOfPayment::FINANCED->value, MethodOfPayment::FINANCEDCASH->value],
+          true
+        )
+          ? $request->type_of_financing
+          : null,
         'service' => $request->service,
         'contract_signing_date' => $request->contract_signing_date,
         'payment_factory_date' => $request->payment_factory_date,
@@ -142,14 +240,16 @@ class UpdateOrder
         'association_permits' => $request->association_permits,
         'equipment_rental' => $request->equipment_rental,
         'notes' => $request->notes,
-        'work_team_notes' => $request->work_team_notes,
         'delivery_date' => $request->delivery_date,
         'status' => $status,
         //'frame_color' => $request->frame_color,
         'cost_delivery' => $request->cost_delivery,
         'cost_city_fee' => $request->cost_city_fee,
         'project_amount' => $request->project_amount,
-        'city' => $request->city,
+        'down_payment' => $request->method_of_payment === MethodOfPayment::FINANCEDCASH->value
+          ? $request->down_payment
+          : null,
+        'city' => $request->city ,
         'job_state' => $request->job_state,
         'job_zip' => $request->job_zip,
         'initial_payment_percentage' => $initial_payment_percentage,
@@ -172,6 +272,295 @@ class UpdateOrder
       //dd( $orderData);
       //dd($request->frame_color);
       $order->update($orderData);
+      $this->orderClientEmailManager->applySelection($order, $clientEmailSelection);
+      $order->save();
+      $order->unsetRelation('client');
+      $order->load('client.companyContact', 'client.companyContacts');
+      $this->orderClientEmailDeliveryLogger->logIfChanged($order, $beforeClientEmailDelivery);
+
+      $isCashAndFinanced = $request->method_of_payment === MethodOfPayment::FINANCEDCASH->value;
+      $requiresSchedule = in_array(
+        $request->method_of_payment,
+        [MethodOfPayment::CASH->value, MethodOfPayment::FINANCEDCASH->value],
+        true
+      );
+      $scheduleTotalAmount = $isCashAndFinanced
+        ? (float) ($request->down_payment ?? 0)
+        : (float) ($request->project_amount ?? 0);
+      $existingSchedule = $order->paymentSchedule()->with('installments')->first();
+      $hasScheduleTypeInput = $request->exists('payment_schedule_type');
+      $hasCustomScheduleInput = $request->exists('custom_schedule');
+      $shouldProcessSchedule = !$requiresSchedule || $hasScheduleTypeInput || $hasCustomScheduleInput;
+      $scheduleType = $requiresSchedule
+        ? ($hasScheduleTypeInput
+          ? (string) ($request->input('payment_schedule_type') ?? '')
+          : (string) ($existingSchedule?->schedule_type ?? ''))
+        : '';
+      $customSchedule = $hasCustomScheduleInput ? $request->input('custom_schedule', []) : [];
+      $hasRecordedPayments = $existingSchedule
+        ? $existingSchedule->installments()->whereHas('movements')->exists()
+        : false;
+
+      if ($requiresSchedule && !$hasCustomScheduleInput && $scheduleType === PaymentScheduleTypeEnum::CUSTOMIZED->value && $existingSchedule) {
+        $customSchedule = $existingSchedule->installments
+          ->sortBy('position')
+          ->values()
+          ->map(fn ($item) => [
+            'label' => $item->label,
+            'amount' => (float) $item->amount,
+          ])->all();
+      }
+
+      if ($shouldProcessSchedule && $hasRecordedPayments) {
+        if (!$requiresSchedule || !$existingSchedule || $scheduleType === '' || $scheduleType !== (string) $existingSchedule->schedule_type) {
+          throw ValidationException::withMessages([
+            'payment_schedule_type' => 'Payment schedule cannot be changed after payments are recorded.',
+          ]);
+        }
+
+        if ($scheduleType === PaymentScheduleTypeEnum::CUSTOMIZED->value) {
+          $incomingItems = collect($customSchedule)
+            ->map(function ($item) {
+              return [
+                'label' => trim((string) ($item['label'] ?? '')),
+                'amount' => round((float) ($item['amount'] ?? 0), 2),
+              ];
+            })
+            ->filter(fn ($item) => $item['label'] !== '')
+            ->values()
+            ->all();
+
+          $existingItems = $existingSchedule->installments
+            ->sortBy('position')
+            ->values()
+            ->map(fn ($item) => [
+              'label' => trim((string) $item->label),
+              'amount' => round((float) $item->amount, 2),
+            ])
+            ->all();
+
+          if ($incomingItems !== $existingItems) {
+            throw ValidationException::withMessages([
+              'payment_schedule_type' => 'Payment schedule cannot be changed after payments are recorded.',
+            ]);
+          }
+        }
+      } elseif ($shouldProcessSchedule) {
+        if (!$requiresSchedule || $scheduleType === '') {
+          if ($existingSchedule) {
+            $previousScheduleType = $existingSchedule->schedule_type;
+            $previousTotalAmount = (float) $existingSchedule->total_amount;
+            $existingSchedule->installments()->delete();
+            $existingSchedule->delete();
+
+            OrderFinancialEventLogger::log(
+              $order,
+              'PAYMENT_SCHEDULE_REMOVED',
+              'Payment schedule removed',
+              [
+                'before_schedule_type' => $previousScheduleType,
+                'before_total_amount' => $previousTotalAmount,
+              ]
+            );
+          }
+        } else {
+          if ($scheduleType === PaymentScheduleTypeEnum::CUSTOMIZED->value) {
+            $installments = [];
+            $runningPercent = 0.0;
+            $count = count($customSchedule);
+            foreach ($customSchedule as $index => $item) {
+              $amount = round((float) ($item['amount'] ?? 0), 2);
+              $percentage = $scheduleTotalAmount > 0
+                ? round(($amount / $scheduleTotalAmount) * 100, 2)
+                : 0;
+
+              if ($index === $count - 1 && $scheduleTotalAmount > 0) {
+                $percentage = round(100 - $runningPercent, 2);
+              }
+
+              $runningPercent += $percentage;
+              $installments[] = [
+                'label' => trim((string) ($item['label'] ?? '')),
+                'percentage' => $percentage,
+                'amount' => $amount,
+              ];
+            }
+          } else {
+            $scheduleItems = PaymentScheduleTemplates::itemsFor($scheduleType);
+            $installments = PaymentScheduleCalculator::withAmounts($scheduleItems, $scheduleTotalAmount);
+          }
+
+          $beforeScheduleType = $existingSchedule?->schedule_type;
+          $beforeTotalAmount = $existingSchedule ? (float) $existingSchedule->total_amount : null;
+          $beforeInstallments = $existingSchedule
+            ? $existingSchedule->installments
+              ->sortBy('position')
+              ->values()
+              ->map(fn ($item) => [
+                'label' => $item->label,
+                'percentage' => round((float) $item->percentage, 2),
+                'amount' => round((float) $item->amount, 2),
+              ])->all()
+            : [];
+
+          $afterInstallments = collect($installments)
+            ->map(fn ($item) => [
+              'label' => $item['label'],
+              'percentage' => round((float) $item['percentage'], 2),
+              'amount' => round((float) $item['amount'], 2),
+            ])
+            ->values()
+            ->all();
+
+          $scheduleChanged =
+            $beforeScheduleType !== $scheduleType
+            || abs((float) ($beforeTotalAmount ?? 0) - $scheduleTotalAmount) > 0.01
+            || $beforeInstallments !== $afterInstallments;
+
+          if ($scheduleChanged) {
+            if (!$existingSchedule) {
+              $existingSchedule = PaymentSchedule::create([
+                'order_id' => $order->id,
+                'schedule_type' => $scheduleType,
+                'total_amount' => $scheduleTotalAmount,
+              ]);
+            } else {
+              $existingSchedule->update([
+                'schedule_type' => $scheduleType,
+                'total_amount' => $scheduleTotalAmount,
+              ]);
+              $existingSchedule->installments()->delete();
+            }
+
+            foreach ($installments as $index => $installment) {
+              $existingSchedule->installments()->create([
+                'position' => $index + 1,
+                'label' => $installment['label'],
+                'percentage' => $installment['percentage'],
+                'amount' => $installment['amount'],
+                'status' => 'PENDING',
+              ]);
+            }
+
+            OrderFinancialEventLogger::log(
+              $order,
+              'PAYMENT_SCHEDULE_DEFINED',
+              "Payment schedule configured as {$scheduleType}",
+              [
+                'schedule_type' => $scheduleType,
+                'total_amount' => $scheduleTotalAmount,
+                'before_schedule_type' => $beforeScheduleType,
+                'before_total_amount' => $beforeTotalAmount,
+                'before_installments' => $beforeInstallments,
+                'installments' => $afterInstallments,
+              ]
+            );
+          }
+        }
+      }
+
+      if (abs((float) $newAmount - (float) $oldAmount) > 0.01) {
+        OrderFinancialEventLogger::log(
+          $order,
+          'PROJECT_AMOUNT_UPDATED',
+          'Project amount updated',
+          [
+            'before_amount' => (float) $oldAmount,
+            'after_amount' => (float) $newAmount,
+          ]
+        );
+      }
+
+      $order->load('paymentSchedule.installments');
+      OrderPaymentInformationAuditLogger::logIfChanged(
+        $order,
+        $beforePaymentInformation,
+        'ORDER_EDIT',
+        $request
+      );
+
+      if ($request->has('change_order_enabled')) {
+        $changeOrderEnabled = filter_var($request->input('change_order_enabled'), FILTER_VALIDATE_BOOLEAN);
+        $changeOrderPayment = $order->orderPayments()->where('type', 'CHANGE_ORDER')->first();
+        if ($changeOrderEnabled) {
+          $payload = [
+            'amount' => $request->input('change_order_amount') ?? 0,
+            'note' => $request->input('change_order_note'),
+          ];
+          if ($changeOrderPayment) {
+            $before = [
+              'amount' => (float) $changeOrderPayment->amount,
+              'note' => $changeOrderPayment->note,
+              'status' => $changeOrderPayment->status,
+            ];
+            $changeOrderPayment->update($payload);
+            if (abs((float) $before['amount'] - (float) ($changeOrderPayment->amount ?? 0)) > 0.01 || (string) $before['note'] !== (string) ($changeOrderPayment->note ?? '')) {
+              OrderFinancialEventLogger::log(
+                $order,
+                'CHANGE_ORDER_UPDATED',
+                'Change order payment updated',
+                [
+                  'order_payment_id' => $changeOrderPayment->id,
+                  'before' => $before,
+                  'after' => [
+                    'amount' => (float) $changeOrderPayment->amount,
+                    'note' => $changeOrderPayment->note,
+                    'status' => $changeOrderPayment->status,
+                  ],
+                ]
+              );
+            }
+          } else {
+            $createdChangeOrder = $order->orderPayments()->create([
+              'type' => 'CHANGE_ORDER',
+              'status' => 'PENDING',
+              ...$payload,
+            ]);
+            OrderFinancialEventLogger::log(
+              $order,
+              'CHANGE_ORDER_CREATED',
+              'Change order payment created',
+              [
+                'order_payment_id' => $createdChangeOrder->id,
+                'amount' => (float) $createdChangeOrder->amount,
+                'note' => $createdChangeOrder->note,
+                'status' => $createdChangeOrder->status,
+              ]
+            );
+          }
+        } elseif ($changeOrderPayment) {
+          OrderFinancialEventLogger::log(
+            $order,
+            'CHANGE_ORDER_REMOVED',
+            'Change order payment removed',
+            [
+              'order_payment_id' => $changeOrderPayment->id,
+              'amount' => (float) $changeOrderPayment->amount,
+              'note' => $changeOrderPayment->note,
+              'status' => $changeOrderPayment->status,
+            ]
+          );
+          $changeOrderPayment->delete();
+        }
+
+        $this->commissionCalculator->refreshOrderCommissions($order->fresh());
+      }
+
+      $currentWorkTeamNotes = trim((string) ($request->work_team_notes ?? ''));
+      if ($currentWorkTeamNotes !== '') {
+        $latestWorkTeamNote = $order->notes()
+          ->where('type', 'work_team_note')
+          ->latest()
+          ->first();
+
+        if (!$latestWorkTeamNote || trim((string) $latestWorkTeamNote->content) !== $currentWorkTeamNotes) {
+          $order->notes()->create([
+            'content' => $currentWorkTeamNotes,
+            'type' => 'work_team_note',
+            'user_id' => auth()->id(),
+          ]);
+        }
+      }
       
       //dd($request->file('attachments'));
       if ($request->hasFile('attachments')) {
@@ -187,17 +576,26 @@ class UpdateOrder
           ]);
         }
       }
-      $order->installationTeams()->sync($request->installation_teams);
+      $this->syncAttachmentRoleTargets($request, $order);
+      $order->installationTeams()->sync($request->installation_teams ?? []);
       $order->load('installationTeams');
      
-      $order->owners()->sync($request->owners);
+      $nextOwnerIds = $this->orderOwnerChangeNotifier->normalizeOwnerIds($request->owners ?? []);
+      $order->owners()->sync($nextOwnerIds);
+      $this->orderOwnerChangeNotifier->notify($order, $previousOwnerIds, $nextOwnerIds);
       $order->syncFrameColors($request->frame_color ?? []);
       $order->orderProducts()->delete();
-      foreach ($request->orderProducts as $product) {
+      $orderProductsPayload = $request->orderProducts ?? [];
+      foreach ($orderProductsPayload as $product) {
+        $typeOfWorkId = $product['type_of_work_id'] ?? null;
+        if ($typeOfWorkId === 0 || $typeOfWorkId === '0' || $typeOfWorkId === '') {
+          $typeOfWorkId = null;
+        }
+
         $orderProduct = OrderProduct::create([
           'order_id' => $order->id,
           'product_config_id' => $product['product_config_id'],
-          'type_of_work_id' => $product['type_of_work_id'],
+          'type_of_work_id' => $typeOfWorkId,
           'height' => $product['height'],
           'width' => $product['width'],
           'qty' => $product['qty'],
@@ -212,6 +610,7 @@ class UpdateOrder
           'product_category_id' => $product['product_category_id'],
           'type_of_product_id' => $product['type_of_product_id'],
           //'pivot_cost' => $product['pivot_cost'],
+          'new_price_storefront' => $product['new_price_storefront'],
         ]);
 
         $extraWorks = [];
@@ -233,6 +632,7 @@ class UpdateOrder
           'status' => $status,
           'user_id' => auth()->user()->id,
           'notes' => "$status created by " . auth()->user()->name,
+          'replanned_reasons' => $replannedReasons,
           'start_date' => $request->installation_date,
           'end_date' => $request->installation_end_date,
           'pickup_date' => $request->delivery_date,
@@ -240,6 +640,10 @@ class UpdateOrder
           'complete_date' => $request->complete_date,
           'material_received_date' => $request->material_received_date,
         ]);
+
+        if ($status === OrderStatusEnum::REVIEW->value) {
+          event(new OrderStatusChanged($order, $status));
+        }
         
         $this->sendEmail($order);
         $order->update([
@@ -248,11 +652,10 @@ class UpdateOrder
        
       }
       else if (($installationTeamsChanged || $supervisorChanged) && $request->status== OrderStatusEnum::CONFIRMED->value) {
-            $order->update([
-              'do_not_send_email' => true,
-            ]);
+            $originalDoNotSendEmail = $order->do_not_send_email;
+            $order->do_not_send_email = true;
             $this->sendEmail($order);
-             //dd( $order->toArray());
+            $order->do_not_send_email = $originalDoNotSendEmail;
         
       }
 
@@ -266,6 +669,24 @@ class UpdateOrder
   {
     $statusOrder = $order->status;
 
+    if ($request->has('project_amount') && $order->hasReachedContractSigned()) {
+      $incomingAmount = $request->input('project_amount');
+      if ($incomingAmount !== null && $incomingAmount !== '' && abs((float) $incomingAmount - (float) ($order->project_amount ?? 0)) > 0.01) {
+        throw ValidationException::withMessages([
+          'project_amount' => 'Project amount cannot be edited after CONTRACT SIGNED BY CLIENT. Use Change Order instead.',
+        ]);
+      }
+    }
+
+    if ($request->has('project_amount') && $request->user()?->hasRole(RoleEnum::OWNER_ADMIN->value)) {
+      $incomingAmount = $request->input('project_amount');
+      if ($incomingAmount !== null && $incomingAmount !== '' && abs((float) $incomingAmount - (float) ($order->project_amount ?? 0)) > 0.01) {
+        throw ValidationException::withMessages([
+          'project_amount' => 'Owner Admin cannot edit Project Amount.',
+        ]);
+      }
+    }
+
     $order->loadMissing(['installationTeams']);
     $installer = $order->installationTeams()->pluck('installation_teams.id')->toArray();
     $currentInstallers = array_map('intval', $installer);
@@ -277,7 +698,7 @@ class UpdateOrder
     $installationTeamsChanged = $currentInstallers !== $requestInstallers;
     $supervisorChanged = ((int) $order->supervisor_id !== (int) $request->supervisor_id);
 
-    $order->update($request->except('installation_teams', 'supervisor_payment_status'));
+    $order->update($request->except('installation_teams', 'supervisor_payment_status', 'replanned_reasons'));
     if ($request->status == OrderStatusEnum::COMPLETE->value) {
       $supervisor_payment_status = SupervisorPaymentStatusEnum::PENDING->value;
     } else {
@@ -341,6 +762,7 @@ class UpdateOrder
         'user_id' => auth()->id(),
       ]);
     }
+    $this->syncAttachmentRoleTargets($request, $order);
 
 
 
@@ -352,6 +774,7 @@ class UpdateOrder
         'status' => $request->status,
         'user_id' => auth()->user()->id,
         'notes' => $request->status . " created by " . auth()->user()->name,
+        'replanned_reasons' => $this->resolveReplannedReasons($request, $request->status),
         'start_date' => $request->installation_date,
         'end_date' => $request->installation_end_date,
         'pickup_date' => $request->delivery_date,
@@ -363,23 +786,27 @@ class UpdateOrder
         'material_received_date' => $request->material_received_date,
       ]);
 
+      if ($request->status === OrderStatusEnum::REVIEW->value) {
+        event(new OrderStatusChanged($order, $request->status));
+      }
+
       $this->sendEmail($order);
       //$this->whatsapp($order);
     }  else if (($installationTeamsChanged || $supervisorChanged) && $request->status== OrderStatusEnum::CONFIRMED->value) {
-      $order->update([
-        'do_not_send_email' => true,
-      ]);
+      $originalDoNotSendEmail = $order->do_not_send_email;
+      $order->do_not_send_email = true;
       $this->sendEmail($order);
+      $order->do_not_send_email = $originalDoNotSendEmail;
   
     }else {
       $orderStatus = $order->orderStatus()->where('status', $request->status)->first(); // Busca el registro relacionado
 
       if ($orderStatus) {
-        // Actualiza el registro existente
-        $orderStatus->update([
+        // Actualiza el registro existente (solo cambia user_id si cambia el status)
+        $payload = [
           //'status' => $request->status,
-          'user_id' => auth()->user()->id,
           //'notes' => $request->status . " updated by " . auth()->user()->name,
+          'replanned_reasons' => $this->resolveReplannedReasons($request, $request->status),
           'start_date' => $request->installation_date,
           'end_date' => $request->installation_end_date,
           'pickup_date' => $request->delivery_date,
@@ -389,8 +816,93 @@ class UpdateOrder
           'final_inspection_date' => $request->final_inspection_date,
           'complete_date' => $request->complete_date,
           'material_received_date' => $request->material_received_date,
-        ]);
+        ];
+
+        if ($sendEmail) {
+          $payload['user_id'] = auth()->user()->id;
+        }
+
+        $orderStatus->update($payload);
       }
+    }
+  }
+
+  private function resolveReplannedReasons(Request $request, ?string $status): ?array
+  {
+    if ($status !== OrderStatusEnum::REPLANNED->value) {
+      return null;
+    }
+
+    $rawReasons = $request->input('replanned_reasons', []);
+    if (!is_array($rawReasons)) {
+      return null;
+    }
+
+    $normalized = [];
+    foreach ($rawReasons as $reason) {
+      $value = strtoupper(trim((string) $reason));
+      if ($value === '' || !in_array($value, self::REPLANNED_REASON_VALUES, true)) {
+        continue;
+      }
+
+      $normalized[] = $value;
+    }
+
+    $normalized = array_values(array_unique($normalized));
+
+    return $normalized === [] ? null : $normalized;
+  }
+
+  private function syncAttachmentRoleTargets(Request $request, Order $order): void
+  {
+    $user = auth()->user();
+    if (
+      !$user
+      || (!$user->hasRole(RoleEnum::ADMIN->value) && !$user->hasRole(RoleEnum::ACCOUNT_MANAGER->value))
+    ) {
+      return;
+    }
+
+    if (!$request->exists('attachment_role_targets')) {
+      return;
+    }
+
+    $rawTargets = $request->input('attachment_role_targets', []);
+    if (!is_array($rawTargets)) {
+      $rawTargets = [];
+    }
+
+    $validAttachmentIdMap = $order->attachments()
+      ->pluck('attachments.id')
+      ->mapWithKeys(fn ($id) => [(int) $id => true])
+      ->all();
+
+    $rows = [];
+    foreach (self::EMAIL_ATTACHMENT_ROLES as $role) {
+      $roleTargets = $rawTargets[$role] ?? [];
+      if (!is_array($roleTargets)) {
+        continue;
+      }
+
+      $attachmentIds = collect($roleTargets)
+        ->map(fn ($id) => (int) $id)
+        ->filter(fn ($id) => isset($validAttachmentIdMap[$id]))
+        ->unique()
+        ->values()
+        ->all();
+
+      foreach ($attachmentIds as $attachmentId) {
+        $rows[] = [
+          'attachment_id' => $attachmentId,
+          'role' => $role,
+          'created_by' => auth()->id(),
+        ];
+      }
+    }
+
+    $order->attachmentRoleTargets()->delete();
+    if (!empty($rows)) {
+      $order->attachmentRoleTargets()->createMany($rows);
     }
   }
 }

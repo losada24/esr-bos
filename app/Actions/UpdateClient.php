@@ -2,13 +2,17 @@
 namespace App\Actions;
 
 use App\Models\Client;
+use App\Support\ClientCompanyContactManager;
+use App\Support\ReferralResolver;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
-use App\Enum\RoleEnum;
-use App\Models\Referral;
 
 class UpdateClient {
+
+  public function __construct(
+    private readonly ReferralResolver $referralResolver,
+    private readonly ClientCompanyContactManager $clientCompanyContactManager
+  ) {}
 
   public function handle(Request $request, Client $client) {
 
@@ -47,27 +51,44 @@ class UpdateClient {
       ];
 
       
-    // Buscar o crear el referral si aplica
-    if (in_array($request->source, ['EXTERNAL REFERAL', 'INTERNALREFERAL'])) {
-      $referral = Referral::updateOrCreate(
-          [
-              'name' => $request->refer_name,
-              'phone' => $request->refer_phone,
-          ],
-          [
-              'type' => $request->source,
-          ]
-          );
-
-        // Asociar el referral al cliente
-        $clientData['referral_id'] = $referral->id;
-    } else {
-        // Si ya tenía uno, puedes quitarlo si no aplica más
-        $clientData['referral_id'] = null;
-    }
+    $referral = $this->referralResolver->resolve($request->all());
+    $clientData['referral_id'] = $referral?->id;
     $client->update($clientData);
+
+    $requestedCompanyIds = $this->extractRequestedCompanyIds($request);
+    if (!empty($requestedCompanyIds) || $request->has('company_contact_ids') || $request->has('company_contact_id')) {
+      $this->clientCompanyContactManager->sync(
+        $client,
+        $requestedCompanyIds,
+        $request->filled('company_contact_id') ? (int) $request->input('company_contact_id') : null
+      );
+    }
 
     });
 }
+
+  protected function extractRequestedCompanyIds(Request $request): array
+  {
+    $companyIds = [];
+
+    if ($request->filled('company_contact_id')) {
+      $companyIds[] = (int) $request->input('company_contact_id');
+    }
+
+    $requestCompanyIds = $request->input('company_contact_ids', []);
+    if (is_array($requestCompanyIds)) {
+      foreach ($requestCompanyIds as $companyId) {
+        if (!empty($companyId)) {
+          $companyIds[] = (int) $companyId;
+        }
+      }
+    }
+
+    return collect($companyIds)
+      ->filter(fn ($companyId) => $companyId > 0)
+      ->unique()
+      ->values()
+      ->all();
+  }
 
 }

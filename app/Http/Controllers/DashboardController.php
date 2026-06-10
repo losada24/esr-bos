@@ -18,6 +18,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 
@@ -26,10 +27,28 @@ class DashboardController extends Controller
 
   use OrderStatus, Twilio;
 
-  public function index(Request $request): Response
+  public function index(Request $request): Response|RedirectResponse
   {
 
     $user = auth()->user();
+
+    if ($user->hasRole(RoleEnum::SERVICE->value) && !$user->hasAnyRole([
+      RoleEnum::ADMIN->value,
+      RoleEnum::ACCOUNT_MANAGER->value,
+      RoleEnum::ACCOUNTING->value,
+      RoleEnum::INSTALLER->value,
+      RoleEnum::SUPERVISOR->value,
+      RoleEnum::OWNER->value,
+      RoleEnum::OWNER_ADMIN->value,
+      RoleEnum::FRONTDESK->value,
+      RoleEnum::FRONTDESK_ADMIN->value,
+      RoleEnum::FRONTDESK_ESR->value,
+      RoleEnum::SERVICE_MANAGER->value,
+      RoleEnum::PAYMENT_COORDINATOR->value,
+    ])) {
+      return redirect()->route('service-control.calendar');
+    }
+
     $status = [];
     $legend = [];
     $statusmodal = [];
@@ -42,9 +61,10 @@ class DashboardController extends Controller
       //ServiceEnum::INSTALLATION_ONLY->value
     ];
 
-    if ($user->hasRole(RoleEnum::ACCOUNT_MANAGER->value) || $user->hasRole(RoleEnum::ADMIN->value) || $user->hasRole(RoleEnum::OWNER->value) || $user->hasRole(RoleEnum::OWNER_ADMIN->value) ) {
+    if ($user->hasRole(RoleEnum::ACCOUNT_MANAGER->value) || $user->hasRole(RoleEnum::ADMIN->value) || $user->hasRole(RoleEnum::OWNER->value) || $user->hasRole(RoleEnum::OWNER_ADMIN->value) || $user->hasRole(RoleEnum::FRONTDESK_ADMIN->value) || $user->hasRole('FRONTDESK_ADMIN') ) {
       $status = [
         OrderStatusEnum::PLANNED->value,
+        OrderStatusEnum::REPLANNED->value,
         OrderStatusEnum::CONFIRMED->value,
         //OrderStatusEnum::DELIVERY_CONFIRMED->value,
         //OrderStatusEnum::EXECUTION->value,
@@ -59,10 +79,14 @@ class DashboardController extends Controller
         //OrderStatusEnum::RESCHEDULE->value,
         //OrderStatusEnum::CONFIRMED_FINISH->value,
         OrderStatusEnum::MATERIALS_RECEIVED->value,
+        OrderStatusEnum::CANCELED->value,
         
         
       ];
       $statusmodal = [  
+        OrderStatusEnum::PLANNED->value,
+        OrderStatusEnum::REPLANNED->value,
+        OrderStatusEnum::MATERIALS_RECEIVED->value,
         OrderStatusEnum::CONFIRMED->value,
         OrderStatusEnum::EXECUTION->value,
         OrderStatusEnum::DELIVERY_CONFIRMED->value,
@@ -75,7 +99,8 @@ class DashboardController extends Controller
         OrderStatusEnum::FINISH->value,
         OrderStatusEnum::SERVICE->value,
         OrderStatusEnum::FINAL_INSPECTION->value,
-        OrderStatusEnum::MATERIALS_RECEIVED->value,  
+        OrderStatusEnum::MATERIALS_RECEIVED->value,
+        OrderStatusEnum::CANCELED->value,  
       ];
 
       $legend = [
@@ -123,11 +148,16 @@ class DashboardController extends Controller
           'color' => StatusColorEnum::FINISH->value,
           'label' => 'FINISH'
         ],
+         [
+          'color' => StatusColorEnum::CANCELED->value,
+          'label' => 'CANCELED'
+        ],
       ];
     } else if ($user->hasRole(RoleEnum::SUPERVISOR->value) || $user->hasRole(RoleEnum::SERVICE_MANAGER->value) || $user->hasRole(RoleEnum::INSTALLER->value) || $user->hasRole(RoleEnum::PAYMENT_COORDINATOR->value)) {
       $status = [
         //OrderStatusEnum::RESCHEDULE->value,
         OrderStatusEnum::PLANNED->value,
+        OrderStatusEnum::REPLANNED->value,
         OrderStatusEnum::CONFIRMED->value,
         OrderStatusEnum::ON_HOLD->value,
         OrderStatusEnum::EXECUTION->value,
@@ -139,8 +169,11 @@ class DashboardController extends Controller
         OrderStatusEnum::FINAL_INSPECTION->value,
         OrderStatusEnum::FINAL_COLLECT->value,
         OrderStatusEnum::COMPLETE->value,
+        OrderStatusEnum::MATERIALS_RECEIVED->value,
+        OrderStatusEnum::CANCELED->value,
       ];
     $statusmodal = [  
+        OrderStatusEnum::REPLANNED->value,
         OrderStatusEnum::SUPERVISION->value,
         OrderStatusEnum::INSPECTION->value,
         OrderStatusEnum::FINISH->value,
@@ -148,6 +181,8 @@ class DashboardController extends Controller
         OrderStatusEnum::FINAL_INSPECTION->value,
         OrderStatusEnum::FINAL_COLLECT->value,
         OrderStatusEnum::COMPLETE->value,
+        OrderStatusEnum::MATERIALS_RECEIVED->value,
+        OrderStatusEnum::CANCELED->value,
       ];
 
       $legend = [
@@ -187,10 +222,16 @@ class DashboardController extends Controller
           'color' => StatusColorEnum::COMPLETE->value,
           'label' => 'COMPLETE'
         ],
+         [
+          'color' => StatusColorEnum::CANCELED->value,
+          'label' => 'CANCELED'
+        ],
       ];
 
       $services = [
-        ServiceEnum::INSTALLATION_ONLY->value
+        ServiceEnum::INSTALLATION_ONLY->value,
+        //ServiceEnum::INSTALLATION->value,
+        ServiceEnum::SERVICE->value,
       ];
     }
 
@@ -202,8 +243,14 @@ class DashboardController extends Controller
       'status' => $status,
       'legend' => $legend,
       'statusmodal' => $statusmodal,
-      'installation_teams' => InstallationTeam::with(['user', 'typeHousing'])->get(),
-      'supervisors' => User::role(RoleEnum::SUPERVISOR->value)->get(),
+      'installation_teams' => InstallationTeam::with(['user', 'typeHousing'])
+        ->whereHas('user', function ($query) {
+          $query->where('status', 'ACTIVE');
+        })
+        ->get(),
+      'supervisors' => User::role(RoleEnum::SUPERVISOR->value)
+        ->where('status', 'ACTIVE')
+        ->get(),
     ]);
   }
 
@@ -213,13 +260,18 @@ class DashboardController extends Controller
   public function getEvents($year, $month, $service, $status, $name = null)
   {
     $user = auth()->user();
+    $canHideOnWeekends = $user->hasRole(RoleEnum::ACCOUNT_MANAGER->value)
+      || $user->hasRole(RoleEnum::ADMIN->value)
+      || $user->hasRole(RoleEnum::INSTALLER->value);
 
     if (empty($name) || $name === 'all') {
       $name = null; // Deja en null si no se quiere filtrar por cliente
     }
     $showOnlyInstallation = $service === ServiceEnum::INSTALLATION_ONLY->value;
     $showOnlyDeliveries = $service === ServiceEnum::DELIVERY->value;
-    $service_filter = $service === ServiceEnum::INSTALLATION_ONLY->value ? ServiceEnum::INSTALLATION->value : $service;
+    $service_filter = $showOnlyInstallation
+      ? [ServiceEnum::INSTALLATION->value, ServiceEnum::SERVICE->value]
+      : $service;
 
     $currentPassingDate = Carbon::parse($year . '-' . $month . '-01');
     $previewMonth = $currentPassingDate->copy()->subMonth()->startOfMonth();
@@ -277,6 +329,7 @@ class DashboardController extends Controller
         return $item->total . $shortName;
       })->join(', ');
 
+<<<<<<< HEAD
        if (!is_null($order->area) && $order->area !== '' && (float)$order->area > 0) {
           $sqft = rtrim(rtrim(number_format((float) $order->area, 2, '.', ''), '0'), '.');
           $productDetails = $productDetails
@@ -285,6 +338,9 @@ class DashboardController extends Controller
       }
 
       $isVip = $order->client->vip_clients ?? false;
+=======
+      $isVip = optional($order->client)->vip_clients ?? false;
+>>>>>>> origin/main
       $serviceLabel = $isVip ? 'VIP' : '';
 
       if ($order->service === ServiceEnum::DELIVERY->value || $order->service === ServiceEnum::PICKUP->value) {
@@ -304,7 +360,9 @@ class DashboardController extends Controller
         $events[] = $event;
       }
 
-      if ($order->service === ServiceEnum::INSTALLATION->value) {
+       
+
+      if ($order->service === ServiceEnum::INSTALLATION->value || $order->service === ServiceEnum::SERVICE->value) {
         /*if($order->status === OrderStatusEnum::INSPECTION->value) {
           $color = StatusColorEnum::PLANNED->value;
           $startDate = $order->inspection_date;
@@ -402,7 +460,7 @@ class DashboardController extends Controller
             $color = StatusColorEnum::DELAY_PERMITS->value;
           }
 
-          if ($order->hide_on_weekends) {
+          if ($order->hide_on_weekends && $canHideOnWeekends) {
             $blockStart = null;
             while ($startInstallationDateCarbon <= $endInstallationDateCarbon) {
               $dayOfWeek = $startInstallationDateCarbon->format('N'); // 1 = Monday, 7 = Sunday
@@ -485,7 +543,10 @@ class DashboardController extends Controller
   public function updateEvent(Request $request, $id)
   {
     $order = Order::find($id);
-    if ($request->type_of_event === ServiceEnum::INSTALLATION->value) {
+    if (in_array($request->type_of_event, [
+      ServiceEnum::INSTALLATION->value,
+      ServiceEnum::SERVICE->value,
+    ], true)) {
       $order->installation_date = $request->start;
       $order->installation_end_date = $request->end;
     } else {
@@ -499,12 +560,17 @@ class DashboardController extends Controller
 
   public function getEvent(Order $order)
   {
+    if ($this->isRestrictedOwner(auth()->user()) && !$order->isAccessibleToOwner(auth()->user())) {
+      abort(403, 'You are not authorized to access this order.');
+    }
+
     $order->load([
       'client',
       'typeOfWork',
       'typeOfHousing',
       'user',
       'attachments',
+      'attachmentRoleTargets',
       'owners',
       'orderProducts.orderProductExtraWorks',
       'installationTeams.user',
@@ -515,8 +581,50 @@ class DashboardController extends Controller
       'orderColors',
     ]);
 
+    $attachmentRoleTargetsByRole = $order->attachmentRoleTargets
+      ->groupBy('role')
+      ->map(function ($items) {
+        return $items->pluck('attachment_id')
+          ->map(fn ($id) => (int) $id)
+          ->unique()
+          ->values();
+      })
+      ->toArray();
+
     return response()
-      ->json($order);
+      ->json(array_merge($order->toArray(), [
+        'attachment_role_targets_by_role' => $attachmentRoleTargetsByRole,
+        'replanned_reasons' => $this->currentReplannedReasons($order),
+      ]));
+  }
+
+  private function currentReplannedReasons(Order $order): array
+  {
+    if ($order->status !== OrderStatusEnum::REPLANNED->value) {
+      return [];
+    }
+
+    $statusRecord = $order->orderStatus()
+      ->where('status', OrderStatusEnum::REPLANNED->value)
+      ->latest('id')
+      ->first();
+
+    return is_array($statusRecord?->replanned_reasons) ? $statusRecord->replanned_reasons : [];
+  }
+
+  private function isRestrictedOwner(?User $user): bool
+  {
+    if (!$user) {
+      return false;
+    }
+
+    return $user->hasRole(RoleEnum::OWNER->value) && !$user->hasAnyRole([
+      RoleEnum::ADMIN->value,
+      RoleEnum::ACCOUNT_MANAGER->value,
+      RoleEnum::OWNER_ADMIN->value,
+      RoleEnum::FRONTDESK_ADMIN->value,
+      'FRONTDESK_ADMIN',
+    ]);
   }
 
   public function getPaymentList(Order $order)
@@ -529,6 +637,9 @@ class DashboardController extends Controller
       'attachments',
       'owners',
       'orderProducts.orderProductExtraWorks',
+      'orderProducts.productConfig.productCosts',
+      'orderProducts.productCategory',
+      'orderProducts.typeOfWork',
       'installationTeams.user',
       'supervisor',
       'travelCost',

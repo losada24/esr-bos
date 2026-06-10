@@ -6,7 +6,6 @@ use App\Enum\ContactSourceEnum;
 use App\Enum\ContactTypeEnum;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
-use App\Enum\States;
 
 class StoreCompanyContactRequest extends FormRequest
 {
@@ -27,10 +26,17 @@ class StoreCompanyContactRequest extends FormRequest
      */
     public function rules()
     {
-        return [
+        $clients = $this->input('clients', []);
+        $sources = array_map(
+            static fn (ContactSourceEnum $source): string => $source->value,
+            ContactSourceEnum::cases()
+        );
+
+        $rules = [
             'name' => 'required|string|max:255',
             'email' => 'nullable|email',
-            'phone' => 'required|max:20',
+            //'phone' => 'required|max:20',
+             'phone' => 'nullable|max:20',
             'website' => 'nullable|url|max:255',
             'billing_street' => 'nullable|string|max:255',
             'billing_city' => 'nullable|string|max:100',
@@ -38,6 +44,39 @@ class StoreCompanyContactRequest extends FormRequest
             'billing_code' => 'nullable|numeric',
             'bid_due_date' =>'nullable|date_format:Y-m-d',
             'from_modal' => 'sometimes|boolean',
+            'clients' => 'sometimes|array',
+            'clients.*.id' => 'nullable|integer|exists:clients,id',
+            'clients.*.source' => [
+                'nullable',
+                'string',
+                Rule::in($sources),
+            ],
+            'clients.*.refer_name' => 'nullable|string|max:255',
+            'clients.*.refer_phone' => 'nullable|string|max:50',
+            'clients.*.refer_email' => 'nullable|email|max:255',
+            'clients.*.referral_id' => 'nullable|integer|exists:referrals,id',
+            'clients.*.referrer_client_id' => 'nullable|integer|exists:clients,id',
+            'clients.*.referrer_user_id' => 'nullable|integer|exists:users,id',
         ];
+
+        foreach ($clients as $index => $client) {
+            if (!empty($client['id'])) {
+                $rules["clients.$index.phone"] = [
+                    'nullable',
+                    'max:20',
+                ];
+
+                continue;
+            }
+
+            $rules["clients.$index.phone"] = [
+                'required',
+                'max:20',
+                'distinct',
+                Rule::unique('clients', 'phone'),
+            ];
+        }
+
+        return $rules;
     }
 }

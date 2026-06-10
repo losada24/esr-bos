@@ -1,6 +1,6 @@
 import DeleteIcon from '@/Components/Icons/DeleteIcon'
 import EditIcon from '@/Components/Icons/EditIcon'
-import { type TypeOfProduct, type OrderProduct, type ProductConfig, type ProductCategory, type TravelCost, type TypeOfWork } from '@/types'
+import { type TypeOfProduct, type OrderProduct, type ProductConfig, type ProductCategory, type TravelCost, type TypeOfWork, type ProductCost } from '@/types'
 import { OrderProductsExtraWorks} from '@/types/interfaces/order'
 import { formatPrice } from '@/Utils/price'
 import React, { useState } from 'react'
@@ -18,6 +18,7 @@ const ProductTable = ({
   travel_costs,
   type_of_works,
   extraWorks,
+  product_costs,
   removeOrderProduct,
   updateOrderProduct
 }: {
@@ -30,6 +31,7 @@ const ProductTable = ({
   values: OrderFormValues
   travel_costs: TravelCost[]
   extraWorks: Array<{ id: number, name: string }>
+  product_costs: ProductCost[]
 
   removeOrderProduct: (index: number) => void
   updateOrderProduct: (index: number) => void
@@ -40,7 +42,11 @@ const ProductTable = ({
   }
   const [expandedRows, setExpandedRows] = useState<number[]>([])
 
-  const getTypeOfWork = (id: number) => {
+  const getTypeOfWork = (id: number | null) => {
+    if (id == null) {
+      return '-'
+    }
+
     return type_of_works.find((type) => type.id === id)?.name
   }
   const getProductCategory = (id: number) => {
@@ -74,6 +80,7 @@ const ProductTable = ({
     const result = getProductsTotal() + getOtherCost() + getTravelCost()
     return result
   }
+  const showPricingColumns = service === SERVICES.DELIVERY_AND_INSTALLATION || service === SERVICES.SERVICE
   return (
     <div className='table-responsive mt-3'>
           <table className="w-full whitespace-nowrap">
@@ -84,7 +91,7 @@ const ProductTable = ({
                   <th className="px-6 pt-5 pb-4">Product Config</th>
                   <th className="px-6 pt-5 pb-4">Type of Work</th>
                   <th className="px-6 pt-5 pb-4 text-right">Count</th>
-                {service === SERVICES.DELIVERY_AND_INSTALLATION && (
+                {showPricingColumns && (
                   <>
                   <th className="px-6 pt-5 pb-4 text-right">Unit Price</th>
                   <th className="px-6 pt-5 pb-4 text-right">Extra Work</th>
@@ -97,6 +104,14 @@ const ProductTable = ({
             <tbody>
             {orderProducts.map((product, index) => {
               const isExpanded = expandedRows.includes(index)
+              const storefrontBasePrice = product_costs.find(
+                (productCost) =>
+                  Number(productCost.product_config_id) === Number(product.product_config_id) &&
+                  Number(productCost.type_of_work_id) === Number(product.type_of_work_id)
+              )?.price
+              const storefrontBasePriceLabel = storefrontBasePrice !== undefined ? formatPrice(storefrontBasePrice) : null
+              const parsedStorefrontPrice = Number(product.new_price_storefront ?? 0) || 0
+              const hasNewStorefrontPrice = parsedStorefrontPrice !== 0
               return (
           <React.Fragment key={index}>
             <tr className="hover:bg-gray-100 focus-within:bg-gray-100">
@@ -112,12 +127,23 @@ const ProductTable = ({
               <td className="border-t px-6 py-4 align-top">
                 {getTypeOfWork(product.type_of_work_id)}
               </td>
-              <td className="border-t px-6 py-4 align-top text-right">{product.qty}</td>
+              <td className="border-t px-6 py-4 align-top text-right">
+                {product.qty}
+                {product.type_of_product_id === 3 && (
+                  <> ({product.storefront_area} SQFT)</>
+                )}
+              </td>
 
-              {service === SERVICES.DELIVERY_AND_INSTALLATION && (
+              {showPricingColumns && (
                 <>
                   <td className="border-t px-6 py-4 align-top text-right">
-                    {formatPrice(product.unit_price)}
+                    {product.type_of_product_id === 3
+                      ? (
+                        hasNewStorefrontPrice
+                          ? formatPrice(parsedStorefrontPrice)
+                          : (storefrontBasePriceLabel !== null ? `${storefrontBasePriceLabel}` : 'N/A')
+                        )
+                      : formatPrice(product.unit_price)}
                   </td>
                   <td className="border-t px-6 py-4 align-top text-right">
                     {formatPrice(product.extra_work_price)}
@@ -130,6 +156,15 @@ const ProductTable = ({
 
         <td className="border-t px-6 py-4 align-top">
         <div className="flex items-center space-x-2">
+          <button
+            onClick={(e) => {
+              e.preventDefault()
+              updateOrderProduct(index)
+            }}
+            title="Edit Product"
+          >
+            <EditIcon />
+          </button>
           <button
             onClick={(e) => {
               e.preventDefault()
@@ -193,14 +228,14 @@ const ProductTable = ({
     </td>
 
     {/* Estas celdas mantienen el espacio de las demás columnas */}
-    <td colSpan={service === SERVICES.DELIVERY_AND_INSTALLATION ? 5 : 2}></td>
+    <td colSpan={showPricingColumns ? 5 : 2}></td>
   </tr>
       )}
      </React.Fragment>
               )
 })}
             </tbody>
-            {service === SERVICES.DELIVERY_AND_INSTALLATION && (
+            {showPricingColumns && (
               <tfoot>
                 <tr>
                     <td colSpan={7} className="px-6 py-4 align-top text-right">Total</td>

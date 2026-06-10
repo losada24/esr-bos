@@ -1,19 +1,23 @@
 <?php
 namespace App\Actions;
 
-use App\Enum\ContactSourceEnum;
 use App\Enum\ContactTypeEnum;
 use App\Models\Client;
+use App\Models\CompanyContact;
+use App\Support\ClientCompanyContactManager;
+use App\Traits\Bigin;
+use App\Support\ReferralResolver;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use App\Models\ClientAddress;
-use App\Models\CompanyContact;
-use App\Models\Referral;
-use App\Traits\Bigin;
 
 class CreateCompanyContact {
 
   use Bigin;
+
+  public function __construct(
+    private readonly ReferralResolver $referralResolver,
+    private readonly ClientCompanyContactManager $clientCompanyContactManager
+  ) {}
   
   public function handle(Request $request) {
     
@@ -39,20 +43,25 @@ class CreateCompanyContact {
       }
       if (!empty($request->clients)) {
         foreach ($request->clients as $client) {
-              $referral = null;
+          if (!empty($client['id'])) {
+            $existingClient = Client::find((int) $client['id']);
 
-            if ($client['source'] == ContactSourceEnum::EXTERNAL_REFERAL->value || 
-                $client['source'] == ContactSourceEnum::INTERNAL_REFERAL->value
-            ) {
-                $referral = Referral::firstOrCreate(
-                [
-                    'name' => $client['refer_name'],
-                    'phone' => $client['refer_phone'],
-                    'type' => $client['source'],
-                ]
-                );
+            if ($existingClient) {
+              if (empty($existingClient->company_contact_id)) {
+                $existingClient->update([
+                  'company_contact_id' => $existingCompany->id,
+                ]);
               }
-          Client::create([
+
+              $this->clientCompanyContactManager->attach($existingClient, $existingCompany->id);
+            }
+
+            continue;
+          }
+
+          $referral = $this->referralResolver->resolve($client);
+
+          $createdClient = Client::create([
             'company_contact_id' => $existingCompany->id,
             'name' =>$client['name'],
             'phone' => $client['phone'],
@@ -67,6 +76,12 @@ class CreateCompanyContact {
             'referral_id' => $referral?->id, // null si no aplica
           ]);
 
+          $this->clientCompanyContactManager->sync(
+            $createdClient,
+            [$existingCompany->id],
+            $existingCompany->id
+          );
+
         }
       } 
 
@@ -74,7 +89,7 @@ class CreateCompanyContact {
       {
           throw new \Exception('Company not created');
       }
-
+       // dd($existingCompany);
       return $existingCompany;
 
     });

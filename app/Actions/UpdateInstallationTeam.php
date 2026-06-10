@@ -32,6 +32,33 @@ class UpdateInstallationTeam {
           Storage::disk('public')->delete($oldWorkerCompensationAttachPath);
         }
       }
+
+      $workerCompensationException = $installationTeam->attachments()->where('file_type', 'worker_compensation_exception_attach')->first();
+      $workerCompensationExceptionFileName = null;
+      $workerCompensationExceptionAttachPath = null;
+      $oldWorkerCompensationExceptionAttachPath = null;
+      if ($workerCompensationException) {
+        $workerCompensationExceptionAttachPath = $workerCompensationException->file_path;
+        $workerCompensationExceptionFileName = $workerCompensationException->filename;
+      }
+      if ($request->hasFile('worker_compensation_exception_attach')) {
+        $oldWorkerCompensationExceptionAttachPath = $workerCompensationExceptionAttachPath;
+        $workerCompensationExceptionFileName = time() . '_' . $request->file('worker_compensation_exception_attach')->getClientOriginalName();
+        $workerCompensationExceptionAttachPath = $request->file('worker_compensation_exception_attach')->storeAs('installation_team_files', $workerCompensationExceptionFileName, 'public');
+        if ($workerCompensationExceptionAttachPath && $oldWorkerCompensationExceptionAttachPath) {
+          Storage::disk('public')->delete($oldWorkerCompensationExceptionAttachPath);
+        }
+      }
+      if (!$workerCompensationException && $request->hasFile('worker_compensation_exception_attach')) {
+        $installationTeam->attachments()->saveMany([
+          new Attachment(
+            [
+              'filename' => $workerCompensationExceptionFileName,
+              'file_path' => $workerCompensationExceptionAttachPath,
+              'file_type' => 'worker_compensation_exception_attach',
+            ]),
+        ]);
+      }
       
       $liabilityExpiration = $installationTeam->attachments()->where('file_type', 'liability_expiration_attach')->first();
       $liabilityExpirationAttachPath = $liabilityExpiration->file_path;
@@ -129,6 +156,12 @@ class UpdateInstallationTeam {
           $attachment->update([
             'filename' => $workerCompensationFileName,
             'file_path' => $workerCompensationAttachPath,
+          ]);
+        }
+        else if ($attachment->file_type == 'worker_compensation_exception_attach') {
+          $attachment->update([
+            'filename' => $workerCompensationExceptionFileName,
+            'file_path' => $workerCompensationExceptionAttachPath,
           ]);
         }
         else if ($attachment->file_type == 'installer_agrement_attach') {

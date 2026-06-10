@@ -574,6 +574,22 @@ hover:text-primary hover:before:!bg-primary ltr:before:mr-2 rtl:before:ml-2 dark
     @apply !bg-transparent;
 }
 
+/* hide native scrollbar tint for horizontal pipelines */
+.pipeline-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(148, 163, 184, 0.2) transparent;
+}
+.pipeline-scroll::-webkit-scrollbar {
+    height: 8px;
+}
+.pipeline-scroll::-webkit-scrollbar-track {
+    background: transparent;
+}
+.pipeline-scroll::-webkit-scrollbar-thumb {
+    background-color: rgba(148, 163, 184, 0.2);
+    border-radius: 9999px;
+}
+
 /* swal2 */
 .swal2-container .swal2-close {
     @apply text-white hover:text-dark-light focus:shadow-none;
@@ -713,4 +729,41 @@ pre.hljs {
 }
 .wide-column {
   min-width: 150px !important;
+}
+
+/* Sales calendar schedule view: avoid clipping event details */
+.sales-calendar .mbsc-schedule-event-inner {
+  padding: 0.25rem 0.35rem;
+}
+
+.sales-calendar .sales-calendar-event-title,
+.sales-calendar .sales-calendar-event-detail {
+  display: block;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.sales-calendar-week .mbsc-schedule-header,
+.sales-calendar-week .mbsc-schedule-grid {
+  min-width: 1400px;
+}
+
+/* Sales calendar day view: hide schedule event time range */
+.sales-calendar-day .mbsc-event-time {
+  display: none !important;
+  width: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.sales-calendar-day .mbsc-event-time * {
+  display: none !important;
+}
+
+.sales-calendar-day .mbsc-schedule-event-range {
+  display: none !important;
+}
+
+.sales-calendar-week .mbsc-schedule-event-range {
+  display: none !important;
 }

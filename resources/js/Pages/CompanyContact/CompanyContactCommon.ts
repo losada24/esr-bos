@@ -7,7 +7,14 @@ export const companyContactSchema = Yup.object({
 
 export const clientSchema = Yup.object({
   name: Yup.string().required('Name is required'),
-  phone: Yup.string().required('Phone is required').max(20, 'Phone number must be 20 characters or less'),
+  order_type: Yup.string().optional(),
+  phone: Yup.string()
+    .max(20, 'Phone number must be 20 characters or less')
+    .when('order_type', {
+      is: (value: unknown) => value === 'COMMERCIAL',
+      then: (schema) => schema.notRequired().nullable(),
+      otherwise: (schema) => schema.required('Phone is required')
+    }),
   email: Yup.string().email('Invalid email address').nullable(),
   source: Yup.string().required('Source is required')
 })

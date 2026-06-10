@@ -18,6 +18,78 @@ import DeleteIcon from '@/Components/Icons/DeleteIcon'
 import ExportIcon from '@/Components/Icons/ExportIcon'
 import { Field } from 'formik'
 import { inspect } from 'util'
+import OrderNotesForOrder from '@/Components/OrderNotesForOrder'
+
+const ATTACHMENT_ROLE_OPTIONS = [
+  { key: 'supervisor', label: 'Supervisor' },
+  { key: 'service_manager', label: 'Service Mgr' },
+  { key: 'installer', label: 'Installer' },
+  { key: 'account_manager', label: 'Account Mgr' }
+] as const
+
+type AttachmentRoleKey = typeof ATTACHMENT_ROLE_OPTIONS[number]['key']
+type AttachmentRoleTargets = Record<AttachmentRoleKey, number[]>
+
+const buildEmptyAttachmentRoleTargets = (): AttachmentRoleTargets => ({
+  supervisor: [],
+  service_manager: [],
+  installer: [],
+  account_manager: []
+})
+
+const normalizeAttachmentRoleTargets = (
+  incomingTargets: Record<string, unknown> | undefined,
+  validAttachmentIds: number[]
+): AttachmentRoleTargets => {
+  const validAttachmentIdSet = new Set(validAttachmentIds)
+  const initialTargets = buildEmptyAttachmentRoleTargets()
+
+  ATTACHMENT_ROLE_OPTIONS.forEach((roleOption) => {
+    const rawRoleTargets = incomingTargets?.[roleOption.key]
+    if (!Array.isArray(rawRoleTargets)) {
+      return
+    }
+
+    initialTargets[roleOption.key] = Array.from(
+      new Set(
+        rawRoleTargets
+          .map((value) => Number(value))
+          .filter((value) => Number.isInteger(value) && validAttachmentIdSet.has(value))
+      )
+    )
+  })
+
+  return initialTargets
+}
+
+const removeAttachmentFromRoleTargets = (
+  currentTargets: AttachmentRoleTargets,
+  attachmentId: number
+): AttachmentRoleTargets => {
+  const nextTargets = { ...currentTargets }
+  ATTACHMENT_ROLE_OPTIONS.forEach((roleOption) => {
+    nextTargets[roleOption.key] = nextTargets[roleOption.key].filter((id) => id !== attachmentId)
+  })
+  return nextTargets
+}
+
+const REPLANNED_REASON_OPTIONS = ['CLIENT', 'PERMIT', 'MATERIALS'] as const
+
+const normalizeReplannedReasons = (incoming: unknown): string[] => {
+  if (!Array.isArray(incoming)) {
+    return []
+  }
+
+  const allowed = new Set(REPLANNED_REASON_OPTIONS)
+
+  return Array.from(
+    new Set(
+      incoming
+        .map((reason) => String(reason).trim().toUpperCase())
+        .filter((reason) => allowed.has(reason as typeof REPLANNED_REASON_OPTIONS[number]))
+    )
+  )
+}
 
 
 const EventModal = ({
@@ -32,8 +104,7 @@ const EventModal = ({
   installation_teams,
   supervisors,
   isOwner,
-  status,
-  attachments
+  status
   // auth
 
 }: {
@@ -49,7 +120,6 @@ const EventModal = ({
   installation_teams: InstallationTeam[]
   supervisors: User[]
   status: string[]
-  attachments?: File[]
 }) => {
   const defaultState = {
     client_id: 0,
@@ -76,6 +146,7 @@ const EventModal = ({
     equipment_rental: false,
     notes: '',
     work_team_notes: '',
+    replanned_reasons: [],
     order_colors: [],
     installation_teams: [],
     supervisor_id: 0,
@@ -111,20 +182,24 @@ const EventModal = ({
   const [isVipClient, setIsVipClient] = useState<boolean>(false)
   const [editableData, setEditableData] = useState<any>(defaultState)
   const [isLoading, setIsLoading] = useState(false)
-  const [attachmentsArray, setAttachmentsArray] = useState<File[]>(attachments ?? [])
   const [attachmentPreInspection, SetAttachmentPreInspection] = useState<File []>([])
   const [attachmentInspection, SetAttachmentInspection] = useState<File []>([])
   const [attachmentIWalkTrough, SetAttachmentWalkTrough] = useState<File []>([])
   const [attachmentsList, setAttachmentsList] = useState<any[]>([])
+  const [attachmentRoleTargets, setAttachmentRoleTargets] = useState<AttachmentRoleTargets>(buildEmptyAttachmentRoleTargets())
+  const [isUploadingAttachments, setIsUploadingAttachments] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
 
-  const removeAttachmentProduct = (index: number) => {
+  const removeAttachmentProduct = (attachmentId: number) => {
     if (confirm('Are you sure you want to delete this attachment?')) {
-      router.delete(route('order.drop_attachment', { id: attachmentsList[index].id }), {
+      router.delete(route('order.drop_attachment', { id: attachmentId }), {
         onSuccess: (page: any) => {
           if (page.props.flash.success != null) {
-            const aux = attachmentsList.filter((_, i) => i !== index)
+            const aux = attachmentsList.filter((attachment) => Number(attachment.id) !== attachmentId)
             setAttachmentsList(aux)
+            if (Number.isInteger(attachmentId) && attachmentId > 0) {
+              setAttachmentRoleTargets((currentTargets) => removeAttachmentFromRoleTargets(currentTargets, attachmentId))
+            }
           } else {
             setMessage(page.props.flash.error)
           }
@@ -142,6 +217,8 @@ const EventModal = ({
     if (id === 0) {
       setEditableData(defaultState)
       setEvent(null)
+      setAttachmentRoleTargets(buildEmptyAttachmentRoleTargets())
+      setIsUploadingAttachments(false)
     } else if (id !== 0 && showModal) {
       // setIsLoading(true)
       const url = route('dashboard.get_event', { id })
@@ -149,13 +226,24 @@ const EventModal = ({
         .then(async (response) => await response.json())
         .then((data: Order) => {
           setEvent(data)
-          // console.log(data.attachments)
-          setAttachmentsList(data.attachments ?? [])
+          const fetchedAttachments = data.attachments ?? []
+          setAttachmentsList(fetchedAttachments)
+          const validAttachmentIds = fetchedAttachments
+            .map((attachment) => Number(attachment.id))
+            .filter((attachmentId) => Number.isInteger(attachmentId) && attachmentId > 0)
+
+          setAttachmentRoleTargets(
+            normalizeAttachmentRoleTargets(
+              data.attachment_role_targets_by_role as Record<string, unknown> | undefined,
+              validAttachmentIds
+            )
+          )
           // const installationDate = new Date(data.installation_date ?? new Date())
           // const duration = data?.duration_of_work?.number_of_day ?? 0
           // const endDate = new Date(installationDate.setDate(installationDate.getDate() + duration - 1))
           setEditableData({
             entry_date: data.entry_date ?? null,
+            service: data.service ?? '',
             contract_signing_date: data.contract_signing_date ?? null,
             payment_factory_date: data.payment_factory_date ?? null,
             eta_date: data.eta_date ?? null,
@@ -175,6 +263,7 @@ const EventModal = ({
             hide_on_weekends: data.hide_on_weekends ?? null,
             notes: data.notes ?? '',
             work_team_notes: data.work_team_notes ?? '',
+            replanned_reasons: normalizeReplannedReasons(data.replanned_reasons),
             pre_inspection: data.pre_inspection ?? false,
             inspection: data.inspection ?? false,
             walk_trough: data.walk_trough ?? false,
@@ -186,6 +275,8 @@ const EventModal = ({
         })
     } else {
       setEditableData(defaultState)
+      setAttachmentRoleTargets(buildEmptyAttachmentRoleTargets())
+      setIsUploadingAttachments(false)
     }
   }, [showModal])
   // console.log(editableData)
@@ -208,14 +299,152 @@ const EventModal = ({
     setEditableData((prev: any) => ({ ...prev, [field]: value }))
   }
 
+  const handleAttachmentSelection = async (changeEvent: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(changeEvent.currentTarget.files ?? [])
+    changeEvent.currentTarget.value = ''
+    if (files.length === 0) {
+      return
+    }
+
+    if (!Number.isInteger(id) || id <= 0) {
+      setMessage('Unable to upload attachments for this order.')
+      return
+    }
+
+    setIsUploadingAttachments(true)
+    setMessage(null)
+
+    try {
+      const formData = new FormData()
+      files.forEach((file) => formData.append('attachments[]', file))
+
+      const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? ''
+      const response = await fetch(route('order.attachments.store', id), {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'X-CSRF-TOKEN': token
+        },
+        body: formData
+      })
+
+      const data = await response.json().catch(() => null)
+      if (!response.ok) {
+        if (response.status === 422 && data?.errors) {
+          const messages = Object.values(data.errors as Record<string, string[]>).flat()
+          throw new Error(String(messages[0] ?? 'Unable to upload attachments.'))
+        }
+
+        throw new Error(String(data?.message ?? 'Unable to upload attachments.'))
+      }
+
+      const nextAttachments: Attachment[] = Array.isArray(data?.attachments) ? data.attachments as Attachment[] : []
+      setAttachmentsList(nextAttachments)
+      const validAttachmentIds = nextAttachments
+        .map((attachment: Attachment) => Number(attachment.id))
+        .filter((attachmentId: number) => Number.isInteger(attachmentId) && attachmentId > 0)
+      setAttachmentRoleTargets((currentTargets) => (
+        normalizeAttachmentRoleTargets(currentTargets as unknown as Record<string, unknown>, validAttachmentIds)
+      ))
+    } catch (error: any) {
+      setMessage(error?.message ?? 'Unable to upload attachments.')
+    } finally {
+      setIsUploadingAttachments(false)
+    }
+  }
+
+  const toggleAttachmentRoleTarget = (role: AttachmentRoleKey, attachmentId: number, isChecked: boolean) => {
+    setAttachmentRoleTargets((currentTargets) => {
+      const currentRoleTargets = currentTargets[role] ?? []
+      if (isChecked) {
+        if (currentRoleTargets.includes(attachmentId)) {
+          return currentTargets
+        }
+
+        return {
+          ...currentTargets,
+          [role]: [...currentRoleTargets, attachmentId]
+        }
+      }
+
+      return {
+        ...currentTargets,
+        [role]: currentRoleTargets.filter((id) => id !== attachmentId)
+      }
+    })
+  }
+
+  const selectableAttachmentIds = attachmentsList
+    .map((attachment) => Number(attachment.id))
+    .filter((attachmentId) => Number.isInteger(attachmentId) && attachmentId > 0)
+
+  const toggleAllAttachmentRoleTargets = (role: AttachmentRoleKey, isChecked: boolean) => {
+    setAttachmentRoleTargets((currentTargets) => ({
+      ...currentTargets,
+      [role]: isChecked ? selectableAttachmentIds : []
+    }))
+  }
+
+  const allowsAttachmentRoleSelection = isAdminOrAccountManager && event?.service !== 'PICKUP' && event?.service !== 'DELIVERY ONLY'
+  const installerAttachmentIds = new Set(
+    (attachmentRoleTargets.installer ?? [])
+      .map((id) => Number(id))
+      .filter((id) => Number.isInteger(id) && id > 0)
+  )
+  const visibleAttachments = isInstaller
+    ? attachmentsList.filter((attachment) => installerAttachmentIds.has(Number(attachment.id)))
+    : attachmentsList
+
   const [showValidationErrors, setShowValidationErrors] = useState(false)
+  const [replannedReasonsError, setReplannedReasonsError] = useState<string | null>(null)
+  const isService = event?.service === 'SERVICE'
+  const InfoItem = ({ label, children }: { label: string, children: React.ReactNode }) => (
+    <div>
+      <strong>{label}</strong>
+      <div className='mt-1 text-sm text-slate-700 dark:text-slate-200'>
+        {children}
+      </div>
+    </div>
+  )
+  const SECTION_GRID_CLASSES: Record<number, string> = {
+    1: 'grid gap-4',
+    2: 'grid gap-4 md:grid-cols-2',
+    3: 'grid gap-4 md:grid-cols-3',
+    4: 'grid gap-4 md:grid-cols-4'
+  }
+  const Section = ({ title, children, columns = 3 }: { title: string, children: React.ReactNode, columns?: 1 | 2 | 3 | 4 }) => {
+    const gridClass = SECTION_GRID_CLASSES[columns] ?? SECTION_GRID_CLASSES[3]
+    return (
+      <div className='mt-6'>
+        <h3 className='text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-3'>{title}</h3>
+        <div className={gridClass}>
+          {children}
+        </div>
+      </div>
+    )
+  }
 
   const handle = () => {
+    if (isUploadingAttachments) {
+      setMessage('Please wait for attachments to finish uploading.')
+      return
+    }
+
     // Actualizamos editableData con los nuevos valores
-    if (event?.service === 'DELIVERY AND INSTALLATION' && (editableData.installation_teams.length === 0 || editableData.supervisor_id === 0) && (editableData.status.value !== 'PLANNED' && editableData.status.value !== 'DELIVERY CONFIRMED' && editableData.status.value !== 'MATERIALS RECEIVED')) {
+    if (event?.service === 'DELIVERY AND INSTALLATION' && (editableData.installation_teams.length === 0 || editableData.supervisor_id === 0) && (editableData.status.value !== 'PLANNED' && editableData.status.value !== 'REPLANNED' && editableData.status.value !== 'DELIVERY CONFIRMED' && editableData.status.value !== 'MATERIALS RECEIVED')) {
+      setReplannedReasonsError(null)
       setShowValidationErrors(true)
       return
     }
+
+    const normalizedReplannedReasons = normalizeReplannedReasons(editableData.replanned_reasons)
+    if (editableData.status.value === 'REPLANNED' && normalizedReplannedReasons.length === 0) {
+      setShowValidationErrors(false)
+      setReplannedReasonsError('Please select at least one replanned reason.')
+      return
+    }
+
+    setReplannedReasonsError(null)
 
     let completeDate = editableData.complete_date
     if (editableData.status.value === 'COMPLETE') {
@@ -232,27 +461,37 @@ const EventModal = ({
         pendingCollect = today
       }
     }
-    const data = {
+    const data: any = {
       ...editableData,
       installation_teams: editableData.installation_teams.map((team: any) => team.value),
       supervisor_id: editableData.supervisor_id || null,
       status: editableData.status.value,
-      attachments: attachmentsArray,
       walk_trough_attach: attachmentIWalkTrough,
       inspection_attach: attachmentInspection,
       pre_inspection_attach: attachmentPreInspection,
       complete_date: completeDate,
       pending_collect: pendingCollect,
+      replanned_reasons: normalizedReplannedReasons,
       order_id: id
+    }
+    if (allowsAttachmentRoleSelection) {
+      data.attachment_role_targets = attachmentRoleTargets
     }
 
     router.post(route('update.order.from.modal', id), data, {
       forceFormData: true,
       onSuccess: (response) => {
         setEditableData(defaultState)
+        setReplannedReasonsError(null)
         onClose(false)
       },
       onError: (errors: any) => {
+        if (errors?.replanned_reasons) {
+          const message = Array.isArray(errors.replanned_reasons)
+            ? String(errors.replanned_reasons[0] ?? 'Select at least one replanned reason.')
+            : String(errors.replanned_reasons)
+          setReplannedReasonsError(message)
+        }
         console.log(errors)
       }
     })
@@ -260,7 +499,7 @@ const EventModal = ({
     SetAttachmentWalkTrough([])
     SetAttachmentInspection([])
     SetAttachmentPreInspection([])
-    setAttachmentsArray([])
+    setAttachmentRoleTargets(buildEmptyAttachmentRoleTargets())
     setMessage(null)
   }
   function setFieldValue(arg0: string, checked: boolean) {
@@ -270,45 +509,42 @@ const EventModal = ({
   return (
     <Modal
       show={showModal}
+      maxWidth='6xl'
       closeable={true}
       onClose={() => {
         // setEditableData(defaultState)
         setEvent(null)
+        setReplannedReasonsError(null)
         onClose(false)
       }
       }
     >
         <div className="flex items-center justify-between bg-[#fbfbfb] px-5 py-3 dark:bg-[#121c2c]">
           <div className="text-lg font-bold">Order Number: {`#${event?.order_number}`}</div>
-          <button type="button" className="text-white-dark hover:text-dark" onClick={() => { onClose(false); setShowValidationErrors(false); setMessage(null) }}>
+          <button type="button" className="text-white-dark hover:text-dark" onClick={() => { onClose(false); setShowValidationErrors(false); setReplannedReasonsError(null); setMessage(null) }}>
             <CloseIcon />
           </button>
         </div>
         <div className='p-5'>
           <div className="h-[550px] overflow-y-scroll">
+            <div className='mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide'>
+              <span className='text-slate-500 dark:text-slate-300'>Service:</span>
+              <span className='inline-flex items-center rounded-full bg-primary/15 px-4 py-1 text-primary'>
+                {event?.service ?? 'SERVICE'}
+              </span>
+            </div>
               {isVipClient && (
-                <div className='flex flex-row gap-2'>
-                  <div className='w-1/3'>
-                    <strong>Client:</strong>
-                    <div className='flex flex-row justify-start'>
-                      {event?.client?.name}
-                    </div>
-                  </div>
-                  <div className='w-1/3'>
-                    <strong>Is VIP:</strong>
-                    <div className='flex flex-row justify-start'>
-                      VIP
-                    </div>
-                  </div>
-                  <div className="w-1/3">
-                    <strong>VIP Notes:</strong>
-                    <div className="flex flex-row justify-start">
-                        {event?.client?.vip_notes
-                          ? event?.client?.vip_notes
-                          : 'No VIP notes available'}
-                    </div>
-                  </div>
-                </div>
+                <Section title='VIP Client' columns={3}>
+                  <InfoItem label='Client'>
+                    {event?.client?.name ?? 'N/A'}
+                  </InfoItem>
+                  <InfoItem label='Is VIP'>
+                    VIP
+                  </InfoItem>
+                  <InfoItem label='VIP Notes'>
+                    {event?.client?.vip_notes ?? 'No VIP notes available'}
+                  </InfoItem>
+                </Section>
               )}
             <div className='flex flex-row gap-2'>
               <div className='w-1/3'>
@@ -420,24 +656,17 @@ const EventModal = ({
             {(event?.service === 'DELIVERY AND INSTALLATION') && (
               <>
             <div className='flex flex-row gap-2 mt-3'>
-              <div className='w-1/3'>
-                <strong>City Permits:</strong>
-                <div className='flex flex-row justify-start'>
-                  {event?.city_permits ?? true ? 'Yes' : 'No'}
-                </div>
-              </div>
-              <div className='w-1/3'>
-                <strong>Association Permits:</strong>
-                <div className='flex flex-row justify-start'>
-                  {event?.association_permits ?? true ? 'Yes' : 'No'}
-                </div>
-              </div>
-              <div className='w-1/3'>
-                <strong>Rental Equipment:</strong>
-                <div className='flex flex-row justify-start'>
-                  {event?.equipment_rental ?? true ? 'Yes' : 'No'}
-                </div>
-              </div>
+              <Section title='Permissions & Equipment'>
+                <InfoItem label='City Permits'>
+                  {event?.city_permits ? 'Yes' : 'No'}
+                </InfoItem>
+                <InfoItem label='Association Permits'>
+                  {event?.association_permits ? 'Yes' : 'No'}
+                </InfoItem>
+                <InfoItem label='Rental Equipment'>
+                  {event?.equipment_rental ? 'Yes' : 'No'}
+                </InfoItem>
+              </Section>
             </div>
             </>
             )}
@@ -639,7 +868,6 @@ const EventModal = ({
                     onChange={(value) => {
                       setEditableData({ ...editableData, installation_teams: value })
                     }}
-                    options={installation_teams.map((installation_team) => { return { label: installation_team.user?.name, value: installation_team.id } })}
                   />
                 </div>
                 <div className='w-1/3'>
@@ -670,7 +898,6 @@ const EventModal = ({
                   </div>
               </>
             )}
-            </div>
 
            {/* {!(isInstaller || isOwner) && (
             <>
@@ -683,23 +910,22 @@ const EventModal = ({
                       name="partial_payment_installation"
                       className="form-checkbox"
                       type="checkbox"
-                      checked={editableData.partial_payment_installation} // Controlado por el estado
+                      checked={editableData.partial_payment_installation}
                       onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                        setEditableData({ ...editableData, partial_payment_installation: e.target.checked }) // Actualiza el estado
+                        setEditableData({ ...editableData, partial_payment_installation: e.target.checked })
                       }}
                     />
-                        <label htmlFor="partial_payment_installation" className='font-bold inline-flex'>Partial Payment Installation</label>
-                      </div>
-
-                      <div className ='flex mt-8'>
-                      <input
+                    <label htmlFor="partial_payment_installation" className='font-bold inline-flex'>Partial Payment Installation</label>
+                  </div>
+                  <div className ='flex mt-8'>
+                    <input
                       id="final_payment_installation"
                       name="final_payment_installation"
                       className="form-checkbox"
                       type="checkbox"
-                      checked={editableData.final_payment_installation} // Controlado por el estado
+                      checked={editableData.final_payment_installation}
                       onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                        setEditableData({ ...editableData, final_payment_installation: e.target.checked }) // Actualiza el estado
+                        setEditableData({ ...editableData, final_payment_installation: e.target.checked })
                       }}
                     />
                         <label htmlFor="inspection" className='font-bold inline-flex'>Final Payment Installation</label>
@@ -825,36 +1051,15 @@ const EventModal = ({
                     }}
                   />
                   </div>
-            )}
-            {/* event?.work_team_notes && (
-              <div className='flex flex-col gap-2'>
-                  <strong>Work Team Notes:</strong>
-                  <div className='flex flex-row justify-start'>
-                    {event?.work_team_notes ?? ''}
-                  </div>
-              </div>
-            ) */}
-               <div className='col-span-4 mt-4'>
-              <label htmlFor="work_team_notes"><strong>Work Team Notes </strong></label>
-              <textarea
-                id="work_team_notes"
-                name="work_team_notes"
-                rows = {6}
-                value={editableData.work_team_notes ?? ''}
-                disabled={isInstaller }
-                className="form-textarea resize-none placeholder:text-white-dark"
-                placeholder='Work Team Notes'
-                onChange={(e) => { setEditableData({ ...editableData, work_team_notes: e.target.value }) }}
-              />
-            </div>
+                  )}
             <div className='col-span-4 mt-4'>
-              <label htmlFor="notes"><strong>Notes </strong></label>
+              <label htmlFor="notes"><strong>Installer Notes </strong></label>
               <textarea
                 id="notes"
                 name="notes"
                 rows = {6}
                 value={editableData.notes ?? ''}
-                disabled={isInstaller }
+                disabled={!isAdminOrAccountManager}
                 className="form-textarea resize-none placeholder:text-white-dark"
                 placeholder='Notes'
                 onChange={(e) => { setEditableData({ ...editableData, notes: e.target.value }) }}
@@ -961,83 +1166,143 @@ const EventModal = ({
                         }}
               />
             </div>)}
-            {attachmentsList && (event?.service === 'DELIVERY AND INSTALLATION') && (
-                <>
-               <div className='flex flex-col gap-2  mt-3'>
-               {!isInstaller && (
-                <>
-               <label htmlFor="attachments" className='font-bold'>Attachments:</label>
-               <input
-                 id="attachments"
-                 name="attachments"
-                 type="file"
-                 accept="*"
-                 className="form-input file:py-2 file:px-4 file:border-0 file:font-semibold p-0 file:bg-primary/90 ltr:file:mr-5 rtl:file:ml-5 file:text-white file:hover:bg-primary"
-                 placeholder="Qty"
-                 multiple={true}
-                 onChange={(event: any) => {
-                   setAttachmentsArray(event.currentTarget.files)
-                 }}
-               />
-               </>)}
-                 <div className="flex flex-col rounded-md border border-[#e0e6ed] dark:border-[#1b2e4b] mt-3">
-                  {message !== '' && (
-                    <div className='flex items-center p-3.5 rounded text-danger dark:bg-danger-dark-light'>{message}</div>
+            {(attachmentsList && (
+              event?.service === 'DELIVERY AND INSTALLATION' ||
+              event?.service === 'SERVICE' ||
+              event?.service === 'PICKUP' ||
+              event?.service === 'DELIVERY ONLY' ||
+              isInstaller ||
+              isOwner
+            )) && (
+              <div className='space-y-3 mt-3'>
+                <div className='flex flex-col gap-2'>
+                  {!isInstaller && (
+                    <>
+                      <label htmlFor='attachments' className='font-bold'>Attachments:</label>
+                      <input
+                        id='attachments'
+                        name='attachments'
+                        type='file'
+                        accept='*'
+                        className='form-input file:py-2 file:px-4 file:border-0 file:font-semibold p-0 file:bg-primary/90 ltr:file:mr-5 rtl:file:ml-5 file:text-white file:hover:bg-primary'
+                        placeholder='Qty'
+                        multiple={true}
+                        disabled={isUploadingAttachments}
+                        onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                          void handleAttachmentSelection(event)
+                        }}
+                      />
+                      {isUploadingAttachments && (
+                        <span className='text-xs text-primary'>Uploading attachments...</span>
+                      )}
+                    </>
                   )}
-                  <table className='w-full whitespace-nowrap'>
-                  <tbody>
-                   {attachmentsList.map((attachment, index) => {
-                     return (
-                       <tr key={index} className='hover:bg-gray-100 focus-within:bg-gray-100'>
+                  <div className='flex flex-col rounded-md border border-[#e0e6ed] dark:border-[#1b2e4b] mt-3'>
+                    {message && (
+                      <div className='flex items-center p-3.5 rounded text-danger dark:bg-danger-dark-light'>{message}</div>
+                    )}
+                    <table className='w-full whitespace-nowrap'>
+                      <thead>
+                        <tr>
+                          <th className='border-t px-6 py-3 text-left'>File</th>
+                          <th className='border-t px-6 py-3 text-left'>Type</th>
+                          {allowsAttachmentRoleSelection && ATTACHMENT_ROLE_OPTIONS.map((roleOption) => {
+                            const selectedCount = (attachmentRoleTargets[roleOption.key] ?? [])
+                              .filter((attachmentId) => selectableAttachmentIds.includes(attachmentId))
+                              .length
+                            const isAllChecked = selectableAttachmentIds.length > 0 && selectedCount === selectableAttachmentIds.length
 
-                         <td className='border-t px-6 py-4 align-top'>{attachment.filename}</td>
-                         <td className='border-t px-6 py-4 align-top'>{attachment.file_type}</td>
-                         <td className='border-t px-6 py-4 align-top'>
-                          <div className='flex flex-row gap-2 justify-end'>
-                            <a key={attachment.id} href={`storage/${attachment.file_path}`} target='_blank' rel="noreferrer">
-                              <ExportIcon />
-                            </a>
-                            <button
-                              onClick={(e) => {
-                                e.preventDefault()
-                                removeAttachmentProduct(index)
-                              }}
+                            return (
+                              <th key={roleOption.key} className='border-t px-3 py-3 text-center text-xs'>
+                                <div className='flex flex-col items-center gap-1'>
+                                  <span>{roleOption.label}</span>
+                                  <label className='flex items-center gap-1 text-[10px] font-normal normal-case'>
+                                    <input
+                                      type='checkbox'
+                                      checked={isAllChecked}
+                                      disabled={selectableAttachmentIds.length === 0}
+                                      onChange={(event) => {
+                                        toggleAllAttachmentRoleTargets(roleOption.key, event.currentTarget.checked)
+                                      }}
+                                    />
+                                    <span>All</span>
+                                  </label>
+                                </div>
+                              </th>
+                            )
+                          })}
+                          <th className='border-t px-6 py-3 text-right'>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {visibleAttachments.map((attachment) => (
+                          <tr key={attachment.id} className='hover:bg-gray-100 focus-within:bg-gray-100'>
+                            <td className='border-t px-6 py-4 align-top'>{attachment.filename}</td>
+                            <td className='border-t px-6 py-4 align-top'>{attachment.file_type}</td>
+                            {allowsAttachmentRoleSelection && ATTACHMENT_ROLE_OPTIONS.map((roleOption) => {
+                              const attachmentId = Number(attachment.id)
+                              const roleTargets = attachmentRoleTargets[roleOption.key] ?? []
+                              const isChecked = Number.isInteger(attachmentId) && roleTargets.includes(attachmentId)
 
-                              title='Delete Attachment'
-                            >
-                              <DeleteIcon />
-                            </button>
-                          </div>
-                         </td>
-                       </tr>
-                     )
-                   })}
-                   </tbody>
-                  </table>
-                 </div>
-             </div>
-             </>
+                              return (
+                                <td key={`${attachment.id}-${roleOption.key}`} className='border-t px-3 py-4 align-top text-center'>
+                                  <input
+                                    type='checkbox'
+                                    checked={isChecked}
+                                    disabled={!Number.isInteger(attachmentId) || attachmentId <= 0}
+                                    onChange={(event) => {
+                                      toggleAttachmentRoleTarget(roleOption.key, attachmentId, event.currentTarget.checked)
+                                    }}
+                                  />
+                                </td>
+                              )
+                            })}
+                            <td className='border-t px-6 py-4 align-top'>
+                              <div className='flex flex-row gap-2 justify-end'>
+                                <a key={attachment.id} href={route('download.file', { id: attachment.id })} target='_blank' rel='noreferrer'>
+                                  <ExportIcon />
+                                </a>
+                                <button
+                                  onClick={(e) => {
+                                    e.preventDefault()
+                                    removeAttachmentProduct(Number(attachment.id))
+                                  }}
+                                  title='Delete Attachment'
+                                >
+                                  <DeleteIcon />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+                <fieldset className='p-3 border rounded-xl mt-3'>
+                  <legend className='text-lg font-semibold px-3'>Work Team Notes (All Notes)</legend>
+                  <OrderNotesForOrder
+                    orderId={event?.id ?? null}
+                    canCreate={(event?.id ?? 0) !== 0}
+                  />
+                </fieldset>
+                {!isSupervisor && !(event?.service === 'PICKUP' || event?.service === 'DELIVERY ONLY') && (
+                  <div className='flex flex-col gap-2'>
+                    <strong>Payment List:</strong>
+                    <div className='flex flex-col justify-start'>
+                      <a href={route('order.get_payment_list', { id: event?.id ?? 0 })} target='_blank' className='badge badge-outline-dark' rel='noreferrer'>Download Payment List</a>
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
-            {(isAdminOrAccountManager || isInstaller || isPaymentCoordinator) && (event?.service === 'DELIVERY AND INSTALLATION') && (
-              <>
-              <div className='flex flex-col gap-2  mt-3'>
+            {(isSupervisor) && (event?.service === 'DELIVERY AND INSTALLATION') && (
+              <div className='flex flex-col gap-2 mt-3'>
                 <strong>Payment List:</strong>
                 <div className='flex flex-col justify-start'>
-                  <a href={route('order.get_payment_list', { id: event?.id ?? 0 })} target='_blank' className='badge badge-outline-dark' rel="noreferrer">Download Payment List</a>
+                  <a href={route('order.get_supervisor_list', { id: event?.id ?? 0 })} target='_blank' className='badge badge-outline-dark' rel='noreferrer'>Download Payment List</a>
                 </div>
               </div>
-             {/* <ProductTable
-                  orderProducts={orderProducts}
-                  type_of_products={type_of_products}
-                  product_category={product_category}
-                  products_config={products_config}
-                  service={values.service}
-                  values= {values}
-                  travel_costs={travel_costs}
-                  removeOrderProduct={(index: number) => { removeOrderProduct(index) }}
-                  updateOrderProduct={(index: number) => { updateOrderProduct(index) }}
-                /> */}
-              </>
             )}
               {(isSupervisor) && (event?.service === 'DELIVERY AND INSTALLATION') && (
               <>
@@ -1089,15 +1354,17 @@ const EventModal = ({
           )}
           {((isAdminOrAccountManager) || (isSupervisor) || (isServiceManager) || (isOwner)) && (
             <div className="flex items-center justify-between mt-4">
-              <button className='btn btn-danger uppercase' onClick={() => { onClose(); setShowValidationErrors(false); setMessage(null) }}>Cancel</button>
-              <PrimaryButton className="btn btn-primary" type='button' onClick={() => { handle() }}>
+              <button className='btn btn-danger uppercase' onClick={() => { onClose(); setShowValidationErrors(false); setReplannedReasonsError(null); setMessage(null) }}>Cancel</button>
+              <PrimaryButton className="btn btn-primary" type='button' disabled={isUploadingAttachments} onClick={() => { handle() }}>
                 Save
               </PrimaryButton>
             </div>
           )}
         </div>
+        </div>
     </Modal>
   )
 }
+
 
 export default EventModal

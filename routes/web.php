@@ -4,7 +4,14 @@ use App\Enum\RoleEnum;
 use App\Http\Controllers\BiginController;
 use App\Http\Controllers\BiweeklyController;
 use App\Http\Controllers\ClientController;
+use App\Http\Controllers\Commission\CommissionPeriodController;
+use App\Http\Controllers\Commission\CommissionHistoryController;
+use App\Http\Controllers\Commission\CommissionReportController;
 use App\Http\Controllers\CompanyContactController;
+use App\Http\Controllers\AuthorizeNetHostedPaymentController;
+use App\Http\Controllers\AuthorizeNetWebhookController;
+use App\Http\Controllers\ActivityController;
+use App\Http\Controllers\CrmNotificationController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\OrderController;
@@ -13,7 +20,19 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DownloadController;
 use App\Http\Controllers\FrontdeskController;
 use App\Http\Controllers\InstallationTeamController;
+use App\Http\Controllers\NoteAudioController;
+use App\Http\Controllers\OrderNoteController;
+use App\Http\Controllers\OrderProcessingController;
+use App\Http\Controllers\OrderStorageController;
+use App\Http\Controllers\OrderSearchController;
+use App\Http\Controllers\OrderPaymentController;
+use App\Http\Controllers\PaymentInstallmentMovementController;
+use App\Http\Controllers\PaymentScheduleController;
+use App\Http\Controllers\ReferralController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\SalesController;
+use App\Http\Controllers\ServiceControlController;
+use App\Http\Controllers\StockMaterialController;
 use App\Http\Controllers\SourceController;
 use App\Models\Biweekly;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -32,6 +51,23 @@ use App\Traits\TwilioWhatsAppMessage;
 */
 
 Route::get('/', [DashboardController::class, 'index'])->middleware(['auth'])->name('dashboard');
+
+Route::post('/webhook/authorize-net/payments', [AuthorizeNetWebhookController::class, 'payments'])
+  ->name('authorize-net.webhooks.payments');
+
+Route::get('/payments/authorize-net/complete', [AuthorizeNetHostedPaymentController::class, 'complete'])
+  ->name('authorize-net.payments.complete');
+
+Route::get('/payments/authorize-net/cancel', [AuthorizeNetHostedPaymentController::class, 'cancel'])
+  ->name('authorize-net.payments.cancel');
+
+Route::get('/payments/authorize-net/intent/{token}', [AuthorizeNetHostedPaymentController::class, 'showIntent'])
+  ->name('authorize-net.payments.intent.show');
+
+Route::get('/payments/authorize-net/{paymentType}/{paymentId}', [AuthorizeNetHostedPaymentController::class, 'show'])
+  ->middleware(['auth', 'role:admin'])
+  ->whereIn('paymentType', ['quota', 'change-order'])
+  ->name('authorize-net.payments.show');
 
 Route::get('/pdf', function () {
   $order = App\Models\Order::with([
@@ -64,6 +100,13 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::get('/crm-notifications', [CrmNotificationController::class, 'index'])->name('crm-notifications.index');
+    Route::post('/crm-notifications/read-all', [CrmNotificationController::class, 'markAllRead'])->name('crm-notifications.read-all');
+    Route::post('/crm-notifications/{notification}/read', [CrmNotificationController::class, 'markRead'])->name('crm-notifications.read');
+
+    Route::post('/notes/{note}/audio', [NoteAudioController::class, 'store'])->name('notes.audio.store');
+    Route::get('/notes/{note}/audio/{attachment}', [NoteAudioController::class, 'show'])->name('notes.audio.show');
+    Route::delete('/notes/{note}/audio/{attachment}', [NoteAudioController::class, 'destroy'])->name('notes.audio.destroy');
 
     // USERS
     /* Route::resource('user', UserController::class)
@@ -74,14 +117,79 @@ Route::middleware('auth')->group(function () {
       phpinfo();
     })->name('myphpinfo');*/
 
+     Route::prefix('order/{order}')->name('order.')->group(function () {
+        Route::get('notes',  [OrderNoteController::class, 'index'])->name('notes.index');
+        Route::post('notes', [OrderNoteController::class, 'store'])->name('notes.store');
+        Route::put('notes/{note}',    [OrderNoteController::class, 'update'])->name('notes.update');
+        Route::delete('notes/{note}', [OrderNoteController::class, 'destroy'])->name('notes.destroy');
+    });
+
+    Route::get('user/referred-clients', [UserController::class, 'referredClients'])
+      ->name('user.referred-clients');
+
     Route::resource('user', UserController::class)
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value ]);
 
+      Route::get('company_contact', [CompanyContactController::class, 'index'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::FRONTDESK_ADMIN->value . '|'. RoleEnum::FRONTDESK_ESR->value])
+      ->name('company_contact.index');
       Route::resource('company_contact', CompanyContactController::class)
-      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value ]);
+      ->except(['index'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::FRONTDESK_ADMIN->value]);
     
-    Route::resource('order', OrderController::class)
+    Route::get('order/create-service', [OrderController::class, 'createService'])
+      ->name('order.create_service')
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value .'|'. RoleEnum::SERVICE_MANAGER->value]);
+
+    Route::post('order/service', [OrderController::class, 'storeService'])
+      ->name('order.store_service')
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value .'|'. RoleEnum::SERVICE_MANAGER->value]);
+
+    Route::put('order/{order}/service', [OrderController::class, 'updateService'])
+      ->name('order.update_service')
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value .'|'. RoleEnum::SERVICE_MANAGER->value]);
+
+    Route::get('service-control/pdf', [ServiceControlController::class, 'pdf'])
+      ->name('service-control.pdf')
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value .'|'. RoleEnum::SERVICE_MANAGER->value]);
+
+    Route::get('service-control/excel', [ServiceControlController::class, 'excel'])
+      ->name('service-control.excel')
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value .'|'. RoleEnum::SERVICE_MANAGER->value]);
+
+    Route::get('service-control/calendar', [ServiceControlController::class, 'calendar'])
+      ->name('service-control.calendar')
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value .'|'. RoleEnum::SERVICE_MANAGER->value .'|'. RoleEnum::SERVICE->value]);
+
+    Route::get('service-control/calendar/events/{year}/{month}', [ServiceControlController::class, 'calendarEvents'])
+      ->name('service-control.calendar.events')
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value .'|'. RoleEnum::SERVICE_MANAGER->value .'|'. RoleEnum::SERVICE->value]);
+
+    Route::get('service-control/clients/search', [ServiceControlController::class, 'searchClients'])
+      ->name('service-control.clients.search')
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value .'|'. RoleEnum::SERVICE_MANAGER->value]);
+
+    Route::resource('service-control', ServiceControlController::class)
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value .'|'. RoleEnum::SERVICE_MANAGER->value]);
+
+    Route::get('stock-material/pdf', [StockMaterialController::class, 'pdf'])
+      ->name('stock-material.pdf')
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value .'|'. RoleEnum::SERVICE_MANAGER->value .'|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::FRONTDESK_ADMIN->value]);
+
+    Route::get('stock-material/excel', [StockMaterialController::class, 'excel'])
+      ->name('stock-material.excel')
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value .'|'. RoleEnum::SERVICE_MANAGER->value .'|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::FRONTDESK_ADMIN->value]);
+
+    Route::resource('stock-material', StockMaterialController::class)
+      ->except(['show'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value .'|'. RoleEnum::SERVICE_MANAGER->value .'|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::FRONTDESK_ADMIN->value]);
+
+    Route::resource('order', OrderController::class)
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value .'|'. RoleEnum::SERVICE_MANAGER->value .'|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::FRONTDESK_ADMIN->value . '|FRONTDESK_ADMIN|frondesk_admin|frondestk_admin|FRONDESK_ADMIN|FRONDESTK_ADMIN'] );
+
+    Route::get('orders/search', [OrderSearchController::class, 'index'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|' . RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::ACCOUNTING->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value . '|' . RoleEnum::OWNER_ADMIN->value . '|' . RoleEnum::OWNER->value . '|' . RoleEnum::FRONTDESK_ADMIN->value . '|' . RoleEnum::FRONTDESK_ESR->value . '|' . RoleEnum::SERVICE_MANAGER->value])
+      ->name('order.search');
 
     Route::get('order/get_delivery_and_installation_date/{payment_factory_date}/{type_of_housing}/{county_id}/{service}/{hasPermit}', [OrderController::class, 'getDeliveryAndInstallationDate'])
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value]);
@@ -102,15 +210,15 @@ Route::middleware('auth')->group(function () {
       ->name('order.supervisor-close-all');
     
     Route::get('dashboard/get_events/{year}/{month}/{service}/{status}/{name?}', [DashboardController::class, 'getEvents'])
-      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::INSTALLER->value .'|' . RoleEnum::SUPERVISOR->value .'|' . RoleEnum::SERVICE_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value . '|' . RoleEnum::OWNER->value . '|' . RoleEnum::OWNER_ADMIN->value])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::INSTALLER->value .'|' . RoleEnum::SUPERVISOR->value .'|' . RoleEnum::SERVICE_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value . '|' . RoleEnum::OWNER->value . '|' . RoleEnum::OWNER_ADMIN->value. '|'. RoleEnum::FRONTDESK_ADMIN->value])
       ->name('dashboard.get_events');
     
     Route::get('dashboard/get_event/{order}', [DashboardController::class, 'getEvent'])
-      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::INSTALLER->value .'|' . RoleEnum::SUPERVISOR->value .'|' . RoleEnum::SERVICE_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value . '|' . RoleEnum::OWNER->value . '|' . RoleEnum::OWNER_ADMIN->value])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::INSTALLER->value .'|' . RoleEnum::SUPERVISOR->value .'|' . RoleEnum::SERVICE_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value . '|' . RoleEnum::OWNER->value . '|' . RoleEnum::OWNER_ADMIN->value. '|'. RoleEnum::FRONTDESK_ADMIN->value])
       ->name('dashboard.get_event');
     
     Route::post('order/update-from-modal/{order}', [OrderController::class, 'updateFromModal'])
-      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::INSTALLER->value .'|' . RoleEnum::SUPERVISOR->value .'|' . RoleEnum::SERVICE_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value . '|' . RoleEnum::OWNER->value . '|' . RoleEnum::OWNER_ADMIN->value])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::INSTALLER->value .'|' . RoleEnum::SUPERVISOR->value .'|' . RoleEnum::SERVICE_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value . '|' . RoleEnum::OWNER->value . '|' . RoleEnum::OWNER_ADMIN->value. '|'. RoleEnum::FRONTDESK_ADMIN->value])
       ->name('update.order.from.modal');
     
     Route::get('order/get_payment_list/{order}', [DashboardController::class, 'getPaymentList'])
@@ -125,9 +233,12 @@ Route::middleware('auth')->group(function () {
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::SUPERVISOR->value .'|' . RoleEnum::SERVICE_MANAGER->value])
       ->name('dashboard.update_event');
 
+    Route::post('order/{order}/attachments', [OrderController::class, 'storeAttachment'])
+      ->middleware('auth')
+      ->name('order.attachments.store');
+
     Route::delete('order/drop_attachment/{id}', [OrderController::class, 'dropAttachment'])
-      // ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|other_roles'])
-      ->middleware('auth') 
+      ->middleware('auth')
       ->name('order.drop_attachment');
 
       Route::delete('report/drop_payment/{id}', [ReportController::class, 'dropPayment'])
@@ -148,13 +259,52 @@ Route::middleware('auth')->group(function () {
       ->name('order.duplicate');
 
     // CLIENTS
-    Route::resource('client', ClientController::class)
-      ->middleware(["role:" . RoleEnum::ADMIN->value . "|" . RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::FRONTDESK->value . '|' . RoleEnum::OWNER->value]);
+    Route::get('client/search', [ClientController::class, 'search'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|' . RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::FRONTDESK->value . '|' . RoleEnum::OWNER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|' . RoleEnum::FRONTDESK_ADMIN->value . '|' . RoleEnum::FRONTDESK_ESR->value ])
+      ->name('client.search');
+    Route::get('users/search-referrers', [UserController::class, 'searchReferrers'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|' . RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::FRONTDESK->value . '|' . RoleEnum::OWNER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|' . RoleEnum::FRONTDESK_ADMIN->value . '|' . RoleEnum::FRONTDESK_ESR->value ])
+      ->name('user.referrers.search');
+    Route::get('referral/search', [ReferralController::class, 'search'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|' . RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::FRONTDESK->value . '|' . RoleEnum::OWNER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|' . RoleEnum::FRONTDESK_ADMIN->value . '|' . RoleEnum::FRONTDESK_ESR->value ])
+      ->name('referral.search');
     Route::get('client/is_unique/{phone}/{address?}', [ClientController::class, 'isUnique'])
-      ->middleware(["role:" . RoleEnum::ADMIN->value . '|' . RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::FRONTDESK->value . '|' . RoleEnum::OWNER->value]);
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|' . RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::FRONTDESK->value . '|' . RoleEnum::OWNER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|' . RoleEnum::FRONTDESK_ADMIN->value ]);
+    Route::get('client/phone-exists', [ClientController::class, 'phoneExists'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|' . RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::FRONTDESK->value . '|' . RoleEnum::OWNER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|' . RoleEnum::FRONTDESK_ADMIN->value ])
+      ->name('client.phone_exists');
+    Route::get('client', [ClientController::class, 'index'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . "|" . RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::FRONTDESK->value . '|' . RoleEnum::OWNER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|' . RoleEnum::FRONTDESK_ADMIN->value . '|' . RoleEnum::FRONTDESK_ESR->value ])
+      ->name('client.index');
+    Route::resource('client', ClientController::class)
+      ->except(['index'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . "|" . RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::FRONTDESK->value . '|' . RoleEnum::OWNER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|' . RoleEnum::FRONTDESK_ADMIN->value ]);
     Route::get('client/document/{id}', [ClientController::class, 'document'])
-      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::FRONTDESK->value . '|' . RoleEnum::OWNER->value])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::FRONTDESK->value . '|' . RoleEnum::OWNER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|' . RoleEnum::FRONTDESK_ADMIN->value ])
       ->name('client.document');
+
+    Route::prefix('activities')->name('activities.')->middleware(["role:" . RoleEnum::ADMIN->value . '|' . RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::FRONTDESK->value . '|' . RoleEnum::OWNER->value . '|' . RoleEnum::OWNER_ADMIN->value . '|' . RoleEnum::FRONTDESK_ADMIN->value . '|' . RoleEnum::SUPERVISOR->value])->group(function () {
+      Route::get('/', [ActivityController::class, 'index'])->name('index');
+      Route::get('calendar/events/{year}/{month}', [ActivityController::class, 'calendarEvents'])->name('calendar.events');
+      Route::get('context', [ActivityController::class, 'context'])->name('context');
+      Route::get('orders/search', [ActivityController::class, 'searchOrders'])->name('orders.search');
+      Route::get('clients/search', [ActivityController::class, 'searchClients'])->name('clients.search');
+      Route::get('users/search', [ActivityController::class, 'searchUsers'])->name('users.search');
+      Route::get('events/{event}', [ActivityController::class, 'showEvent'])->name('events.show');
+      Route::get('events/{event}/notes', [ActivityController::class, 'eventNotes'])->name('events.notes.index');
+      Route::post('events/{event}/notes', [ActivityController::class, 'storeEventNote'])->name('events.notes.store');
+      Route::put('events/{event}/notes/{note}', [ActivityController::class, 'updateEventNote'])->name('events.notes.update');
+      Route::delete('events/{event}/notes/{note}', [ActivityController::class, 'destroyEventNote'])->name('events.notes.destroy');
+      Route::post('events', [ActivityController::class, 'storeEvent'])->name('events.store');
+      Route::put('events/{event}', [ActivityController::class, 'updateEvent'])->name('events.update');
+      Route::get('calls/{call}', [ActivityController::class, 'showCall'])->name('calls.show');
+      Route::get('calls/{call}/notes', [ActivityController::class, 'callNotes'])->name('calls.notes.index');
+      Route::post('calls/{call}/notes', [ActivityController::class, 'storeCallNote'])->name('calls.notes.store');
+      Route::put('calls/{call}/notes/{note}', [ActivityController::class, 'updateCallNote'])->name('calls.notes.update');
+      Route::delete('calls/{call}/notes/{note}', [ActivityController::class, 'destroyCallNote'])->name('calls.notes.destroy');
+      Route::post('calls', [ActivityController::class, 'storeCall'])->name('calls.store');
+      Route::put('calls/{call}', [ActivityController::class, 'updateCall'])->name('calls.update');
+    });
 
     //BIGIN
     Route::get('/bigin/callback', [BiginController::class, 'callback'])
@@ -174,7 +324,7 @@ Route::middleware('auth')->group(function () {
       ->name('report.supervisor');
 
       Route::get('/report/installer', [ReportController::class, 'installer'])
-      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::INSTALLER->value .'|'. RoleEnum::SERVICE_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value] )
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::SERVICE_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value] )
       ->name('report.installer');
 
       Route::get('/report/show_installer/{id?}', [ReportController::class, 'showInstaller'])
@@ -207,11 +357,95 @@ Route::middleware('auth')->group(function () {
       Route::resource('biweekly', BiweeklyController::class)
         ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value ]);
 
-      Route::resource('frontdesk', FrontdeskController::class)
-        ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value ]);
+      Route::resource('frontdesk', FrontdeskController::class)->except(['show'])
+        ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value. '|'. RoleEnum::FRONTDESK_ADMIN->value . '|'. RoleEnum::FRONTDESK_ESR->value  ]);
+
+      Route::get('/frontdesk/tasks', [FrontdeskController::class, 'tasks'])
+        ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::FRONTDESK_ADMIN->value ])
+        ->name('frontdesk.tasks');
+
+      Route::get('sales/calendar', [SalesController::class, 'calendar'])->name('sales.calendar');
+      Route::get('sales/calendar/events/{year}/{month}', [SalesController::class, 'calendarEvents'])->name('sales.calendar.events');
+      Route::get('/sales', [SalesController::class, 'index'])
+        ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::ACCOUNTING->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::OWNER->value . '|'. RoleEnum::FRONTDESK_ADMIN->value])
+        ->name('sales.index');
+      Route::get('/sales/tasks', [SalesController::class, 'tasks'])
+        ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::ACCOUNTING->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::OWNER->value . '|'. RoleEnum::FRONTDESK_ADMIN->value])
+        ->name('sales.tasks');
+      Route::resource('sales', SalesController::class)
+        ->except(['index'])
+        ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::OWNER->value. '|'. RoleEnum::FRONTDESK_ADMIN->value ]);
+      Route::get('order-processing', [OrderProcessingController::class, 'index'])
+        ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::ACCOUNTING->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::OWNER->value. '|'. RoleEnum::FRONTDESK_ADMIN->value ])
+        ->name('order-processing.index');
+      Route::get('order-processing/tasks', [OrderProcessingController::class, 'tasks'])
+        ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::ACCOUNTING->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::OWNER->value . '|'. RoleEnum::FRONTDESK_ADMIN->value])
+        ->name('order-processing.tasks');
+      Route::get('order-storage', [OrderStorageController::class, 'index'])
+        ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::ACCOUNTING->value . '|'. RoleEnum::FRONTDESK_ADMIN->value . '|FRONTDESK_ADMIN'])
+        ->name('order-storage.index');
+      Route::get('order-storage/tasks', [OrderStorageController::class, 'tasks'])
+        ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::ACCOUNTING->value . '|'. RoleEnum::FRONTDESK_ADMIN->value . '|FRONTDESK_ADMIN'])
+        ->name('order-storage.tasks');
+
+      Route::get('/frontdesk/orders/{order}/sale-form', [FrontdeskController::class, 'saleFormPdf'])
+        ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::OWNER->value. '|'. RoleEnum::FRONTDESK_ADMIN->value  ])
+        ->name('frontdesk.order.sale_form');
+
+      Route::post('/sales/{order}/assign-estimate', [SalesController::class, 'assignEstimate'])
+        ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::FRONTDESK_ADMIN->value])
+        ->name('sales.assign_estimate');
+
+      Route::post('/sales/{order}/assign-follow-up', [SalesController::class, 'assignFollowUp'])
+        ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value. '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::FRONTDESK_ADMIN->value. '|'. RoleEnum::OWNER->value])
+        ->name('sales.assign_follow_up');
+
+      Route::post('/sales/{order}/assign-stand-by', [SalesController::class, 'assignStandBy'])
+        ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::FRONTDESK_ADMIN->value . '|'. RoleEnum::OWNER->value])
+        ->name('sales.assign_stand_by');
+
+      Route::post('/sales/{order}/assign-request-reschedule', [SalesController::class, 'assignRequestReschedule'])
+        ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::FRONTDESK_ADMIN->value . '|'. RoleEnum::OWNER->value])
+        ->name('sales.assign_request_reschedule');
+
+      Route::post('/sales/{order}/assign-pre-contract', [SalesController::class, 'assignPreContract'])
+        ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::FRONTDESK_ADMIN->value. '|'. RoleEnum::OWNER->value])
+        ->name('sales.assign_pre_contract');
+
+      Route::post('/sales/{order}/assign-contract-signed', [SalesController::class, 'assignContractSigned'])
+        ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::FRONTDESK_ADMIN->value. '|'. RoleEnum::OWNER->value])
+        ->name('sales.assign_contract_signed');
+
+      Route::patch('/payment-installments/{installment}', [PaymentScheduleController::class, 'updateInstallment'])
+        ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::ACCOUNTING->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::OWNER->value. '|'. RoleEnum::FRONTDESK_ADMIN->value])
+        ->name('payment_installments.update');
+
+      Route::post('/payment-installments/{installment}/movements', [PaymentInstallmentMovementController::class, 'store'])
+        ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::ACCOUNTING->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::OWNER->value. '|'. RoleEnum::FRONTDESK_ADMIN->value])
+        ->name('payment_installment_movements.store');
+
+      Route::patch('/payment-installment-movements/{movement}', [PaymentInstallmentMovementController::class, 'update'])
+        ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::ACCOUNTING->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::OWNER->value. '|'. RoleEnum::FRONTDESK_ADMIN->value])
+        ->name('payment_installment_movements.update');
+
+      Route::post('/payment-installment-movements/{movement}/void', [PaymentInstallmentMovementController::class, 'void'])
+        ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::ACCOUNTING->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::OWNER->value. '|'. RoleEnum::FRONTDESK_ADMIN->value])
+        ->name('payment_installment_movements.void');
+
+      Route::patch('/order-payments/{orderPayment}', [OrderPaymentController::class, 'update'])
+        ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::ACCOUNTING->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::OWNER->value. '|'. RoleEnum::FRONTDESK_ADMIN->value])
+        ->name('order_payments.update');
+
+      Route::post('/sales/{order}/assign-lost-contract', [SalesController::class, 'assignLostContract'])
+        ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value. '|'. RoleEnum::FRONTDESK_ADMIN->value. '|'. RoleEnum::OWNER->value])
+        ->name('sales.assign_lost_contract');
+
+      Route::delete('/sales/{order}/delete-order', [SalesController::class, 'destroyOrder'])
+        ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::OWNER_ADMIN->value])
+        ->name('sales.destroy_order');
 
     Route::resource('source', SourceController::class)
-        ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value ]);
+        ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::FRONTDESK_ADMIN->value ]);
 
       Route::get('/report/edit_report_installer/{id}/{installation_team}', [ReportController::class, 'editReportInstaller'])
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value] )
@@ -278,13 +512,13 @@ Route::middleware('auth')->group(function () {
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value .'|'. RoleEnum::SERVICE_MANAGER->value] )
       ->name('biweekly.show-pdf-biweekly-payment-resumen');
       
-     /* Route::get('/download/{id}', [DownloadController::class, 'secureDownload'])
-      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value .'|'. RoleEnum::SERVICE_MANAGER->value] )
+     Route::get('/download/{id}', [DownloadController::class, 'secureDownload'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value .'|'. RoleEnum::SERVICE_MANAGER->value . '|' . RoleEnum::SUPERVISOR->value.'|' . RoleEnum::INSTALLER->value.'|' . RoleEnum::OWNER->value .'|' . RoleEnum::OWNER_ADMIN->value. '|'. RoleEnum::FRONTDESK_ADMIN->value] )
       ->name('download.file');
 
       Route::get('/download/image-download/{id}', [DownloadController::class, 'imageDownload'])
-      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value .'|'. RoleEnum::SERVICE_MANAGER->value] )
-      ->name('download.image-download');*/
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value .'|'. RoleEnum::SERVICE_MANAGER->value . '|' . RoleEnum::SUPERVISOR->value] )
+      ->name('download.image-download');
 
       Route::get('/biweekly/show-pdf-biweekly-payment-resumen-general/{biweeklyId}', [BiweeklyController::class, 'showPdfBiweeklyPaymentResumenGeneral'])
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value .'|'. RoleEnum::SERVICE_MANAGER->value] )
@@ -298,18 +532,278 @@ Route::middleware('auth')->group(function () {
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value .'|'. RoleEnum::SERVICE_MANAGER->value] )
       ->name('biweekly.uncollected-customer-payments-report');
 
+      Route::get('/biweekly/uncollected-customer-payments-report-excel/{biweeklyId}', [BiweeklyController::class, 'exportUncollectedCustomerPaymentsReport'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value .'|'. RoleEnum::SERVICE_MANAGER->value] )
+      ->name('biweekly.uncollected-customer-payments-report-excel');
+
 
     Route::get('/report/product-summary', [ReportController::class, 'productSummary'])
     ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::SERVICE_MANAGER->value] )
     ->name('report.product-summary');
 
+    Route::get('/report/order-status-summary', [ReportController::class, 'orderStatusSummary'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::SERVICE_MANAGER->value] )
+    ->name('report.order-status-summary');
+
+    Route::get('/report/planned-to-complete-average', [ReportController::class, 'plannedToCompleteAverage'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::SERVICE_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value] )
+    ->name('report.planned-to-complete-average');
+
+    Route::get('/report/planned-to-complete-average/pdf', [ReportController::class, 'plannedToCompleteAveragePdf'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::SERVICE_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value ] )
+    ->name('report.planned-to-complete-average-pdf');
+
+    Route::get('/report/planned-to-complete-average/excel', [ReportController::class, 'plannedToCompleteAverageExcel'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::SERVICE_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value] )
+    ->name('report.planned-to-complete-average-excel');
+
+    Route::get('/report/accounting-status-summary', [ReportController::class, 'accountingStatusSummary'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNTING->value] )
+    ->name('report.accounting-status-summary');
+
+    Route::get('/report/accounting-status-summary/pdf', [ReportController::class, 'accountingStatusSummaryPdf'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNTING->value] )
+    ->name('report.accounting-status-summary-pdf');
+
+    Route::get('/report/accounting-status-summary/excel', [ReportController::class, 'accountingStatusSummaryExcel'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNTING->value] )
+    ->name('report.accounting-status-summary-excel');
+
+    Route::get('/report/commissions', [CommissionReportController::class, 'index'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNTING->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value])
+    ->name('report.commissions');
+
+    Route::get('/report/commissions/pdf', [CommissionReportController::class, 'pdf'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNTING->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value])
+    ->name('report.commissions.pdf');
+
+    Route::get('/report/commissions/excel', [CommissionReportController::class, 'excel'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNTING->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value])
+    ->name('report.commissions.excel');
+
+    Route::get('/report/commissions/history', [CommissionHistoryController::class, 'index'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNTING->value])
+    ->name('report.commissions.history');
+
+    Route::get('/report/commissions/history/{commission}', [CommissionHistoryController::class, 'show'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNTING->value])
+    ->name('report.commissions.history.show');
+
+    Route::get('/report/commissions/paid-history', [CommissionHistoryController::class, 'paidHistory'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNTING->value])
+    ->name('report.commissions.paid-history');
+
+    Route::get('/report/commissions/order/{order}', [CommissionReportController::class, 'editOrder'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNTING->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value])
+    ->name('report.commissions.edit-order');
+
+    Route::post('/report/commissions', [CommissionReportController::class, 'storeCommission'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNTING->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value])
+    ->name('report.commissions.store');
+
+    Route::patch('/report/commissions/{commission}', [CommissionReportController::class, 'updateCommission'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNTING->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value])
+    ->name('report.commissions.update');
+
+    Route::delete('/report/commissions/{commission}', [CommissionReportController::class, 'destroyCommission'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNTING->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value])
+    ->name('report.commissions.destroy');
+
+    Route::post('/report/commissions/{commission}/payments', [CommissionReportController::class, 'storePayment'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNTING->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value])
+    ->name('report.commissions.payments.store');
+
+    Route::patch('/report/commission-payments/{payment}', [CommissionReportController::class, 'updatePayment'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNTING->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value])
+    ->name('report.commissions.payments.update');
+
+    Route::delete('/report/commission-payments/{payment}', [CommissionReportController::class, 'destroyPayment'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNTING->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value])
+    ->name('report.commissions.payments.destroy');
+
+    Route::post('/report/commission-payments/bulk-pay', [CommissionReportController::class, 'bulkPay'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNTING->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value])
+    ->name('report.commissions.payments.bulk-pay');
+
+    Route::get('/commission-periods', [CommissionPeriodController::class, 'index'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNTING->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value])
+    ->name('commission-periods.index');
+
+    Route::post('/commission-periods', [CommissionPeriodController::class, 'store'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNTING->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value])
+    ->name('commission-periods.store');
+
+    Route::patch('/commission-periods/{commissionPeriod}', [CommissionPeriodController::class, 'update'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNTING->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value])
+    ->name('commission-periods.update');
+
+    Route::delete('/commission-periods/{commissionPeriod}', [CommissionPeriodController::class, 'destroy'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNTING->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value])
+    ->name('commission-periods.destroy');
+
+    Route::get('/commission-periods/{commissionPeriod}', [CommissionPeriodController::class, 'show'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNTING->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value])
+    ->name('commission-periods.show');
+
+    Route::get('/commission-periods/{commissionPeriod}/pdf', [CommissionPeriodController::class, 'pdf'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNTING->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value])
+    ->name('commission-periods.pdf');
+
+    Route::get('/commission-periods/{commissionPeriod}/excel', [CommissionPeriodController::class, 'excel'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNTING->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value])
+    ->name('commission-periods.excel');
+
+    Route::delete('/commission-periods/{commissionPeriod}/payments/{payment}', [CommissionPeriodController::class, 'unassignPayment'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNTING->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value])
+    ->name('commission-periods.payments.unassign');
+
+    Route::post('/commission-periods/{commissionPeriod}/close', [CommissionPeriodController::class, 'close'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNTING->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value])
+    ->name('commission-periods.close');
+
+    Route::post('/commission-periods/{commissionPeriod}/reopen', [CommissionPeriodController::class, 'reopen'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNTING->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value])
+    ->name('commission-periods.reopen');
+
+    Route::get('/report/daily-order-status-summary', [ReportController::class, 'dailyOrderStatusSummary'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::FRONTDESK_ADMIN->value . '|'. RoleEnum::OWNER_ADMIN->value] )
+    ->name('report.daily-order-status-summary');
+
+    Route::get('/report/daily-order-status-summary/pdf', [ReportController::class, 'dailyOrderStatusSummaryPdf'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::FRONTDESK_ADMIN->value . '|'. RoleEnum::OWNER_ADMIN->value] )
+    ->name('report.daily-order-status-summary-pdf');
+
+    Route::get('/report/daily-order-status-summary/excel', [ReportController::class, 'dailyOrderStatusSummaryExcel'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::FRONTDESK_ADMIN->value . '|'. RoleEnum::OWNER_ADMIN->value] )
+    ->name('report.daily-order-status-summary-excel');
+
+    Route::get('/report/overdue-stage-orders', [ReportController::class, 'overdueStageOrders'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::FRONTDESK_ADMIN->value] )
+    ->name('report.overdue-stage-orders');
+
+    Route::get('/report/overdue-stage-orders/pdf', [ReportController::class, 'overdueStageOrdersPdf'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::FRONTDESK_ADMIN->value] )
+    ->name('report.overdue-stage-orders-pdf');
+
+    Route::get('/report/overdue-stage-orders/excel', [ReportController::class, 'overdueStageOrdersExcel'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::FRONTDESK_ADMIN->value] )
+    ->name('report.overdue-stage-orders-excel');
+
+    Route::get('/report/marketing', [ReportController::class, 'marketingReport'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::FRONTDESK_ADMIN->value . '|'. RoleEnum::OWNER_ADMIN->value] )
+    ->name('report.marketing');
+
+    Route::get('/report/marketing/pdf', [ReportController::class, 'marketingReportPdf'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::FRONTDESK_ADMIN->value . '|'. RoleEnum::OWNER_ADMIN->value] )
+    ->name('report.marketing-pdf');
+
+    Route::get('/report/marketing/excel', [ReportController::class, 'marketingReportExcel'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::FRONTDESK_ADMIN->value . '|'. RoleEnum::OWNER_ADMIN->value] )
+    ->name('report.marketing-excel');
+
+    Route::get('/report/sales-appointments-by-seller', [ReportController::class, 'salesAppointmentsBySeller'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::FRONTDESK_ADMIN->value] )
+    ->name('report.sales-appointments-by-seller');
+
+    Route::get('/report/sales-appointments-by-seller/pdf', [ReportController::class, 'salesAppointmentsBySellerPdf'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::FRONTDESK_ADMIN->value] )
+    ->name('report.sales-appointments-by-seller-pdf');
+
+    Route::get('/report/sales-appointments-by-seller/excel', [ReportController::class, 'salesAppointmentsBySellerExcel'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::FRONTDESK_ADMIN->value] )
+    ->name('report.sales-appointments-by-seller-excel');
+
+    Route::get('/report/installer-confirmed-summary', [ReportController::class, 'installerConfirmedSummary'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::SERVICE_MANAGER->value] )
+    ->name('report.installer-confirmed-summary');
+
+    Route::get('/report/installer-confirmed-summary/pdf', [ReportController::class, 'installerConfirmedSummaryPdf'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::SERVICE_MANAGER->value] )
+    ->name('report.installer-confirmed-summary-pdf');
+
+    Route::get('/report/installer-confirmed-summary/excel', [ReportController::class, 'installerConfirmedSummaryExcel'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::SERVICE_MANAGER->value] )
+    ->name('report.installer-confirmed-summary-excel');
+
+    Route::get('/report/owner-assigned-summary', [ReportController::class, 'ownerAssignedSummary'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::SERVICE_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value] )
+    ->name('report.owner-assigned-summary');
+
+    Route::get('/report/owner-assigned-summary/pdf', [ReportController::class, 'ownerAssignedSummaryPdf'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::SERVICE_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value] )
+    ->name('report.owner-assigned-summary-pdf');
+
+    Route::get('/report/owner-assigned-summary/excel', [ReportController::class, 'ownerAssignedSummaryExcel'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::SERVICE_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value] )
+    ->name('report.owner-assigned-summary-excel');
+
+    Route::get('/report/supervisor-assigned-summary', [ReportController::class, 'supervisorAssignedSummary'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::SERVICE_MANAGER->value] )
+    ->name('report.supervisor-assigned-summary');
+
+    Route::get('/report/supervisor-assigned-summary/pdf', [ReportController::class, 'supervisorAssignedSummaryPdf'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::SERVICE_MANAGER->value] )
+    ->name('report.supervisor-assigned-summary-pdf');
+
+    Route::get('/report/supervisor-assigned-summary/excel', [ReportController::class, 'supervisorAssignedSummaryExcel'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::SERVICE_MANAGER->value] )
+    ->name('report.supervisor-assigned-summary-excel');
+
+    Route::get('/report/replanned-orders-summary', [ReportController::class, 'replannedOrdersSummary'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::SERVICE_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::FRONTDESK_ADMIN->value] )
+    ->name('report.replanned-orders-summary');
+
+    Route::get('/report/replanned-orders-summary/pdf', [ReportController::class, 'replannedOrdersSummaryPdf'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::SERVICE_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::FRONTDESK_ADMIN->value] )
+    ->name('report.replanned-orders-summary-pdf');
+
+    Route::get('/report/replanned-orders-summary/excel', [ReportController::class, 'replannedOrdersSummaryExcel'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::SERVICE_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::FRONTDESK_ADMIN->value] )
+    ->name('report.replanned-orders-summary-excel');
+
     Route::post('/frontdesk/{order}/update-status', [FrontdeskController::class, 'updateStatus'])
-     ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::SERVICE_MANAGER->value] )
+     ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::ACCOUNTING->value . '|'. RoleEnum::SERVICE_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value. '|'. RoleEnum::OWNER->value . '|'. RoleEnum::FRONTDESK_ADMIN->value]  )
     ->name('frontdesk.updateStatus');
 
+    Route::post('/frontdesk/{order}/update-status-standby', [FrontdeskController::class, 'updateStatusStandBy'])
+     ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::SERVICE_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value. '|'. RoleEnum::FRONTDESK_ADMIN->value]  )
+    ->name('frontdesk.updateStatusStandBy');
+
     Route::post('/frontdesk/{order}/update-status-lost', [FrontdeskController::class, 'updateStatusLost'])
-     ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::SERVICE_MANAGER->value] )
+     ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::SERVICE_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value. '|'. RoleEnum::FRONTDESK_ADMIN->value] )
     ->name('frontdesk.updateStatusLost');
+
+      Route::get('/frontdesk/show-quantified-modal/{order}', [FrontdeskController::class, 'showQuantifiedModal'])
+    ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value. '|'. RoleEnum::FRONTDESK_ADMIN->value])
+    ->name('frontdesk.show-quantified-modal');
+
+     Route::post('/frontdesk/update-status-quantified/{order}', [FrontdeskController::class, 'updateStatusQuantified'])
+     ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value. '|'. RoleEnum::FRONTDESK_ADMIN->value])
+    ->name('frontdesk.update-status-quantified');
+
+    Route::get('/frontdesk/create-qualified', [FrontdeskController::class, 'createQualified'])
+     ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value. '|'. RoleEnum::FRONTDESK_ADMIN->value])
+    ->name('frontdesk.create-qualified');
+
+     Route::post('/frontdesk/store-qualified-order', [FrontdeskController::class, 'storeQualifiedOrder'])
+     ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value. '|'. RoleEnum::FRONTDESK_ADMIN->value])
+    ->name('frontdesk.store-qualified-order');
+
+    
+      Route::get('/frontdesk/order_view/{id}', [FrontdeskController::class, 'orderView'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::ACCOUNTING->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::OWNER->value . '|'. RoleEnum::FRONTDESK_ADMIN->value. '|'. RoleEnum::FRONTDESK_ESR->value ])
+      ->name('frontdesk.order_view');
+
+       Route::put('/frontdesk/orders/{order}/contact', [FrontdeskController::class, 'updateOrderContact'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::OWNER->value . '|'. RoleEnum::FRONTDESK_ADMIN->value ])
+      ->name('frontdesk.orders.update-contact');
+
+      Route::put('/frontdesk/orders/{order}/qualified', [FrontdeskController::class, 'updateQualifiedOrder'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::ACCOUNTING->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::OWNER->value . '|'. RoleEnum::FRONTDESK_ADMIN->value ])
+      ->name('frontdesk.orders.update-qualified');
+
+      Route::patch('/frontdesk/tags_update/{order}', [FrontdeskController::class, 'tagsUpdate'])
+    ->name('frontdesk.tags_update');
 
      /* Route::get('/email-test', function() {
         echo 'Start Email test <br/>';

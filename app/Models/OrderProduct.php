@@ -31,6 +31,7 @@ class OrderProduct extends Model
         'product_category_id',
         'type_of_product_id',
         'pivot_cost',
+        'new_price_storefront'
     ];
 
     public function order(): BelongsTo {

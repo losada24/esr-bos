@@ -7,15 +7,15 @@ import ReferralIcon from '@/Components/Icons/ReferralIcon'
 import SidebarLinkLabel from '@/Components/SidebarLinkLabel'
 import DashboardIcon from '@/Components/Icons/DashboardIcon'
 import CompanyIcon from '@/Components/Icons/CompanyIcon'
-import { isAdmin, isAccountManager, isFrontdesk, isOwner, isSupervisor, isServiceManager, isInstaller, isPaymentCoordinator } from '@/Utils/user'
+import { isAdmin, isAccountManager, isAccounting, isFrontdesk, isFrontdeskAdmin, isOwner, isSupervisor, isServiceManager, isService, isPaymentCoordinator, isOwnerAdmin, isFrontdeskEsr } from '@/Utils/user'
 import { type Role, type Auth } from '@/types'
 import WindowsIcon from '@/Components/Icons/WindowsIcon'
-import PrintIcon from '@/Components/Icons/PrintIcon'
 import CodeIcon from '@/Components/Icons/CodeIcon'
 import CalendarIcon from '@/Components/Icons/CalendarIcon'
 import FolderIcon from '@/Components/Icons/FolderIcon'
 import RoundIcon from '@/Components/Icons/RoundIcon'
 import BuildingIcon from '@/Components/Icons/BuildingIcon'
+import BookIcon from '@/Components/Icons/BookIcon'
 
 const Sidebar = ({ auth }: { auth: Auth }) => {
   const [themeState, toggleSidebar] = useStore((state: ThemeState) => [
@@ -23,22 +23,70 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
     state.toggleSidebar
   ])
 
-  const IS_ADMIN = isAdmin(auth.user.roles.map((role: Role) => role.name))
-  const IS_ACCOUNT_MANAGER = isAccountManager(auth.user.roles.map((role: Role) => role.name))
-  const IS_FRONTDESK = isFrontdesk(auth.user.roles.map((role: Role) => role.name))
-  const IS_OWNER = isOwner(auth.user.roles.map((role: Role) => role.name))
-  const IS_SUPERVISOR = isSupervisor(auth.user.roles.map((role: Role) => role.name))
-  const IS_SERVICE_MANAGER = isServiceManager(auth.user.roles.map((role: Role) => role.name))
-  const IS_INSTALLER = isInstaller(auth.user.roles.map((role: Role) => role.name))
-  const IS_PAYMENT_COORDINATOR = isPaymentCoordinator(auth.user.roles.map((role: Role) => role.name))
+  const roleNames = auth.user.roles.map((role: Role) => String(role.name ?? '').trim().toLowerCase().replace(/[\s-]+/g, '_'))
+  const IS_ADMIN = isAdmin(roleNames)
+  const IS_ACCOUNT_MANAGER = isAccountManager(roleNames)
+  const IS_ACCOUNTING = isAccounting(roleNames)
+  const IS_FRONTDESK = isFrontdesk(roleNames)
+  const IS_FRONTDESK_ADMIN = isFrontdeskAdmin(roleNames)
+  const HAS_FRONTDESK_ADMIN_ROLE = IS_FRONTDESK_ADMIN || Boolean(auth.user?.has_frontdesk_admin_role)
+  const IS_OWNER = isOwner(roleNames)
+  const IS_SUPERVISOR = isSupervisor(roleNames)
+  const IS_SERVICE_MANAGER = isServiceManager(roleNames)
+  const IS_SERVICE = isService(roleNames)
+  const IS_PAYMENT_COORDINATOR = isPaymentCoordinator(roleNames)
+  const IS_OWNER_ADMIN = isOwnerAdmin(roleNames)
+  const IS_FRONTDESK_ESR = isFrontdeskEsr(roleNames)
+  const CAN_VIEW_FRONTDESK_PIPELINE = IS_ADMIN || IS_FRONTDESK || IS_OWNER_ADMIN || IS_FRONTDESK_ADMIN || IS_FRONTDESK_ESR
+  const CAN_VIEW_FRONTDESK_CONTACTS = CAN_VIEW_FRONTDESK_PIPELINE || IS_ACCOUNT_MANAGER
+  const CAN_VIEW_FRONTDESK_SECTION = CAN_VIEW_FRONTDESK_PIPELINE || CAN_VIEW_FRONTDESK_CONTACTS
+  const CAN_VIEW_REPORT_SUPERVISOR = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SUPERVISOR || IS_SERVICE_MANAGER
+  const CAN_VIEW_REPORT_INSTALLER = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER || IS_PAYMENT_COORDINATOR
+  const CAN_VIEW_BIWEEKLY = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_PAYMENT_COORDINATOR
+  const CAN_VIEW_PRODUCT_SUMMARY = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER
+  const CAN_VIEW_ORDER_STATUS_SUMMARY = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER
+  const CAN_VIEW_PLANNED_TO_COMPLETE_AVERAGE = !HAS_FRONTDESK_ADMIN_ROLE && (IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER || IS_OWNER_ADMIN)
+  const HAS_PLANNED_TO_COMPLETE_AVERAGE_ROUTE = route().has('report.planned-to-complete-average')
+  const CAN_VIEW_ACCOUNTING_STATUS_SUMMARY = IS_ADMIN || IS_ACCOUNTING
+  const CAN_VIEW_COMMISSIONS = IS_ADMIN || IS_ACCOUNTING || IS_PAYMENT_COORDINATOR
+  const CAN_VIEW_ACCOUNTING_SECTION = IS_ADMIN || IS_ACCOUNTING
+  const CAN_VIEW_INSTALLER_CONFIRMED = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER
+  const CAN_VIEW_OWNER_ASSIGNED = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER || IS_OWNER_ADMIN
+  const CAN_VIEW_SUPERVISOR_ASSIGNED = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER
+  const CAN_VIEW_REPLANNED_SUMMARY = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER || IS_OWNER_ADMIN || HAS_FRONTDESK_ADMIN_ROLE
+  const CAN_VIEW_DAILY_ORDER_STATUS = IS_ADMIN || HAS_FRONTDESK_ADMIN_ROLE || IS_OWNER_ADMIN
+  const CAN_VIEW_OVERDUE_STAGE_REPORT = IS_ADMIN || IS_ACCOUNT_MANAGER || HAS_FRONTDESK_ADMIN_ROLE || IS_OWNER_ADMIN
+  const CAN_VIEW_MARKETING_REPORT = IS_ADMIN || HAS_FRONTDESK_ADMIN_ROLE || IS_OWNER_ADMIN
+  const CAN_VIEW_SALES_APPOINTMENTS = IS_ADMIN || IS_ACCOUNT_MANAGER || HAS_FRONTDESK_ADMIN_ROLE || IS_OWNER_ADMIN
+  const CAN_VIEW_ORDER_STORAGE = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_ACCOUNTING || HAS_FRONTDESK_ADMIN_ROLE
+  const CAN_VIEW_SERVICE_CONTROL = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER
+  const CAN_VIEW_SERVICE_CALENDAR = CAN_VIEW_SERVICE_CONTROL || IS_SERVICE
+  const CAN_VIEW_ACTIVITIES = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_FRONTDESK || IS_OWNER || IS_OWNER_ADMIN || HAS_FRONTDESK_ADMIN_ROLE || IS_SUPERVISOR
+  const IS_SERVICE_ONLY = IS_SERVICE && !IS_ADMIN && !IS_ACCOUNT_MANAGER && !IS_ACCOUNTING && !IS_FRONTDESK && !IS_FRONTDESK_ADMIN && !IS_OWNER && !IS_SUPERVISOR && !IS_SERVICE_MANAGER && !IS_PAYMENT_COORDINATOR && !IS_OWNER_ADMIN && !IS_FRONTDESK_ESR
+  const CAN_VIEW_MY_REFERRED_CLIENTS = !IS_SERVICE_ONLY
+  const CAN_VIEW_ADMINISTRATION = IS_ADMIN || IS_ACCOUNT_MANAGER || CAN_VIEW_MY_REFERRED_CLIENTS
+  const CAN_VIEW_REPORTS = CAN_VIEW_REPORT_SUPERVISOR
+    || CAN_VIEW_REPORT_INSTALLER
+    || CAN_VIEW_BIWEEKLY
+    || CAN_VIEW_PRODUCT_SUMMARY
+    || CAN_VIEW_ORDER_STATUS_SUMMARY
+    || CAN_VIEW_PLANNED_TO_COMPLETE_AVERAGE
+    || CAN_VIEW_INSTALLER_CONFIRMED
+    || CAN_VIEW_OWNER_ASSIGNED
+    || CAN_VIEW_SUPERVISOR_ASSIGNED
+    || CAN_VIEW_REPLANNED_SUMMARY
+    || CAN_VIEW_DAILY_ORDER_STATUS
+    || CAN_VIEW_OVERDUE_STAGE_REPORT
+    || CAN_VIEW_MARKETING_REPORT
+    || CAN_VIEW_SALES_APPOINTMENTS
 
   return (
         <div className={`${themeState.semidark ? 'dark' : ''}`}>
             <nav
-                className={`sidebar fixed min-h-screen h-full top-0 bottom-0 w-[260px] shadow-[5px_0_25px_0_rgba(94,92,154,0.1)] z-50 transition-all duration-300 ${themeState.semidark ? 'text-white-dark' : ''}`}
+                className={`sidebar fixed min-h-screen h-full flex flex-col top-0 bottom-0 w-[260px] shadow-[5px_0_25px_0_rgba(94,92,154,0.1)] z-50 transition-all duration-300 ${themeState.semidark ? 'text-white-dark' : ''}`}
             >
-                <div className="bg-white dark:bg-black h-full">
-                    <div className="flex justify-between items-center px-4 py-3">
+                <div className="bg-white dark:bg-black h-full flex flex-col">
+                    <div className="flex justify-between items-center px-4 py-3 shrink-0">
                         <NavLink href={route('dashboard')} active={false} className="main-logo flex items-center shrink-0">
                             <img className="w-52 flex-none" src={logo} alt="logo" />
                         </NavLink>
@@ -55,16 +103,467 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                         </button>
                     </div>
                     <PerfectScrollbar className="h-[calc(100vh-80px)] relative">
-                        <ul className="relative font-semibold space-y-0.5 p-4 py-0">
+                      <ul className="relative font-semibold space-y-0.5 p-4 py-0">
+
+                          {CAN_VIEW_FRONTDESK_SECTION && (
+                              <>
+                              <h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">
+                                <svg className="w-4 h-5 flex-none hidden" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                </svg>
+                                <span>Frontdesk</span>
+                            </h2>
+
+                            {CAN_VIEW_FRONTDESK_PIPELINE && (
+                              <li className="menu nav-item">
+                                  <NavLink href={route('frontdesk.index')} active={route().current('frontdesk.index')} className="group">
+                                      <div className="flex items-center">
+                                          <CodeIcon />
+                                          <SidebarLinkLabel>Pipeline</SidebarLinkLabel>
+                                      </div>
+                                  </NavLink>
+                              </li>
+                            )}
+
+                            {CAN_VIEW_FRONTDESK_CONTACTS && (
+                              <li className="menu nav-item">
+                                      <NavLink href={route('client.index')} active={route().current('client.index')} className="group">
+                                          <div className="flex items-center">
+                                              <ReferralIcon />
+                                              <SidebarLinkLabel>Contact</SidebarLinkLabel>
+                                          </div>
+                                      </NavLink>
+                                  </li>
+                            )}
+
+                            {CAN_VIEW_FRONTDESK_CONTACTS && (
+                              <li className="menu nav-item">
+                                  <NavLink href={route('company_contact.index')} active={route().current('company_contact.index')} className="group">
+                                      <div className="flex items-center">
+                                          <BuildingIcon />
+                                          <SidebarLinkLabel>Company</SidebarLinkLabel>
+                                      </div>
+                                  </NavLink>
+                              </li>
+                            )}
+                            {CAN_VIEW_FRONTDESK_PIPELINE && (
+                              <li className="menu nav-item">
+                                  <NavLink href={route('source.index')} active={route().current('source.index')} className="group">
+                                      <div className="flex items-center">
+                                          <RoundIcon />
+                                          <SidebarLinkLabel>Sources</SidebarLinkLabel>
+                                      </div>
+                                  </NavLink>
+                              </li>
+                            )}
+                              </>
+                          )}
+
+                           {(IS_ADMIN || IS_OWNER || IS_OWNER_ADMIN || HAS_FRONTDESK_ADMIN_ROLE || IS_ACCOUNT_MANAGER || IS_ACCOUNTING) && (
+                            <>
+                            <h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">
+                                <svg className="w-4 h-5 flex-none hidden" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                </svg>
+                                <span>Sales</span>
+                            </h2>
+
                             <li className="menu nav-item">
-                                <NavLink href={route('dashboard')} active={route().current('dashboard')} className="group">
+                                <NavLink href={route('sales.index')} active={route().current('sales.index')} className="group">
                                     <div className="flex items-center">
                                         <DashboardIcon />
                                         <SidebarLinkLabel>Project Schedule ESR</SidebarLinkLabel>
                                     </div>
                                 </NavLink>
                             </li>
-                            {(IS_ADMIN || IS_ACCOUNT_MANAGER) && (
+                            <li className="menu nav-item">
+                                <NavLink href={route('sales.calendar')} active={route().current('sales.calendar')} className="group">
+                                    <div className="flex items-center">
+                                        <CalendarIcon />
+                                        <SidebarLinkLabel>Sales Calendar</SidebarLinkLabel>
+                                    </div>
+                                </NavLink>
+                            </li>
+                               </>
+                           )}
+                           {CAN_VIEW_ACTIVITIES && (
+                            <>
+                              <h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">
+                                <svg className="w-4 h-5 flex-none hidden" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                </svg>
+                                <span>Activities</span>
+                              </h2>
+                              <li className="menu nav-item">
+                                <NavLink href={route('activities.index')} active={route().current('activities.*')} className="group">
+                                  <div className="flex items-center">
+                                    <CalendarIcon />
+                                    <SidebarLinkLabel>Activities</SidebarLinkLabel>
+                                  </div>
+                                </NavLink>
+                              </li>
+                            </>
+                           )}
+                           {(IS_ADMIN || IS_OWNER || IS_OWNER_ADMIN || IS_ACCOUNT_MANAGER || IS_ACCOUNTING || HAS_FRONTDESK_ADMIN_ROLE) && (
+                            <>
+                             <h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">
+                                <svg className="w-4 h-5 flex-none hidden" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                </svg>
+                                <span>Order Processing</span>
+                            </h2>
+                             <li className="menu nav-item">
+                                <NavLink href={route('order-processing.index')} active={route().current('order-processing.index')} className="group">
+                                    <div className="flex items-center">
+                                        <CodeIcon />
+                                        <SidebarLinkLabel>Order Processing Pipeline</SidebarLinkLabel>
+                                    </div>
+                                </NavLink>
+                            </li>
+                            </>
+                           )}
+                           {CAN_VIEW_ORDER_STORAGE && (
+                               <>
+                             <h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">
+                                <svg className="w-4 h-5 flex-none hidden" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                </svg>
+                                <span>Order Storage</span>
+                            </h2>
+                            <li className="menu nav-item">
+                              <NavLink href={route('order-storage.index')} active={route().current('order-storage.index')} className="group">
+                                <div className="flex items-center">
+                                  <CodeIcon />
+                                  <SidebarLinkLabel>Order Storage Pipeline</SidebarLinkLabel>
+                                </div>
+                              </NavLink>
+                            </li>
+                               </>
+                           )}
+                           <h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">
+                                <svg className="w-4 h-5 flex-none hidden" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                </svg>
+                                <span>Operations</span>
+                            </h2>
+                            {(IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER || IS_PAYMENT_COORDINATOR || IS_OWNER_ADMIN ) && (
+                            <>
+                             <li className="menu nav-item">
+                                <NavLink href={route('dashboard')} active={route().current('dashboard')} className="group">
+                                    <div className="flex items-center">
+                                        <DashboardIcon />
+                                        <SidebarLinkLabel>Project Schedule Operations</SidebarLinkLabel>
+                                    </div>
+                                </NavLink>
+                            </li>
+                            <li className="menu nav-item">
+                                    <NavLink href={route('order.index')} active={route().current('order.index')} className="group">
+                                        <div className="flex items-center">
+                                            <FolderIcon />
+                                            <SidebarLinkLabel>Order</SidebarLinkLabel>
+                                        </div>
+                                    </NavLink>
+                            </li>
+                            <li className="menu nav-item">
+                              <NavLink href={route('installation_team.index')} active={route().current('installation_team.index') || route().current('installation_team.create') || route().current('installation_team.edit')} className="group">
+                                  <div className="flex items-center">
+                                    <ReferralIcon />
+                                    <SidebarLinkLabel>Installation Team</SidebarLinkLabel>
+                                  </div>
+                              </NavLink>
+                          </li>
+
+                           </>
+                            )}
+                             {(IS_SUPERVISOR || IS_OWNER || HAS_FRONTDESK_ADMIN_ROLE) && (
+                              <>
+                               <li className="menu nav-item">
+                                <NavLink href={route('dashboard')} active={route().current('dashboard')} className="group">
+                                    <div className="flex items-center">
+                                        <DashboardIcon />
+                                        <SidebarLinkLabel>Project Schedule Operations</SidebarLinkLabel>
+                                    </div>
+                                </NavLink>
+                              </li>
+                             {(IS_SUPERVISOR || IS_OWNER) && (
+                                <li className="menu nav-item">
+                                      <NavLink href={route('report.show-supervisor-report', { id: auth.user.id })} active={route().current('report.show-supervisor-report')} className="group">
+                                          <div className="flex items-center">
+                                              <ReferralIcon/>
+                                              <SidebarLinkLabel>My Orders</SidebarLinkLabel>
+                                          </div>
+                                      </NavLink>
+                                </li>
+                              )}
+                              {HAS_FRONTDESK_ADMIN_ROLE && (
+                                <li className="menu nav-item">
+                                  <NavLink href={route('order.index')} active={route().current('order.index')} className="group">
+                                    <div className="flex items-center">
+                                      <FolderIcon />
+                                      <SidebarLinkLabel>Order</SidebarLinkLabel>
+                                    </div>
+                                  </NavLink>
+                                </li>
+                              )}
+                              </>
+                             ) }
+                              {CAN_VIEW_SERVICE_CALENDAR && (
+                                <>
+                                  <h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">
+                                      <svg className="w-4 h-5 flex-none hidden" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                                          <line x1="5" y1="12" x2="19" y2="12"></line>
+                                      </svg>
+                                      <span>SERVICES CONTROL</span>
+                                  </h2>
+                                  {CAN_VIEW_SERVICE_CONTROL && (
+                                    <li className="menu nav-item">
+                                      <NavLink
+                                        href={route('service-control.index')}
+                                        active={route().current('service-control.index') || route().current('service-control.create') || route().current('service-control.edit') || route().current('service-control.show')}
+                                        className="group"
+                                      >
+                                        <div className="flex items-center">
+                                          <FolderIcon />
+                                          <SidebarLinkLabel>Service Control</SidebarLinkLabel>
+                                        </div>
+                                      </NavLink>
+                                    </li>
+                                  )}
+                                  <li className="menu nav-item">
+                                    <NavLink
+                                      href={route('service-control.calendar')}
+                                      active={route().current('service-control.calendar')}
+                                      className="group"
+                                    >
+                                      <div className="flex items-center">
+                                        <CalendarIcon />
+                                        <SidebarLinkLabel>Service Calendar</SidebarLinkLabel>
+                                      </div>
+                                    </NavLink>
+                                  </li>
+                                  {CAN_VIEW_SERVICE_CONTROL && (
+                                    <li className="menu nav-item">
+                                      <NavLink
+                                        href={route('stock-material.index')}
+                                        active={route().current('stock-material.index') || route().current('stock-material.create') || route().current('stock-material.edit')}
+                                        className="group"
+                                      >
+                                        <div className="flex items-center">
+                                          <FolderIcon />
+                                          <SidebarLinkLabel>Stock Materials</SidebarLinkLabel>
+                                        </div>
+                                      </NavLink>
+                                    </li>
+                                  )}
+                                </>
+                              )}
+                              {CAN_VIEW_REPORTS && (
+                                <>
+                                <h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">
+                                      <svg className="w-4 h-5 flex-none hidden" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                                          <line x1="5" y1="12" x2="19" y2="12"></line>
+                                      </svg>
+                                      <span>Reports</span>
+                                  </h2>
+                                  {CAN_VIEW_REPORT_SUPERVISOR && (
+                                    <li className="menu nav-item">
+                                      <NavLink href={route('report.supervisor')} active={route().current('report.supervisor')} className="group">
+                                        <div className="flex items-center">
+                                          <ReferralIcon/>
+                                          <SidebarLinkLabel>Supervisors</SidebarLinkLabel>
+                                        </div>
+                                      </NavLink>
+                                    </li>
+                                  )}
+                                  {CAN_VIEW_REPORT_INSTALLER && (
+                                    <li className="menu nav-item">
+                                      <NavLink href={route('report.installer')} active={route().current('report.installer')} className="group">
+                                        <div className="flex items-center">
+                                          <ReferralIcon/>
+                                          <SidebarLinkLabel>Installers</SidebarLinkLabel>
+                                        </div>
+                                      </NavLink>
+                                    </li>
+                                  )}
+                                  {CAN_VIEW_BIWEEKLY && (
+                                    <li className="menu nav-item">
+                                      <NavLink href={route('biweekly.index')} active={route().current('biweekly.index')} className="group">
+                                        <div className="flex items-center">
+                                          <CalendarIcon/>
+                                          <SidebarLinkLabel>Biweekly</SidebarLinkLabel>
+                                        </div>
+                                      </NavLink>
+                                    </li>
+                                  )}
+                                  {CAN_VIEW_PRODUCT_SUMMARY && (
+                                    <li className="menu nav-item">
+                                      <NavLink href={route('report.product-summary')} active={route().current('report.product-summary')} className="group">
+                                        <div className="flex items-center">
+                                          <ReferralIcon/>
+                                          <SidebarLinkLabel>Product Summary</SidebarLinkLabel>
+                                        </div>
+                                      </NavLink>
+                                    </li>
+                                  )}
+                                  {CAN_VIEW_ORDER_STATUS_SUMMARY && (
+                                    <li className="menu nav-item">
+                                      <NavLink href={route('report.order-status-summary')} active={route().current('report.order-status-summary')} className="group">
+                                        <div className="flex items-center">
+                                          <ReferralIcon/>
+                                          <SidebarLinkLabel>Order Status Summary</SidebarLinkLabel>
+                                        </div>
+                                      </NavLink>
+                                    </li>
+                                  )}
+                                  {CAN_VIEW_PLANNED_TO_COMPLETE_AVERAGE && HAS_PLANNED_TO_COMPLETE_AVERAGE_ROUTE && (
+                                    <li className="menu nav-item">
+                                      <NavLink href={route('report.planned-to-complete-average')} active={route().current('report.planned-to-complete-average')} className="group">
+                                        <div className="flex items-center">
+                                          <ReferralIcon/>
+                                          <SidebarLinkLabel>Status Transition Average</SidebarLinkLabel>
+                                        </div>
+                                      </NavLink>
+                                    </li>
+                                  )}
+                                  {CAN_VIEW_DAILY_ORDER_STATUS && (
+                                    <li className="menu nav-item">
+                                      <NavLink href={route('report.daily-order-status-summary')} active={route().current('report.daily-order-status-summary')} className="group">
+                                        <div className="flex items-center">
+                                          <ReferralIcon/>
+                                          <SidebarLinkLabel>Daily Order Status</SidebarLinkLabel>
+                                        </div>
+                                      </NavLink>
+                                    </li>
+                                  )}
+                                  {CAN_VIEW_OVERDUE_STAGE_REPORT && (
+                                    <li className="menu nav-item">
+                                      <NavLink href={route('report.overdue-stage-orders')} active={route().current('report.overdue-stage-orders')} className="group">
+                                        <div className="flex items-center">
+                                          <ReferralIcon/>
+                                          <SidebarLinkLabel>Overdue Stage Orders</SidebarLinkLabel>
+                                        </div>
+                                      </NavLink>
+                                    </li>
+                                  )}
+                                  {CAN_VIEW_MARKETING_REPORT && (
+                                    <li className="menu nav-item">
+                                      <NavLink href={route('report.marketing')} active={route().current('report.marketing')} className="group">
+                                        <div className="flex items-center">
+                                          <ReferralIcon/>
+                                          <SidebarLinkLabel>Marketing Report</SidebarLinkLabel>
+                                        </div>
+                                      </NavLink>
+                                    </li>
+                                  )}
+                                  {CAN_VIEW_SALES_APPOINTMENTS && (
+                                    <li className="menu nav-item">
+                                      <NavLink href={route('report.sales-appointments-by-seller')} active={route().current('report.sales-appointments-by-seller')} className="group">
+                                        <div className="flex items-center">
+                                          <ReferralIcon/>
+                                          <SidebarLinkLabel>Sales Orders & Appointments</SidebarLinkLabel>
+                                        </div>
+                                      </NavLink>
+                                    </li>
+                                  )}
+                                  {CAN_VIEW_INSTALLER_CONFIRMED && (
+                                    <li className="menu nav-item">
+                                      <NavLink href={route('report.installer-confirmed-summary')} active={route().current('report.installer-confirmed-summary')} className="group">
+                                        <div className="flex items-center">
+                                          <ReferralIcon/>
+                                          <SidebarLinkLabel>Installer Confirmed Orders</SidebarLinkLabel>
+                                        </div>
+                                      </NavLink>
+                                    </li>
+                                  )}
+                                  {CAN_VIEW_OWNER_ASSIGNED && (
+                                    <li className="menu nav-item">
+                                      <NavLink href={route('report.owner-assigned-summary')} active={route().current('report.owner-assigned-summary')} className="group">
+                                        <div className="flex items-center">
+                                          <ReferralIcon/>
+                                          <SidebarLinkLabel>Owner Report</SidebarLinkLabel>
+                                        </div>
+                                      </NavLink>
+                                    </li>
+                                  )}
+                                  {CAN_VIEW_SUPERVISOR_ASSIGNED && (
+                                    <li className="menu nav-item">
+                                      <NavLink href={route('report.supervisor-assigned-summary')} active={route().current('report.supervisor-assigned-summary')} className="group">
+                                        <div className="flex items-center">
+                                          <ReferralIcon/>
+                                          <SidebarLinkLabel>Supervisor Assigned Orders</SidebarLinkLabel>
+                                        </div>
+                                      </NavLink>
+                                    </li>
+                                  )}
+                                  {CAN_VIEW_REPLANNED_SUMMARY && (
+                                    <li className="menu nav-item">
+                                      <NavLink href={route('report.replanned-orders-summary')} active={route().current('report.replanned-orders-summary')} className="group">
+                                        <div className="flex items-center">
+                                          <ReferralIcon/>
+                                          <SidebarLinkLabel>Replanned Orders</SidebarLinkLabel>
+                                        </div>
+                                      </NavLink>
+                                    </li>
+                                  )}
+                                </>
+                              )}
+                            {CAN_VIEW_ACCOUNTING_SECTION && (
+                              <>
+                                <h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">
+                                    <svg className="w-4 h-5 flex-none hidden" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                                    </svg>
+                                    <span>ACCOUNTING</span>
+                                </h2>
+                                {CAN_VIEW_ACCOUNTING_STATUS_SUMMARY && (
+                                  <li className="menu nav-item">
+                                    <NavLink href={route('report.accounting-status-summary')} active={route().current('report.accounting-status-summary')} className="group">
+                                      <div className="flex items-center">
+                                        <ReferralIcon/>
+                                        <SidebarLinkLabel>Accounting Status</SidebarLinkLabel>
+                                      </div>
+                                    </NavLink>
+                                  </li>
+                                )}
+                                {IS_ADMIN || IS_ACCOUNTING ? (
+                                  <>
+                                    <li className="menu nav-item">
+                                      <NavLink href={route('report.commissions')} active={route().current('report.commissions') || route().current('report.commissions.edit-order')} className="group">
+                                        <div className="flex items-center">
+                                          <ReferralIcon/>
+                                          <SidebarLinkLabel>Commissions</SidebarLinkLabel>
+                                        </div>
+                                      </NavLink>
+                                    </li>
+                                    <li className="menu nav-item">
+                                      <NavLink href={route('report.commissions.history')} active={route().current('report.commissions.history')} className="group">
+                                        <div className="flex items-center">
+                                          <BookIcon />
+                                          <SidebarLinkLabel>Commission History</SidebarLinkLabel>
+                                        </div>
+                                      </NavLink>
+                                    </li>
+                                    <li className="menu nav-item">
+                                      <NavLink href={route('report.commissions.paid-history')} active={route().current('report.commissions.paid-history')} className="group">
+                                        <div className="flex items-center">
+                                          <BookIcon />
+                                          <SidebarLinkLabel>Paid Commission History</SidebarLinkLabel>
+                                        </div>
+                                      </NavLink>
+                                    </li>
+                                    <li className="menu nav-item">
+                                      <NavLink href={route('commission-periods.index')} active={route().current('commission-periods.index') || route().current('commission-periods.show')} className="group">
+                                        <div className="flex items-center">
+                                          <CalendarIcon/>
+                                          <SidebarLinkLabel>Commission Periods</SidebarLinkLabel>
+                                        </div>
+                                      </NavLink>
+                                    </li>
+                                  </>
+                                ) : null}
+                              </>
+                            )}
+                            {CAN_VIEW_ADMINISTRATION && (
                               <>
                                 <h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">
                                     <svg className="w-4 h-5 flex-none hidden" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
@@ -92,7 +591,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                             <NavLink href={route('installation_team.index')} active={route().current('installation_team.index') || route().current('installation_team.create') || route().current('installation_team.edit')} className="group">
                                                 <div className="flex items-center">
                                                   <ReferralIcon />
-                                                  <SidebarLinkLabel>Installation Team</SidebarLinkLabel>
+                                                  <SidebarLinkLabel>My Referred Clients</SidebarLinkLabel>
                                                 </div>
                                             </NavLink>
                                         </li> */}

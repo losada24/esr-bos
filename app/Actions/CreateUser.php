@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 use App\Enum\RoleEnum;
 use App\Jobs\SendGmailEmail;
 use Illuminate\Support\Facades\Mail;
+use Spatie\Permission\Models\Role;
 
 class CreateUser {
 
@@ -27,15 +28,42 @@ class CreateUser {
         'password' => Hash::make($request->password),
         'featured_image' => $reaturedImagePath,
         'phone' => $request->phone,
+        'status' => $request->status,
       ]);
 
       if( !$user )
       {
           throw new \Exception('User not created');
       }
-          if ($request->role && is_array($request->role)) {
-            $user->syncRoles($request->role);
-        }
+
+      $roleIds = collect($request->input('role', []))
+        ->map(fn ($roleId) => (int) $roleId)
+        ->filter(fn (int $roleId) => $roleId > 0)
+        ->values()
+        ->all();
+
+      if ($roleIds !== []) {
+        $user->syncRoles($roleIds);
+      }
+
+      $selectedRoleNames = Role::query()
+        ->whereIn('id', $roleIds)
+        ->pluck('name')
+        ->all();
+
+      $delegatedOwnerIds = [];
+      if (in_array(RoleEnum::OWNER->value, $selectedRoleNames, true)) {
+        $delegatedOwnerIds = User::role(RoleEnum::OWNER->value)
+          ->whereIn('id', collect($request->input('delegated_owner_ids', []))
+            ->map(fn ($ownerId) => (int) $ownerId)
+            ->filter(fn (int $ownerId) => $ownerId > 0 && $ownerId !== (int) $user->id)
+            ->values()
+            ->all())
+          ->pluck('id')
+          ->all();
+      }
+
+      $user->delegatedOwners()->sync($delegatedOwnerIds);
       
        //$user->assignRole($request->role);
 

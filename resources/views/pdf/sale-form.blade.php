@@ -1,206 +1,207 @@
 <html>
-<header>
-  <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
   <link rel="stylesheet" href="{{ base_path('resources/css/sell-form-pdf-styles.css') }}">
-  <style>
-    .page-break {
-      page-break-after: always;
-    }
-  </style>
-</header>
+</head>
 <body>
-  <div class="content">
-    <header class="clearfix">
-      <table class="table-container">
+@php
+    $clientAddressModel = isset($clientAddress) ? $clientAddress : null;
+    $orderModel = $order ?? ($clientAddressModel?->order ?? null);
+    $clientModel = $orderModel->client ?? ($clientAddressModel?->client ?? null);
+    $saleForm = $orderModel->saleForm ?? null;
+    $ownersCollection = $orderModel && isset($orderModel->owners)
+        ? collect($orderModel->owners)
+        : collect();
+    $ownerNames = $ownersCollection->pluck('name')->filter()->implode(', ');
+    $createdBy = $ownerNames !== ''
+        ? $ownerNames
+        : ($orderModel?->user->name ?? ($clientModel?->user->name ?? ''));
+    $scheduleAppointment = '';
+    if ($orderModel && $orderModel->schedule_appointment) {
+        $scheduleAppointment = \Carbon\Carbon::parse($orderModel->schedule_appointment)
+            ->locale('en')
+            ->translatedFormat('l, F j, Y h:i A');
+    } elseif (!empty($clientAddressModel?->appointment_date)) {
+        $scheduleAppointment = \Carbon\Carbon::parse($clientAddressModel->appointment_date)
+            ->locale('en')
+            ->translatedFormat('l, F j, Y h:i A');
+    }
+    $notes = $orderModel->description ?? ($clientAddressModel?->notes ?? '');
+
+    $typeOfWorkFlags = [
+        'Sale' => $saleForm?->sale ?? false,
+        'Installation' => $saleForm?->installation ?? false,
+        'Permit' => $saleForm?->permit ?? false,
+        'Financing' => $saleForm?->financing ?? false,
+        'HOA' => $saleForm?->hoa ?? false,
+    ];
+    $languageDisplay = $saleForm?->language
+        ? ucwords(strtolower($saleForm->language))
+        : '';
+    /*$projectOptionFlags = [
+        'Screens' => $saleForm?->screen ?? false,
+        'Door design' => $saleForm?->design ?? false,
+        'Mountins' => $saleForm?->mountin ?? false,
+        'Bars' => $saleForm?->bar ?? false,
+        'Shutters holes' => $saleForm?->shutter_hole ?? false,
+        'Floor Cutting' => $saleForm?->floor_cutting ?? false,
+        'Interior Finish' => $saleForm?->interior_finish ?? false,
+    ];*/
+@endphp
+  <div class="page sale-form">
+    @if($clientModel?->vip_clients)
+      <div class="vip-badge">VIP</div>
+    @endif
+    <table class="header-table">
+      <tr>
+        <td class="logo-cell">
+          <img src="{{ base_path('resources/assets/images/logo-reylos.jpg') }}" alt="Reylos Glass">
+        </td>
+        <td class="info-cell">
+          <div class="customer-summary">
+            <div class="customer-summary__title">Customer Information</div>
+            <div class="customer-summary__grid">
+              <div class="customer-summary__item customer-summary__item--name">{{ $clientModel->name ?? '' }}</div>
+              <div class="customer-summary__row">
+                <div class="customer-summary__col customer-summary__col--details">
+                  <div class="customer-summary__item customer-summary__item--address">
+                    <span class="customer-summary__value customer-summary__value--address">{{ $orderModel->job_address ?? ($clientAddressModel?->address ?? '') }}</span>
+                  </div>
+                  <div class="customer-summary__item customer-summary__item--left">{{ trim(($orderModel->city ?? '') . ' ' . ($orderModel->job_state ?? '') . ' ' . ($orderModel->job_zip ?? '')) }}</div>
+                </div>
+                <div class="customer-summary__col customer-summary__col--contact">
+                  <div class="customer-summary__item">
+                    <span class="customer-summary__value customer-summary__value--phone">{{ $clientModel->phone ?? '' }}</span>
+                  </div>
+                  <div class="customer-summary__item">
+                    <span class="customer-summary__value customer-summary__value--email">{{ $clientModel->email ?? '' }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </td>
+      </tr>
+    </table>
+
+    <table class="consultant-table">
+      <tr>
+        <td>
+          <span class="consultant-table__label">Consultant:</span>
+          <span class="consultant-table__value">{{ $createdBy }}</span>
+          <span class="consultant-table__label consultant-table__label--separator">APPT:</span>
+          <span class="consultant-table__value">{{ $scheduleAppointment }}</span>
+        </td>
+      </tr>
+    </table>
+
+    <div class="section section-type">
+      <div class="section-title-inline">
+        <span class="section-title section-title--inline">Type of Work:</span>
+        @if(count($typeOfWorkFlags) > 0)
+          <span class="type-of-work-inline">
+            @foreach($typeOfWorkFlags as $label => $flag)
+              <span class="type-of-work-inline__item">
+                <span class="checkbox checkbox--inline">{!! $flag ? '&#10003;' : '&nbsp;' !!}</span>
+                <span class="checkbox-text">{{ $label }}</span>
+              </span>
+            @endforeach
+            <span class="type-of-work-inline__language">
+              Language:
+              <span class="type-of-work-inline__language-value">{{ $languageDisplay !== '' ? $languageDisplay : 'N/A' }}</span>
+            </span>
+          </span>
+        @else
+          <span class="type-of-work-inline__values">N/A</span>
+        @endif
+      </div>
+     {{--<table class="inline-table">
         <tr>
-          <td class="column-50">
-            <div id="logo">
-              <img src="{{ base_path('resources/assets/images/logo-reylos.jpg') }}">
+          <td>
+            <div class="inline-pair">
+              <span class="label">Floor:</span>
+              <span class="value-line">{{ $saleForm->floor ?? '' }}</span>
             </div>
           </td>
-          <td class="column-50">
-            <table class="table-container">
-              <tr>
-                <td class="column-35 text-right pr-10">
-                  <span class="strong-labels">Date:</span>
-                </td>
-                <td class="bottom-line column-65">{{ date('m/d/Y')}}</td>
-              </tr>
-              <tr>
-                <td class="column-35 text-right pr-10">
-                  <span class="strong-labels">Customer Name:</span>
-                </td>
-                <td class="bottom-line column-65">{{ $clientAddress->client->name }}</td>
-              </tr>
-              <tr>
-                <td class="column-35 text-right pr-10">
-                  <span class="strong-labels">Address:</span>
-                </td>
-                <td class="bottom-line column-65">{{ $clientAddress->address }}</td>
-              </tr>
-              <tr>
-                <td class="column-35 text-right pr-10">
-                  <span class="strong-labels">Phone #:</span>
-                </td>
-                <td class="bottom-line column-65">{{ $clientAddress->client->phone }}</td>
-              </tr>
-              <tr>
-                <td class="column-35 text-right pr-10">
-                  <span class="strong-labels">E-mail:</span>
-                </td>
-                <td class="bottom-line column-65">{{ $clientAddress->client->email }}</td>
-              </tr>
-            </table>
+          <td>
+            <div class="inline-pair">
+              <span class="label">Reference:</span>
+              <span class="value-line">{{ $clientModel->source ? $clientModel->source : '' }}</span>
+            </div>
           </td>
         </tr>
       </table>
-    </header>
-    <table class="table-container">
-      <tr>
-        <td colspan="6">
-          <span class="strong-labels">Type of Work and / or Service</span>
-        </td>
-      </tr>
-      <tr>
-        <td class="pt-10">
-          <span class="regular-labels pr-10">Sale</span><span class="checkbox"></span>
-        </td>
-        <td class="pt-10">
-          <span class="regular-labels pr-10">Installation</span><span class="checkbox"></span>
-        </td>
-        <td class="pt-10">
-          <span class="regular-labels pr-10">Permit</span><span class="checkbox"></span>
-        </td>
-        <td class="pt-10">
-          <span class="regular-labels pr-10">Replacement</span><span class="checkbox"></span>
-        </td>
-        <td class="pt-10">
-          <span class="regular-labels pr-10">New Construction</span><span class="checkbox"></span>
-        </td>
-        <td class="pt-10">
-          <span class="regular-labels pr-10">Financing</span><span class="checkbox"></span>
-        </td>
-      </tr>
-      <tr>
-        <td class="pt-10 text-right">
-          <span class="regular-labels pr-10">Floor:</span>
-        </td>
-        <td colspan="2" class="bottom-line pt-10"></td>
-        <td class="pt-10 text-right">
-          <span class="regular-labels pr-10">Reference:</span>
-        </td>
-        <td colspan="2" class="bottom-line pt-10"></td>
-      </tr>
-    </table>
-    <table class="table-container mt-10">
-      <tr>
-        <td colspan="8">
-          <span class="strong-labels">Project Specifications</span>
-        </td>
-      </tr>
-      <tr>
-        <td class="pt-10 wp-14">
-          <span class="regular-labels pr-10">Frame Color:</span>
-        </td> 
-        <td class="pt-10 bottom-line wp-10">&nbsp;</td>
-        <td class="pt-10 wp-12 text-right">
-          <span class="regular-labels pr-14">Glass Color:</span>
-        </td> 
-        <td class="pt-10 bottom-line wp-10">&nbsp;</td>
-        <td class="pt-10 wp-12 text-right">
-          <span class="regular-labels pr-14">Glass Type:</span>
-        </td> 
-        <td class="pt-10 bottom-line wp-10">&nbsp;</td>
-        <td class="pt-10 wp-12 text-right">
-          <span class="regular-labels pr-14">Glass Coating:</span>
-        </td> 
-        <td class="pt-10 bottom-line wp-10">&nbsp;</td>
-      </tr>
-    </table>
-    <table class="table-container mt-10">
-      <tr>
-        <td class="pt-10 column-18">
-          <span class="regular-labels pr-10">Doors Quantity:</span>
-        </td>
-        <td class="pt-10 bottom-line column-6">&nbsp;</td>
-        <td class="pt-10 column-18">
-          <span class="regular-labels pr-10">Windows Quantity:</span>
-        </td>
-        <td class="pt-10 bottom-line column-6">&nbsp;</td>
-        <td class="pt-10 column-48">
-          <table class="table-container">
-            <tr>
-              <td>
-                <span class="regular-labels pr-10">Screens</span><span class="checkbox"></span>
-              </td>
-              <td>
-                <span class="regular-labels pr-10">Door Design</span><span class="checkbox"></span>
-              </td>
-              <td>
-                <span class="regular-labels pr-10">Mountins</span><span class="checkbox"></span>
-              </td>
-            </tr>
-          </table>
-        </td>
-      </tr>
-    </table>
-    <table class="table-container mt-10">
-      <tr>
-        <td>
-          <span class="regular-labels pr-10">Bars</span><span class="checkbox"></span>
-        </td>
-        <td>
-          <span class="regular-labels pr-10">Shutters holes</span><span class="checkbox"></span>
-        </td>
-        <td>
-          <span class="regular-labels pr-10">Floor Cutting</span><span class="checkbox"></span>
-        </td>
-        <td>
-          <span class="regular-labels pr-10">Interior Finish</span><span class="checkbox"></span>
-        </td>
-        <td>
-          <table class="table-container">
-            <tr>
-              <td class="column-35">
-                <span class="regular-labels pr-10">Other:</span>
-              </td>
-              <td class="bottom-line column-65">&nbsp;</td>
-            </tr>
-          </table>
-        </td>
-      </tr>
-    </table>
-    <footer class="mt-10"></footer>
-    @if (!empty($clientAddress->notes))
-      <table class="table-container">
+      --}}
+    </div>
+
+    <div class="section">
+      <div class="section-title section-title--sm">Project Specifications</div>
+      <table class="inline-table project-spec">
         <tr>
           <td>
-            <span class="strong-labels">Notes</span>
-            <p>{{ $clientAddress->notes }}</p>
-          </td>  
-        </tr>    
+            <div class="inline-pair">
+              <span class="label">Frame Color:</span>
+              <span class="value-inline">{{ $saleForm->frame_color ?? '' }}</span>
+            </div>
+          </td>
+          <td>
+            <div class="inline-pair">
+              <span class="label">Glass Color:</span>
+              <span class="value-inline">{{ $saleForm->glass_color ?? '' }}</span>
+            </div>
+          </td>
+        </tr>
+       {{-- <tr>
+          <td>
+            <div class="inline-pair">
+              <span class="label">Glass Type:</span>
+              <span class="value-line">{{ $saleForm->glass_type ?? '' }}</span>
+            </div>
+          </td>
+          <td>
+            <div class="inline-pair">
+              <span class="label">Glass Coating:</span>
+              <span class="value-line">{{ $saleForm->glass_coating ?? '' }}</span>
+            </div>
+          </td>
+        </tr>
+      --}}
       </table>
-    @endif
-    @if (!empty($clientAddress->appointment_date))
-      <table class="table-container">
+      <table class="inline-table">
         <tr>
           <td>
-            <span class="strong-labels">Appointment Date</span>
-            <p>{{ $clientAddress->appointment_date }}</p>
-          </td>  
-        </tr>    
-      </table>
-    @endif
-    @if (isset($clientAddress->client->user))
-      <table class="table-container">
-        <tr>
+            <div class="inline-pair">
+              <span class="label">Doors Quantity:</span>
+              <span class="value-inline">{{ $saleForm->door_quantity ?? '' }}</span>
+            </div>
+          </td>
           <td>
-            <span class="strong-labels">Created By</span>
-            <p>{{ $clientAddress->client->user->name }}</p>
-          </td>  
-        </tr>    
+            <div class="inline-pair">
+              <span class="label">Windows Quantity:</span>
+              <span class="value-inline">{{ $saleForm->window_quantity ?? '' }}</span>
+            </div>
+          </td>
+        </tr>
       </table>
-    @endif
+      <table class="checkbox-table project-options">
+        <tr>
+        {{--
+          @foreach($projectOptionFlags as $label => $flag)
+            <td>
+              <span class="checkbox">{!! $flag ? '&#10003;' : '&nbsp;' !!}</span>
+              <span class="checkbox-text">{{ $label }}</span>
+            </td>
+          @endforeach
+        --}}
+        </tr>
+      </table>
+    </div>
+
+    <div class="drawing-area">
+      @if(!empty($notes))
+        <div class="notes-content">{{ $notes }}</div>
+      @endif
+    </div>
   </div>
-  </body>
+</body>
 </html>

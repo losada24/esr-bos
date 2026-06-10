@@ -1,5 +1,5 @@
 import { Field, Form } from 'formik'
-import { useRef, useMemo, useState } from 'react'
+import { useRef, useMemo, useState, type Dispatch, type SetStateAction } from 'react'
 import { useJsApiLoader, StandaloneSearchBox } from '@react-google-maps/api'
 import InputError from '@/Components/InputError'
 import PrimaryButton from '@/Components/PrimaryButton'
@@ -10,6 +10,7 @@ import 'flatpickr/dist/flatpickr.css'
 import { type CompanyContact } from './CompanyContactCommon'
 import ClientModal from './ClientModal'
 import { type Client } from '@/Pages/Client/ClientCommon'
+import DeleteIcon from '@/Components/Icons/DeleteIcon'
 
 const CompanyContactForm = ({ submitCount, errors, isCreate, setFieldValue, values, clients, setClients, sources }: {
   submitCount: number
@@ -19,12 +20,30 @@ const CompanyContactForm = ({ submitCount, errors, isCreate, setFieldValue, valu
   values: CompanyContact
   clients: Client[]
   sources: string[]
-  setClients: (clients: Client[]) => void
+  setClients: Dispatch<SetStateAction<Client[]>>
 }) => {
   const [showClientModal, setShowClientModal] = useState<boolean>(false)
 
   const addClient = (client: Client) => {
-    setClients([...clients, client])
+    setClients((prevClients) => {
+      if (client.id && prevClients.some((item) => item.id === client.id)) {
+        return prevClients
+      }
+
+      if (!client.id && client.phone && prevClients.some((item) => !item.id && item.phone === client.phone)) {
+        return prevClients
+      }
+
+      return [...prevClients, client]
+    })
+  }
+  const removeClient = (client: Client, index: number) => {
+    if (client.id) {
+      setClients(clients.filter((item) => item.id !== client.id))
+      return
+    }
+
+    setClients(clients.filter((_, itemIndex) => itemIndex !== index))
   }
   return (
     <Form className='space-y-5'>
@@ -118,23 +137,25 @@ const CompanyContactForm = ({ submitCount, errors, isCreate, setFieldValue, valu
           />
           </div>
           {(submitCount && errors.billing_code) ? <InputError message={errors.billing_code} className="mt-2" /> : ''}
+          {/*
           <div className={submitCount ? (errors.bid_due_date) ? 'has-error' : 'has-success' : ''}>
-                <label htmlFor="bid_due_date">Bid Due Date</label>
-                <Flatpickr
-                  options={{
-                    mode: 'single',
-                    dateFormat: 'Y-m-d',
-                    position: 'auto right'
-                  }}
-                  name="bid_due_date"
-                  value={values.bid_due_date ?? ''}
-                  className="form-input"
-                  onChange={([date]) => {
-                    setFieldValue('bid_due_date', date.toISOString().slice(0, 10))
-                  }}
-                />
-                {(submitCount && errors.bid_due_date) ? <InputError message={errors.bid_due_date.toString()} className="mt-2" /> : ''}
-              </div>
+            <label htmlFor="bid_due_date">Bid Due Date</label>
+            <Flatpickr
+              options={{
+                mode: 'single',
+                dateFormat: 'Y-m-d',
+                position: 'auto right'
+              }}
+              name="bid_due_date"
+              value={values.bid_due_date ?? ''}
+              className="form-input"
+              onChange={([date]) => {
+                setFieldValue('bid_due_date', date.toISOString().slice(0, 10))
+              }}
+            />
+            {(submitCount && errors.bid_due_date) ? <InputError message={errors.bid_due_date.toString()} className="mt-2" /> : ''}
+          </div>
+          */}
       </div>
       <div className='flex flex-col'>
         <div className='flex justify-end p-3'>
@@ -147,6 +168,7 @@ const CompanyContactForm = ({ submitCount, errors, isCreate, setFieldValue, valu
                 <th className='px-4 py-2'>Client Name</th>
                 <th className='px-4 py-2'>Email</th>
                 <th className='px-4 py-2'>Phone</th>
+                <th className='px-4 py-2 text-right'>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -155,11 +177,22 @@ const CompanyContactForm = ({ submitCount, errors, isCreate, setFieldValue, valu
                   <td className='border px-4 py-2'>{client.name}</td>
                   <td className='border px-4 py-2'>{client.email}</td>
                   <td className='border px-4 py-2'>{client.phone}</td>
+                  <td className='border px-4 py-2 text-right'>
+                    <button
+                      type="button"
+                      className="text-white-dark hover:text-danger"
+                      aria-label={`Remove ${client.name}`}
+                      title={`Remove ${client.name}`}
+                      onClick={() => { removeClient(client, index) }}
+                    >
+                      <DeleteIcon />
+                    </button>
+                  </td>
                 </tr>
               ))}
               {clients.length === 0 && (
                 <tr>
-                  <td className='border px-4 py-2' colSpan={3}>No clients added yet.</td>
+                  <td className='border px-4 py-2' colSpan={4}>No clients added yet.</td>
                 </tr>
               )}
             </tbody>
@@ -179,8 +212,8 @@ const CompanyContactForm = ({ submitCount, errors, isCreate, setFieldValue, valu
         }}
         addClient={addClient }
         sources={sources}
-        // clients={clients}
-        //  setClients={setClients}
+        allowExistingSelection={true}
+        selectedClients={clients}
       />
     </Form>
   )

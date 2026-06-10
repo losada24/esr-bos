@@ -22,6 +22,7 @@ export default function Edit ({ auth, type_of_housings, users, installation_team
       return { value: travelCost.id, label: travelCost.name }
     }) ?? [],
     worker_compensation_attach: '',
+    worker_compensation_exception_attach: '',
     liability_expiration_attach: '',
     annual_w9_attach: '',
     installer_agrement_attach: '',
@@ -38,6 +39,7 @@ export default function Edit ({ auth, type_of_housings, users, installation_team
       annual_w9_expiration_date: values.annual_w9_expiration_date,
       user_id: values.user_id.value,
       worker_compensation_attach: values.worker_compensation_attach,
+      worker_compensation_exception_attach: values.worker_compensation_exception_attach,
       liability_expiration_attach: values.liability_expiration_attach,
       annual_w9_attach: values.annual_w9_attach,
       installer_agrement_attach: values.installer_agrement_attach,

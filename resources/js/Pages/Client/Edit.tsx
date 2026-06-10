@@ -1,36 +1,42 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
-import { Head, router } from '@inertiajs/react'
+import { Head, router, useForm } from '@inertiajs/react'
 import { Formik, type FormikHelpers } from 'formik'
 import { type ClientEditFormType, clientSchema, type ClientFormType } from './ClientCommon'
 import ClientForm from './ClientForm'
 import { type User, type PageProps, type ClientAddress, type CompanyContact } from '@/types'
 import { useState, useRef } from 'react'
 import AddressModal from './AddressModal'
+import TagPicker, { type TagItem } from '@/Components/TagPicker'
 
-export default function Edit ({ auth, clients, clientAddress, contact_type, sources, companies }: PageProps & { auth: User, clients: ClientEditFormType, clientAddress: ClientAddress, contact_type: string[], sources: string[], companies: CompanyContact[] }) {
+export default function Edit ({ auth, clients, tags, clientAddress, contact_type, sources, companies }: PageProps & { auth: User, clients: ClientEditFormType, tags: TagItem[], clientAddress: ClientAddress, contact_type: string[], sources: string[], companies: CompanyContact[] }) {
 
- const formikRef = useRef<any>()
+  const formikRef = useRef<any>()
   const [showAddressModal, setShowAddressModal] = useState<boolean>(false)
   const [address, setAddress] = useState<string[]>([])
   const [currentAddress, setCurrentAddress] = useState<string>('')
   const initialValues: ClientFormType = {
     id: clients.id,
-    name: clients.name,
-    email: clients.email,
+    name: clients.name ?? '',
+    email: clients.email ?? '',
     address: clients?.client_address?.[0]?.address ?? '',
     appointment_date: clients?.client_address?.[0]?.appointment_date ?? null,
-    phone: clients.phone,
+    phone: clients.phone ?? '',
     confirmed: false,
     notes: clients?.client_address?.[0]?.notes ?? '',
-    contact_type: clients.contact_type,
-    other_phone: clients.other_phone,
-    secondary_email: clients.secondary_email,
-    source: clients.source,
+    contact_type: clients.contact_type ?? '',
+    other_phone: clients.other_phone ?? '',
+    secondary_email: clients.secondary_email ?? '',
+    source: clients.source ?? '',
     vip_clients: clients.vip_clients ?? false,
     vip_notes: clients.vip_notes ?? '',
     refer_name: clients?.referral?.name ?? '',
     refer_phone: clients?.referral?.phone ?? '',
-    company_contact_id: clients?.company_contact_id ?? 0
+    refer_email: clients?.referral?.email ?? '',
+    referral_id: clients?.referral?.id ?? null,
+    referrer_client_id: clients?.referral?.client_id ?? null,
+    referrer_user_id: clients?.referral?.user_id ?? null,
+    company_contact_id: clients?.company_contact_id ?? 0,
+    tags: tags ?? []
   }
 
   const setModalAddress = (address: string) => {
@@ -86,6 +92,9 @@ export default function Edit ({ auth, clients, clientAddress, contact_type, sour
                 contact_type={contact_type}
                 sources={sources}
                 companies={companies}
+                showContactType={false}
+                showCompanyField={false}
+               // tags={tags}
               />
             )}
           </Formik>

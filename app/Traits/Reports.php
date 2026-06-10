@@ -3,6 +3,7 @@
 namespace App\Traits;
 
 use App\Enum\OrderStatusEnum;
+use App\Enum\ServiceEnum;
 use App\Models\Biweekly;
 use App\Models\InstallationPayment;
 use App\Models\InstallationTeam;
@@ -22,6 +23,7 @@ trait Reports
       ->where('supervisor_id', $id)
       ->whereDate('installation_date', '<=', Carbon::today())
       ->where('status', '!=', OrderStatusEnum::PLANNED->value)
+      ->where('service', '!=', ServiceEnum::SERVICE->value) 
       ->orderBy('created_at', 'desc')
       ->get();
 
@@ -29,7 +31,7 @@ trait Reports
 
     $total_amount = $orders->sum('project_amount');
     $total_commissions = $orders->sum('supervisor_commissions');
-    //dd($orders); 
+   //dd($orders); 
 
     return $orders->map(function ($order, $key) use ($total_amount, $total_commissions) {
       //dd($order->comissions); 
@@ -85,6 +87,7 @@ trait Reports
       ->where('supervisor_id', $id)
       ->whereDate('installation_date', '<=', Carbon::today())
       ->where('status', '!=', OrderStatusEnum::PLANNED->value)
+      //->where('service', '!=', ServiceEnum::SERVICE->value) 
       ->orderBy('created_at', 'desc')
       ->get();
    
@@ -150,7 +153,7 @@ trait Reports
   public function getOrdersByInstaller($id, $status = null, $startDate = null, $endDate = null, $orderStatus = null)
   {
 
-    $orders = Order::whereNotIn('status', [OrderStatusEnum::PLANNED->value, OrderStatusEnum::CONFIRMED->value])
+    $orders = Order::whereNotIn('status', [OrderStatusEnum::PLANNED->value, OrderStatusEnum::CONFIRMED->value,OrderStatusEnum::MATERIALS_RECEIVED->value])
       ->whereHas('installationTeams', function ($query) use ($id) {
         $query->whereHas('user', function ($subQuery) use ($id) {
           $subQuery->where('id', $id);
@@ -239,7 +242,7 @@ trait Reports
             'name' => $owner->name,
           ];
         }),
-        'supervisor' => $order->supervisor->name,
+        'supervisor' => $order->supervisor->name ?? '',
         'installation_team' => $order->installationTeams->map(function ($team, $key) {
           return [
             'id' => $team->id,
@@ -278,6 +281,7 @@ trait Reports
         'payment_extra_fields' => $transformedFields,
         'pending_payment_amount' => $pendingPaymentAmount,
         'total_payment_amount' => $totalPaymentAmount,
+        'service' => $order->service,
       ];
     });
   }

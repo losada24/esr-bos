@@ -19,6 +19,13 @@ class CreateInstallationTeam {
         $workerCompensationFileName = time() . '_' . $request->file('worker_compensation_attach')->getClientOriginalName();
         $workerCompensationAttachPath = $request->file('worker_compensation_attach')->storeAs('installation_team_files', $workerCompensationFileName, 'public');
       }
+
+      $workerCompensationExceptionAttachPath = null;
+      $workerCompensationExceptionFileName = null;
+      if ($request->hasFile('worker_compensation_exception_attach')) {
+        $workerCompensationExceptionFileName = time() . '_' . $request->file('worker_compensation_exception_attach')->getClientOriginalName();
+        $workerCompensationExceptionAttachPath = $request->file('worker_compensation_exception_attach')->storeAs('installation_team_files', $workerCompensationExceptionFileName, 'public');
+      }
       
       $liabilityExpirationAttachPath = null;
       $liabilityExpirationFileName = null;
@@ -51,7 +58,7 @@ class CreateInstallationTeam {
 
       $installationTeam->typeHousing()->attach($request->type_of_housings);
       $installationTeam->travelCost()->attach($request->travel_costs);
-      $installationTeam->attachments()->saveMany([
+      $attachments = [
         new Attachment(
           [
             'filename' => $workerCompensationFileName,
@@ -76,7 +83,18 @@ class CreateInstallationTeam {
               'file_path' => $annualW9AttachPath,
               'file_type' => 'annual_w9_attach',
             ]),
-      ]);
+      ];
+
+      if ($workerCompensationExceptionAttachPath) {
+        $attachments[] = new Attachment(
+          [
+            'filename' => $workerCompensationExceptionFileName,
+            'file_path' => $workerCompensationExceptionAttachPath,
+            'file_type' => 'worker_compensation_exception_attach',
+          ]);
+      }
+
+      $installationTeam->attachments()->saveMany($attachments);
       
       if( !$installationTeam )
       {

@@ -43,6 +43,7 @@ interface OrderInstaller {
   partial_payment_installation: boolean
   final_payment_installation: boolean
   status: string
+  service: string
 }
 
 type IndexUserProps = PageProps & {
@@ -78,7 +79,7 @@ export default function ShowInstaller ({ auth, orders, installer, companyName, s
     const percentagePayment = Number(lastPayment.percentage_payment) || 0
 
     // if (percentagePayment > 0) {
-      totalPayment = Number(installerPayment) + Number(extraWork) - Number(extraDiscount) + Number(otherCost)
+    totalPayment = Number(installerPayment) + Number(extraWork) - Number(extraDiscount) + Number(otherCost)
     // }
 
     return sum + totalPayment
@@ -172,14 +173,14 @@ export default function ShowInstaller ({ auth, orders, installer, companyName, s
               <th className="px-6 pt-5 pb-4">Start Date</th>
               <th className="px-6 pt-5 pb-4">Pre-Inspection Date</th>
               <th className="px-6 pt-5 pb-4">End Date</th>
+              <th className="px-6 pt-5 pb-4">Owners</th>
+              <th className="px-6 pt-5 pb-4">City Permit</th>
               <th className="px-6 pt-5 pb-4">Order Status</th>
-                <th className="px-6 pt-5 pb-4">Name</th>
-                <th className="px-6 pt-5 pb-4">Owners</th>
-                <th className="px-6 pt-5 pb-4">Supervisor</th>
-                <th className="px-6 pt-5 pb-4">City Permit</th>
-                <th className="px-6 pt-5 pb-4">Total Project Payment</th>
-                <th className="px-6 pt-5 pb-4">% Project </th>
-               <th className="px-6 pt-5 pb-4">Pending Pay </th>
+              <th className="px-6 pt-5 pb-4">Name</th>
+              <th className="px-6 pt-5 pb-4">Supervisor</th>
+              <th className="px-6 pt-5 pb-4">Total Project Payment</th>
+              <th className="px-6 pt-5 pb-4">% Project </th>
+              <th className="px-6 pt-5 pb-4">Pending Pay </th>
               <th className="px-6 pt-5 pb-4">Payment Processed</th>
                 {/* <th className="px-6 pt-5 pb-4">Pending Pay</th */}
               <th className="px-6 pt-5 pb-4">Extra Work</th>
@@ -240,24 +241,29 @@ export default function ShowInstaller ({ auth, orders, installer, companyName, s
                     <td className="px-6 py-4 border-t ">
                       {order.final_installation_date}
                     </td>
-                    <td className="px-6 py-4 border-t ">
-                      {order.status}
-                    </td>
-                    <td className={`px-6 py-4 border-t ${isZeroPayment ? 'bg-yellow-200' : ''}`}>
-                      {order.name}
-                    </td>
-                    <td className="px-6 py-4 border-t">
+                     <td className="px-6 py-4 border-t">
                       {order.owners.map((owner) => {
                         return owner.name
                       }).join(', ')}
                     </td>
                     <td className="px-6 py-4 border-t">
+                    {order.city_permits ? 'YES' : 'NO'}
+                    </td>
+                    <td className="px-6 py-4 border-t ">
+                      {order.status}
+                    </td>
+                    <td className={`px-6 py-4 border-t ${isZeroPayment ? 'bg-yellow-200' : ''}`}>
+                      <div className="font-medium">{order.name}</div>
+                      {order.service === 'SERVICE' && (
+                        <span className="inline-flex items-center mt-1 px-2 py-0.5 text-xs font-semibold text-blue-600 border border-blue-600 bg-transparent rounded-full dark:text-blue-300 dark:border-blue-400">
+                          {order.service}
+                        </span>
+                      )}
+                    </td>
+                     <td className="px-6 py-4 border-t">
                       <ul>
                         {order.supervisor}
                       </ul>
-                    </td>
-                    <td className="px-6 py-4 border-t">
-                    {order.city_permits ? 'YES' : 'NO'}
                     </td>
                     <td className="px-6 py-4 border-t">
                     {formatPrice(Number(order.amount))}

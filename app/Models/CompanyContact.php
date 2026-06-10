@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Facades\DB;
 
 class CompanyContact extends Model
@@ -44,7 +45,11 @@ class CompanyContact extends Model
     public function scopeFilter($query, array $filters)
     {
         $query->when($filters['text'] ?? null, function ($query, $search) {
-          $query->where(DB::raw("CONCAT(name, ' ', email, ' ', phone)"), 'like', '%'.$search.'%');
+          $query->where(function ($subQuery) use ($search) {
+            $subQuery->where('name', 'like', '%'.$search.'%')
+              ->orWhere('email', 'like', '%'.$search.'%')
+              ->orWhere('phone', 'like', '%'.$search.'%');
+          });
         });
     }
 
@@ -52,12 +57,32 @@ class CompanyContact extends Model
       return $this->belongsTo(User::class);
     }
     
-    public function clients(): HasMany {
-      return $this->hasMany(Client::class);
+    public function clients(): BelongsToMany {
+      return $this->belongsToMany(Client::class, 'client_company_contacts')
+        ->wherePivotNull('deleted_at')
+        ->withPivot(['is_primary', 'deleted_at', 'deleted_by_user_id'])
+        ->withTimestamps();
+    }
+
+    public function clientCompanyContacts(): HasMany
+    {
+      return $this->hasMany(ClientCompanyContact::class);
     }
 
     public function clientAddress(): HasMany {
       return $this->hasMany(ClientAddress::class);
+    }
+
+    public function orderCompanyContacts(): HasMany
+    {
+      return $this->hasMany(OrderCompanyContact::class);
+    }
+
+    public function orders(): BelongsToMany
+    {
+      return $this->belongsToMany(Order::class, 'order_company_contacts')
+        ->withPivot(['client_id', 'source_id', 'is_selected', 'selected_at'])
+        ->withTimestamps();
     }
 
 }

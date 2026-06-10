@@ -20,6 +20,14 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 class CompanyContactController extends Controller
 {
+    private function contactSources(): array
+    {
+        return array_map(
+            static fn (ContactSourceEnum $source): string => $source->value,
+            ContactSourceEnum::cases()
+        );
+    }
+
     /**
      * Display a listing of the resource.
      *
@@ -47,18 +55,7 @@ class CompanyContactController extends Controller
             ContactTypeEnum::RESIDENTIAL_CONTACT->value,
             ContactTypeEnum::COMMERCIAL_CONTACT->value,
           ],
-          'sources' => [
-            ContactSourceEnum::TIK_TOK->value,
-            ContactSourceEnum::INSTAGRAM_FACEBOOK->value,
-            ContactSourceEnum::META->value,
-            ContactSourceEnum::DESTINO_TOLK->value,
-            ContactSourceEnum::RESOURCE_MAGAZINE->value,
-            ContactSourceEnum::BANNER_PUBLICITARIO->value,
-            ContactSourceEnum::EXTERNAL_REFERAL->value,
-            ContactSourceEnum::INTERNAL_REFERAL->value,
-            ContactSourceEnum::GOOGLE_MY_BUSINESS->value,
-            ContactSourceEnum::PICHY_BOYS->value,
-          ],
+          'sources' => $this->contactSources(),
         ] );
     }
 
@@ -93,20 +90,13 @@ class CompanyContactController extends Controller
             ContactTypeEnum::RESIDENTIAL_CONTACT->value,
             ContactTypeEnum::COMMERCIAL_CONTACT->value,
           ],
-          'sources' => [
-            ContactSourceEnum::TIK_TOK->value,
-            ContactSourceEnum::INSTAGRAM_FACEBOOK->value,
-            ContactSourceEnum::META->value,
-            ContactSourceEnum::DESTINO_TOLK->value,
-            ContactSourceEnum::RESOURCE_MAGAZINE->value,
-            ContactSourceEnum::BANNER_PUBLICITARIO->value,
-            ContactSourceEnum::EXTERNAL_REFERAL->value,
-            ContactSourceEnum::INTERNAL_REFERAL->value,
-            ContactSourceEnum::GOOGLE_MY_BUSINESS->value,
-            ContactSourceEnum::PICHY_BOYS->value,
-          ],
+          'sources' => $this->contactSources(),
           'companyContact' => $companyContact,
-          'clientslist' => $companyContact->clients,
+          'clientslist' => $companyContact->clients()->with([
+            'referral',
+            'referral.referrerClient:id,name,phone,email',
+            'referral.referrerUser:id,name,phone,email,status',
+          ])->get(),
         ]);
     }
 
@@ -119,7 +109,15 @@ class CompanyContactController extends Controller
      */
     public function update(UpdateCompanyContactRequest $UpdateCompanyContactRequest, UpdateCompanyContact $updateCompanyContact, CompanyContact $companyContact)
     {
-        $updateCompanyContact->handle($UpdateCompanyContactRequest, $companyContact);
+        $result = $updateCompanyContact->handle($UpdateCompanyContactRequest, $companyContact);
+        if (is_array($result) && !empty($result['error'])) {
+            return redirect()
+                ->back()
+                ->with('error', $result['error']);
+        }
+        if ($UpdateCompanyContactRequest->boolean('from_modal')) {
+            return response()->json(['company' => $companyContact->fresh()]);
+        }
         return redirect()->route('company_contact.index')
           ->with('success', 'Company updated successfully.');
     }

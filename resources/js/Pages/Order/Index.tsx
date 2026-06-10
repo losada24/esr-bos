@@ -50,12 +50,20 @@ export default function Index ({ auth, orders, statuses }: IndexOrderProps) {
           auth={auth}
           pageTitle='Orders'
           actions={
-            <Link
-              className="btn btn-primary"
-              href={route('order.create')}
-            >
-              <span>Create Order</span>
-            </Link>
+            <div className="flex gap-2">
+              <Link
+                className="btn btn-primary"
+                href={route('order.create')}
+              >
+                <span>Create Order</span>
+              </Link>
+              <Link
+                className="btn btn-secondary"
+                href={route('order.create_service')}
+              >
+                <span>Create Service</span>
+              </Link>
+            </div>
           }
       >
         <Head title="Orders" />
@@ -98,6 +106,11 @@ export default function Index ({ auth, orders, statuses }: IndexOrderProps) {
                     <td className="border-t px-6 py-4 align-top">
                       <div className='font-bold'>{order.name}</div>
                       <div>{order.service}</div>
+                      {order.is_supply && (
+                        <div className="mt-1 inline-block rounded-md border border-emerald-300 bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-800">
+                          SUPPLY
+                        </div>
+                      )}
                     </td>
                     <td className="border-t px-6 py-4 align-top">
                     {`${order.job_address ?? ''}${order.city ? `, ${order.city}` : ''}${order.job_state ? `, ${order.job_state}` : ''}${order.job_zip ? `, ${order.job_zip}` : ''}`}

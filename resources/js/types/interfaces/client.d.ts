@@ -1,4 +1,5 @@
 import { type User } from '@/types/interfaces/user'
+import { type CompanyContact } from '@/types/interfaces/companyContact'
 
 export interface Client {
   id: number
@@ -22,9 +23,36 @@ export interface Client {
   secondary_email?: string
   refer_name?: string
   refer_phone?: string
-  referral_id?: number
+  refer_email?: string
+  referral_id?: number | null
+  referrer_client_id?: number | null
+  referrer_user_id?: number | null
+  referral?: {
+    id: number
+    name?: string
+    phone?: string
+    email?: string
+    client_id?: number | null
+    user_id?: number | null
+    referrerClient?: {
+      id: number
+      name: string
+      phone?: string
+      email?: string
+    }
+    referrerUser?: {
+      id: number
+      name: string
+      phone?: string
+      email?: string
+      status?: string
+    }
+  }
   company_contact_id?: number
-  company_contact?: CompanyContact[]
+  company_contact_ids?: number[]
+  company_contact?: CompanyContact
+  company_contacts?: CompanyContact[]
+  is_contact?: boolean
 }
 
 export interface ClientAddress {
