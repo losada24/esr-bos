@@ -329,7 +329,6 @@ class DashboardController extends Controller
         return $item->total . $shortName;
       })->join(', ');
 
-<<<<<<< HEAD
        if (!is_null($order->area) && $order->area !== '' && (float)$order->area > 0) {
           $sqft = rtrim(rtrim(number_format((float) $order->area, 2, '.', ''), '0'), '.');
           $productDetails = $productDetails
@@ -338,9 +337,6 @@ class DashboardController extends Controller
       }
 
       $isVip = $order->client->vip_clients ?? false;
-=======
-      $isVip = optional($order->client)->vip_clients ?? false;
->>>>>>> origin/main
       $serviceLabel = $isVip ? 'VIP' : '';
 
       if ($order->service === ServiceEnum::DELIVERY->value || $order->service === ServiceEnum::PICKUP->value) {
