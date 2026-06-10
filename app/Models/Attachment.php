@@ -18,6 +18,12 @@ class Attachment extends Model
         'filename',
         'file_path',
         'file_type',
+        'mime_type',
+        'size_bytes',
+        'duration_seconds',
+        'transcription_status',
+        'transcription_text',
+        'transcription_error',
         'user_id',
 
     ];

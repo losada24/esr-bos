@@ -20,6 +20,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DownloadController;
 use App\Http\Controllers\FrontdeskController;
 use App\Http\Controllers\InstallationTeamController;
+use App\Http\Controllers\NoteAudioController;
 use App\Http\Controllers\OrderNoteController;
 use App\Http\Controllers\OrderProcessingController;
 use App\Http\Controllers\OrderStorageController;
@@ -102,6 +103,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/crm-notifications', [CrmNotificationController::class, 'index'])->name('crm-notifications.index');
     Route::post('/crm-notifications/read-all', [CrmNotificationController::class, 'markAllRead'])->name('crm-notifications.read-all');
     Route::post('/crm-notifications/{notification}/read', [CrmNotificationController::class, 'markRead'])->name('crm-notifications.read');
+
+    Route::post('/notes/{note}/audio', [NoteAudioController::class, 'store'])->name('notes.audio.store');
+    Route::get('/notes/{note}/audio/{attachment}', [NoteAudioController::class, 'show'])->name('notes.audio.show');
+    Route::delete('/notes/{note}/audio/{attachment}', [NoteAudioController::class, 'destroy'])->name('notes.audio.destroy');
 
     // USERS
     /* Route::resource('user', UserController::class)
