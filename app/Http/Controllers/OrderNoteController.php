@@ -19,7 +19,7 @@ class OrderNoteController extends Controller
     public function index(Order $order)
     {
         $directNotes = $order->notes()
-            ->with(['user:id,name'])
+            ->with(['user:id,name', 'attachments'])
             ->get();
 
         if (!request()->boolean('include_related')) {
@@ -33,7 +33,7 @@ class OrderNoteController extends Controller
         $eventIds = CrmEvent::query()->where('order_id', $order->id)->pluck('id');
 
         $activityNotes = Note::query()
-            ->with(['user:id,name', 'noteable'])
+            ->with(['user:id,name', 'attachments', 'noteable'])
             ->where(function ($query) use ($callIds, $eventIds) {
                 $query->where(function ($callQuery) use ($callIds) {
                     $callQuery->where('noteable_type', CrmCall::class)
@@ -76,6 +76,8 @@ class OrderNoteController extends Controller
             ($request->user()?->name ?? 'Someone') . ' added a note to order ' . ($order->name ?? ('#' . $order->id))
         );
 
+        $note->load('attachments');
+
         return response()->json($this->notePayload($note), Response::HTTP_CREATED);
     }
 
@@ -97,7 +99,7 @@ class OrderNoteController extends Controller
         ]);
 
         $note->update($data);
-        $note->load('user:id,name');
+        $note->load(['user:id,name', 'attachments']);
 
         return $this->notePayload($note);
     }
@@ -133,6 +135,27 @@ class OrderNoteController extends Controller
             'can'        => [
                 'update' => $isOrderNote && $isAuthor,
                 'delete' => $isOrderNote && $isAuthor,
+            ],
+            'audio_attachments' => $note->attachments
+                ->where('file_type', \App\Enum\AttachmentsFileTypeEnum::NOTE_AUDIO->value)
+                ->map(fn ($attachment) => $this->audioPayload($note, $attachment))
+                ->values()
+                ->all(),
+        ];
+    }
+
+    private function audioPayload(Note $note, $attachment): array
+    {
+        return [
+            'id' => $attachment->id,
+            'filename' => $attachment->filename,
+            'mime_type' => $attachment->mime_type,
+            'duration_seconds' => $attachment->duration_seconds,
+            'transcription_status' => $attachment->transcription_status,
+            'url' => route('notes.audio.show', ['note' => $note->id, 'attachment' => $attachment->id]),
+            'created_at' => optional($attachment->created_at)->toISOString(),
+            'can' => [
+                'delete' => $attachment->user_id === auth()->id() || $note->user_id === auth()->id(),
             ],
         ];
     }

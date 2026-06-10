@@ -171,7 +171,7 @@ class ActivityController extends Controller
     {
         $event = $this->visibleEventsQuery($request->user())->findOrFail($event->id);
 
-        return response()->json($this->noteRows($event->notes()->with('user:id,name')->latest()->get()));
+        return response()->json($this->noteRows($event->notes()->with(['user:id,name', 'attachments'])->latest()->get()));
     }
 
     public function storeEventNote(Request $request, CrmEvent $event): JsonResponse
@@ -185,7 +185,7 @@ class ActivityController extends Controller
             'user_id' => $request->user()->id,
         ]);
 
-        $note->load('user:id,name');
+        $note->load(['user:id,name', 'attachments']);
 
         return response()->json($this->noteRow($note), 201);
     }
@@ -200,7 +200,7 @@ class ActivityController extends Controller
             'content' => $data['content'] ?? $note->content,
             'type' => 'event_note',
         ]);
-        $note->load('user:id,name');
+        $note->load(['user:id,name', 'attachments']);
 
         return response()->json($this->noteRow($note));
     }
@@ -278,7 +278,7 @@ class ActivityController extends Controller
     {
         $call = $this->visibleCallsQuery($request->user())->findOrFail($call->id);
 
-        return response()->json($this->noteRows($call->notes()->with('user:id,name')->latest()->get()));
+        return response()->json($this->noteRows($call->notes()->with(['user:id,name', 'attachments'])->latest()->get()));
     }
 
     public function storeCallNote(Request $request, CrmCall $call): JsonResponse
@@ -292,7 +292,7 @@ class ActivityController extends Controller
             'user_id' => $request->user()->id,
         ]);
 
-        $note->load('user:id,name');
+        $note->load(['user:id,name', 'attachments']);
 
         return response()->json($this->noteRow($note), 201);
     }
@@ -307,7 +307,7 @@ class ActivityController extends Controller
             'content' => $data['content'] ?? $note->content,
             'type' => 'call_note',
         ]);
-        $note->load('user:id,name');
+        $note->load(['user:id,name', 'attachments']);
 
         return response()->json($this->noteRow($note));
     }
@@ -712,6 +712,22 @@ class ActivityController extends Controller
                 'update' => $note->user_id === auth()->id(),
                 'delete' => $note->user_id === auth()->id(),
             ],
+            'audio_attachments' => $note->attachments
+                ->where('file_type', \App\Enum\AttachmentsFileTypeEnum::NOTE_AUDIO->value)
+                ->map(fn ($attachment) => [
+                    'id' => $attachment->id,
+                    'filename' => $attachment->filename,
+                    'mime_type' => $attachment->mime_type,
+                    'duration_seconds' => $attachment->duration_seconds,
+                    'transcription_status' => $attachment->transcription_status,
+                    'url' => route('notes.audio.show', ['note' => $note->id, 'attachment' => $attachment->id]),
+                    'created_at' => optional($attachment->created_at)->toISOString(),
+                    'can' => [
+                        'delete' => $attachment->user_id === auth()->id() || $note->user_id === auth()->id(),
+                    ],
+                ])
+                ->values()
+                ->all(),
         ];
     }
 
