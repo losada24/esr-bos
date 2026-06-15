@@ -1,1 +1,0 @@
-import{c as r,a as e}from"./object-37dd57d6.js";const i=r({name:e().required("Name is required")}),s=r({name:e().required("Name is required"),phone:e().required("Phone is required").max(20,"Phone number must be 20 characters or less"),email:e().email("Invalid email address").nullable(),source:e().required("Source is required")});export{s as a,i as c};

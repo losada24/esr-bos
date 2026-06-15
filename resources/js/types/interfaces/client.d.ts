@@ -13,6 +13,8 @@ export interface Client {
   address?: string
   user_id?: number
   user?: User
+  created_by_user_id?: number | null
+  created_by_user?: User | null
   client_address: ClientAddress[]
   updated_at: Date
   vip_clients: boolean

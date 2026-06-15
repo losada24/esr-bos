@@ -40,6 +40,7 @@ export interface Client {
   referral_id?: number | null
   referrer_client_id?: number | null
   referrer_user_id?: number | null
+  user_id?: number | null
   referral?: {
     id: number
     name?: string
@@ -61,7 +62,7 @@ export interface Client {
       status?: string
     }
   }
-  company_contact_id?: number
+  company_contact_id?: number | null
   company_contact_ids?: number[]
   company_contact?: CompanyContact
   company_contacts?: CompanyContact[]

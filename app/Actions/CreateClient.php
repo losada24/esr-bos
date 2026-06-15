@@ -61,7 +61,8 @@ class CreateClient {
             'source' => $request->source,
             'vip_clients' => $request->boolean('vip_clients'),
             'vip_notes' => $request->vip_notes,
-            'user_id' => auth()->user()->id,
+            'user_id' => $request->filled('user_id') ? (int) $request->input('user_id') : auth()->user()->id,
+            'created_by_user_id' => auth()->user()->id,
             'referral_id' => $referral?->id, // null si no aplica
             'company_contact_id' => $request->company_contact_id ? $request->company_contact_id : null,
           ]);

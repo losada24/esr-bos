@@ -11,15 +11,16 @@ import { type FormikErrors } from 'formik'
 import { type ClientFormType } from './ClientCommon'
 import Flatpickr from 'react-flatpickr'
 import 'flatpickr/dist/flatpickr.css'
-import { type CompanyContact, type OptionType } from '@/types'
+import { type CompanyContact, type OptionType, type User } from '@/types'
 import SearchIcon from '@/Components/Icons/SearchIcon'
 import PlusIcon from '@/Components/Icons/PlusIcon'
 import CompanyModal from './CompanyModal'
 import TagPicker, { type TagItem } from '@/Components/TagPicker'
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
+type OwnerOption = Pick<User, 'id' | 'name'>
 
-const ClientForm = ({ submitCount, errors, isCreate, setFieldValue, values, contact_type, sources, companies, showContactType = true, showCompanyField = true }: {
+const ClientForm = ({ submitCount, errors, isCreate, setFieldValue, values, contact_type, sources, companies, owners, showContactType = true, showCompanyField = true }: {
   submitCount: number
   errors: FormikErrors<ClientFormType>
   setFieldValue: (field: string, value: any, shouldValidate?: boolean) => void
@@ -28,6 +29,7 @@ const ClientForm = ({ submitCount, errors, isCreate, setFieldValue, values, cont
   contact_type: string[]
   sources: string[]
   companies: CompanyContact[]
+  owners: OwnerOption[]
   showContactType?: boolean
   showCompanyField?: boolean
   // tags: TagItem[]
@@ -65,6 +67,15 @@ const ClientForm = ({ submitCount, errors, isCreate, setFieldValue, values, cont
         label: companiesList.find(c => c.id === values.company_contact_id)?.name ?? ''
       }
     : null
+  const selectedOwner = values.user_id
+    ? {
+        value: values.user_id,
+        label: owners.find(owner => owner.id === values.user_id)?.name ?? ''
+      }
+    : null
+  const shouldShowCompanyField = showCompanyField && (
+    !showContactType || values.contact_type === CONTACT_TYPES.COMMERCIAL_CONTACT
+  )
 
   const handleOnPlaceChanged = () => {
     const searchBox = inputRef.current
@@ -95,7 +106,7 @@ const ClientForm = ({ submitCount, errors, isCreate, setFieldValue, values, cont
               setFieldValue('contact_type', e.target.value)
               setFieldValue('cost_delivery', 0)
               setFieldValue('type_of_financing', '')
-              setFieldValue('company_contact_id', 0)
+              setFieldValue('company_contact_id', null)
             }}
           >
             <option value="">Contact Type</option>
@@ -197,7 +208,28 @@ const ClientForm = ({ submitCount, errors, isCreate, setFieldValue, values, cont
           submitCount={submitCount}
           setFieldValue={setFieldValue}
         />
-       {showCompanyField && (values.contact_type === CONTACT_TYPES.COMMERCIAL_CONTACT) && (
+        <div className={submitCount ? (errors.user_id) ? 'has-error' : 'has-success' : ''}>
+          <label htmlFor="user_id">Owner</label>
+          <Select
+            id="user_id"
+            placeholder="Owner"
+            name="user_id"
+            value={selectedOwner}
+            isMulti={false}
+            onChange={(option) => {
+              setFieldValue('user_id', option?.value ?? null)
+            }}
+            options={owners.map(owner => ({ value: owner.id, label: owner.name }))}
+            styles={{
+              control: (base) => ({
+                ...base,
+                minHeight: '40px'
+              })
+            }}
+          />
+          {(submitCount && errors.user_id) ? <InputError message={errors.user_id} className="mt-2" /> : ''}
+        </div>
+       {shouldShowCompanyField && (
          <div className={submitCount ? (errors.company_contact_id) ? 'has-error' : 'has-success' : ''}>
               <label htmlFor="status">Company</label>
               <div className="flex items-center">
@@ -209,7 +241,7 @@ const ClientForm = ({ submitCount, errors, isCreate, setFieldValue, values, cont
                 value={selectedCompany }
                 isMulti={false}
                onChange={(option) => {
-                 setFieldValue('company_contact_id', option?.value ?? 0)
+                 setFieldValue('company_contact_id', option?.value ?? null)
                }}
                 options={companiesList.map(company => ({ value: company.id, label: company.name }))}
                 styles={{

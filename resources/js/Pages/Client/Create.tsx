@@ -3,12 +3,14 @@ import { Head, router } from '@inertiajs/react'
 import { Formik, type FormikHelpers } from 'formik'
 import { clientSchema, type ClientFormType } from './ClientCommon'
 import ClientForm from './ClientForm'
-import {type CompanyContact, type PageProps } from '@/types'
+import {type CompanyContact, type PageProps, type User } from '@/types'
 import { useState, useRef } from 'react'
 import AddressModal from './AddressModal'
 import { type TagItem } from '@/Components/TagPicker'
 
-export default function Create ({ auth, contact_type, sources, companies }: PageProps & { contact_type: string[], sources: string[], companies: CompanyContact[]}) {
+type OwnerOption = Pick<User, 'id' | 'name'>
+
+export default function Create ({ auth, contact_type, sources, companies, owners }: PageProps & { contact_type: string[], sources: string[], companies: CompanyContact[], owners: OwnerOption[]}) {
   const formikRef = useRef<any>()
   const [showAddressModal, setShowAddressModal] = useState<boolean>(false)
   const [address, setAddress] = useState<string[]>([])
@@ -35,7 +37,8 @@ export default function Create ({ auth, contact_type, sources, companies }: Page
     referral_id: null,
     referrer_client_id: null,
     referrer_user_id: null,
-    company_contact_id: 0
+    user_id: null,
+    company_contact_id: null
     // tags: []
   }
 
@@ -87,9 +90,10 @@ export default function Create ({ auth, contact_type, sources, companies }: Page
                 values={values}
                 contact_type={contact_type}
                 companies={companiesList}
+                owners={owners}
                 sources={sources}
                 showContactType={false}
-                showCompanyField={false}
+                showCompanyField={true}
                 // tags={tags}
               />
             )}

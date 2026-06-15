@@ -10,6 +10,17 @@ use Illuminate\Validation\Rule;
 
 class StoreClientRequest extends FormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        if ($this->input('company_contact_id') === 0 || $this->input('company_contact_id') === '0' || $this->input('company_contact_id') === '') {
+            $this->merge(['company_contact_id' => null]);
+        }
+
+        if ($this->input('user_id') === 0 || $this->input('user_id') === '0' || $this->input('user_id') === '') {
+            $this->merge(['user_id' => null]);
+        }
+    }
+
     /**
      * Determine if the user is authorized to make this request.
      *
@@ -79,6 +90,8 @@ class StoreClientRequest extends FormRequest
             'referral_id' => 'nullable|integer|exists:referrals,id',
             'referrer_client_id' => 'nullable|integer|exists:clients,id',
             'referrer_user_id' => 'nullable|integer|exists:users,id',
+            'user_id' => 'nullable|integer|exists:users,id',
+            'company_contact_id' => 'nullable|integer|exists:company_contacts,id',
             'from_modal' => 'sometimes|boolean',
             'force_create' => 'sometimes|boolean',
         ];
