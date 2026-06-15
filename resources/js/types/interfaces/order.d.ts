@@ -19,6 +19,7 @@ export interface Order {
   notes?: string
   work_team_notes?: string
   client_id: number
+  contact_type?: string | null
   user_id?: number
   created_at?: Date
   updated_at?: Date

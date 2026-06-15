@@ -8,10 +8,13 @@ use App\Actions\CreateClient;
 use App\Actions\UpdateClient;
 use App\Enum\ContactSourceEnum;
 use App\Enum\ContactTypeEnum;
+use App\Enum\RoleEnum;
+use App\Enum\StatusUserEnum;
 use App\Http\Requests\StoreClientRequest;
 use App\Http\Requests\UpdateClientRequest;
 use App\Models\ClientAddress;
 use App\Models\CompanyContact;
+use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
 
 class ClientController extends Controller
@@ -24,7 +27,7 @@ class ClientController extends Controller
     public function index(Request $request)
     {
         return Inertia::render('Client/Index', [
-          'clients' => Client::with(['clientAddress', 'user'])->filter($request->only(['text']))
+          'clients' => Client::with(['clientAddress', 'companyContact', 'createdByUser', 'user'])->filter($request->only(['text']))
             ->orderBy('updated_at', 'desc')
             ->paginate()
             ->withQueryString()
@@ -44,6 +47,7 @@ class ClientController extends Controller
           ContactTypeEnum::COMMERCIAL_CONTACT->value,
         ],
         'companies' => CompanyContact::all(),
+        'owners' => $this->ownerOptions(),
           'sources' => [
             ContactSourceEnum::TIK_TOK->value,
             ContactSourceEnum::INSTAGRAM_FACEBOOK->value,
@@ -103,6 +107,7 @@ class ClientController extends Controller
             ContactTypeEnum::COMMERCIAL_CONTACT->value,
           ],
           'companies' => CompanyContact::all(),
+          'owners' => $this->ownerOptions($client->user_id),
           'sources' => [
              ContactSourceEnum::TIK_TOK->value,
             ContactSourceEnum::INSTAGRAM_FACEBOOK->value,
@@ -171,6 +176,27 @@ class ClientController extends Controller
         return redirect()
             ->back()
             ->with('success', 'Client deleted successfully.');
+    }
+
+    private function ownerOptions(?int $currentOwnerId = null)
+    {
+        $owners = User::role(RoleEnum::OWNER->value)
+            ->select('id', 'name')
+            ->where('status', StatusUserEnum::ACTIVE->value)
+            ->orderBy('name')
+            ->get();
+
+        if ($currentOwnerId && !$owners->contains('id', $currentOwnerId)) {
+            $currentOwner = User::query()
+                ->select('id', 'name')
+                ->find($currentOwnerId);
+
+            if ($currentOwner) {
+                $owners->push($currentOwner);
+            }
+        }
+
+        return $owners->sortBy('name')->values();
     }
 
     /**

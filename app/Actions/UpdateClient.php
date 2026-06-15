@@ -43,7 +43,7 @@ class UpdateClient {
         'city' => $request->city,
         'state' => $request->state,
         'zip' => $request->zip,
-        'user_id' => auth()->user()->id,
+        'user_id' => $request->filled('user_id') ? (int) $request->input('user_id') : auth()->user()->id,
         'vip_clients' => $request->vip_clients,
         'vip_notes' => $request->vip_notes,
         'company_contact_id' => $request->company_contact_id ? $request->company_contact_id : null,

@@ -3,12 +3,14 @@ import { Head, router, useForm } from '@inertiajs/react'
 import { Formik, type FormikHelpers } from 'formik'
 import { type ClientEditFormType, clientSchema, type ClientFormType } from './ClientCommon'
 import ClientForm from './ClientForm'
-import { type User, type PageProps, type ClientAddress, type CompanyContact } from '@/types'
+import { type Auth, type User, type PageProps, type ClientAddress, type CompanyContact } from '@/types'
 import { useState, useRef } from 'react'
 import AddressModal from './AddressModal'
 import TagPicker, { type TagItem } from '@/Components/TagPicker'
 
-export default function Edit ({ auth, clients, tags, clientAddress, contact_type, sources, companies }: PageProps & { auth: User, clients: ClientEditFormType, tags: TagItem[], clientAddress: ClientAddress, contact_type: string[], sources: string[], companies: CompanyContact[] }) {
+type OwnerOption = Pick<User, 'id' | 'name'>
+
+export default function Edit ({ auth, clients, tags, clientAddress, contact_type, sources, companies, owners }: PageProps & { auth: Auth, clients: ClientEditFormType, tags: TagItem[], clientAddress: ClientAddress, contact_type: string[], sources: string[], companies: CompanyContact[], owners: OwnerOption[] }) {
 
   const formikRef = useRef<any>()
   const [showAddressModal, setShowAddressModal] = useState<boolean>(false)
@@ -35,7 +37,8 @@ export default function Edit ({ auth, clients, tags, clientAddress, contact_type
     referral_id: clients?.referral?.id ?? null,
     referrer_client_id: clients?.referral?.client_id ?? null,
     referrer_user_id: clients?.referral?.user_id ?? null,
-    company_contact_id: clients?.company_contact_id ?? 0,
+    user_id: clients?.user_id ?? auth.user.id,
+    company_contact_id: clients?.company_contact_id ?? null,
     tags: tags ?? []
   }
 
@@ -92,8 +95,9 @@ export default function Edit ({ auth, clients, tags, clientAddress, contact_type
                 contact_type={contact_type}
                 sources={sources}
                 companies={companies}
+                owners={owners}
                 showContactType={false}
-                showCompanyField={false}
+                showCompanyField={true}
                // tags={tags}
               />
             )}

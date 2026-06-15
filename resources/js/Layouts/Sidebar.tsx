@@ -79,6 +79,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
     || CAN_VIEW_OVERDUE_STAGE_REPORT
     || CAN_VIEW_MARKETING_REPORT
     || CAN_VIEW_SALES_APPOINTMENTS
+  const SHOW_HIDDEN_SIDEBAR_MODULES = false
 
   return (
         <div className={`${themeState.semidark ? 'dark' : ''}`}>
@@ -114,7 +115,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                 <span>Frontdesk</span>
                             </h2>
 
-                            {CAN_VIEW_FRONTDESK_PIPELINE && (
+                            {SHOW_HIDDEN_SIDEBAR_MODULES && CAN_VIEW_FRONTDESK_PIPELINE && (
                               <li className="menu nav-item">
                                   <NavLink href={route('frontdesk.index')} active={route().current('frontdesk.index')} className="group">
                                       <div className="flex items-center">
@@ -146,7 +147,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                   </NavLink>
                               </li>
                             )}
-                            {CAN_VIEW_FRONTDESK_PIPELINE && (
+                            {SHOW_HIDDEN_SIDEBAR_MODULES && CAN_VIEW_FRONTDESK_PIPELINE && (
                               <li className="menu nav-item">
                                   <NavLink href={route('source.index')} active={route().current('source.index')} className="group">
                                       <div className="flex items-center">
@@ -159,7 +160,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                               </>
                           )}
 
-                           {(IS_ADMIN || IS_OWNER || IS_OWNER_ADMIN || HAS_FRONTDESK_ADMIN_ROLE || IS_ACCOUNT_MANAGER || IS_ACCOUNTING) && (
+                           {SHOW_HIDDEN_SIDEBAR_MODULES && (IS_ADMIN || IS_OWNER || IS_OWNER_ADMIN || HAS_FRONTDESK_ADMIN_ROLE || IS_ACCOUNT_MANAGER || IS_ACCOUNTING) && (
                             <>
                             <h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">
                                 <svg className="w-4 h-5 flex-none hidden" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
@@ -204,7 +205,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                               </li>
                             </>
                            )}
-                           {(IS_ADMIN || IS_OWNER || IS_OWNER_ADMIN || IS_ACCOUNT_MANAGER || IS_ACCOUNTING || HAS_FRONTDESK_ADMIN_ROLE) && (
+                           {SHOW_HIDDEN_SIDEBAR_MODULES && (IS_ADMIN || IS_OWNER || IS_OWNER_ADMIN || IS_ACCOUNT_MANAGER || IS_ACCOUNTING || HAS_FRONTDESK_ADMIN_ROLE) && (
                             <>
                              <h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">
                                 <svg className="w-4 h-5 flex-none hidden" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
@@ -222,7 +223,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                             </li>
                             </>
                            )}
-                           {CAN_VIEW_ORDER_STORAGE && (
+                           {SHOW_HIDDEN_SIDEBAR_MODULES && CAN_VIEW_ORDER_STORAGE && (
                                <>
                              <h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">
                                 <svg className="w-4 h-5 flex-none hidden" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
@@ -264,6 +265,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                         </div>
                                     </NavLink>
                             </li>
+                            {SHOW_HIDDEN_SIDEBAR_MODULES && (
                             <li className="menu nav-item">
                               <NavLink href={route('installation_team.index')} active={route().current('installation_team.index') || route().current('installation_team.create') || route().current('installation_team.edit')} className="group">
                                   <div className="flex items-center">
@@ -272,6 +274,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                   </div>
                               </NavLink>
                           </li>
+                            )}
 
                            </>
                             )}
@@ -357,7 +360,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                   )}
                                 </>
                               )}
-                              {CAN_VIEW_REPORTS && (
+                              {SHOW_HIDDEN_SIDEBAR_MODULES && CAN_VIEW_REPORTS && (
                                 <>
                                 <h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">
                                       <svg className="w-4 h-5 flex-none hidden" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
@@ -507,7 +510,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                   )}
                                 </>
                               )}
-                            {CAN_VIEW_ACCOUNTING_SECTION && (
+                            {SHOW_HIDDEN_SIDEBAR_MODULES && CAN_VIEW_ACCOUNTING_SECTION && (
                               <>
                                 <h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">
                                     <svg className="w-4 h-5 flex-none hidden" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
@@ -597,53 +600,57 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                         </li> */}
                               </>
                             )}
-                            <h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">
-                                <svg className="w-4 h-5 flex-none hidden" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                                </svg>
-                                <span>Actions</span>
-                            </h2>
-                            {(IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER) && (
+                            {SHOW_HIDDEN_SIDEBAR_MODULES && (
                               <>
+                                <h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">
+                                    <svg className="w-4 h-5 flex-none hidden" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                                    </svg>
+                                    <span>Actions</span>
+                                </h2>
+                                {(IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER) && (
+                                  <>
+                                    <li className="menu nav-item">
+                                        <NavLink href={route('order.index')} active={route().current('order.index')} className="group">
+                                            <div className="flex items-center">
+                                                <FolderIcon />
+                                                <SidebarLinkLabel>Order</SidebarLinkLabel>
+                                            </div>
+                                        </NavLink>
+                                    </li>
+                                  </>
+                                )}
+                                {(IS_ADMIN || IS_FRONTDESK || IS_ACCOUNT_MANAGER || IS_OWNER) && (
+                                  <>
+                                  </>
+                                )}
+
+                                {/* <h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">
+                                    <svg className="w-4 h-5 flex-none hidden" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                                    </svg>
+                                    <span>Frontdesk</span>
+                                </h2>
+
                                 <li className="menu nav-item">
-                                    <NavLink href={route('order.index')} active={route().current('order.index')} className="group">
+                                    <NavLink href={route('frontdesk.index')} active={route().current('frontdesk.index')} className="group">
                                         <div className="flex items-center">
-                                            <FolderIcon />
-                                            <SidebarLinkLabel>Order</SidebarLinkLabel>
+                                            <CodeIcon />
+                                            <SidebarLinkLabel>Pipeline</SidebarLinkLabel>
                                         </div>
                                     </NavLink>
-                                </li>
+                                </li> */}
+
+                                <li className="menu nav-item">
+                                        <NavLink href={route('client.index')} active={route().current('client.index')} className="group">
+                                            <div className="flex items-center">
+                                                <ReferralIcon />
+                                                <SidebarLinkLabel>Contact</SidebarLinkLabel>
+                                            </div>
+                                        </NavLink>
+                                    </li>
                               </>
                             )}
-                            {(IS_ADMIN || IS_FRONTDESK || IS_ACCOUNT_MANAGER || IS_OWNER) && (
-                              <>
-                              </>
-                            )}
-
-                            {/* <h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">
-                                <svg className="w-4 h-5 flex-none hidden" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                                </svg>
-                                <span>Frontdesk</span>
-                            </h2>
-
-                            <li className="menu nav-item">
-                                <NavLink href={route('frontdesk.index')} active={route().current('frontdesk.index')} className="group">
-                                    <div className="flex items-center">
-                                        <CodeIcon />
-                                        <SidebarLinkLabel>Pipeline</SidebarLinkLabel>
-                                    </div>
-                                </NavLink>
-                            </li> */}
-
-                            <li className="menu nav-item">
-                                    <NavLink href={route('client.index')} active={route().current('client.index')} className="group">
-                                        <div className="flex items-center">
-                                            <ReferralIcon />
-                                            <SidebarLinkLabel>Contact</SidebarLinkLabel>
-                                        </div>
-                                    </NavLink>
-                                </li>
 
                                 {/* <li className="menu nav-item">
                                     <NavLink href={route('company_contact.index')} active={route().current('company_contact.index')} className="group">

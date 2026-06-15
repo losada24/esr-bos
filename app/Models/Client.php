@@ -26,6 +26,7 @@ class Client extends Model
       'phone',
       'email',
       'user_id',
+      'created_by_user_id',
       'mobile_user_id',
       'vip_clients',
       'vip_notes',
@@ -66,6 +67,10 @@ class Client extends Model
 
     public function user(): BelongsTo {
       return $this->belongsTo(User::class);
+    }
+
+    public function createdByUser(): BelongsTo {
+      return $this->belongsTo(User::class, 'created_by_user_id');
     }
 
     public function mobileUser(): BelongsTo {

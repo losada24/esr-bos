@@ -1,0 +1,1 @@
+import{j as n}from"./app-b857f6ab.js";function a({value:t,className:e="",children:o,...r}){return n.jsx("label",{...r,className:"block font-medium text-sm text-gray-700 "+e,children:t!==void 0})}export{a as I};
