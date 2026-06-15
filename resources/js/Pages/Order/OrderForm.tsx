@@ -989,6 +989,21 @@ const OrderForm = ({
   const scheduleOptions = isCashAndFinancedPaymentMethod
     ? [CUSTOM_SCHEDULE_TYPE]
     : payment_schedule_types
+  const orderTypeOptions = (() => {
+    const options = order_types.filter((order_type) => order_type !== 'SUPPLY')
+    const current = String(values.order_type ?? '').trim()
+    return current && !options.includes(current) ? [current, ...options] : options
+  })()
+  const productLineOptions = (() => {
+    const current = String(values.product_line ?? '').trim()
+    return current && !(PRODUCT_LINES as readonly string[]).includes(current)
+      ? [current, ...PRODUCT_LINES]
+      : PRODUCT_LINES
+  })()
+  const paymentScheduleOptions = (() => {
+    const current = String(values.payment_schedule_type ?? '').trim()
+    return current && !scheduleOptions.includes(current) ? [current, ...scheduleOptions] : scheduleOptions
+  })()
   const selectedScheduleItems = values.payment_schedule_type
     ? (scheduleTemplates[values.payment_schedule_type] ?? [])
     : []
@@ -1326,11 +1341,9 @@ const OrderForm = ({
                 }}
               >
                 <option value="">Order Type</option>
-                {order_types
-                  .filter((order_type) => order_type !== 'SUPPLY')
-                  .map((order_type, index) => (
-                    <option key={index} value={order_type}>{order_type}</option>
-                  ))}
+                {orderTypeOptions.map((order_type, index) => (
+                  <option key={index} value={order_type}>{order_type}</option>
+                ))}
               </Field>
               {(submitCount && errors.order_type) ? <InputError message={errors.order_type} className="mt-2" /> : ''}
             </div>
@@ -1343,7 +1356,7 @@ const OrderForm = ({
                 as="select"
               >
                 <option value="">Product Line</option>
-                {PRODUCT_LINES.map((productLine) => (
+                {productLineOptions.map((productLine) => (
                   <option key={productLine} value={productLine}>{productLine}</option>
                 ))}
               </Field>
@@ -2097,7 +2110,7 @@ const OrderForm = ({
                   <option value="">
                     {isCashAndFinancedPaymentMethod ? 'CUSTOMIZED' : 'Select Payment Schedule'}
                   </option>
-                  {scheduleOptions.map((type, index) => (
+                  {paymentScheduleOptions.map((type, index) => (
                     <option key={index} value={type}>{type}</option>
                   ))}
                 </Field>

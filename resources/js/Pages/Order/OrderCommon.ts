@@ -136,7 +136,19 @@ export const orderFormObj: OrderFormValues = {
   is_new_travel_cost: false,
   new_travel_cost: 0,
   material_received_date: null,
-  area: 0
+  area: 0,
+  order_type: '',
+  product_line: '',
+  is_supply: false,
+  has_contract_signed: false,
+  down_payment: null,
+  payment_schedule: null,
+  payment_schedule_type: '',
+  custom_schedule: [],
+  change_order_enabled: false,
+  change_order_amount: null,
+  change_order_note: '',
+  attachment_role_targets: {}
 }
 
 export interface OrderProductExtraWorksFormValues {
@@ -181,6 +193,10 @@ export const loadOrderFormObj = (order: Order): OrderFormValues => {
     vip_clients: order.client?.vip_clients ?? false,
     vip_notes: order.client?.vip_notes ?? '',
     name: order.name,
+    order_type: order.order_type ?? '',
+    product_line: order.product_line ?? '',
+    is_supply: order.is_supply ?? false,
+    has_contract_signed: order.has_contract_signed ?? false,
     order_number: order.order_number,
     invoice_number: order.invoice_number ?? '',
     job_address: order.job_address,
@@ -207,6 +223,19 @@ export const loadOrderFormObj = (order: Order): OrderFormValues => {
     duration_of_work_id: order.duration_of_work_id,
     method_of_payment: order.method_of_payment,
     type_of_financing: order.type_of_financing,
+    down_payment: order.down_payment ?? null,
+    payment_schedule: order.payment_schedule ?? null,
+    payment_schedule_type: scheduleType,
+    custom_schedule: customSchedule,
+    change_order_enabled: Boolean(order.change_order_payment),
+    change_order_amount: order.change_order_payment?.amount != null ? Number(order.change_order_payment.amount) : null,
+    change_order_note: order.change_order_payment?.note ?? '',
+    attachment_role_targets: {
+      ADMIN: getAttachmentRoleTargetIds('ADMIN'),
+      OWNER: getAttachmentRoleTargetIds('OWNER'),
+      SUPERVISOR: getAttachmentRoleTargetIds('SUPERVISOR'),
+      ACCOUNTING: getAttachmentRoleTargetIds('ACCOUNTING')
+    },
     service: order.service,
     contract_signing_date: order.contract_signing_date ?? null,
     payment_factory_date: order.payment_factory_date ?? null,

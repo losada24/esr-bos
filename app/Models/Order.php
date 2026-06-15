@@ -31,6 +31,8 @@ class Order extends Model
   protected $fillable = [
     'order_number',
     'invoice_number',
+    'order_type',
+    'product_line',
     'name',
     'job_address',
     'job_city',

@@ -7,6 +7,8 @@ export interface Order {
   name: string
   order_number: number
   invoice_number?: string
+  order_type?: string | null
+  product_line?: string | null
   is_supply?: boolean
   has_contract_signed?: boolean
   job_address?: string

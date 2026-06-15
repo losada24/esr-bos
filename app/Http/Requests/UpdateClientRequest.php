@@ -45,7 +45,9 @@ class UpdateClientRequest extends FormRequest
             'phone' => [
               'required',
               'regex:/^\d{10}$/',
-              Rule::unique('clients', 'phone')->ignore($this->id)
+              Rule::unique('clients', 'phone')
+                ->ignore($this->id)
+                ->whereNull('deleted_at')
             ],
             'address' => 'nullable|string|max:500',
             'vip_clients' => 'boolean',
