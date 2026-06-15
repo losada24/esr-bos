@@ -630,7 +630,7 @@ export default function ServiceControlForm ({
                     <FieldError message={errors.cost} />
                   </div>
                   {dateField('service_created_date', 'Service Created Date')}
-                  {dateField('service_id_requested_date', 'Service ID Request Date')}
+                  {dateField('service_id_requested_date', 'Obtained Date')}
                   {dateField('eta_date', 'ETA Date')}
                   {dateField('parts_received_date', 'Parts Received Date')}
                   {dateField('part_delivered_date', 'Part Delivered Date')}
