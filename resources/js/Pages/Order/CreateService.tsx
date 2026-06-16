@@ -19,6 +19,7 @@ import {
   type InstallationTeam
 } from '@/types'
 import { PAYMENT_METHODS, SERVICES } from '@/Utils/constants'
+import { NO_CLIENT_EMAIL_SELECTION } from '@/Pages/Sales/ContractSignedModal'
 
 export default function CreateService ({
   auth,
@@ -72,7 +73,8 @@ export default function CreateService ({
     type_of_financing: '',
     vip_clients: false,
     vip_notes: '',
-    do_not_send_email: false,
+    do_not_send_email: true,
+    client_email_selection: NO_CLIENT_EMAIL_SELECTION,
     // @ts-expect-error Formik additional field
     orderProducts: []
   }
@@ -116,7 +118,8 @@ export default function CreateService ({
       contact_type: 'RESIDENTIAL CONTACT',
       vip_clients: values.vip_clients,
       vip_notes: values.vip_notes,
-      do_not_send_email: true
+      client_email_selection: values.client_email_selection ?? NO_CLIENT_EMAIL_SELECTION,
+      do_not_send_email: (values.client_email_selection ?? NO_CLIENT_EMAIL_SELECTION) === NO_CLIENT_EMAIL_SELECTION
     }
 
     delete payload.user
