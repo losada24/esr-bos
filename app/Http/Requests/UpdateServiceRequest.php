@@ -100,6 +100,7 @@ class UpdateServiceRequest extends FormRequest
                     MethodOfPayment::FINANCED->value,
                     MethodOfPayment::FINANCEDCASH->value,
                     MethodOfPayment::AIA->value,
+                    MethodOfPayment::NOTPAYMENT->value,
                 ),
             ],
             'payment_schedule_type' => [

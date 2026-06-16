@@ -212,6 +212,7 @@ class OrderController extends Controller
   public function createService()
   {
     $data = $this->getOrderFormData([ServiceEnum::SERVICE->value]);
+    $data['methods_of_payment'][] = MethodOfPayment::NOTPAYMENT->value;
     $data['defaultService'] = ServiceEnum::SERVICE->value;
     $data['status'] = [
       OrderStatusEnum::PLANNED->value,
@@ -305,6 +306,7 @@ class OrderController extends Controller
         OrderStatusEnum::FINAL_COLLECT->value,
         OrderStatusEnum::COMPLETE->value,
       ];
+      $data['methods_of_payment'][] = MethodOfPayment::NOTPAYMENT->value;
       $data['supervisors'] = $data['supervisors']->map(function ($supervisor) {
         return [
           'id' => $supervisor->id,
@@ -516,7 +518,7 @@ class OrderController extends Controller
       abort(403, 'You are not authorized to update this order.');
     }
 
-    if ($request->user()->hasRole(RoleEnum::SUPERVISOR->value)) {
+    if ($request->user()->hasSupervisorOnlyAccess()) {
       $request->merge([
         'installation_date' => $order->installation_date,
         'installation_end_date' => $order->installation_end_date,

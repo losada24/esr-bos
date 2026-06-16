@@ -25,6 +25,11 @@ type ClientOption = {
   label: string
 }
 
+type SelectOption = {
+  value: string
+  label: string
+}
+
 export type ServiceControlFormData = {
   order_id: number | null
   client_id: number | string | null
@@ -38,7 +43,7 @@ export type ServiceControlFormData = {
   service_name: string
   service_id: string
   is_bm: boolean
-  service_type: string
+  service_type: string[]
   description: string
   requires_part: boolean
   requested_parts: boolean
@@ -99,6 +104,12 @@ const humanize = (value: string | null | undefined): string => {
   return value.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase())
 }
 
+const humanizeList = (values: string[] | string | null | undefined): string => {
+  const list = Array.isArray(values) ? values : (values ? [values] : [])
+
+  return list.length > 0 ? list.map((value) => humanize(value)).join(', ') : 'N/A'
+}
+
 const FieldError = ({ message }: { message?: string }) => {
   if (!message) return null
   return <p className="mt-1 text-xs font-medium text-rose-600">{message}</p>
@@ -155,6 +166,8 @@ export default function ServiceControlForm ({
   ].filter(Boolean) as PartyOption[]
   const effectiveRequesterOptions = requesterOptions.length > 0 ? requesterOptions : fallbackRequesterOptions
   const effectiveAssigneeOptions = assigneeOptions.length > 0 ? assigneeOptions : fallbackAssigneeOptions
+  const serviceTypeSelectOptions: SelectOption[] = serviceTypeOptions.map((option) => ({ value: option, label: humanize(option) }))
+  const selectedServiceTypeOptions = serviceTypeSelectOptions.filter((option) => data.service_type.includes(option.value))
   const [clientSearch, setClientSearch] = useState('')
   const [clientResults, setClientResults] = useState<ClientOption[]>([])
   const [clientLoading, setClientLoading] = useState(false)
@@ -397,7 +410,7 @@ export default function ServiceControlForm ({
                 {relatedServices.map((item) => (
                   <Link key={item.id} href={route('service-control.edit', item.id)} className="rounded-lg border border-slate-200 bg-white px-4 py-3 shadow-sm transition hover:border-sky-300">
                     <div className="flex items-center justify-between gap-2">
-                      <p className="text-sm font-semibold text-slate-700">{item.service_name?.trim() || humanize(item.service_type)}</p>
+                      <p className="text-sm font-semibold text-slate-700">{item.service_name?.trim() || humanizeList(item.service_type)}</p>
                       <span className="text-xs text-slate-400">{item.open_days ?? 0} days</span>
                     </div>
                     <p className="mt-1 text-xs text-slate-500">Service ID: {item.service_id?.trim() || 'N/A'}</p>
@@ -514,11 +527,23 @@ export default function ServiceControlForm ({
                   <FieldError message={errors.service_id} />
                 </div>
                 <div>
-                  <label htmlFor="service_type" className="text-sm font-semibold text-slate-700">Service Type</label>
-                  <select id="service_type" value={data.service_type} onChange={(event) => { setData('service_type', event.target.value) }} disabled={isReadOnly} className="form-select mt-1">
-                    <option value="">Select</option>
-                    {serviceTypeOptions.map((option) => <option key={option} value={option}>{humanize(option)}</option>)}
-                  </select>
+                  <label className="text-sm font-semibold text-slate-700">Service Type</label>
+                  <Select
+                    id="service_type"
+                    placeholder="Select service type"
+                    name="service_type"
+                    isMulti
+                    isDisabled={isReadOnly}
+                    value={selectedServiceTypeOptions}
+                    onChange={(value) => {
+                      const options = Array.from(value as readonly SelectOption[])
+                      setData('service_type', options.map((option) => option.value))
+                    }}
+                    options={serviceTypeSelectOptions}
+                    menuPortalTarget={selectPortalTarget}
+                    menuPosition="fixed"
+                    styles={selectStyles}
+                  />
                   <FieldError message={errors.service_type} />
                 </div>
                 <div>

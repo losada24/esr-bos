@@ -8,6 +8,13 @@ const humanize = (value: string | null | undefined): string => {
     .replace(/\b\w/g, (char) => char.toUpperCase())
 }
 
+const renderValue = (value: unknown): string => {
+  if (Array.isArray(value)) return value.map((item) => humanize(String(item))).join(', ') || 'N/A'
+  if (typeof value === 'string') return humanize(value)
+
+  return String(value ?? 'N/A')
+}
+
 const renderChangeList = (label: string, values: Record<string, unknown> | null | undefined) => {
   if (!values || Object.keys(values).length === 0) return null
 
@@ -18,7 +25,7 @@ const renderChangeList = (label: string, values: Record<string, unknown> | null 
         {Object.entries(values).map(([field, value]) => (
           <div key={field} className="flex flex-wrap items-center gap-2 text-xs text-slate-600">
             <span className="font-semibold text-slate-500">{humanize(field)}</span>
-            <span className="rounded-md bg-slate-100 px-2 py-0.5">{String(value ?? 'N/A')}</span>
+            <span className="rounded-md bg-slate-100 px-2 py-0.5">{renderValue(value)}</span>
           </div>
         ))}
       </div>

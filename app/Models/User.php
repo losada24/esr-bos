@@ -111,6 +111,16 @@ class User extends Authenticatable
         return $this->created_by == auth()->user()->id;
     }
 
+    public function hasSupervisorOnlyAccess(): bool
+    {
+        return $this->hasRole(RoleEnum::SUPERVISOR->value)
+            && ! $this->hasAnyRole([
+                RoleEnum::ADMIN->value,
+                RoleEnum::ACCOUNT_MANAGER->value,
+                RoleEnum::SERVICE_MANAGER->value,
+            ]);
+    }
+
     public function createdBy()
     {
         return $this->belongsTo(User::class, 'created_by');

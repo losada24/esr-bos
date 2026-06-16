@@ -80,6 +80,9 @@ export default function CreateService ({
   }
 
   const handleSubmit = async (values: OrderFormValues & { orderProducts?: any[] }, helpers: FormikHelpers<OrderFormValues>) => {
+    const isFinancedMethod = values.method_of_payment === PAYMENT_METHODS.FINANCED || values.method_of_payment === PAYMENT_METHODS.CASH_AND_FINANCE
+    const isCashMethod = values.method_of_payment === PAYMENT_METHODS.CASH
+
     const payload: Record<string, any> = {
       ...values,
       owners: [],
@@ -104,8 +107,8 @@ export default function CreateService ({
       }),
       status: values.status,
       method_of_payment: values.method_of_payment,
-      payment_schedule_type: values.method_of_payment === PAYMENT_METHODS.CASH ? values.payment_schedule_type : null,
-      custom_schedule: values.method_of_payment === PAYMENT_METHODS.CASH && values.payment_schedule_type === 'CUSTOMIZED'
+      payment_schedule_type: isCashMethod ? values.payment_schedule_type : null,
+      custom_schedule: isCashMethod && values.payment_schedule_type === 'CUSTOMIZED'
         ? (values.custom_schedule ?? [])
           .map((item: { label?: string, amount?: string | number }) => ({
             label: String(item.label ?? '').trim(),
@@ -113,7 +116,8 @@ export default function CreateService ({
           }))
           .filter((item: { label: string, amount: number }) => item.label !== '' && Number.isFinite(item.amount))
         : [],
-      type_of_financing: values.type_of_financing ? values.type_of_financing : null,
+      type_of_financing: isFinancedMethod && values.type_of_financing ? values.type_of_financing : null,
+      down_payment: values.method_of_payment === PAYMENT_METHODS.CASH_AND_FINANCE ? values.down_payment : null,
       service: values.service ?? resolvedService,
       contact_type: 'RESIDENTIAL CONTACT',
       vip_clients: values.vip_clients,

@@ -22,14 +22,15 @@ class UpdateServiceControlRequest extends FormRequest
     {
         $newClient = $this->input('new_client', []);
 
-        if (! is_array($newClient) || ! array_key_exists('phone', $newClient)) {
-            return;
+        if (is_array($newClient) && array_key_exists('phone', $newClient)) {
+            $newClient['phone'] = preg_replace('/\D+/', '', (string) $newClient['phone']);
         }
 
-        $newClient['phone'] = preg_replace('/\D+/', '', (string) $newClient['phone']);
+        $serviceType = $this->input('service_type');
 
         $this->merge([
             'new_client' => $newClient,
+            'service_type' => is_string($serviceType) && $serviceType !== '' ? [$serviceType] : $serviceType,
         ]);
     }
 
@@ -53,7 +54,8 @@ class UpdateServiceControlRequest extends FormRequest
             'service_name' => ['required', 'string', 'max:255'],
             'service_id' => ['nullable', 'string', 'max:255'],
             'is_bm' => ['boolean'],
-            'service_type' => ['nullable', Rule::requiredIf(fn () => ! $this->boolean('is_bm')), 'string', Rule::in(array_column(ServiceControlTypeEnum::cases(), 'value'))],
+            'service_type' => [Rule::excludeIf(fn () => $this->boolean('is_bm')), Rule::requiredIf(fn () => ! $this->boolean('is_bm')), 'array', 'min:1'],
+            'service_type.*' => ['string', Rule::in(array_column(ServiceControlTypeEnum::cases(), 'value'))],
             'description' => ['nullable', 'string'],
             'requires_part' => ['boolean'],
             'requested_parts' => ['boolean'],
