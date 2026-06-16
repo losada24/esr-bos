@@ -14,6 +14,10 @@ type EditProps = PageProps & {
   assigneeOptions: any[]
 }
 
+const normalizeServiceTypes = (value: ServiceControl['service_type']): string[] => {
+  return Array.isArray(value) ? value : (value ? [value] : [])
+}
+
 export default function Edit ({
   auth,
   flash,
@@ -40,7 +44,7 @@ export default function Edit ({
     service_name: serviceControl.service_name ?? '',
     service_id: serviceControl.service_id ?? '',
     is_bm: Boolean(serviceControl.is_bm),
-    service_type: serviceControl.service_type ?? '',
+    service_type: normalizeServiceTypes(serviceControl.service_type),
     description: serviceControl.description ?? '',
     requires_part: Boolean(serviceControl.requires_part),
     requested_parts: Boolean(serviceControl.requested_parts),

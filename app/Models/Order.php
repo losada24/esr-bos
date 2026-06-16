@@ -265,7 +265,7 @@ class Order extends Model
           $q->where('supervisor_id', $supervisor->user->id);
         });*/
 
-      if ($user->hasRole(RoleEnum::SUPERVISOR->value)) {
+      if ($user->hasSupervisorOnlyAccess()) {
         $query->where('supervisor_id', $user->id)
           ->whereIn('status', [
             OrderStatusEnum::PLANNED,        // Solo órdenes en "PLANNED"

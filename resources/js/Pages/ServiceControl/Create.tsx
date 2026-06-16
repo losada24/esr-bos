@@ -44,7 +44,7 @@ export default function Create ({
     service_name: `${order.name ?? 'Order'} ${isBm ? 'BM' : 'Services'}`,
     service_id: '',
     is_bm: isBm,
-    service_type: 'OTHER',
+    service_type: ['OTHER'],
     description: '',
     requires_part: false,
     requested_parts: false,

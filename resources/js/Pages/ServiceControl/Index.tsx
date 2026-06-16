@@ -41,6 +41,12 @@ const humanize = (value: string | null | undefined): string => {
     .replace(/\b\w/g, (char) => char.toUpperCase())
 }
 
+const humanizeList = (values: string[] | string | null | undefined): string => {
+  const list = Array.isArray(values) ? values : (values ? [values] : [])
+
+  return list.length > 0 ? list.map((value) => humanize(value)).join(', ') : 'N/A'
+}
+
 function buildFilterState (filters: ServiceControlFilterState): ServiceControlFilterState {
   const type = filters.type === 'bm' ? 'bm' : 'services'
 
@@ -365,7 +371,7 @@ export default function Index ({
                           )
                         : (
                           <>
-                            <td className="px-4 py-4 align-top">{humanize(serviceControl.service_type)}</td>
+                            <td className="px-4 py-4 align-top">{humanizeList(serviceControl.service_type)}</td>
                             <td className="px-4 py-4 align-top">
                               <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                                 {humanize(serviceControl.service_status)}

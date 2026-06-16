@@ -516,7 +516,7 @@ class ActivityController extends Controller
             return $query->accessibleToOwner($user);
         }
 
-        if ($user->hasRole(RoleEnum::SUPERVISOR->value)) {
+        if ($user->hasSupervisorOnlyAccess()) {
             return $query->where('supervisor_id', $user->id);
         }
 
@@ -569,6 +569,8 @@ class ActivityController extends Controller
 
         return $user->hasAnyRole([
             RoleEnum::ADMIN->value,
+            RoleEnum::ACCOUNT_MANAGER->value,
+            RoleEnum::SERVICE_MANAGER->value,
             RoleEnum::OWNER_ADMIN->value,
             RoleEnum::FRONTDESK_ADMIN->value,
         ]);

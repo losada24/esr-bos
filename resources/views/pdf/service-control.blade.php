@@ -145,7 +145,7 @@
                     <td class="left-cell compact">{{ $serviceControl['order']['address_label'] ?? 'N/A' }}</td>
                     <td>{{ $serviceControl['service_id'] ?? 'N/A' }}</td>
                     <td>{{ $serviceControl['service_created_date'] ?? 'N/A' }}</td>
-                    <td>{{ $serviceControl['service_type'] ?? 'N/A' }}</td>
+                    <td>{{ is_array($serviceControl['service_type'] ?? null) ? implode(', ', $serviceControl['service_type']) : ($serviceControl['service_type'] ?? 'N/A') }}</td>
                     <td class="left-cell compact">{{ $serviceControl['description'] ?? 'N/A' }}</td>
                     <td>{{ ! empty($serviceControl['requires_part']) ? 'Yes' : 'No' }}</td>
                     <td>{{ ! empty($serviceControl['requested_parts']) ? 'Yes' : 'No' }}</td>

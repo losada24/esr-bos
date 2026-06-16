@@ -85,6 +85,7 @@ class StoreServiceRequest extends FormRequest
                     MethodOfPayment::FINANCED->value,
                     MethodOfPayment::FINANCEDCASH->value,
                     MethodOfPayment::AIA->value,
+                    MethodOfPayment::NOTPAYMENT->value,
                 ),
             ],
             'type_of_financing' => [
