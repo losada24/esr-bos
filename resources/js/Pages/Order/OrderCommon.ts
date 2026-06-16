@@ -192,6 +192,7 @@ export const loadOrderFormObj = (order: Order): OrderFormValues => {
 
   return {
     id: order.id,
+    client: order.client,
     last_name: order.client?.last_name ?? '',
     client_name: order.client?.name ?? '',
     phone: order.client?.phone ?? '',

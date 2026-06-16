@@ -20,6 +20,7 @@ import {
   type InstallationTeam
 } from '@/types'
 import { PAYMENT_METHODS } from '@/Utils/constants'
+import { NO_CLIENT_EMAIL_SELECTION } from '@/Pages/Sales/ContractSignedModal'
 
 export default function EditService ({
   auth,
@@ -76,6 +77,7 @@ export default function EditService ({
     vip_clients: loadedValues.vip_clients ?? false,
     vip_notes: loadedValues.vip_notes ?? '',
     do_not_send_email: loadedValues.do_not_send_email ?? false,
+    client_email_selection: loadedValues.client_email_selection ?? NO_CLIENT_EMAIL_SELECTION,
     is_new_travel_cost: loadedValues.is_new_travel_cost ?? false,
     new_travel_cost: loadedValues.new_travel_cost ?? 0,
     additional_travel_costs: loadedValues.additional_travel_costs ?? 0,
@@ -91,7 +93,8 @@ export default function EditService ({
       email: values.email,
       vip_clients: values.vip_clients,
       vip_notes: values.vip_notes,
-      do_not_send_email: true,
+      client_email_selection: values.client_email_selection ?? NO_CLIENT_EMAIL_SELECTION,
+      do_not_send_email: (values.client_email_selection ?? NO_CLIENT_EMAIL_SELECTION) === NO_CLIENT_EMAIL_SELECTION,
       name: values.name,
       order_number: values.order_number,
       job_address: values.job_address,
