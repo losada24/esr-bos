@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Enum\AttachmentsFileTypeEnum;
 use App\Enum\RoleEnum;
+use GuzzleHttp\Client;
+use GuzzleHttp\Exception\RequestException;
 use App\Models\Attachment;
 use App\Models\CrmCall;
 use App\Models\CrmEvent;
@@ -66,8 +68,16 @@ class NoteAudioController extends Controller
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
 
+        $this->transcribeAudioImmediately($attachment, $note, $file);
+        $note->refresh();
+        $attachment->refresh();
+
         return response()->json([
             'audio' => $this->audioPayload($attachment),
+            'note' => [
+                'id' => $note->id,
+                'content' => $note->content,
+            ],
         ], Response::HTTP_CREATED);
     }
 
@@ -199,6 +209,8 @@ class NoteAudioController extends Controller
             'mime_type' => $attachment->mime_type,
             'duration_seconds' => $attachment->duration_seconds,
             'transcription_status' => $attachment->transcription_status,
+            'transcription_text' => $attachment->transcription_text,
+            'transcription_error' => $attachment->transcription_error,
             'url' => route('notes.audio.show', [
                 'note' => $attachment->attachable_id,
                 'attachment' => $attachment->id,
@@ -208,6 +220,170 @@ class NoteAudioController extends Controller
                 'delete' => $attachment->user_id === auth()->id(),
             ],
         ];
+    }
+
+    private function transcribeAudioImmediately(Attachment $attachment, Note $note, UploadedFile $file): void
+    {
+        $apiKey = (string) config('services.openai.api_key');
+
+        if ($apiKey === '') {
+            $attachment->update([
+                'transcription_status' => 'failed',
+                'transcription_error' => 'OPENAI_API_KEY is not configured.',
+            ]);
+
+            return;
+        }
+
+        $attachment->update([
+            'transcription_status' => 'processing',
+            'transcription_error' => null,
+        ]);
+
+        $realPath = $file->getRealPath();
+
+        if (!is_string($realPath) || $realPath === '') {
+            $attachment->update([
+                'transcription_status' => 'failed',
+                'transcription_error' => 'The uploaded audio file could not be read for transcription.',
+            ]);
+
+            return;
+        }
+
+        $audioStream = fopen($realPath, 'r');
+
+        if ($audioStream === false) {
+            $attachment->update([
+                'transcription_status' => 'failed',
+                'transcription_error' => 'The uploaded audio file could not be read for transcription.',
+            ]);
+
+            return;
+        }
+
+        try {
+            $model = $this->transcriptionModel();
+            if ($model === null) {
+                $attachment->update([
+                    'transcription_status' => 'failed',
+                    'transcription_error' => 'OPENAI_TRANSCRIPTION_MODEL must be a model name, for example gpt-4o-mini-transcribe.',
+                ]);
+
+                return;
+            }
+
+            $payload = [
+                [
+                    'name' => 'model',
+                    'contents' => $model,
+                ],
+                [
+                    'name' => 'file',
+                    'contents' => $audioStream,
+                    'filename' => $file->getClientOriginalName() ?: $attachment->filename,
+                    'headers' => ['Content-Type' => $attachment->mime_type ?: 'audio/webm'],
+                ],
+            ];
+
+            $language = config('services.openai.transcription_language');
+            if (is_string($language) && trim($language) !== '') {
+                $payload[] = [
+                    'name' => 'language',
+                    'contents' => trim($language),
+                ];
+            }
+
+            $client = new Client([
+                'timeout' => 120,
+            ]);
+
+            $response = $client->post('https://api.openai.com/v1/audio/transcriptions', [
+                'headers' => [
+                    'Authorization' => 'Bearer ' . $apiKey,
+                    'Accept' => 'application/json',
+                ],
+                'multipart' => $payload,
+            ]);
+
+            $responseBody = (string) $response->getBody();
+            $responseJson = json_decode($responseBody, true);
+
+            if ($response->getStatusCode() < 200 || $response->getStatusCode() >= 300) {
+                $attachment->update([
+                    'transcription_status' => 'failed',
+                    'transcription_error' => $this->openAiErrorMessage($responseJson, $responseBody),
+                ]);
+
+                return;
+            }
+
+            $text = trim((string) data_get($responseJson, 'text', ''));
+
+            if ($text === '') {
+                $attachment->update([
+                    'transcription_status' => 'failed',
+                    'transcription_error' => 'OpenAI returned an empty transcription.',
+                ]);
+
+                return;
+            }
+
+            $attachment->update([
+                'transcription_status' => 'completed',
+                'transcription_text' => $text,
+                'transcription_error' => null,
+            ]);
+
+            if (trim((string) $note->content) === 'Voice note') {
+                $note->update(['content' => $text]);
+            }
+        } catch (RequestException $exception) {
+            report($exception);
+
+            $response = $exception->getResponse();
+            $responseBody = $response ? (string) $response->getBody() : $exception->getMessage();
+            $responseJson = json_decode($responseBody, true);
+
+            $attachment->update([
+                'transcription_status' => 'failed',
+                'transcription_error' => $this->openAiErrorMessage($responseJson, $responseBody),
+            ]);
+        } catch (Throwable $exception) {
+            report($exception);
+
+            $attachment->update([
+                'transcription_status' => 'failed',
+                'transcription_error' => $exception->getMessage(),
+            ]);
+        } finally {
+            if (is_resource($audioStream)) {
+                fclose($audioStream);
+            }
+        }
+    }
+
+    private function transcriptionModel(): ?string
+    {
+        $model = trim((string) config('services.openai.transcription_model', 'gpt-4o-mini-transcribe'));
+
+        if ($model === '' || str_starts_with($model, 'http') || str_contains($model, '/v1/audio')) {
+            return null;
+        }
+
+        return $model;
+    }
+
+    private function openAiErrorMessage(mixed $json, string $fallback): string
+    {
+        if (is_array($json)) {
+            $message = data_get($json, 'error.message');
+            if (is_string($message) && trim($message) !== '') {
+                return $message;
+            }
+        }
+
+        return $fallback !== '' ? $fallback : 'OpenAI transcription request failed.';
     }
 
     private function validateAudioFile(UploadedFile $file): void
