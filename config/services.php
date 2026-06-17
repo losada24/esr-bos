@@ -35,6 +35,12 @@ return [
       'client_id' => env('GITHUB_CLIENT_ID'),
       'client_secret' => env('GITHUB_CLIENT_SECRET'),
       'redirect' => '/auth/github/callback',
-    ]
+    ],
+
+    'openai' => [
+      'api_key' => env('OPENAI_API_KEY'),
+      'transcription_model' => env('OPENAI_TRANSCRIPTION_MODEL', 'gpt-4o-mini-transcribe'),
+      'transcription_language' => env('OPENAI_TRANSCRIPTION_LANGUAGE'),
+    ],
 
 ];
