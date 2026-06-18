@@ -244,9 +244,9 @@ class Order extends Model
           $q->where('supervisor_id', $supervisor->user->id);
         });*/
 
-      if (auth()->user()->hasRole(RoleEnum::ACCOUNT_MANAGER->value)) {
-        
-         $query ->whereIn('status', [
+      if ($user->hasSupervisorOnlyAccess()) {
+        $query->where('supervisor_id', $user->id)
+          ->whereIn('status', [
             OrderStatusEnum::PLANNED,        // Solo órdenes en "PLANNED"
             OrderStatusEnum::REVIEW,         // Solo órdenes en "REVIEW"
             OrderStatusEnum::CONFIRMED,

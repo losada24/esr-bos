@@ -83,6 +83,7 @@ class UpdateServiceRequest extends FormRequest
             'product_line' => ['nullable', 'string', Rule::enum(ProductLineEnum::class)],
             'vip_clients' => 'boolean',
             'vip_notes' => 'nullable|string|max:1000',
+            'client_email_selection' => 'nullable|string|max:255',
             'do_not_send_email' => 'boolean',
             'additional_travel_costs' => 'nullable|numeric',
             'travel_cost_id' => 'nullable|integer|exists:travel_costs,id',
@@ -99,6 +100,7 @@ class UpdateServiceRequest extends FormRequest
                     MethodOfPayment::FINANCED->value,
                     MethodOfPayment::FINANCEDCASH->value,
                     MethodOfPayment::AIA->value,
+                    MethodOfPayment::NOTPAYMENT->value,
                 ),
             ],
             'payment_schedule_type' => [

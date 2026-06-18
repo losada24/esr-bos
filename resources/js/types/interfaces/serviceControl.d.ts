@@ -45,7 +45,7 @@ export interface ServiceControlOrderSummary {
     id: number
     service_name?: string | null
     service_id?: string | null
-    service_type: string
+    service_type: string[]
     service_status: string
     priority: string
     is_bm?: boolean
@@ -72,7 +72,7 @@ export interface ServiceControl {
   service_name?: string | null
   service_id?: string | null
   is_bm?: boolean
-  service_type: string
+  service_type: string[]
   description?: string | null
   requires_part: boolean
   requested_parts: boolean

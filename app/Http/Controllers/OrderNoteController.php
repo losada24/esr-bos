@@ -152,6 +152,8 @@ class OrderNoteController extends Controller
             'mime_type' => $attachment->mime_type,
             'duration_seconds' => $attachment->duration_seconds,
             'transcription_status' => $attachment->transcription_status,
+            'transcription_text' => $attachment->transcription_text,
+            'transcription_error' => $attachment->transcription_error,
             'url' => route('notes.audio.show', ['note' => $note->id, 'attachment' => $attachment->id]),
             'created_at' => optional($attachment->created_at)->toISOString(),
             'can' => [

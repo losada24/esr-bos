@@ -94,7 +94,7 @@ type LinkedServiceControl = {
   id: number
   service_name?: string | null
   service_id?: string | null
-  service_type?: string | null
+  service_type?: string[] | string | null
   service_status?: string | null
   priority?: string | null
   open_days?: number | null
@@ -3486,7 +3486,7 @@ export default function ShowStatusOrder ({
                           <>
                             <div className="flex items-start justify-between gap-3">
                               <div>
-                                <p className="text-sm font-semibold text-slate-700">{serviceControl.service_name ?? serviceControl.service_type ?? 'Service Control'}</p>
+                                <p className="text-sm font-semibold text-slate-700">{serviceControl.service_name ?? (Array.isArray(serviceControl.service_type) ? serviceControl.service_type.join(', ') : serviceControl.service_type) ?? 'Service Control'}</p>
                                 <p className="text-xs text-slate-400">
                                   {serviceControl.creator?.name ?? 'System'} · {serviceControl.updated_at ? new Date(serviceControl.updated_at).toLocaleString() : 'No update'}
                                 </p>

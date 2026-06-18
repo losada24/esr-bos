@@ -8,6 +8,7 @@ enum MethodOfPayment: string
     case FINANCED = 'FINANCED';
     case FINANCEDCASH = 'CASH AND FINANCED';
     case AIA = 'AIA';
+    case NOTPAYMENT = 'NOT PAYMENT';
     case ZELLE = 'ZELLE';
     case CHECK = 'CHECK';
 }

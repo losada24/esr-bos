@@ -65,6 +65,7 @@ class ServiceControl extends Model
         'requested_parts' => 'boolean',
         'parts_available' => 'boolean',
         'is_bm' => 'boolean',
+        'service_type' => 'array',
         'cost' => 'decimal:2',
         'target_date' => 'date:Y-m-d',
         'service_created_date' => 'date:Y-m-d',

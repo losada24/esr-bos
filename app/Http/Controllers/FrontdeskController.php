@@ -1129,7 +1129,9 @@ public function showQuantifiedModal(Order $order)
         'id' => $serviceControl->id,
         'service_name' => $serviceControl->service_name,
         'service_id' => $serviceControl->service_id,
-        'service_type' => $serviceControl->service_type,
+        'service_type' => is_array($serviceControl->service_type)
+          ? array_values(array_filter($serviceControl->service_type))
+          : (filled($serviceControl->service_type) ? [$serviceControl->service_type] : []),
         'service_status' => $serviceControl->service_status,
         'priority' => $serviceControl->priority,
         'open_days' => $serviceControl->open_days,

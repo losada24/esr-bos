@@ -20,6 +20,7 @@ import {
   type InstallationTeam
 } from '@/types'
 import { PAYMENT_METHODS } from '@/Utils/constants'
+import { NO_CLIENT_EMAIL_SELECTION } from '@/Pages/Sales/ContractSignedModal'
 
 export default function EditService ({
   auth,
@@ -76,12 +77,16 @@ export default function EditService ({
     vip_clients: loadedValues.vip_clients ?? false,
     vip_notes: loadedValues.vip_notes ?? '',
     do_not_send_email: loadedValues.do_not_send_email ?? false,
+    client_email_selection: loadedValues.client_email_selection ?? NO_CLIENT_EMAIL_SELECTION,
     is_new_travel_cost: loadedValues.is_new_travel_cost ?? false,
     new_travel_cost: loadedValues.new_travel_cost ?? 0,
     additional_travel_costs: loadedValues.additional_travel_costs ?? 0,
   }
 
   const handleSubmit = async (values: OrderFormValues & { orderProducts?: any[] }, helpers: FormikHelpers<OrderFormValues>) => {
+    const isFinancedMethod = values.method_of_payment === PAYMENT_METHODS.FINANCED || values.method_of_payment === PAYMENT_METHODS.CASH_AND_FINANCE
+    const isCashMethod = values.method_of_payment === PAYMENT_METHODS.CASH
+
     const payload = {
       id: values.id,
       client_id: values.client_id,
@@ -91,7 +96,8 @@ export default function EditService ({
       email: values.email,
       vip_clients: values.vip_clients,
       vip_notes: values.vip_notes,
-      do_not_send_email: true,
+      client_email_selection: values.client_email_selection ?? NO_CLIENT_EMAIL_SELECTION,
+      do_not_send_email: (values.client_email_selection ?? NO_CLIENT_EMAIL_SELECTION) === NO_CLIENT_EMAIL_SELECTION,
       name: values.name,
       order_number: values.order_number,
       job_address: values.job_address,
@@ -103,8 +109,8 @@ export default function EditService ({
       travel_cost_id: values.travel_cost_id !== 0 ? values.travel_cost_id : '',
       duration_of_work_id: values.duration_of_work_id !== 0 ? values.duration_of_work_id : '',
       method_of_payment: values.method_of_payment,
-      payment_schedule_type: values.method_of_payment === PAYMENT_METHODS.CASH ? (values.payment_schedule_type || null) : null,
-      custom_schedule: values.method_of_payment === PAYMENT_METHODS.CASH && values.payment_schedule_type === 'CUSTOMIZED'
+      payment_schedule_type: isCashMethod ? (values.payment_schedule_type || null) : null,
+      custom_schedule: isCashMethod && values.payment_schedule_type === 'CUSTOMIZED'
         ? (values.custom_schedule ?? [])
           .map((item: { label?: string, amount?: string | number }) => ({
             label: String(item.label ?? '').trim(),
@@ -112,9 +118,9 @@ export default function EditService ({
           }))
           .filter((item: { label: string, amount: number }) => item.label !== '' && Number.isFinite(item.amount))
         : [],
-      type_of_financing: values.type_of_financing ? values.type_of_financing : null,
+      type_of_financing: isFinancedMethod && values.type_of_financing ? values.type_of_financing : null,
       project_amount: values.project_amount,
-      down_payment: values.down_payment,
+      down_payment: values.method_of_payment === PAYMENT_METHODS.CASH_AND_FINANCE ? values.down_payment : null,
       change_order_enabled: values.change_order_enabled,
       change_order_amount: values.change_order_amount,
       change_order_note: values.change_order_note,

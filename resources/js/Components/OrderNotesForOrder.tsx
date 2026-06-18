@@ -47,6 +47,8 @@ export interface NoteAudioDTO {
   mime_type?: string | null
   duration_seconds?: number | null
   transcription_status?: string | null
+  transcription_text?: string | null
+  transcription_error?: string | null
   url: string
   created_at?: string | null
   can?: { delete?: boolean } | null
@@ -322,7 +324,10 @@ export default function OrderNotesForOrder ({
     }
   }
 
-  const uploadNoteAudio = async (noteId: string | number, audio: NonNullable<typeof recordedAudio>): Promise<NoteAudioDTO> => {
+  const uploadNoteAudio = async (
+    noteId: string | number,
+    audio: NonNullable<typeof recordedAudio>
+  ): Promise<{ audio: NoteAudioDTO, noteContent?: string | null }> => {
     const formData = new FormData()
     let extension = 'webm'
     if (audio.mimeType.includes('ogg')) {
@@ -345,8 +350,12 @@ export default function OrderNotesForOrder ({
 
     if (!res.ok) throw new Error(await parseErrorMessage(res, 'La nota se guardó, pero no se pudo subir el audio'))
     const json = await res.json()
+    const payload = json as { audio?: NoteAudioDTO, note?: { content?: string | null } }
 
-    return (json as { audio?: NoteAudioDTO }).audio ?? json
+    return {
+      audio: payload.audio ?? json,
+      noteContent: payload.note?.content ?? null
+    }
   }
 
   useEffect(() => {
@@ -431,8 +440,11 @@ export default function OrderNotesForOrder ({
 
       if (recordedAudio) {
         try {
-          const audio = await uploadNoteAudio(created.id, recordedAudio)
+          const { audio, noteContent } = await uploadNoteAudio(created.id, recordedAudio)
           ui = { ...ui, audioAttachments: [...ui.audioAttachments, audio] }
+          if (typeof noteContent === 'string' && noteContent.trim() !== '') {
+            ui = { ...ui, body: noteContent }
+          }
           setNotes((prev) => (prev ?? []).map((n) => (n.id === created.id ? ui : n)))
           clearRecordedAudio()
         } catch (audioError: any) {
@@ -728,6 +740,9 @@ export default function OrderNotesForOrder ({
                                       {audio.transcription_status}
                                     </span>
                                   )}
+                                  {audio.transcription_error && (
+                                    <span className="font-medium text-rose-600">{audio.transcription_error}</span>
+                                  )}
                                 </div>
                                 {audio.can?.delete && (
                                   <button
@@ -738,6 +753,11 @@ export default function OrderNotesForOrder ({
                                   >
                                     Delete audio
                                   </button>
+                                )}
+                                {audio.transcription_text && (
+                                  <div className="w-full rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-700 sm:basis-full">
+                                    {audio.transcription_text}
+                                  </div>
                                 )}
                               </div>
                             ))}

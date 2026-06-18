@@ -255,7 +255,7 @@ class ServiceControlController extends Controller
                     ->orWhere('service_id', 'like', $like)
                     ->orWhere('bm_invoice_number', 'like', $like)
                     ->orWhere('bm_picked_up_by', 'like', $like)
-                    ->orWhere('service_type', 'like', $like)
+                    ->orWhereRaw('JSON_SEARCH(service_type, "one", ?) IS NOT NULL', [$like])
                     ->orWhere('service_status', 'like', $like)
                     ->orWhere('priority', 'like', $like)
                     ->orWhere('description', 'like', $like)
@@ -312,7 +312,7 @@ class ServiceControlController extends Controller
                 'type' => $type,
             ],
             'serviceTypeOptions' => array_column(ServiceControlTypeEnum::cases(), 'value'),
-            'serviceStatusOptions' => array_column(ServiceControlStatusEnum::cases(), 'value'),
+            'serviceStatusOptions' => $this->serviceStatusOptions(),
             'priorityOptions' => array_column(ServiceControlPriorityEnum::cases(), 'value'),
             'closureResultOptions' => array_column(ServiceControlClosureResultEnum::cases(), 'value'),
             'areaOptions' => array_column(AreaEnum::cases(), 'value'),
@@ -333,7 +333,7 @@ class ServiceControlController extends Controller
             'order' => $order ? $this->serializeOrderForServiceControl($order) : $this->standaloneOrderSummary(),
             'defaultType' => $request->query('type') === 'bm' ? 'bm' : 'services',
             'serviceTypeOptions' => array_column(ServiceControlTypeEnum::cases(), 'value'),
-            'serviceStatusOptions' => array_column(ServiceControlStatusEnum::cases(), 'value'),
+            'serviceStatusOptions' => $this->serviceStatusOptions(),
             'priorityOptions' => array_column(ServiceControlPriorityEnum::cases(), 'value'),
             'closureResultOptions' => array_column(ServiceControlClosureResultEnum::cases(), 'value'),
             'areaOptions' => array_column(AreaEnum::cases(), 'value'),
@@ -364,7 +364,7 @@ class ServiceControlController extends Controller
         return Inertia::render('ServiceControl/Show', [
             'serviceControl' => $this->serializeServiceControl($serviceControl, true),
             'serviceTypeOptions' => array_column(ServiceControlTypeEnum::cases(), 'value'),
-            'serviceStatusOptions' => array_column(ServiceControlStatusEnum::cases(), 'value'),
+            'serviceStatusOptions' => $this->serviceStatusOptions(),
             'priorityOptions' => array_column(ServiceControlPriorityEnum::cases(), 'value'),
             'closureResultOptions' => array_column(ServiceControlClosureResultEnum::cases(), 'value'),
             'areaOptions' => array_column(AreaEnum::cases(), 'value'),
@@ -395,7 +395,7 @@ class ServiceControlController extends Controller
         return Inertia::render('ServiceControl/Edit', [
             'serviceControl' => $this->serializeServiceControl($serviceControl, true),
             'serviceTypeOptions' => array_column(ServiceControlTypeEnum::cases(), 'value'),
-            'serviceStatusOptions' => array_column(ServiceControlStatusEnum::cases(), 'value'),
+            'serviceStatusOptions' => $this->serviceStatusOptions(),
             'priorityOptions' => array_column(ServiceControlPriorityEnum::cases(), 'value'),
             'closureResultOptions' => array_column(ServiceControlClosureResultEnum::cases(), 'value'),
             'areaOptions' => array_column(AreaEnum::cases(), 'value'),
@@ -543,7 +543,7 @@ class ServiceControlController extends Controller
             'service_name' => $serviceControl->service_name,
             'service_id' => $serviceControl->service_id,
             'is_bm' => (bool) $serviceControl->is_bm,
-            'service_type' => $serviceControl->service_type,
+            'service_type' => $this->normalizeServiceTypes($serviceControl->service_type),
             'description' => $serviceControl->description,
             'requires_part' => (bool) $serviceControl->requires_part,
             'requested_parts' => (bool) $serviceControl->requested_parts,
@@ -686,7 +686,7 @@ class ServiceControlController extends Controller
                     'id' => $serviceControl->id,
                     'service_name' => $serviceControl->service_name,
                     'service_id' => $serviceControl->service_id,
-                    'service_type' => $serviceControl->service_type,
+                    'service_type' => $this->normalizeServiceTypes($serviceControl->service_type),
                     'service_status' => $serviceControl->service_status,
                     'priority' => $serviceControl->priority,
                     'opened_at' => $this->formatDate($serviceControl->opened_at),
@@ -755,7 +755,7 @@ class ServiceControlController extends Controller
             'service_name' => $serviceControl->service_name,
             'service_id' => $serviceControl->service_id,
             'is_bm' => (bool) $serviceControl->is_bm,
-            'service_type' => $serviceControl->service_type,
+            'service_type' => $this->normalizeServiceTypes($serviceControl->service_type),
             'description' => $serviceControl->description,
             'requires_part' => (bool) $serviceControl->requires_part,
             'requested_parts' => (bool) $serviceControl->requested_parts,
@@ -817,7 +817,7 @@ class ServiceControlController extends Controller
             'service_name' => $request->input('service_name'),
             'service_id' => $isBm ? null : $request->input('service_id'),
             'is_bm' => $isBm,
-            'service_type' => $isBm ? null : $request->input('service_type'),
+            'service_type' => $isBm ? null : $this->normalizeServiceTypes($request->input('service_type')),
             'description' => $isBm ? null : $request->input('description'),
             'requires_part' => $isBm ? false : $request->boolean('requires_part'),
             'requested_parts' => $isBm ? false : $request->boolean('requested_parts'),
@@ -915,6 +915,22 @@ class ServiceControlController extends Controller
         return Carbon::parse((string) $value)->format('Y-m-d');
     }
 
+    private function normalizeServiceTypes(mixed $value): array
+    {
+        if ($value === null || $value === '') {
+            return [];
+        }
+
+        $types = is_array($value) ? $value : [$value];
+
+        return collect($types)
+            ->filter(fn ($type) => filled($type))
+            ->map(fn ($type) => (string) $type)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
     private function serviceCalendarDate(ServiceControl $serviceControl, string $status, string $timezone): ?Carbon
     {
         if ($status === ServiceControlStatusEnum::SCHEDULED->value && ! empty($serviceControl->scheduled_date)) {
@@ -952,6 +968,15 @@ class ServiceControlController extends Controller
             ServiceControlStatusEnum::COMPLETED->value,
             ServiceControlStatusEnum::CANCELED->value,
         ];
+    }
+
+    private function serviceStatusOptions(): array
+    {
+        return collect(ServiceControlStatusEnum::cases())
+            ->reject(fn (ServiceControlStatusEnum $status) => $status === ServiceControlStatusEnum::CLOSED)
+            ->map(fn (ServiceControlStatusEnum $status) => $status->value)
+            ->values()
+            ->all();
     }
 
     private function serviceCalendarStatusColor(string $status): string
@@ -1012,25 +1037,22 @@ class ServiceControlController extends Controller
             $options->push($this->partyOption('client', $standaloneClient->id, $standaloneClient->name, 'client'));
         }
 
-        if ($order?->user) {
-            $options->push($this->partyOption('user', $order->user->id, $order->user->name, 'seller'));
-        }
-
-        $order?->owners?->each(fn (User $owner) => $options->push($this->partyOption('user', $owner->id, $owner->name, 'seller')));
-
-        if ($order?->supervisor) {
-            $options->push($this->partyOption('user', $order->supervisor->id, $order->supervisor->name, 'supervisor'));
-        }
-
         User::query()
+            ->with('roles:id,name')
             ->select('id', 'name')
-            ->where('status', StatusUserEnum::ACTIVE->value)
-            ->role([RoleEnum::ACCOUNT_MANAGER->value, RoleEnum::SERVICE_MANAGER->value])
+            ->whereDoesntHave('roles', fn (Builder $query) => $query->where('name', RoleEnum::CUSTOMER->value))
             ->orderBy('name')
             ->get()
             ->each(function (User $user) use ($options) {
-                $role = $user->hasRole(RoleEnum::SERVICE_MANAGER->value) ? 'service_manager' : 'account_manager';
-                $options->push($this->partyOption('user', $user->id, $user->name, $role));
+                $roles = $user->roles->pluck('name')->reject(fn (string $role) => $role === RoleEnum::CUSTOMER->value);
+
+                if ($roles->isEmpty()) {
+                    $options->push($this->partyOption('user', $user->id, $user->name, 'no_role'));
+
+                    return;
+                }
+
+                $roles->each(fn (string $role) => $options->push($this->partyOption('user', $user->id, $user->name, $role)));
             });
 
         return $options->unique('value')->values()->all();
@@ -1052,15 +1074,19 @@ class ServiceControlController extends Controller
             User::query()
                 ->select('id', 'name')
                 ->where('status', StatusUserEnum::ACTIVE->value)
-                ->role([RoleEnum::SUPERVISOR->value, RoleEnum::SERVICE_MANAGER->value, RoleEnum::SERVICE->value, RoleEnum::ACCOUNT_MANAGER->value])
+                ->role([RoleEnum::SUPERVISOR->value, RoleEnum::SERVICE_MANAGER->value, RoleEnum::SERVICE->value, RoleEnum::INSTALLER->value, RoleEnum::ACCOUNT_MANAGER->value])
                 ->orderBy('name')
                 ->get()
                 ->each(function (User $user) use ($options) {
-                    $role = $user->hasRole(RoleEnum::SUPERVISOR->value)
-                        ? 'supervisor'
+                    $role = $user->hasRole(RoleEnum::ACCOUNT_MANAGER->value)
+                        ? 'account_manager'
                         : ($user->hasRole(RoleEnum::SERVICE_MANAGER->value)
                             ? 'service_manager'
-                            : ($user->hasRole(RoleEnum::SERVICE->value) ? 'service' : 'account_manager'));
+                            : ($user->hasSupervisorOnlyAccess()
+                                ? 'supervisor'
+                                : ($user->hasRole(RoleEnum::SERVICE->value)
+                                    ? 'service'
+                                    : 'installer')));
                     $options->push($this->partyOption('user', $user->id, $user->name, $role));
                 });
 
@@ -1070,11 +1096,17 @@ class ServiceControlController extends Controller
         User::query()
             ->select('id', 'name')
             ->where('status', StatusUserEnum::ACTIVE->value)
-            ->role([RoleEnum::SUPERVISOR->value, RoleEnum::SERVICE->value])
+            ->role([RoleEnum::SUPERVISOR->value, RoleEnum::SERVICE_MANAGER->value, RoleEnum::SERVICE->value, RoleEnum::INSTALLER->value, RoleEnum::ACCOUNT_MANAGER->value])
             ->orderBy('name')
             ->get()
             ->each(function (User $user) use ($options) {
-                $role = $user->hasRole(RoleEnum::SUPERVISOR->value) ? 'supervisor' : 'service';
+                $role = $user->hasRole(RoleEnum::ACCOUNT_MANAGER->value)
+                    ? 'account_manager'
+                    : ($user->hasRole(RoleEnum::SERVICE_MANAGER->value)
+                        ? 'service_manager'
+                        : ($user->hasSupervisorOnlyAccess()
+                            ? 'supervisor'
+                            : ($user->hasRole(RoleEnum::SERVICE->value) ? 'service' : 'installer')));
                 $options->push($this->partyOption('user', $user->id, $user->name, $role));
             });
 

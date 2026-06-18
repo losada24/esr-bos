@@ -28,6 +28,7 @@ import { SERVICES, PAYMENT_METHODS, PRODUCT_LINES } from '@/Utils/constants'
 import OrderNotesForOrder from '@/Components/OrderNotesForOrder'
 import DeleteIcon from '@/Components/Icons/DeleteIcon'
 import ExportIcon from '@/Components/Icons/ExportIcon'
+import { NO_CLIENT_EMAIL_SELECTION, PRIMARY_CLIENT_EMAIL_SELECTION } from '@/Pages/Sales/ContractSignedModal'
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
 
@@ -37,8 +38,15 @@ type ClientSearchResult = {
   name: string
   phone: string
   email?: string | null
+  secondary_email?: string | null
   vip_clients?: boolean | number
   vip_notes?: string | null
+  company_contact?: { id: number, name: string, email?: string | null } | null
+}
+type ClientEmailOption = {
+  value: string
+  label: string
+  is_primary?: boolean
 }
 type PaymentScheduleTemplateItem = { label: string, percentage: number }
 type PaymentScheduleTemplates = Record<string, PaymentScheduleTemplateItem[]>
@@ -46,6 +54,55 @@ type CustomScheduleItem = { label: string, amount: string }
 
 const CUSTOM_SCHEDULE_TYPE = 'CUSTOMIZED'
 const REPLANNED_REASON_OPTIONS = ['CLIENT', 'PERMIT', 'MATERIALS'] as const
+
+const normalizeEmail = (email?: string | null) => {
+  if (typeof email !== 'string') return null
+  const normalized = email.trim()
+  return normalized !== '' ? normalized : null
+}
+
+const pushClientEmailOption = (options: ClientEmailOption[], seen: Set<string>, email: string | null, label: string, isPrimary = false) => {
+  const normalizedEmail = normalizeEmail(email)
+  if (!normalizedEmail) return
+
+  const key = normalizedEmail.toLowerCase()
+  if (seen.has(key)) {
+    const existing = options.find((option) => option.value.toLowerCase() === key)
+    if (existing && isPrimary) {
+      existing.is_primary = true
+      existing.label = `${label}: ${normalizedEmail}`
+    }
+    return
+  }
+
+  seen.add(key)
+  options.push({
+    value: normalizedEmail,
+    label: `${label}: ${normalizedEmail}`,
+    is_primary: isPrimary
+  })
+}
+
+const buildClientEmailOptions = (
+  primaryEmail: string | null,
+  secondaryEmail: string | null,
+  companyEmail: string | null,
+  companyName: string | null
+) => {
+  const options: ClientEmailOption[] = []
+  const seen = new Set<string>()
+
+  pushClientEmailOption(options, seen, primaryEmail, 'Primary client email', true)
+  pushClientEmailOption(options, seen, secondaryEmail, 'Secondary client email')
+  pushClientEmailOption(
+    options,
+    seen,
+    companyEmail,
+    companyName ? `Company email: ${companyName}` : 'Company email'
+  )
+
+  return options
+}
 
 const getStatusValue = (statusValue: unknown): string => {
   if (typeof statusValue === 'string') return statusValue
@@ -236,6 +293,7 @@ const ServiceForm = ({
   const [selectedClientId, setSelectedClientId] = useState<number | null>(
     isCreate && Number(values.client_id) > 0 ? Number(values.client_id) : null
   )
+  const [selectedClientRecord, setSelectedClientRecord] = useState<ClientSearchResult | null>(null)
   const [isClientReassigning, setIsClientReassigning] = useState<boolean>(false)
   const clientSnapshotRef = useRef({
     client_id: Number(values.client_id ?? 0),
@@ -243,7 +301,8 @@ const ServiceForm = ({
     phone: values.phone ?? '',
     email: values.email ?? '',
     vip_clients: Boolean(values.vip_clients),
-    vip_notes: values.vip_notes ?? ''
+    vip_notes: values.vip_notes ?? '',
+    client_email_selection: values.client_email_selection ?? NO_CLIENT_EMAIL_SELECTION
   })
   const isClientLocked = selectedClientId !== null
   const canSearchClient = isCreate ? !isClientLocked : isClientReassigning
@@ -258,6 +317,29 @@ const ServiceForm = ({
   const [isUploadingAttachments, setIsUploadingAttachments] = useState<boolean>(false)
   const [attachmentUploadError, setAttachmentUploadError] = useState<string>('')
   const allowsAttachmentRoleSelection = values.service !== SERVICES.PICKUP && values.service !== SERVICES.DELIVERY_ONLY
+  const currentClientRecord = selectedClientRecord ?? [
+    ...clientSearchResults,
+    ...phoneSearchResults
+  ].find((client) => Number(client.id) === Number(values.client_id)) ?? values.client ?? null
+  const clientEmailOptions = buildClientEmailOptions(
+    normalizeEmail(values.email ?? currentClientRecord?.email ?? null),
+    normalizeEmail(currentClientRecord?.secondary_email ?? null),
+    normalizeEmail(currentClientRecord?.company_contact?.email ?? null),
+    currentClientRecord?.company_contact?.name ?? null
+  )
+  const primaryClientEmailOption = clientEmailOptions.find((option) => option.is_primary)
+
+  useEffect(() => {
+    if (values.client_email_selection === NO_CLIENT_EMAIL_SELECTION || values.client_email_selection === PRIMARY_CLIENT_EMAIL_SELECTION) {
+      return
+    }
+
+    const normalizedSelection = String(values.client_email_selection ?? '').trim().toLowerCase()
+    const stillAvailable = clientEmailOptions.some((option) => option.value.trim().toLowerCase() === normalizedSelection)
+    if (!stillAvailable) {
+      setFieldValue('client_email_selection', NO_CLIENT_EMAIL_SELECTION)
+    }
+  }, [clientEmailOptions, setFieldValue, values.client_email_selection])
 
   const syncAttachmentRoleTargets = (nextTargets: AttachmentRoleTargets) => {
     setAttachmentRoleTargets(nextTargets)
@@ -628,12 +710,14 @@ const ServiceForm = ({
     suppressNextSearchRef.current = true
     suppressNextPhoneSearchRef.current = true
     setSelectedClientId(client.id)
+    setSelectedClientRecord(client)
     setFieldValue('client_id', client.id)
     setFieldValue('client_name', client.name ?? '')
     setFieldValue('phone', client.phone ?? '')
     setFieldValue('email', client.email ?? '')
     setFieldValue('vip_clients', !!client.vip_clients)
     setFieldValue('vip_notes', client.vip_notes ?? '')
+    setFieldValue('client_email_selection', NO_CLIENT_EMAIL_SELECTION)
     setClientSearchResults([])
     setClientSearchTerm(client.name ?? '')
     setPhoneSearchResults([])
@@ -646,12 +730,14 @@ const ServiceForm = ({
 
   const clearSelectedClient = () => {
     setSelectedClientId(null)
+    setSelectedClientRecord(null)
     setFieldValue('client_id', 0)
     setFieldValue('client_name', '')
     setFieldValue('phone', '')
     setFieldValue('email', '')
     setFieldValue('vip_clients', false)
     setFieldValue('vip_notes', '')
+    setFieldValue('client_email_selection', NO_CLIENT_EMAIL_SELECTION)
     setClientSearchResults([])
     setClientSearchTerm('')
     setClientSearchError('')
@@ -668,7 +754,8 @@ const ServiceForm = ({
       phone: values.phone ?? '',
       email: values.email ?? '',
       vip_clients: Boolean(values.vip_clients),
-      vip_notes: values.vip_notes ?? ''
+      vip_notes: values.vip_notes ?? '',
+      client_email_selection: values.client_email_selection ?? NO_CLIENT_EMAIL_SELECTION
     }
     clearSelectedClient()
     setIsClientReassigning(true)
@@ -682,7 +769,9 @@ const ServiceForm = ({
     setFieldValue('email', snapshot.email)
     setFieldValue('vip_clients', snapshot.vip_clients)
     setFieldValue('vip_notes', snapshot.vip_notes)
+    setFieldValue('client_email_selection', snapshot.client_email_selection)
     setSelectedClientId(snapshot.client_id > 0 ? snapshot.client_id : null)
+    setSelectedClientRecord(null)
     setClientSearchResults([])
     setClientSearchTerm('')
     setClientSearchError('')
@@ -872,6 +961,33 @@ const ServiceForm = ({
                 readOnly={!canEditClientLookupFields}
               />
               {(submitCount && errors.email) ? <InputError message={errors.email} className="mt-2" /> : ''}
+            </div>
+            <div className={submitCount ? (errors.client_email_selection ? 'has-error' : 'has-success') : ''}>
+              <label htmlFor="client_email_selection">Client Email Delivery</label>
+              <Field
+                as="select"
+                id="client_email_selection"
+                name="client_email_selection"
+                className="form-select"
+              >
+                <option value={PRIMARY_CLIENT_EMAIL_SELECTION}>
+                  {primaryClientEmailOption
+                    ? `Primary client email (${primaryClientEmailOption.value})`
+                    : 'Primary client email'}
+                </option>
+                {clientEmailOptions
+                  .filter((option) => !option.is_primary)
+                  .map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                <option value={NO_CLIENT_EMAIL_SELECTION}>Do not send client emails</option>
+              </Field>
+              {(submitCount && errors.client_email_selection) ? <InputError message={errors.client_email_selection} className="mt-2" /> : ''}
+              <div className="mt-1 text-xs text-[#5c6370]">
+                If no alternate address is selected, emails for this order go to the client&apos;s primary email.
+              </div>
             </div>
             <div className='flex items-center gap-2'>
               <Field
