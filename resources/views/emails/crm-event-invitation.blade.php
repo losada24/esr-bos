@@ -5,7 +5,7 @@
         ? $startsAt->format('h:i A') . ' - ' . $endsAt->format('h:i A') . ' (' . $timezone . ')'
         : 'Time pending';
     $whenLabel = trim($dateLabel . ', ' . $timeLabel);
-    $whereLabel = $event->location ?: ($event->online_meeting ? 'Online meeting' : 'REYLOS GLASS');
+    $whereLabel = $event->location;
     $relatedLabel = $event->order?->name ?? $event->client?->name;
     $organizerEmail = $event->host?->email;
     $rsvpSubject = rawurlencode('RSVP: ' . $event->title);

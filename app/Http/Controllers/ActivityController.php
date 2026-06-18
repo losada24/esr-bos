@@ -787,7 +787,11 @@ class ActivityController extends Controller
             ->values();
 
         foreach ($emails as $email) {
-            SendGmailEmail::dispatch($email, new CrmEventInvitation($event))->onQueue('emails');
+            SendGmailEmail::dispatch(
+                $email,
+                new CrmEventInvitation($event),
+                allowInactiveUserRecipient: true
+            )->onQueue('emails');
         }
     }
 
