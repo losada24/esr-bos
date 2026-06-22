@@ -29,6 +29,7 @@ use App\Models\CompanyContact;
 use Illuminate\Http\Request;
 use App\Models\InstallationTeam;
 use App\Models\Order;
+use App\Models\OrderCompanyContact;
 use App\Models\OrderStatus;
 use App\Models\SaleForm;
 use App\Models\Source;
@@ -1225,6 +1226,9 @@ public function showQuantifiedModal(Order $order)
       OrderStatusEnum::LOST_CUSTOMER_REQUEST->value,
       OrderStatusEnum::QUALIFIED->value,
     ];
+    if (filled($order->status) && !in_array($order->status, $frontdeskStatuses, true)) {
+      $frontdeskStatuses[] = $order->status;
+    }
     $sources = [
             ContactSourceEnum::TIK_TOK->value,
             ContactSourceEnum::INSTAGRAM_FACEBOOK->value,
@@ -1253,18 +1257,39 @@ public function showQuantifiedModal(Order $order)
       'notes' => ['nullable', 'string', 'max:1000'],
       'vip_clients' => ['nullable', 'boolean'],
       'vip_notes' => ['nullable', 'string', 'max:1000'],
+      'product_line' => ['nullable', 'string', Rule::enum(ProductLineEnum::class)],
     ];
 
     $targetClientId = (int) ($request->input('client_id') ?? $order->client_id ?? 0);
     if ($mode === 'frontdesk') {
+      $phoneRules = $order->order_type === OrderTypeEnum::COMMERCIAL->value
+        ? [
+            'nullable',
+            'regex:/^\\d{10}$/',
+            Rule::unique('clients', 'phone')->ignore($targetClientId),
+          ]
+        : [
+            'required',
+            'regex:/^\\d{10}$/',
+            Rule::unique('clients', 'phone')->ignore($targetClientId),
+          ];
+
       $rules = array_merge($rules, [
-        'phone' => [
-          'required',
-          'regex:/^\\d{10}$/',
-          Rule::unique('clients', 'phone')->ignore($targetClientId),
-        ],
+        'phone' => $phoneRules,
         'status' => ['required', 'string', Rule::in($frontdeskStatuses)],
         'source' => ['required', 'string', Rule::in($sources)],
+        'commercial_pairs' => [
+          Rule::requiredIf(
+            $mode === 'frontdesk' &&
+            $order->order_type === OrderTypeEnum::COMMERCIAL->value
+          ),
+          'array',
+          'min:1',
+          'max:5',
+        ],
+        'commercial_pairs.*.company_id' => ['required', 'integer', 'distinct', 'exists:company_contacts,id'],
+        'commercial_pairs.*.client_id' => ['required', 'integer', 'exists:clients,id'],
+        'commercial_pairs.*.source_id' => ['required', 'integer', 'exists:sources,id'],
       ]);
     } else {
       $rules = array_merge($rules, [
@@ -1343,6 +1368,39 @@ public function showQuantifiedModal(Order $order)
         $previousClientName = trim((string) ($previousClientName ?? ''));
         if ($currentOrderName !== '' && $previousClientName !== '' && strcasecmp($currentOrderName, $previousClientName) === 0) {
           $orderPayload['name'] = $data['client_name'];
+        }
+        $orderPayload['product_line'] = $data['product_line'] ?? null;
+
+        if ($order->order_type === OrderTypeEnum::COMMERCIAL->value) {
+          $commercialPairs = collect($data['commercial_pairs'] ?? []);
+          $selectedClientId = $order->client_id ? (int) $order->client_id : null;
+          $hasSingleCompany = $commercialPairs->count() === 1;
+
+          OrderCompanyContact::withTrashed()
+            ->where('order_id', $order->id)
+            ->forceDelete();
+
+          foreach ($commercialPairs as $pair) {
+            $clientId = (int) $pair['client_id'];
+            $companyId = (int) $pair['company_id'];
+            $isSelected = $selectedClientId
+              ? $clientId === $selectedClientId
+              : $hasSingleCompany;
+
+            app(\App\Support\ClientCompanyContactManager::class)->attach(
+              Client::findOrFail($clientId),
+              $companyId
+            );
+
+            OrderCompanyContact::create([
+              'order_id' => $order->id,
+              'company_contact_id' => $companyId,
+              'client_id' => $clientId,
+              'source_id' => (int) $pair['source_id'],
+              'is_selected' => $isSelected,
+              'selected_at' => $isSelected ? now() : null,
+            ]);
+          }
         }
       }
 

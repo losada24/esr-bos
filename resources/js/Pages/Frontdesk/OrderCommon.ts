@@ -53,6 +53,18 @@ export const orderQualifiedSchema = Yup.object({
     .when('associate_company_contact_id_2', {
       is: (value: number | null) => Boolean(value),
       then: (schema) => schema.required('Source is required')
+    }),
+  associate_source_id_3: Yup.number()
+    .nullable()
+    .when('associate_company_contact_id_3', {
+      is: (value: number | null) => Boolean(value),
+      then: (schema) => schema.required('Source is required')
+    }),
+  associate_source_id_4: Yup.number()
+    .nullable()
+    .when('associate_company_contact_id_4', {
+      is: (value: number | null) => Boolean(value),
+      then: (schema) => schema.required('Source is required')
     })
 })
 
@@ -138,6 +150,8 @@ export interface Order {
   client_id: number
   associate_client_id_1: number | null
   associate_client_id_2: number | null
+  associate_client_id_3: number | null
+  associate_client_id_4: number | null
   project_amount: number
   status: string
   notes: string
@@ -182,6 +196,7 @@ export interface Order {
   financial_events?: OrderFinancialEvent[]
   has_contract_signed?: boolean
   invoice_number?: string | null
+  order_company_contacts?: any[]
 }
 
 export type OrderFormValues = Order & {
@@ -206,8 +221,12 @@ export type OrderFormValues = Order & {
   company_source_id: number | null
   associate_company_contact_id_1: number | null
   associate_company_contact_id_2: number | null
+  associate_company_contact_id_3: number | null
+  associate_company_contact_id_4: number | null
   associate_source_id_1: number | null
   associate_source_id_2: number | null
+  associate_source_id_3: number | null
+  associate_source_id_4: number | null
   company_contact?: CompanyContact[]
   sale: boolean
   installation: boolean
@@ -247,6 +266,8 @@ export const orderFormObj: OrderFormValues = {
   client_id: 0,
   associate_client_id_1: null,
   associate_client_id_2: null,
+  associate_client_id_3: null,
+  associate_client_id_4: null,
   project_amount: 0,
   status: '',
   source: '',
@@ -266,8 +287,12 @@ export const orderFormObj: OrderFormValues = {
   company_source_id: null,
   associate_company_contact_id_1: null,
   associate_company_contact_id_2: null,
+  associate_company_contact_id_3: null,
+  associate_company_contact_id_4: null,
   associate_source_id_1: null,
   associate_source_id_2: null,
+  associate_source_id_3: null,
+  associate_source_id_4: null,
   company_contact: [],
   job_address: '',
   job_city: '',
@@ -354,7 +379,7 @@ export const loadOrderFormObj = (order: Order): OrderFormValues => {
     if (selectedDiff !== 0) return selectedDiff
     return Number(a?.id ?? 0) - Number(b?.id ?? 0)
   })
-  const [primaryCompany, assocCompany1, assocCompany2] = sortedCompanyContacts
+  const [primaryCompany, assocCompany1, assocCompany2, assocCompany3, assocCompany4] = sortedCompanyContacts
   const getCompanyId = (item?: any) =>
     item?.company_contact_id ?? item?.company_contact?.id ?? item?.companyContact?.id ?? null
   const getClientId = (item?: any) =>
@@ -372,6 +397,8 @@ export const loadOrderFormObj = (order: Order): OrderFormValues => {
     client_id: getClientId(primaryCompany) ?? order.client_id,
     associate_client_id_1: getClientId(assocCompany1) ?? order.associate_client_id_1 ?? null,
     associate_client_id_2: getClientId(assocCompany2) ?? order.associate_client_id_2 ?? null,
+    associate_client_id_3: getClientId(assocCompany3) ?? order.associate_client_id_3 ?? null,
+    associate_client_id_4: getClientId(assocCompany4) ?? order.associate_client_id_4 ?? null,
     project_amount: order.project_amount,
     status: order.status,
     notes: order.notes ?? '',
@@ -384,8 +411,12 @@ export const loadOrderFormObj = (order: Order): OrderFormValues => {
     company_source_id: getSourceId(primaryCompany),
     associate_company_contact_id_1: getCompanyId(assocCompany1),
     associate_company_contact_id_2: getCompanyId(assocCompany2),
+    associate_company_contact_id_3: getCompanyId(assocCompany3),
+    associate_company_contact_id_4: getCompanyId(assocCompany4),
     associate_source_id_1: getSourceId(assocCompany1),
     associate_source_id_2: getSourceId(assocCompany2),
+    associate_source_id_3: getSourceId(assocCompany3),
+    associate_source_id_4: getSourceId(assocCompany4),
     company_contact: companyContacts,
     job_address: order.job_address ?? '',
     job_city: order.job_city ?? '',

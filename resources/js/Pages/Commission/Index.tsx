@@ -20,6 +20,7 @@ interface CommissionRow {
   pending_amount: number
   next_payment_amount: number
   next_payment_status: string | null
+  can_delete: boolean
 }
 
 interface ReviewPaymentRow {
@@ -586,9 +587,29 @@ export default function CommissionIndex ({
                   <td className="border-t px-4 py-4">{formatCurrency(row.pending_amount)}</td>
                   <td className="border-t px-4 py-4">{formatCurrency(row.commission_total)}</td>
                   <td className="border-t px-4 py-4">
-                    <Link className="btn btn-sm btn-primary" href={route('report.commissions.edit-order', row.order_id)}>
-                      Manage
-                    </Link>
+                    <div className="flex flex-wrap gap-2">
+                      <Link className="btn btn-sm btn-primary" href={route('report.commissions.edit-order', row.order_id)}>
+                        Manage
+                      </Link>
+                      {row.commission_id !== null && row.can_delete && (
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-outline-danger"
+                          onClick={() => {
+                            if (!window.confirm(`Delete commission for ${row.beneficiary_name ?? 'this beneficiary'}?`)) {
+                              return
+                            }
+
+                            router.delete(route('report.commissions.destroy', row.commission_id!), {
+                              preserveScroll: true,
+                              preserveState: true
+                            })
+                          }}
+                        >
+                          Delete
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
