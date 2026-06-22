@@ -53,8 +53,12 @@ export default function CreateQualified ({
       ...values,
       associate_company_contact_id_1: toNull(values.associate_company_contact_id_1),
       associate_company_contact_id_2: toNull(values.associate_company_contact_id_2),
+      associate_company_contact_id_3: toNull(values.associate_company_contact_id_3),
+      associate_company_contact_id_4: toNull(values.associate_company_contact_id_4),
       associate_client_id_1: toNull(values.associate_client_id_1),
       associate_client_id_2: toNull(values.associate_client_id_2),
+      associate_client_id_3: toNull(values.associate_client_id_3),
+      associate_client_id_4: toNull(values.associate_client_id_4),
       status: typeof values.status === 'string' ? values.status : getValueIdNotNull(values.status),
       source: typeof values.source === 'string' ? values.source : getValueIdNotNull(values.source)
     }

@@ -83,9 +83,6 @@ class CreateQualifiedOrder
           $status = OrderStatusEnum::COMMERCIAL_ASSIGNMENT->value;
         }
   
-      $primarySourceId = (int) $request->input('company_source_id', 0);
-      $associateSourceId1 = (int) $request->input('associate_source_id_1', 0);
-      $associateSourceId2 = (int) $request->input('associate_source_id_2', 0);
       $companyClientPairs = [];
       $addPair = function (?int $companyId, ?int $clientId, ?int $sourceId) use (&$companyClientPairs) {
         if (!$companyId || !$clientId || !$sourceId) {
@@ -99,9 +96,18 @@ class CreateQualifiedOrder
       };
 
       if ($request->order_type === OrderTypeEnum::COMMERCIAL->value) {
-        $addPair((int) $request->company_contact_id, (int) $request->client_id, $primarySourceId);
-        $addPair((int) $request->associate_company_contact_id_1, (int) $request->associate_client_id_1, $associateSourceId1);
-        $addPair((int) $request->associate_company_contact_id_2, (int) $request->associate_client_id_2, $associateSourceId2);
+        $addPair(
+          (int) $request->input('company_contact_id'),
+          (int) $request->input('client_id'),
+          (int) $request->input('company_source_id')
+        );
+        foreach (range(1, 4) as $index) {
+          $addPair(
+            (int) $request->input("associate_company_contact_id_{$index}"),
+            (int) $request->input("associate_client_id_{$index}"),
+            (int) $request->input("associate_source_id_{$index}")
+          );
+        }
       }
 
       $orderClientId = $request->client_id;
@@ -267,18 +273,15 @@ class CreateQualifiedOrder
                 ]);
             }
 
-            // Guarda SOLO los asociados en order_clients_temps (como ya haces)
-            if ((int)$request->associate_client_id_1 > 0) {
-                OrderClientTemps::create([
-                    'order_id'  => $order->id,
-                    'client_id' => (int)$request->associate_client_id_1,
-                ]);
-            }
-            if ((int)$request->associate_client_id_2 > 0) {
-                OrderClientTemps::create([
-                    'order_id'  => $order->id,
-                    'client_id' => (int)$request->associate_client_id_2,
-                ]);
+            // Guarda SOLO los asociados en order_clients_temps.
+            foreach (range(1, 4) as $index) {
+                $associateClientId = (int) $request->input("associate_client_id_{$index}");
+                if ($associateClientId > 0) {
+                    OrderClientTemps::create([
+                        'order_id' => $order->id,
+                        'client_id' => $associateClientId,
+                    ]);
+                }
             }
         }
 

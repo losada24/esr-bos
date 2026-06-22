@@ -69,12 +69,18 @@ class StoreQualifiedOrderRequest extends FormRequest
             // Company asociadas (opcionales)
             'associate_company_contact_id_1' => ['nullable','integer','exists:company_contacts,id'],
             'associate_company_contact_id_2' => ['nullable','integer','exists:company_contacts,id'],
+            'associate_company_contact_id_3' => ['nullable','integer','exists:company_contacts,id'],
+            'associate_company_contact_id_4' => ['nullable','integer','exists:company_contacts,id'],
 
             // Client asociado requerido si hay company asociada
             'associate_client_id_1' => ['nullable','integer','exists:clients,id','required_with:associate_company_contact_id_1'],
-            'associate_client_id_2' => ['nullable','integer','exists:clients,id','required_with:associate_company_contact_id_2'],  
+            'associate_client_id_2' => ['nullable','integer','exists:clients,id','required_with:associate_company_contact_id_2'],
+            'associate_client_id_3' => ['nullable','integer','exists:clients,id','required_with:associate_company_contact_id_3'],
+            'associate_client_id_4' => ['nullable','integer','exists:clients,id','required_with:associate_company_contact_id_4'],
             'associate_source_id_1' => ['nullable', 'integer', 'exists:sources,id', 'required_with:associate_company_contact_id_1'],
             'associate_source_id_2' => ['nullable', 'integer', 'exists:sources,id', 'required_with:associate_company_contact_id_2'],
+            'associate_source_id_3' => ['nullable', 'integer', 'exists:sources,id', 'required_with:associate_company_contact_id_3'],
+            'associate_source_id_4' => ['nullable', 'integer', 'exists:sources,id', 'required_with:associate_company_contact_id_4'],
             'client_email_selection' => ['required', 'string', 'max:255'],
             'hoa' => ['nullable', 'boolean'],
             'force_duplicate' => ['nullable', 'boolean'],

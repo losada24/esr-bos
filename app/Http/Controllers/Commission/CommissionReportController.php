@@ -619,6 +619,7 @@ class CommissionReportController extends Controller
                         'pending_amount' => 0,
                         'next_payment_amount' => 0,
                         'next_payment_status' => null,
+                        'can_delete' => false,
                     ]];
                 }
 
@@ -643,6 +644,7 @@ class CommissionReportController extends Controller
                         'pending_amount' => (float) $commission->pending_amount,
                         'next_payment_amount' => (float) ($nextPayment?->total_to_pay ?? 0),
                         'next_payment_status' => $nextPayment?->status,
+                        'can_delete' => $this->canDeleteCommission($commission),
                     ];
                 });
             })

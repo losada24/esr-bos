@@ -41,7 +41,7 @@ import ContractSignedModal, { PRIMARY_CLIENT_EMAIL_SELECTION } from '@/Pages/Sal
 import LostContractModal from '@/Pages/Sales/LostContractModal'
 import QuantifiedModal from '@/Pages/Frontdesk/QuantifiedModal'
 import { ContactEditModal, type ContactFormValues } from '@/Pages/Frontdesk/ContactEditModals'
-import RequestEditModal, { type RequestFormValues, type RequestFormErrors } from '@/Pages/Frontdesk/RequestEditModal'
+import RequestEditModal, { type RequestCommercialPair, type RequestFormValues, type RequestFormErrors } from '@/Pages/Frontdesk/RequestEditModal'
 import CompanyQuickEditModal from '@/Pages/Frontdesk/CompanyQuickEditModal'
 
 type IndexOrderProps = PageProps & {
@@ -686,7 +686,9 @@ export default function ShowStatusOrder ({
     phone: initialOrder.client?.phone ?? '',
     status: initialOrder.status ?? (FRONTDESK_STATUS_OPTIONS[0] ?? ''),
     source: initialOrder.client?.source ?? (sources?.[0] ?? ''),
-    notes: initialOrder.notes ?? ''
+    notes: initialOrder.notes ?? '',
+    product_line: initialOrder.product_line ?? '',
+    commercial_pairs: []
   })
   const [contactFormErrors, setContactFormErrors] = useState<Record<string, string[]>>({})
   const [requestFormErrors, setRequestFormErrors] = useState<RequestFormErrors>({})
@@ -780,12 +782,21 @@ export default function ShowStatusOrder ({
   }
 
   const openRequestModal = () => {
+    const commercialPairs: RequestCommercialPair[] = Array.isArray(order.order_company_contacts)
+      ? order.order_company_contacts.slice(0, 5).map((item: any) => ({
+        company_id: Number(item.company_contact_id ?? item.company_contact?.id ?? 0) || null,
+        client_id: Number(item.client_id ?? item.client?.id ?? 0) || null,
+        source_id: Number(item.source_id ?? item.source?.id ?? 0) || null
+      }))
+      : []
     setRequestFormValues({
       client_name: order.client?.name ?? order.name ?? '',
       phone: order.client?.phone ?? '',
       status: order.status ?? (FRONTDESK_STATUS_OPTIONS[0] ?? ''),
       source: order.client?.source ?? (sources[0] ?? ''),
-      notes: order.notes ?? ''
+      notes: order.notes ?? '',
+      product_line: order.product_line ?? '',
+      commercial_pairs: commercialPairs
     })
     setRequestFormErrors({})
     setRequestSubmitError(null)
@@ -907,11 +918,17 @@ export default function ShowStatusOrder ({
         company_contact_id: toNull(values.company_contact_id),
         associate_company_contact_id_1: toNull(values.associate_company_contact_id_1),
         associate_company_contact_id_2: toNull(values.associate_company_contact_id_2),
+        associate_company_contact_id_3: toNull(values.associate_company_contact_id_3),
+        associate_company_contact_id_4: toNull(values.associate_company_contact_id_4),
         associate_client_id_1: toNull(values.associate_client_id_1),
         associate_client_id_2: toNull(values.associate_client_id_2),
+        associate_client_id_3: toNull(values.associate_client_id_3),
+        associate_client_id_4: toNull(values.associate_client_id_4),
         company_source_id: toNull(values.company_source_id),
         associate_source_id_1: toNull(values.associate_source_id_1),
         associate_source_id_2: toNull(values.associate_source_id_2),
+        associate_source_id_3: toNull(values.associate_source_id_3),
+        associate_source_id_4: toNull(values.associate_source_id_4),
         source: typeof values.source === 'string' ? values.source : getValueIdNotNull(values.source)
       }
 
@@ -4453,6 +4470,11 @@ export default function ShowStatusOrder ({
         errors={requestFormErrors}
         statusOptions={requestStatusOptions}
         sourceOptions={requestSourceOptions}
+        isCommercial={String(order.order_type ?? '').toUpperCase() === 'COMMERCIAL'}
+        companies={safeCompanies}
+        clients={clientsList}
+        qualifiedSources={safeQualifiedSources}
+        sourcesClients={safeSourcesClients}
         errorMessage={requestSubmitError}
         onClose={() => { setRequestModalOpen(false) }}
         onChange={handleRequestFieldChange}
