@@ -78,6 +78,43 @@ test('it sends email when the recipient is not a system user', function () {
     (new SendGmailEmail('external@example.com', $mailable))->handle($gmailService);
 });
 
+test('it can dispatch email to an inactive system user when explicitly allowed', function () {
+    Bus::fake();
+
+    User::factory()->create([
+        'email' => 'former-user@example.com',
+        'status' => StatusUserEnum::INACTIVE->value,
+    ]);
+
+    SendGmailEmail::dispatch(
+        'former-user@example.com',
+        registrationEmail('former-user@example.com'),
+        allowInactiveUserRecipient: true
+    )->onQueue('emails');
+
+    Bus::assertDispatched(SendGmailEmail::class);
+});
+
+test('it can send email to a deleted system user when explicitly allowed', function () {
+    User::factory()->create([
+        'email' => 'deleted-user@example.com',
+        'status' => StatusUserEnum::ACTIVE->value,
+        'deleted_at' => now(),
+    ]);
+
+    $mailable = registrationEmail('deleted-user@example.com');
+    $gmailService = Mockery::mock(GmailService::class);
+    $gmailService->shouldReceive('sendEmail')
+        ->once()
+        ->with('deleted-user@example.com', null, $mailable);
+
+    (new SendGmailEmail(
+        'deleted-user@example.com',
+        $mailable,
+        allowInactiveUserRecipient: true
+    ))->handle($gmailService);
+});
+
 test('it removes inactive system users from multiple recipients', function () {
     User::factory()->create([
         'email' => 'inactive@example.com',

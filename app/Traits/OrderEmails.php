@@ -27,26 +27,21 @@ trait OrderEmails {
     $clientEmailManager = app(OrderClientEmailManager::class);
 
     if ($order->status === OrderStatusEnum::PLANNED->value) {
-      $users = [];
-      foreach ($order->owners as $owner) {
-        $users[] = $owner->email;
-      }
-      if ($order->do_not_send_email != 1) {
-        $clientEmail = $clientEmailManager->resolveRecipient($order);
-        if (!empty($clientEmail)) {
-          $users[] = $clientEmail;
-        }
-      }
+      $ownerEmails = $order->owners->pluck('email')->toArray();
+      $clientEmail = $clientEmailManager->resolveRecipient($order);
       $accountings = User::role([RoleEnum::ACCOUNTING->value])->get();
      
       //$accountManager = User::role([RoleEnum::ACCOUNT_MANAGER->value])->get();
-      //$users = array_merge($users, $accountManager->pluck('email')->toArray());
+      //$ownerEmails = array_merge($ownerEmails, $accountManager->pluck('email')->toArray());
 
       if ($order->service === ServiceEnum::INSTALLATION->value || $order->service === ServiceEnum::SERVICE->value) {
-        foreach ($users as $user) {
+        foreach ($ownerEmails as $user) {
           // Mail::to($user)->send(new EstimateDeliveryInstallationDate($order));
           $estimateDeliveryInstallationDate = new EstimateDeliveryInstallationDate($order);
           SendGmailEmail::dispatch($user, $estimateDeliveryInstallationDate)->onQueue('emails');
+        }
+        if (!empty($clientEmail)) {
+          $this->dispatchClientEmail($clientEmail, new EstimateDeliveryInstallationDate($order));
         }
        
        /* foreach ($accountings->pluck('email')->toArray() as $user) {
@@ -55,10 +50,13 @@ trait OrderEmails {
           SendGmailEmail::dispatch($user, $emailAccounting)->onQueue('emails');
         }*/
       } else if ($order->service === ServiceEnum::DELIVERY->value || $order->service === ServiceEnum::PICKUP->value) {
-        foreach ($users as $user) {
+        foreach ($ownerEmails as $user) {
           // Mail::to($user)->send(new EstimateMaterialArrivalDate($order));
           $estimateMaterialArrivalDate = new EstimateMaterialArrivalDate($order);
           SendGmailEmail::dispatch($user, $estimateMaterialArrivalDate)->onQueue('emails');
+        }
+        if (!empty($clientEmail)) {
+          $this->dispatchClientEmail($clientEmail, new EstimateMaterialArrivalDate($order));
         }
       }
     } else if ($order->status === OrderStatusEnum::ESTIMATE_APPT_SCHEDULE->value) {
@@ -77,7 +75,7 @@ trait OrderEmails {
       $clientEmail = trim((string) ($clientEmailManager->resolveRecipient($order) ?? ''));
       if ($clientEmail !== '' && !empty($order->schedule_appointment)) {
         $mailable = new EstimateAppointmentScheduledClient($order);
-        SendGmailEmail::dispatch($clientEmail, $mailable)->onQueue('emails');
+        $this->dispatchClientEmail($clientEmail, $mailable);
       }
     } else if ($order->status === OrderStatusEnum::PENDING_ASSIGNMENT->value || $order->status === OrderStatusEnum::COMMERCIAL_ASSIGNMENT->value) {
       if ($order->saleForm) {
@@ -118,16 +116,13 @@ trait OrderEmails {
 
     }
     else if ($order->status === OrderStatusEnum::DELIVERY_CONFIRMED->value) {
-      $users = [];
-      if ($order->do_not_send_email != 1) {
-        $clientEmail = $clientEmailManager->resolveRecipient($order);
-        if (!empty($clientEmail)) {
-          $users[] = $clientEmail;
-        }
+      $clientEmail = $clientEmailManager->resolveRecipient($order);
+      if (!empty($clientEmail)) {
+        $this->dispatchClientEmail($clientEmail, new DeliveryConfirmed($order));
       }
      
       $accountManager = User::role([RoleEnum::ACCOUNT_MANAGER->value])->get();
-      $users = array_merge($users, $accountManager->pluck('email')->toArray());
+      $users = $accountManager->pluck('email')->toArray();
       $usersByRoleManager = User::role([RoleEnum::WAREHOUSE_MANAGER->value, RoleEnum::SERVICE_MANAGER->value])->get();
       $users = array_merge($users, $usersByRoleManager->pluck('email')->toArray());
       foreach ($users as $user) {
@@ -145,17 +140,11 @@ trait OrderEmails {
           SendGmailEmail::dispatch($owner, $installationDateConfirmation)->onQueue('emails');
         }
 
-        if ($order->do_not_send_email != 1) {
-          $clientEmail = $clientEmailManager->resolveRecipient($order);
-          if (!empty($clientEmail)) {
-            $users[] = $clientEmail;
-          }
-        }
-        
-        foreach ($users as $user) {
+        $clientEmail = $clientEmailManager->resolveRecipient($order);
+        if (!empty($clientEmail)) {
           // Mail::to($user)->send(new InstallationDateConfirmationClient($order, true));
           $installationDateConfirmation = new InstallationDateConfirmationClient($order, true);
-          SendGmailEmail::dispatch($user, $installationDateConfirmation)->onQueue('emails');
+          $this->dispatchClientEmail($clientEmail, $installationDateConfirmation);
         }
 
         $supervisorAttachmentIds = $this->selectedAttachmentIdsForRole($order, 'supervisor');
@@ -196,15 +185,12 @@ trait OrderEmails {
           SendGmailEmail::dispatch($user, $installationDateConfirmation)->onQueue('emails');
         }
       } else if ($order->service === ServiceEnum::DELIVERY->value || $order->service === ServiceEnum::PICKUP->value) {
-        $users = [];
-        if ($order->do_not_send_email != 1) {
-          $clientEmail = $clientEmailManager->resolveRecipient($order);
-          if (!empty($clientEmail)) {
-            $users[] = $clientEmail;
-          }
+        $clientEmail = $clientEmailManager->resolveRecipient($order);
+        if (!empty($clientEmail)) {
+          $this->dispatchClientEmail($clientEmail, new DeliveryConfirmed($order));
         }
         
-        $users = array_merge($users,$order->owners->pluck('email')->toArray());
+        $users = $order->owners->pluck('email')->toArray();
         $accountManager = User::role([RoleEnum::ACCOUNT_MANAGER->value])->get();
         $users = array_merge($users, $accountManager->pluck('email')->toArray());
         $usersByRoleManager = User::role([RoleEnum::WAREHOUSE_MANAGER->value, RoleEnum::SERVICE_MANAGER->value])->get();
@@ -217,6 +203,15 @@ trait OrderEmails {
         }
       }
     }
+  }
+
+  private function dispatchClientEmail(string $email, $mailable): void
+  {
+    SendGmailEmail::dispatch(
+      $email,
+      $mailable,
+      allowInactiveUserRecipient: true
+    )->onQueue('emails');
   }
 
   private function selectedAttachmentIdsForRole(Order $order, string $role): array

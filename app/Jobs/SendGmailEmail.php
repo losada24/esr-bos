@@ -22,13 +22,16 @@ class SendGmailEmail implements ShouldQueue
 
     protected $mailable;
 
+    protected bool $allowInactiveUserRecipient;
+
     /**
      * Create a new job instance.
      */
-    public function __construct($email, $mailable)
+    public function __construct($email, $mailable, bool $allowInactiveUserRecipient = false)
     {
         $this->email = $email;
         $this->mailable = $mailable;
+        $this->allowInactiveUserRecipient = $allowInactiveUserRecipient;
     }
 
     /**
@@ -68,6 +71,10 @@ class SendGmailEmail implements ShouldQueue
 
         if ($recipients->isEmpty()) {
             return $multipleRecipients ? [] : null;
+        }
+
+        if ($this->allowInactiveUserRecipient) {
+            return $multipleRecipients ? $recipients->all() : $recipients->first();
         }
 
         $normalizedRecipients = $recipients
