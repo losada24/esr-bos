@@ -133,6 +133,7 @@ export interface OrderFinancialEvent {
 
 export interface Order {
   id: number
+  order_number?: string
   client?: Client
   name: string
   client_id: number
@@ -149,6 +150,11 @@ export interface Order {
   description?: string
   order_type?: string
   product_line?: string
+  service?: string | null
+  esr_design?: boolean
+  esr_express?: boolean
+  esr_reylos_glass?: boolean
+  esr_service?: boolean
   bid_due_date?: Date | null
   user: User
   owners?: User[]
@@ -169,7 +175,7 @@ export interface Order {
     is_primary?: boolean
   }>
   loss_reason_frontdesk?: string | null
-  attachments?: Attachment[]
+  attachments?: Array<Attachment | File>
   method_of_payment?: string | null
   name_check?: boolean
   address_check?: boolean
@@ -240,6 +246,7 @@ export type OrderFormValues = Order & {
 
 export const orderFormObj: OrderFormValues = {
   id: 0,
+  order_number: '',
   name: '',
   invoice_number: '',
   client_name: '',
@@ -277,6 +284,11 @@ export const orderFormObj: OrderFormValues = {
   description: '',
   order_type: '',
   product_line: '',
+  service: '',
+  esr_design: false,
+  esr_express: false,
+  esr_reylos_glass: false,
+  esr_service: false,
   bid_due_date: null,
   user: null as unknown as User,
   is_supply: false,
@@ -395,6 +407,11 @@ export const loadOrderFormObj = (order: Order): OrderFormValues => {
     description: order.description ?? '',
     order_type: order.order_type ?? '',
     product_line: order.product_line ?? '',
+    service: order.service ?? '',
+    esr_design: order.esr_design ?? false,
+    esr_express: order.esr_express ?? false,
+    esr_reylos_glass: order.esr_reylos_glass ?? false,
+    esr_service: order.esr_service ?? false,
     bid_due_date: order.bid_due_date ?? null,
     user: order.user,
     is_supply: order.is_supply ?? false,

@@ -3,6 +3,7 @@ namespace App\Actions;
 
 use App\Models\Client;
 use App\Support\ClientCompanyContactManager;
+use App\Support\ContactOwnerChangeNotifier;
 use App\Support\ReferralResolver;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -11,7 +12,8 @@ class UpdateClient {
 
   public function __construct(
     private readonly ReferralResolver $referralResolver,
-    private readonly ClientCompanyContactManager $clientCompanyContactManager
+    private readonly ClientCompanyContactManager $clientCompanyContactManager,
+    private readonly ContactOwnerChangeNotifier $contactOwnerChangeNotifier,
   ) {}
 
   public function handle(Request $request, Client $client) {
@@ -29,7 +31,7 @@ class UpdateClient {
       }*/
       //dd($request); 
 
-      
+      $previousOwnerId = $client->user_id ? (int) $client->user_id : null;
       
       $clientData = [
         'name' => $request->name,
@@ -54,6 +56,13 @@ class UpdateClient {
     $referral = $this->referralResolver->resolve($request->all());
     $clientData['referral_id'] = $referral?->id;
     $client->update($clientData);
+
+    $currentOwnerId = $client->user_id ? (int) $client->user_id : null;
+    $this->contactOwnerChangeNotifier->notify(
+      $client,
+      $previousOwnerId,
+      $currentOwnerId
+    );
 
     $requestedCompanyIds = $this->extractRequestedCompanyIds($request);
     if (!empty($requestedCompanyIds) || $request->has('company_contact_ids') || $request->has('company_contact_id')) {

@@ -81,23 +81,13 @@ class OrderController extends Controller
       ]
     ]);*/
      $allowedStatuses = [
-        OrderStatusEnum::REVIEW->value,
+        OrderStatusEnum::PENDING_MATERIALS->value,
+        OrderStatusEnum::PENDING_MATERIALS_EWS->value,
         OrderStatusEnum::PLANNED->value,
-        OrderStatusEnum::REPLANNED->value,
-        OrderStatusEnum::CONFIRMED->value,
-        OrderStatusEnum::DELIVERY_CONFIRMED->value,
-        OrderStatusEnum::EXECUTION->value,
-        OrderStatusEnum::SUPERVISION->value,
-        OrderStatusEnum::INSPECTION->value,
-        OrderStatusEnum::FINISH->value,
-        OrderStatusEnum::SERVICE->value,
-        OrderStatusEnum::FINAL_INSPECTION->value,
+        OrderStatusEnum::MATERIAL_ORDER_COMPLETED->value,
+        OrderStatusEnum::STORAGE_MATERIAL->value,
+        OrderStatusEnum::MATERIALS_PICK_UP_OR_DELIVERED->value,
         OrderStatusEnum::COMPLETE->value,
-        OrderStatusEnum::ON_HOLD->value,
-        OrderStatusEnum::RESCHEDULE->value,
-        OrderStatusEnum::MATERIALS_RECEIVED->value,
-        OrderStatusEnum::FINAL_COLLECT->value,
-        OrderStatusEnum::CANCELED->value
     ];
 
     $filters = $request->only(['text', 'status']);
@@ -339,38 +329,14 @@ class OrderController extends Controller
     }
 
     $status = [
-      OrderStatusEnum::REVIEW->value,
+      OrderStatusEnum::PENDING_MATERIALS->value,
+      OrderStatusEnum::PENDING_MATERIALS_EWS->value,
       OrderStatusEnum::PLANNED->value,
-      OrderStatusEnum::MATERIALS_RECEIVED->value,
-      OrderStatusEnum::REPLANNED->value,
-      OrderStatusEnum::CONFIRMED->value,
-      OrderStatusEnum::ON_HOLD->value,
+      OrderStatusEnum::MATERIAL_ORDER_COMPLETED->value,
+      OrderStatusEnum::STORAGE_MATERIAL->value,
+      OrderStatusEnum::MATERIALS_PICK_UP_OR_DELIVERED->value,
       OrderStatusEnum::COMPLETE->value,
     ];
-
-    if ($order->service === ServiceEnum::INSTALLATION->value) {
-      $status = [
-        OrderStatusEnum::REVIEW->value,
-        OrderStatusEnum::PLANNED->value,
-        OrderStatusEnum::REPLANNED->value,
-        OrderStatusEnum::CONFIRMED->value,
-        //OrderStatusEnum::EXECUTION->value,
-        //OrderStatusEnum::SUPERVISION->value,
-        //OrderStatusEnum::FINAL_COLLECT->value,
-        //OrderStatusEnum::INSPECTION->value,
-        //OrderStatusEnum::FINISH->value,
-        //OrderStatusEnum::SERVICE->value,
-        //OrderStatusEnum::FINAL_INSPECTION->value,
-        OrderStatusEnum::COMPLETE->value,
-        OrderStatusEnum::ON_HOLD->value,
-        OrderStatusEnum::MATERIALS_RECEIVED->value,
-        OrderStatusEnum::CANCELED->value,
-
-      ];
-      if ($order->status === OrderStatusEnum::CONFIRMED->value) {
-        $status[] = OrderStatusEnum::RESCHEDULE->value;
-      }
-    }
     $statusPaymentInstaller = PaymentExtraField::where('order_id', $order->id)->first();
     //dd($statusPaymentInstaller->installer_payment_status);
 

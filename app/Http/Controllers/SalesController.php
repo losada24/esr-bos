@@ -150,7 +150,7 @@ class SalesController extends Controller
           ->orderBy('name');
 
       if ($this->isOwnerRestricted($user)) {
-          $ownerOptions->whereIn('id', $user->accessibleOwnerIds());
+          $ownerOptions->where('id', $user->id);
       }
 
       $supervisors = User::role(RoleEnum::SUPERVISOR->value)
@@ -733,7 +733,7 @@ class SalesController extends Controller
       ->orderBy('name');
 
     if ($this->isOwnerRestricted($user)) {
-      $ownerQuery->whereIn('id', $user->accessibleOwnerIds());
+      $ownerQuery->where('id', $user->id);
     }
 
     return $ownerQuery->get();
@@ -746,7 +746,7 @@ class SalesController extends Controller
       ->orderBy('name');
 
     if ($this->isOwnerRestricted($user)) {
-      $ownerQuery->whereIn('id', $user->accessibleOwnerIds());
+      $ownerQuery->where('id', $user->id);
     }
 
     return $ownerQuery->get();

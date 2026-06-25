@@ -17,6 +17,7 @@ use App\Enum\OrderStatusEnum;
 use App\Enum\OrderTypeEnum;
 use App\Enum\ProductLineEnum;
 use App\Enum\RoleEnum;
+use App\Enum\ServiceEnum;
 use App\Events\OrderStatusChanged;
 use App\Enum\MethodOfPayment;
 use App\Enum\TypeOfFinancing;
@@ -495,7 +496,9 @@ class FrontdeskController extends Controller
         static fn (LanguageEnum $language) => $language->value,
         LanguageEnum::cases()
       ),
-      'companies' => CompanyContact::all(),
+      'companies' => CompanyContact::visibleTo(auth()->user())
+        ->orderBy('name')
+        ->get(),
     ]);
   }
 
@@ -541,6 +544,33 @@ class FrontdeskController extends Controller
     $finalStatus = $status === OrderStatusEnum::CLOSED_WON->value
       ? OrderStatusEnum::ACCOUNT_RECEIPT->value
       : $status;
+    $isEsrProcessOrder = in_array($order->status, [
+      OrderStatusEnum::DEALER_REQUEST->value,
+      OrderStatusEnum::FOLLOW_UP_PROJECTS->value,
+      OrderStatusEnum::REVIEW->value,
+      OrderStatusEnum::ACCOUNT_RECEIPT->value,
+      OrderStatusEnum::PLANNED->value,
+      OrderStatusEnum::PRODUCTION->value,
+      OrderStatusEnum::PRODUCTION_SERVICES->value,
+      OrderStatusEnum::PRE_COORDINATION_ACCOUNTING->value,
+      OrderStatusEnum::PENDING_MAT_REYLOS->value,
+      OrderStatusEnum::PENDING_MATERIALS->value,
+      OrderStatusEnum::PENDING_MATERIALS_EWS->value,
+      OrderStatusEnum::MATERIAL_ORDER_COMPLETED->value,
+      OrderStatusEnum::STORAGE_MATERIAL->value,
+      OrderStatusEnum::MATERIALS_PICK_UP_OR_DELIVERED->value,
+      OrderStatusEnum::PENDING_PAYMENT->value,
+      OrderStatusEnum::PENDING_MATCH->value,
+      OrderStatusEnum::COMPLETE->value,
+      OrderStatusEnum::LOST->value,
+    ], true);
+
+    if ($isEsrProcessOrder && $finalStatus === OrderStatusEnum::PLANNED->value) {
+      return response()->json([
+        'message' => 'Orders cannot be moved to PLANNED from the ESR PROCESS pipeline.',
+      ], 422);
+    }
+
     $historyStatuses = $status === OrderStatusEnum::CLOSED_WON->value
       ? [$status, $finalStatus]
       : [$status];
@@ -885,6 +915,31 @@ public function showQuantifiedModal(Order $order)
   { // Obtener las órdenes por supervisor
 
     $order = Order::findOrFail($id);
+    $isEsrProcessView = request()->routeIs('esr-process.order-view');
+
+    if ($isEsrProcessView && !in_array($order->status, [
+      OrderStatusEnum::DEALER_REQUEST->value,
+      OrderStatusEnum::FOLLOW_UP_PROJECTS->value,
+      OrderStatusEnum::REVIEW->value,
+      OrderStatusEnum::ACCOUNT_RECEIPT->value,
+      OrderStatusEnum::PLANNED->value,
+      OrderStatusEnum::PRODUCTION->value,
+      OrderStatusEnum::PRODUCTION_SERVICES->value,
+      OrderStatusEnum::PRE_COORDINATION_ACCOUNTING->value,
+      OrderStatusEnum::PENDING_MAT_REYLOS->value,
+      OrderStatusEnum::PENDING_MATERIALS->value,
+      OrderStatusEnum::PENDING_MATERIALS_EWS->value,
+      OrderStatusEnum::MATERIAL_ORDER_COMPLETED->value,
+      OrderStatusEnum::STORAGE_MATERIAL->value,
+      OrderStatusEnum::MATERIALS_PICK_UP_OR_DELIVERED->value,
+      OrderStatusEnum::PENDING_PAYMENT->value,
+      OrderStatusEnum::PENDING_MATCH->value,
+      OrderStatusEnum::COMPLETE->value,
+      OrderStatusEnum::LOST->value,
+    ], true)) {
+      abort(404);
+    }
+
     if (!$this->ownerCanAccessOrder(auth()->user(), $order)) {
       abort(403, 'You are not authorized to access this order.');
     }
@@ -995,7 +1050,7 @@ public function showQuantifiedModal(Order $order)
       ->orderBy('name');
 
     if ($this->isOwnerRestricted(auth()->user())) {
-      $ownerOptionsQuery->whereIn('id', auth()->user()->accessibleOwnerIds());
+      $ownerOptionsQuery->where('id', auth()->id());
     }
 
     $ownerOptions = $ownerOptionsQuery->get();
@@ -1076,7 +1131,10 @@ public function showQuantifiedModal(Order $order)
       ->orderBy('name')
       ->get();
 
-    $companies = CompanyContact::select('id', 'name', 'email')->orderBy('name')->get();
+    $companies = CompanyContact::visibleTo(auth()->user())
+      ->select('id', 'name', 'email')
+      ->orderBy('name')
+      ->get();
 
     $qualifiedSources = Source::select('id', 'name')->orderBy('name')->get();
 
@@ -1163,7 +1221,12 @@ public function showQuantifiedModal(Order $order)
       'companies' => $companies,
       'sourcesClients' => $sourcesClients,
       'status' => $statusOptions,
+      'workflow' => $isEsrProcessView ? 'esr_process' : null,
       'order_types' => $order_types,
+      'services' => array_map(
+        static fn (ServiceEnum $service) => $service->value,
+        ServiceEnum::cases()
+      ),
       'methods_of_payment' => $methodsOfPayment,
       'type_of_financing' => $typeOfFinancing,
       'payment_schedule_templates' => PaymentScheduleTemplates::templates(),

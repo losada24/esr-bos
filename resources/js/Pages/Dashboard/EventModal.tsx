@@ -527,11 +527,68 @@ const EventModal = ({
         </div>
         <div className='p-5'>
           <div className="h-[550px] overflow-y-scroll">
-            <div className='mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide'>
-              <span className='text-slate-500 dark:text-slate-300'>Service:</span>
-              <span className='inline-flex items-center rounded-full bg-primary/15 px-4 py-1 text-primary'>
-                {event?.service ?? 'SERVICE'}
-              </span>
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/40">
+              <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Order Summary</div>
+                  <div className="mt-1 text-lg font-bold text-slate-800 dark:text-slate-100">
+                    #{event?.order_number} · {event?.name ?? 'N/A'}
+                  </div>
+                </div>
+                <span className='inline-flex items-center rounded-full bg-primary/15 px-4 py-1 text-sm font-semibold text-primary'>
+                  {event?.service ?? 'SERVICE'}
+                </span>
+              </div>
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <InfoItem label='Order Number'>
+                  #{event?.order_number}
+                </InfoItem>
+                <InfoItem label='Client'>
+                  {event?.client?.name ?? 'N/A'}
+                </InfoItem>
+                <InfoItem label='Client Phone'>
+                  {event?.client?.phone
+                    ? (
+                      <a href={`tel:${event.client.phone}`} className="text-blue-500 underline">
+                        {event.client.phone}
+                      </a>
+                      )
+                    : 'N/A'}
+                </InfoItem>
+                <InfoItem label='Payment Method'>
+                  {event?.method_of_payment ?? 'N/A'}
+                </InfoItem>
+                <InfoItem label='Address'>
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${event?.job_address ?? ''}, ${event?.city ?? ''}, ${event?.job_state ?? ''}, ${event?.job_zip ?? ''}`)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-500 underline"
+                  >
+                    {`${event?.job_address ?? ''}${event?.city ? `, ${event.city}` : ''}${event?.job_state ? `, ${event.job_state}` : ''}${event?.job_zip ? `, ${event.job_zip}` : ''}` || 'N/A'}
+                  </a>
+                </InfoItem>
+                <InfoItem label='Owner'>
+                  <div className='flex flex-wrap gap-1'>
+                    {event?.owners?.length
+                      ? event.owners.map((owner) => (
+                        <span key={owner.id} className='badge badge-outline-dark'>{owner.name}</span>
+                      ))
+                      : 'N/A'}
+                  </div>
+                </InfoItem>
+                {!isInstaller && (
+                  <>
+                    <InfoItem label='Client Pending Payment'>
+                      {formatPrice(event?.cost_delivery ?? 0)}
+                    </InfoItem>
+                    <InfoItem label='Area'>
+                      <span>{event?.area ?? 0}</span>
+                      <span className="ml-1 text-sm text-gray-500">SQFT</span>
+                    </InfoItem>
+                  </>
+                )}
+              </div>
             </div>
               {isVipClient && (
                 <Section title='VIP Client' columns={3}>
@@ -546,113 +603,27 @@ const EventModal = ({
                   </InfoItem>
                 </Section>
               )}
-            <div className='flex flex-row gap-2'>
-              <div className='w-1/3'>
-                <strong>Order number:</strong> {`#${event?.order_number}`}
-              </div>
-              <div className='w-1/3'>
-                <strong>Name:</strong> {event?.name}
-              </div>
-              <div className='w-1/3'>
-              <strong>Address:</strong>{' '}
-                      <a
-                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${event?.job_address ?? ''}, ${event?.city ?? ''}, ${event?.job_state ?? ''}, ${event?.job_zip ?? ''}`)}`} 
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-500 underline"
-                      >
-                        {`${event?.job_address ?? ''}${event?.city ? `, ${event.city}` : ''}${event?.job_state ? `, ${event.job_state}` : ''}${event?.job_zip ? `, ${event.job_zip}` : ''}`}
-                      </a>
-              </div>
-              <div className='w-1/3'>
-                <strong>Client Phone:</strong>
-                <a href={`tel:${event?.client?.phone}`} className="text-blue-500 underline">
-                {event?.client?.phone}
-                </a>
-              </div>
-            </div>
-            <div className='flex flex-row gap-2 mt-3'>
-              <div className='w-1/3'>
-                <strong>Owner:</strong>
-                <div className='flex flex-row justify-start'>
-                  {event?.owners.map((owner) => {
-                    return <div key={owner.id} className='badge badge-outline-dark'>{owner.name}</div>
-                  })}
-                </div>
-              </div>
-              <div className='w-1/3'>
-                <strong>Service:</strong>
-                <div className='flex flex-row justify-start'>
-                  {event?.service}
-                </div>
-              </div>
-              <div className='w-1/3'>
-                <strong>Payment Method:</strong>
-                <div className='flex flex-row justify-start'>
-                  {event?.method_of_payment}
-                </div>
-              </div>
-            </div>
-            <div className='flex flex-row gap-2 mt-3'>
             {(event?.service === 'DELIVERY AND INSTALLATION') && (
-              <>
-              <div className='w-1/3'>
-                <strong>Frame Color:</strong>
-                <div className='flex flex-row justify-start'>
-                {event?.order_colors && event?.order_colors.length > 0
-                  ? event.order_colors.map(c => c.name).join(', ')
-                  : ''}
-                </div>
-              </div>
-              <div className='w-1/3'>
-                <strong>Type of Housing:</strong>
-                <div className='flex flex-row justify-start'>
-                  {event?.type_of_housing?.name}
-                </div>
-              </div>
-              <div className='w-1/3'>
-                <strong>Type of Work:</strong>
-                <div className='flex flex-row justify-start'>
-                  {event?.type_of_work?.name}
-                </div>
-              </div>
-              <div className='w-1/3'>
-                <strong>County:</strong>
-                <div className='flex flex-row justify-start'>
-                  {event?.travel_cost?.name}
-                </div>
-              </div>
-              </>
+              <Section title='Project Details' columns={4}>
+                <InfoItem label='Frame Color'>
+                  {event?.order_colors && event.order_colors.length > 0 ? event.order_colors.map(c => c.name).join(', ') : 'N/A'}
+                </InfoItem>
+                <InfoItem label='Type of Housing'>
+                  {event?.type_of_housing?.name ?? 'N/A'}
+                </InfoItem>
+                <InfoItem label='Type of Work'>
+                  {event?.type_of_work?.name ?? 'N/A'}
+                </InfoItem>
+                <InfoItem label='County'>
+                  {event?.travel_cost?.name ?? 'N/A'}
+                </InfoItem>
+                {!isInstaller && (
+                  <InfoItem label='Duration of Work'>
+                    {event?.duration_of_work?.name ?? 'N/A'}
+                  </InfoItem>
+                )}
+              </Section>
             )}
-            </div>
-            <div className='flex flex-row gap-2 mt-3'>
-            {(event?.service === 'DELIVERY AND INSTALLATION' && !isInstaller) && (
-              <>
-              <div className='w-1/3'>
-                <strong>Duration of Work:</strong>
-                <div className='flex flex-row justify-start'>
-                  {event?.duration_of_work?.name}
-                </div>
-              </div>
-              </>
-            )}
-             {!isInstaller && (
-              <>
-              <div className='w-1/3'>
-                <strong>Client Pending Payment:</strong>
-                <div className='flex flex-row justify-start'>
-                  {formatPrice(event?.cost_delivery ?? 0)}
-                </div>
-              </div>
-               <div className="w-1/3">
-                <strong>Area:</strong>
-                <div className="flex flex-row justify-start items-center">
-                  <span>{event?.area ?? 0}</span>
-                  <span className="ml-1 text-gray-500 text-sm">SQFT</span>
-                </div>
-              </div>
-              </>)}
-            </div>
             {(event?.service === 'DELIVERY AND INSTALLATION') && (
               <>
             <div className='flex flex-row gap-2 mt-3'>
@@ -793,19 +764,15 @@ const EventModal = ({
                   isDisabled={isInstaller || isOwner}
                   isMulti={false}
                   onChange={(value) => { setEditableData({ ...editableData, status: value }) }}
-                  options={(() => {
-                    let options = status.map((status) => { return { label: status, value: status } })
-                    if (event?.service === 'PICKUP' || event?.service === 'DELIVERY ONLY') {
-                      options = status.filter((status) =>
-                        status === 'PLANNED' ||
-                        status === 'COMPLETE' ||
-                        status === 'CONFIRMED' ||
-                        status === 'DELIVERY CONFIRMED'
-                      ).map((status) => { return { label: status, value: status } })
-                    }
-
-                    return options
-                  })()}
+                  options={[
+                    'PENDING MATERIALS',
+                    'PENDING MATERIALS ESW',
+                    'PLANNED',
+                    'MATERIAL ORDER COMPLETED',
+                    'STORAGE MATERIAL',
+                    'MATERIALS PICK UP OR DELIVERED',
+                    'COMPLETE'
+                  ].map((status) => { return { label: status, value: status } })}
                 />
               </div>
               {(event?.service === 'DELIVERY AND INSTALLATION') && (
@@ -832,7 +799,7 @@ const EventModal = ({
               </div>
               )}
             </div>
-            <div className='flex flex-row gap-2 mt-3'>
+            <div className='flex flex-row flex-wrap gap-2 mt-3'>
             {(event?.service === 'DELIVERY AND INSTALLATION') && (
               <>
               <div className='w-1/3'>
@@ -1052,19 +1019,6 @@ const EventModal = ({
                   />
                   </div>
                   )}
-            <div className='col-span-4 mt-4'>
-              <label htmlFor="notes"><strong>Installer Notes </strong></label>
-              <textarea
-                id="notes"
-                name="notes"
-                rows = {6}
-                value={editableData.notes ?? ''}
-                disabled={!isAdminOrAccountManager}
-                className="form-textarea resize-none placeholder:text-white-dark"
-                placeholder='Notes'
-                onChange={(e) => { setEditableData({ ...editableData, notes: e.target.value }) }}
-              />
-            </div>
             {/* {!(isInstaller || isOwner) && (
             <>
             <div className='col-span-4'>
@@ -1174,178 +1128,139 @@ const EventModal = ({
               isInstaller ||
               isOwner
             )) && (
-              <div className='space-y-3 mt-3'>
-                <div className='flex flex-col gap-2'>
-                  {!isInstaller && (
-                    <>
-                      <label htmlFor='attachments' className='font-bold'>Attachments:</label>
-                      <input
-                        id='attachments'
-                        name='attachments'
-                        type='file'
-                        accept='*'
-                        className='form-input file:py-2 file:px-4 file:border-0 file:font-semibold p-0 file:bg-primary/90 ltr:file:mr-5 rtl:file:ml-5 file:text-white file:hover:bg-primary'
-                        placeholder='Qty'
-                        multiple={true}
-                        disabled={isUploadingAttachments}
-                        onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                          void handleAttachmentSelection(event)
-                        }}
-                      />
-                      {isUploadingAttachments && (
-                        <span className='text-xs text-primary'>Uploading attachments...</span>
+              <div className='mt-6 w-full flex-none rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/40'>
+                <h3 className='mb-4 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400'>Order Activity</h3>
+                <div className='space-y-4'>
+                  <div className='rounded-xl border border-slate-200 p-4 dark:border-slate-700'>
+                    <div className='flex flex-col gap-3'>
+                      {!isInstaller && (
+                        <>
+                          <label htmlFor='attachments' className='font-bold'>Attachments</label>
+                          <input
+                            id='attachments'
+                            name='attachments'
+                            type='file'
+                            accept='*'
+                            className='form-input file:py-2 file:px-4 file:border-0 file:font-semibold p-0 file:bg-primary/90 ltr:file:mr-5 rtl:file:ml-5 file:text-white file:hover:bg-primary'
+                            placeholder='Qty'
+                            multiple={true}
+                            disabled={isUploadingAttachments}
+                            onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                              void handleAttachmentSelection(event)
+                            }}
+                          />
+                          {isUploadingAttachments && (
+                            <span className='text-xs text-primary'>Uploading attachments...</span>
+                          )}
+                        </>
                       )}
-                    </>
-                  )}
-                  <div className='flex flex-col rounded-md border border-[#e0e6ed] dark:border-[#1b2e4b] mt-3'>
-                    {message && (
-                      <div className='flex items-center p-3.5 rounded text-danger dark:bg-danger-dark-light'>{message}</div>
-                    )}
-                    <table className='w-full whitespace-nowrap'>
-                      <thead>
-                        <tr>
-                          <th className='border-t px-6 py-3 text-left'>File</th>
-                          <th className='border-t px-6 py-3 text-left'>Type</th>
-                          {allowsAttachmentRoleSelection && ATTACHMENT_ROLE_OPTIONS.map((roleOption) => {
-                            const selectedCount = (attachmentRoleTargets[roleOption.key] ?? [])
-                              .filter((attachmentId) => selectableAttachmentIds.includes(attachmentId))
-                              .length
-                            const isAllChecked = selectableAttachmentIds.length > 0 && selectedCount === selectableAttachmentIds.length
+                      <div className='overflow-x-auto rounded-md border border-[#e0e6ed] dark:border-[#1b2e4b]'>
+                        {message && (
+                          <div className='flex items-center p-3.5 rounded text-danger dark:bg-danger-dark-light'>{message}</div>
+                        )}
+                        <table className='w-full whitespace-nowrap'>
+                          <thead>
+                            <tr>
+                              <th className='border-t px-4 py-3 text-left'>File</th>
+                              <th className='border-t px-4 py-3 text-left'>Type</th>
+                              {allowsAttachmentRoleSelection && ATTACHMENT_ROLE_OPTIONS.map((roleOption) => {
+                                const selectedCount = (attachmentRoleTargets[roleOption.key] ?? [])
+                                  .filter((attachmentId) => selectableAttachmentIds.includes(attachmentId))
+                                  .length
+                                const isAllChecked = selectableAttachmentIds.length > 0 && selectedCount === selectableAttachmentIds.length
 
-                            return (
-                              <th key={roleOption.key} className='border-t px-3 py-3 text-center text-xs'>
-                                <div className='flex flex-col items-center gap-1'>
-                                  <span>{roleOption.label}</span>
-                                  <label className='flex items-center gap-1 text-[10px] font-normal normal-case'>
-                                    <input
-                                      type='checkbox'
-                                      checked={isAllChecked}
-                                      disabled={selectableAttachmentIds.length === 0}
-                                      onChange={(event) => {
-                                        toggleAllAttachmentRoleTargets(roleOption.key, event.currentTarget.checked)
+                                return (
+                                  <th key={roleOption.key} className='border-t px-3 py-3 text-center text-xs'>
+                                    <div className='flex flex-col items-center gap-1'>
+                                      <span>{roleOption.label}</span>
+                                      <label className='flex items-center gap-1 text-[10px] font-normal normal-case'>
+                                        <input
+                                          type='checkbox'
+                                          checked={isAllChecked}
+                                          disabled={selectableAttachmentIds.length === 0}
+                                          onChange={(event) => {
+                                            toggleAllAttachmentRoleTargets(roleOption.key, event.currentTarget.checked)
+                                          }}
+                                        />
+                                        <span>All</span>
+                                      </label>
+                                    </div>
+                                  </th>
+                                )
+                              })}
+                              <th className='border-t px-4 py-3 text-right'>Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {visibleAttachments.map((attachment) => (
+                              <tr key={attachment.id} className='hover:bg-gray-100 focus-within:bg-gray-100'>
+                                <td className='border-t px-4 py-4 align-top'>{attachment.filename}</td>
+                                <td className='border-t px-4 py-4 align-top'>{attachment.file_type}</td>
+                                {allowsAttachmentRoleSelection && ATTACHMENT_ROLE_OPTIONS.map((roleOption) => {
+                                  const attachmentId = Number(attachment.id)
+                                  const roleTargets = attachmentRoleTargets[roleOption.key] ?? []
+                                  const isChecked = Number.isInteger(attachmentId) && roleTargets.includes(attachmentId)
+
+                                  return (
+                                    <td key={`${attachment.id}-${roleOption.key}`} className='border-t px-3 py-4 align-top text-center'>
+                                      <input
+                                        type='checkbox'
+                                        checked={isChecked}
+                                        disabled={!Number.isInteger(attachmentId) || attachmentId <= 0}
+                                        onChange={(event) => {
+                                          toggleAttachmentRoleTarget(roleOption.key, attachmentId, event.currentTarget.checked)
+                                        }}
+                                      />
+                                    </td>
+                                  )
+                                })}
+                                <td className='border-t px-4 py-4 align-top'>
+                                  <div className='flex flex-row gap-2 justify-end'>
+                                    <a key={attachment.id} href={route('download.file', { id: attachment.id })} target='_blank' rel='noreferrer'>
+                                      <ExportIcon />
+                                    </a>
+                                    <button
+                                      onClick={(e) => {
+                                        e.preventDefault()
+                                        removeAttachmentProduct(Number(attachment.id))
                                       }}
-                                    />
-                                    <span>All</span>
-                                  </label>
-                                </div>
-                              </th>
-                            )
-                          })}
-                          <th className='border-t px-6 py-3 text-right'>Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {visibleAttachments.map((attachment) => (
-                          <tr key={attachment.id} className='hover:bg-gray-100 focus-within:bg-gray-100'>
-                            <td className='border-t px-6 py-4 align-top'>{attachment.filename}</td>
-                            <td className='border-t px-6 py-4 align-top'>{attachment.file_type}</td>
-                            {allowsAttachmentRoleSelection && ATTACHMENT_ROLE_OPTIONS.map((roleOption) => {
-                              const attachmentId = Number(attachment.id)
-                              const roleTargets = attachmentRoleTargets[roleOption.key] ?? []
-                              const isChecked = Number.isInteger(attachmentId) && roleTargets.includes(attachmentId)
-
-                              return (
-                                <td key={`${attachment.id}-${roleOption.key}`} className='border-t px-3 py-4 align-top text-center'>
-                                  <input
-                                    type='checkbox'
-                                    checked={isChecked}
-                                    disabled={!Number.isInteger(attachmentId) || attachmentId <= 0}
-                                    onChange={(event) => {
-                                      toggleAttachmentRoleTarget(roleOption.key, attachmentId, event.currentTarget.checked)
-                                    }}
-                                  />
+                                      title='Delete Attachment'
+                                    >
+                                      <DeleteIcon />
+                                    </button>
+                                  </div>
                                 </td>
-                              )
-                            })}
-                            <td className='border-t px-6 py-4 align-top'>
-                              <div className='flex flex-row gap-2 justify-end'>
-                                <a key={attachment.id} href={route('download.file', { id: attachment.id })} target='_blank' rel='noreferrer'>
-                                  <ExportIcon />
-                                </a>
-                                <button
-                                  onClick={(e) => {
-                                    e.preventDefault()
-                                    removeAttachmentProduct(Number(attachment.id))
-                                  }}
-                                  title='Delete Attachment'
-                                >
-                                  <DeleteIcon />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className='rounded-xl border border-slate-200 p-4 dark:border-slate-700'>
+                    <strong className='mb-3 block'>Payment List</strong>
+                    {!isSupervisor && !(event?.service === 'PICKUP' || event?.service === 'DELIVERY ONLY') && (
+                      <a href={route('order.get_payment_list', { id: event?.id ?? 0 })} target='_blank' className='badge badge-outline-dark' rel='noreferrer'>Download Payment List</a>
+                    )}
+                    {isSupervisor && event?.service === 'DELIVERY AND INSTALLATION' && (
+                      <a href={route('order.get_supervisor_list', { id: event?.id ?? 0 })} target='_blank' className='badge badge-outline-dark' rel='noreferrer'>Download Payment List</a>
+                    )}
+                    {isAdminOrAccountManager && (event?.service === 'PICKUP' || event?.service === 'DELIVERY ONLY') && (
+                      <a href={route('order.get_supervisor_list', { id: event?.id ?? 0 })} target='_blank' className='badge badge-outline-dark' rel="noreferrer">Download Payment List</a>
+                    )}
                   </div>
                 </div>
-                <fieldset className='p-3 border rounded-xl mt-3'>
-                  <legend className='text-lg font-semibold px-3'>Work Team Notes (All Notes)</legend>
+
+                <div className='mt-4 rounded-xl border border-slate-200 p-4 dark:border-slate-700'>
+                  <h4 className='mb-3 text-lg font-semibold'>Work Team Notes (All Notes)</h4>
                   <OrderNotesForOrder
                     orderId={event?.id ?? null}
                     canCreate={(event?.id ?? 0) !== 0}
                   />
-                </fieldset>
-                {!isSupervisor && !(event?.service === 'PICKUP' || event?.service === 'DELIVERY ONLY') && (
-                  <div className='flex flex-col gap-2'>
-                    <strong>Payment List:</strong>
-                    <div className='flex flex-col justify-start'>
-                      <a href={route('order.get_payment_list', { id: event?.id ?? 0 })} target='_blank' className='badge badge-outline-dark' rel='noreferrer'>Download Payment List</a>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-            {(isSupervisor) && (event?.service === 'DELIVERY AND INSTALLATION') && (
-              <div className='flex flex-col gap-2 mt-3'>
-                <strong>Payment List:</strong>
-                <div className='flex flex-col justify-start'>
-                  <a href={route('order.get_supervisor_list', { id: event?.id ?? 0 })} target='_blank' className='badge badge-outline-dark' rel='noreferrer'>Download Payment List</a>
                 </div>
               </div>
             )}
-              {(isSupervisor) && (event?.service === 'DELIVERY AND INSTALLATION') && (
-              <>
-              <div className='flex flex-col gap-2  mt-3'>
-                <strong>Payment List:</strong>
-                <div className='flex flex-col justify-start'>
-                  <a href={route('order.get_supervisor_list', { id: event?.id ?? 0 })} target='_blank' className='badge badge-outline-dark' rel="noreferrer">Download Payment List</a>
-                </div>
-              </div>
-             {/* <ProductTable
-                  orderProducts={orderProducts}
-                  type_of_products={type_of_products}
-                  product_category={product_category}
-                  products_config={products_config}
-                  service={values.service}
-                  values= {values}
-                  travel_costs={travel_costs}
-                  removeOrderProduct={(index: number) => { removeOrderProduct(index) }}
-                  updateOrderProduct={(index: number) => { updateOrderProduct(index) }}
-                /> */}
-              </>
-              )}
-               {(isAdminOrAccountManager) && (event?.service === 'PICKUP' || event?.service === 'DELIVERY ONLY') && (
-              <>
-              <div className='flex flex-col gap-2  mt-3'>
-                <strong>Payment List:</strong>
-                <div className='flex flex-col justify-start'>
-                  <a href={route('order.get_supervisor_list', { id: event?.id ?? 0 })} target='_blank' className='badge badge-outline-dark' rel="noreferrer">Download Payment List</a>
-                </div>
-              </div>
-             {/* <ProductTable
-                  orderProducts={orderProducts}
-                  type_of_products={type_of_products}
-                  product_category={product_category}
-                  products_config={products_config}
-                  service={values.service}
-                  values= {values}
-                  travel_costs={travel_costs}
-                  removeOrderProduct={(index: number) => { removeOrderProduct(index) }}
-                  updateOrderProduct={(index: number) => { updateOrderProduct(index) }}
-                /> */}
-              </>
-                )}
           </div>
           {showValidationErrors && (
             <div className='flex flex-row gap-2'>

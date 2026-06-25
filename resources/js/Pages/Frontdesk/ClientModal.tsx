@@ -29,13 +29,15 @@ const ClientModal = ({
   //addClient,
   sourcesClients,
   onConfirm,
-  orderType
+  orderType,
+  storeRoute = 'client.store'
 }: {
   showModal: boolean
   onClose: CallableFunction
   onConfirm: (client: Client) => void
   sourcesClients: string[]
   orderType?: string
+  storeRoute?: string
 }) => {
   type ClientFormValues = Client & { order_type?: string }
   const [existingClientQuery, setExistingClientQuery] = useState('')
@@ -123,7 +125,7 @@ const ClientModal = ({
     forceCreate = false
   ) => {
     try {
-      const response = await fetch(route('client.store'), {
+      const response = await fetch(route(storeRoute), {
         method: 'POST',
         headers: {
           'X-CSRF-TOKEN': csrfToken,
