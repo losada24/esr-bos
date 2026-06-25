@@ -14,6 +14,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use App\Enum\ServiceEnum;
 use App\Enum\SupervisorPaymentStatusEnum;
 use App\Enum\TypeOfFinancing;
+use App\Models\CompanyContact;
 use App\Rules\ValidateOrderStatus;
 use Illuminate\Validation\Rule;
 
@@ -87,5 +88,36 @@ class StoreQualifiedOrderRequest extends FormRequest
               ))
             ],
         ];
+    }
+
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator) {
+            if ($this->input('order_type') !== OrderTypeEnum::COMMERCIAL->value) {
+                return;
+            }
+
+            $requestedCompanyIds = collect([
+                $this->input('company_contact_id'),
+                $this->input('associate_company_contact_id_1'),
+                $this->input('associate_company_contact_id_2'),
+            ])
+                ->filter()
+                ->map(fn ($id) => (int) $id)
+                ->unique()
+                ->values();
+
+            if ($requestedCompanyIds->isEmpty()) {
+                return;
+            }
+
+            $visibleCompanyCount = CompanyContact::visibleTo($this->user())
+                ->whereIn('id', $requestedCompanyIds)
+                ->count();
+
+            if ($visibleCompanyCount !== $requestedCompanyIds->count()) {
+                $validator->errors()->add('company_contact_id', 'You can only use companies associated with your owner account.');
+            }
+        });
     }
 }

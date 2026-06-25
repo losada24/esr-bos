@@ -15,19 +15,31 @@ class CrmNotificationController extends Controller
         $user = $request->user();
         $now = Carbon::now();
         $supervising = $this->canSuperviseNotifications($request);
-        $baseQuery = CrmNotification::query()
-            ->when(!$supervising, fn ($query) => $query->where('user_id', $user->id))
+        $baseQuery = $this->visibleNotificationsQuery($request)
             ->where(function ($query) use ($now) {
                 $query->where('type', '!=', CrmNotification::TYPE_REMINDER)
                     ->orWhereNull('due_at')
                     ->orWhere('due_at', '<=', $now);
             });
 
-        $notifications = (clone $baseQuery)
+        $notificationRows = (clone $baseQuery)
             ->with(['actor:id,name', 'user:id,name'])
             ->latest('created_at')
             ->limit(60)
-            ->get(['id', 'user_id', 'actor_id', 'type', 'title', 'body', 'data', 'due_at', 'read_at', 'created_at'])
+            ->get(['id', 'user_id', 'actor_id', 'type', 'title', 'body', 'data', 'notifiable_type', 'notifiable_id', 'due_at', 'read_at', 'created_at']);
+
+        if ($this->isOwnerAdmin($request)) {
+            $ownNotificationKeys = $notificationRows
+                ->filter(fn (CrmNotification $notification) => (int) $notification->user_id === (int) $user->id)
+                ->mapWithKeys(fn (CrmNotification $notification) => [$this->dedupeKey($notification) => true]);
+
+            $notificationRows = $notificationRows
+                ->reject(fn (CrmNotification $notification) => (int) $notification->user_id !== (int) $user->id
+                    && $ownNotificationKeys->has($this->dedupeKey($notification)))
+                ->values();
+        }
+
+        $notifications = $notificationRows
             ->groupBy('type')
             ->map(fn ($items) => $items->map(fn (CrmNotification $notification) => $this->row($notification, $supervising))->values())
             ->all();
@@ -46,7 +58,11 @@ class CrmNotificationController extends Controller
     public function markRead(Request $request, CrmNotification $notification): JsonResponse
     {
         $ownsNotification = (int) $notification->user_id === (int) $request->user()->id;
-        abort_unless($ownsNotification || $this->canSuperviseNotifications($request), 404);
+        $canViewNotification = $this->visibleNotificationsQuery($request)
+            ->whereKey($notification->getKey())
+            ->exists();
+
+        abort_unless($canViewNotification, 404);
 
         if ($ownsNotification && !$notification->read_at) {
             $notification->update(['read_at' => Carbon::now()]);
@@ -92,6 +108,52 @@ class CrmNotificationController extends Controller
 
     private function canSuperviseNotifications(Request $request): bool
     {
-        return (bool) $request->user()?->hasRole(RoleEnum::ADMIN->value);
+        return (bool) $request->user()?->hasAnyRole([
+            RoleEnum::ADMIN->value,
+            RoleEnum::OWNER_ADMIN->value,
+        ]);
+    }
+
+    private function isOwnerAdmin(Request $request): bool
+    {
+        return (bool) $request->user()?->hasRole(RoleEnum::OWNER_ADMIN->value);
+    }
+
+    private function visibleNotificationsQuery(Request $request)
+    {
+        $user = $request->user();
+
+        $query = CrmNotification::query();
+
+        if (!$user) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        if ($user->hasRole(RoleEnum::ADMIN->value)) {
+            return $query;
+        }
+
+        if ($user->hasRole(RoleEnum::OWNER_ADMIN->value)) {
+            return $query->where(function ($innerQuery) use ($user) {
+                $innerQuery
+                    ->where('user_id', $user->id)
+                    ->orWhereHas('user.roles', function ($roleQuery) {
+                        $roleQuery->where('name', RoleEnum::OWNER->value);
+                    });
+            });
+        }
+
+        return $query->where('user_id', $user->id);
+    }
+
+    private function dedupeKey(CrmNotification $notification): string
+    {
+        return implode('|', [
+            $notification->type,
+            $notification->title,
+            $notification->notifiable_type,
+            $notification->notifiable_id,
+            ($notification->data ?? [])['url'] ?? '',
+        ]);
     }
 }

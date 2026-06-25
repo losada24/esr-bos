@@ -111,7 +111,7 @@ class OrderProcessingController extends Controller
             ->orderBy('name');
 
         if ($this->isOwnerRestricted($user)) {
-            $ownerOptions->whereIn('id', $user->accessibleOwnerIds());
+            $ownerOptions->where('id', $user->id);
         }
 
         $supervisors = User::role(RoleEnum::SUPERVISOR->value)

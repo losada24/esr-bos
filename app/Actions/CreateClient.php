@@ -4,6 +4,7 @@ namespace App\Actions;
 use App\Enum\OrderTypeEnum;
 use App\Models\Client;
 use App\Support\ClientCompanyContactManager;
+use App\Support\ContactOwnerChangeNotifier;
 use App\Traits\Bigin;
 use App\Support\ReferralResolver;
 use Illuminate\Http\Request;
@@ -16,7 +17,8 @@ class CreateClient {
 
   public function __construct(
     private readonly ReferralResolver $referralResolver,
-    private readonly ClientCompanyContactManager $clientCompanyContactManager
+    private readonly ClientCompanyContactManager $clientCompanyContactManager,
+    private readonly ContactOwnerChangeNotifier $contactOwnerChangeNotifier,
   ) {}
   
   public function handle(Request $request) {
@@ -68,6 +70,13 @@ class CreateClient {
           ]);
 
           $createdNewClient = true;
+
+          $this->contactOwnerChangeNotifier->notify(
+            $existingClient,
+            null,
+            $existingClient->user_id ? (int) $existingClient->user_id : null,
+            true
+          );
 
 
           /*$tag = new \stdClass();

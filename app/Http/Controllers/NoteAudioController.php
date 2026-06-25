@@ -184,7 +184,7 @@ class NoteAudioController extends Controller
         }
 
         if ($user->hasRole(RoleEnum::OWNER->value)) {
-            return $order->owners()->whereIn('users.id', $user->accessibleOwnerIds())->exists();
+            return $order->owners()->where('users.id', $user->id)->exists();
         }
 
         if ($order->owners()->where('users.id', $user->id)->exists()) {

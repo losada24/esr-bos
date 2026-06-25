@@ -214,6 +214,7 @@ const OrderQualifiedForm = ({
   methodsOfPayment = [],
   financingOptions = [],
   paymentScheduleTemplates = {},
+  services = [],
   onCancel,
   submitLabel,
   showClientField = true,
@@ -224,7 +225,14 @@ const OrderQualifiedForm = ({
   showPaymentInformationSection = false,
   showProjectAmountOnlySection = false,
   projectAmountReadOnly = false,
-  appointmentDateReadOnly = false
+  appointmentDateReadOnly = false,
+  esrMode = false,
+  showCommercialSourceField = true,
+  showAddCommercialCompanyButton = true,
+  hideActions = false,
+  showAttachmentsField = false,
+  companyStoreRoute = 'company_contact.store',
+  clientStoreRoute = 'client.store'
 }: {
   submitCount: number
   errors: FormikErrors<OrderFormValues>
@@ -247,6 +255,7 @@ const OrderQualifiedForm = ({
   methodsOfPayment?: string[]
   financingOptions?: string[]
   paymentScheduleTemplates?: PaymentScheduleTemplates
+  services?: string[]
   onCancel?: () => void
   submitLabel?: string
   showClientField?: boolean
@@ -258,6 +267,13 @@ const OrderQualifiedForm = ({
   showProjectAmountOnlySection?: boolean
   projectAmountReadOnly?: boolean
   appointmentDateReadOnly?: boolean
+  esrMode?: boolean
+  showCommercialSourceField?: boolean
+  showAddCommercialCompanyButton?: boolean
+  hideActions?: boolean
+  showAttachmentsField?: boolean
+  companyStoreRoute?: string
+  clientStoreRoute?: string
 }) => {
   const jobAddressInputRef = useRef<HTMLInputElement | null>(null)
   const autocompleteInstanceRef = useRef<google.maps.places.Autocomplete | null>(null)
@@ -562,6 +578,9 @@ const OrderQualifiedForm = ({
   const [isCreated] = useState<boolean>(true)
   const [showProductModal, setShowProductModal] = useState<boolean>(false)
   const [attachmentsArray, setAttachmentsList] = useState<Attachment[]>(attachments ?? [])
+  useEffect(() => {
+    setAttachmentsList(attachments ?? [])
+  }, [attachments])
   const removeAttachmentProduct = (index: number) => {
     if (confirm('Are you sure you want to delete this attachment?')) {
       router.delete(route('order.drop_attachment', { id: attachmentsArray[index].id }), {
@@ -583,7 +602,7 @@ const OrderQualifiedForm = ({
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(numeric)
   }
   const projectAmountNumber = Number(values.project_amount ?? 0)
-  const showProjectAmountField = !isCreate && (showPaymentInformationSection || showProjectAmountOnlySection)
+  const showProjectAmountField = esrMode || (!isCreate && (showPaymentInformationSection || showProjectAmountOnlySection))
   const isCashPaymentMethod = values.method_of_payment === PAYMENT_METHODS.CASH
   const isCashAndFinancedPaymentMethod = values.method_of_payment === PAYMENT_METHODS.CASH_AND_FINANCE
   const isFinancedPaymentMethod = values.method_of_payment === PAYMENT_METHODS.FINANCED
@@ -735,6 +754,54 @@ const OrderQualifiedForm = ({
               </Field>
               {(submitCount && errors.product_line) ? <InputError message={errors.product_line} className="mt-2" /> : ''}
             </div>
+            {esrMode && (
+              <div className={submitCount ? ((errors as any).service ? 'has-error' : 'has-success') : ''}>
+                <label htmlFor="service">Service</label>
+                <Field id="service" name="service" className="form-select" as="select">
+                  <option value="">Service</option>
+                  {services.map((service) => (
+                    <option key={service} value={service}>{service}</option>
+                  ))}
+                </Field>
+                {(submitCount && (errors as any).service) ? <InputError message={(errors as any).service} className="mt-2" /> : null}
+              </div>
+            )}
+            {esrMode && (
+              <div className="col-span-4">
+                <label className="mb-2 block text-sm font-semibold text-slate-700">ESR Options</label>
+                <div className="grid gap-2 sm:grid-cols-4">
+                  {[
+                    { field: 'esr_design', label: 'Design' },
+                    { field: 'esr_express', label: 'EXPRESS' },
+                    { field: 'esr_reylos_glass', label: 'Reylos Glass' },
+                    { field: 'esr_service', label: 'Service' }
+                  ].map((option) => {
+                    const checked = Boolean((values as any)[option.field])
+
+                    return (
+                      <label
+                        key={option.field}
+                        className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition ${
+                          checked
+                            ? 'border-[#2c7df6] bg-blue-50 text-[#1f5fbf]'
+                            : 'border-[#e0e6ed] bg-white text-slate-600 hover:border-[#2c7df6]/60'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          className="form-checkbox"
+                          checked={checked}
+                          onChange={(event) => {
+                            setFieldValue(option.field, event.target.checked)
+                          }}
+                        />
+                        <span>{option.label}</span>
+                      </label>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
              <div className={submitCount ? (errors.name) ? 'has-error' : 'has-success' : ''}>
                 <label htmlFor="name">Order Name</label>
                 <Field
@@ -764,6 +831,31 @@ const OrderQualifiedForm = ({
                   />
                   {(submitCount && errors.invoice_number) ? <InputError message={errors.invoice_number as string} className="mt-2" /> : ''}
                 </div>
+              )}
+              {esrMode && (
+                <>
+                  <div className={submitCount ? (errors.status ? 'has-error' : 'has-success') : ''}>
+                    <label htmlFor="status">Status</label>
+                    <Field id="status" name="status" className="form-select" as="select">
+                      {isCreate
+                        ? status.map((statusOption) => (
+                          <option key={statusOption} value={statusOption}>{statusOption}</option>
+                        ))
+                        : <option value={values.status ?? ''}>{values.status ?? ''}</option>}
+                    </Field>
+                    {(submitCount && errors.status) ? <InputError message={errors.status} className="mt-2" /> : null}
+                  </div>
+                  <div className={submitCount ? (errors.order_number ? 'has-error' : 'has-success') : ''}>
+                    <label htmlFor="order_number">Order Number</label>
+                    <Field
+                      id="order_number"
+                      name="order_number"
+                      className="form-input"
+                      placeholder="Order Number"
+                    />
+                    {(submitCount && errors.order_number) ? <InputError message={errors.order_number} className="mt-2" /> : null}
+                  </div>
+                </>
               )}
               {showProjectAmountField && (
                 <div className={`col-span-2 ${submitCount ? (errors.project_amount ? 'has-error' : 'has-success') : ''}`}>
@@ -915,6 +1007,26 @@ const OrderQualifiedForm = ({
                 />
                 {(submitCount && errors.job_zip) ? <InputError message={errors.job_zip} className="mt-2" /> : ''}
               </div>
+              {showOwnerField && esrMode && (
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Owners</label>
+                  <div className="mt-2 rounded-lg border border-slate-200 p-1">
+                    <Select
+                      isMulti
+                      className="owners-select"
+                      placeholder="Select owners"
+                      value={selectedOwners}
+                      onChange={(selection) => {
+                        const values = Array.isArray(selection) ? selection.map(option => (option as any)?.value) : []
+                        setFieldValue('owner_ids', values)
+                      }}
+                      options={ownerOptions}
+                      styles={{ control: (base) => ({ ...base, minHeight: '40px', border: 'none', boxShadow: 'none' }) }}
+                    />
+                  </div>
+                  {(submitCount && errors.owner_ids) ? <InputError message={(errors.owner_ids as any) ?? null} className="mt-2" /> : null}
+                </div>
+              )}
                 {showClientField && !isCommercial && (
                   <div className={submitCount ? (errors.client_id ? 'has-error' : 'has-success') : ''}>
                     <label htmlFor="client_id">Contact Name</label>
@@ -954,7 +1066,7 @@ const OrderQualifiedForm = ({
                     {(submitCount && errors.client_id) ? <InputError message={errors.client_id} className="mt-2" /> : null}
                   </div>
                 )}
-                  <div className={submitCount ? (errors.schedule_appointment) ? 'has-error' : 'has-success' : ''}>
+                  {!esrMode && <div className={submitCount ? (errors.schedule_appointment) ? 'has-error' : 'has-success' : ''}>
                            <label htmlFor="schedule_appointment">Appointment Date</label>
                            <Flatpickr
                              options={{
@@ -979,8 +1091,8 @@ const OrderQualifiedForm = ({
                              }}
                            />
                   {(submitCount && typeof errors.schedule_appointment === 'string') ? <InputError message={errors.schedule_appointment} className="mt-2" /> : ''}
-                         </div>
-                  {isCommercial && (
+                         </div>}
+                  {isCommercial && !esrMode && (
                     <div className={submitCount ? (errors.bid_due_date) ? 'has-error' : 'has-success' : ''}>
                       <label htmlFor="bid_due_date">Bid Due Date</label>
                       <Flatpickr
@@ -1019,14 +1131,16 @@ const OrderQualifiedForm = ({
                       <div className="text-sm font-semibold text-slate-700">Companies</div>
                       <div className="text-xs text-slate-500">Add up to 3 companies and pick a contact per company.</div>
                     </div>
-                    <button
-                      type="button"
-                      className={`btn btn-primary ${commercialPairs.length >= 3 ? 'opacity-50 cursor-not-allowed' : ''}`}
-                      onClick={addCommercialPair}
-                      disabled={commercialPairs.length >= 3}
-                    >
-                      Add Company
-                    </button>
+                    {showAddCommercialCompanyButton && (
+                      <button
+                        type="button"
+                        className={`btn btn-primary ${commercialPairs.length >= 3 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        onClick={addCommercialPair}
+                        disabled={commercialPairs.length >= 3}
+                      >
+                        Add Company
+                      </button>
+                    )}
                   </div>
 
                   {commercialPairs.map((pair, index) => {
@@ -1088,9 +1202,9 @@ const OrderQualifiedForm = ({
                                   isMulti={false}
                                   onChange={(option) => {
                                     const companyId = option ? Number((option as any).value) : null
-                                  setCommercialPairs(prev => prev.map((item, i) => (
-                                    i === index ? { companyId, clientId: null, sourceId: null } : item
-                                  )))
+                                    setCommercialPairs(prev => prev.map((item, i) => (
+                                      i === index ? { companyId, clientId: null, sourceId: null } : item
+                                    )))
                                   }}
                                   options={companyOptions}
                                   styles={{ control: (base) => ({ ...base, minHeight: '40px' }) }}
@@ -1148,7 +1262,7 @@ const OrderQualifiedForm = ({
                                 : null}
                             </div>
                           )}
-                          <div className={`${showClientField ? '' : 'md:col-span-2'} ${submitCount ? (sourceError ? 'has-error' : 'has-success') : ''}`}>
+                          {showCommercialSourceField && <div className={`${showClientField ? '' : 'md:col-span-2'} ${submitCount ? (sourceError ? 'has-error' : 'has-success') : ''}`}>
                             <label htmlFor={`source_id_${index}`}>Source</label>
                             <Select
                               id={`source_id_${index}`}
@@ -1169,7 +1283,7 @@ const OrderQualifiedForm = ({
                             {(submitCount && sourceError)
                               ? <InputError message={sourceError as any} className="mt-2" />
                               : null}
-                          </div>
+                          </div>}
                         </div>
                       </div>
                     )
@@ -1360,7 +1474,7 @@ const OrderQualifiedForm = ({
               />
               {(submitCount && errors.status) ? <InputError message={errors.status} className="mt-2" /> : ''}
             </div> */}
-                 <div className='flex mt-8'>
+              {!esrMode && <div className='flex mt-8'>
                 <Field
                   id="is_supply"
                   name="is_supply"
@@ -1371,7 +1485,7 @@ const OrderQualifiedForm = ({
                   }}
                 />
                 <label htmlFor="is_supply" className='font-bold inline-flex'>Supply</label>
-              </div>
+              </div>}
               {/* <div className='col-span-4'>
               <label htmlFor="description"> Description</label>
               <Field
@@ -1383,7 +1497,7 @@ const OrderQualifiedForm = ({
                 placeholder='Description'
               />
             </div> */}
-            {showNotesField && (
+            {showNotesField && !esrMode && (
             <div className={`col-span-4 ${submitCount ? (errors.notes) ? 'has-error' : 'has-success' : ''}`}>
               <label htmlFor="notes"> Notes</label>
               <Field
@@ -1397,8 +1511,54 @@ const OrderQualifiedForm = ({
                 {(submitCount && errors.notes) ? <InputError message={errors.notes} className="mt-2" /> : ''}
               </div>
             )}
+            {showAttachmentsField && !esrMode && (
+              <div className={`col-span-4 ${submitCount ? (errors.attachments ? 'has-error' : 'has-success') : ''}`}>
+                <label htmlFor="attachments">Attachments</label>
+                <input
+                  id="attachments"
+                  name="attachments"
+                  type="file"
+                  multiple
+                  className="form-input"
+                  onChange={(event) => {
+                    setFieldValue('attachments', Array.from(event.currentTarget.files ?? []))
+                  }}
+                />
+                {(submitCount && typeof errors.attachments === 'string')
+                  ? <InputError message={errors.attachments} className="mt-2" />
+                  : null}
+                {Array.isArray(values.attachments) && values.attachments.length > 0 && (
+                  <div className="mt-2 space-y-1 text-xs text-slate-500">
+                    {values.attachments.map((attachment: any, index: number) => (
+                      <div key={`${attachment.name ?? attachment.filename ?? 'attachment'}-${index}`}>
+                        {attachment.name ?? attachment.filename ?? `Attachment ${index + 1}`}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {attachmentsArray.length > 0 && (
+                  <div className="mt-3 overflow-hidden rounded-lg border border-slate-200">
+                    {attachmentsArray.map((attachment, index) => (
+                      <div key={attachment.id} className="flex items-center justify-between gap-3 border-b border-slate-100 px-3 py-2 text-sm last:border-b-0">
+                        <Link href={route('download.file', { id: attachment.id })} target="_blank" className="truncate font-medium text-sky-700 hover:text-sky-900">
+                          {attachment.filename}
+                        </Link>
+                        <button
+                          type="button"
+                          className="rounded-md p-1 text-rose-500 transition hover:bg-rose-50 hover:text-rose-700"
+                          onClick={() => { removeAttachmentProduct(index) }}
+                          title="Delete attachment"
+                        >
+                          <DeleteIcon />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
             </div>
-            {showOwnerField && (
+            {showOwnerField && !esrMode && (
               <div className="col-span-4 md:col-span-2 mt-4 md:mt-0">
                 <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Owners</label>
                 <div className="mt-2 rounded-lg border border-slate-200 p-1">
@@ -1686,7 +1846,74 @@ const OrderQualifiedForm = ({
             </div>
           </fieldset>
         )}
-        <fieldset className='p-3 border rounded-xl'>
+        {esrMode && (showNotesField || showAttachmentsField) && (
+          <fieldset className='p-3 border rounded-xl'>
+            <legend className='text-lg font-semibold px-3'>Additional Information</legend>
+            <div className='grid gap-4 grid-cols-4'>
+              {showNotesField && (
+                <div className={`col-span-4 ${submitCount ? (errors.notes) ? 'has-error' : 'has-success' : ''}`}>
+                  <label htmlFor="notes"> Notes</label>
+                  <Field
+                    id="notes"
+                    name="notes"
+                    component="textarea"
+                    rows="3"
+                    className="form-textarea resize-none placeholder:text-white-dark"
+                    placeholder='Notes'
+                  />
+                  {(submitCount && errors.notes) ? <InputError message={errors.notes} className="mt-2" /> : ''}
+                </div>
+              )}
+              {showAttachmentsField && (
+                <div className={`col-span-4 ${submitCount ? (errors.attachments ? 'has-error' : 'has-success') : ''}`}>
+                  <label htmlFor="attachments">Attachments</label>
+                  <input
+                    id="attachments"
+                    name="attachments"
+                    type="file"
+                    multiple
+                    className="form-input"
+                    onChange={(event) => {
+                      setFieldValue('attachments', Array.from(event.currentTarget.files ?? []))
+                    }}
+                  />
+                  {(submitCount && typeof errors.attachments === 'string')
+                    ? <InputError message={errors.attachments} className="mt-2" />
+                    : null}
+                  {Array.isArray(values.attachments) && values.attachments.length > 0 && (
+                    <div className="mt-2 space-y-1 text-xs text-slate-500">
+                      {values.attachments.map((attachment: any, index: number) => (
+                        <div key={`${attachment.name ?? attachment.filename ?? 'attachment'}-${index}`}>
+                          {attachment.name ?? attachment.filename ?? `Attachment ${index + 1}`}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {attachmentsArray.length > 0 && (
+                    <div className="mt-3 overflow-hidden rounded-lg border border-slate-200">
+                      {attachmentsArray.map((attachment, index) => (
+                        <div key={attachment.id} className="flex items-center justify-between gap-3 border-b border-slate-100 px-3 py-2 text-sm last:border-b-0">
+                          <Link href={route('download.file', { id: attachment.id })} target="_blank" className="truncate font-medium text-sky-700 hover:text-sky-900">
+                            {attachment.filename}
+                          </Link>
+                          <button
+                            type="button"
+                            className="rounded-md p-1 text-rose-500 transition hover:bg-rose-50 hover:text-rose-700"
+                            onClick={() => { removeAttachmentProduct(index) }}
+                            title="Delete attachment"
+                          >
+                            <DeleteIcon />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </fieldset>
+        )}
+        {!esrMode && <fieldset className='p-3 border rounded-xl'>
         <legend className='text-lg font-semibold px-3'>Sales Information</legend>
         <div className='grid grid-cols-1 gap-4'>
         <fieldset className='p-3 border rounded-xl w-full'>
@@ -2003,8 +2230,8 @@ const OrderQualifiedForm = ({
             </div>
         </fieldset>
         </div>
-        </fieldset>
-        {useModalLayout ? (
+        </fieldset>}
+        {!hideActions && (useModalLayout ? (
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
             <button
               type="button"
@@ -2039,11 +2266,12 @@ const OrderQualifiedForm = ({
               {submitLabel ?? (isCreate ? 'Create' : 'Save')}
             </PrimaryButton>
           </div>
-        )}
+        ))}
         <CompanyModal
           showModal={showCompanyModal}
           onClose={() => { setShowCompanyModal(false); setCompanyModalTargetIndex(null) }}
           onConfirm={onCompanyCreated}
+          storeRoute={companyStoreRoute}
         />
         <ClientModal
           showModal={showClientModal}
@@ -2053,6 +2281,7 @@ const OrderQualifiedForm = ({
           // addClient={addClient}
           sourcesClients={sourcesClients}
           orderType={values.order_type}
+          storeRoute={clientStoreRoute}
       />
       </Form>
     </>

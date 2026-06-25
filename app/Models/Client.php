@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Enum\RoleEnum;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -63,6 +65,27 @@ class Client extends Model
         $query->when($filters['text'] ?? null, function ($query, $search) {
           $query->where(DB::raw("CONCAT_WS(' ', name, email, phone)"), 'like', '%'.$search.'%');
         });
+    }
+
+    public function scopeVisibleTo(Builder $query, ?User $user): Builder
+    {
+        if (!$user) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        $isRestrictedOwner = $user->hasRole(RoleEnum::OWNER->value)
+            && !$user->hasAnyRole([
+                RoleEnum::ADMIN->value,
+                RoleEnum::ACCOUNT_MANAGER->value,
+                RoleEnum::OWNER_ADMIN->value,
+                RoleEnum::FRONTDESK_ADMIN->value,
+            ]);
+
+        if ($isRestrictedOwner) {
+            $query->where('user_id', $user->id);
+        }
+
+        return $query;
     }
 
     public function user(): BelongsTo {

@@ -57,6 +57,7 @@ type IndexOrderProps = PageProps & {
   sources?: string[]
   qualifiedSources?: Source[]
   order_types?: string[]
+  services?: string[]
   methods_of_payment?: string[]
   type_of_financing?: string[]
   payment_schedule_templates?: PaymentScheduleTemplates
@@ -69,6 +70,7 @@ type IndexOrderProps = PageProps & {
   companies?: CompanyContactType[]
   sourcesClients?: string[]
   status?: string[]
+  workflow?: 'esr_process' | null
 }
 
 type PaymentScheduleTemplateItem = { label: string, percentage: number }
@@ -233,6 +235,26 @@ const ORDER_STORAGE_STATUS_OPTIONS = [
 ] as const
 
 const ORDER_STORAGE_TRANSITION_STATUSES = ['ACCOUNT RECEIPT', 'REVIEW'] as const
+const ESR_PROCESS_STATUS_OPTIONS = [
+  'DEALER REQUEST',
+  'FOLLOW UP PROJECTS',
+  'REVIEW',
+  'ACCOUNT RECEIPT',
+  'PRODUCTION',
+  'PRODUCTION SERVICES',
+  'PRE-COORDINATION ACCOUNTING',
+  'PENDING MAT REYLOS',
+  'PENDING MATERIALS',
+  'PENDING MATERIALS ESW',
+  'PLANNED',
+  'MATERIAL ORDER COMPLETED',
+  'STORAGE MATERIAL',
+  'MATERIALS PICK UP OR DELIVERED',
+  'PENDING PAYMENT',
+  'PENDING MATCH',
+  'COMPLETE',
+  'LOST'
+] as const
 
 const REQUEST_RESCHEDULE_STATUS = 'REQUEST RE-SCHEDULE'
 const ESTIMATE_STATUS = 'ESTIMATE & APPT SCHEDULE'
@@ -511,6 +533,7 @@ export default function ShowStatusOrder ({
   sources = [],
   qualifiedSources = [],
   order_types = [],
+  services = [],
   methods_of_payment = [],
   type_of_financing = [],
   payment_schedule_templates = {},
@@ -522,12 +545,14 @@ export default function ShowStatusOrder ({
   clients = [],
   companies = [],
   sourcesClients = [],
-  status: statusOptions = []
+  status: statusOptions = [],
+  workflow = null
 }: IndexOrderProps) {
   const [order, setOrder] = useState(initialOrder)
   const [orderEditModalOpen, setOrderEditModalOpen] = useState(false)
   const [orderEditError, setOrderEditError] = useState<string | null>(null)
   const [orderFormInitialValues, setOrderFormInitialValues] = useState<OrderFormValues>(() => loadOrderFormObj(initialOrder))
+  const pendingPipelineEditOpenedRef = useRef(false)
   const scheduleAppointmentIso = order.schedule_appointment_iso ?? toScheduleString(order.schedule_appointment ?? null)
   const safeOrderStatuses = Array.isArray(orderStatuses) ? orderStatuses : []
   const safeSnapshots = Array.isArray(snapshots) ? snapshots : []
@@ -551,9 +576,11 @@ export default function ShowStatusOrder ({
   const roleNames = Array.isArray(auth?.user?.roles)
     ? auth.user.roles.map((role: Role) => role.name)
     : []
+  const isFrontdeskEsrRole = isFrontdeskEsr(roleNames)
+  const isEsrProcessWorkflow = workflow === 'esr_process'
   const canMoveToEstimate = isAdmin(roleNames) || isOwnerAdmin(roleNames) || isFrontdeskAdmin(roleNames)
-  const canViewPipeline = isAdmin(roleNames) || isAccountManager(roleNames) || isOwner(roleNames) || isOwnerAdmin(roleNames) || isFrontdeskAdmin(roleNames) || isAccounting(roleNames)
-  const canEditPipeline = isAdmin(roleNames) || isAccountManager(roleNames) || isOwner(roleNames) || isOwnerAdmin(roleNames) || isFrontdeskAdmin(roleNames) || isAccounting(roleNames)
+  const canViewPipeline = isAdmin(roleNames) || isAccountManager(roleNames) || isOwner(roleNames) || isOwnerAdmin(roleNames) || isFrontdeskAdmin(roleNames) || isFrontdeskEsrRole || isAccounting(roleNames)
+  const canEditPipeline = isAdmin(roleNames) || isAccountManager(roleNames) || isOwner(roleNames) || isOwnerAdmin(roleNames) || isFrontdeskAdmin(roleNames) || isFrontdeskEsrRole || isAccounting(roleNames)
   const canManageServiceControl = isAdmin(roleNames) || isAccountManager(roleNames) || isServiceManager(roleNames)
   const canEditPaymentInformationInModal = isAdmin(roleNames) || isAccountManager(roleNames) || isAccounting(roleNames) || isOwnerAdmin(roleNames)
   const hasReachedContractSigned = Boolean(order.has_contract_signed)
@@ -564,7 +591,6 @@ export default function ShowStatusOrder ({
   const showProjectAmountOnlyBeforeContract = !hasReachedContractSigned
   const isProjectAmountReadOnlyBeforeContract = showProjectAmountOnlyBeforeContract && isOwner(roleNames) && hasAssignedPaymentConfiguration
   const canSubmitProjectAmountBeforeContract = showProjectAmountOnlyBeforeContract && !isProjectAmountReadOnlyBeforeContract
-  const isFrontdeskEsrRole = isFrontdeskEsr(roleNames)
 
   const [scheduleModalOpen, setScheduleModalOpen] = useState(false)
   const [scheduleInitialValues, setScheduleInitialValues] = useState<{ scheduleDate: string, ownerIds: number[] }>({
@@ -892,6 +918,30 @@ export default function ShowStatusOrder ({
     setOrderEditModalOpen(true)
   }
 
+  useEffect(() => {
+    if (!isEsrProcessWorkflow || pendingPipelineEditOpenedRef.current) {
+      return
+    }
+
+    const params = new URLSearchParams(window.location.search)
+    const shouldOpenEdit = params.get('open_edit_order') === '1'
+    const pendingStatus = params.get('pending_status') ?? ''
+    const allowedPendingStatuses = ['PRODUCTION', 'PRODUCTION SERVICES']
+
+    if (!shouldOpenEdit || !allowedPendingStatuses.includes(pendingStatus)) {
+      return
+    }
+
+    pendingPipelineEditOpenedRef.current = true
+    setOrderEditError(null)
+    setOrderFormInitialValues({
+      ...loadOrderFormObj(order),
+      status: pendingStatus
+    })
+    setOrderEditModalOpen(true)
+    window.history.replaceState({}, '', window.location.pathname)
+  }, [isEsrProcessWorkflow, order])
+
   const handleOrderEditSubmit = async (values: OrderFormValues, helpers: FormikHelpers<OrderFormValues>) => {
     setOrderEditError(null)
     const currentStatusValue = typeof order.status === 'string'
@@ -914,8 +964,18 @@ export default function ShowStatusOrder ({
         associate_source_id_2: toNull(values.associate_source_id_2),
         source: typeof values.source === 'string' ? values.source : getValueIdNotNull(values.source)
       }
+      const orderEditAttachmentFiles = Array.isArray(values.attachments)
+        ? values.attachments.filter((attachment): attachment is File => attachment instanceof File)
+        : []
+      const orderEditNote = String(values.notes ?? '').trim()
+      delete payload.attachments
+      if (orderEditNote === '') {
+        delete payload.notes
+      } else {
+        payload.notes = orderEditNote
+      }
 
-      if (canManagePaymentInformationForOrder) {
+      if (canManagePaymentInformationForOrder || isEsrProcessWorkflow) {
         const isCash = values.method_of_payment === PAYMENT_METHODS.CASH
         const isCashAndFinanced = values.method_of_payment === PAYMENT_METHODS.CASH_AND_FINANCE
         const requiresSchedule = isCash || isCashAndFinanced
@@ -1015,14 +1075,46 @@ export default function ShowStatusOrder ({
         throw new Error('Unexpected server response.')
       }
 
+      let nextUpdatedOrder = updatedOrder
+      if (orderEditAttachmentFiles.length > 0) {
+        const attachmentFormData = new FormData()
+        orderEditAttachmentFiles.forEach(file => attachmentFormData.append('attachments[]', file))
+
+        const attachmentResponse = await fetch(route('order.attachments.store', order.id), {
+          method: 'POST',
+          headers: {
+            Accept: 'application/json',
+            'X-CSRF-TOKEN': csrfToken
+          },
+          body: attachmentFormData
+        })
+        const attachmentData = await attachmentResponse.json().catch(() => null)
+
+        if (!attachmentResponse.ok) {
+          if (attachmentResponse.status === 422 && attachmentData?.errors) {
+            const messages = Object.values(attachmentData.errors as Record<string, string[]>).flat()
+            throw new Error(messages[0] ?? 'Order was updated, but attachments could not be uploaded.')
+          }
+
+          throw new Error(attachmentData?.message ?? 'Order was updated, but attachments could not be uploaded.')
+        }
+
+        const uploadedAttachments = Array.isArray(attachmentData?.attachments) ? attachmentData.attachments as Attachment[] : []
+        setAttachments(uploadedAttachments)
+        nextUpdatedOrder = {
+          ...updatedOrder,
+          attachments: uploadedAttachments
+        }
+      }
+
       setOrder(prev => ({
         ...prev,
-        ...updatedOrder
+        ...nextUpdatedOrder
       }))
-      if (Array.isArray((updatedOrder as any).order_company_contacts)) {
+      if (Array.isArray((nextUpdatedOrder as any).order_company_contacts)) {
         setClientsList(prev => {
           const next = [...prev]
-          for (const item of (updatedOrder as any).order_company_contacts) {
+          for (const item of (nextUpdatedOrder as any).order_company_contacts) {
             const clientId = item?.client?.id ?? item?.client_id
             if (!clientId) continue
             const companyId = item?.company_contact_id ?? item?.company_contact?.id ?? item?.companyContact?.id ?? null
@@ -1048,27 +1140,27 @@ export default function ShowStatusOrder ({
           return next
         })
       }
-      setOrderFormInitialValues(loadOrderFormObj(updatedOrder))
+      setOrderFormInitialValues(loadOrderFormObj(nextUpdatedOrder))
       setOrderEditModalOpen(false)
 
       setContactFormValues({
-        client_name: updatedOrder.client?.name ?? '',
-        email: updatedOrder.client?.email ?? '',
-        secondary_email: updatedOrder.client?.secondary_email ?? '',
-        phone: updatedOrder.client?.phone ?? '',
-        other_phone: updatedOrder.client?.other_phone ?? '',
-        source: updatedOrder.client?.source ?? '',
-        vip_clients: normalizeBoolean(updatedOrder.client?.vip_clients),
-        vip_notes: updatedOrder.client?.vip_notes ?? ''
+        client_name: nextUpdatedOrder.client?.name ?? '',
+        email: nextUpdatedOrder.client?.email ?? '',
+        secondary_email: nextUpdatedOrder.client?.secondary_email ?? '',
+        phone: nextUpdatedOrder.client?.phone ?? '',
+        other_phone: nextUpdatedOrder.client?.other_phone ?? '',
+        source: nextUpdatedOrder.client?.source ?? '',
+        vip_clients: normalizeBoolean(nextUpdatedOrder.client?.vip_clients),
+        vip_notes: nextUpdatedOrder.client?.vip_notes ?? ''
       })
 
       setRequestFormValues(prev => ({
         ...prev,
-        client_name: updatedOrder.client?.name ?? updatedOrder.name ?? prev.client_name,
-        phone: updatedOrder.client?.phone ?? prev.phone,
-        status: updatedOrder.status ?? prev.status,
-        source: updatedOrder.client?.source ?? prev.source,
-        notes: updatedOrder.notes ?? prev.notes
+        client_name: nextUpdatedOrder.client?.name ?? nextUpdatedOrder.name ?? prev.client_name,
+        phone: nextUpdatedOrder.client?.phone ?? prev.phone,
+        status: nextUpdatedOrder.status ?? prev.status,
+        source: nextUpdatedOrder.client?.source ?? prev.source,
+        notes: nextUpdatedOrder.notes ?? prev.notes
       }))
     } catch (error) {
       setOrderEditError(error instanceof Error ? error.message : 'Unable to update order.')
@@ -1218,7 +1310,12 @@ export default function ShowStatusOrder ({
   const scheduleAppointmentLabel = formatScheduleDisplay(scheduleAppointmentIso)
   const lossReasonFrontdeskValue = order.loss_reason_frontdesk?.trim()
 
-  const initialAttachments = Array.isArray(order.attachments) ? order.attachments : []
+  const persistedAttachments = (items: Order['attachments'] | undefined): Attachment[] => (
+    Array.isArray(items)
+      ? items.filter((attachment): attachment is Attachment => !(attachment instanceof File) && typeof attachment?.id === 'number')
+      : []
+  )
+  const initialAttachments = persistedAttachments(order.attachments)
   const [attachments, setAttachments] = useState<Attachment[]>(initialAttachments)
   const [newFiles, setNewFiles] = useState<File[]>([])
   const [uploading, setUploading] = useState(false)
@@ -1256,7 +1353,7 @@ export default function ShowStatusOrder ({
           .filter(id => Number.isFinite(id))
         : []
     })
-    setAttachments(Array.isArray(initialOrder.attachments) ? initialOrder.attachments : [])
+    setAttachments(persistedAttachments(initialOrder.attachments))
   }, [initialOrder])
 
   const refreshOrderActivity = useCallback(() => {
@@ -1285,13 +1382,15 @@ export default function ShowStatusOrder ({
   const orderInOrderStorageFlow = isOrderStorageStatus(actualStatusValue)
   const orderStorageTransitionsEnabled = orderInOrderStorageFlow && isOrderStorageTransitionStatus(actualStatusValue)
   const isAdminOrOwnerAdmin = isAdmin(roleNames) || isOwnerAdmin(roleNames)
-  const pipelineStatuses = orderInFrontdeskFlow
-    ? FRONTDESK_STATUS_OPTIONS
-    : (orderInSalesFlow ? SALES_STATUS_OPTIONS : (orderInOrderStorageFlow ? ORDER_STORAGE_STATUS_OPTIONS : ORDER_PROCESSING_STATUS_OPTIONS))
+  const pipelineStatuses = isEsrProcessWorkflow
+    ? ESR_PROCESS_STATUS_OPTIONS
+    : (orderInFrontdeskFlow
+        ? FRONTDESK_STATUS_OPTIONS
+        : (orderInSalesFlow ? SALES_STATUS_OPTIONS : (orderInOrderStorageFlow ? ORDER_STORAGE_STATUS_OPTIONS : ORDER_PROCESSING_STATUS_OPTIONS)))
   const pipelineDropdownStatuses = useMemo(() => {
     let base = Array.from(pipelineStatuses) as string[]
 
-    if (orderInOrderStorageFlow) {
+    if (orderInOrderStorageFlow && !isEsrProcessWorkflow) {
       base = orderStorageTransitionsEnabled
         ? Array.from(ORDER_STORAGE_TRANSITION_STATUSES)
         : (actualStatusValue ? [actualStatusValue] : [])
@@ -1322,16 +1421,18 @@ export default function ShowStatusOrder ({
     }
 
     return base
-  }, [actualStatusValue, canMoveToEstimate, isAdminOrOwnerAdmin, orderInSalesFlow, orderInOrderStorageFlow, orderStorageTransitionsEnabled, pipelineStatuses])
+  }, [actualStatusValue, canMoveToEstimate, isAdminOrOwnerAdmin, isEsrProcessWorkflow, orderInSalesFlow, orderInOrderStorageFlow, orderStorageTransitionsEnabled, pipelineStatuses])
   const pipelineStatusValue = mapStatusToPipeline(actualStatusValue)
   const calculatedStatusIndex = pipelineStatuses.findIndex(status => matchesStatus(status, pipelineStatusValue))
   const fallbackStatusIndex = pipelineStatuses.length > 0
     ? (actualStatusValue ? pipelineStatuses.length - 1 : 0)
     : -1
   const currentStatusIndex = calculatedStatusIndex >= 0 ? calculatedStatusIndex : fallbackStatusIndex
-  const pipelineTitle = orderInFrontdeskFlow
-    ? 'Frontdesk Pipeline'
-    : (orderInSalesFlow ? 'Sales Pipeline' : (orderInOrderStorageFlow ? 'Order Storage Pipeline' : 'Order Processing Pipeline'))
+  const pipelineTitle = isEsrProcessWorkflow
+    ? 'ESR PROCESS'
+    : (orderInFrontdeskFlow
+        ? 'Frontdesk Pipeline'
+        : (orderInSalesFlow ? 'Sales Pipeline' : (orderInOrderStorageFlow ? 'Order Storage Pipeline' : 'Order Processing Pipeline')))
   const pipelineHint = canEditPipeline
     ? 'Click a stage to move the order and complete the required workflow.'
     : 'View the workflow stages for this order.'
@@ -1603,11 +1704,30 @@ export default function ShowStatusOrder ({
       return
     }
 
-    if (orderInOrderStorageFlow) {
+    if (orderInOrderStorageFlow && !isEsrProcessWorkflow) {
       if (!isOrderStorageTransitionStatus(actualStatusValue) || !isOrderStorageTransitionStatus(targetStatus)) {
         setStatusChangeError('Only ACCOUNT RECEIPT and REVIEW can be updated from this workflow.')
         return
       }
+    }
+
+    if (
+      isEsrProcessWorkflow &&
+      matchesStatus(actualStatusValue, 'ACCOUNT RECEIPT') &&
+      (matchesStatus(targetStatus, 'PRODUCTION') || matchesStatus(targetStatus, 'PRODUCTION SERVICES'))
+    ) {
+      setOrderEditError(null)
+      setOrderFormInitialValues({
+        ...loadOrderFormObj(order),
+        status: targetStatus
+      })
+      setOrderEditModalOpen(true)
+      return
+    }
+
+    if (isEsrProcessWorkflow) {
+      void handleSimpleStatusChange(targetStatus)
+      return
     }
 
     if (orderInFrontdeskFlow && matchesStatus(targetStatus, 'REQUEST STAND BY')) {
@@ -2733,9 +2853,11 @@ export default function ShowStatusOrder ({
     { key: 'payments', label: 'Payments', Icon: MoneyBagIcon },
     { key: 'attachments', label: 'Attachments', Icon: FolderIcon }
   ]
-  const tabs = isFrontdeskEsrRole
-    ? tabsBase.filter((tab) => tab.key !== 'payments')
-    : tabsBase
+  const tabs = tabsBase.filter((tab) => {
+    if (isFrontdeskEsrRole && tab.key === 'payments') return false
+    if (isEsrProcessWorkflow && tab.key === 'sales') return false
+    return true
+  })
 
   const projectAmountNumber = Number(order.project_amount ?? 0)
   const showProjectAmount = Number.isFinite(projectAmountNumber) && projectAmountNumber > 1
@@ -3134,7 +3256,7 @@ export default function ShowStatusOrder ({
                         {primaryOwnerDisplay}
                       </span>
                     )}
-                    {isCommercialOrder && commercialBidDueDateLabel && (
+                    {isCommercialOrder && !isEsrProcessWorkflow && commercialBidDueDateLabel && (
                       <span className="inline-flex items-center gap-2 rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-700 ring-1 ring-rose-200">
                         <span className="text-[10px] uppercase tracking-wide text-rose-600">Bid Due Date</span>
                         <span className="normal-case text-rose-800">{commercialBidDueDateLabel}</span>
@@ -3187,7 +3309,7 @@ export default function ShowStatusOrder ({
                     const isCompleted = currentStatusIndex > index
                     const isCurrent = currentStatusIndex === index
                     const isOpen = statusPickerAnchor?.status === status
-                    const canOpenDropdown = canEditPipeline && (!orderInOrderStorageFlow
+                    const canOpenDropdown = canEditPipeline && (isEsrProcessWorkflow || !orderInOrderStorageFlow
                       || (orderStorageTransitionsEnabled && isOrderStorageTransitionStatus(status))
                     )
                     return (
@@ -3448,7 +3570,7 @@ export default function ShowStatusOrder ({
                           Phone:{' '}
                           <span className="font-medium text-slate-600">{formatPhoneForDisplay(company.phone) ?? '—'}</span>
                         </p>
-                        {company.bid_due_date && (
+                        {!isEsrProcessWorkflow && company.bid_due_date && (
                           <div className="flex items-center justify-between rounded-md bg-slate-100 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
                             <span>Bid Due Date</span>
                             <span className="text-slate-700 normal-case">
@@ -3462,7 +3584,7 @@ export default function ShowStatusOrder ({
                 </div>
               )}
 
-              <div className="panel space-y-4">
+              {!isEsrProcessWorkflow && <div className="panel space-y-4">
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">Service Controls</h2>
@@ -3524,7 +3646,7 @@ export default function ShowStatusOrder ({
                       No service controls linked to this order yet.
                     </div>
                     )}
-              </div>
+              </div>}
 
               {/* Sales timeline component will render elsewhere */}
 
@@ -4395,7 +4517,10 @@ export default function ShowStatusOrder ({
       <OrderEditModal
         open={orderEditModalOpen}
         initialValues={orderFormInitialValues}
-        onClose={() => { setOrderEditModalOpen(false) }}
+        onClose={() => {
+          setOrderEditModalOpen(false)
+          setOrderFormInitialValues(loadOrderFormObj(order))
+        }}
         onSubmit={handleOrderEditSubmit}
         clients={clientsList}
         owners={modalOwnerOptions}
@@ -4412,11 +4537,13 @@ export default function ShowStatusOrder ({
         methodsOfPayment={methods_of_payment ?? []}
         financingOptions={type_of_financing ?? []}
         paymentScheduleTemplates={payment_schedule_templates ?? {}}
-        showPaymentInformationSection={canManagePaymentInformationForOrder}
+        services={services ?? []}
+        showPaymentInformationSection={isEsrProcessWorkflow || canManagePaymentInformationForOrder}
         showProjectAmountOnlySection={showProjectAmountOnlyBeforeContract}
         projectAmountReadOnly={isProjectAmountReadOnlyBeforeContract}
         canManageOwners={isAdmin(roleNames) || isOwnerAdmin(roleNames) || isFrontdeskAdmin(roleNames)}
-        attachments={Array.isArray(order.attachments) ? order.attachments : []}
+        esrMode={isEsrProcessWorkflow}
+        attachments={attachments}
         errorMessage={orderEditError}
       />
 

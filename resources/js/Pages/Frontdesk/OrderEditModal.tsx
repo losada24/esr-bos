@@ -2,10 +2,34 @@ import Modal from '@/Components/Modal'
 import OrderQualifiedForm from './OrderQualifiedForm'
 import { Formik, type FormikHelpers } from 'formik'
 import { orderQualifiedSchema, type OrderFormValues } from './OrderCommon'
+import * as Yup from 'yup'
 import { type Client } from '../Client/ClientCommon'
 import { type CompanyContact, type User } from '@/types'
 import { type Source, type Attachment } from '@/types/interfaces/order'
 import CloseIcon from '@/Components/Icons/CloseIcon'
+import OrderNotesForOrder from '@/Components/OrderNotesForOrder'
+
+const esrOrderEditSchema = Yup.object({
+  order_type: Yup.string().required('Order Type is required'),
+  product_line: Yup.string().nullable(),
+  name: Yup.string().required('Order Name is required'),
+  job_address: Yup.string().required('Job Address is required'),
+  city: Yup.string().required('City is required'),
+  job_state: Yup.string().required('State is required'),
+  job_zip: Yup.string().required('ZIP Code is required'),
+  client_id: Yup.number().required('Contact Name is required').min(1, 'Contact Name is required'),
+  company_contact_id: Yup.number().required('Company is required').min(1, 'Company is required'),
+  client_email_selection: Yup.string().required('Client Email Delivery is required'),
+  status: Yup.string().required('Status is required'),
+  order_number: Yup.string().nullable(),
+  project_amount: Yup.number().nullable().min(0, 'Project Amount cannot be negative'),
+  service: Yup.string().nullable(),
+  method_of_payment: Yup.string().nullable(),
+  type_of_financing: Yup.string().nullable(),
+  down_payment: Yup.number().nullable().min(0, 'Cash Amount cannot be negative'),
+  payment_schedule_type: Yup.string().nullable(),
+  custom_schedule: Yup.array().nullable()
+})
 
 interface OrderEditModalProps {
   open: boolean
@@ -27,10 +51,12 @@ interface OrderEditModalProps {
   methodsOfPayment?: string[]
   financingOptions?: string[]
   paymentScheduleTemplates?: Record<string, { label: string, percentage: number }[]>
+  services?: string[]
   showPaymentInformationSection?: boolean
   showProjectAmountOnlySection?: boolean
   projectAmountReadOnly?: boolean
   canManageOwners?: boolean
+  esrMode?: boolean
   attachments?: Attachment[]
   errorMessage?: string | null
 }
@@ -55,10 +81,12 @@ export default function OrderEditModal ({
   methodsOfPayment = [],
   financingOptions = [],
   paymentScheduleTemplates = {},
+  services = [],
   showPaymentInformationSection = false,
   showProjectAmountOnlySection = false,
   projectAmountReadOnly = false,
   canManageOwners = false,
+  esrMode = false,
   attachments,
   errorMessage
 }: OrderEditModalProps) {
@@ -66,12 +94,16 @@ export default function OrderEditModal ({
   const shouldShowOwnerField = hasInitialOwners && canManageOwners
   return (
     <Formik<OrderFormValues>
-      initialValues={initialValues}
-      validationSchema={orderQualifiedSchema}
+      initialValues={{
+        ...initialValues,
+        notes: '',
+        attachments: []
+      }}
+      validationSchema={esrMode ? esrOrderEditSchema : orderQualifiedSchema}
       enableReinitialize
       onSubmit={onSubmit}
     >
-      {({ errors, submitCount, setFieldValue, values, isSubmitting }) => (
+      {({ errors, submitCount, setFieldValue, values, isSubmitting, submitForm }) => (
         <Modal
           show={open}
           maxWidth="5xl"
@@ -119,11 +151,13 @@ export default function OrderEditModal ({
                   methodsOfPayment={methodsOfPayment}
                   financingOptions={financingOptions}
                   paymentScheduleTemplates={paymentScheduleTemplates}
+                  services={services}
                   attachments={attachments}
                   onCancel={() => { if (!isSubmitting) onClose() }}
                   submitLabel={isSubmitting ? 'Saving…' : 'Save Changes'}
                   showClientField
                   showNotesField={false}
+                  showAttachmentsField
                   useModalLayout
                   showOwnerField={shouldShowOwnerField}
                   showInvoiceField
@@ -131,7 +165,38 @@ export default function OrderEditModal ({
                   showProjectAmountOnlySection={showProjectAmountOnlySection}
                   projectAmountReadOnly={projectAmountReadOnly}
                   appointmentDateReadOnly
+                  esrMode={esrMode}
+                  showCommercialSourceField={!esrMode}
+                  showAddCommercialCompanyButton={!esrMode}
+                  hideActions
                 />
+                <div className="mt-5 rounded-xl border border-slate-200 p-4">
+                  <OrderNotesForOrder
+                    orderId={initialValues.id || null}
+                    canCreate={Boolean(initialValues.id)}
+                    includeRelatedActivities
+                    listTitle="Order Notes"
+                    emptyMessage="No notes for this order."
+                  />
+                </div>
+                <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => { if (!isSubmitting) onClose() }}
+                    disabled={isSubmitting}
+                    className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { void submitForm() }}
+                    disabled={isSubmitting}
+                    className="rounded-lg bg-sky-600 px-5 py-2 text-sm font-semibold text-white shadow hover:bg-sky-700 disabled:cursor-not-allowed disabled:bg-sky-400"
+                  >
+                    {isSubmitting ? 'Saving…' : 'Save Changes'}
+                  </button>
+                </div>
             </div>
           </div>
           </div>

@@ -33,6 +33,10 @@ class Order extends Model
     'invoice_number',
     'order_type',
     'product_line',
+    'esr_design',
+    'esr_express',
+    'esr_reylos_glass',
+    'esr_service',
     'name',
     'job_address',
     'job_city',
@@ -137,6 +141,10 @@ class Order extends Model
       'address_check' => 'boolean',
       'amount_check' => 'boolean',
       'email_check' => 'boolean',
+      'esr_design' => 'boolean',
+      'esr_express' => 'boolean',
+      'esr_reylos_glass' => 'boolean',
+      'esr_service' => 'boolean',
     ];
   }
 
@@ -365,27 +373,15 @@ class Order extends Model
 
   public function scopeAccessibleToOwner(Builder $query, User $user): Builder
   {
-    $accessibleOwnerIds = $user->accessibleOwnerIds();
-
-    if ($accessibleOwnerIds === []) {
-      return $query->whereRaw('1 = 0');
-    }
-
-    return $query->whereHas('owners', function (Builder $ownerQuery) use ($accessibleOwnerIds) {
-      $ownerQuery->whereIn('users.id', $accessibleOwnerIds);
+    return $query->whereHas('owners', function (Builder $ownerQuery) use ($user) {
+      $ownerQuery->where('users.id', $user->id);
     });
   }
 
   public function isAccessibleToOwner(User $user): bool
   {
-    $accessibleOwnerIds = $user->accessibleOwnerIds();
-
-    if ($accessibleOwnerIds === []) {
-      return false;
-    }
-
     return $this->owners()
-      ->whereIn('users.id', $accessibleOwnerIds)
+      ->where('users.id', $user->id)
       ->exists();
   }
 

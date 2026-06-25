@@ -36,7 +36,9 @@ class CompanyContactController extends Controller
     public function index(Request $request)
     {
         return Inertia::render('CompanyContact/Index', [
-          'company_contacts' => CompanyContact::with(['clients'])->filter($request->only(['text']))
+          'company_contacts' => CompanyContact::visibleTo($request->user())
+            ->with(['clients'])
+            ->filter($request->only(['text']))
             ->orderBy('updated_at', 'desc')
             ->paginate()
             ->withQueryString()
@@ -82,7 +84,8 @@ class CompanyContactController extends Controller
      * @return \Illuminate\Http\Response
      */
     public function edit(CompanyContact $companyContact)
-    {    
+    {
+        $this->authorizeCompanyAccess(request(), $companyContact);
       
         return Inertia::render('CompanyContact/Edit', [
           //'clients' => $client,
@@ -109,6 +112,8 @@ class CompanyContactController extends Controller
      */
     public function update(UpdateCompanyContactRequest $UpdateCompanyContactRequest, UpdateCompanyContact $updateCompanyContact, CompanyContact $companyContact)
     {
+        $this->authorizeCompanyAccess($UpdateCompanyContactRequest, $companyContact);
+
         $result = $updateCompanyContact->handle($UpdateCompanyContactRequest, $companyContact);
         if (is_array($result) && !empty($result['error'])) {
             return redirect()
@@ -130,6 +135,8 @@ class CompanyContactController extends Controller
      */
     public function destroy(CompanyContact $companyContact)
     {
+      $this->authorizeCompanyAccess(request(), $companyContact);
+
       // Suponiendo que tienes una relación definida: $companyContact->clients()
           if ($companyContact->clients()->exists()) {
               return redirect()
@@ -142,6 +149,14 @@ class CompanyContactController extends Controller
           return redirect()
               ->back()
               ->with('success', 'Company deleted successfully.');
+    }
+
+    private function authorizeCompanyAccess(Request $request, CompanyContact $companyContact): void
+    {
+        abort_unless(
+            CompanyContact::visibleTo($request->user())->whereKey($companyContact->getKey())->exists(),
+            403
+        );
     }
 
     /**

@@ -3,6 +3,8 @@
 namespace App\Actions;
 
 use App\Enum\MethodOfPayment;
+use App\Enum\ContactSourceEnum;
+use App\Enum\OrderStatusEnum;
 use App\Enum\OrderTypeEnum;
 use App\Enum\PaymentScheduleTypeEnum;
 use App\Http\Requests\UpdateQualifiedOrderRequest;
@@ -11,6 +13,7 @@ use App\Models\CompanyContact;
 use App\Models\Order;
 use App\Models\OrderCompanyContact;
 use App\Models\PaymentSchedule;
+use App\Models\Source;
 use App\Models\User;
 use App\Support\ClientCompanyContactManager;
 use App\Support\OrderClientEmailDeliveryLogger;
@@ -23,6 +26,7 @@ use App\Support\PaymentScheduleCalculator;
 use App\Support\PaymentScheduleTemplates;
 use App\Support\QualifiedOrderDuplicateChecker;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class UpdateQualifiedOrder
@@ -56,15 +60,32 @@ class UpdateQualifiedOrder
                 'job_state' => $request->job_state,
                 'job_zip' => $request->job_zip,
                 'description' => $request->description,
-                'notes' => $request->notes,
                 'source' => $request->source ?? '',
                 'bid_due_date' => $request->bid_due_date ?: null,
                 'is_supply' => (bool) $request->is_supply,
                 'schedule_appointment' => $request->schedule_appointment ?: null,
             ];
+            if ($request->exists('notes')) {
+                $payload['notes'] = $request->notes;
+            }
             if ($request->exists('invoice_number')) {
                 $invoiceNumber = trim((string) $request->input('invoice_number'));
                 $payload['invoice_number'] = $invoiceNumber !== '' ? $invoiceNumber : null;
+            }
+            if ($request->exists('service')) {
+                $payload['service'] = $request->input('service') ?: null;
+            }
+            if ($request->exists('esr_design')) {
+                $payload['esr_design'] = $request->boolean('esr_design');
+            }
+            if ($request->exists('esr_express')) {
+                $payload['esr_express'] = $request->boolean('esr_express');
+            }
+            if ($request->exists('esr_reylos_glass')) {
+                $payload['esr_reylos_glass'] = $request->boolean('esr_reylos_glass');
+            }
+            if ($request->exists('esr_service')) {
+                $payload['esr_service'] = $request->boolean('esr_service');
             }
             $projectAmount = $request->exists('project_amount')
                 ? $request->input('project_amount')
@@ -113,10 +134,36 @@ class UpdateQualifiedOrder
                     strcasecmp((string) $order->status, (string) $incomingStatus) !== 0;
             }
 
+            $isEsrProcessOrder = in_array($order->status, [
+                OrderStatusEnum::DEALER_REQUEST->value,
+                OrderStatusEnum::FOLLOW_UP_PROJECTS->value,
+                OrderStatusEnum::REVIEW->value,
+                OrderStatusEnum::ACCOUNT_RECEIPT->value,
+                OrderStatusEnum::PLANNED->value,
+                OrderStatusEnum::PRODUCTION->value,
+                OrderStatusEnum::PRODUCTION_SERVICES->value,
+                OrderStatusEnum::PRE_COORDINATION_ACCOUNTING->value,
+                OrderStatusEnum::PENDING_MAT_REYLOS->value,
+                OrderStatusEnum::PENDING_MATERIALS->value,
+                OrderStatusEnum::PENDING_MATERIALS_EWS->value,
+                OrderStatusEnum::MATERIAL_ORDER_COMPLETED->value,
+                OrderStatusEnum::STORAGE_MATERIAL->value,
+                OrderStatusEnum::MATERIALS_PICK_UP_OR_DELIVERED->value,
+                OrderStatusEnum::PENDING_PAYMENT->value,
+                OrderStatusEnum::PENDING_MATCH->value,
+                OrderStatusEnum::COMPLETE->value,
+                OrderStatusEnum::LOST->value,
+            ], true);
+            $esrSourceId = $isEsrProcessOrder
+                ? Source::firstOrCreate(['name' => ContactSourceEnum::ESR_REFER->value])->id
+                : null;
             $companyClientPairs = [];
-            $addPair = function (?int $companyId, ?int $clientId, ?int $sourceId) use (&$companyClientPairs) {
+            $addPair = function (?int $companyId, ?int $clientId, ?int $sourceId) use (&$companyClientPairs, $esrSourceId) {
                 if (!$companyId && !$clientId && !$sourceId) {
                     return;
+                }
+                if (!$sourceId && $esrSourceId) {
+                    $sourceId = (int) $esrSourceId;
                 }
                 if (!$companyId || !$clientId || !$sourceId) {
                     return;
@@ -464,6 +511,27 @@ class UpdateQualifiedOrder
                     'user_id' => auth()->id(),
                     'notes' => "{$order->status} updated via frontdesk edit by " . (auth()->user()->name ?? 'System'),
                 ]);
+            }
+
+            if ($request->filled('notes')) {
+                $order->notes()->create([
+                    'content' => $request->notes,
+                    'type' => 'order_note',
+                    'user_id' => auth()->id(),
+                ]);
+            }
+
+            if ($request->hasFile('attachments')) {
+                foreach ($request->file('attachments') as $file) {
+                    $fileName = time() . '_' . Str::replace(' ', '_', $file->getClientOriginalName());
+                    $filePath = $file->storeAs('order_files', $fileName, 'public');
+                    $order->attachments()->create([
+                        'filename' => $file->getClientOriginalName(),
+                        'file_path' => $filePath,
+                        'file_type' => 'order_files',
+                        'user_id' => auth()->id(),
+                    ]);
+                }
             }
 
             $hasAnySaleFormData =

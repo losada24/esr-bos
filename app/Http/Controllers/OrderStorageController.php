@@ -86,7 +86,7 @@ class OrderStorageController extends Controller
             ->orderBy('name');
 
         if ($this->isOwnerRestricted($user)) {
-            $ownerOptions->whereIn('id', $user->accessibleOwnerIds());
+            $ownerOptions->where('id', $user->id);
         }
 
         $supervisors = User::role(RoleEnum::SUPERVISOR->value)
@@ -142,6 +142,15 @@ class OrderStorageController extends Controller
         return Inertia::render('OrderStorage/Index', [
             'data' => $data,
             'statuses' => $storageStatuses,
+            'board_title' => $this->boardTitle(),
+            'index_route' => $this->indexRoute(),
+            'tasks_route' => $this->tasksRoute(),
+            'sortable_group' => $this->sortableGroup(),
+            'search_origin' => $this->searchOrigin(),
+            'show_create_order' => $this->showCreateOrder(),
+            'show_esr_task_actions' => $this->showEsrTaskActions(),
+            'order_view_route' => $this->orderViewRoute(),
+            'can_reorder_orders' => $this->canReorderOrders(),
             'owners' => $ownerOptions->get(),
             'supervisors' => $supervisors,
             'created_by_users' => $createdByUsers,
@@ -221,7 +230,7 @@ class OrderStorageController extends Controller
     /**
      * @return array<int, string>
      */
-    private function storageStatuses(): array
+    protected function storageStatuses(): array
     {
         return [
             OrderStatusEnum::ACCOUNT_RECEIPT->value,
@@ -245,11 +254,56 @@ class OrderStorageController extends Controller
     /**
      * @return array<int, string>
      */
-    private function paginatedStorageStatuses(): array
+    protected function paginatedStorageStatuses(): array
     {
         return [
             OrderStatusEnum::COMPLETE->value,
         ];
+    }
+
+    protected function boardTitle(): string
+    {
+        return 'Order Storage';
+    }
+
+    protected function indexRoute(): string
+    {
+        return 'order-storage.index';
+    }
+
+    protected function tasksRoute(): string
+    {
+        return 'order-storage.tasks';
+    }
+
+    protected function sortableGroup(): string
+    {
+        return 'order-storage';
+    }
+
+    protected function searchOrigin(): string
+    {
+        return 'order_storage';
+    }
+
+    protected function showCreateOrder(): bool
+    {
+        return false;
+    }
+
+    protected function showEsrTaskActions(): bool
+    {
+        return false;
+    }
+
+    protected function orderViewRoute(): string
+    {
+        return 'frontdesk.order_view';
+    }
+
+    protected function canReorderOrders(): bool
+    {
+        return true;
     }
 
     private function storageOrdersForStatusQuery(string $status, ?User $user): Builder
@@ -271,6 +325,7 @@ class OrderStorageController extends Controller
             'user',
             'tags:id,name,color,taggable_id,taggable_type',
             'orderCompanyContacts.companyContact',
+            'paymentSchedule.installments.movements',
         ];
     }
 
@@ -300,6 +355,12 @@ class OrderStorageController extends Controller
             'job_zip' => $order->job_zip,
             'method_of_payment' => $order->method_of_payment,
             'type_of_financing' => $order->type_of_financing,
+            'payment_schedule_type' => $order->paymentSchedule?->schedule_type,
+            'has_payment_made' => (bool) ($order->paymentSchedule?->installments?->contains(function ($installment) {
+                return $installment->movements->isNotEmpty()
+                    || $installment->paid_at !== null
+                    || strtoupper((string) $installment->status) !== 'PENDING';
+            }) ?? false),
             'owner_ids' => $order->owners->pluck('id')->values(),
             'owners' => $order->owners->map(fn ($owner) => [
                 'id' => $owner->id,
@@ -307,6 +368,10 @@ class OrderStorageController extends Controller
             ])->values(),
             'order_type' => $order->order_type,
             'product_line' => $order->product_line,
+            'esr_design' => (bool) ($order->esr_design ?? false),
+            'esr_express' => (bool) ($order->esr_express ?? false),
+            'esr_reylos_glass' => (bool) ($order->esr_reylos_glass ?? false),
+            'esr_service' => (bool) ($order->esr_service ?? false),
             'bid_due_date' => $this->resolveBidDueDate($order),
             'tags' => ($order->tags ?? collect())->map(function ($tag) {
                 return [

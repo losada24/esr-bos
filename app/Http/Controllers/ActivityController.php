@@ -358,7 +358,7 @@ class ActivityController extends Controller
             $order->load(['client:id,name,phone,email', 'owners:id,name', 'user:id,name']);
             $client = $order->client;
         } elseif ($clientId) {
-            $client = Client::query()->select('id', 'name', 'phone', 'email')->findOrFail($clientId);
+            $client = $this->authorizedClient($request, $clientId);
         }
 
         return response()->json([
@@ -496,6 +496,10 @@ class ActivityController extends Controller
 
     private function visibleClientsQuery(?User $user): Builder
     {
+        if ($user && $user->hasRole(RoleEnum::OWNER->value) && !$this->canManageAllActivities($user)) {
+            return Client::visibleTo($user);
+        }
+
         return Client::query()
             ->when(!$this->canManageAllActivities($user), function (Builder $query) use ($user) {
                 $query->whereHas('orders', fn (Builder $orderQuery) => $this->applyRestrictedOrderVisibility($orderQuery, $user));

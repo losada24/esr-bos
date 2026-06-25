@@ -11,6 +11,7 @@ const MODULE_OPTIONS: ModuleOption[] = [
   { value: 'all', label: 'All' },
   { value: 'frontdesk', label: 'Frontdesk' },
   { value: 'sales', label: 'Sales' },
+  { value: 'esr_process', label: 'ESR Process' },
   { value: 'order_processing', label: 'Order Processing' },
   { value: 'order_storage', label: 'Order Storage' }
 ]
