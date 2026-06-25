@@ -1240,7 +1240,7 @@ const OrderForm = ({
                   <Field
                     id="vip_clients"
                     name="vip_clients"
-                    className="form-checkbox"
+                    className="form-checkbox checked:!border-primary checked:!bg-primary disabled:checked:!border-primary disabled:checked:!bg-primary"
                     type='checkbox'
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                       setFieldValue('vip_clients', e.target.checked)
