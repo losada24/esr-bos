@@ -312,6 +312,7 @@ class Order extends Model
           OrderStatusEnum::INSPECTION,
           OrderStatusEnum::FINISH,
           OrderStatusEnum::SERVICE,
+          OrderStatusEnum::ON_HOLD,
           OrderStatusEnum::FINAL_INSPECTION,
           OrderStatusEnum::FINAL_COLLECT,
           OrderStatusEnum::COMPLETE,
