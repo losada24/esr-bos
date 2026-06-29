@@ -47,7 +47,7 @@ class UserController extends Controller
             'id' => $role->id,
             'name' => $role->name
           ]),
-          'owner_options' => User::role(RoleEnum::OWNER->value)
+          'owner_options' => User::assignableOrderOwner()
             ->select('id', 'name')
             ->where('status', StatusUserEnum::ACTIVE->value)
             ->orderBy('name')
@@ -84,7 +84,7 @@ class UserController extends Controller
         return Inertia::render('User/Edit', [
           'user' => new UserResource($user),
           'roles' => Role::orderBy('name')->get(),
-          'owner_options' => User::role(RoleEnum::OWNER->value)
+          'owner_options' => User::assignableOrderOwner()
             ->select('id', 'name')
             ->where('status', StatusUserEnum::ACTIVE->value)
             ->where('id', '!=', $user->id)

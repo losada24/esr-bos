@@ -267,7 +267,7 @@ class FrontdeskController extends Controller
             })->values(),
         ];
     });
-      $owners = User::role(RoleEnum::OWNER->value)
+      $owners = User::assignableOrderOwner()
         ->select('id', 'name')
         ->where('status', StatusUserEnum::ACTIVE->value)
         ->orderBy('name')
@@ -396,7 +396,7 @@ class FrontdeskController extends Controller
   {
     return Inertia::render('Frontdesk/Create', [
       'clients' => Client::all(),
-      'owners' => User::role(RoleEnum::OWNER->value)
+      'owners' => User::assignableOrderOwner()
         ->where('status', StatusUserEnum::ACTIVE->value)
         ->get(),
       'status' => [
@@ -436,7 +436,7 @@ class FrontdeskController extends Controller
         ->select('id', 'name', 'phone', 'email', 'other_phone', 'secondary_email', 'source', 'vip_clients', 'vip_notes', 'company_contact_id')
         ->orderBy('name')
         ->get(),
-      'owners' => User::role(RoleEnum::OWNER->value)
+      'owners' => User::assignableOrderOwner()
         ->where('status', StatusUserEnum::ACTIVE->value)
         ->get(),
       'status' => [
@@ -1045,7 +1045,7 @@ public function showQuantifiedModal(Order $order)
             //dd($usedTags);
 
 
-    $ownerOptionsQuery = User::role(RoleEnum::OWNER->value)
+    $ownerOptionsQuery = User::assignableOrderOwner()
       ->select('id', 'name')
       ->where('status', StatusUserEnum::ACTIVE->value)
       ->orderBy('name');

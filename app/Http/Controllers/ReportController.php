@@ -2171,7 +2171,7 @@ class ReportController extends Controller
 
   private function buildSalesAppointmentsBySellerData(Carbon $startDate, Carbon $endDate): array
   {
-    $owners = User::role(RoleEnum::OWNER->value)
+    $owners = User::assignableOrderOwner()
       ->where('status', StatusUserEnum::ACTIVE->value)
       ->select('users.id', 'users.name');
 

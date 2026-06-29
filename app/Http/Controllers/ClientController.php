@@ -194,7 +194,7 @@ class ClientController extends Controller
 
     private function ownerOptions(?int $currentOwnerId = null)
     {
-        $owners = User::role(RoleEnum::OWNER->value)
+        $owners = User::assignableOrderOwner()
             ->select('id', 'name')
             ->where('status', StatusUserEnum::ACTIVE->value)
             ->orderBy('name')
