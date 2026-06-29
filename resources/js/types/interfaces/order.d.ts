@@ -4,6 +4,9 @@ import exp from 'constants'
 
 export interface Order {
   id: number
+  parent_order_id?: number | null
+  root_order_id?: number | null
+  counts_for_owner_commission?: boolean
   name: string
   order_number: number
   invoice_number?: string

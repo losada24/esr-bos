@@ -176,9 +176,18 @@ class UpdateQualifiedOrder
             };
 
             if ($request->order_type === OrderTypeEnum::COMMERCIAL->value) {
-                $addPair((int) $request->company_contact_id, (int) $request->client_id, (int) $request->company_source_id);
-                $addPair((int) $request->associate_company_contact_id_1, (int) $request->associate_client_id_1, (int) $request->associate_source_id_1);
-                $addPair((int) $request->associate_company_contact_id_2, (int) $request->associate_client_id_2, (int) $request->associate_source_id_2);
+                $addPair(
+                    (int) $request->input('company_contact_id'),
+                    (int) $request->input('client_id'),
+                    (int) $request->input('company_source_id')
+                );
+                foreach (range(1, 4) as $index) {
+                    $addPair(
+                        (int) $request->input("associate_company_contact_id_{$index}"),
+                        (int) $request->input("associate_client_id_{$index}"),
+                        (int) $request->input("associate_source_id_{$index}")
+                    );
+                }
             }
 
             $primaryClient = $request->filled('client_id')

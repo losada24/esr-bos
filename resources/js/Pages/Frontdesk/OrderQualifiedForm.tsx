@@ -326,15 +326,35 @@ const OrderQualifiedForm = ({
         sourceId: values.associate_source_id_2 ? Number(values.associate_source_id_2) : null
       })
     }
+    if (values.associate_company_contact_id_3) {
+      pairs.push({
+        companyId: Number(values.associate_company_contact_id_3),
+        clientId: values.associate_client_id_3 ? Number(values.associate_client_id_3) : null,
+        sourceId: values.associate_source_id_3 ? Number(values.associate_source_id_3) : null
+      })
+    }
+    if (values.associate_company_contact_id_4) {
+      pairs.push({
+        companyId: Number(values.associate_company_contact_id_4),
+        clientId: values.associate_client_id_4 ? Number(values.associate_client_id_4) : null,
+        sourceId: values.associate_source_id_4 ? Number(values.associate_source_id_4) : null
+      })
+    }
     return pairs.length > 0 ? pairs : [{ companyId: null, clientId: null, sourceId: null }]
   }, [
     isCommercial,
     values.associate_client_id_1,
     values.associate_client_id_2,
+    values.associate_client_id_3,
+    values.associate_client_id_4,
     values.associate_company_contact_id_1,
     values.associate_company_contact_id_2,
+    values.associate_company_contact_id_3,
+    values.associate_company_contact_id_4,
     values.associate_source_id_1,
     values.associate_source_id_2,
+    values.associate_source_id_3,
+    values.associate_source_id_4,
     values.client_id,
     values.company_contact_id,
     values.company_source_id
@@ -351,7 +371,7 @@ const OrderQualifiedForm = ({
 
   useEffect(() => {
     if (!isCommercial) return
-    const [primary, assoc1, assoc2] = commercialPairs
+    const [primary, assoc1, assoc2, assoc3, assoc4] = commercialPairs
     setFieldValue('company_contact_id', primary?.companyId ?? null)
     setFieldValue('client_id', primary?.clientId ?? null)
     setFieldValue('company_source_id', primary?.sourceId ?? null)
@@ -361,6 +381,12 @@ const OrderQualifiedForm = ({
     setFieldValue('associate_company_contact_id_2', assoc2?.companyId ?? null)
     setFieldValue('associate_client_id_2', assoc2?.clientId ?? null)
     setFieldValue('associate_source_id_2', assoc2?.sourceId ?? null)
+    setFieldValue('associate_company_contact_id_3', assoc3?.companyId ?? null)
+    setFieldValue('associate_client_id_3', assoc3?.clientId ?? null)
+    setFieldValue('associate_source_id_3', assoc3?.sourceId ?? null)
+    setFieldValue('associate_company_contact_id_4', assoc4?.companyId ?? null)
+    setFieldValue('associate_client_id_4', assoc4?.clientId ?? null)
+    setFieldValue('associate_source_id_4', assoc4?.sourceId ?? null)
   }, [commercialPairs, isCommercial, setFieldValue])
 
   const onCompanyCreated = (company: CompanyContact) => {
@@ -384,7 +410,7 @@ const OrderQualifiedForm = ({
 
   const addCommercialPair = () => {
     setCommercialPairs(prev => {
-      if (prev.length >= 3) return prev
+      if (prev.length >= 5) return prev
       return [...prev, { companyId: null, clientId: null, sourceId: null }]
     })
   }
@@ -730,10 +756,16 @@ const OrderQualifiedForm = ({
                 setFieldValue('company_source_id', null) // Reset company source when order type changes
                 setFieldValue('associate_company_contact_id_1', null) // Reset associate company contact 1 when order type changes
                 setFieldValue('associate_company_contact_id_2', null) // Reset associate company contact 2 when order type changes
+                setFieldValue('associate_company_contact_id_3', null)
+                setFieldValue('associate_company_contact_id_4', null)
                 setFieldValue('associate_client_id_1', null) // Reset associate client 1 when order type changes
                 setFieldValue('associate_client_id_2', null) // Reset associate client 2 when order type changes
+                setFieldValue('associate_client_id_3', null)
+                setFieldValue('associate_client_id_4', null)
                 setFieldValue('associate_source_id_1', null) // Reset associate source 1 when order type changes
                 setFieldValue('associate_source_id_2', null) // Reset associate source 2 when order type changes
+                setFieldValue('associate_source_id_3', null)
+                setFieldValue('associate_source_id_4', null)
                 setFieldValue('client_email_selection', PRIMARY_CLIENT_EMAIL_SELECTION)
               }}
             >
@@ -1129,7 +1161,7 @@ const OrderQualifiedForm = ({
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
                       <div className="text-sm font-semibold text-slate-700">Companies</div>
-                      <div className="text-xs text-slate-500">Add up to 3 companies and pick a contact per company.</div>
+                      <div className="text-xs text-slate-500">Add up to 5 companies and pick a contact per company.</div>
                     </div>
                     {showAddCommercialCompanyButton && (
                       <button
@@ -1160,19 +1192,13 @@ const OrderQualifiedForm = ({
                     const isCompanySelected = pair.companyId != null
                     const companyError = index === 0
                       ? errors.company_contact_id
-                      : index === 1
-                        ? (errors as any).associate_company_contact_id_1
-                        : (errors as any).associate_company_contact_id_2
+                      : (errors as any)[`associate_company_contact_id_${index}`]
                     const sourceError = index === 0
                       ? (errors as any).company_source_id
-                      : index === 1
-                        ? (errors as any).associate_source_id_1
-                        : (errors as any).associate_source_id_2
+                      : (errors as any)[`associate_source_id_${index}`]
                     const clientError = index === 0
                       ? errors.client_id
-                      : index === 1
-                        ? (errors as any).associate_client_id_1
-                        : (errors as any).associate_client_id_2
+                      : (errors as any)[`associate_client_id_${index}`]
 
                     return (
                       <div key={`commercial-pair-${index}`} className="rounded-md border border-slate-200 bg-white p-4 shadow-sm">

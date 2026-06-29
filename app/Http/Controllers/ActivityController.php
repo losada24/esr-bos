@@ -139,7 +139,7 @@ class ActivityController extends Controller
     {
         $data = $this->validateEvent($request);
 
-        $order = $this->authorizedOrder($request, $data['order_id'] ?? null);
+        $order = !empty($data['order_id']) ? $this->authorizedOrder($request, $data['order_id']) : null;
         $hostId = (int) $request->user()->id;
         $sendInvitation = $this->shouldSendEventInvitation($data, true);
         unset($data['send_invitation']);
@@ -219,7 +219,7 @@ class ActivityController extends Controller
         $event = $this->visibleEventsQuery($request->user())->findOrFail($event->id);
         abort_unless($this->canManageAllActivities($request->user()) || $event->host_id === $request->user()->id, 403);
         $data = $this->validateEvent($request);
-        $order = $this->authorizedOrder($request, $data['order_id'] ?? null);
+        $order = !empty($data['order_id']) ? $this->authorizedOrder($request, $data['order_id']) : null;
         $hostId = $this->canManageAllActivities($request->user())
             ? (int) ($data['host_id'] ?? $event->host_id)
             : (int) $request->user()->id;

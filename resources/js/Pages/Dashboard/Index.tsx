@@ -41,7 +41,7 @@ export default function Dashboard ({ auth, services, status, statusmodal, legend
 
   const [myEvents, setEvents] = useState([])
   const [currentDate, setCurrentDate] = useState(new Date())
-  const [calendarFilter, setCalendarFilter] = useState<CalendarFilter>({ service: IS_ADMIN || IS_ACCOUNT_MANAGER ? 'all' : 'INSTALLATION', status: 'all', name: '' })
+  const [calendarFilter, setCalendarFilter] = useState<CalendarFilter>({ service: IS_ADMIN || IS_ACCOUNT_MANAGER ? 'all' : services[0] ?? 'INSTALLATION', status: 'all', name: '' })
   const [eventId, setEventId] = useState(0)
   const calendarRef = useRef<HTMLDivElement>(null)
 

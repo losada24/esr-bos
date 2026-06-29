@@ -214,6 +214,10 @@ function blankCreatePayment(paymentStatuses: string[], splitTypes: string[], spl
   }
 }
 
+function firstFormError(errors: object): string {
+  return Object.values(errors).find((message): message is string => typeof message === 'string' && message.trim() !== '') ?? ''
+}
+
 function defaultCreatePaymentsForRelation(
   relation: string,
   paymentStatuses: string[],
@@ -1158,6 +1162,11 @@ export default function EditOrder ({
                 createForm.post(route('report.commissions.store'))
               }}
             >
+              {firstFormError(createForm.errors) && (
+                <div className="md:col-span-4 rounded border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800">
+                  {firstFormError(createForm.errors)}
+                </div>
+              )}
               <FormSection
                 title="1. Beneficiary"
                 description="Use OWNER for one of the owners already assigned to the order. Use REMEASURER for users with that role. Use USER, REFERRAL, or EXTERNAL for everybody else."
@@ -1193,6 +1202,9 @@ export default function EditOrder ({
                         <option key={item} value={item}>{item}</option>
                       ))}
                     </select>
+                    {createForm.errors.beneficiary_source_type && (
+                      <div className="mt-1 text-sm text-red-600">{createForm.errors.beneficiary_source_type}</div>
+                    )}
                   </div>
 
                   <div>
@@ -1218,6 +1230,9 @@ export default function EditOrder ({
                         <option key={item} value={item}>{item}</option>
                       ))}
                     </select>
+                    {createForm.errors.beneficiary_relation && (
+                      <div className="mt-1 text-sm text-red-600">{createForm.errors.beneficiary_relation}</div>
+                    )}
                   </div>
 
                   {createForm.data.beneficiary_source_type !== 'EXTERNAL' && (
@@ -1235,6 +1250,9 @@ export default function EditOrder ({
                           <option key={item.id} value={item.id}>{item.name}</option>
                         ))}
                       </select>
+                      {createForm.errors.beneficiary_source_id && (
+                        <div className="mt-1 text-sm text-red-600">{createForm.errors.beneficiary_source_id}</div>
+                      )}
                     </div>
                   )}
 

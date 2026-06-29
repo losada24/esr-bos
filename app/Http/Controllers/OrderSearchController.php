@@ -220,6 +220,7 @@ class OrderSearchController extends Controller
                 OrderStatusEnum::FINAL_INSPECTION->value,
                 OrderStatusEnum::FINAL_COLLECT->value,
                 OrderStatusEnum::COMPLETE->value,
+                OrderStatusEnum::SERVICE->value,
             ],
         ];
     }

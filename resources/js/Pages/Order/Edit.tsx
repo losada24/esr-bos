@@ -46,7 +46,8 @@ export default function Edit ({
   order_colors,
   status,
   type_of_financing,
-  extraWorks
+  extraWorks,
+  parent_order_options
 }: PageProps & {
   clients: Client[]
   owners: User[]
@@ -72,6 +73,7 @@ export default function Edit ({
   statusPaymentInstaller: string
   type_of_financing: string[]
   extraWorks: Array<{ id: number, name: string }>
+  parent_order_options: Array<{ id: number, order_number: string | number, name: string, status?: string }>
 }) {
   const initialValues: OrderFormValues = loadOrderFormObj(order)
   // console.log(initialValues)
@@ -244,6 +246,7 @@ export default function Edit ({
                 statusPaymentInstaller={statusPaymentInstaller}
                 type_of_financing={type_of_financing}
                 extraWorks={extraWorks}
+                parent_order_options={parent_order_options}
                 order_colors={order_colors}
                 showWorkTeamNotes={false}
               />

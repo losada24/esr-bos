@@ -619,6 +619,7 @@ class CommissionReportController extends Controller
                         'pending_amount' => 0,
                         'next_payment_amount' => 0,
                         'next_payment_status' => null,
+                        'can_delete' => false,
                     ]];
                 }
 
@@ -643,6 +644,7 @@ class CommissionReportController extends Controller
                         'pending_amount' => (float) $commission->pending_amount,
                         'next_payment_amount' => (float) ($nextPayment?->total_to_pay ?? 0),
                         'next_payment_status' => $nextPayment?->status,
+                        'can_delete' => $this->canDeleteCommission($commission),
                     ];
                 });
             })
@@ -818,6 +820,12 @@ class CommissionReportController extends Controller
         $sourceId = $data['beneficiary_source_id'] ?? null;
 
         if (($data['beneficiary_relation'] ?? null) === CommissionBeneficiaryRelationEnum::OWNER->value) {
+            if (! (bool) ($order?->counts_for_owner_commission ?? true)) {
+                throw ValidationException::withMessages([
+                    'beneficiary_source_id' => 'Owner commissions cannot be created for split orders linked to a parent order.',
+                ]);
+            }
+
             if ($sourceType !== CommissionBeneficiarySourceEnum::USER->value) {
                 throw ValidationException::withMessages([
                     'beneficiary_source_type' => 'Owner commissions must use a user already assigned as an owner on the order.',

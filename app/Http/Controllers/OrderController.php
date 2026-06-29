@@ -177,6 +177,7 @@ class OrderController extends Controller
       'product_category' => ProductCategory::all(),
       'extra_works' => ExtraWork::all(),
       'extraWorks' => ExtraWork::select('id', 'name')->get(),
+      'parent_order_options' => $this->parentOrderOptions(),
       'product_costs' => ProductCost::all(),
       'payment_schedule_types' => PaymentScheduleTemplates::types(),
       'payment_schedule_templates' => PaymentScheduleTemplates::templates(),
@@ -197,6 +198,22 @@ class OrderController extends Controller
   public function create()
   {
     return Inertia::render('Order/Create', $this->getOrderFormData());
+  }
+
+  private function parentOrderOptions(?int $excludeOrderId = null)
+  {
+    return Order::query()
+      ->select('id', 'order_number', 'name', 'status')
+      ->when($excludeOrderId, fn ($query) => $query->whereKeyNot($excludeOrderId))
+      ->whereNull('deleted_at')
+      ->orderByDesc('id')
+      ->get()
+      ->map(fn (Order $order) => [
+        'id' => $order->id,
+        'order_number' => $order->order_number,
+        'name' => $order->name,
+        'status' => $order->status,
+      ]);
   }
 
   public function createService()
@@ -368,6 +385,7 @@ class OrderController extends Controller
       'clients' => Client::with(['companyContact:id,name,email'])->get(),
 
       'extraWorks' => ExtraWork::select('id', 'name')->get(),
+      'parent_order_options' => $this->parentOrderOptions($order->id),
       
       //'statusPaymentInstaller' => $statusPaymentInstaller->installer_payment_status,
       'statusPaymentInstaller' => $statusPaymentInstaller

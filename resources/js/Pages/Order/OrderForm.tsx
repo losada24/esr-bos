@@ -47,6 +47,7 @@ const ATTACHMENT_ROLE_OPTIONS = [
 type AttachmentRoleKey = typeof ATTACHMENT_ROLE_OPTIONS[number]['key']
 type AttachmentRoleTargets = Record<AttachmentRoleKey, number[]>
 type PendingAttachment = Attachment | File
+type ParentOrderOption = { id: number, order_number: string | number, name: string, status?: string }
 
 const buildEmptyAttachmentRoleTargets = (): AttachmentRoleTargets => ({
   supervisor: [],
@@ -257,6 +258,7 @@ const OrderForm = ({
   type_of_financing,
   statusPaymentInstaller,
   extraWorks,
+  parent_order_options = [],
   order_colors,
   showWorkTeamNotes = true
 }: {
@@ -290,12 +292,17 @@ const OrderForm = ({
   statusPaymentInstaller: string
   type_of_financing: string[]
   extraWorks: Array<{ id: number, name: string }>
+  parent_order_options?: ParentOrderOption[]
   showWorkTeamNotes?: boolean
 }) => {
   const jobAddressInputRef = useRef<HTMLInputElement | null>(null)
   const autocompleteInstanceRef = useRef<google.maps.places.Autocomplete | null>(null)
   const autocompleteListenerRef = useRef<google.maps.MapsEventListener | null>(null)
   const geocoderRef = useRef<google.maps.Geocoder | null>(null)
+  const parentOrderSelectOptions = parent_order_options.map((order) => ({
+    label: `${order.order_number} - ${order.name}${order.status ? ` (${order.status})` : ''}`,
+    value: order.id
+  }))
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
     googleMapsApiKey: GOOGLE_MAPS_API_KEY,
@@ -1255,7 +1262,7 @@ const OrderForm = ({
                   <Field
                     id="vip_clients"
                     name="vip_clients"
-                    className="form-checkbox"
+                    className="form-checkbox checked:!border-primary checked:!bg-primary disabled:checked:!border-primary disabled:checked:!bg-primary"
                     type='checkbox'
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                       setFieldValue('vip_clients', e.target.checked)

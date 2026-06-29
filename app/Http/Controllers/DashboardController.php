@@ -263,6 +263,9 @@ class DashboardController extends Controller
     $canHideOnWeekends = $user->hasRole(RoleEnum::ACCOUNT_MANAGER->value)
       || $user->hasRole(RoleEnum::ADMIN->value)
       || $user->hasRole(RoleEnum::INSTALLER->value);
+    $showOnHoldByStatusDate = $user->hasRole(RoleEnum::SERVICE_MANAGER->value)
+      && !$user->hasRole(RoleEnum::ACCOUNT_MANAGER->value)
+      && !$user->hasRole(RoleEnum::ADMIN->value);
 
     if (empty($name) || $name === 'all') {
       $name = null; // Deja en null si no se quiere filtrar por cliente
@@ -278,8 +281,14 @@ class DashboardController extends Controller
     $nextMonth = $currentPassingDate->copy()->addMonth()->endOfMonth();
     //dd($previewMonth , $nextMonth);
 
-    $orders = Order::with(['permit'])->calendarFilter(['service' => $service_filter, 'status' => $status, 'name' => $name])
-      ->where(function ($query) use ($previewMonth, $nextMonth) {
+    $orders = Order::with([
+        'permit',
+        'orderStatus' => fn ($query) => $query
+          ->where('status', OrderStatusEnum::ON_HOLD->value)
+          ->latest('created_at')
+          ->latest('id'),
+      ])->calendarFilter(['service' => $service_filter, 'status' => $status, 'name' => $name])
+      ->where(function ($query) use ($previewMonth, $nextMonth, $showOnHoldByStatusDate) {
         $query->where(function ($query) use ($previewMonth, $nextMonth) {
           $query->whereBetween('delivery_date', [$previewMonth, $nextMonth]);
         })->orWhere(function ($query) use ($previewMonth, $nextMonth) {
@@ -291,6 +300,14 @@ class DashboardController extends Controller
             ->orWhereBetween('final_inspection_date', [$previewMonth, $nextMonth])
             ->orWhereBetween('pending_collect', [$previewMonth, $nextMonth])
             ->orWhereBetween('complete_date', [$previewMonth, $nextMonth]);
+        })->when($showOnHoldByStatusDate, function ($query) use ($previewMonth, $nextMonth) {
+          $query->orWhere(function ($query) use ($previewMonth, $nextMonth) {
+            $query->where('status', OrderStatusEnum::ON_HOLD->value)
+              ->whereHas('orderStatus', function ($query) use ($previewMonth, $nextMonth) {
+                $query->where('status', OrderStatusEnum::ON_HOLD->value)
+                  ->whereBetween('created_at', [$previewMonth, $nextMonth]);
+              });
+            });
         });
       });
 
@@ -338,6 +355,24 @@ class DashboardController extends Controller
 
       $isVip = $order->client->vip_clients ?? false;
       $serviceLabel = $isVip ? 'VIP' : '';
+      $onHoldStatus = $showOnHoldByStatusDate && $order->status === OrderStatusEnum::ON_HOLD->value
+        ? $order->orderStatus->first()
+        : null;
+
+      if ($onHoldStatus) {
+        $onHoldDate = Carbon::parse($onHoldStatus->created_at)->format('Y-m-d');
+        $events[] = $this->createEvent(
+          $order->id,
+          '#' . $order->order_number . ' - ' . $order->name .  ($serviceLabel ? ' (' . $serviceLabel . ')' : '') . (!empty($order->city) ? ' - ' . $order->city : ''),
+          'Products: ' . $productDetails,
+          $onHoldDate,
+          $onHoldDate,
+          StatusColorEnum::ON_HOLD->value,
+          $order->service
+        );
+
+        continue;
+      }
 
       if ($order->service === ServiceEnum::DELIVERY->value || $order->service === ServiceEnum::PICKUP->value) {
         $startDate = $order->delivery_date;

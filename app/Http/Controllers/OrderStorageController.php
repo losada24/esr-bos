@@ -61,12 +61,14 @@ class OrderStorageController extends Controller
                 OrderPipelineSort::apply($ordersQuery, $sort['sort_by'], $sort['sort_dir']);
                 $orders = $ordersQuery
                     ->with($this->orderStorageRelations())
+                    ->withCount('childOrders')
                     ->limit(self::ORDER_STORAGE_PAGE_SIZE)
                     ->get();
             } else {
                 OrderPipelineSort::apply($ordersQuery, $sort['sort_by'], $sort['sort_dir']);
                 $orders = $ordersQuery
                     ->with($this->orderStorageRelations())
+                    ->withCount('childOrders')
                     ->get();
                 $total = $orders->count();
             }
@@ -210,6 +212,7 @@ class OrderStorageController extends Controller
         OrderPipelineSort::apply($ordersQuery, $sort['sort_by'], $sort['sort_dir']);
         $orders = $ordersQuery
             ->with($this->orderStorageRelations())
+            ->withCount('childOrders')
             ->forPage($page, $perPage)
             ->get();
 
@@ -347,6 +350,8 @@ class OrderStorageController extends Controller
             'vip_clients' => (bool) (optional($order->client)->vip_clients ?? false),
             'created_by' => $order->user->name ?? null,
             'is_supply' => (bool) ($order->is_supply ?? false),
+            'is_parent_order' => (int) ($order->child_orders_count ?? 0) > 0,
+            'child_orders_count' => (int) ($order->child_orders_count ?? 0),
             'project_amount' => $order->project_amount ? (float) $order->project_amount : null,
             'down_payment' => $order->down_payment ? (float) $order->down_payment : null,
             'job_address' => $order->job_address,

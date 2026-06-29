@@ -41,7 +41,7 @@ import ContractSignedModal, { PRIMARY_CLIENT_EMAIL_SELECTION } from '@/Pages/Sal
 import LostContractModal from '@/Pages/Sales/LostContractModal'
 import QuantifiedModal from '@/Pages/Frontdesk/QuantifiedModal'
 import { ContactEditModal, type ContactFormValues } from '@/Pages/Frontdesk/ContactEditModals'
-import RequestEditModal, { type RequestFormValues, type RequestFormErrors } from '@/Pages/Frontdesk/RequestEditModal'
+import RequestEditModal, { type RequestCommercialPair, type RequestFormValues, type RequestFormErrors } from '@/Pages/Frontdesk/RequestEditModal'
 import CompanyQuickEditModal from '@/Pages/Frontdesk/CompanyQuickEditModal'
 
 type IndexOrderProps = PageProps & {
@@ -273,6 +273,9 @@ const formatDateForInput = (date: Date): string => {
 }
 
 const round2 = (value: number): number => Math.round((value + Number.EPSILON) * 100) / 100
+
+const resolveEffectiveScheduleTotal = (scheduleTotal: number, changeOrderAmount: number): number =>
+  changeOrderAmount < 0 ? Math.max(0, round2(scheduleTotal + changeOrderAmount)) : scheduleTotal
 
 const normalizeScheduleValue = (value?: string | null): string => {
   if (!value) return ''
@@ -712,7 +715,9 @@ export default function ShowStatusOrder ({
     phone: initialOrder.client?.phone ?? '',
     status: initialOrder.status ?? (FRONTDESK_STATUS_OPTIONS[0] ?? ''),
     source: initialOrder.client?.source ?? (sources?.[0] ?? ''),
-    notes: initialOrder.notes ?? ''
+    notes: initialOrder.notes ?? '',
+    product_line: initialOrder.product_line ?? '',
+    commercial_pairs: []
   })
   const [contactFormErrors, setContactFormErrors] = useState<Record<string, string[]>>({})
   const [requestFormErrors, setRequestFormErrors] = useState<RequestFormErrors>({})
@@ -806,12 +811,21 @@ export default function ShowStatusOrder ({
   }
 
   const openRequestModal = () => {
+    const commercialPairs: RequestCommercialPair[] = Array.isArray(order.order_company_contacts)
+      ? order.order_company_contacts.slice(0, 5).map((item: any) => ({
+        company_id: Number(item.company_contact_id ?? item.company_contact?.id ?? 0) || null,
+        client_id: Number(item.client_id ?? item.client?.id ?? 0) || null,
+        source_id: Number(item.source_id ?? item.source?.id ?? 0) || null
+      }))
+      : []
     setRequestFormValues({
       client_name: order.client?.name ?? order.name ?? '',
       phone: order.client?.phone ?? '',
       status: order.status ?? (FRONTDESK_STATUS_OPTIONS[0] ?? ''),
       source: order.client?.source ?? (sources[0] ?? ''),
-      notes: order.notes ?? ''
+      notes: order.notes ?? '',
+      product_line: order.product_line ?? '',
+      commercial_pairs: commercialPairs
     })
     setRequestFormErrors({})
     setRequestSubmitError(null)
@@ -957,11 +971,17 @@ export default function ShowStatusOrder ({
         company_contact_id: toNull(values.company_contact_id),
         associate_company_contact_id_1: toNull(values.associate_company_contact_id_1),
         associate_company_contact_id_2: toNull(values.associate_company_contact_id_2),
+        associate_company_contact_id_3: toNull(values.associate_company_contact_id_3),
+        associate_company_contact_id_4: toNull(values.associate_company_contact_id_4),
         associate_client_id_1: toNull(values.associate_client_id_1),
         associate_client_id_2: toNull(values.associate_client_id_2),
+        associate_client_id_3: toNull(values.associate_client_id_3),
+        associate_client_id_4: toNull(values.associate_client_id_4),
         company_source_id: toNull(values.company_source_id),
         associate_source_id_1: toNull(values.associate_source_id_1),
         associate_source_id_2: toNull(values.associate_source_id_2),
+        associate_source_id_3: toNull(values.associate_source_id_3),
+        associate_source_id_4: toNull(values.associate_source_id_4),
         source: typeof values.source === 'string' ? values.source : getValueIdNotNull(values.source)
       }
       const orderEditAttachmentFiles = Array.isArray(values.attachments)
@@ -2352,6 +2372,8 @@ export default function ShowStatusOrder ({
         return Number.isFinite(value) ? total + value : total
       }, 0)
       const totalAmount = Number(schedule.total_amount ?? 0)
+      const changeOrderAmount = Number(prev.change_order_payment?.amount ?? 0)
+      const effectiveTotalAmount = resolveEffectiveScheduleTotal(totalAmount, changeOrderAmount)
 
       return {
         ...prev,
@@ -2359,8 +2381,8 @@ export default function ShowStatusOrder ({
           ...schedule,
           installments: updatedInstallments,
           paid_amount: round2(paidAmount),
-          remaining_amount: round2(Math.max(0, totalAmount - paidAmount)),
-          credit_amount: round2(Math.max(0, paidAmount - totalAmount))
+          remaining_amount: round2(Math.max(0, effectiveTotalAmount - paidAmount)),
+          credit_amount: round2(Math.max(0, paidAmount - effectiveTotalAmount))
         }
       }
     })
@@ -2461,14 +2483,15 @@ export default function ShowStatusOrder ({
     const draft = movementDrafts[installmentId] ?? emptyMovementFormValues()
     const scheduledAmount = Number(installment.amount ?? 0)
     const remainingAmount = Number(installment.balance ?? Math.max(0, scheduledAmount - Number(installment.paid_amount ?? 0)))
-    const defaultAmount = remainingAmount > 0 ? remainingAmount : scheduledAmount
-    const amount = draft.useDefaultAmount
-      ? defaultAmount
-      : Number(String(draft.amount ?? '').replace(/,/g, '').trim())
     const schedule = order.payment_schedule
     const scheduleTotal = Number(schedule?.total_amount ?? 0)
     const schedulePaid = Number(schedule?.paid_amount ?? 0)
-    const remainingCapacity = Math.max(0, round2(scheduleTotal - schedulePaid))
+    const effectiveScheduleTotal = resolveEffectiveScheduleTotal(scheduleTotal, changeOrderAmountNumber)
+    const remainingCapacity = Math.max(0, round2(effectiveScheduleTotal - schedulePaid))
+    const defaultAmount = Math.min(remainingAmount > 0 ? remainingAmount : scheduledAmount, remainingCapacity)
+    const amount = draft.useDefaultAmount
+      ? defaultAmount
+      : Number(String(draft.amount ?? '').replace(/,/g, '').trim())
 
     if (!Number.isFinite(amount) || amount <= 0) {
       setPaymentError(draft.useDefaultAmount
@@ -2538,7 +2561,8 @@ export default function ShowStatusOrder ({
     const schedule = order.payment_schedule
     const scheduleTotal = Number(schedule?.total_amount ?? 0)
     const schedulePaid = Number(schedule?.paid_amount ?? 0)
-    const remainingCapacity = Math.max(0, round2(scheduleTotal - schedulePaid))
+    const effectiveScheduleTotal = resolveEffectiveScheduleTotal(scheduleTotal, changeOrderAmountNumber)
+    const remainingCapacity = Math.max(0, round2(effectiveScheduleTotal - schedulePaid))
     const maxAllowed = round2(currentAmount + remainingCapacity)
 
     if (!Number.isFinite(amount) || amount <= 0) {
@@ -2860,23 +2884,39 @@ export default function ShowStatusOrder ({
   })
 
   const projectAmountNumber = Number(order.project_amount ?? 0)
+  const changeOrderPayment = order.change_order_payment ?? null
+  const changeOrderAmountNumber = Number(changeOrderPayment?.amount ?? 0)
+  const hasChangeOrderAmount = changeOrderPayment !== null && Number.isFinite(changeOrderAmountNumber)
+  const hasNegativeChangeOrder = hasChangeOrderAmount && changeOrderAmountNumber < 0
+  const changeOrderTotalLabel = hasNegativeChangeOrder ? 'Adjusted Project Amount' : 'Project + Change Order'
+  const changeOrderPaymentLabel = hasNegativeChangeOrder ? 'Reduction' : 'Amount'
+  const totalProjectAmountWithChangeOrder = projectAmountNumber + (hasChangeOrderAmount ? changeOrderAmountNumber : 0)
   const showProjectAmount = Number.isFinite(projectAmountNumber) && projectAmountNumber > 1
   const formattedProjectAmount = showProjectAmount
     ? `$${projectAmountNumber.toLocaleString()}`
     : null
+  const formattedTotalProjectAmountWithChangeOrder = hasChangeOrderAmount && Number.isFinite(totalProjectAmountWithChangeOrder)
+    ? `$${totalProjectAmountWithChangeOrder.toLocaleString()}`
+    : null
   const paymentSchedule = order.payment_schedule ?? null
-  const changeOrderPayment = order.change_order_payment ?? null
   const paymentInstallments: PaymentInstallment[] = Array.isArray(paymentSchedule?.installments)
     ? paymentSchedule?.installments ?? []
     : []
   const paymentTotalAmount = Number(paymentSchedule?.total_amount ?? 0)
+  const effectivePaymentTotalAmount = hasNegativeChangeOrder
+    ? Math.max(0, paymentTotalAmount + changeOrderAmountNumber)
+    : paymentTotalAmount
   const paymentPaidAmount = Number(paymentSchedule?.paid_amount ?? paymentInstallments.reduce((total, installment) => {
     const amountValue = Number(installment.paid_amount ?? 0)
     return Number.isFinite(amountValue) ? total + amountValue : total
   }, 0))
-  const paymentRemainingAmount = Number(paymentSchedule?.remaining_amount ?? Math.max(0, paymentTotalAmount - paymentPaidAmount))
-  const paymentCreditAmount = Number(paymentSchedule?.credit_amount ?? Math.max(0, paymentPaidAmount - paymentTotalAmount))
-  const scheduleRemainingCapacity = Math.max(0, paymentTotalAmount - paymentPaidAmount)
+  const paymentRemainingAmount = hasNegativeChangeOrder
+    ? Math.max(0, effectivePaymentTotalAmount - paymentPaidAmount)
+    : Number(paymentSchedule?.remaining_amount ?? Math.max(0, effectivePaymentTotalAmount - paymentPaidAmount))
+  const paymentCreditAmount = hasNegativeChangeOrder
+    ? Math.max(0, paymentPaidAmount - effectivePaymentTotalAmount)
+    : Number(paymentSchedule?.credit_amount ?? Math.max(0, paymentPaidAmount - effectivePaymentTotalAmount))
+  const scheduleRemainingCapacity = Math.max(0, effectivePaymentTotalAmount - paymentPaidAmount)
   const formatScheduleCurrency = (value: number) =>
     new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value)
   const formatPaidAt = (value?: string | null) => {
@@ -3286,6 +3326,12 @@ export default function ShowStatusOrder ({
                 <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 md:text-right">
                   <span>Project Amount</span>
                   <span className="text-emerald-800">{formattedProjectAmount}</span>
+                </span>
+              )}
+              {formattedTotalProjectAmountWithChangeOrder && (
+                <span className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700 md:text-right">
+                  <span>{changeOrderTotalLabel}</span>
+                  <span className="text-sky-800">{formattedTotalProjectAmountWithChangeOrder}</span>
                 </span>
               )}
             </div>
@@ -4060,10 +4106,15 @@ export default function ShowStatusOrder ({
                                 <p className="text-sm font-semibold text-slate-700">{paymentSchedule.schedule_type}</p>
                               </div>
                               <div className="text-right">
-                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{isCashAndFinancedPaymentMethod ? 'Cash Schedule Total' : 'Total'}</p>
+                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{hasNegativeChangeOrder ? 'Adjusted Total' : (isCashAndFinancedPaymentMethod ? 'Cash Schedule Total' : 'Total')}</p>
                                 <p className="text-sm font-semibold text-slate-700">
-                                  {formatScheduleCurrency(Number(paymentSchedule.total_amount ?? 0))}
+                                  {formatScheduleCurrency(effectivePaymentTotalAmount)}
                                 </p>
+                                {hasNegativeChangeOrder && (
+                                  <p className="text-[11px] font-medium text-slate-500">
+                                    Original: {formatScheduleCurrency(paymentTotalAmount)}
+                                  </p>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -4082,10 +4133,15 @@ export default function ShowStatusOrder ({
                               </p>
                             </div>
                             <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
-                              <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Total</p>
+                              <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{hasNegativeChangeOrder ? 'Adjusted Total' : 'Total'}</p>
                               <p className="text-sm font-semibold text-slate-700">
-                                {formatScheduleCurrency(paymentTotalAmount)}
+                                {formatScheduleCurrency(effectivePaymentTotalAmount)}
                               </p>
+                              {hasNegativeChangeOrder && (
+                                <p className="text-[11px] font-medium text-slate-500">
+                                  Original: {formatScheduleCurrency(paymentTotalAmount)}
+                                </p>
+                              )}
                             </div>
                             <div className="rounded-xl border border-sky-100 bg-sky-50 px-4 py-3">
                               <p className="text-xs font-semibold uppercase tracking-wide text-sky-600">Credit</p>
@@ -4307,7 +4363,7 @@ export default function ShowStatusOrder ({
                             </p>
                           </div>
                           <div className="text-right">
-                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Amount</p>
+                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{changeOrderPaymentLabel}</p>
                             <p className="text-sm font-semibold text-slate-700">
                               {formatScheduleCurrency(Number(changeOrderPayment.amount ?? 0))}
                             </p>
@@ -4580,6 +4636,11 @@ export default function ShowStatusOrder ({
         errors={requestFormErrors}
         statusOptions={requestStatusOptions}
         sourceOptions={requestSourceOptions}
+        isCommercial={String(order.order_type ?? '').toUpperCase() === 'COMMERCIAL'}
+        companies={safeCompanies}
+        clients={clientsList}
+        qualifiedSources={safeQualifiedSources}
+        sourcesClients={safeSourcesClients}
         errorMessage={requestSubmitError}
         onClose={() => { setRequestModalOpen(false) }}
         onChange={handleRequestFieldChange}

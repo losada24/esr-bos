@@ -30,6 +30,9 @@ class Order extends Model
 
   protected $fillable = [
     'order_number',
+    'parent_order_id',
+    'root_order_id',
+    'counts_for_owner_commission',
     'invoice_number',
     'order_type',
     'product_line',
@@ -137,6 +140,7 @@ class Order extends Model
       'is_send_email' => 'boolean',
       'is_new_travel_cost' => 'boolean',
       'is_supply' => 'boolean',
+      'counts_for_owner_commission' => 'boolean',
       'name_check' => 'boolean',
       'address_check' => 'boolean',
       'amount_check' => 'boolean',
@@ -301,6 +305,7 @@ class Order extends Model
           OrderStatusEnum::INSPECTION,
           OrderStatusEnum::FINISH,
           OrderStatusEnum::SERVICE,
+          OrderStatusEnum::ON_HOLD,
           OrderStatusEnum::FINAL_INSPECTION,
           OrderStatusEnum::FINAL_COLLECT,
           OrderStatusEnum::COMPLETE,
@@ -369,6 +374,21 @@ class Order extends Model
   {
     return $this->belongsToMany(User::class, 'owner_user')
       ->withTimestamps();
+  }
+
+  public function parentOrder(): BelongsTo
+  {
+    return $this->belongsTo(Order::class, 'parent_order_id');
+  }
+
+  public function rootOrder(): BelongsTo
+  {
+    return $this->belongsTo(Order::class, 'root_order_id');
+  }
+
+  public function childOrders(): HasMany
+  {
+    return $this->hasMany(Order::class, 'parent_order_id');
   }
 
   public function scopeAccessibleToOwner(Builder $query, User $user): Builder
