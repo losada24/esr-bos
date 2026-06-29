@@ -27,7 +27,9 @@ class ClientController extends Controller
     public function index(Request $request)
     {
         return Inertia::render('Client/Index', [
-          'clients' => Client::with(['clientAddress', 'companyContact', 'createdByUser', 'user'])->filter($request->only(['text']))
+          'clients' => Client::visibleTo($request->user())
+            ->with(['clientAddress', 'companyContact', 'createdByUser', 'user'])
+            ->filter($request->only(['text']))
             ->orderBy('updated_at', 'desc')
             ->paginate()
             ->withQueryString()
@@ -46,7 +48,9 @@ class ClientController extends Controller
           ContactTypeEnum::RESIDENTIAL_CONTACT->value,
           ContactTypeEnum::COMMERCIAL_CONTACT->value,
         ],
-        'companies' => CompanyContact::all(),
+        'companies' => CompanyContact::visibleTo(request()->user())
+          ->orderBy('name')
+          ->get(),
         'owners' => $this->ownerOptions(),
           'sources' => [
             ContactSourceEnum::TIK_TOK->value,
@@ -79,6 +83,8 @@ class ClientController extends Controller
         $client = $createClient->handle($storeClientRequest);
             //dd($client);
         if ($storeClientRequest->boolean('from_modal')) {
+            $this->authorizeClientAccess($storeClientRequest, $client);
+
             $client->load([
                 'referral',
                 'referral.referrerClient:id,name,phone,email',
@@ -98,7 +104,9 @@ class ClientController extends Controller
      * @return \Illuminate\Http\Response
      */
     public function edit(Client $client)
-    {    
+    {
+        $this->authorizeClientAccess(request(), $client);
+
         $client->load('tags:id,name,color,taggable_id,taggable_type');
         return Inertia::render('Client/Edit', [
           //'clients' => $client,
@@ -106,7 +114,9 @@ class ClientController extends Controller
             ContactTypeEnum::RESIDENTIAL_CONTACT->value,
             ContactTypeEnum::COMMERCIAL_CONTACT->value,
           ],
-          'companies' => CompanyContact::all(),
+          'companies' => CompanyContact::visibleTo(request()->user())
+            ->orderBy('name')
+            ->get(),
           'owners' => $this->ownerOptions($client->user_id),
           'sources' => [
              ContactSourceEnum::TIK_TOK->value,
@@ -152,6 +162,8 @@ class ClientController extends Controller
      */
     public function update(UpdateClientRequest $updateClientRequest, UpdateClient $updateUser, Client $client)
     {
+        $this->authorizeClientAccess($updateClientRequest, $client);
+
         $updateUser->handle($updateClientRequest, $client);
         return redirect()->route('client.index')
           ->with('success', 'Client updated successfully.');
@@ -165,6 +177,8 @@ class ClientController extends Controller
      */
     public function destroy(Client $client)
     {
+        $this->authorizeClientAccess(request(), $client);
+
             if ($client->orders()->exists()) {
             return redirect()
                 ->back()
@@ -205,10 +219,13 @@ class ClientController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function isUnique($phone, $address = null)
+    public function isUnique(Request $request, $phone, $address = null)
     {
         $addressList = [];
-        $clientsByPhone = Client::with(['clientAddress'])->where('phone', $phone)->get();    
+        $clientsByPhone = Client::visibleTo($request->user())
+            ->with(['clientAddress'])
+            ->where('phone', $phone)
+            ->get();
         
         if ($address != null) {
           foreach ($clientsByPhone as $clientAddress) {
@@ -232,7 +249,8 @@ class ClientController extends Controller
             'ignore_id' => ['nullable', 'integer', 'min:1'],
         ]);
 
-        $query = Client::query()->where('phone', $data['phone']);
+        $query = Client::visibleTo($request->user())
+            ->where('phone', $data['phone']);
         if (!empty($data['ignore_id'])) {
             $query->where('id', '!=', (int) $data['ignore_id']);
         }
@@ -256,7 +274,7 @@ class ClientController extends Controller
         $digits = preg_replace('/\D+/', '', $term) ?? '';
         $like = '%' . $term . '%';
 
-        $clients = Client::query()
+        $clients = Client::visibleTo($request->user())
             ->select('id', 'name', 'phone', 'email', 'secondary_email', 'vip_clients', 'vip_notes', 'company_contact_id')
             ->with(['companyContact:id,name,email', 'companyContacts:id,name,email'])
             ->where(function ($query) use ($like, $digits) {
@@ -276,11 +294,22 @@ class ClientController extends Controller
         return response()->json(['data' => $clients]);
     }
 
-    public function document($id)
+    public function document(Request $request, $id)
     {
-        $clientAddress = ClientAddress::with(['client', 'client.user'])->find($id);
+        $clientAddress = ClientAddress::with(['client', 'client.user'])->findOrFail($id);
+        abort_unless($clientAddress->client, 404);
+        $this->authorizeClientAccess($request, $clientAddress->client);
+
         $pdf = Pdf::loadView('pdf.sale-form', ['clientAddress' => $clientAddress]);
         $pdf->setPaper('a4', 'portrait');
         return $pdf->download('sale-form.pdf');
+    }
+
+    private function authorizeClientAccess(Request $request, Client $client): void
+    {
+        abort_unless(
+            Client::visibleTo($request->user())->whereKey($client->getKey())->exists(),
+            403
+        );
     }
 }

@@ -13,11 +13,13 @@ import { formatDateOnlyValue, toDateOnlyString } from '@/Utils/dateOnly'
 const CompanyModal = ({
   showModal,
   onClose,
-  onConfirm
+  onConfirm,
+  storeRoute = 'company_contact.store'
 }: {
   showModal: boolean
   onClose: () => void
   onConfirm: (company: CompanyContact) => void
+  storeRoute?: string
   // addCompany: (company: CompanyContact) => void
 }) => {
   const initialValues: CompanyContact = {
@@ -38,7 +40,7 @@ const CompanyModal = ({
     helpers: FormikHelpers<CompanyContact>
   ) => {
     try {
-      const response = await fetch(route('company_contact.store'), {
+      const response = await fetch(route(storeRoute), {
         method: 'POST',
         headers: {
           'X-CSRF-TOKEN': csrfToken,

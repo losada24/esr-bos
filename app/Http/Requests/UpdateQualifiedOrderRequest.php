@@ -16,6 +16,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use App\Enum\ServiceEnum;
 use App\Enum\SupervisorPaymentStatusEnum;
 use App\Enum\TypeOfFinancing;
+use App\Models\CompanyContact;
 use App\Models\Order;
 use App\Rules\ValidateOrderStatus;
 use App\Support\PaymentScheduleTemplates;
@@ -25,11 +26,49 @@ class UpdateQualifiedOrderRequest extends FormRequest
 {
     protected function prepareForValidation(): void
     {
-        foreach (['method_of_payment', 'type_of_financing', 'payment_schedule_type', 'down_payment'] as $field) {
+        foreach (['method_of_payment', 'type_of_financing', 'payment_schedule_type', 'down_payment', 'service'] as $field) {
             if ($this->has($field) && trim((string) $this->input($field)) === '') {
                 $this->merge([$field => null]);
             }
         }
+
+        $customSchedule = $this->input('custom_schedule', []);
+        if ($this->input('payment_schedule_type') !== PaymentScheduleTypeEnum::CUSTOMIZED->value) {
+            $this->merge(['custom_schedule' => []]);
+        } elseif (is_array($customSchedule)) {
+            $this->merge([
+                'custom_schedule' => collect($customSchedule)
+                    ->filter(fn ($item) => trim((string) ($item['label'] ?? '')) !== '' || trim((string) ($item['amount'] ?? '')) !== '')
+                    ->values()
+                    ->all(),
+            ]);
+        }
+    }
+
+    private function isEsrProcessOrder(): bool
+    {
+        $order = $this->route('order');
+
+        return $order instanceof Order && in_array($order->status, [
+            OrderStatusEnum::DEALER_REQUEST->value,
+            OrderStatusEnum::FOLLOW_UP_PROJECTS->value,
+            OrderStatusEnum::REVIEW->value,
+            OrderStatusEnum::ACCOUNT_RECEIPT->value,
+            OrderStatusEnum::PLANNED->value,
+            OrderStatusEnum::PRODUCTION->value,
+            OrderStatusEnum::PRODUCTION_SERVICES->value,
+            OrderStatusEnum::PRE_COORDINATION_ACCOUNTING->value,
+            OrderStatusEnum::PENDING_MAT_REYLOS->value,
+            OrderStatusEnum::PENDING_MATERIALS->value,
+            OrderStatusEnum::PENDING_MATERIALS_EWS->value,
+            OrderStatusEnum::MATERIAL_ORDER_COMPLETED->value,
+            OrderStatusEnum::STORAGE_MATERIAL->value,
+            OrderStatusEnum::MATERIALS_PICK_UP_OR_DELIVERED->value,
+            OrderStatusEnum::PENDING_PAYMENT->value,
+            OrderStatusEnum::PENDING_MATCH->value,
+            OrderStatusEnum::COMPLETE->value,
+            OrderStatusEnum::LOST->value,
+        ], true);
     }
 
     private function canEditPaymentInformation(): bool
@@ -90,17 +129,40 @@ class UpdateQualifiedOrderRequest extends FormRequest
               )
             ],*/
             'notes' => 'nullable|string|max:1000',
+            'attachments' => ['nullable', 'array'],
+            'attachments.*' => ['file', 'max:10240'],
             'invoice_number' => 'nullable|string|max:255',
             'project_amount' => ['nullable', 'numeric', 'min:0'],
+            'service' => [
+                'nullable',
+                'string',
+                $this->isEsrProcessOrder()
+                    ? Rule::in([
+                        ServiceEnum::DELIVERY->value,
+                        ServiceEnum::PICKUP->value,
+                    ])
+                    : Rule::enum(ServiceEnum::class),
+            ],
+            'esr_design' => ['nullable', 'boolean'],
+            'esr_express' => ['nullable', 'boolean'],
+            'esr_reylos_glass' => ['nullable', 'boolean'],
+            'esr_service' => ['nullable', 'boolean'],
             'method_of_payment' => [
                 'nullable',
                 'string',
-                Rule::in(
-                    MethodOfPayment::CASH->value,
-                    MethodOfPayment::FINANCED->value,
-                    MethodOfPayment::FINANCEDCASH->value,
-                    MethodOfPayment::AIA->value
-                )
+                Rule::in($this->isEsrProcessOrder()
+                    ? [
+                        MethodOfPayment::CASH->value,
+                        MethodOfPayment::FINANCED->value,
+                        MethodOfPayment::FINANCEDCASH->value,
+                        MethodOfPayment::NOTPAYMENT->value,
+                    ]
+                    : [
+                        MethodOfPayment::CASH->value,
+                        MethodOfPayment::FINANCED->value,
+                        MethodOfPayment::FINANCEDCASH->value,
+                        MethodOfPayment::AIA->value,
+                    ])
             ],
             'type_of_financing' => [
                 'nullable',
@@ -132,7 +194,12 @@ class UpdateQualifiedOrderRequest extends FormRequest
            
             // Solo obligatoria en COMMERCIAL
             'company_contact_id' => [  'nullable','required_if:order_type,COMMERCIAL', 'integer', 'exists:company_contacts,id'],
-            'company_source_id' => ['nullable', 'required_if:order_type,COMMERCIAL', 'integer', 'exists:sources,id'],
+            'company_source_id' => [
+                'nullable',
+                Rule::requiredIf(fn () => !$this->isEsrProcessOrder() && $this->input('order_type') === OrderTypeEnum::COMMERCIAL->value),
+                'integer',
+                'exists:sources,id',
+            ],
             // Company asociadas (opcionales)
             'associate_company_contact_id_1' => ['nullable','integer','exists:company_contacts,id'],
             'associate_company_contact_id_2' => ['nullable','integer','exists:company_contacts,id'],
@@ -140,15 +207,26 @@ class UpdateQualifiedOrderRequest extends FormRequest
             // Client asociado requerido si hay company asociada
             'associate_client_id_1' => ['nullable','integer','exists:clients,id','required_with:associate_company_contact_id_1'],
             'associate_client_id_2' => ['nullable','integer','exists:clients,id','required_with:associate_company_contact_id_2'],  
-            'associate_source_id_1' => ['nullable','integer','exists:sources,id','required_with:associate_company_contact_id_1'],
-            'associate_source_id_2' => ['nullable','integer','exists:sources,id','required_with:associate_company_contact_id_2'],
+            'associate_source_id_1' => [
+                'nullable',
+                'integer',
+                'exists:sources,id',
+                Rule::requiredIf(fn () => !$this->isEsrProcessOrder() && $this->filled('associate_company_contact_id_1')),
+            ],
+            'associate_source_id_2' => [
+                'nullable',
+                'integer',
+                'exists:sources,id',
+                Rule::requiredIf(fn () => !$this->isEsrProcessOrder() && $this->filled('associate_company_contact_id_2')),
+            ],
             'client_email_selection' => ['required', 'string', 'max:255'],
             'hoa' => ['nullable', 'boolean'],
             'force_duplicate' => ['nullable', 'boolean'],
             'owner_ids' => ['nullable', 'array'],
             'owner_ids.*' => ['integer', 'exists:users,id'],
             'language' => [
-              'required',
+              Rule::requiredIf(fn () => !$this->isEsrProcessOrder()),
+              'nullable',
               'string',
               Rule::in(array_map(
                 static fn (LanguageEnum $language) => $language->value,
@@ -165,6 +243,7 @@ class UpdateQualifiedOrderRequest extends FormRequest
             if (!$order instanceof Order) {
                 return;
             }
+            $isEsrProcessOrder = $this->isEsrProcessOrder();
 
             $existingSchedule = $order->paymentSchedule()->with('installments')->first();
             $hasRecordedPayments = $existingSchedule
@@ -183,12 +262,12 @@ class UpdateQualifiedOrderRequest extends FormRequest
                 || $this->exists('change_order_note');
             $touchesPrivilegedPaymentInformation = $touchesPaymentConfiguration || $touchesChangeOrder;
 
-            if (($touchesPrivilegedPaymentInformation || ($touchesProjectAmount && $hasReachedContractSigned)) && !$this->canEditPaymentInformation()) {
+            if (!$isEsrProcessOrder && ($touchesPrivilegedPaymentInformation || ($touchesProjectAmount && $hasReachedContractSigned)) && !$this->canEditPaymentInformation()) {
                 $validator->errors()->add('method_of_payment', 'You are not allowed to update Payment Information.');
                 return;
             }
 
-            if (!$hasReachedContractSigned && $touchesPrivilegedPaymentInformation) {
+            if (!$isEsrProcessOrder && !$hasReachedContractSigned && $touchesPrivilegedPaymentInformation) {
                 $validator->errors()->add('method_of_payment', 'Before CONTRACT SIGNED BY CLIENT, only Project Amount can be updated.');
                 return;
             }
@@ -201,6 +280,28 @@ class UpdateQualifiedOrderRequest extends FormRequest
                 $requestedAmount = (float) ($this->input('project_amount') ?? $currentAmount);
                 if (abs($requestedAmount - $currentAmount) > 0.01) {
                     $validator->errors()->add('project_amount', 'Owner cannot edit Project Amount before CONTRACT SIGNED BY CLIENT when payment method and payment schedule are already assigned.');
+                }
+            }
+
+            if ($this->input('order_type') === OrderTypeEnum::COMMERCIAL->value) {
+                $requestedCompanyIds = collect([
+                    $this->input('company_contact_id'),
+                    $this->input('associate_company_contact_id_1'),
+                    $this->input('associate_company_contact_id_2'),
+                ])
+                    ->filter()
+                    ->map(fn ($id) => (int) $id)
+                    ->unique()
+                    ->values();
+
+                if ($requestedCompanyIds->isNotEmpty()) {
+                    $visibleCompanyCount = CompanyContact::visibleTo($this->user())
+                        ->whereIn('id', $requestedCompanyIds)
+                        ->count();
+
+                    if ($visibleCompanyCount !== $requestedCompanyIds->count()) {
+                        $validator->errors()->add('company_contact_id', 'You can only use companies associated with your owner account.');
+                    }
                 }
             }
 

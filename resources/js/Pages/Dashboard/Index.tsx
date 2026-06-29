@@ -22,6 +22,14 @@ interface CalendarFilter {
   name: string
 }
 
+const CALENDAR_STATUS_FILTER_OPTIONS = [
+  'PLANNED',
+  'MATERIAL ORDER COMPLETED',
+  'STORAGE MATERIAL',
+  'MATERIALS PICK UP OR DELIVERED',
+  'COMPLETE'
+]
+
 export default function Dashboard ({ auth, services, status, statusmodal, legend, installation_teams, supervisors }: PageProps & { services: string[], status: string[], statusmodal: [], legend: Legend[], installation_teams: InstallationTeam[], supervisors: User[] }) {
   const IS_ADMIN = isAdmin(auth.user.roles.map((role: Role) => role.name))
   const IS_ACCOUNT_MANAGER = isAccountManager(auth.user.roles.map((role: Role) => role.name))
@@ -132,7 +140,7 @@ export default function Dashboard ({ auth, services, status, statusmodal, legend
                 }}
               >
                 <option value="all">All</option>
-                {status.map((status) => (
+                {CALENDAR_STATUS_FILTER_OPTIONS.map((status) => (
                   <option key={status}>{status}</option>
                 ))}
               </select>

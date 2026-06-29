@@ -1,19 +1,28 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Dispatch, SetStateAction } from 'react'
+import { type FormikErrors, type FormikHelpers } from 'formik'
 import { Head, Link, router } from '@inertiajs/react'
 import type { RequestPayload } from '@inertiajs/core'
 import { ReactSortable } from 'react-sortablejs'
-import { type PageProps, type Pipelines, type Tasks } from '@/types'
+import { type CompanyContact, type PageProps, type Pipelines, type Tasks, type User } from '@/types'
 import AuthenticatedCalendarLayout from '@/Layouts/AuthenticatedCalendarLayout'
 import { tagClasses, type TagColor } from '@/Utils/tags'
 import EyeIcon from '@/Components/Icons/EyeIcon'
 import EditIcon from '@/Components/Icons/EditIcon'
+import DeleteIcon from '@/Components/Icons/DeleteIcon'
+import CalendarIcon from '@/Components/Icons/CalendarIcon'
+import PhoneIcon from '@/Components/Icons/PhoneIcon'
 import InfoTooltip from '@/Components/InfoTooltip'
 import OrderBoardFilter, { type BoardFilters, type FilterFieldConfig } from '@/Components/OrderBoardFilter'
 import OrderGlobalSearch from '@/Components/OrderGlobalSearch'
 import OrderPipelineSort from '@/Components/OrderPipelineSort'
 import ProductLineBadge from '@/Components/ProductLineBadge'
 import { formatDateOnlyDisplay, isDateOnlyPast } from '@/Utils/dateOnly'
+import OrderEditModal from '@/Pages/Frontdesk/OrderEditModal'
+import { getValueIdNotNull, loadOrderFormObj, type Order, type OrderFormValues } from '@/Pages/Frontdesk/OrderCommon'
+import { type Client } from '@/Pages/Client/ClientCommon'
+import { type Attachment, type Source } from '@/types/interfaces/order'
+import { PAYMENT_METHODS } from '@/Utils/constants'
 import {
   type PipelineSortBy,
   type PipelineSortDir,
@@ -26,6 +35,17 @@ import {
 export interface OwnerOption { id: number, name: string }
 type IdOption = { id: number, name: string }
 type TagOption = { name: string | null }
+interface BoardConfigProps {
+  board_title?: string
+  index_route?: string
+  tasks_route?: string
+  sortable_group?: string
+  search_origin?: string
+  show_create_order?: boolean
+  show_esr_task_actions?: boolean
+  order_view_route?: string
+  can_reorder_orders?: boolean
+}
 
 const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const
 
@@ -122,11 +142,48 @@ const stampTaskAsUpdated = (task: Tasks): Tasks => ({
   date_edited: formatDateForDisplay(new Date())
 })
 
-const INFINITE_SCROLL_STATUSES = new Set(['COMPLETE'])
+const INFINITE_SCROLL_STATUSES = new Set(['COMPLETE', 'LOST'])
 const TASKS_PAGE_SIZE = 20
 const SCROLL_THRESHOLD_PX = 120
+const DUPLICATE_ORDER_ERROR_KEY = 'duplicate_order_confirmation'
 
 type StatusPaginationState = { nextPage: number, loading: boolean }
+type ActivityMenuState = { orderId: number, x: number, y: number } | null
+type PaymentScheduleTemplates = Record<string, { label: string, percentage: number }[]>
+type PendingEsrStatusMove = {
+  orderId: number
+  oldStatus: string
+  newStatus: string
+  task: Tasks
+} | null
+type EsrEditData = {
+  order: Order
+  clients: Client[]
+  owners: User[]
+  companies: CompanyContact[]
+  sources: Source[]
+  sources_clients: string[]
+  statuses: string[]
+  order_types: string[]
+  services: string[]
+  methods_of_payment: string[]
+  type_of_financing: string[]
+  payment_schedule_templates: PaymentScheduleTemplates
+  frame_colors: string[]
+  glass_colors: string[]
+  glass_types: string[]
+  glass_coatings: string[]
+  languages: string[]
+}
+
+const activityMenuPosition = (element: HTMLElement) => {
+  const rect = element.getBoundingClientRect()
+
+  return {
+    x: Math.min(rect.left + rect.width - 8, window.innerWidth - 190),
+    y: Math.min(rect.top + rect.height + 4, window.innerHeight - 140)
+  }
+}
 
 const toNumericAmount = (value?: number | string | null): number => {
   if (typeof value === 'number') return Number.isFinite(value) ? value : 0
@@ -177,13 +234,21 @@ const buildPaginationState = (pipelines: Pipelines[] = []): Record<string, Statu
   }, {})
 }
 
-const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_users, tags, sources, order_types, product_lines, filters, sort }: PageProps & { data: Pipelines[], statuses: string[], owners: OwnerOption[], supervisors: IdOption[], created_by_users: IdOption[], tags: TagOption[], sources: string[], order_types: string[], product_lines: string[], filters: BoardFilters, sort: { sort_by?: string, sort_dir?: string } }) => {
+const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_users, tags, sources, order_types, product_lines, filters, sort, board_title: boardTitle = 'Order Storage', index_route: indexRoute = 'order-storage.index', tasks_route: tasksRoute = 'order-storage.tasks', sortable_group: sortableGroup = 'order-storage', search_origin: searchOrigin = 'order_storage', show_create_order: showCreateOrder = false, show_esr_task_actions: showEsrTaskActions = false, order_view_route: orderViewRoute = 'frontdesk.order_view', can_reorder_orders: canReorderOrders = true }: PageProps & BoardConfigProps & { data: Pipelines[], statuses: string[], owners: OwnerOption[], supervisors: IdOption[], created_by_users: IdOption[], tags: TagOption[], sources: string[], order_types: string[], product_lines: string[], filters: BoardFilters, sort: { sort_by?: string, sort_dir?: string } }) => {
   const [pipelines, setPipelinesState] = useState<Pipelines[]>(() => data)
   const [statusPagination, setStatusPagination] = useState<Record<string, StatusPaginationState>>(() => buildPaginationState(data))
   const [isFilterOpen, setIsFilterOpen] = useState(false)
+  const [activityMenu, setActivityMenu] = useState<ActivityMenuState>(null)
+  const [deletingTaskId, setDeletingTaskId] = useState<number | null>(null)
+  const [esrEditModalOpen, setEsrEditModalOpen] = useState(false)
+  const [esrEditData, setEsrEditData] = useState<EsrEditData | null>(null)
+  const [esrEditInitialValues, setEsrEditInitialValues] = useState<OrderFormValues | null>(null)
+  const [esrEditError, setEsrEditError] = useState<string | null>(null)
+  const [pendingEsrStatusMove, setPendingEsrStatusMove] = useState<PendingEsrStatusMove>(null)
   const dragSnapshotRef = useRef<Pipelines[] | null>(null)
   const sortHydratedRef = useRef(false)
   const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? ''
+  const isEsrBoard = searchOrigin === 'esr_process'
   const appliedFilters = filters ?? {}
   const filterQueryParams = useMemo(() => buildFilterQuery(appliedFilters), [appliedFilters])
   const sortState = useMemo(() => normalizePipelineSort(sort), [sort])
@@ -262,8 +327,8 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
     if (!storedSort) return
     if (storedSort.sort_by === sortState.sort_by && storedSort.sort_dir === sortState.sort_dir) return
 
-    router.get(route('order-storage.index'), { ...filterQueryParams, ...storedSort }, { replace: true, preserveState: true, preserveScroll: true })
-  }, [filterQueryParams, hasSortInUrl, sortState.sort_by, sortState.sort_dir])
+    router.get(route(indexRoute), { ...filterQueryParams, ...storedSort }, { replace: true, preserveState: true, preserveScroll: true })
+  }, [filterQueryParams, hasSortInUrl, indexRoute, sortState.sort_by, sortState.sort_dir])
 
   useEffect(() => {
     if (!sortHydratedRef.current) return
@@ -271,12 +336,12 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
   }, [sortState.sort_by, sortState.sort_dir])
 
   const applySort = useCallback((nextSortBy: PipelineSortBy, nextSortDir: PipelineSortDir) => {
-    router.get(route('order-storage.index'), { ...filterQueryParams, sort_by: nextSortBy, sort_dir: nextSortDir }, {
+    router.get(route(indexRoute), { ...filterQueryParams, sort_by: nextSortBy, sort_dir: nextSortDir }, {
       replace: true,
       preserveState: true,
       preserveScroll: true
     })
-  }, [filterQueryParams])
+  }, [filterQueryParams, indexRoute])
 
   const updatePipelineTasks = (pipelineId: Pipelines['id'], tasks: Tasks[]) => {
     setPipelines((prev) =>
@@ -305,6 +370,126 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
         return { ...pipeline, tasks: nextTasks, total_tasks: nextTotal, total_project_amount: nextProjectAmount }
       })
     )
+  }
+
+  const toNull = (value: unknown) => {
+    if (value === '' || value === undefined) return null
+    return value
+  }
+
+  const openEsrEditModalForStatusMove = async (move: NonNullable<PendingEsrStatusMove>) => {
+    setEsrEditError(null)
+    setPendingEsrStatusMove(move)
+
+    try {
+      const response = await fetch(route('esr-process.orders.edit-data', { order: move.orderId }), {
+        headers: {
+          Accept: 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      })
+      const payload = await response.json().catch(() => null)
+
+      if (!response.ok || !payload?.order) {
+        throw new Error(payload?.message ?? 'Unable to load order edit form.')
+      }
+
+      const editData = payload as EsrEditData
+      setEsrEditData(editData)
+      setEsrEditInitialValues({
+        ...loadOrderFormObj(editData.order),
+        status: move.newStatus
+      })
+      setEsrEditModalOpen(true)
+    } catch (error) {
+      setPendingEsrStatusMove(null)
+      window.alert(error instanceof Error ? error.message : 'Unable to load order edit form.')
+    }
+  }
+
+  const applyPendingEsrStatusMove = (updatedOrder: Order) => {
+    if (!pendingEsrStatusMove) return
+
+    const { orderId, oldStatus, newStatus, task } = pendingEsrStatusMove
+    const nextTask: Tasks = stampTaskAsUpdated({
+      ...task,
+      title: updatedOrder.name ?? task.title,
+      project_amount: updatedOrder.project_amount ?? task.project_amount,
+      order_type: updatedOrder.order_type ?? task.order_type,
+      product_line: updatedOrder.product_line ?? task.product_line,
+      esr_design: updatedOrder.esr_design ?? task.esr_design,
+      esr_express: updatedOrder.esr_express ?? task.esr_express,
+      esr_reylos_glass: updatedOrder.esr_reylos_glass ?? task.esr_reylos_glass,
+      esr_service: updatedOrder.esr_service ?? task.esr_service
+    })
+
+    setPipelines(prev => prev.map(pipeline => {
+      const pipelineKey = pipeline.id?.toString() ?? pipeline.title ?? ''
+      const currentTasks = pipeline.tasks ?? []
+
+      if (pipelineKey === oldStatus) {
+        const removedTask = currentTasks.find(item => item.id === orderId)
+        return {
+          ...pipeline,
+          tasks: currentTasks.filter(item => item.id !== orderId),
+          total_tasks: Math.max(0, (pipeline.total_tasks ?? currentTasks.length) - (removedTask ? 1 : 0)),
+          total_project_amount: Math.max(0, getPipelineTotalProjectAmount(pipeline) - (removedTask ? toNumericAmount(removedTask.project_amount) : 0))
+        }
+      }
+
+      if (pipelineKey === newStatus) {
+        const alreadyExists = currentTasks.some(item => item.id === orderId)
+        const nextTasks = alreadyExists
+          ? currentTasks.map(item => item.id === orderId ? nextTask : item)
+          : [nextTask, ...currentTasks]
+        return {
+          ...pipeline,
+          tasks: nextTasks,
+          total_tasks: Math.max(0, (pipeline.total_tasks ?? currentTasks.length) + (alreadyExists ? 0 : 1)),
+          total_project_amount: getPipelineTotalProjectAmount(pipeline) + (alreadyExists ? 0 : toNumericAmount(nextTask.project_amount))
+        }
+      }
+
+      return pipeline
+    }))
+  }
+
+  const deleteEsrOrder = async (task: Tasks) => {
+    if (!showEsrTaskActions || deletingTaskId !== null) return
+    if (!window.confirm(`Are you sure you want to delete order "${task.title}"?`)) return
+
+    setDeletingTaskId(task.id)
+
+    try {
+      const response = await fetch(route('esr-process.destroy-order', { order: task.id }), {
+        method: 'DELETE',
+        headers: {
+          Accept: 'application/json',
+          'X-CSRF-TOKEN': csrfToken
+        }
+      })
+      const payload = await response.json().catch(() => null)
+
+      if (!response.ok) {
+        throw new Error(payload?.message ?? 'Unable to delete order.')
+      }
+
+      setPipelines(prev => prev.map(pipeline => {
+        const removedTask = pipeline.tasks.find(item => item.id === task.id)
+        if (!removedTask) return pipeline
+
+        return {
+          ...pipeline,
+          tasks: pipeline.tasks.filter(item => item.id !== task.id),
+          total_tasks: Math.max(0, (pipeline.total_tasks ?? pipeline.tasks.length) - 1),
+          total_project_amount: Math.max(0, getPipelineTotalProjectAmount(pipeline) - toNumericAmount(removedTask.project_amount))
+        }
+      }))
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : 'Unable to delete order.')
+    } finally {
+      setDeletingTaskId(null)
+    }
   }
 
   const updateOrderStatus = async (orderId: number, status: string, confirmCustomerRole = false): Promise<void> => {
@@ -337,6 +522,153 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
     }
   }
 
+  const handleEsrEditSubmit = async (values: OrderFormValues, helpers: FormikHelpers<OrderFormValues>) => {
+    if (!esrEditData) return
+
+    setEsrEditError(null)
+
+    try {
+      const payload: Record<string, any> = {
+        ...values,
+        company_contact_id: toNull(values.company_contact_id),
+        associate_company_contact_id_1: toNull(values.associate_company_contact_id_1),
+        associate_company_contact_id_2: toNull(values.associate_company_contact_id_2),
+        associate_client_id_1: toNull(values.associate_client_id_1),
+        associate_client_id_2: toNull(values.associate_client_id_2),
+        company_source_id: toNull(values.company_source_id),
+        associate_source_id_1: toNull(values.associate_source_id_1),
+        associate_source_id_2: toNull(values.associate_source_id_2),
+        source: typeof values.source === 'string' ? values.source : getValueIdNotNull(values.source)
+      }
+      const attachmentFiles = Array.isArray(values.attachments)
+        ? values.attachments.filter((attachment): attachment is File => attachment instanceof File)
+        : []
+      const note = String(values.notes ?? '').trim()
+      delete payload.attachments
+      if (note === '') {
+        delete payload.notes
+      } else {
+        payload.notes = note
+      }
+
+      const isCash = values.method_of_payment === PAYMENT_METHODS.CASH
+      const isCashAndFinanced = values.method_of_payment === PAYMENT_METHODS.CASH_AND_FINANCE
+      const requiresSchedule = isCash || isCashAndFinanced
+      const resolvedPaymentScheduleType = requiresSchedule
+        ? (isCashAndFinanced ? 'CUSTOMIZED' : (values.payment_schedule_type || null))
+        : null
+
+      payload.method_of_payment = values.method_of_payment || null
+      payload.type_of_financing = (values.method_of_payment === PAYMENT_METHODS.FINANCED || isCashAndFinanced)
+        ? (values.type_of_financing || null)
+        : null
+      payload.down_payment = isCashAndFinanced
+        ? (values.down_payment ?? null)
+        : null
+      payload.payment_schedule_type = resolvedPaymentScheduleType
+      payload.custom_schedule = requiresSchedule && resolvedPaymentScheduleType === 'CUSTOMIZED'
+        ? (values.custom_schedule ?? [])
+          .map((item: { label?: string, amount?: string | number }) => ({
+            label: String(item.label ?? '').trim(),
+            amount: Number(String(item.amount ?? '').replace(/,/g, ''))
+          }))
+          .filter((item: { label: string, amount: number }) => item.label !== '' && Number.isFinite(item.amount))
+        : []
+
+      const submitOrderEdit = async (forceDuplicate = false): Promise<any | null> => {
+        const response = await fetch(route('frontdesk.orders.update-qualified', { order: values.id }), {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+            'X-CSRF-TOKEN': csrfToken
+          },
+          body: JSON.stringify({
+            ...payload,
+            force_duplicate: forceDuplicate
+          })
+        })
+
+        const data = await response.json().catch(() => null)
+
+        if (response.status === 422) {
+          const duplicateMessageRaw = data?.errors?.[DUPLICATE_ORDER_ERROR_KEY]
+          const duplicateMessage = Array.isArray(duplicateMessageRaw)
+            ? duplicateMessageRaw[0]
+            : duplicateMessageRaw
+
+          if (!forceDuplicate && typeof duplicateMessage === 'string' && duplicateMessage.trim() !== '') {
+            const shouldContinue = window.confirm(duplicateMessage)
+            if (shouldContinue) {
+              return await submitOrderEdit(true)
+            }
+            return null
+          }
+
+          const formattedErrors: FormikErrors<OrderFormValues> = {}
+          Object.entries(data?.errors ?? {}).forEach(([field, messages]) => {
+            if (Array.isArray(messages) && messages.length > 0) {
+              formattedErrors[field as keyof OrderFormValues] = messages[0] as any
+            } else if (typeof messages === 'string') {
+              formattedErrors[field as keyof OrderFormValues] = messages as any
+            }
+          })
+          helpers.setErrors(formattedErrors)
+          setEsrEditError(data?.message ?? 'Please fix the highlighted fields.')
+          return null
+        }
+
+        if (!response.ok) {
+          throw new Error(data?.message ?? 'Failed to update order. Please try again later.')
+        }
+
+        return data
+      }
+
+      const data = await submitOrderEdit()
+      if (!data) return
+
+      let updatedOrder: Order | undefined = data?.order
+      if (!updatedOrder) {
+        throw new Error('Unexpected server response.')
+      }
+
+      if (attachmentFiles.length > 0) {
+        const attachmentFormData = new FormData()
+        attachmentFiles.forEach(file => attachmentFormData.append('attachments[]', file))
+        const attachmentResponse = await fetch(route('order.attachments.store', values.id), {
+          method: 'POST',
+          headers: {
+            Accept: 'application/json',
+            'X-CSRF-TOKEN': csrfToken
+          },
+          body: attachmentFormData
+        })
+        const attachmentData = await attachmentResponse.json().catch(() => null)
+
+        if (!attachmentResponse.ok) {
+          throw new Error(attachmentData?.message ?? 'Order was updated, but attachments could not be uploaded.')
+        }
+
+        const uploadedAttachments = Array.isArray(attachmentData?.attachments) ? attachmentData.attachments as Attachment[] : []
+        updatedOrder = {
+          ...updatedOrder,
+          attachments: uploadedAttachments
+        }
+      }
+
+      applyPendingEsrStatusMove(updatedOrder)
+      setEsrEditModalOpen(false)
+      setEsrEditData(null)
+      setEsrEditInitialValues(null)
+      setPendingEsrStatusMove(null)
+    } catch (error) {
+      setEsrEditError(error instanceof Error ? error.message : 'Unable to update order.')
+    } finally {
+      helpers.setSubmitting(false)
+    }
+  }
+
   const loadMoreTasks = useCallback(async (statusKey: string, nextPage: number) => {
     setStatusPagination(prev => ({
       ...prev,
@@ -344,7 +676,7 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
     }))
 
     try {
-      const response = await fetch(route('order-storage.tasks', { status: statusKey, page: nextPage, per_page: TASKS_PAGE_SIZE, ...filterQueryParams, ...sortQueryParams }), {
+      const response = await fetch(route(tasksRoute, { status: statusKey, page: nextPage, per_page: TASKS_PAGE_SIZE, ...filterQueryParams, ...sortQueryParams }), {
         headers: {
           Accept: 'application/json'
         }
@@ -401,7 +733,7 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
         }
       }))
     }
-  }, [setPipelines, setStatusPagination, filterQueryParams, sortQueryParams])
+  }, [setPipelines, setStatusPagination, filterQueryParams, sortQueryParams, tasksRoute])
 
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value)
@@ -410,7 +742,7 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
     <AuthenticatedCalendarLayout
       auth={auth}
       printPanel={false}
-      leftActions={<OrderGlobalSearch origin="order_storage" className="w-full max-w-[420px]" />}
+      leftActions={<OrderGlobalSearch origin={searchOrigin} className="w-full max-w-[420px]" />}
       actions={
         <div className="flex flex-wrap items-center gap-2">
           <OrderPipelineSort
@@ -426,10 +758,18 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
           >
             Filter
           </button>
+          {showCreateOrder && (
+            <Link
+              className="btn btn-primary"
+              href={route('esr-process.create-order')}
+            >
+              <span>Create Order</span>
+            </Link>
+          )}
         </div>
       }
     >
-      <Head title="Order Storage" />
+      <Head title={boardTitle} />
       {isFilterOpen && (
         <div
           className="fixed inset-0 z-40 bg-black/40"
@@ -459,11 +799,11 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
                 ...sortQueryParams,
                 ...(Array.isArray(params.filters) ? { filters: JSON.stringify(params.filters) } : {})
               }
-              router.get(route('order-storage.index'), payload, { replace: true, preserveState: true })
+              router.get(route(indexRoute), payload, { replace: true, preserveState: true })
               setIsFilterOpen(false)
             }}
             onReset={() => {
-              router.get(route('order-storage.index'), sortQueryParams, { replace: true, preserveState: false })
+              router.get(route(indexRoute), sortQueryParams, { replace: true, preserveState: false })
               setIsFilterOpen(false)
             }}
           />
@@ -518,7 +858,8 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
                     <ReactSortable<Tasks>
                       list={pipeline.tasks}
                       setList={(newState) => updatePipelineTasks(pipeline.id, newState as Tasks[])}
-                      group="order-storage"
+                      disabled={!canReorderOrders}
+                      group={sortableGroup}
                       animation={200}
                       onStart={() => {
                         dragSnapshotRef.current = clonePipelines(pipelines)
@@ -538,6 +879,39 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
                           const orderId = Number(movedTaskId)
                           if (!Number.isFinite(orderId)) {
                             dragSnapshotRef.current = null
+                            return
+                          }
+
+                          if (isEsrBoard && newStatus === 'PLANNED') {
+                            if (dragSnapshotRef.current) {
+                              setPipelines(dragSnapshotRef.current)
+                            }
+                            dragSnapshotRef.current = null
+                            return
+                          }
+
+                          if (
+                            isEsrBoard &&
+                            oldStatus === 'ACCOUNT RECEIPT' &&
+                            ['PRODUCTION', 'PRODUCTION SERVICES'].includes(newStatus)
+                          ) {
+                            const movedTask = pipelines
+                              .flatMap(pipeline => pipeline.tasks ?? [])
+                              .find(task => task.id === orderId)
+                            if (dragSnapshotRef.current) {
+                              setPipelines(dragSnapshotRef.current)
+                            }
+                            dragSnapshotRef.current = null
+                            if (!movedTask) {
+                              window.alert('Unable to load order from the pipeline.')
+                              return
+                            }
+                            await openEsrEditModalForStatusMove({
+                              orderId,
+                              oldStatus,
+                              newStatus,
+                              task: movedTask
+                            })
                             return
                           }
 
@@ -570,12 +944,42 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
                         const isCommercialOrder = task.order_type?.toLowerCase() === 'commercial'
                         const bidDueDateLabel = formatBidDueDate(task.bid_due_date)
                         const bidDuePast = isBidDuePast(task.bid_due_date)
-                        const showBidDueDate = Boolean(isCommercialOrder && bidDueDateLabel)
+                        const showBidDueDate = Boolean(isCommercialOrder && bidDueDateLabel && !isEsrBoard)
                         const bidDueBadgeClass = bidDuePast
                           ? 'bg-rose-100 text-rose-800 ring-rose-200'
                           : 'bg-emerald-100 text-emerald-800 ring-emerald-200'
                         const bidDueLabelClass = bidDuePast ? 'text-rose-600' : 'text-emerald-600'
                         const isVipClient = Boolean(task.vip_clients)
+                        const esrOptionBadges = [
+                          task.esr_design
+                            ? { label: 'Design', className: 'bg-emerald-100 text-emerald-800 ring-emerald-200' }
+                            : null,
+                          task.esr_express
+                            ? { label: 'EXPRESS', className: 'bg-yellow-100 text-yellow-800 ring-yellow-300' }
+                            : null,
+                          task.esr_reylos_glass
+                            ? { label: 'Reylos Glass', className: 'bg-blue-100 text-blue-800 ring-blue-200' }
+                            : null,
+                          task.esr_service
+                            ? { label: 'Service', className: 'bg-red-100 text-red-800 ring-red-200' }
+                            : null
+                        ].filter((badge): badge is { label: string, className: string } => Boolean(badge))
+                        const paymentBadge = (() => {
+                          if (!isEsrBoard) return null
+                          const scheduleType = String(task.payment_schedule_type ?? '').trim().toLowerCase()
+                          const methodOfPayment = String(task.method_of_payment ?? '').trim().toUpperCase()
+                          const isFullPayment = scheduleType === 'full payment'
+                          if (isFullPayment) {
+                            return { label: 'Full Payment', className: 'bg-emerald-100 text-emerald-800 ring-emerald-200' }
+                          }
+                          if (methodOfPayment === 'FINANCED') {
+                            return { label: 'Financed', className: 'bg-slate-200 text-slate-900 ring-slate-400' }
+                          }
+                          if (methodOfPayment === 'CASH' && !isFullPayment && task.has_payment_made) {
+                            return { label: 'Deposit', className: 'bg-rose-100 text-rose-800 ring-rose-200' }
+                          }
+                          return null
+                        })()
 
                         return (
                           <div className="sortable-list" key={task.id} data-id={task.id}>
@@ -591,19 +995,52 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
                                 </p>
                                 <div className="flex items-center gap-2 text-[11px]">
                                   <Link
-                                    href={route('frontdesk.order_view', task.id)}
+                                    href={route(orderViewRoute, orderViewRoute === 'esr-process.order-view' ? { id: task.id } : task.id)}
                                     title="Order View"
                                     className="flex items-center gap-1 hover:text-success"
                                   >
                                     <EyeIcon />
                                   </Link>
-                                  <button
-                                    onClick={() => {}}
-                                    type="button"
-                                    className="flex items-center gap-1 hover:text-info"
-                                  >
-                                    <EditIcon />
-                                  </button>
+                                  {showEsrTaskActions
+                                    ? (
+                                      <>
+                                        <button
+                                          type="button"
+                                          title="Add Activity"
+                                          className="flex h-5 w-5 items-center justify-center rounded-full text-base font-bold leading-none text-sky-600 hover:bg-sky-50 hover:text-sky-700"
+                                          onClick={(event) => {
+                                            event.preventDefault()
+                                            event.stopPropagation()
+                                            const position = activityMenuPosition(event.currentTarget)
+                                            setActivityMenu({ orderId: task.id, x: position.x, y: position.y })
+                                          }}
+                                        >
+                                          +
+                                        </button>
+                                        <button
+                                          type="button"
+                                          title="Delete Order"
+                                          disabled={deletingTaskId === task.id}
+                                          className="flex items-center gap-1 hover:text-danger disabled:cursor-not-allowed disabled:opacity-50"
+                                          onClick={(event) => {
+                                            event.preventDefault()
+                                            event.stopPropagation()
+                                            void deleteEsrOrder(task)
+                                          }}
+                                        >
+                                          <DeleteIcon className="h-4 w-4" />
+                                        </button>
+                                      </>
+                                      )
+                                    : (
+                                      <button
+                                        onClick={() => {}}
+                                        type="button"
+                                        className="flex items-center gap-1 hover:text-info"
+                                      >
+                                        <EditIcon />
+                                      </button>
+                                      )}
                                   <InfoTooltip
                                     side="left"
                                     width={220}
@@ -622,6 +1059,21 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
                               </div>
                               <div className="flex gap-2 items-center flex-wrap">
                                 <ProductLineBadge productLine={task.product_line} />
+                                {esrOptionBadges.map((badge) => (
+                                  <span
+                                    key={`${task.id}-esr-${badge.label}`}
+                                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ring-1 ${badge.className}`}
+                                  >
+                                    {badge.label}
+                                  </span>
+                                ))}
+                                {paymentBadge && (
+                                  <span
+                                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ring-1 ${paymentBadge.className}`}
+                                  >
+                                    {paymentBadge.label}
+                                  </span>
+                                )}
                                 {task.tags?.length
                                   ? (
                                       task.tags.map((tag, index) => (
@@ -707,6 +1159,70 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
           </div>
         </div>
       </div>
+      {activityMenu && (
+        <>
+          <button
+            type="button"
+            className="fixed inset-0 z-40 cursor-default bg-transparent"
+            aria-label="Close activity actions"
+            onClick={() => { setActivityMenu(null) }}
+          />
+          <div
+            className="fixed z-50 w-[180px] overflow-hidden rounded-md border border-slate-200 bg-white py-1 shadow-xl"
+            style={{ left: activityMenu.x, top: activityMenu.y }}
+          >
+            <Link
+              href={route('activities.index', { mode: 'event', order_id: activityMenu.orderId })}
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-sky-50 hover:text-sky-700"
+            >
+              <CalendarIcon />
+              Create Event
+            </Link>
+            <Link
+              href={route('activities.index', { mode: 'call', order_id: activityMenu.orderId })}
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-emerald-50 hover:text-emerald-700"
+            >
+              <PhoneIcon />
+              Log Call
+            </Link>
+          </div>
+        </>
+      )}
+      {esrEditData && esrEditInitialValues && (
+        <OrderEditModal
+          open={esrEditModalOpen}
+          initialValues={esrEditInitialValues}
+          onClose={() => {
+            setEsrEditModalOpen(false)
+            setEsrEditData(null)
+            setEsrEditInitialValues(null)
+            setEsrEditError(null)
+            setPendingEsrStatusMove(null)
+          }}
+          onSubmit={handleEsrEditSubmit}
+          clients={esrEditData.clients ?? []}
+          owners={esrEditData.owners ?? []}
+          status={esrEditData.statuses ?? []}
+          sources={esrEditData.sources ?? []}
+          order_types={esrEditData.order_types ?? []}
+          companies={esrEditData.companies ?? []}
+          sourcesClients={esrEditData.sources_clients ?? []}
+          frame_colors={esrEditData.frame_colors ?? []}
+          glass_colors={esrEditData.glass_colors ?? []}
+          glass_types={esrEditData.glass_types ?? []}
+          glass_coatings={esrEditData.glass_coatings ?? []}
+          languages={esrEditData.languages ?? []}
+          methodsOfPayment={esrEditData.methods_of_payment ?? []}
+          financingOptions={esrEditData.type_of_financing ?? []}
+          paymentScheduleTemplates={esrEditData.payment_schedule_templates ?? {}}
+          services={esrEditData.services ?? []}
+          showPaymentInformationSection
+          canManageOwners={true}
+          esrMode={isEsrBoard}
+          attachments={Array.isArray(esrEditData.order.attachments) ? esrEditData.order.attachments.filter((attachment): attachment is Attachment => !(attachment instanceof File)) : []}
+          errorMessage={esrEditError}
+        />
+      )}
     </AuthenticatedCalendarLayout>
   )
 }

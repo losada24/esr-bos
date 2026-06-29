@@ -62,10 +62,7 @@ class OrderSearchController extends Controller
 
         $restrictionContext = $module !== 'all' ? $module : $origin;
         if ($this->shouldRestrictOwner($request->user(), $restrictionContext)) {
-            $accessibleOwnerIds = $request->user()?->accessibleOwnerIds() ?? [];
-            $query->whereHas('owners', function (Builder $builder) use ($accessibleOwnerIds) {
-                $builder->whereIn('users.id', $accessibleOwnerIds);
-            });
+            $query->accessibleToOwner($request->user());
         }
 
         $like = '%' . $term . '%';
@@ -160,6 +157,26 @@ class OrderSearchController extends Controller
                 OrderStatusEnum::PRE_CONTRACT_APPOINTMENT->value,
                 OrderStatusEnum::CONTRACT_SIGNED_BY_CLIENT->value,
                 OrderStatusEnum::LOST_CONTRACT->value,
+            ],
+            'esr_process' => [
+                OrderStatusEnum::DEALER_REQUEST->value,
+                OrderStatusEnum::FOLLOW_UP_PROJECTS->value,
+                OrderStatusEnum::REVIEW->value,
+                OrderStatusEnum::ACCOUNT_RECEIPT->value,
+                OrderStatusEnum::PLANNED->value,
+                OrderStatusEnum::PRODUCTION->value,
+                OrderStatusEnum::PRODUCTION_SERVICES->value,
+                OrderStatusEnum::PRE_COORDINATION_ACCOUNTING->value,
+                OrderStatusEnum::PENDING_MAT_REYLOS->value,
+                OrderStatusEnum::PENDING_MATERIALS->value,
+                OrderStatusEnum::PENDING_MATERIALS_EWS->value,
+                OrderStatusEnum::MATERIAL_ORDER_COMPLETED->value,
+                OrderStatusEnum::STORAGE_MATERIAL->value,
+                OrderStatusEnum::MATERIALS_PICK_UP_OR_DELIVERED->value,
+                OrderStatusEnum::PENDING_PAYMENT->value,
+                OrderStatusEnum::PENDING_MATCH->value,
+                OrderStatusEnum::COMPLETE->value,
+                OrderStatusEnum::LOST->value,
             ],
             'order_processing' => [
                 OrderStatusEnum::RECTIFICATION_OF_MEASURES_AND_HOA->value,

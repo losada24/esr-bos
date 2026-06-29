@@ -36,8 +36,14 @@ export interface Tasks {
   job_zip?: string | null
   method_of_payment?: string | null
   type_of_financing?: string | null
+  payment_schedule_type?: string | null
+  has_payment_made?: boolean
   order_type?: string | null
   product_line?: string | null
+  esr_design?: boolean
+  esr_express?: boolean
+  esr_reylos_glass?: boolean
+  esr_service?: boolean
   bid_due_date?: string | null
   vip_clients?: boolean
   order_company_contacts?: Array<{

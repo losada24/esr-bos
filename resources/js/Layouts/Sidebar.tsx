@@ -37,9 +37,11 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
   const IS_PAYMENT_COORDINATOR = isPaymentCoordinator(roleNames)
   const IS_OWNER_ADMIN = isOwnerAdmin(roleNames)
   const IS_FRONTDESK_ESR = isFrontdeskEsr(roleNames)
+  const IS_RESTRICTED_OWNER = IS_OWNER && !IS_ADMIN && !IS_ACCOUNT_MANAGER && !IS_OWNER_ADMIN && !IS_FRONTDESK_ADMIN
   const CAN_VIEW_FRONTDESK_PIPELINE = IS_ADMIN || IS_FRONTDESK || IS_OWNER_ADMIN || IS_FRONTDESK_ADMIN || IS_FRONTDESK_ESR
   const CAN_VIEW_FRONTDESK_CONTACTS = CAN_VIEW_FRONTDESK_PIPELINE || IS_ACCOUNT_MANAGER
-  const CAN_VIEW_FRONTDESK_SECTION = CAN_VIEW_FRONTDESK_PIPELINE || CAN_VIEW_FRONTDESK_CONTACTS
+  const CAN_VIEW_ESR_PROCESS = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_ACCOUNTING || IS_OWNER_ADMIN || IS_FRONTDESK_ADMIN || IS_FRONTDESK_ESR
+  const CAN_VIEW_FRONTDESK_SECTION = CAN_VIEW_FRONTDESK_PIPELINE || CAN_VIEW_FRONTDESK_CONTACTS || CAN_VIEW_ESR_PROCESS
   const CAN_VIEW_REPORT_SUPERVISOR = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SUPERVISOR || IS_SERVICE_MANAGER
   const CAN_VIEW_REPORT_INSTALLER = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER || IS_PAYMENT_COORDINATOR
   const CAN_VIEW_BIWEEKLY = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_PAYMENT_COORDINATOR
@@ -61,10 +63,10 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
   const CAN_VIEW_ORDER_STORAGE = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_ACCOUNTING || HAS_FRONTDESK_ADMIN_ROLE
   const CAN_VIEW_SERVICE_CONTROL = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER
   const CAN_VIEW_SERVICE_CALENDAR = CAN_VIEW_SERVICE_CONTROL || IS_SERVICE
-  const CAN_VIEW_ACTIVITIES = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_FRONTDESK || IS_OWNER || IS_OWNER_ADMIN || HAS_FRONTDESK_ADMIN_ROLE || IS_SUPERVISOR
+  const CAN_VIEW_ACTIVITIES = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_FRONTDESK || IS_OWNER || IS_OWNER_ADMIN || HAS_FRONTDESK_ADMIN_ROLE || IS_FRONTDESK_ESR || IS_SUPERVISOR
   const IS_SERVICE_ONLY = IS_SERVICE && !IS_ADMIN && !IS_ACCOUNT_MANAGER && !IS_ACCOUNTING && !IS_FRONTDESK && !IS_FRONTDESK_ADMIN && !IS_OWNER && !IS_SUPERVISOR && !IS_SERVICE_MANAGER && !IS_PAYMENT_COORDINATOR && !IS_OWNER_ADMIN && !IS_FRONTDESK_ESR
   const CAN_VIEW_MY_REFERRED_CLIENTS = !IS_SERVICE_ONLY
-  const CAN_VIEW_ADMINISTRATION = IS_ADMIN || IS_ACCOUNT_MANAGER || CAN_VIEW_MY_REFERRED_CLIENTS
+  const CAN_VIEW_ADMINISTRATION = IS_ADMIN || IS_ACCOUNT_MANAGER
   const CAN_VIEW_REPORTS = CAN_VIEW_REPORT_SUPERVISOR
     || CAN_VIEW_REPORT_INSTALLER
     || CAN_VIEW_BIWEEKLY
@@ -106,6 +108,30 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                     <PerfectScrollbar className="h-[calc(100vh-80px)] relative">
                       <ul className="relative font-semibold space-y-0.5 p-4 py-0">
 
+                          {IS_RESTRICTED_OWNER && (
+                            <>
+                              <h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">
+                                <span>My Work</span>
+                              </h2>
+                              <li className="menu nav-item">
+                                <NavLink href={route('client.index')} active={route().current('client.*')} className="group">
+                                  <div className="flex items-center">
+                                    <ReferralIcon />
+                                    <SidebarLinkLabel>My Contacts</SidebarLinkLabel>
+                                  </div>
+                                </NavLink>
+                              </li>
+                              <li className="menu nav-item">
+                                <NavLink href={route('esr-process.index')} active={route().current('esr-process.*')} className="group">
+                                  <div className="flex items-center">
+                                    <FolderIcon />
+                                    <SidebarLinkLabel>My ESR Orders</SidebarLinkLabel>
+                                  </div>
+                                </NavLink>
+                              </li>
+                            </>
+                          )}
+
                           {CAN_VIEW_FRONTDESK_SECTION && (
                               <>
                               <h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">
@@ -145,6 +171,16 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                           <SidebarLinkLabel>Company</SidebarLinkLabel>
                                       </div>
                                   </NavLink>
+                              </li>
+                            )}
+                            {CAN_VIEW_ESR_PROCESS && (
+                              <li className="menu nav-item">
+                                <NavLink href={route('esr-process.index')} active={route().current('esr-process.*')} className="group">
+                                  <div className="flex items-center">
+                                    <CodeIcon />
+                                    <SidebarLinkLabel>ESR PROCESS</SidebarLinkLabel>
+                                  </div>
+                                </NavLink>
                               </li>
                             )}
                             {SHOW_HIDDEN_SIDEBAR_MODULES && CAN_VIEW_FRONTDESK_PIPELINE && (
@@ -288,16 +324,6 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                     </div>
                                 </NavLink>
                               </li>
-                             {(IS_SUPERVISOR || IS_OWNER) && (
-                                <li className="menu nav-item">
-                                      <NavLink href={route('report.show-supervisor-report', { id: auth.user.id })} active={route().current('report.show-supervisor-report')} className="group">
-                                          <div className="flex items-center">
-                                              <ReferralIcon/>
-                                              <SidebarLinkLabel>My Orders</SidebarLinkLabel>
-                                          </div>
-                                      </NavLink>
-                                </li>
-                              )}
                               {HAS_FRONTDESK_ADMIN_ROLE && (
                                 <li className="menu nav-item">
                                   <NavLink href={route('order.index')} active={route().current('order.index')} className="group">
