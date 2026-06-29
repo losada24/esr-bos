@@ -80,6 +80,14 @@ class User extends Authenticatable
         });
     }
 
+    public function scopeAssignableOrderOwner(Builder $query): Builder
+    {
+        return $query->role([
+            RoleEnum::OWNER->value,
+            RoleEnum::OWNER_ADMIN->value,
+        ]);
+    }
+
     public function clients(): HasMany
     {
         return $this->hasMany(Client::class);

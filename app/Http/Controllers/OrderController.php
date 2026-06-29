@@ -118,7 +118,7 @@ class OrderController extends Controller
       'clients' => Client::with(['companyContact:id,name,email'])->get(),
       'type_of_works' => TypeOfWork::all(),
       'types_of_housing' => TypeOfHousing::all(),
-      'owners' => User::role(RoleEnum::OWNER->value)
+      'owners' => User::assignableOrderOwner()
         ->where('status', StatusUserEnum::ACTIVE->value)
         ->get(),
       'installation_teams' => InstallationTeam::with(['user', 'typeHousing'])
@@ -396,7 +396,7 @@ class OrderController extends Controller
       /*'owners' => User::role(RoleEnum::OWNER->value)->get(),
       'installation_teams' => InstallationTeam::with(['user', 'typeHousing'])->get(),
       'supervisors' => User::role(RoleEnum::SUPERVISOR->value)->get(),*/
-      'owners' => User::role(RoleEnum::OWNER->value)
+      'owners' => User::assignableOrderOwner()
         ->where('status', StatusUserEnum::ACTIVE->value)
         ->get(),
       'installation_teams' => InstallationTeam::with(['user', 'typeHousing'])

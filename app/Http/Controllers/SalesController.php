@@ -144,7 +144,7 @@ class SalesController extends Controller
         ];
     });
 
-      $ownerOptions = User::role(RoleEnum::OWNER->value)
+      $ownerOptions = User::assignableOrderOwner()
           ->select('id', 'name')
           ->where('status', StatusUserEnum::ACTIVE->value)
           ->orderBy('name');
@@ -727,7 +727,7 @@ class SalesController extends Controller
 
   private function ownerListForCalendar(?User $user): Collection
   {
-    $ownerQuery = User::role(RoleEnum::OWNER->value)
+    $ownerQuery = User::assignableOrderOwner()
       ->select('id', 'name')
       ->where('status', StatusUserEnum::ACTIVE->value)
       ->orderBy('name');
@@ -741,7 +741,7 @@ class SalesController extends Controller
 
   private function ownerListForCalendarAll(?User $user): Collection
   {
-    $ownerQuery = User::role(RoleEnum::OWNER->value)
+    $ownerQuery = User::assignableOrderOwner()
       ->select('id', 'name', 'status')
       ->orderBy('name');
 
@@ -850,7 +850,7 @@ class SalesController extends Controller
   {
     return Inertia::render('Frontdesk/Create', [
       'clients' => Client::all(),
-      'owners' => User::role(RoleEnum::OWNER->value)
+      'owners' => User::assignableOrderOwner()
         ->where('status', StatusUserEnum::ACTIVE->value)
         ->get(),
       'status' => [

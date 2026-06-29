@@ -53,7 +53,7 @@ class CreateUser {
 
       $delegatedOwnerIds = [];
       if (in_array(RoleEnum::OWNER->value, $selectedRoleNames, true)) {
-        $delegatedOwnerIds = User::role(RoleEnum::OWNER->value)
+        $delegatedOwnerIds = User::assignableOrderOwner()
           ->whereIn('id', collect($request->input('delegated_owner_ids', []))
             ->map(fn ($ownerId) => (int) $ownerId)
             ->filter(fn (int $ownerId) => $ownerId > 0 && $ownerId !== (int) $user->id)

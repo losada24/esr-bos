@@ -95,7 +95,7 @@ class EsrProcessController extends OrderStorageController
             ->orderBy('name')
             ->get();
 
-        $owners = User::role(RoleEnum::OWNER->value)
+        $owners = User::assignableOrderOwner()
             ->select('id', 'name')
             ->where('status', StatusUserEnum::ACTIVE->value)
             ->when(
@@ -165,7 +165,7 @@ class EsrProcessController extends OrderStorageController
 
     public function create(): Response
     {
-        $owners = User::role(RoleEnum::OWNER->value)
+        $owners = User::assignableOrderOwner()
             ->select('id', 'name')
             ->where('status', StatusUserEnum::ACTIVE->value)
             ->when(
@@ -595,7 +595,7 @@ class EsrProcessController extends OrderStorageController
             ->unique()
             ->values();
 
-        $validOwnerIds = User::role(RoleEnum::OWNER->value)
+        $validOwnerIds = User::assignableOrderOwner()
             ->where('status', StatusUserEnum::ACTIVE->value)
             ->whereIn('id', $ownerIds)
             ->pluck('id')
@@ -604,7 +604,7 @@ class EsrProcessController extends OrderStorageController
 
         if ($validOwnerIds->count() !== $ownerIds->count()) {
             throw ValidationException::withMessages([
-                'owner_ids' => 'Select only active users with the owner role.',
+                'owner_ids' => 'Select only active users with the owner or owner admin role.',
             ]);
         }
 
