@@ -7,6 +7,8 @@ export interface Tasks {
   status_created_at_iso?: string | null
   follow_up_started_at_iso?: string | null
   is_supply?: boolean
+  is_parent_order?: boolean
+  child_orders_count?: number
   tags: Array<{ name: string, color: string }>
   schedule_appointment: string | null
   schedule_appointment_iso?: string | null

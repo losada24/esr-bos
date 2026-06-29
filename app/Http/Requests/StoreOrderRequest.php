@@ -34,6 +34,7 @@ class StoreOrderRequest extends FormRequest
         $normalize('type_of_housing_id');
         $normalize('travel_cost_id');
         $normalize('duration_of_work_id');
+        $normalize('parent_order_id');
 
         if ($this->input('order_type') === '') {
             $this->merge(['order_type' => null]);
@@ -95,6 +96,7 @@ class StoreOrderRequest extends FormRequest
             'vip_clients' => 'boolean',
             'vip_notes' => 'nullable|string|max:1000',
             'name' => 'required|string|max:255',
+            'parent_order_id' => ['nullable', 'integer', Rule::exists('orders', 'id')],
             //'order_number' => 'required|integer',
             'order_number' => 'required|string|max:255',
             'invoice_number' => 'nullable|string|max:255',

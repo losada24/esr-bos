@@ -621,6 +621,14 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
                                 </div>
                               </div>
                               <div className="flex gap-2 items-center flex-wrap">
+                                {task.is_parent_order && (
+                                  <span
+                                    className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide ring-1 bg-fuchsia-600 text-white ring-fuchsia-700 shadow-sm"
+                                    title={task.child_orders_count ? `${task.child_orders_count} linked split order${task.child_orders_count === 1 ? '' : 's'}` : undefined}
+                                  >
+                                    Owner Commission Order
+                                  </span>
+                                )}
                                 <ProductLineBadge productLine={task.product_line} />
                                 {task.tags?.length
                                   ? (

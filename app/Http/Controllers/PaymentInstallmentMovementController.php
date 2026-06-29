@@ -226,7 +226,9 @@ class PaymentInstallmentMovementController extends Controller
 
     private function remainingScheduleCapacity(PaymentInstallment $installment): float
     {
-        $schedule = $installment->schedule()->first();
+        $schedule = $installment->schedule()
+            ->with('order.changeOrderPayment')
+            ->first();
         if (!$schedule) {
             throw ValidationException::withMessages([
                 'amount' => 'Payment schedule not found for this installment.',
@@ -234,6 +236,11 @@ class PaymentInstallmentMovementController extends Controller
         }
 
         $scheduleTotal = round((float) $schedule->total_amount, 2);
+        $changeOrderAmount = round((float) ($schedule->order?->changeOrderPayment?->amount ?? 0), 2);
+        if ($changeOrderAmount < 0) {
+            $scheduleTotal = max(0, round($scheduleTotal + $changeOrderAmount, 2));
+        }
+
         $paidTotal = (float) PaymentInstallmentMovement::query()
             ->whereHas('installment', function ($query) use ($schedule) {
                 $query->where('payment_schedule_id', $schedule->id);

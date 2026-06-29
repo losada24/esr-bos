@@ -17,6 +17,7 @@ use App\Models\SupervisorComissionOrder;
 use App\Support\OrderClientEmailDeliveryLogger;
 use App\Support\OrderClientEmailManager;
 use App\Support\OrderFinancialEventLogger;
+use App\Support\Orders\OrderSplitResolver;
 use App\Support\PaymentScheduleCalculator;
 use App\Support\PaymentScheduleTemplates;
 use App\Traits\ComissionSupervisor;
@@ -32,7 +33,8 @@ class CreateOrder
 
   public function __construct(
     protected OrderClientEmailManager $orderClientEmailManager,
-    protected OrderClientEmailDeliveryLogger $orderClientEmailDeliveryLogger
+    protected OrderClientEmailDeliveryLogger $orderClientEmailDeliveryLogger,
+    protected OrderSplitResolver $orderSplitResolver
   ) {
   }
  
@@ -105,9 +107,15 @@ class CreateOrder
       $typeOfHousingId = $request->type_of_housing_id ?: null;
       $travelCostId = $request->travel_cost_id ?: null;
       $durationOfWorkId = $request->duration_of_work_id ?: null;
+      $splitFields = $this->orderSplitResolver->resolve(
+        $request->filled('parent_order_id') ? (int) $request->parent_order_id : null
+      );
 
       $order = Order::create([
         'client_id' => $client->id,
+        'parent_order_id' => $splitFields['parent_order_id'],
+        'root_order_id' => $splitFields['root_order_id'],
+        'counts_for_owner_commission' => $splitFields['counts_for_owner_commission'],
         'user_id' => auth()->user()->id,
         'name' => $request->name,
         'job_address' => $request->job_address,

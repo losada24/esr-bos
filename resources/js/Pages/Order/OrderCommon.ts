@@ -81,10 +81,12 @@ export type OrderFormValues = Omit<Order, 'installation_date' | 'delivery_date' 
   change_order_amount?: number | null
   change_order_note?: string
   attachment_role_targets?: Record<string, number[]>
+  parent_order_id?: number | null
 }
 
 export const orderFormObj: OrderFormValues = {
   id: 0,
+  parent_order_id: null,
   last_name: '',
   client_name: '',
   phone: '',
@@ -192,6 +194,7 @@ export const loadOrderFormObj = (order: Order): OrderFormValues => {
 
   return {
     id: order.id,
+    parent_order_id: order.parent_order_id ?? null,
     client: order.client,
     last_name: order.client?.last_name ?? '',
     client_name: order.client?.name ?? '',

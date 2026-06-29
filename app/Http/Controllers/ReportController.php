@@ -2183,7 +2183,8 @@ class ReportController extends Controller
     $qualifiedOrdersInRange = DB::table('order_status')
       ->join('orders', function ($join) {
         $join->on('orders.id', '=', 'order_status.order_id')
-          ->whereNull('orders.deleted_at');
+          ->whereNull('orders.deleted_at')
+          ->where('orders.counts_for_owner_commission', true);
       })
       ->where('order_status.status', OrderStatusEnum::QUALIFIED->value)
       ->whereBetween('order_status.created_at', [$startDate, $endDate])
@@ -2604,6 +2605,7 @@ class ReportController extends Controller
         $join->on('closed_won_orders.order_id', '=', 'orders.id');
       })
       ->whereNull('orders.deleted_at')
+      ->where('orders.counts_for_owner_commission', true)
       ->select(
         'users.id as owner_id',
         'users.name as owner_name',
@@ -2624,6 +2626,7 @@ class ReportController extends Controller
       })
       ->join('orders', 'orders.id', '=', 'owner_assignments.order_id')
       ->whereNull('orders.deleted_at')
+      ->where('orders.counts_for_owner_commission', true)
       ->count();
 
     $totalEstimatedClients = DB::query()
@@ -2633,6 +2636,7 @@ class ReportController extends Controller
       })
       ->join('orders', 'orders.id', '=', 'owner_assignments.order_id')
       ->whereNull('orders.deleted_at')
+      ->where('orders.counts_for_owner_commission', true)
       ->whereRaw($estimatedCondition)
       ->count();
 
@@ -2643,6 +2647,7 @@ class ReportController extends Controller
       })
       ->join('orders', 'orders.id', '=', 'owner_assignments.order_id')
       ->whereNull('orders.deleted_at')
+      ->where('orders.counts_for_owner_commission', true)
       ->whereRaw($estimatedCondition)
       ->select(DB::raw('SUM(' . $amountExpression . ') as total_estimate_amount'))
       ->value('total_estimate_amount') ?? 0;
@@ -2657,6 +2662,7 @@ class ReportController extends Controller
         $join->on('closed_won_orders.order_id', '=', 'orders.id');
       })
       ->whereNull('orders.deleted_at')
+      ->where('orders.counts_for_owner_commission', true)
       ->whereRaw($estimatedCondition)
       ->count();
 
@@ -2670,6 +2676,7 @@ class ReportController extends Controller
         $join->on('closed_won_orders.order_id', '=', 'orders.id');
       })
       ->whereNull('orders.deleted_at')
+      ->where('orders.counts_for_owner_commission', true)
       ->whereRaw($estimatedCondition)
       ->select(DB::raw('SUM(' . $amountExpression . ') as total_closed_won_amount'))
       ->value('total_closed_won_amount') ?? 0;
