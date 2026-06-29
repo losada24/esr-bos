@@ -8,12 +8,12 @@
 <table>
     <thead>
         <tr>
-            <td colspan="20" style="font-weight: bold; font-size: 16px; text-align: left; background-color: #f0f0f0;">
+            <td colspan="21" style="font-weight: bold; font-size: 16px; text-align: left; background-color: #f0f0f0;">
                 Commission Period {{ $period['label'] }} ({{ $period['start_date'] }} to {{ $period['end_date'] }})
             </td>
         </tr>
         <tr>
-            <td colspan="20" style="font-weight: bold;">
+            <td colspan="21" style="font-weight: bold;">
                 Status: {{ $period['status'] }} |
                 Closed At: {{ $period['closed_at'] ?? '-' }} |
                 Payments: {{ $summary['payments_count'] ?? 0 }} |
@@ -25,7 +25,7 @@
         </tr>
         @if ($selectedBeneficiary)
             <tr>
-                <td colspan="20" style="font-weight: bold;">
+                <td colspan="21" style="font-weight: bold;">
                     Beneficiary Filter: {{ $selectedBeneficiary['beneficiary_name'] ?? '-' }}
                     ({{ $selectedBeneficiary['beneficiary_relation'] ?? '-' }})
                 </td>
@@ -35,6 +35,7 @@
         <tr>
             <th>Accounting Status</th>
             <th>Order</th>
+            <th>Owner</th>
             <th>Commission</th>
             <th>#Invoice</th>
             <th>Beneficiary</th>
@@ -60,6 +61,7 @@
             <tr>
                 <td>{{ $payment['accounting_status'] ?? '-' }}</td>
                 <td>{{ $payment['order']['name'] ?? '-' }}</td>
+                <td>{{ !empty($payment['order']['owners']) ? implode(', ', $payment['order']['owners']) : '-' }}</td>
                 <td>#{{ $payment['commission']['id'] ?? '-' }}</td>
                 <td>{{ $payment['order']['invoice_number'] ?? (($payment['order']['order_number'] ?? null) ? '#' . $payment['order']['order_number'] : '-') }}</td>
                 <td>{{ $payment['commission']['beneficiary_name'] ?? '-' }}</td>
@@ -81,7 +83,7 @@
             </tr>
         @empty
             <tr>
-                <td colspan="20">No payments snapshot available for this period.</td>
+                <td colspan="21">No payments snapshot available for this period.</td>
             </tr>
         @endforelse
     </tbody>

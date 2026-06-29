@@ -70,12 +70,12 @@
 <table>
     <thead>
         <tr>
-            <td class="header" colspan="18">
+            <td class="header" colspan="19">
                 Commission Period {{ $period['label'] }} ({{ $period['start_date'] }} to {{ $period['end_date'] }})
             </td>
         </tr>
         <tr class="meta">
-            <td colspan="18">
+            <td colspan="19">
                 Status: {{ $period['status'] }} |
                 Closed At: {{ $period['closed_at'] ?? '-' }} |
                 Payments: {{ $summary['payments_count'] ?? 0 }} |
@@ -87,7 +87,7 @@
         </tr>
         @if ($selectedBeneficiary)
             <tr class="meta">
-                <td colspan="18">
+                <td colspan="19">
                     Beneficiary Filter: {{ $selectedBeneficiary['beneficiary_name'] ?? '-' }}
                     ({{ $selectedBeneficiary['beneficiary_relation'] ?? '-' }})
                 </td>
@@ -96,6 +96,7 @@
         <tr>
             <th>Accounting Status</th>
             <th>Order</th>
+            <th>Owner</th>
             <th>#Invoice</th>
             <th>Beneficiary</th>
             <th>Project Payment Method</th>
@@ -122,8 +123,9 @@
                 </td>
                 <td>
                     <div>{{ $payment['order']['name'] ?? '-' }}</div>
-                    <div>{{ ($payment['order']['status'] ?? '-') . ' · ' . (!empty($payment['order']['owners']) ? implode(', ', $payment['order']['owners']) : '-') }}</div>
+                    <div>{{ $payment['order']['status'] ?? '-' }}</div>
                 </td>
+                <td>{{ !empty($payment['order']['owners']) ? implode(', ', $payment['order']['owners']) : '-' }}</td>
                 <td>{{ $payment['order']['invoice_number'] ?? (($payment['order']['order_number'] ?? null) ? '#' . $payment['order']['order_number'] : '-') }}</td>
                 <td>
                     <div>{{ $payment['commission']['beneficiary_name'] ?? '-' }}</div>
@@ -146,13 +148,13 @@
             </tr>
         @empty
             <tr>
-                <td colspan="18">No payments snapshot available for this period.</td>
+                <td colspan="19">No payments snapshot available for this period.</td>
             </tr>
         @endforelse
     </tbody>
     <tfoot>
         <tr class="meta">
-            <td colspan="5" style="text-align: right;">Total</td>
+            <td colspan="6" style="text-align: right;">Total</td>
             <td>{{ '$' . number_format((float) collect($payments)->sum(fn ($payment) => (float) ($payment['order']['project_amount'] ?? 0)), 2, '.', ',') }}</td>
             <td>{{ '$' . number_format((float) collect($payments)->sum(fn ($payment) => (float) ($payment['commission']['fee_amount_snapshot'] ?? 0)), 2, '.', ',') }}</td>
             <td>{{ '$' . number_format((float) collect($payments)->sum(fn ($payment) => (float) ($payment['commission']['base_amount_snapshot'] ?? 0)), 2, '.', ',') }}</td>

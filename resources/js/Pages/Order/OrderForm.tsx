@@ -47,6 +47,7 @@ const ATTACHMENT_ROLE_OPTIONS = [
 type AttachmentRoleKey = typeof ATTACHMENT_ROLE_OPTIONS[number]['key']
 type AttachmentRoleTargets = Record<AttachmentRoleKey, number[]>
 type PendingAttachment = Attachment | File
+type ParentOrderOption = { id: number, order_number: string | number, name: string, status?: string }
 
 const buildEmptyAttachmentRoleTargets = (): AttachmentRoleTargets => ({
   supervisor: [],
@@ -257,6 +258,7 @@ const OrderForm = ({
   type_of_financing,
   statusPaymentInstaller,
   extraWorks,
+  parent_order_options = [],
   order_colors,
   showWorkTeamNotes = true
 }: {
@@ -290,12 +292,17 @@ const OrderForm = ({
   statusPaymentInstaller: string
   type_of_financing: string[]
   extraWorks: Array<{ id: number, name: string }>
+  parent_order_options?: ParentOrderOption[]
   showWorkTeamNotes?: boolean
 }) => {
   const jobAddressInputRef = useRef<HTMLInputElement | null>(null)
   const autocompleteInstanceRef = useRef<google.maps.places.Autocomplete | null>(null)
   const autocompleteListenerRef = useRef<google.maps.MapsEventListener | null>(null)
   const geocoderRef = useRef<google.maps.Geocoder | null>(null)
+  const parentOrderSelectOptions = parent_order_options.map((order) => ({
+    label: `${order.order_number} - ${order.name}${order.status ? ` (${order.status})` : ''}`,
+    value: order.id
+  }))
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
     googleMapsApiKey: GOOGLE_MAPS_API_KEY,
@@ -1311,6 +1318,21 @@ const OrderForm = ({
                   {statusPaymentInstaller}
                 </span>
               </div>
+          <div className={submitCount ? (errors.parent_order_id) ? 'has-error mb-4' : 'has-success mb-4' : 'mb-4'}>
+            <label htmlFor="parent_order_id">Split From Parent Order</label>
+            <Select
+              id="parent_order_id"
+              name="parent_order_id"
+              placeholder="Select parent order only if this order is split from another"
+              isClearable
+              value={parentOrderSelectOptions.find((option) => option.value === Number(values.parent_order_id)) ?? null}
+              onChange={(value) => {
+                setFieldValue('parent_order_id', value ? value.value : null)
+              }}
+              options={parentOrderSelectOptions}
+            />
+            {(submitCount && errors.parent_order_id) ? <InputError message={String(errors.parent_order_id)} className="mt-2" /> : ''}
+          </div>
           <div className='grid gap-4 grid-cols-4'>
             <div className={submitCount ? (errors.order_type) ? 'has-error' : 'has-success' : ''}>
               <label htmlFor="order_type">Order Type</label>

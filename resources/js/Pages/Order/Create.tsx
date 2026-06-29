@@ -43,6 +43,7 @@ export default function Create ({
   type_of_financing,
   statusPaymentInstaller,
   extraWorks,
+  parent_order_options,
   defaultService,
   pageTitle
 }: PageProps & {
@@ -68,6 +69,7 @@ export default function Create ({
   type_of_financing: string[]
   statusPaymentInstaller: string
   extraWorks: Array<{ id: number, name: string }>
+  parent_order_options: Array<{ id: number, order_number: string | number, name: string, status?: string }>
   defaultService?: string
   pageTitle?: string
 }) {
@@ -177,6 +179,7 @@ export default function Create ({
                 type_of_financing={type_of_financing}
                 statusPaymentInstaller={statusPaymentInstaller}
                 extraWorks={extraWorks}
+                parent_order_options={parent_order_options}
                 order_colors={[]} // Assuming frame_colors are used for order colors
 
               />

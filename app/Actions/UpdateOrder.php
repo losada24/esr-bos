@@ -20,6 +20,7 @@ use App\Support\OrderClientEmailManager;
 use App\Support\OrderOwnerChangeNotifier;
 use App\Support\OrderPaymentInformationAuditLogger;
 use App\Support\Commissions\CommissionCalculator;
+use App\Support\Orders\OrderSplitResolver;
 use App\Support\PaymentScheduleCalculator;
 use App\Support\PaymentScheduleTemplates;
 use App\Traits\ComissionSupervisor;
@@ -51,7 +52,8 @@ class UpdateOrder
     protected OrderOwnerChangeNotifier $orderOwnerChangeNotifier,
     protected OrderClientEmailManager $orderClientEmailManager,
     protected OrderClientEmailDeliveryLogger $orderClientEmailDeliveryLogger,
-    protected CommissionCalculator $commissionCalculator
+    protected CommissionCalculator $commissionCalculator,
+    protected OrderSplitResolver $orderSplitResolver
   ) {
   }
 
@@ -204,8 +206,15 @@ class UpdateOrder
       //dd($request->pending_collect);
       $sendEmail = $status != $order->status;
       //dd($sendEmail,$status,$order->status);
+      $splitFields = $this->orderSplitResolver->resolve(
+        $request->filled('parent_order_id') ? (int) $request->parent_order_id : null,
+        $order
+      );
       $orderData = [
         'client_id' => $clientId,
+        'parent_order_id' => $splitFields['parent_order_id'],
+        'root_order_id' => $splitFields['root_order_id'],
+        'counts_for_owner_commission' => $splitFields['counts_for_owner_commission'],
         'user_id' => auth()->user()->id,
         'name' => $request->name,
         'job_address' => $request->job_address,

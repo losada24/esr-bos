@@ -252,6 +252,9 @@ const formatDateForInput = (date: Date): string => {
 
 const round2 = (value: number): number => Math.round((value + Number.EPSILON) * 100) / 100
 
+const resolveEffectiveScheduleTotal = (scheduleTotal: number, changeOrderAmount: number): number =>
+  changeOrderAmount < 0 ? Math.max(0, round2(scheduleTotal + changeOrderAmount)) : scheduleTotal
+
 const normalizeScheduleValue = (value?: string | null): string => {
   if (!value) return ''
   const normalized = value.includes('T') ? value : value.replace(' ', 'T')
@@ -2249,6 +2252,8 @@ export default function ShowStatusOrder ({
         return Number.isFinite(value) ? total + value : total
       }, 0)
       const totalAmount = Number(schedule.total_amount ?? 0)
+      const changeOrderAmount = Number(prev.change_order_payment?.amount ?? 0)
+      const effectiveTotalAmount = resolveEffectiveScheduleTotal(totalAmount, changeOrderAmount)
 
       return {
         ...prev,
@@ -2256,8 +2261,8 @@ export default function ShowStatusOrder ({
           ...schedule,
           installments: updatedInstallments,
           paid_amount: round2(paidAmount),
-          remaining_amount: round2(Math.max(0, totalAmount - paidAmount)),
-          credit_amount: round2(Math.max(0, paidAmount - totalAmount))
+          remaining_amount: round2(Math.max(0, effectiveTotalAmount - paidAmount)),
+          credit_amount: round2(Math.max(0, paidAmount - effectiveTotalAmount))
         }
       }
     })
@@ -2358,14 +2363,15 @@ export default function ShowStatusOrder ({
     const draft = movementDrafts[installmentId] ?? emptyMovementFormValues()
     const scheduledAmount = Number(installment.amount ?? 0)
     const remainingAmount = Number(installment.balance ?? Math.max(0, scheduledAmount - Number(installment.paid_amount ?? 0)))
-    const defaultAmount = remainingAmount > 0 ? remainingAmount : scheduledAmount
-    const amount = draft.useDefaultAmount
-      ? defaultAmount
-      : Number(String(draft.amount ?? '').replace(/,/g, '').trim())
     const schedule = order.payment_schedule
     const scheduleTotal = Number(schedule?.total_amount ?? 0)
     const schedulePaid = Number(schedule?.paid_amount ?? 0)
-    const remainingCapacity = Math.max(0, round2(scheduleTotal - schedulePaid))
+    const effectiveScheduleTotal = resolveEffectiveScheduleTotal(scheduleTotal, changeOrderAmountNumber)
+    const remainingCapacity = Math.max(0, round2(effectiveScheduleTotal - schedulePaid))
+    const defaultAmount = Math.min(remainingAmount > 0 ? remainingAmount : scheduledAmount, remainingCapacity)
+    const amount = draft.useDefaultAmount
+      ? defaultAmount
+      : Number(String(draft.amount ?? '').replace(/,/g, '').trim())
 
     if (!Number.isFinite(amount) || amount <= 0) {
       setPaymentError(draft.useDefaultAmount
@@ -2435,7 +2441,8 @@ export default function ShowStatusOrder ({
     const schedule = order.payment_schedule
     const scheduleTotal = Number(schedule?.total_amount ?? 0)
     const schedulePaid = Number(schedule?.paid_amount ?? 0)
-    const remainingCapacity = Math.max(0, round2(scheduleTotal - schedulePaid))
+    const effectiveScheduleTotal = resolveEffectiveScheduleTotal(scheduleTotal, changeOrderAmountNumber)
+    const remainingCapacity = Math.max(0, round2(effectiveScheduleTotal - schedulePaid))
     const maxAllowed = round2(currentAmount + remainingCapacity)
 
     if (!Number.isFinite(amount) || amount <= 0) {
@@ -2755,23 +2762,39 @@ export default function ShowStatusOrder ({
     : tabsBase
 
   const projectAmountNumber = Number(order.project_amount ?? 0)
+  const changeOrderPayment = order.change_order_payment ?? null
+  const changeOrderAmountNumber = Number(changeOrderPayment?.amount ?? 0)
+  const hasChangeOrderAmount = changeOrderPayment !== null && Number.isFinite(changeOrderAmountNumber)
+  const hasNegativeChangeOrder = hasChangeOrderAmount && changeOrderAmountNumber < 0
+  const changeOrderTotalLabel = hasNegativeChangeOrder ? 'Adjusted Project Amount' : 'Project + Change Order'
+  const changeOrderPaymentLabel = hasNegativeChangeOrder ? 'Reduction' : 'Amount'
+  const totalProjectAmountWithChangeOrder = projectAmountNumber + (hasChangeOrderAmount ? changeOrderAmountNumber : 0)
   const showProjectAmount = Number.isFinite(projectAmountNumber) && projectAmountNumber > 1
   const formattedProjectAmount = showProjectAmount
     ? `$${projectAmountNumber.toLocaleString()}`
     : null
+  const formattedTotalProjectAmountWithChangeOrder = hasChangeOrderAmount && Number.isFinite(totalProjectAmountWithChangeOrder)
+    ? `$${totalProjectAmountWithChangeOrder.toLocaleString()}`
+    : null
   const paymentSchedule = order.payment_schedule ?? null
-  const changeOrderPayment = order.change_order_payment ?? null
   const paymentInstallments: PaymentInstallment[] = Array.isArray(paymentSchedule?.installments)
     ? paymentSchedule?.installments ?? []
     : []
   const paymentTotalAmount = Number(paymentSchedule?.total_amount ?? 0)
+  const effectivePaymentTotalAmount = hasNegativeChangeOrder
+    ? Math.max(0, paymentTotalAmount + changeOrderAmountNumber)
+    : paymentTotalAmount
   const paymentPaidAmount = Number(paymentSchedule?.paid_amount ?? paymentInstallments.reduce((total, installment) => {
     const amountValue = Number(installment.paid_amount ?? 0)
     return Number.isFinite(amountValue) ? total + amountValue : total
   }, 0))
-  const paymentRemainingAmount = Number(paymentSchedule?.remaining_amount ?? Math.max(0, paymentTotalAmount - paymentPaidAmount))
-  const paymentCreditAmount = Number(paymentSchedule?.credit_amount ?? Math.max(0, paymentPaidAmount - paymentTotalAmount))
-  const scheduleRemainingCapacity = Math.max(0, paymentTotalAmount - paymentPaidAmount)
+  const paymentRemainingAmount = hasNegativeChangeOrder
+    ? Math.max(0, effectivePaymentTotalAmount - paymentPaidAmount)
+    : Number(paymentSchedule?.remaining_amount ?? Math.max(0, effectivePaymentTotalAmount - paymentPaidAmount))
+  const paymentCreditAmount = hasNegativeChangeOrder
+    ? Math.max(0, paymentPaidAmount - effectivePaymentTotalAmount)
+    : Number(paymentSchedule?.credit_amount ?? Math.max(0, paymentPaidAmount - effectivePaymentTotalAmount))
+  const scheduleRemainingCapacity = Math.max(0, effectivePaymentTotalAmount - paymentPaidAmount)
   const formatScheduleCurrency = (value: number) =>
     new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value)
   const formatPaidAt = (value?: string | null) => {
@@ -3181,6 +3204,12 @@ export default function ShowStatusOrder ({
                 <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 md:text-right">
                   <span>Project Amount</span>
                   <span className="text-emerald-800">{formattedProjectAmount}</span>
+                </span>
+              )}
+              {formattedTotalProjectAmountWithChangeOrder && (
+                <span className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700 md:text-right">
+                  <span>{changeOrderTotalLabel}</span>
+                  <span className="text-sky-800">{formattedTotalProjectAmountWithChangeOrder}</span>
                 </span>
               )}
             </div>
@@ -3955,10 +3984,15 @@ export default function ShowStatusOrder ({
                                 <p className="text-sm font-semibold text-slate-700">{paymentSchedule.schedule_type}</p>
                               </div>
                               <div className="text-right">
-                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{isCashAndFinancedPaymentMethod ? 'Cash Schedule Total' : 'Total'}</p>
+                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{hasNegativeChangeOrder ? 'Adjusted Total' : (isCashAndFinancedPaymentMethod ? 'Cash Schedule Total' : 'Total')}</p>
                                 <p className="text-sm font-semibold text-slate-700">
-                                  {formatScheduleCurrency(Number(paymentSchedule.total_amount ?? 0))}
+                                  {formatScheduleCurrency(effectivePaymentTotalAmount)}
                                 </p>
+                                {hasNegativeChangeOrder && (
+                                  <p className="text-[11px] font-medium text-slate-500">
+                                    Original: {formatScheduleCurrency(paymentTotalAmount)}
+                                  </p>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -3977,10 +4011,15 @@ export default function ShowStatusOrder ({
                               </p>
                             </div>
                             <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
-                              <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Total</p>
+                              <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{hasNegativeChangeOrder ? 'Adjusted Total' : 'Total'}</p>
                               <p className="text-sm font-semibold text-slate-700">
-                                {formatScheduleCurrency(paymentTotalAmount)}
+                                {formatScheduleCurrency(effectivePaymentTotalAmount)}
                               </p>
+                              {hasNegativeChangeOrder && (
+                                <p className="text-[11px] font-medium text-slate-500">
+                                  Original: {formatScheduleCurrency(paymentTotalAmount)}
+                                </p>
+                              )}
                             </div>
                             <div className="rounded-xl border border-sky-100 bg-sky-50 px-4 py-3">
                               <p className="text-xs font-semibold uppercase tracking-wide text-sky-600">Credit</p>
@@ -4202,7 +4241,7 @@ export default function ShowStatusOrder ({
                             </p>
                           </div>
                           <div className="text-right">
-                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Amount</p>
+                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{changeOrderPaymentLabel}</p>
                             <p className="text-sm font-semibold text-slate-700">
                               {formatScheduleCurrency(Number(changeOrderPayment.amount ?? 0))}
                             </p>
