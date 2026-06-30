@@ -141,7 +141,11 @@ const OrderGlobalSearch = ({
       return
     }
 
-    router.visit(route('frontdesk.order_view', { id: orderId }))
+    const orderViewRoute = origin === 'esr_process'
+      ? route('esr-process.order-view', { id: orderId })
+      : route('frontdesk.order_view', { id: orderId })
+
+    router.visit(orderViewRoute)
     setOpen(false)
   }
 
