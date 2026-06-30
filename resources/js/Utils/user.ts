@@ -67,6 +67,9 @@ export const isPaymentCoordinator = (roles: string[]): boolean => {
 export const isFrontdeskEsr = (roles: string[]): boolean => {
   return roles.find((role) => role === ROLES.FRONTDESK_ESR) !== undefined
 }
+export const isProduction = (roles: string[]): boolean => {
+  return roles.find((role) => role === ROLES.PRODUCTION) !== undefined
+}
 export const can = (permissions: string[], permission: string): boolean => {
   return permissions.find((p) => p === permission) !== undefined
 }
@@ -100,6 +103,8 @@ export const getRoleName = (roles: string[]): string => {
     return 'Frontdesk Admin'
   } else if (isFrontdeskEsr(roles)) {
     return 'Frontdesk Esr'
+  } else if (isProduction(roles)) {
+    return 'Production'
   } else {
     return 'User'
   }

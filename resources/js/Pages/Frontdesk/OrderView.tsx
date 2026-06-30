@@ -29,7 +29,7 @@ import EditIcon from '@/Components/Icons/EditIcon'
 import MessageIcon from '@/Components/Icons/MessageIcon'
 import StarIcon from '@/Components/Icons/StarIcon'
 import PlusIcon from '@/Components/Icons/PlusIcon'
-import { isAccountManager, isAccounting, isAdmin, isFrontdeskAdmin, isFrontdeskEsr, isOwner, isOwnerAdmin, isServiceManager } from '@/Utils/user'
+import { isAccountManager, isAccounting, isAdmin, isFrontdeskAdmin, isFrontdeskEsr, isOwner, isOwnerAdmin, isProduction, isServiceManager } from '@/Utils/user'
 import { PAYMENT_METHODS, SOURCES } from '@/Utils/constants'
 import { formatDateOnlyDisplay } from '@/Utils/dateOnly'
 import EstimateScheduleModal from '@/Pages/Sales/EstimateScheduleModal'
@@ -590,10 +590,11 @@ export default function ShowStatusOrder ({
     ? auth.user.roles.map((role: Role) => role.name)
     : []
   const isFrontdeskEsrRole = isFrontdeskEsr(roleNames)
+  const isProductionRole = isProduction(roleNames)
   const isEsrProcessWorkflow = workflow === 'esr_process'
   const canMoveToEstimate = isAdmin(roleNames) || isOwnerAdmin(roleNames) || isFrontdeskAdmin(roleNames)
-  const canViewPipeline = isAdmin(roleNames) || isAccountManager(roleNames) || isOwner(roleNames) || isOwnerAdmin(roleNames) || isFrontdeskAdmin(roleNames) || isFrontdeskEsrRole || isAccounting(roleNames)
-  const canEditPipeline = isAdmin(roleNames) || isAccountManager(roleNames) || isOwner(roleNames) || isOwnerAdmin(roleNames) || isFrontdeskAdmin(roleNames) || isFrontdeskEsrRole || isAccounting(roleNames)
+  const canViewPipeline = isAdmin(roleNames) || isAccountManager(roleNames) || isOwner(roleNames) || isOwnerAdmin(roleNames) || isFrontdeskAdmin(roleNames) || isFrontdeskEsrRole || isAccounting(roleNames) || isProductionRole
+  const canEditPipeline = isAdmin(roleNames) || isAccountManager(roleNames) || isOwner(roleNames) || isOwnerAdmin(roleNames) || isFrontdeskAdmin(roleNames) || isFrontdeskEsrRole || isAccounting(roleNames) || isProductionRole
   const canManageServiceControl = isAdmin(roleNames) || isAccountManager(roleNames) || isServiceManager(roleNames)
   const canEditPaymentInformationInModal = isAdmin(roleNames) || isAccountManager(roleNames) || isAccounting(roleNames) || isOwnerAdmin(roleNames)
   const hasReachedContractSigned = Boolean(order.has_contract_signed)
@@ -3307,7 +3308,7 @@ export default function ShowStatusOrder ({
                         Edit Request
                       </button>
                     )}
-                    {canEditContact && !isFrontdeskEsrRole && (
+                    {canEditContact && !isFrontdeskEsrRole && !isProductionRole && (
                       <button
                         type="button"
                         onClick={openOrderEditModal}
@@ -3508,7 +3509,7 @@ export default function ShowStatusOrder ({
                   <div className="flex items-center justify-between gap-3">
                     <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">Related Contact</h2>
                     <div className="flex items-center gap-3">
-                      {canEditContact && !isFrontdeskEsrRole && (
+                      {canEditContact && !isFrontdeskEsrRole && !isProductionRole && (
                         <button
                           type="button"
                           onClick={openContactModal}

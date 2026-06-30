@@ -7,7 +7,7 @@ import ReferralIcon from '@/Components/Icons/ReferralIcon'
 import SidebarLinkLabel from '@/Components/SidebarLinkLabel'
 import DashboardIcon from '@/Components/Icons/DashboardIcon'
 import CompanyIcon from '@/Components/Icons/CompanyIcon'
-import { isAdmin, isAccountManager, isAccounting, isFrontdesk, isFrontdeskAdmin, isOwner, isSupervisor, isServiceManager, isService, isPaymentCoordinator, isOwnerAdmin, isFrontdeskEsr } from '@/Utils/user'
+import { isAdmin, isAccountManager, isAccounting, isFrontdesk, isFrontdeskAdmin, isOwner, isSupervisor, isServiceManager, isService, isPaymentCoordinator, isOwnerAdmin, isFrontdeskEsr, isProduction } from '@/Utils/user'
 import { type Role, type Auth } from '@/types'
 import WindowsIcon from '@/Components/Icons/WindowsIcon'
 import CodeIcon from '@/Components/Icons/CodeIcon'
@@ -37,10 +37,11 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
   const IS_PAYMENT_COORDINATOR = isPaymentCoordinator(roleNames)
   const IS_OWNER_ADMIN = isOwnerAdmin(roleNames)
   const IS_FRONTDESK_ESR = isFrontdeskEsr(roleNames)
+  const IS_PRODUCTION = isProduction(roleNames)
   const IS_RESTRICTED_OWNER = IS_OWNER && !IS_ADMIN && !IS_ACCOUNT_MANAGER && !IS_OWNER_ADMIN && !IS_FRONTDESK_ADMIN
   const CAN_VIEW_FRONTDESK_PIPELINE = IS_ADMIN || IS_FRONTDESK || IS_OWNER_ADMIN || IS_FRONTDESK_ADMIN || IS_FRONTDESK_ESR
   const CAN_VIEW_FRONTDESK_CONTACTS = CAN_VIEW_FRONTDESK_PIPELINE || IS_ACCOUNT_MANAGER
-  const CAN_VIEW_ESR_PROCESS = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_ACCOUNTING || IS_OWNER_ADMIN || IS_FRONTDESK_ADMIN || IS_FRONTDESK_ESR
+  const CAN_VIEW_ESR_PROCESS = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_ACCOUNTING || IS_OWNER_ADMIN || IS_FRONTDESK_ADMIN || IS_FRONTDESK_ESR || IS_PRODUCTION
   const CAN_VIEW_FRONTDESK_SECTION = CAN_VIEW_FRONTDESK_PIPELINE || CAN_VIEW_FRONTDESK_CONTACTS || CAN_VIEW_ESR_PROCESS
   const CAN_VIEW_REPORT_SUPERVISOR = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SUPERVISOR || IS_SERVICE_MANAGER
   const CAN_VIEW_REPORT_INSTALLER = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER || IS_PAYMENT_COORDINATOR
@@ -64,7 +65,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
   const CAN_VIEW_SERVICE_CONTROL = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER
   const CAN_VIEW_SERVICE_CALENDAR = CAN_VIEW_SERVICE_CONTROL || IS_SERVICE
   const CAN_VIEW_ACTIVITIES = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_FRONTDESK || IS_OWNER || IS_OWNER_ADMIN || HAS_FRONTDESK_ADMIN_ROLE || IS_FRONTDESK_ESR || IS_SUPERVISOR
-  const IS_SERVICE_ONLY = IS_SERVICE && !IS_ADMIN && !IS_ACCOUNT_MANAGER && !IS_ACCOUNTING && !IS_FRONTDESK && !IS_FRONTDESK_ADMIN && !IS_OWNER && !IS_SUPERVISOR && !IS_SERVICE_MANAGER && !IS_PAYMENT_COORDINATOR && !IS_OWNER_ADMIN && !IS_FRONTDESK_ESR
+  const IS_SERVICE_ONLY = IS_SERVICE && !IS_ADMIN && !IS_ACCOUNT_MANAGER && !IS_ACCOUNTING && !IS_FRONTDESK && !IS_FRONTDESK_ADMIN && !IS_OWNER && !IS_SUPERVISOR && !IS_SERVICE_MANAGER && !IS_PAYMENT_COORDINATOR && !IS_OWNER_ADMIN && !IS_FRONTDESK_ESR && !IS_PRODUCTION
   const CAN_VIEW_MY_REFERRED_CLIENTS = !IS_SERVICE_ONLY
   const CAN_VIEW_ADMINISTRATION = IS_ADMIN || IS_ACCOUNT_MANAGER
   const CAN_VIEW_REPORTS = CAN_VIEW_REPORT_SUPERVISOR
