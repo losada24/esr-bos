@@ -150,7 +150,8 @@ export const orderFormObj: OrderFormValues = {
   change_order_enabled: false,
   change_order_amount: null,
   change_order_note: '',
-  attachment_role_targets: {}
+  attachment_role_targets: {},
+  client_email_selection: '__NONE__'
 }
 
 export interface OrderProductExtraWorksFormValues {
@@ -166,7 +167,7 @@ export const loadOrderFormObj = (order: Order): OrderFormValues => {
   const scheduleType = order.payment_schedule?.schedule_type ?? ''
   const clientEmailSelection = order.do_not_send_email
     ? '__NONE__'
-    : (order.client_email_selection ?? order.client_email_override ?? '__PRIMARY__')
+    : (order.client_email_selection ?? order.client_email_override ?? '__NONE__')
   const attachmentRoleTargetsByRole = order.attachment_role_targets_by_role ?? {}
   const getAttachmentRoleTargetIds = (role: string): number[] => {
     const ids = attachmentRoleTargetsByRole[role]

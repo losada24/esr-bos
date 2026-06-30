@@ -83,17 +83,6 @@ class UpdateOrder
       $beforePaymentInformation = OrderPaymentInformationAuditLogger::snapshot($order);
       $oldAmount = $order->project_amount;
       $newAmount = $request->project_amount;
-      if (
-        $request->has('project_amount')
-        && $newAmount !== null
-        && $newAmount !== ''
-        && $request->user()?->hasRole(RoleEnum::OWNER_ADMIN->value)
-        && abs((float) $newAmount - (float) ($oldAmount ?? 0)) > 0.01
-      ) {
-        throw ValidationException::withMessages([
-          'project_amount' => 'Owner Admin cannot edit Project Amount.',
-        ]);
-      }
 
       $hasCommissions = $order->comissions()->exists();
   
@@ -172,9 +161,7 @@ class UpdateOrder
       }
       $clientForEmailSelection = Client::with('companyContact')->find($clientId);
       $clientEmailSelection = (string) ($request->input('client_email_selection')
-        ?: ($request->boolean('do_not_send_email')
-          ? OrderClientEmailManager::NONE_SELECTION
-          : OrderClientEmailManager::PRIMARY_SELECTION));
+        ?: OrderClientEmailManager::NONE_SELECTION);
       $selectionError = $this->orderClientEmailManager->validateSelectionForContext(
         $clientForEmailSelection,
         $clientEmailSelection,
@@ -683,15 +670,6 @@ class UpdateOrder
       if ($incomingAmount !== null && $incomingAmount !== '' && abs((float) $incomingAmount - (float) ($order->project_amount ?? 0)) > 0.01) {
         throw ValidationException::withMessages([
           'project_amount' => 'Project amount cannot be edited after CONTRACT SIGNED BY CLIENT. Use Change Order instead.',
-        ]);
-      }
-    }
-
-    if ($request->has('project_amount') && $request->user()?->hasRole(RoleEnum::OWNER_ADMIN->value)) {
-      $incomingAmount = $request->input('project_amount');
-      if ($incomingAmount !== null && $incomingAmount !== '' && abs((float) $incomingAmount - (float) ($order->project_amount ?? 0)) > 0.01) {
-        throw ValidationException::withMessages([
-          'project_amount' => 'Owner Admin cannot edit Project Amount.',
         ]);
       }
     }

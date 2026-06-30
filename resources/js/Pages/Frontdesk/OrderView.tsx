@@ -37,7 +37,7 @@ import FollowUpModal from '@/Pages/Sales/FollowUpModal'
 import StandByNoteModal from '@/Pages/Sales/StandByNoteModal'
 import RequestRescheduleModal from '@/Pages/Sales/RequestRescheduleModal'
 import PreContractNoteModal from '@/Pages/Sales/PreContractNoteModal'
-import ContractSignedModal, { PRIMARY_CLIENT_EMAIL_SELECTION } from '@/Pages/Sales/ContractSignedModal'
+import ContractSignedModal, { NO_CLIENT_EMAIL_SELECTION } from '@/Pages/Sales/ContractSignedModal'
 import LostContractModal from '@/Pages/Sales/LostContractModal'
 import QuantifiedModal from '@/Pages/Frontdesk/QuantifiedModal'
 import { ContactEditModal, type ContactFormValues } from '@/Pages/Frontdesk/ContactEditModals'
@@ -326,6 +326,16 @@ const isOrderStorageStatus = (value: string): boolean =>
 
 const isOrderStorageTransitionStatus = (value: string): boolean =>
   ORDER_STORAGE_TRANSITION_STATUSES.some(status => matchesStatus(status, value))
+
+const esrProcessStatusIndex = (value: string): number =>
+  ESR_PROCESS_STATUS_OPTIONS.findIndex(status => matchesStatus(status, value))
+
+const isBackwardEsrStatusChange = (currentStatus: string, targetStatus: string): boolean => {
+  const currentIndex = esrProcessStatusIndex(currentStatus)
+  const targetIndex = esrProcessStatusIndex(targetStatus)
+
+  return currentIndex >= 0 && targetIndex >= 0 && targetIndex < currentIndex
+}
 
 const mergeOptionWithCurrent = (options: readonly string[] | null | undefined, current?: string | null): string[] => {
   const base = Array.isArray(options) ? Array.from(options) : []
@@ -653,7 +663,7 @@ export default function ShowStatusOrder ({
     jobZip: order.job_zip ?? '',
     methodOfPayment: order.method_of_payment ?? '',
     typeOfFinancing: order.type_of_financing ?? '',
-    clientEmailSelection: order.client_email_selection ?? PRIMARY_CLIENT_EMAIL_SELECTION,
+    clientEmailSelection: order.client_email_selection ?? NO_CLIENT_EMAIL_SELECTION,
     orderCompanyContactId: null as number | null,
     nameCheck: Boolean(order.name_check),
     addressCheck: Boolean(order.address_check),
@@ -686,6 +696,7 @@ export default function ShowStatusOrder ({
   const [pendingContractSigned, setPendingContractSigned] = useState<{ oldStatus: string, newStatus: string } | null>(null)
   const [pendingLostContract, setPendingLostContract] = useState<{ oldStatus: string, newStatus: string } | null>(null)
   const [pendingOrderProcessingMove, setPendingOrderProcessingMove] = useState<{ oldStatus: string, newStatus: string } | null>(null)
+  const [pendingEsrBackwardMove, setPendingEsrBackwardMove] = useState<{ oldStatus: string, newStatus: string } | null>(null)
   const [statusChangeSaving, setStatusChangeSaving] = useState(false)
   const [statusChangeError, setStatusChangeError] = useState<string | null>(null)
   const [orderProcessingModalOpen, setOrderProcessingModalOpen] = useState(false)
@@ -693,6 +704,9 @@ export default function ShowStatusOrder ({
   const [orderProcessingInvoiceNumber, setOrderProcessingInvoiceNumber] = useState('')
   const [orderProcessingAttachments, setOrderProcessingAttachments] = useState<File[]>([])
   const [orderProcessingError, setOrderProcessingError] = useState<string | null>(null)
+  const [esrBackwardModalOpen, setEsrBackwardModalOpen] = useState(false)
+  const [esrBackwardNote, setEsrBackwardNote] = useState('')
+  const [esrBackwardError, setEsrBackwardError] = useState<string | null>(null)
   const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? ''
   const [companyEditModalOpen, setCompanyEditModalOpen] = useState(false)
   const [companyEditTarget, setCompanyEditTarget] = useState<CompanyContactType | null>(null)
@@ -1484,6 +1498,13 @@ export default function ShowStatusOrder ({
     setOrderProcessingError(null)
   }, [])
 
+  const closeEsrBackwardModal = () => {
+    setEsrBackwardModalOpen(false)
+    setPendingEsrBackwardMove(null)
+    setEsrBackwardNote('')
+    setEsrBackwardError(null)
+  }
+
   const closeFrontdeskStandByModal = () => {
     setFrontdeskStandByModalOpen(false)
     setFrontdeskStandByNote('')
@@ -1623,6 +1644,29 @@ export default function ShowStatusOrder ({
     }
   }
 
+  const handleEsrBackwardSubmit = async () => {
+    if (!pendingEsrBackwardMove) return
+
+    const note = esrBackwardNote.trim()
+
+    setEsrBackwardError(null)
+    setStatusChangeError(null)
+
+    if (note === '') {
+      setEsrBackwardError('A note is required to move this ESR order backward.')
+      return
+    }
+
+    const success = await handleSimpleStatusChange(pendingEsrBackwardMove.newStatus, {
+      note,
+      onError: (message) => { setEsrBackwardError(message) }
+    })
+
+    if (success) {
+      closeEsrBackwardModal()
+    }
+  }
+
   const handleFrontdeskStandBySubmit = async () => {
     if (!frontdeskStandByNote.trim()) {
       setFrontdeskStandByError('Note is required.')
@@ -1746,6 +1790,14 @@ export default function ShowStatusOrder ({
     }
 
     if (isEsrProcessWorkflow) {
+      if (isBackwardEsrStatusChange(actualStatusValue, targetStatus)) {
+        setPendingEsrBackwardMove({ oldStatus: actualStatusValue, newStatus: targetStatus })
+        setEsrBackwardNote('')
+        setEsrBackwardError(null)
+        setEsrBackwardModalOpen(true)
+        return
+      }
+
       void handleSimpleStatusChange(targetStatus)
       return
     }
@@ -1841,7 +1893,7 @@ export default function ShowStatusOrder ({
         jobZip: order.job_zip ?? prev.jobZip,
         methodOfPayment: order.method_of_payment ?? prev.methodOfPayment,
         typeOfFinancing: order.type_of_financing ?? prev.typeOfFinancing,
-        clientEmailSelection: order.client_email_selection ?? prev.clientEmailSelection ?? PRIMARY_CLIENT_EMAIL_SELECTION,
+        clientEmailSelection: order.client_email_selection ?? prev.clientEmailSelection ?? NO_CLIENT_EMAIL_SELECTION,
         orderCompanyContactId: selectedCommercialCompanyId ?? prev.orderCompanyContactId ?? null,
         nameCheck: Boolean(order.name_check),
         addressCheck: Boolean(order.address_check),
@@ -4752,6 +4804,70 @@ export default function ShowStatusOrder ({
         onCancel={closeLostContractModal}
         onSubmit={handleLostContractSubmit}
       />
+
+      {esrBackwardModalOpen && pendingEsrBackwardMove && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div key={pendingEsrBackwardMove.newStatus} className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl">
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-slate-800">ESR Status Rollback</h3>
+                <p className="text-xs text-slate-500">
+                  {pendingEsrBackwardMove.oldStatus || 'Current status'} -&gt; {pendingEsrBackwardMove.newStatus}
+                </p>
+              </div>
+              <button
+                type="button"
+                className="rounded-full p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+                onClick={closeEsrBackwardModal}
+                disabled={statusChangeSaving}
+              >
+                <span className="sr-only">Close</span>
+                ×
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-600" htmlFor="esr-backward-note">
+                  Note <span className="text-rose-500">*</span>
+                </label>
+                <textarea
+                  id="esr-backward-note"
+                  className="form-textarea w-full resize-none placeholder:text-slate-400"
+                  rows={4}
+                  value={esrBackwardNote}
+                  onChange={(event) => {
+                    setEsrBackwardNote(event.target.value)
+                    if (esrBackwardError) setEsrBackwardError(null)
+                  }}
+                  placeholder="Explain why this ESR order is moving backward"
+                  disabled={statusChangeSaving}
+                />
+              </div>
+              {(esrBackwardError || statusChangeError) && (
+                <p className="text-sm text-rose-600">{esrBackwardError ?? statusChangeError}</p>
+              )}
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={closeEsrBackwardModal}
+                  className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+                  disabled={statusChangeSaving}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleEsrBackwardSubmit}
+                  className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-sky-700 disabled:cursor-not-allowed disabled:bg-sky-400"
+                  disabled={statusChangeSaving}
+                >
+                  {statusChangeSaving ? 'Saving...' : 'Save'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {orderProcessingModalOpen && pendingOrderProcessingMove && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">

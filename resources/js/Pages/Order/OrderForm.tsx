@@ -444,7 +444,7 @@ const OrderForm = ({
     vip_clients: Boolean(values.vip_clients),
     vip_notes: values.vip_notes ?? '',
     client_company_name: values.client_company_name ?? '',
-    client_email_selection: values.client_email_selection ?? PRIMARY_CLIENT_EMAIL_SELECTION
+    client_email_selection: values.client_email_selection ?? NO_CLIENT_EMAIL_SELECTION
   })
   const isClientLocked = selectedClientId !== null
   const canSearchClient = isCreate ? !isClientLocked : isClientReassigning
@@ -480,7 +480,7 @@ const OrderForm = ({
     const normalizedSelection = String(values.client_email_selection ?? '').trim().toLowerCase()
     const stillAvailable = clientEmailOptions.some((option) => option.value.trim().toLowerCase() === normalizedSelection)
     if (!stillAvailable) {
-      setFieldValue('client_email_selection', PRIMARY_CLIENT_EMAIL_SELECTION)
+      setFieldValue('client_email_selection', NO_CLIENT_EMAIL_SELECTION)
     }
   }, [clientEmailOptions, setFieldValue, values.client_email_selection])
 
@@ -836,7 +836,7 @@ const OrderForm = ({
     setFieldValue('vip_clients', !!client.vip_clients)
     setFieldValue('vip_notes', client.vip_notes ?? '')
     setFieldValue('client_company_name', client.company_contact?.name ?? '')
-    setFieldValue('client_email_selection', PRIMARY_CLIENT_EMAIL_SELECTION)
+    setFieldValue('client_email_selection', NO_CLIENT_EMAIL_SELECTION)
     setClientSearchResults([])
     setClientSearchTerm(client.name ?? '')
     setPhoneSearchResults([])
@@ -856,7 +856,7 @@ const OrderForm = ({
     setFieldValue('vip_clients', false)
     setFieldValue('vip_notes', '')
     setFieldValue('client_company_name', '')
-    setFieldValue('client_email_selection', PRIMARY_CLIENT_EMAIL_SELECTION)
+    setFieldValue('client_email_selection', NO_CLIENT_EMAIL_SELECTION)
     setClientSearchResults([])
     setClientSearchTerm('')
     setClientSearchError('')
@@ -875,7 +875,7 @@ const OrderForm = ({
       vip_clients: Boolean(values.vip_clients),
       vip_notes: values.vip_notes ?? '',
       client_company_name: values.client_company_name ?? '',
-      client_email_selection: values.client_email_selection ?? PRIMARY_CLIENT_EMAIL_SELECTION
+      client_email_selection: values.client_email_selection ?? NO_CLIENT_EMAIL_SELECTION
     }
     clearSelectedClient()
     setIsClientReassigning(true)

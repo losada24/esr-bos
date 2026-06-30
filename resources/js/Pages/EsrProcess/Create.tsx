@@ -16,10 +16,22 @@ const esrOrderSchema = Yup.object({
   order_type: Yup.string().required('Order Type is required'),
   product_line: Yup.string().required('Product Line is required'),
   name: Yup.string().required('Order Name is required'),
-  job_address: Yup.string().required('Job Address is required'),
-  city: Yup.string().required('City is required'),
-  job_state: Yup.string().required('State is required'),
-  job_zip: Yup.string().required('ZIP Code is required'),
+  job_address: Yup.string().nullable().when('service', {
+    is: (service?: string | null) => service !== 'PICKUP',
+    then: (schema) => schema.required('Job Address is required')
+  }),
+  city: Yup.string().nullable().when('service', {
+    is: (service?: string | null) => service !== 'PICKUP',
+    then: (schema) => schema.required('City is required')
+  }),
+  job_state: Yup.string().nullable().when('service', {
+    is: (service?: string | null) => service !== 'PICKUP',
+    then: (schema) => schema.required('State is required')
+  }),
+  job_zip: Yup.string().nullable().when('service', {
+    is: (service?: string | null) => service !== 'PICKUP',
+    then: (schema) => schema.required('ZIP Code is required')
+  }),
   client_id: Yup.number().required('Contact Name is required').min(1, 'Contact Name is required'),
   company_contact_id: Yup.number().required('Company is required').min(1, 'Company is required'),
   client_email_selection: Yup.string().required('Client Email Delivery is required'),
@@ -37,6 +49,7 @@ const esrOrderSchema = Yup.object({
   payment_schedule_type: Yup.string().nullable(),
   custom_schedule: Yup.array().nullable(),
   owner_ids: Yup.array().of(Yup.number().required()).min(1, 'Owner is required'),
+  attachments: Yup.array().min(1, 'Attachment is required').required('Attachment is required'),
   notes: Yup.string().nullable().max(4000, 'Notes must be less than 4000 characters')
 })
 

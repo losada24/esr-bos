@@ -58,7 +58,7 @@ class CreateQualifiedOrder
       $primaryCompany = $request->order_type === OrderTypeEnum::COMMERCIAL->value && $request->filled('company_contact_id')
         ? CompanyContact::find((int) $request->input('company_contact_id'))
         : null;
-      $clientEmailSelection = (string) $request->input('client_email_selection', OrderClientEmailManager::PRIMARY_SELECTION);
+      $clientEmailSelection = (string) $request->input('client_email_selection', OrderClientEmailManager::NONE_SELECTION);
       $selectionError = $this->orderClientEmailManager->validateSelectionForContext(
         $primaryClient,
         $clientEmailSelection,

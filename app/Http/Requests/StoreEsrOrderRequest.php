@@ -59,10 +59,30 @@ class StoreEsrOrderRequest extends FormRequest
             'order_type' => ['required', Rule::in([OrderTypeEnum::COMMERCIAL->value])],
             'product_line' => ['required', Rule::enum(ProductLineEnum::class)],
             'name' => ['required', 'string', 'max:255'],
-            'job_address' => ['required', 'string', 'max:500'],
-            'city' => ['required', 'string', 'max:255'],
-            'job_state' => ['required', 'string', 'max:255'],
-            'job_zip' => ['required', 'string', 'max:20'],
+            'job_address' => [
+                'nullable',
+                'string',
+                'max:500',
+                Rule::requiredIf(fn () => $this->input('service') !== ServiceEnum::PICKUP->value),
+            ],
+            'city' => [
+                'nullable',
+                'string',
+                'max:255',
+                Rule::requiredIf(fn () => $this->input('service') !== ServiceEnum::PICKUP->value),
+            ],
+            'job_state' => [
+                'nullable',
+                'string',
+                'max:255',
+                Rule::requiredIf(fn () => $this->input('service') !== ServiceEnum::PICKUP->value),
+            ],
+            'job_zip' => [
+                'nullable',
+                'string',
+                'max:20',
+                Rule::requiredIf(fn () => $this->input('service') !== ServiceEnum::PICKUP->value),
+            ],
             'client_id' => ['required', 'integer', 'exists:clients,id'],
             'company_contact_id' => ['required', 'integer', 'exists:company_contacts,id'],
             'associate_company_contact_id_1' => ['nullable', 'integer', 'exists:company_contacts,id'],
@@ -109,7 +129,7 @@ class StoreEsrOrderRequest extends FormRequest
             'custom_schedule.*.label' => ['required_with:custom_schedule', 'string', 'max:255'],
             'custom_schedule.*.amount' => ['required_with:custom_schedule', 'numeric', 'min:0.01'],
             'notes' => ['nullable', 'string', 'max:4000'],
-            'attachments' => ['nullable', 'array'],
+            'attachments' => ['required', 'array', 'min:1'],
             'attachments.*' => ['file', 'max:10240'],
         ];
     }

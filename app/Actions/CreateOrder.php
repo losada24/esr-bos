@@ -56,9 +56,7 @@ class CreateOrder
       }
 
       $clientEmailSelection = (string) ($request->input('client_email_selection')
-        ?: ($request->boolean('do_not_send_email')
-          ? OrderClientEmailManager::NONE_SELECTION
-          : OrderClientEmailManager::PRIMARY_SELECTION));
+        ?: OrderClientEmailManager::NONE_SELECTION);
       $selectionError = $this->orderClientEmailManager->validateSelectionForContext(
         $client,
         $clientEmailSelection,
