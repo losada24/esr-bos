@@ -498,7 +498,7 @@ const OrderQualifiedForm = ({
     const normalizedSelection = String(values.client_email_selection ?? '').trim().toLowerCase()
     const isStillAvailable = clientEmailOptions.some((option) => option.value.trim().toLowerCase() === normalizedSelection)
     if (!isStillAvailable) {
-      setFieldValue('client_email_selection', PRIMARY_CLIENT_EMAIL_SELECTION)
+      setFieldValue('client_email_selection', NO_CLIENT_EMAIL_SELECTION)
     }
   }, [clientEmailOptions, setFieldValue, values.client_email_selection])
 
@@ -713,6 +713,7 @@ const OrderQualifiedForm = ({
     : projectAmountReadOnly
       ? 'Locked for this role while payment method and schedule are already assigned before CONTRACT SIGNED BY CLIENT.'
       : null
+  const canShowChangeOrderFields = showPaymentInformationSection && !isCreate && (values.has_contract_signed || esrMode)
   console.log('frame_colors ->', frame_colors)
   return (
     <>
@@ -766,7 +767,7 @@ const OrderQualifiedForm = ({
                 setFieldValue('associate_source_id_2', null) // Reset associate source 2 when order type changes
                 setFieldValue('associate_source_id_3', null)
                 setFieldValue('associate_source_id_4', null)
-                setFieldValue('client_email_selection', PRIMARY_CLIENT_EMAIL_SELECTION)
+                setFieldValue('client_email_selection', NO_CLIENT_EMAIL_SELECTION)
               }}
             >
               <option value="">Order Type</option>
@@ -902,7 +903,7 @@ const OrderQualifiedForm = ({
                       type="number"
                       disabled={isProjectAmountLocked}
                     />
-                    {showPaymentInformationSection && !isCreate && values.has_contract_signed && (
+                    {canShowChangeOrderFields && (
                       <div className="inline-flex shrink-0 items-center whitespace-nowrap">
                         <Field
                           id="change_order_enabled"
@@ -934,7 +935,7 @@ const OrderQualifiedForm = ({
                   {(submitCount && errors.change_order_enabled) ? <div className="block"><InputError message={errors.change_order_enabled as string} className="mt-2" /></div> : ''}
                 </div>
               )}
-              {showPaymentInformationSection && !showProjectAmountField && !isCreate && values.has_contract_signed && (
+              {canShowChangeOrderFields && !showProjectAmountField && (
                 <div className={submitCount ? (errors.change_order_enabled ? 'has-error inline-flex flex-col' : 'has-success inline-flex') : 'inline-flex items-end'}>
                   <div className="flex">
                     <Field
@@ -957,7 +958,7 @@ const OrderQualifiedForm = ({
                   {(submitCount && errors.change_order_enabled) ? <div className="block"><InputError message={errors.change_order_enabled as string} className="mt-2" /></div> : ''}
                 </div>
               )}
-              {showPaymentInformationSection && !isCreate && values.has_contract_signed && values.change_order_enabled && (
+              {canShowChangeOrderFields && values.change_order_enabled && (
                 <>
                   <div className={submitCount ? (errors.change_order_amount ? 'has-error' : 'has-success') : ''}>
                     <label htmlFor="change_order_amount">Change Order Price</label>

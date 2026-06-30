@@ -236,7 +236,7 @@ export default function ContractSignedModal ({
             jobZip: initialJobZip ?? '',
             methodOfPayment: initialMethodOfPayment ?? '',
             typeOfFinancing: initialTypeOfFinancing ?? '',
-            clientEmailSelection: initialClientEmailSelection ?? PRIMARY_CLIENT_EMAIL_SELECTION,
+            clientEmailSelection: initialClientEmailSelection ?? NO_CLIENT_EMAIL_SELECTION,
             orderCompanyContactId: initialOrderCompanyContactId ? String(initialOrderCompanyContactId) : (companyOptions.length === 1 ? String(companyOptions[0].id) : ''),
             nameCheck: initialNameCheck ?? true,
             addressCheck: initialAddressCheck ?? true,
@@ -535,7 +535,7 @@ export default function ContractSignedModal ({
                           const isReservedSelection = currentSelection === PRIMARY_CLIENT_EMAIL_SELECTION || currentSelection === NO_CLIENT_EMAIL_SELECTION
 
                           if (!isReservedSelection && !nextAllowedValues.has(currentSelection.toLowerCase())) {
-                            setFieldValue('clientEmailSelection', PRIMARY_CLIENT_EMAIL_SELECTION)
+                            setFieldValue('clientEmailSelection', NO_CLIENT_EMAIL_SELECTION)
                           }
                         }}
                         onBlur={handleBlur}

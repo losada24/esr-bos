@@ -308,7 +308,7 @@ class UpdateQualifiedOrderRequest extends FormRequest
             }
 
             $changeOrderEnabled = filter_var($this->input('change_order_enabled'), FILTER_VALIDATE_BOOLEAN);
-            if ($changeOrderEnabled && !$hasReachedContractSigned) {
+            if ($changeOrderEnabled && !$hasReachedContractSigned && !$isEsrProcessOrder) {
                 $validator->errors()->add('change_order_enabled', 'Change Order is available only after CONTRACT SIGNED BY CLIENT.');
             }
 
@@ -316,14 +316,6 @@ class UpdateQualifiedOrderRequest extends FormRequest
                 ? $this->input('project_amount')
                 : $order->project_amount;
             $projectAmount = (float) ($projectAmountRaw ?? 0);
-
-            if ($touchesProjectAmount && ($this->user()?->hasRole(RoleEnum::OWNER_ADMIN->value) ?? false)) {
-                $currentAmount = (float) ($order->project_amount ?? 0);
-                if (abs($projectAmount - $currentAmount) > 0.01) {
-                    $validator->errors()->add('project_amount', 'Owner Admin cannot edit Project Amount.');
-                    return;
-                }
-            }
 
             $methodOfPayment = (string) $this->input('method_of_payment', (string) $order->method_of_payment);
             $isCash = $methodOfPayment === MethodOfPayment::CASH->value;

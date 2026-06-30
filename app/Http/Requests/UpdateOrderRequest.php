@@ -9,7 +9,6 @@ use App\Enum\MethodOfPayment;
 use App\Enum\OrderStatusEnum;
 use App\Enum\PlaningDateSupervisorEnum;
 use App\Enum\PaymentScheduleTypeEnum;
-use App\Enum\RoleEnum;
 use App\Enum\SupervisorPaymentStatusEnum;
 use App\Enum\TypeOfFinancing;
 use App\Enum\OrderTypeEnum;
@@ -411,14 +410,6 @@ class UpdateOrderRequest extends FormRequest
                 ? $this->input('project_amount')
                 : $order->project_amount;
             $projectAmount = (float) ($projectAmountRaw ?? 0);
-
-            if ($this->exists('project_amount') && ($this->user()?->hasRole(RoleEnum::OWNER_ADMIN->value) ?? false)) {
-                $currentAmount = (float) ($order->project_amount ?? 0);
-                if (abs($projectAmount - $currentAmount) > 0.01) {
-                    $validator->errors()->add('project_amount', 'Owner Admin cannot edit Project Amount.');
-                    return;
-                }
-            }
 
             $downPaymentRaw = $this->exists('down_payment')
                 ? $this->input('down_payment')

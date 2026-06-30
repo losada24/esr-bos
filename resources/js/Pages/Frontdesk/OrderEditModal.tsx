@@ -13,10 +13,22 @@ const esrOrderEditSchema = Yup.object({
   order_type: Yup.string().required('Order Type is required'),
   product_line: Yup.string().nullable(),
   name: Yup.string().required('Order Name is required'),
-  job_address: Yup.string().required('Job Address is required'),
-  city: Yup.string().required('City is required'),
-  job_state: Yup.string().required('State is required'),
-  job_zip: Yup.string().required('ZIP Code is required'),
+  job_address: Yup.string().nullable().when('service', {
+    is: (service?: string | null) => service !== 'PICKUP',
+    then: (schema) => schema.required('Job Address is required')
+  }),
+  city: Yup.string().nullable().when('service', {
+    is: (service?: string | null) => service !== 'PICKUP',
+    then: (schema) => schema.required('City is required')
+  }),
+  job_state: Yup.string().nullable().when('service', {
+    is: (service?: string | null) => service !== 'PICKUP',
+    then: (schema) => schema.required('State is required')
+  }),
+  job_zip: Yup.string().nullable().when('service', {
+    is: (service?: string | null) => service !== 'PICKUP',
+    then: (schema) => schema.required('ZIP Code is required')
+  }),
   client_id: Yup.number().required('Contact Name is required').min(1, 'Contact Name is required'),
   company_contact_id: Yup.number().required('Company is required').min(1, 'Company is required'),
   client_email_selection: Yup.string().required('Client Email Delivery is required'),
@@ -28,7 +40,15 @@ const esrOrderEditSchema = Yup.object({
   type_of_financing: Yup.string().nullable(),
   down_payment: Yup.number().nullable().min(0, 'Cash Amount cannot be negative'),
   payment_schedule_type: Yup.string().nullable(),
-  custom_schedule: Yup.array().nullable()
+  custom_schedule: Yup.array().nullable(),
+  change_order_enabled: Yup.boolean().optional(),
+  change_order_amount: Yup.number()
+    .nullable()
+    .when('change_order_enabled', {
+      is: true,
+      then: (schema) => schema.required('Change Order Price is required')
+    }),
+  change_order_note: Yup.string().nullable().max(2000, 'Change Order Note must be less than 2000 characters')
 })
 
 interface OrderEditModalProps {

@@ -196,7 +196,7 @@ class UpdateQualifiedOrder
             $primaryCompany = $request->order_type === OrderTypeEnum::COMMERCIAL->value && $request->filled('company_contact_id')
                 ? CompanyContact::find((int) $request->input('company_contact_id'))
                 : null;
-            $clientEmailSelection = (string) $request->input('client_email_selection', OrderClientEmailManager::PRIMARY_SELECTION);
+            $clientEmailSelection = (string) $request->input('client_email_selection', OrderClientEmailManager::NONE_SELECTION);
             $selectionError = $this->orderClientEmailManager->validateSelectionForContext(
                 $primaryClient,
                 $clientEmailSelection,
@@ -438,7 +438,7 @@ class UpdateQualifiedOrder
                 $request
             );
 
-            if ($order->hasReachedContractSigned() && $request->has('change_order_enabled')) {
+            if (($order->hasReachedContractSigned() || $this->isEsrProcessOrder($order)) && $request->has('change_order_enabled')) {
                 $changeOrderEnabled = filter_var($request->input('change_order_enabled'), FILTER_VALIDATE_BOOLEAN);
                 $changeOrderPayment = $order->orderPayments()->where('type', 'CHANGE_ORDER')->first();
 
@@ -678,5 +678,29 @@ class UpdateQualifiedOrder
         }
 
         $this->clientCompanyContactManager->attach($client, $companyId, $force && empty($client->company_contact_id));
+    }
+
+    private function isEsrProcessOrder(Order $order): bool
+    {
+        return in_array($order->status, [
+            OrderStatusEnum::DEALER_REQUEST->value,
+            OrderStatusEnum::FOLLOW_UP_PROJECTS->value,
+            OrderStatusEnum::REVIEW->value,
+            OrderStatusEnum::ACCOUNT_RECEIPT->value,
+            OrderStatusEnum::PLANNED->value,
+            OrderStatusEnum::PRODUCTION->value,
+            OrderStatusEnum::PRODUCTION_SERVICES->value,
+            OrderStatusEnum::PRE_COORDINATION_ACCOUNTING->value,
+            OrderStatusEnum::PENDING_MAT_REYLOS->value,
+            OrderStatusEnum::PENDING_MATERIALS->value,
+            OrderStatusEnum::PENDING_MATERIALS_EWS->value,
+            OrderStatusEnum::MATERIAL_ORDER_COMPLETED->value,
+            OrderStatusEnum::STORAGE_MATERIAL->value,
+            OrderStatusEnum::MATERIALS_PICK_UP_OR_DELIVERED->value,
+            OrderStatusEnum::PENDING_PAYMENT->value,
+            OrderStatusEnum::PENDING_MATCH->value,
+            OrderStatusEnum::COMPLETE->value,
+            OrderStatusEnum::LOST->value,
+        ], true);
     }
 }

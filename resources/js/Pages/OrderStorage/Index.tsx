@@ -142,6 +142,11 @@ const stampTaskAsUpdated = (task: Tasks): Tasks => ({
   date_edited: formatDateForDisplay(new Date())
 })
 
+const normalizeStatusValue = (value: string | number): string => String(value).replace(/\s+/g, ' ').trim().toUpperCase()
+
+const matchesStatus = (value: string | number, target: string | number): boolean =>
+  normalizeStatusValue(value) === normalizeStatusValue(target)
+
 const INFINITE_SCROLL_STATUSES = new Set(['COMPLETE', 'LOST'])
 const TASKS_PAGE_SIZE = 20
 const SCROLL_THRESHOLD_PX = 120
@@ -245,6 +250,11 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
   const [esrEditInitialValues, setEsrEditInitialValues] = useState<OrderFormValues | null>(null)
   const [esrEditError, setEsrEditError] = useState<string | null>(null)
   const [pendingEsrStatusMove, setPendingEsrStatusMove] = useState<PendingEsrStatusMove>(null)
+  const [pendingEsrBackwardMove, setPendingEsrBackwardMove] = useState<PendingEsrStatusMove>(null)
+  const [esrBackwardModalOpen, setEsrBackwardModalOpen] = useState(false)
+  const [esrBackwardNote, setEsrBackwardNote] = useState('')
+  const [esrBackwardError, setEsrBackwardError] = useState<string | null>(null)
+  const [esrBackwardSaving, setEsrBackwardSaving] = useState(false)
   const dragSnapshotRef = useRef<Pipelines[] | null>(null)
   const sortHydratedRef = useRef(false)
   const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? ''
@@ -257,6 +267,15 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
     sort_by: sortState.sort_by,
     sort_dir: sortState.sort_dir
   }), [sortState.sort_by, sortState.sort_dir])
+  const statusIndex = useCallback((value: string): number => (
+    statuses.findIndex(status => matchesStatus(status, value))
+  ), [statuses])
+  const isBackwardStatusMove = useCallback((oldStatus: string, newStatus: string): boolean => {
+    const oldIndex = statusIndex(oldStatus)
+    const newIndex = statusIndex(newStatus)
+
+    return oldIndex >= 0 && newIndex >= 0 && newIndex < oldIndex
+  }, [statusIndex])
 
   const tagFilterOptions = useMemo(() => {
     const seen = new Set<string>()
@@ -407,10 +426,8 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
     }
   }
 
-  const applyPendingEsrStatusMove = (updatedOrder: Order) => {
-    if (!pendingEsrStatusMove) return
-
-    const { orderId, oldStatus, newStatus, task } = pendingEsrStatusMove
+  const applyEsrStatusMove = (move: NonNullable<PendingEsrStatusMove>, updatedOrder: Order) => {
+    const { orderId, oldStatus, newStatus, task } = move
     const nextTask: Tasks = stampTaskAsUpdated({
       ...task,
       title: updatedOrder.name ?? task.title,
@@ -454,6 +471,12 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
     }))
   }
 
+  const applyPendingEsrStatusMove = (updatedOrder: Order) => {
+    if (!pendingEsrStatusMove) return
+
+    applyEsrStatusMove(pendingEsrStatusMove, updatedOrder)
+  }
+
   const deleteEsrOrder = async (task: Tasks) => {
     if (!showEsrTaskActions || deletingTaskId !== null) return
     if (!window.confirm(`Are you sure you want to delete order "${task.title}"?`)) return
@@ -492,7 +515,8 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
     }
   }
 
-  const updateOrderStatus = async (orderId: number, status: string, confirmCustomerRole = false): Promise<void> => {
+  const updateOrderStatus = async (orderId: number, status: string, note?: string, confirmCustomerRole = false): Promise<Order | null> => {
+    const trimmedNote = note?.trim() ?? ''
     const response = await fetch(route('frontdesk.updateStatus', { order: orderId }), {
       method: 'POST',
       headers: {
@@ -502,6 +526,7 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
       },
       body: JSON.stringify({
         status,
+        ...(trimmedNote !== '' ? { note: trimmedNote } : {}),
         ...(confirmCustomerRole ? { confirm_customer_role: true } : {})
       })
     })
@@ -512,13 +537,48 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
       if (response.status === 409 && payload?.requires_confirmation) {
         const confirmed = window.confirm(payload?.message ?? 'This email already belongs to another user. Convert it to customer?')
         if (!confirmed) {
-          return
+          return null
         }
 
-        return await updateOrderStatus(orderId, status, true)
+        return await updateOrderStatus(orderId, status, note, true)
       }
 
       throw new Error(payload?.message ?? 'Unable to update status.')
+    }
+
+    return payload.order as Order
+  }
+
+  const closeEsrBackwardModal = () => {
+    setEsrBackwardModalOpen(false)
+    setPendingEsrBackwardMove(null)
+    setEsrBackwardNote('')
+    setEsrBackwardError(null)
+    setEsrBackwardSaving(false)
+  }
+
+  const handleEsrBackwardSubmit = async () => {
+    if (!pendingEsrBackwardMove) return
+
+    const note = esrBackwardNote.trim()
+    if (note === '') {
+      setEsrBackwardError('A note is required to move this ESR order backward.')
+      return
+    }
+
+    setEsrBackwardSaving(true)
+    setEsrBackwardError(null)
+
+    try {
+      const updatedOrder = await updateOrderStatus(pendingEsrBackwardMove.orderId, pendingEsrBackwardMove.newStatus, note)
+      if (updatedOrder) {
+        applyEsrStatusMove(pendingEsrBackwardMove, updatedOrder)
+        closeEsrBackwardModal()
+      }
+    } catch (error) {
+      setEsrBackwardError(error instanceof Error ? error.message : 'Unable to update status.')
+    } finally {
+      setEsrBackwardSaving(false)
     }
   }
 
@@ -890,6 +950,30 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
                             return
                           }
 
+                          if (isEsrBoard && isBackwardStatusMove(oldStatus, newStatus)) {
+                            const movedTask = pipelines
+                              .flatMap(pipeline => pipeline.tasks ?? [])
+                              .find(task => task.id === orderId)
+                            if (dragSnapshotRef.current) {
+                              setPipelines(dragSnapshotRef.current)
+                            }
+                            dragSnapshotRef.current = null
+                            if (!movedTask) {
+                              window.alert('Unable to load order from the pipeline.')
+                              return
+                            }
+                            setPendingEsrBackwardMove({
+                              orderId,
+                              oldStatus,
+                              newStatus,
+                              task: movedTask
+                            })
+                            setEsrBackwardNote('')
+                            setEsrBackwardError(null)
+                            setEsrBackwardModalOpen(true)
+                            return
+                          }
+
                           if (
                             isEsrBoard &&
                             oldStatus === 'ACCOUNT RECEIPT' &&
@@ -980,10 +1064,13 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
                           }
                           return null
                         })()
+                        const cardBackgroundClass = task.esr_service
+                          ? 'bg-yellow-100 ring-1 ring-yellow-300 dark:bg-yellow-500/20 dark:ring-yellow-400/40'
+                          : 'bg-[#f4f4f4] dark:bg-white-dark/20'
 
                         return (
                           <div className="sortable-list" key={task.id} data-id={task.id}>
-                            <div className="shadow bg-[#f4f4f4] dark:bg-white-dark/20 p-3 pb-4 rounded-md mb-5 space-y-2 cursor-move text-xs text-slate-600">
+                            <div className={`shadow ${cardBackgroundClass} p-3 pb-4 rounded-md mb-5 space-y-2 cursor-move text-xs text-slate-600`}>
                               <div className="flex items-center justify-between w-full">
                                 <p className="flex items-center gap-2 break-all text-sm font-semibold text-slate-700 dark:text-white">
                                   {task.title}
@@ -1195,6 +1282,69 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
             </Link>
           </div>
         </>
+      )}
+      {esrBackwardModalOpen && pendingEsrBackwardMove && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl">
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-slate-800">ESR Status Rollback</h3>
+                <p className="text-xs text-slate-500">
+                  {pendingEsrBackwardMove.oldStatus || 'Current status'} -&gt; {pendingEsrBackwardMove.newStatus}
+                </p>
+              </div>
+              <button
+                type="button"
+                className="rounded-full p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+                onClick={closeEsrBackwardModal}
+                disabled={esrBackwardSaving}
+              >
+                <span className="sr-only">Close</span>
+                x
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-600" htmlFor="esr-board-backward-note">
+                  Note <span className="text-rose-500">*</span>
+                </label>
+                <textarea
+                  id="esr-board-backward-note"
+                  className="form-textarea w-full resize-none placeholder:text-slate-400"
+                  rows={4}
+                  value={esrBackwardNote}
+                  onChange={(event) => {
+                    setEsrBackwardNote(event.target.value)
+                    if (esrBackwardError) setEsrBackwardError(null)
+                  }}
+                  placeholder="Explain why this ESR order is moving backward"
+                  disabled={esrBackwardSaving}
+                />
+              </div>
+              {esrBackwardError && (
+                <p className="text-sm text-rose-600">{esrBackwardError}</p>
+              )}
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={closeEsrBackwardModal}
+                  className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+                  disabled={esrBackwardSaving}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleEsrBackwardSubmit}
+                  className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-sky-700 disabled:cursor-not-allowed disabled:bg-sky-400"
+                  disabled={esrBackwardSaving}
+                >
+                  {esrBackwardSaving ? 'Saving...' : 'Save'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
       {esrEditData && esrEditInitialValues && (
         <OrderEditModal

@@ -510,6 +510,39 @@ class FrontdeskController extends Controller
       ->with('success', 'Request created successfully.');
   }
 
+  private function esrProcessStatusOrder(): array
+  {
+    return [
+      OrderStatusEnum::DEALER_REQUEST->value,
+      OrderStatusEnum::FOLLOW_UP_PROJECTS->value,
+      OrderStatusEnum::REVIEW->value,
+      OrderStatusEnum::ACCOUNT_RECEIPT->value,
+      OrderStatusEnum::PRODUCTION->value,
+      OrderStatusEnum::PRODUCTION_SERVICES->value,
+      OrderStatusEnum::PRE_COORDINATION_ACCOUNTING->value,
+      OrderStatusEnum::PENDING_MAT_REYLOS->value,
+      OrderStatusEnum::PENDING_MATERIALS->value,
+      OrderStatusEnum::PENDING_MATERIALS_EWS->value,
+      OrderStatusEnum::PLANNED->value,
+      OrderStatusEnum::MATERIAL_ORDER_COMPLETED->value,
+      OrderStatusEnum::STORAGE_MATERIAL->value,
+      OrderStatusEnum::MATERIALS_PICK_UP_OR_DELIVERED->value,
+      OrderStatusEnum::PENDING_PAYMENT->value,
+      OrderStatusEnum::PENDING_MATCH->value,
+      OrderStatusEnum::COMPLETE->value,
+      OrderStatusEnum::LOST->value,
+    ];
+  }
+
+  private function isBackwardEsrStatusChange(?string $currentStatus, ?string $targetStatus): bool
+  {
+    $statusOrder = $this->esrProcessStatusOrder();
+    $currentIndex = array_search($currentStatus, $statusOrder, true);
+    $targetIndex = array_search($targetStatus, $statusOrder, true);
+
+    return $currentIndex !== false && $targetIndex !== false && $targetIndex < $currentIndex;
+  }
+
   public function updateStatus(Request $request, Order $order)
   {
     if (!$this->ownerCanAccessOrder($request->user(), $order)) {
@@ -545,31 +578,18 @@ class FrontdeskController extends Controller
     $finalStatus = $status === OrderStatusEnum::CLOSED_WON->value
       ? OrderStatusEnum::ACCOUNT_RECEIPT->value
       : $status;
-    $isEsrProcessOrder = in_array($order->status, [
-      OrderStatusEnum::DEALER_REQUEST->value,
-      OrderStatusEnum::FOLLOW_UP_PROJECTS->value,
-      OrderStatusEnum::REVIEW->value,
-      OrderStatusEnum::ACCOUNT_RECEIPT->value,
-      OrderStatusEnum::PLANNED->value,
-      OrderStatusEnum::PRODUCTION->value,
-      OrderStatusEnum::PRODUCTION_SERVICES->value,
-      OrderStatusEnum::PRE_COORDINATION_ACCOUNTING->value,
-      OrderStatusEnum::PENDING_MAT_REYLOS->value,
-      OrderStatusEnum::PENDING_MATERIALS->value,
-      OrderStatusEnum::PENDING_MATERIALS_EWS->value,
-      OrderStatusEnum::MATERIAL_ORDER_COMPLETED->value,
-      OrderStatusEnum::STORAGE_MATERIAL->value,
-      OrderStatusEnum::MATERIALS_PICK_UP_OR_DELIVERED->value,
-      OrderStatusEnum::PENDING_PAYMENT->value,
-      OrderStatusEnum::PENDING_MATCH->value,
-      OrderStatusEnum::COMPLETE->value,
-      OrderStatusEnum::LOST->value,
-    ], true);
+    $isEsrProcessOrder = in_array($order->status, $this->esrProcessStatusOrder(), true);
 
     if ($isEsrProcessOrder && $finalStatus === OrderStatusEnum::PLANNED->value) {
       return response()->json([
         'message' => 'Orders cannot be moved to PLANNED from the ESR PROCESS pipeline.',
       ], 422);
+    }
+
+    if ($this->isBackwardEsrStatusChange($order->status, $finalStatus) && $noteContent === '') {
+      throw ValidationException::withMessages([
+        'note' => 'A note is required to move this ESR order backward.',
+      ]);
     }
 
     $historyStatuses = $status === OrderStatusEnum::CLOSED_WON->value
@@ -792,9 +812,14 @@ public function showQuantifiedModal(Order $order)
         $incomingProjectAmount = (float) ($request['project_amount'] ?? 0);
         $currentProjectAmount = (float) ($order->project_amount ?? 0);
 
-        if ($request->user()?->hasRole(RoleEnum::OWNER_ADMIN->value) && abs($incomingProjectAmount - $currentProjectAmount) > 0.01) {
+        $existingSchedule = $order->paymentSchedule()->with('installments')->first();
+        $hasRecordedPayments = $existingSchedule
+          ? $existingSchedule->installments()->whereHas('movements')->exists()
+          : false;
+
+        if ($hasRecordedPayments && abs($incomingProjectAmount - $currentProjectAmount) > 0.01) {
           throw ValidationException::withMessages([
-            'project_amount' => 'Owner Admin cannot edit Project Amount.',
+            'project_amount' => 'Project amount cannot be changed after payments are recorded.',
           ]);
         }
 
