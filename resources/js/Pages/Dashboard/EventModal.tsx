@@ -769,6 +769,7 @@ const EventModal = ({
                     'PENDING MATERIALS ESW',
                     'PLANNED',
                     'MATERIAL ORDER COMPLETED',
+                    'MATERIAL ORDER COMPLETED FINANCED',
                     'STORAGE MATERIAL',
                     'MATERIALS PICK UP OR DELIVERED',
                     'COMPLETE'

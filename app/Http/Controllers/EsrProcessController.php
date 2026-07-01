@@ -495,10 +495,10 @@ class EsrProcessController extends OrderStorageController
             OrderStatusEnum::PENDING_MATERIALS_EWS->value,
             OrderStatusEnum::PLANNED->value,
             OrderStatusEnum::MATERIAL_ORDER_COMPLETED->value,
+            OrderStatusEnum::MATERIAL_ORDER_COMPLETED_FINANCED->value,
             OrderStatusEnum::STORAGE_MATERIAL->value,
             OrderStatusEnum::MATERIALS_PICK_UP_OR_DELIVERED->value,
             OrderStatusEnum::PENDING_PAYMENT->value,
-            OrderStatusEnum::PENDING_MATCH->value,
             OrderStatusEnum::COMPLETE->value,
             OrderStatusEnum::LOST->value,
         ];
