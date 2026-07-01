@@ -102,7 +102,7 @@ class StoreEsrOrderRequest extends FormRequest
             ],
             'order_number' => ['required', 'string', 'max:255'],
             'project_amount' => ['required', 'numeric', 'min:0'],
-            'service' => ['nullable', 'string', Rule::in([
+            'service' => ['required', 'string', Rule::in([
                 ServiceEnum::DELIVERY->value,
                 ServiceEnum::PICKUP->value,
             ])],
@@ -111,7 +111,7 @@ class StoreEsrOrderRequest extends FormRequest
             'esr_reylos_glass' => ['nullable', 'boolean'],
             'esr_service' => ['nullable', 'boolean'],
             'method_of_payment' => [
-                'nullable',
+                'required',
                 'string',
                 Rule::in($this->allowedPaymentMethods()),
             ],
