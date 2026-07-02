@@ -765,7 +765,7 @@ const EventModal = ({
                   isMulti={false}
                   onChange={(value) => { setEditableData({ ...editableData, status: value }) }}
                   options={[
-                    'PENDING MATERIALS',
+                    'PENDING MATERIALS DEALER ESR',
                     'PENDING MATERIALS ESW',
                     'PLANNED',
                     'MATERIAL ORDER COMPLETED',

@@ -13,6 +13,7 @@ use App\Models\Tag;
 use App\Models\User;
 use App\Support\OrderBoardFilter;
 use App\Support\OrderPipelineSort;
+use App\Support\OrderStageOverdueTracker;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -309,6 +310,11 @@ class OrderStorageController extends Controller
         return true;
     }
 
+    protected function tracksStageOverdues(): bool
+    {
+        return false;
+    }
+
     private function storageOrdersForStatusQuery(string $status, ?User $user): Builder
     {
         $query = Order::query()->where('status', $status);
@@ -326,6 +332,7 @@ class OrderStorageController extends Controller
             'client.companyContact',
             'owners',
             'user',
+            'orderStatus',
             'tags:id,name,color,taggable_id,taggable_type',
             'orderCompanyContacts.companyContact',
             'paymentSchedule.installments.movements',
@@ -334,6 +341,11 @@ class OrderStorageController extends Controller
 
     private function mapOrderToTask(Order $order): array
     {
+        $stageOverdueTracker = app(OrderStageOverdueTracker::class);
+        $stageAge = $this->tracksStageOverdues()
+            ? $stageOverdueTracker->sync($order)
+            : $stageOverdueTracker->resolveStageAge($order);
+
         return [
             'id' => $order->id,
             'title' => $order->name ?? 'No Title',
@@ -361,6 +373,12 @@ class OrderStorageController extends Controller
             'method_of_payment' => $order->method_of_payment,
             'type_of_financing' => $order->type_of_financing,
             'payment_schedule_type' => $order->paymentSchedule?->schedule_type,
+            'current_status' => $order->status,
+            'stage_started_at' => $stageAge['started_at'],
+            'stage_started_at_iso' => $stageAge['started_at_iso'],
+            'stage_business_days_elapsed' => $stageAge['business_days_elapsed'],
+            'stage_limit_business_days' => $stageAge['limit_business_days'],
+            'stage_overdue' => $stageAge['overdue'],
             'has_payment_made' => (bool) ($order->paymentSchedule?->installments?->contains(function ($installment) {
                 return $installment->movements->isNotEmpty()
                     || $installment->paid_at !== null

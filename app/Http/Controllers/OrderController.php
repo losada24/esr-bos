@@ -81,6 +81,7 @@ class OrderController extends Controller
       ]
     ]);*/
      $allowedStatuses = [
+        OrderStatusEnum::PENDING_MAT_REYLOS->value,
         OrderStatusEnum::PENDING_MATERIALS->value,
         OrderStatusEnum::PENDING_MATERIALS_EWS->value,
         OrderStatusEnum::PLANNED->value,
@@ -347,6 +348,7 @@ class OrderController extends Controller
     }
 
     $status = [
+      OrderStatusEnum::PENDING_MAT_REYLOS->value,
       OrderStatusEnum::PENDING_MATERIALS->value,
       OrderStatusEnum::PENDING_MATERIALS_EWS->value,
       OrderStatusEnum::PLANNED->value,

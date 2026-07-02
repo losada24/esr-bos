@@ -985,6 +985,7 @@ public function showQuantifiedModal(Order $order)
       'paymentSchedule.installments.movements.paidBy',
       'changeOrderPayment.paidBy',
       'financialEvents.user',
+      'stageOverdues',
       'serviceControls.creator:id,name',
       'orderCompanyContacts.companyContact',
       'orderCompanyContacts.client.companyContacts',
@@ -1208,6 +1209,22 @@ public function showQuantifiedModal(Order $order)
       ])
       ->values();
     $orderData['has_contract_signed'] = $order->hasReachedContractSigned();
+    $stageOverdues = $order->stageOverdues
+      ->sortByDesc('detected_at')
+      ->map(fn ($overdue) => [
+        'id' => $overdue->id,
+        'status' => $overdue->status,
+        'stage_started_at' => optional($overdue->stage_started_at)->toISOString(),
+        'limit_business_days' => (int) $overdue->limit_business_days,
+        'business_days_elapsed' => (int) $overdue->business_days_elapsed,
+        'detected_at' => optional($overdue->detected_at)->toISOString(),
+        'resolved_at' => optional($overdue->resolved_at)->toISOString(),
+        'resolved_business_days_elapsed' => $overdue->resolved_business_days_elapsed !== null
+          ? (int) $overdue->resolved_business_days_elapsed
+          : null,
+        'is_active' => (bool) $overdue->is_active,
+      ])
+      ->values();
     $serviceControls = $order->serviceControls
       ->map(fn ($serviceControl) => [
         'id' => $serviceControl->id,
@@ -1233,6 +1250,7 @@ public function showQuantifiedModal(Order $order)
       'order' => $orderData,
       'serviceControls' => $serviceControls,
       'snapshots' => $orderSnapshots,
+      'stageOverdues' => $stageOverdues,
       'clientOrders' => $clientOrders,
        'tags' => $order->tags->map(fn($t) => [
                 'name'  => $t->name,

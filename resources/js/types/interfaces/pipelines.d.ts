@@ -5,6 +5,12 @@ export interface Tasks {
   date: string
   date_edited: string
   status_created_at_iso?: string | null
+  current_status?: string | null
+  stage_started_at?: string | null
+  stage_started_at_iso?: string | null
+  stage_business_days_elapsed?: number | null
+  stage_limit_business_days?: number | null
+  stage_overdue?: boolean
   follow_up_started_at_iso?: string | null
   is_supply?: boolean
   is_parent_order?: boolean

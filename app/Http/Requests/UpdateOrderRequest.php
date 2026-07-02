@@ -229,6 +229,7 @@ class UpdateOrderRequest extends FormRequest
               OrderStatusEnum::DELIVERY_CONFIRMED->value,
               OrderStatusEnum::COMPLETE->value,
               OrderStatusEnum::RESCHEDULE->value,
+              OrderStatusEnum::PENDING_MAT_REYLOS->value,
               OrderStatusEnum::PENDING_MATERIALS->value,
               OrderStatusEnum::PENDING_MATERIALS_EWS->value,
               OrderStatusEnum::MATERIAL_ORDER_COMPLETED->value,

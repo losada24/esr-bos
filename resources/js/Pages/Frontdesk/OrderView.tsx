@@ -47,6 +47,7 @@ import CompanyQuickEditModal from '@/Pages/Frontdesk/CompanyQuickEditModal'
 type IndexOrderProps = PageProps & {
   orderStatuses?: OrderStatus[]
   snapshots?: OrderSnapshot[]
+  stageOverdues?: OrderStageOverdue[]
   order: Order
   tags: TagItem[]
   usedTags: TagItem[]
@@ -136,6 +137,18 @@ type OrderSnapshot = {
   snapshot_data?: SnapshotData | null
 }
 
+interface OrderStageOverdue {
+  id: number | string
+  status: string
+  stage_started_at?: string | null
+  limit_business_days: number
+  business_days_elapsed: number
+  detected_at?: string | null
+  resolved_at?: string | null
+  resolved_business_days_elapsed?: number | null
+  is_active?: boolean
+}
+
 type TimelineItem = {
   id: string
   createdAt: Date
@@ -144,7 +157,7 @@ type TimelineItem = {
   title: string
   description?: string
   icon: ComponentType
-  iconTone: 'neutral' | 'info' | 'success' | 'warning'
+  iconTone: 'neutral' | 'info' | 'success' | 'warning' | 'danger'
 }
 
 const DUPLICATE_ORDER_ERROR_KEY = 'duplicate_order_confirmation'
@@ -244,7 +257,7 @@ const ESR_PROCESS_STATUS_OPTIONS = [
   'PRODUCTION SERVICES',
   'PRE-COORDINATION ACCOUNTING',
   'PENDING MAT REYLOS',
-  'PENDING MATERIALS',
+  'PENDING MATERIALS DEALER ESR',
   'PENDING MATERIALS ESW',
   'PLANNED',
   'MATERIAL ORDER COMPLETED',
@@ -536,6 +549,7 @@ export default function ShowStatusOrder ({
   auth,
   orderStatuses = [],
   snapshots = [],
+  stageOverdues = [],
   tags = [],
   order: initialOrder,
   usedTags = [],
@@ -569,6 +583,7 @@ export default function ShowStatusOrder ({
   const scheduleAppointmentIso = order.schedule_appointment_iso ?? toScheduleString(order.schedule_appointment ?? null)
   const safeOrderStatuses = Array.isArray(orderStatuses) ? orderStatuses : []
   const safeSnapshots = Array.isArray(snapshots) ? snapshots : []
+  const safeStageOverdues = Array.isArray(stageOverdues) ? stageOverdues : []
   const safeFinancialEvents = Array.isArray(order.financial_events) ? order.financial_events : []
   const safeTags = Array.isArray(tags) ? tags : []
   const safeUsedTags = Array.isArray(usedTags) ? usedTags : []
@@ -3227,8 +3242,33 @@ export default function ShowStatusOrder ({
       })
     })
 
+    safeStageOverdues.forEach((overdue) => {
+      const detectedAt = overdue?.detected_at ? new Date(overdue.detected_at) : null
+      if (!detectedAt || Number.isNaN(detectedAt.getTime())) {
+        return
+      }
+
+      const status = String(overdue.status ?? '').trim()
+      const elapsed = overdue.business_days_elapsed
+      const limit = overdue.limit_business_days
+      const resolvedText = overdue.resolved_at
+        ? `Resolved at ${overdue.resolved_business_days_elapsed ?? elapsed} business days`
+        : 'Still active'
+
+      items.push({
+        id: `stage-overdue-${overdue.id}`,
+        createdAt: detectedAt,
+        timeLabel: formatTimelineTime(detectedAt),
+        dateLabel: formatTimelineDate(detectedAt),
+        title: `Order became overdue${status ? ` in ${status}` : ''}`,
+        description: `${elapsed}/${limit} business days · ${resolvedText}`,
+        icon: CalendarIcon,
+        iconTone: 'danger'
+      })
+    })
+
     return items.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-  }, [safeSnapshots, safeFinancialEvents])
+  }, [safeSnapshots, safeFinancialEvents, safeStageOverdues])
 
   const timelineGroups = useMemo(() => {
     const groups = new Map<string, TimelineItem[]>()
@@ -3249,7 +3289,8 @@ export default function ShowStatusOrder ({
     neutral: 'border-slate-200 text-slate-500',
     info: 'border-sky-200 text-sky-500',
     success: 'border-emerald-200 text-emerald-500',
-    warning: 'border-amber-200 text-amber-500'
+    warning: 'border-amber-200 text-amber-500',
+    danger: 'border-red-200 text-red-500'
   }
 
   useEffect(() => {
