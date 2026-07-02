@@ -147,6 +147,20 @@ const normalizeStatusValue = (value: string | number): string => String(value).r
 const matchesStatus = (value: string | number, target: string | number): boolean =>
   normalizeStatusValue(value) === normalizeStatusValue(target)
 
+const getStageOverdueBadge = (pipeline: Pick<Pipelines, 'id' | 'title'>, task: Tasks): string | null => {
+  if (!task.stage_overdue) return null
+  if (task.current_status && !matchesStatus(task.current_status, pipeline.title)) return null
+
+  const elapsed = task.stage_business_days_elapsed
+  const limit = task.stage_limit_business_days
+
+  if (typeof elapsed === 'number' && typeof limit === 'number') {
+    return `OVERDUE: ${elapsed}/${limit} business days`
+  }
+
+  return 'OVERDUE'
+}
+
 const INFINITE_SCROLL_STATUSES = new Set(['COMPLETE', 'LOST'])
 const TASKS_PAGE_SIZE = 20
 const SCROLL_THRESHOLD_PX = 120
@@ -311,6 +325,9 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
     { value: 'order_type', label: 'Order Type', type: 'select', options: order_types.map((type) => ({ label: type, value: type })) },
     { value: 'product_line', label: 'Product Line', type: 'select', options: product_lines.map((line) => ({ label: line, value: line })) },
     { value: 'is_supply', label: 'Is Supply', type: 'select', options: [{ label: 'Yes', value: '1' }, { label: 'No', value: '0' }] },
+    ...(isEsrBoard
+      ? [{ value: 'stage_overdue', label: 'Overdue', type: 'select' as const, options: [{ label: 'Yes', value: '1' }, { label: 'No', value: '0' }] }]
+      : []),
     { value: 'owner', label: 'Owner', type: 'select', options: owners.map((owner) => ({ label: owner.name, value: owner.id.toString() })) },
     { value: 'source', label: 'Source', type: 'select', options: sources.map((source) => ({ label: source, value: source })) },
     { value: 'company_name', label: 'Company Name', type: 'text' },
@@ -321,7 +338,7 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
     { value: 'created_by', label: 'Created By', type: 'select', options: created_by_users.map((user) => ({ label: user.name, value: user.id.toString() })) },
     { value: 'created_time', label: 'Created Time', type: 'date' },
     { value: 'project_amount', label: 'Project Amount', type: 'amount' }
-  ]), [statuses, order_types, product_lines, owners, sources, tagFilterOptions, supervisors, created_by_users])
+  ]), [statuses, order_types, product_lines, isEsrBoard, owners, sources, tagFilterOptions, supervisors, created_by_users])
 
   useEffect(() => {
     setPipelinesState(data)
@@ -1034,6 +1051,7 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
                           : 'bg-emerald-100 text-emerald-800 ring-emerald-200'
                         const bidDueLabelClass = bidDuePast ? 'text-rose-600' : 'text-emerald-600'
                         const isVipClient = Boolean(task.vip_clients)
+                        const stageOverdueBadge = isEsrBoard ? getStageOverdueBadge(pipeline, task) : null
                         const esrOptionBadges = [
                           task.esr_design
                             ? { label: 'Design', className: 'bg-emerald-100 text-emerald-800 ring-emerald-200' }
@@ -1242,6 +1260,16 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
                                     </div>
                                   )
                                   )}
+                              {stageOverdueBadge && (
+                                <div className="mt-2 flex justify-end">
+                                  <span
+                                    className="inline-flex items-center rounded-full bg-red-600 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-white ring-2 ring-red-300 shadow-sm"
+                                    title={task.stage_started_at ? `Entered status: ${task.stage_started_at}` : undefined}
+                                  >
+                                    {stageOverdueBadge}
+                                  </span>
+                                </div>
+                              )}
                             </div>
                           </div>
                         )

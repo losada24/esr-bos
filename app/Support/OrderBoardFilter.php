@@ -93,6 +93,22 @@ class OrderBoardFilter
                     $query->where('orders.is_supply', $boolValue);
                 }
                 break;
+            case 'stage_overdue':
+                $boolValue = self::parseBoolean($value);
+                if ($boolValue === true) {
+                    $query->whereHas('stageOverdues', function ($query) {
+                        $query->where('is_active', true)
+                            ->whereNull('resolved_at')
+                            ->whereColumn('order_stage_overdues.status', 'orders.status');
+                    });
+                } elseif ($boolValue === false) {
+                    $query->whereDoesntHave('stageOverdues', function ($query) {
+                        $query->where('is_active', true)
+                            ->whereNull('resolved_at')
+                            ->whereColumn('order_stage_overdues.status', 'orders.status');
+                    });
+                }
+                break;
             case 'owner':
                 $ownerId = self::parseId($value);
                 if ($ownerId !== null) {

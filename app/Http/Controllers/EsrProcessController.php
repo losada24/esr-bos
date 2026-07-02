@@ -557,6 +557,11 @@ class EsrProcessController extends OrderStorageController
         return true;
     }
 
+    protected function tracksStageOverdues(): bool
+    {
+        return true;
+    }
+
     private function esrPaymentMethods(): array
     {
         return array_values(array_filter(
