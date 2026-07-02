@@ -235,9 +235,15 @@ class StoreOrderRequest extends FormRequest
             'required',
             'string',
               Rule::in(
+                OrderStatusEnum::PENDING_MAT_REYLOS->value,
+                OrderStatusEnum::PENDING_MATERIALS->value,
+                OrderStatusEnum::PENDING_MATERIALS_EWS->value,
                 OrderStatusEnum::PLANNED->value,
-                OrderStatusEnum::CONFIRMED->value,
-                OrderStatusEnum::REVIEW->value,
+                OrderStatusEnum::MATERIAL_ORDER_COMPLETED->value,
+                OrderStatusEnum::MATERIAL_ORDER_COMPLETED_FINANCED->value,
+                OrderStatusEnum::STORAGE_MATERIAL->value,
+                OrderStatusEnum::MATERIALS_PICK_UP_OR_DELIVERED->value,
+                OrderStatusEnum::COMPLETE->value,
               ),
               new ValidateOrderStatus
             ],

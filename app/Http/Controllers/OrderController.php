@@ -189,10 +189,15 @@ class OrderController extends Controller
         OrderTypeEnum::SUPPLY->value,
       ],
       'status' => [
-        OrderStatusEnum::REVIEW->value,
+        OrderStatusEnum::PENDING_MAT_REYLOS->value,
+        OrderStatusEnum::PENDING_MATERIALS->value,
+        OrderStatusEnum::PENDING_MATERIALS_EWS->value,
         OrderStatusEnum::PLANNED->value,
-        OrderStatusEnum::CONFIRMED->value,
-        OrderStatusEnum::DELIVERY_CONFIRMED->value,
+        OrderStatusEnum::MATERIAL_ORDER_COMPLETED->value,
+        OrderStatusEnum::MATERIAL_ORDER_COMPLETED_FINANCED->value,
+        OrderStatusEnum::STORAGE_MATERIAL->value,
+        OrderStatusEnum::MATERIALS_PICK_UP_OR_DELIVERED->value,
+        OrderStatusEnum::COMPLETE->value,
       ]
     ];
   }
