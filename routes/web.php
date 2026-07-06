@@ -136,7 +136,7 @@ Route::middleware('auth')->group(function () {
       ->name('company_contact.index');
       Route::resource('company_contact', CompanyContactController::class)
       ->except(['index'])
-      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::FRONTDESK_ADMIN->value]);
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::OWNER->value . '|'. RoleEnum::FRONTDESK_ADMIN->value]);
     
     Route::get('order/create-service', [OrderController::class, 'createService'])
       ->name('order.create_service')
