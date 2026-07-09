@@ -66,7 +66,10 @@ export default function Create ({
   methods_of_payment: methodsOfPayment,
   type_of_financing: typeOfFinancing,
   payment_schedule_templates: paymentScheduleTemplates,
-  sources_clients: sourcesClients
+  sources_clients: sourcesClients,
+  is_service_form: isServiceForm = false,
+  page_title: pageTitle = 'Create ESR Order',
+  submit_route: submitRoute = 'esr-process.store-order'
 }: PageProps & {
   clients: Client[]
   owners: User[]
@@ -80,22 +83,27 @@ export default function Create ({
   type_of_financing: string[]
   payment_schedule_templates: Record<string, { label: string, percentage: number }[]>
   sources_clients: string[]
+  is_service_form?: boolean
+  page_title?: string
+  submit_route?: string
 }) {
   const initialValues: OrderFormValues = {
     ...orderFormObj,
     order_type: order_types[0] ?? 'COMMERCIAL',
-    product_line: product_lines[0] ?? 'ESR',
+    product_line: isServiceForm ? 'ESR' : (product_lines[0] ?? 'ESR'),
     status: statuses[0] ?? 'DEALER REQUEST',
+    service_source: isServiceForm ? 'ESR' : null,
     service: '',
     order_number: '',
-    owner_ids: owners.length === 1 ? [owners[0].id] : []
+    owner_ids: owners.length === 1 ? [owners[0].id] : [],
+    esr_service: isServiceForm
   }
 
   const handleSubmit = (
     values: OrderFormValues,
     helpers: FormikHelpers<OrderFormValues>
   ) => {
-    router.post(route('esr-process.store-order'), values as unknown as RequestPayload, {
+    router.post(route(submitRoute), values as unknown as RequestPayload, {
       forceFormData: true,
       onError: (errors) => {
         helpers.setErrors(errors)
@@ -107,8 +115,8 @@ export default function Create ({
   }
 
   return (
-    <AuthenticatedLayout auth={auth} pageTitle="Create ESR Order">
-      <Head title="Create ESR Order" />
+    <AuthenticatedLayout auth={auth} pageTitle={pageTitle}>
+      <Head title={pageTitle} />
       <Formik<OrderFormValues>
         initialValues={initialValues}
         validationSchema={esrOrderSchema}
@@ -140,11 +148,12 @@ export default function Create ({
             showNotesField={true}
             showProjectAmountOnlySection={true}
             showPaymentInformationSection={true}
-            submitLabel="Create"
+            submitLabel={isServiceForm ? 'Create Service' : 'Create'}
             esrMode={true}
             showCommercialSourceField={false}
             showAttachmentsField={true}
             showOwnerField={true}
+            serviceCreationMode={isServiceForm}
             companyStoreRoute="esr-process.companies.store"
             clientStoreRoute="esr-process.clients.store"
             onCancel={() => { router.visit(route('esr-process.index')) }}

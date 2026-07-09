@@ -42,6 +42,7 @@ interface BoardConfigProps {
   sortable_group?: string
   search_origin?: string
   show_create_order?: boolean
+  show_new_service?: boolean
   show_esr_task_actions?: boolean
   order_view_route?: string
   can_reorder_orders?: boolean
@@ -161,6 +162,10 @@ const getStageOverdueBadge = (pipeline: Pick<Pipelines, 'id' | 'title'>, task: T
   return 'OVERDUE'
 }
 
+const isPostSaleServiceTask = (task: Tasks): boolean => (
+  Boolean(task.is_post_sale_service) && String(task.service_origin ?? '').toUpperCase() === 'SERVICE'
+)
+
 const INFINITE_SCROLL_STATUSES = new Set(['COMPLETE', 'LOST'])
 const TASKS_PAGE_SIZE = 20
 const SCROLL_THRESHOLD_PX = 120
@@ -253,7 +258,7 @@ const buildPaginationState = (pipelines: Pipelines[] = []): Record<string, Statu
   }, {})
 }
 
-const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_users, tags, sources, order_types, product_lines, filters, sort, board_title: boardTitle = 'Order Storage', index_route: indexRoute = 'order-storage.index', tasks_route: tasksRoute = 'order-storage.tasks', sortable_group: sortableGroup = 'order-storage', search_origin: searchOrigin = 'order_storage', show_create_order: showCreateOrder = false, show_esr_task_actions: showEsrTaskActions = false, order_view_route: orderViewRoute = 'frontdesk.order_view', can_reorder_orders: canReorderOrders = true }: PageProps & BoardConfigProps & { data: Pipelines[], statuses: string[], owners: OwnerOption[], supervisors: IdOption[], created_by_users: IdOption[], tags: TagOption[], sources: string[], order_types: string[], product_lines: string[], filters: BoardFilters, sort: { sort_by?: string, sort_dir?: string } }) => {
+const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_users, tags, sources, order_types, product_lines, filters, sort, board_title: boardTitle = 'Order Storage', index_route: indexRoute = 'order-storage.index', tasks_route: tasksRoute = 'order-storage.tasks', sortable_group: sortableGroup = 'order-storage', search_origin: searchOrigin = 'order_storage', show_create_order: showCreateOrder = false, show_new_service: showNewService = false, show_esr_task_actions: showEsrTaskActions = false, order_view_route: orderViewRoute = 'frontdesk.order_view', can_reorder_orders: canReorderOrders = true }: PageProps & BoardConfigProps & { data: Pipelines[], statuses: string[], owners: OwnerOption[], supervisors: IdOption[], created_by_users: IdOption[], tags: TagOption[], sources: string[], order_types: string[], product_lines: string[], filters: BoardFilters, sort: { sort_by?: string, sort_dir?: string } }) => {
   const [pipelines, setPipelinesState] = useState<Pipelines[]>(() => data)
   const [statusPagination, setStatusPagination] = useState<Record<string, StatusPaginationState>>(() => buildPaginationState(data))
   const [isFilterOpen, setIsFilterOpen] = useState(false)
@@ -454,7 +459,10 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
       esr_design: updatedOrder.esr_design ?? task.esr_design,
       esr_express: updatedOrder.esr_express ?? task.esr_express,
       esr_reylos_glass: updatedOrder.esr_reylos_glass ?? task.esr_reylos_glass,
-      esr_service: updatedOrder.esr_service ?? task.esr_service
+      esr_service: updatedOrder.esr_service ?? task.esr_service,
+      service_origin: updatedOrder.service_origin ?? task.service_origin,
+      service_source: updatedOrder.service_source ?? task.service_source,
+      is_post_sale_service: updatedOrder.is_post_sale_service ?? task.is_post_sale_service
     })
 
     setPipelines(prev => prev.map(pipeline => {
@@ -843,6 +851,14 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
               <span>Create Order</span>
             </Link>
           )}
+          {showNewService && (
+            <Link
+              className="btn btn-outline-primary"
+              href={route('esr-process.create-service')}
+            >
+              <span>New Service</span>
+            </Link>
+          )}
         </div>
       }
     >
@@ -938,6 +954,16 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
                       disabled={!canReorderOrders}
                       group={sortableGroup}
                       animation={200}
+                      filter=".js-post-sale-service-card"
+                      preventOnFilter={false}
+                      onMove={(evt) => {
+                        const draggedId = Number(evt.dragged.getAttribute('data-id'))
+                        const draggedTask = pipelines
+                          .flatMap(pipeline => pipeline.tasks ?? [])
+                          .find(task => task.id === draggedId)
+
+                        return !(isEsrBoard && draggedTask && isPostSaleServiceTask(draggedTask))
+                      }}
                       onStart={() => {
                         dragSnapshotRef.current = clonePipelines(pipelines)
                       }}
@@ -955,6 +981,18 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
 
                           const orderId = Number(movedTaskId)
                           if (!Number.isFinite(orderId)) {
+                            dragSnapshotRef.current = null
+                            return
+                          }
+
+                          const movedTaskForLock = pipelines
+                            .flatMap(pipeline => pipeline.tasks ?? [])
+                            .find(task => task.id === orderId)
+
+                          if (isEsrBoard && movedTaskForLock && isPostSaleServiceTask(movedTaskForLock)) {
+                            if (dragSnapshotRef.current) {
+                              setPipelines(dragSnapshotRef.current)
+                            }
                             dragSnapshotRef.current = null
                             return
                           }
@@ -1007,12 +1045,16 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
                               window.alert('Unable to load order from the pipeline.')
                               return
                             }
-                            await openEsrEditModalForStatusMove({
-                              orderId,
-                              oldStatus,
-                              newStatus,
-                              task: movedTask
-                            })
+                            if (movedTask.is_post_sale_service) {
+                              await updateOrderStatus(orderId, newStatus)
+                            } else {
+                              await openEsrEditModalForStatusMove({
+                                orderId,
+                                oldStatus,
+                                newStatus,
+                                task: movedTask
+                              })
+                            }
                             return
                           }
 
@@ -1066,6 +1108,25 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
                             ? { label: 'Service', className: 'bg-red-100 text-red-800 ring-red-200' }
                             : null
                         ].filter((badge): badge is { label: string, className: string } => Boolean(badge))
+                        const serviceSource = String(task.service_source ?? '').trim().toUpperCase()
+                        const isPostSaleServiceCard = isEsrBoard && isPostSaleServiceTask(task)
+                        const showPostSaleServiceTabs = isPostSaleServiceCard
+                        const postSaleServiceTabs = showPostSaleServiceTabs
+                          ? [
+                              serviceSource
+                                ? {
+                                    label: serviceSource,
+                                    className: serviceSource === 'ESW'
+                                      ? 'bg-indigo-100 text-indigo-800 ring-indigo-200'
+                                      : 'bg-sky-100 text-sky-800 ring-sky-200'
+                                  }
+                                : null,
+                              {
+                                label: 'Post-Sale Service',
+                                className: 'bg-amber-100 text-amber-900 ring-amber-300'
+                              }
+                            ].filter((tab): tab is { label: string, className: string } => Boolean(tab))
+                          : []
                         const paymentBadge = (() => {
                           if (!isEsrBoard) return null
                           const scheduleType = String(task.payment_schedule_type ?? '').trim().toLowerCase()
@@ -1082,13 +1143,15 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
                           }
                           return null
                         })()
-                        const cardBackgroundClass = task.esr_service
-                          ? 'bg-yellow-100 ring-1 ring-yellow-300 dark:bg-yellow-500/20 dark:ring-yellow-400/40'
-                          : 'bg-[#f4f4f4] dark:bg-white-dark/20'
+                        const cardBackgroundClass = isPostSaleServiceCard
+                          ? 'bg-purple-100 ring-1 ring-purple-300 dark:bg-purple-500/20 dark:ring-purple-400/40'
+                          : (task.esr_service
+                              ? 'bg-yellow-100 ring-1 ring-yellow-300 dark:bg-yellow-500/20 dark:ring-yellow-400/40'
+                              : 'bg-[#f4f4f4] dark:bg-white-dark/20')
 
                         return (
-                          <div className="sortable-list" key={task.id} data-id={task.id}>
-                            <div className={`shadow ${cardBackgroundClass} p-3 pb-4 rounded-md mb-5 space-y-2 cursor-move text-xs text-slate-600`}>
+                          <div className={`sortable-list ${isPostSaleServiceCard ? 'js-post-sale-service-card' : ''}`} key={task.id} data-id={task.id}>
+                            <div className={`shadow ${cardBackgroundClass} p-3 pb-4 rounded-md mb-5 space-y-2 ${isPostSaleServiceCard ? 'cursor-default' : 'cursor-move'} text-xs text-slate-600`}>
                               <div className="flex items-center justify-between w-full">
                                 <p className="flex items-center gap-2 break-all text-sm font-semibold text-slate-700 dark:text-white">
                                   {task.title}
@@ -1099,53 +1162,57 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
                                   )}
                                 </p>
                                 <div className="flex items-center gap-2 text-[11px]">
-                                  <Link
-                                    href={route(orderViewRoute, orderViewRoute === 'esr-process.order-view' ? { id: task.id } : task.id)}
-                                    title="Order View"
-                                    className="flex items-center gap-1 hover:text-success"
-                                  >
-                                    <EyeIcon />
-                                  </Link>
-                                  {showEsrTaskActions
-                                    ? (
-                                      <>
+                                  {!isPostSaleServiceCard && (
+                                    <Link
+                                      href={route(orderViewRoute, orderViewRoute === 'esr-process.order-view' ? { id: task.id } : task.id)}
+                                      title="Order View"
+                                      className="flex items-center gap-1 hover:text-success"
+                                    >
+                                      <EyeIcon />
+                                    </Link>
+                                  )}
+                                  {!isPostSaleServiceCard && (
+                                    showEsrTaskActions
+                                      ? (
+                                        <>
+                                          <button
+                                            type="button"
+                                            title="Add Activity"
+                                            className="flex h-5 w-5 items-center justify-center rounded-full text-base font-bold leading-none text-sky-600 hover:bg-sky-50 hover:text-sky-700"
+                                            onClick={(event) => {
+                                              event.preventDefault()
+                                              event.stopPropagation()
+                                              const position = activityMenuPosition(event.currentTarget)
+                                              setActivityMenu({ orderId: task.id, x: position.x, y: position.y })
+                                            }}
+                                          >
+                                            +
+                                          </button>
+                                          <button
+                                            type="button"
+                                            title="Delete Order"
+                                            disabled={deletingTaskId === task.id}
+                                            className="flex items-center gap-1 hover:text-danger disabled:cursor-not-allowed disabled:opacity-50"
+                                            onClick={(event) => {
+                                              event.preventDefault()
+                                              event.stopPropagation()
+                                              void deleteEsrOrder(task)
+                                            }}
+                                          >
+                                            <DeleteIcon className="h-4 w-4" />
+                                          </button>
+                                        </>
+                                        )
+                                      : (
                                         <button
+                                          onClick={() => {}}
                                           type="button"
-                                          title="Add Activity"
-                                          className="flex h-5 w-5 items-center justify-center rounded-full text-base font-bold leading-none text-sky-600 hover:bg-sky-50 hover:text-sky-700"
-                                          onClick={(event) => {
-                                            event.preventDefault()
-                                            event.stopPropagation()
-                                            const position = activityMenuPosition(event.currentTarget)
-                                            setActivityMenu({ orderId: task.id, x: position.x, y: position.y })
-                                          }}
+                                          className="flex items-center gap-1 hover:text-info"
                                         >
-                                          +
+                                          <EditIcon />
                                         </button>
-                                        <button
-                                          type="button"
-                                          title="Delete Order"
-                                          disabled={deletingTaskId === task.id}
-                                          className="flex items-center gap-1 hover:text-danger disabled:cursor-not-allowed disabled:opacity-50"
-                                          onClick={(event) => {
-                                            event.preventDefault()
-                                            event.stopPropagation()
-                                            void deleteEsrOrder(task)
-                                          }}
-                                        >
-                                          <DeleteIcon className="h-4 w-4" />
-                                        </button>
-                                      </>
-                                      )
-                                    : (
-                                      <button
-                                        onClick={() => {}}
-                                        type="button"
-                                        className="flex items-center gap-1 hover:text-info"
-                                      >
-                                        <EditIcon />
-                                      </button>
-                                      )}
+                                        )
+                                  )}
                                   <InfoTooltip
                                     side="left"
                                     width={220}
@@ -1163,7 +1230,7 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
                                 </div>
                               </div>
                               <div className="flex gap-2 items-center flex-wrap">
-                                {task.is_parent_order && (
+                                {task.is_parent_order && !isEsrBoard && (
                                   <span
                                     className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide ring-1 bg-fuchsia-600 text-white ring-fuchsia-700 shadow-sm"
                                     title={task.child_orders_count ? `${task.child_orders_count} linked split order${task.child_orders_count === 1 ? '' : 's'}` : undefined}
@@ -1171,7 +1238,15 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
                                     Owner Commission Order
                                   </span>
                                 )}
-                                <ProductLineBadge productLine={task.product_line} />
+                                {postSaleServiceTabs.map((tab) => (
+                                  <span
+                                    key={`${task.id}-post-sale-${tab.label}`}
+                                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ring-1 ${tab.className}`}
+                                  >
+                                    {tab.label}
+                                  </span>
+                                ))}
+                                {!isPostSaleServiceCard && <ProductLineBadge productLine={task.product_line} />}
                                 {esrOptionBadges.map((badge) => (
                                   <span
                                     key={`${task.id}-esr-${badge.label}`}

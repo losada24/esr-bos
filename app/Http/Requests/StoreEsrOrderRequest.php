@@ -29,6 +29,13 @@ class StoreEsrOrderRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
+        if ($this->routeIs('esr-process.store-service')) {
+            $this->merge([
+                'esr_service' => true,
+                'service_source' => $this->input('service_source') ?: 'ESR',
+            ]);
+        }
+
         foreach (['method_of_payment', 'type_of_financing', 'payment_schedule_type', 'down_payment', 'service'] as $field) {
             if ($this->has($field) && trim((string) $this->input($field)) === '') {
                 $this->merge([$field => null]);
@@ -84,6 +91,8 @@ class StoreEsrOrderRequest extends FormRequest
                 Rule::requiredIf(fn () => $this->input('service') !== ServiceEnum::PICKUP->value),
             ],
             'client_id' => ['required', 'integer', 'exists:clients,id'],
+            'parent_order_id' => ['nullable', 'integer', 'exists:orders,id'],
+            'service_source' => ['nullable', 'string', Rule::in(['ESR', 'ESW'])],
             'company_contact_id' => ['required', 'integer', 'exists:company_contacts,id'],
             'associate_company_contact_id_1' => ['nullable', 'integer', 'exists:company_contacts,id'],
             'associate_client_id_1' => ['nullable', 'integer', 'exists:clients,id', 'required_with:associate_company_contact_id_1'],
@@ -100,7 +109,12 @@ class StoreEsrOrderRequest extends FormRequest
                     OrderStatusEnum::REVIEW->value,
                 ]),
             ],
-            'order_number' => ['required', 'string', 'max:255'],
+            'order_number' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('orders', 'order_number')->whereNull('deleted_at'),
+            ],
             'project_amount' => ['required', 'numeric', 'min:0'],
             'service' => ['required', 'string', Rule::in([
                 ServiceEnum::DELIVERY->value,
@@ -131,6 +145,13 @@ class StoreEsrOrderRequest extends FormRequest
             'notes' => ['nullable', 'string', 'max:4000'],
             'attachments' => ['required', 'array', 'min:1'],
             'attachments.*' => ['file', 'max:10240'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'order_number.unique' => 'This order number already exists in BOS.',
         ];
     }
 

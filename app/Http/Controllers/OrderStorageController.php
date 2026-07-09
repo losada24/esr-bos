@@ -151,6 +151,7 @@ class OrderStorageController extends Controller
             'sortable_group' => $this->sortableGroup(),
             'search_origin' => $this->searchOrigin(),
             'show_create_order' => $this->showCreateOrder(),
+            'show_new_service' => $this->showNewService(),
             'show_esr_task_actions' => $this->showEsrTaskActions(),
             'order_view_route' => $this->orderViewRoute(),
             'can_reorder_orders' => $this->canReorderOrders(),
@@ -295,6 +296,11 @@ class OrderStorageController extends Controller
         return false;
     }
 
+    protected function showNewService(): bool
+    {
+        return false;
+    }
+
     protected function showEsrTaskActions(): bool
     {
         return false;
@@ -336,6 +342,7 @@ class OrderStorageController extends Controller
             'tags:id,name,color,taggable_id,taggable_type',
             'orderCompanyContacts.companyContact',
             'paymentSchedule.installments.movements',
+            'serviceControls:id,order_id,service_source',
         ];
     }
 
@@ -395,6 +402,9 @@ class OrderStorageController extends Controller
             'esr_express' => (bool) ($order->esr_express ?? false),
             'esr_reylos_glass' => (bool) ($order->esr_reylos_glass ?? false),
             'esr_service' => (bool) ($order->esr_service ?? false),
+            'service_origin' => $order->service_origin,
+            'is_post_sale_service' => (bool) ($order->is_post_sale_service ?? false),
+            'service_source' => $order->serviceControls->first()?->service_source,
             'bid_due_date' => $this->resolveBidDueDate($order),
             'tags' => ($order->tags ?? collect())->map(function ($tag) {
                 return [

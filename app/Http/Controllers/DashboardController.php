@@ -27,6 +27,44 @@ class DashboardController extends Controller
 
   use OrderStatus, Twilio;
 
+  private function projectScheduleCalendarStatuses(): array
+  {
+    return [
+      OrderStatusEnum::PLANNED->value,
+      OrderStatusEnum::MATERIAL_ORDER_COMPLETED->value,
+      OrderStatusEnum::MATERIAL_ORDER_COMPLETED_FINANCED->value,
+      OrderStatusEnum::STORAGE_MATERIAL->value,
+      OrderStatusEnum::MATERIALS_PICK_UP_OR_DELIVERED->value,
+      OrderStatusEnum::PENDING_PAYMENT->value,
+      OrderStatusEnum::COMPLETE->value,
+    ];
+  }
+
+  private function projectScheduleCalendarStatusColor(string $status): string
+  {
+    return match ($status) {
+      OrderStatusEnum::PLANNED->value,
+      OrderStatusEnum::MATERIAL_ORDER_COMPLETED->value => StatusColorEnum::PLANNED->value,
+      OrderStatusEnum::MATERIAL_ORDER_COMPLETED_FINANCED->value => '#2563eb',
+      OrderStatusEnum::STORAGE_MATERIAL->value => '#f97316',
+      OrderStatusEnum::MATERIALS_PICK_UP_OR_DELIVERED->value => '#0891b2',
+      OrderStatusEnum::PENDING_PAYMENT->value => '#dc2626',
+      OrderStatusEnum::COMPLETE->value => StatusColorEnum::COMPLETE->value,
+      default => $this->getColorByStatus($status, ServiceEnum::DELIVERY->value),
+    };
+  }
+
+  private function projectScheduleCalendarLegend(): array
+  {
+    return collect($this->projectScheduleCalendarStatuses())
+      ->map(fn (string $status): array => [
+        'color' => $this->projectScheduleCalendarStatusColor($status),
+        'label' => $status,
+      ])
+      ->values()
+      ->all();
+  }
+
   public function index(Request $request): Response|RedirectResponse
   {
 
@@ -235,12 +273,16 @@ class DashboardController extends Controller
       ];
     }
 
-    
 
+
+
+    $status = $this->projectScheduleCalendarStatuses();
+    $legend = $this->projectScheduleCalendarLegend();
 
     return Inertia::render('Dashboard/Index', [
       'services' => $services,
       'status' => $status,
+      'calendarStatusOptions' => $status,
       'legend' => $legend,
       'statusmodal' => $statusmodal,
       'installation_teams' => InstallationTeam::with(['user', 'typeHousing'])
@@ -260,6 +302,12 @@ class DashboardController extends Controller
   public function getEvents($year, $month, $service, $status, $name = null)
   {
     $user = auth()->user();
+    $calendarStatuses = $this->projectScheduleCalendarStatuses();
+
+    if ($status !== 'all' && !in_array($status, $calendarStatuses, true)) {
+      return response()->json([]);
+    }
+
     $canHideOnWeekends = $user->hasRole(RoleEnum::ACCOUNT_MANAGER->value)
       || $user->hasRole(RoleEnum::ADMIN->value)
       || $user->hasRole(RoleEnum::INSTALLER->value);
@@ -288,6 +336,7 @@ class DashboardController extends Controller
           ->latest('created_at')
           ->latest('id'),
       ])->calendarFilter(['service' => $service_filter, 'status' => $status, 'name' => $name])
+      ->whereIn('status', $calendarStatuses)
       ->where(function ($query) use ($previewMonth, $nextMonth, $showOnHoldByStatusDate) {
         $query->where(function ($query) use ($previewMonth, $nextMonth) {
           $query->whereBetween('delivery_date', [$previewMonth, $nextMonth]);
@@ -384,7 +433,7 @@ class DashboardController extends Controller
           'Products: ' . $productDetails,
           $startDate,
           $endDate,
-          $this->getColorByStatus($order->status, $order->service),
+          $this->projectScheduleCalendarStatusColor($order->status),
           $order->service
         );
 
@@ -419,7 +468,7 @@ class DashboardController extends Controller
             }else{*/
             $startDeliveryDate = $order->delivery_date;
             $endDeliveryDate = $order->delivery_date;
-            $color= $this->getColorByStatus($order->status, $order->service);
+            $color = $this->projectScheduleCalendarStatusColor($order->status);
             //}
 
           $event = $this->createEvent(
@@ -457,7 +506,7 @@ class DashboardController extends Controller
           else if($order->status === OrderStatusEnum::FINAL_COLLECT->value){
             $startInstallationDate = $order->pending_collect;
             $endInstallationDate =$order->pending_collect;
-            $color = $this->getColorByStatus($order->status, $order->service, true);
+            $color = $this->projectScheduleCalendarStatusColor($order->status);
           }
           else if ($order->status === OrderStatusEnum::FINAL_INSPECTION->value){
             $startInstallationDate = $order->final_inspection_date;
@@ -467,19 +516,19 @@ class DashboardController extends Controller
           else if($order->status === OrderStatusEnum::COMPLETE->value){
               $startInstallationDate = $order->complete_date;
               $endInstallationDate =$order->complete_date;
-              $color = $this->getColorByStatus($order->status, $order->service, true);
+              $color = $this->projectScheduleCalendarStatusColor($order->status);
             }
             else{
               $startInstallationDate = $order->installation_date;
               $endInstallationDate = $order->installation_end_date;
-              $color = $this->getColorByStatus($order->status, $order->service, true);
+              $color = $this->projectScheduleCalendarStatusColor($order->status);
               }
           }
 
           else{
           $startInstallationDate = $order->installation_date;
           $endInstallationDate = $order->installation_end_date;
-          $color = $this->getColorByStatus($order->status, $order->service, true);
+          $color = $this->projectScheduleCalendarStatusColor($order->status);
           
         }
           $startInstallationDateCarbon = Carbon::parse($startInstallationDate);
@@ -487,7 +536,7 @@ class DashboardController extends Controller
           $actualDate = Carbon::now();
           
           
-          if ($actualDate->diffInDays($startInstallationDateCarbon) <= 7 && $order->permit != null && $order->permit->pick_up_permit == '') {
+          if (!in_array($order->status, $calendarStatuses, true) && $actualDate->diffInDays($startInstallationDateCarbon) <= 7 && $order->permit != null && $order->permit->pick_up_permit == '') {
             $color = StatusColorEnum::DELAY_PERMITS->value;
           }
 
@@ -508,7 +557,7 @@ class DashboardController extends Controller
                           'Products: ' . $productDetails,
                           $blockStart->format('Y-m-d'),
                          $startInstallationDateCarbon->modify('-1 day')->format('Y-m-d'),
-                          $this->getColorByStatus($order->status, ServiceEnum::INSTALLATION->value, true),
+                          $this->projectScheduleCalendarStatusColor($order->status),
                           ServiceEnum::INSTALLATION->value
                           
                       );
@@ -525,7 +574,7 @@ class DashboardController extends Controller
                       'Products: ' . $productDetails,
                       $blockStart->format('Y-m-d'),
                        $startInstallationDateCarbon->format('Y-m-d'),
-                      $this->getColorByStatus($order->status, ServiceEnum::INSTALLATION->value, true),
+                      $this->projectScheduleCalendarStatusColor($order->status),
                       ServiceEnum::INSTALLATION->value
                   );
                 
@@ -557,7 +606,7 @@ class DashboardController extends Controller
                 'Products: ' . $productDetails,
                 $startInstallationDate,
                 $endInstallationDate,
-                $this->getColorByStatus($order->status, $order->service, true),
+                $this->projectScheduleCalendarStatusColor($order->status),
                 $order->service,
               );
               $events[] = $event;

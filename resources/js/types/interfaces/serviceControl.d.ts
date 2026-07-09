@@ -1,10 +1,15 @@
-import { type Order } from '@/types/interfaces/order'
 import { type User } from '@/types/interfaces/user'
 
 export interface ServiceControlOrderSummary {
   id?: number | null
   name: string
   order_number?: string | number | null
+  parent_order_id?: number | null
+  parent_order?: {
+    id?: number | null
+    name?: string | null
+    order_number?: string | number | null
+  } | null
   order_type?: string | null
   job_address?: string | null
   city?: string | null
@@ -45,6 +50,10 @@ export interface ServiceControlOrderSummary {
     id: number
     service_name?: string | null
     service_id?: string | null
+    external_order_id?: string | number | null
+    service_source?: 'ESR' | 'ESW' | string | null
+    creation_source?: 'EXTERNAL' | 'MANUAL' | string | null
+    request_origin?: 'OWNER' | 'SERVICE' | string | null
     service_type: string[]
     service_status: string
     priority: string
@@ -71,7 +80,11 @@ export interface ServiceControl {
   client_id?: number | string | null
   service_name?: string | null
   service_id?: string | null
+  external_order_id?: string | number | null
   is_bm?: boolean
+  service_source?: 'ESR' | 'ESW' | string | null
+  creation_source?: 'EXTERNAL' | 'MANUAL' | string | null
+  request_origin?: 'OWNER' | 'SERVICE' | string | null
   service_type: string[]
   description?: string | null
   requires_part: boolean
@@ -92,6 +105,9 @@ export interface ServiceControl {
   service_id_requested_date?: string | null
   eta_date?: string | null
   parts_received_date?: string | null
+  urgency_status?: string | null
+  production_output_overdue_days?: number | null
+  production_output_overdue_resolved_at?: string | null
   part_delivered_date?: string | null
   scheduled_date?: string | null
   executed_date?: string | null
@@ -112,7 +128,7 @@ export interface ServiceControl {
   is_missing_eta_overdue?: boolean
   creator?: User | null
   updater?: User | null
-  order?: ServiceControlOrderSummary | Order | null
+  order?: ServiceControlOrderSummary | null
   client?: ServiceControlOrderSummary['client'] | null
   histories?: ServiceControlHistory[]
 }

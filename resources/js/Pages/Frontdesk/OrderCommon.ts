@@ -145,6 +145,8 @@ export interface OrderFinancialEvent {
 
 export interface Order {
   id: number
+  parent_order_id?: number | null
+  root_order_id?: number | null
   order_number?: string
   client?: Client
   name: string
@@ -164,7 +166,10 @@ export interface Order {
   description?: string
   order_type?: string
   product_line?: string
+  service_source?: string | null
+  service_origin?: string | null
   service?: string | null
+  is_post_sale_service?: boolean
   esr_design?: boolean
   esr_express?: boolean
   esr_reylos_glass?: boolean
@@ -265,6 +270,8 @@ export type OrderFormValues = Order & {
 
 export const orderFormObj: OrderFormValues = {
   id: 0,
+  parent_order_id: null,
+  root_order_id: null,
   order_number: '',
   name: '',
   invoice_number: '',
@@ -309,6 +316,7 @@ export const orderFormObj: OrderFormValues = {
   description: '',
   order_type: '',
   product_line: '',
+  service_source: null,
   service: '',
   esr_design: false,
   esr_express: false,
@@ -401,6 +409,8 @@ export const loadOrderFormObj = (order: Order): OrderFormValues => {
 
   return {
     id: order.id,
+    parent_order_id: order.parent_order_id ?? null,
+    root_order_id: order.root_order_id ?? null,
     order_number: order.order_number ?? '',
     client_name: order.client?.name ?? '',
     phone: order.client?.phone ?? '',
@@ -439,6 +449,7 @@ export const loadOrderFormObj = (order: Order): OrderFormValues => {
     description: order.description ?? '',
     order_type: order.order_type ?? '',
     product_line: order.product_line ?? '',
+    service_source: order.service_source ?? null,
     service: order.service ?? '',
     esr_design: order.esr_design ?? false,
     esr_express: order.esr_express ?? false,

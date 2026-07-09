@@ -42,7 +42,11 @@ export type ServiceControlFormData = {
   }
   service_name: string
   service_id: string
+  external_order_id?: string | number | null
   is_bm: boolean
+  service_source: string
+  creation_source: string
+  request_origin: string
   service_type: string[]
   description: string
   requires_part: boolean
@@ -74,6 +78,10 @@ export type ServiceControlFormData = {
   bm_pickup_date: string
   bm_invoice_number: string
   bm_invoice_status: string
+  external_company_contact_id?: number | string | null
+  external_owner_id?: number | string | null
+  external_owner_name?: string
+  external_owner_email?: string
 }
 
 type Props = PageProps & {
@@ -129,6 +137,22 @@ const formatDate = (date: Date) => {
   return `${date.getFullYear()}-${month}-${day}`
 }
 
+const addBusinessDays = (date: Date, days: number) => {
+  const output = new Date(date)
+  let remainingDays = days
+
+  while (remainingDays > 0) {
+    output.setDate(output.getDate() + 1)
+    const day = output.getDay()
+
+    if (day !== 0 && day !== 6) {
+      remainingDays -= 1
+    }
+  }
+
+  return output
+}
+
 export default function ServiceControlForm ({
   auth,
   title,
@@ -153,6 +177,7 @@ export default function ServiceControlForm ({
   const isReadOnly = mode === 'show'
   const currentRecord = serviceControl ?? null
   const isStandalone = !order.id
+  const isExternalService = data.creation_source === 'EXTERNAL'
   const relatedServices = Array.isArray(order.service_controls) ? order.service_controls : []
   const fallbackRequesterOptions: PartyOption[] = [
     order.client?.id ? { value: `client:${order.client.id}:client`, label: `${order.client.name ?? 'Client'} - Client`, type: 'client', id: Number(order.client.id), role: 'client' } : null,
@@ -186,14 +211,14 @@ export default function ServiceControlForm ({
   const requesterOptionsWithStandaloneClient = selectedStandaloneClientOption
     ? [selectedStandaloneClientOption, ...effectiveRequesterOptions].filter((option, index, options) => options.findIndex((item) => item.value === option.value) === index)
     : effectiveRequesterOptions
+  const shouldShowStandaloneClientFields = isStandalone && !selectedClientLabel
 
   useEffect(() => {
     if (isReadOnly) return
-    const suffix = data.is_bm ? 'BM' : 'Services'
-    if (data.service_name.trim() === '' || data.service_name === `${order.name ?? 'Order'} Services` || data.service_name === `${order.name ?? 'Order'} BM`) {
-      setData('service_name', `${order.name ?? 'Standalone Service'} ${suffix}`)
+    if (data.service_name === `${order.name ?? 'Order'} Services` || data.service_name === `${order.name ?? 'Order'} BM`) {
+      setData('service_name', order.name ?? '')
     }
-  }, [data.is_bm, order.name])
+  }, [data.service_name, order.name])
 
   useEffect(() => {
     if (!isStandalone || isReadOnly || !data.is_bm) return
@@ -232,6 +257,16 @@ export default function ServiceControlForm ({
 
   const setDate = (key: keyof ServiceControlFormData, dates: Date[]) => {
     const value = dates[0] ? formatDate(dates[0]) : ''
+
+    if (key === 'eta_date') {
+      setData((currentData) => ({
+        ...currentData,
+        eta_date: value,
+        parts_received_date: dates[0] ? formatDate(addBusinessDays(dates[0], 2)) : '',
+      }))
+      return
+    }
+
     setData(key, value)
   }
 
@@ -380,7 +415,9 @@ export default function ServiceControlForm ({
             <div>
               <h2 className="text-lg font-semibold text-slate-800">{order.name}</h2>
               <p className="text-sm text-slate-500">
-                {order.id ? `Order #${order.order_number ?? 'N/A'}${order.order_type ? ` · ${humanize(order.order_type)}` : ''}` : 'Unlinked service'}
+                {order.id
+                  ? `Order #${order.order_number ?? 'N/A'}${order.order_type ? ` · ${humanize(order.order_type)}` : ''}`
+                  : (order.order_number ? `External ESR Order #${order.order_number}` : 'Unlinked service')}
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -393,8 +430,12 @@ export default function ServiceControlForm ({
             <ReadonlyItem label="Client Name" value={order.client?.name ?? null} />
             <ReadonlyItem label="Client Phone" value={order.client?.phone ?? null} />
             <ReadonlyItem label="Client Email" value={order.client?.email ?? null} />
-            <ReadonlyItem label="Supervisor" value={order.supervisor?.name ?? null} />
-            <ReadonlyItem label="Address" value={order.address_label ?? null} />
+            <ReadonlyItem
+              label="Owner"
+              value={(order.owners ?? []).length > 0
+                ? order.owners?.map((owner) => owner.name).join(', ')
+                : (order.seller?.name ?? null)}
+            />
             <ReadonlyItem label="Company" value={order.company?.name ?? null} />
             <ReadonlyItem label="Open Days" value={currentRecord?.open_days ?? 0} />
             <ReadonlyItem label="Opened At" value={currentRecord?.opened_at ?? order.today_date ?? null} />
@@ -423,7 +464,7 @@ export default function ServiceControlForm ({
         </div>
 
         <form onSubmit={onSubmit} className="panel space-y-6">
-          {isStandalone && (
+          {shouldShowStandaloneClientFields && (
             <div className="space-y-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
               <div>
                 <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Client</h3>
@@ -506,13 +547,6 @@ export default function ServiceControlForm ({
             </div>
           )}
 
-          {!isStandalone && (
-            <label className="inline-flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
-              <input type="checkbox" checked={Boolean(data.is_bm)} onChange={(event) => { setData('is_bm', event.target.checked) }} disabled={isReadOnly} className="form-checkbox" />
-              <span className="text-sm font-medium text-slate-700">BM</span>
-            </label>
-          )}
-
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             <div>
               <label htmlFor="service_name" className="text-sm font-semibold text-slate-700">Service Name</label>
@@ -547,10 +581,25 @@ export default function ServiceControlForm ({
                   <FieldError message={errors.service_type} />
                 </div>
                 <div>
+                  <label htmlFor="service_source" className="text-sm font-semibold text-slate-700">Origin</label>
+                  <select
+                    id="service_source"
+                    value={data.service_source}
+                    onChange={(event) => { setData('service_source', event.target.value) }}
+                    disabled={isReadOnly || isExternalService}
+                    className="form-select mt-1"
+                  >
+                    <option value="">Select</option>
+                    <option value="ESR">ESR</option>
+                    <option value="ESW">ESW</option>
+                  </select>
+                  <FieldError message={errors.service_source} />
+                </div>
+                <div>
                   <label htmlFor="service_status" className="text-sm font-semibold text-slate-700">Service Status</label>
                   <select id="service_status" value={data.service_status} onChange={(event) => { setData('service_status', event.target.value) }} disabled={isReadOnly} className="form-select mt-1">
                     <option value="">Select</option>
-                    {serviceStatusOptions.map((option) => <option key={option} value={option}>{humanize(option)}</option>)}
+                    {serviceStatusOptions.map((option) => <option key={option} value={option}>{option}</option>)}
                   </select>
                   <FieldError message={errors.service_status} />
                 </div>
@@ -561,14 +610,6 @@ export default function ServiceControlForm ({
                     {priorityOptions.map((option) => <option key={option} value={option}>{humanize(option)}</option>)}
                   </select>
                   <FieldError message={errors.priority} />
-                </div>
-                <div>
-                  <label htmlFor="area" className="text-sm font-semibold text-slate-700">Area</label>
-                  <select id="area" value={data.area} onChange={(event) => { setData('area', event.target.value) }} disabled={isReadOnly} className="form-select mt-1">
-                    <option value="">Select</option>
-                    {areaOptions.map((option) => <option key={option} value={option}>{option}</option>)}
-                  </select>
-                  <FieldError message={errors.area} />
                 </div>
               </>
             )}
@@ -608,27 +649,6 @@ export default function ServiceControlForm ({
               <>
                 <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                   <div>
-                    <label className="text-sm font-semibold text-slate-700">Service Requester</label>
-                    <Select
-                      id="service_requester"
-                      placeholder="Select requester"
-                      name="service_requester"
-                      isMulti={false}
-                      isDisabled={isReadOnly}
-                      value={localRequester}
-                      onChange={(value) => {
-                        const option = value as PartyOption | null
-                        setLocalRequester(option)
-                        applyParty('requester', option)
-                      }}
-                      options={requesterOptionsWithStandaloneClient}
-                      menuPortalTarget={selectPortalTarget}
-                      menuPosition="fixed"
-                      styles={selectStyles}
-                    />
-                    <FieldError message={errors.requester_id || errors.requester_type || errors.requester_role} />
-                  </div>
-                  <div>
                     <label className="text-sm font-semibold text-slate-700">Service Assignee</label>
                     <Select
                       id="service_assignee"
@@ -654,22 +674,12 @@ export default function ServiceControlForm ({
                     <input id="cost" type="number" min="0" step="0.01" value={data.cost} onChange={(event) => { setData('cost', event.target.value) }} disabled={isReadOnly} className="form-input mt-1" />
                     <FieldError message={errors.cost} />
                   </div>
-                  {dateField('service_created_date', 'Service Created Date')}
-                  {dateField('service_id_requested_date', 'Obtained Date')}
+                  {dateField('service_created_date', 'Reception Date')}
+                  {dateField('service_id_requested_date', 'Put Into Production Date')}
                   {dateField('eta_date', 'ETA Date')}
-                  {dateField('parts_received_date', 'Parts Received Date')}
-                  {dateField('part_delivered_date', 'Part Delivered Date')}
-                  {dateField('target_date', 'Target Date')}
+                  {dateField('parts_received_date', 'Production Output Date')}
                   {dateField('scheduled_date', 'Scheduled Date')}
                   {dateField('executed_date', 'Executed Date')}
-                  <div>
-                    <label htmlFor="closure_result" className="text-sm font-semibold text-slate-700">Closure Result</label>
-                    <select id="closure_result" value={data.closure_result} onChange={(event) => { setData('closure_result', event.target.value) }} disabled={isReadOnly} className="form-select mt-1">
-                      <option value="">Select</option>
-                      {closureResultOptions.map((option) => <option key={option} value={option}>{humanize(option)}</option>)}
-                    </select>
-                    <FieldError message={errors.closure_result} />
-                  </div>
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-3">

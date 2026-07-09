@@ -52,6 +52,9 @@ export interface Tasks {
   esr_express?: boolean
   esr_reylos_glass?: boolean
   esr_service?: boolean
+  service_origin?: string | null
+  service_source?: string | null
+  is_post_sale_service?: boolean
   bid_due_date?: string | null
   vip_clients?: boolean
   order_company_contacts?: Array<{

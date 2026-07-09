@@ -5,9 +5,9 @@ import { companyContactSchema, type CompanyContact } from './CompanyContactCommo
 import CompanyContactForm from './CompanyContactForm'
 import { type User, type PageProps } from '@/types'
 import { type Client } from '@/Pages/Client/ClientCommon'
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 
-export default function Create ({ auth, contact_type, sources }: PageProps & { auth: User, contact_type: string[], sources: string[] }) {
+export default function Create ({ auth, sources }: PageProps & { auth: User, contact_type: string[], sources: string[] }) {
   const [clients, setClients] = useState<Client[]>([])
   const initialValues: CompanyContact = {
     id: 0,
@@ -31,10 +31,9 @@ export default function Create ({ auth, contact_type, sources }: PageProps & { a
   } */
 
   const handleSubmit = async (values: any, helpers: FormikHelpers<CompanyContact>) => {
-    values.clients = clients
-    console.log('Submitting values:', values)
-    router.post(route('company_contact.store', values), {
-      _method: 'POST'
+    router.post(route('company_contact.store'), {
+      ...values,
+      clients
     }, {
       forceFormData: true,
       onError: (errors: any) => {

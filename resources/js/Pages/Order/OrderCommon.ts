@@ -202,6 +202,7 @@ export const loadOrderFormObj = (order: Order): OrderFormValues => {
     product_line: order.product_line ?? '',
     is_supply: order.is_supply ?? false,
     has_contract_signed: order.has_contract_signed ?? false,
+    client_company_name: order.client?.company_contact?.name ?? '',
     order_number: order.order_number,
     invoice_number: order.invoice_number ?? '',
     job_address: order.job_address,

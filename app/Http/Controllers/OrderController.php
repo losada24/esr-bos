@@ -15,6 +15,7 @@ use App\Enum\OrderStatusEnum;
 use App\Enum\OrderTypeEnum;
 use App\Enum\RoleEnum;
 use App\Enum\ServiceEnum;
+use App\Enum\ServiceControlTypeEnum;
 use App\Enum\SupervisorPaymentStatusEnum;
 use App\Enum\StatusUserEnum;
 use App\Enum\TypeOfFinancing;
@@ -44,6 +45,7 @@ use Illuminate\Support\Str;
 use Doctrine\DBAL\Types\Type;
 use App\Support\PaymentInstallmentPresenter;
 use App\Support\PaymentScheduleTemplates;
+use Illuminate\Validation\Rule;
 
 class OrderController extends Controller
 {
@@ -80,23 +82,31 @@ class OrderController extends Controller
         OrderStatusEnum::MATERIALS_RECEIVED->value,
       ]
     ]);*/
-     $allowedStatuses = [
-        OrderStatusEnum::PENDING_MAT_REYLOS->value,
-        OrderStatusEnum::PENDING_MATERIALS->value,
-        OrderStatusEnum::PENDING_MATERIALS_EWS->value,
-        OrderStatusEnum::PLANNED->value,
-        OrderStatusEnum::MATERIAL_ORDER_COMPLETED->value,
-        OrderStatusEnum::MATERIAL_ORDER_COMPLETED_FINANCED->value,
-        OrderStatusEnum::STORAGE_MATERIAL->value,
-        OrderStatusEnum::MATERIALS_PICK_UP_OR_DELIVERED->value,
-        OrderStatusEnum::COMPLETE->value,
-    ];
+     $allowedStatuses = $this->orderModuleStatuses();
+     $queryStatuses = array_values(array_unique([
+        ...$allowedStatuses,
+        ...$this->legacyServiceInReviewStatuses(),
+     ]));
 
     $filters = $request->only(['text', 'status']);
     $filters['is_supply'] = $request->boolean('is_supply');
 
     $orders = Order::with(['installationTeams.user'])
-        ->whereIn('orders.status', $allowedStatuses)   // <- filtro duro por status permitidos
+        ->whereIn('orders.status', $queryStatuses)   // <- filtro duro por status permitidos
+        ->where(function ($query) {
+            $query
+                ->whereNotIn('orders.status', $this->serviceInReviewStatuses())
+                ->orWhereHas('serviceControls', function ($serviceQuery) {
+                    $serviceQuery
+                        ->where('is_bm', false)
+                        ->whereNull('deleted_at')
+                        ->where(function ($typeQuery) {
+                            $typeQuery
+                                ->whereNull('service_type')
+                                ->orWhereRaw('JSON_SEARCH(service_type, "one", ?) IS NULL', [ServiceControlTypeEnum::SERVICE_MAN->value]);
+                        });
+                });
+        })
         ->filter($filters)   // si viene un status fuera de la lista, igual quedará excluido
         ->orderBy('orders.updated_at', 'desc')
         ->orderBy('orders.id', 'desc')
@@ -189,10 +199,10 @@ class OrderController extends Controller
         OrderTypeEnum::SUPPLY->value,
       ],
       'status' => [
+        OrderStatusEnum::SERVICE_IN_REVIEW->value,
         OrderStatusEnum::PENDING_MAT_REYLOS->value,
         OrderStatusEnum::PENDING_MATERIALS->value,
         OrderStatusEnum::PENDING_MATERIALS_EWS->value,
-        OrderStatusEnum::PLANNED->value,
         OrderStatusEnum::MATERIAL_ORDER_COMPLETED->value,
         OrderStatusEnum::MATERIAL_ORDER_COMPLETED_FINANCED->value,
         OrderStatusEnum::STORAGE_MATERIAL->value,
@@ -200,6 +210,48 @@ class OrderController extends Controller
         OrderStatusEnum::COMPLETE->value,
       ]
     ];
+  }
+
+  private function orderModuleStatuses(): array
+  {
+    return [
+      OrderStatusEnum::SERVICE_IN_REVIEW->value,
+      OrderStatusEnum::PENDING_MAT_REYLOS->value,
+      OrderStatusEnum::PENDING_MATERIALS->value,
+      OrderStatusEnum::PENDING_MATERIALS_EWS->value,
+      OrderStatusEnum::MATERIAL_ORDER_COMPLETED->value,
+      OrderStatusEnum::MATERIAL_ORDER_COMPLETED_FINANCED->value,
+      OrderStatusEnum::STORAGE_MATERIAL->value,
+      OrderStatusEnum::MATERIALS_PICK_UP_OR_DELIVERED->value,
+      OrderStatusEnum::COMPLETE->value,
+    ];
+  }
+
+  private function serviceInReviewStatuses(): array
+  {
+    return [
+      OrderStatusEnum::SERVICE_IN_REVIEW->value,
+      ...$this->legacyServiceInReviewStatuses(),
+    ];
+  }
+
+  private function legacyServiceInReviewStatuses(): array
+  {
+    return ['Service in Review'];
+  }
+
+  private function isPostSaleServiceOrder(Order $order): bool
+  {
+    return (bool) $order->is_post_sale_service;
+  }
+
+  private function displayOrderStatus(Order $order): string
+  {
+    if (in_array($order->status, $this->serviceInReviewStatuses(), true)) {
+      return OrderStatusEnum::SERVICE_IN_REVIEW->value;
+    }
+
+    return $order->status;
   }
 
   public function create()
@@ -308,7 +360,38 @@ class OrderController extends Controller
    */
   public function edit(Order $order)
   {
-    if ($order->service === ServiceEnum::SERVICE->value) {
+    if ($this->isPostSaleServiceOrder($order)) {
+      $loadedOrder = $order->load([
+        'client:id,name',
+        'parentOrder:id,order_number,name',
+        'serviceControls:id,order_id,service_source,service_type',
+      ]);
+      $serviceControl = $loadedOrder->serviceControls->first();
+
+      return Inertia::render('Order/EditStatusOnly', [
+        'order' => [
+          'id' => $loadedOrder->id,
+          'order_number' => $loadedOrder->order_number,
+          'name' => $loadedOrder->name,
+          'status' => $this->displayOrderStatus($loadedOrder),
+          'service' => $loadedOrder->service,
+          'service_source' => $serviceControl?->service_source,
+          'service_type' => $serviceControl?->service_type ?? [],
+          'client' => $loadedOrder->client ? [
+            'id' => $loadedOrder->client->id,
+            'name' => $loadedOrder->client->name,
+          ] : null,
+          'parent_order' => $loadedOrder->parentOrder ? [
+            'id' => $loadedOrder->parentOrder->id,
+            'order_number' => $loadedOrder->parentOrder->order_number,
+            'name' => $loadedOrder->parentOrder->name,
+          ] : null,
+        ],
+        'statuses' => $this->orderModuleStatuses(),
+      ]);
+    }
+
+    if ($order->service === ServiceEnum::SERVICE->value && ! $order->is_post_sale_service) {
       $data = $this->getOrderFormData([ServiceEnum::SERVICE->value]);
       $data['defaultService'] = ServiceEnum::SERVICE->value;
       $data['status'] = [
@@ -352,17 +435,7 @@ class OrderController extends Controller
       return Inertia::render('Order/EditService', $data);
     }
 
-    $status = [
-      OrderStatusEnum::PENDING_MAT_REYLOS->value,
-      OrderStatusEnum::PENDING_MATERIALS->value,
-      OrderStatusEnum::PENDING_MATERIALS_EWS->value,
-      OrderStatusEnum::PLANNED->value,
-      OrderStatusEnum::MATERIAL_ORDER_COMPLETED->value,
-      OrderStatusEnum::MATERIAL_ORDER_COMPLETED_FINANCED->value,
-      OrderStatusEnum::STORAGE_MATERIAL->value,
-      OrderStatusEnum::MATERIALS_PICK_UP_OR_DELIVERED->value,
-      OrderStatusEnum::COMPLETE->value,
-    ];
+    $status = $this->orderModuleStatuses();
     $statusPaymentInstaller = PaymentExtraField::where('order_id', $order->id)->first();
     //dd($statusPaymentInstaller->installer_payment_status);
 
@@ -502,6 +575,31 @@ class OrderController extends Controller
     $updateOrder->handle($updateOrderRequest, $order);
     return redirect()->route('order.index')
       ->with('success', 'Order updated successfully.');
+  }
+
+  public function updateStatusOnly(Request $request, Order $order)
+  {
+    abort_unless(
+      $this->isPostSaleServiceOrder($order),
+      404
+    );
+
+    $validated = $request->validate([
+      'status' => ['required', 'string', Rule::in($this->orderModuleStatuses())],
+    ]);
+
+    if ($order->status !== $validated['status']) {
+      $order->update(['status' => $validated['status']]);
+
+      $order->orderStatus()->create([
+        'status' => $validated['status'],
+        'user_id' => auth()->id(),
+        'notes' => $validated['status'] . ' created by ' . auth()->user()->name,
+      ]);
+    }
+
+    return redirect()->route('order.index')
+      ->with('success', 'Status updated successfully.');
   }
 
   public function updateFromModal(PartialOrderRequest $request, UpdateOrder $updateOrder, Order $order)
