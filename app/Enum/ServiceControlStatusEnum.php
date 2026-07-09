@@ -4,14 +4,12 @@ namespace App\Enum;
 
 enum ServiceControlStatusEnum: string
 {
-    case PENDING = 'PENDING';
-    case IN_PROGRESS = 'IN PROGRESS';
-    case WAITING_FOR_PART = 'WAITING FOR PART';
-    case PART_RECIEVED = 'Part Recieved';
-    case READY_TO_SCHEDULE = 'READY TO SCHEDULE';
-    case SCHEDULED = 'SCHEDULED';
-    case IN_EXECUTION = 'IN EXECUTION';
+    case ORDER_IN_REVIEW = 'Order In Review';
+    case MATERIAL_REVIEWED = 'Material Reviewed';
+    case PRODUCTION = 'Production';
+    case PRODUCTION_IN_PROGRESS = 'Production in Progress';
+    case PRODUCTION_COMPLETED = 'Production Completed';
+    case READY_FOR_DELIVERY = 'Ready for Delivery';
+    case DELIVERED = 'Delivered';
     case COMPLETED = 'COMPLETED';
-    case CANCELED = 'CANCELED';
-    case CLOSED = 'CLOSED';
 }

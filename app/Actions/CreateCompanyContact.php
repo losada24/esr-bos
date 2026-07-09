@@ -38,7 +38,6 @@ class CreateCompanyContact {
             'billing_state' => $request->billing_state,
             'billing_code' => $request->billing_code,
             'bid_due_date' => $request->bid_due_date,
-            'user_id' => auth()->user()->id,
           ]);
       }
       if (!empty($request->clients)) {

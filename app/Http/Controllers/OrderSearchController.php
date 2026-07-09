@@ -53,7 +53,19 @@ class OrderSearchController extends Controller
             $query->withCount([
                 'serviceControls as assigned_services_count' => fn (Builder $builder) => $builder->where('is_bm', false),
                 'serviceControls as assigned_bm_count' => fn (Builder $builder) => $builder->where('is_bm', true),
-            ]);
+            ])
+                ->whereNull('orders.parent_order_id')
+                ->whereNull('orders.service_origin')
+                ->where(function (Builder $builder) {
+                    $builder
+                        ->whereNull('orders.is_post_sale_service')
+                        ->orWhere('orders.is_post_sale_service', false);
+                })
+                ->where(function (Builder $builder) {
+                    $builder
+                        ->whereNull('orders.esr_service')
+                        ->orWhere('orders.esr_service', false);
+                });
         }
 
         if (!empty($statuses)) {
@@ -201,26 +213,24 @@ class OrderSearchController extends Controller
             ],
             'commissions' => array_column(OrderStatusEnum::cases(), 'value'),
             'service_control' => [
-                OrderStatusEnum::CONTRACT_SIGNED_BY_CLIENT->value,
-                OrderStatusEnum::CLOSED_WON->value,
-                OrderStatusEnum::RECTIFICATION_OF_MEASURES_AND_HOA->value,
-                OrderStatusEnum::ORDER_MATERIALS_AND_FILE_ORGANIZATION->value,
-                OrderStatusEnum::FILE_REVIEW->value,
-                OrderStatusEnum::ACCOUNT_RECEIPT->value,
+                OrderStatusEnum::DEALER_REQUEST->value,
+                OrderStatusEnum::FOLLOW_UP_PROJECTS->value,
                 OrderStatusEnum::REVIEW->value,
+                OrderStatusEnum::ACCOUNT_RECEIPT->value,
                 OrderStatusEnum::PLANNED->value,
-                OrderStatusEnum::MATERIALS_RECEIVED->value,
-                OrderStatusEnum::CONFIRMED->value,
-                OrderStatusEnum::DELIVERY_CONFIRMED->value,
-                OrderStatusEnum::EXECUTION->value,
-                OrderStatusEnum::ON_HOLD->value,
-                OrderStatusEnum::SUPERVISION->value,
-                OrderStatusEnum::INSPECTION->value,
-                OrderStatusEnum::FINISH->value,
-                OrderStatusEnum::FINAL_INSPECTION->value,
-                OrderStatusEnum::FINAL_COLLECT->value,
+                OrderStatusEnum::PRODUCTION->value,
+                OrderStatusEnum::PRODUCTION_SERVICES->value,
+                OrderStatusEnum::PRE_COORDINATION_ACCOUNTING->value,
+                OrderStatusEnum::PENDING_MAT_REYLOS->value,
+                OrderStatusEnum::PENDING_MATERIALS->value,
+                OrderStatusEnum::PENDING_MATERIALS_EWS->value,
+                OrderStatusEnum::MATERIAL_ORDER_COMPLETED->value,
+                OrderStatusEnum::MATERIAL_ORDER_COMPLETED_FINANCED->value,
+                OrderStatusEnum::STORAGE_MATERIAL->value,
+                OrderStatusEnum::MATERIALS_PICK_UP_OR_DELIVERED->value,
+                OrderStatusEnum::PENDING_PAYMENT->value,
                 OrderStatusEnum::COMPLETE->value,
-                OrderStatusEnum::SERVICE->value,
+                OrderStatusEnum::LOST->value,
             ],
         ];
     }

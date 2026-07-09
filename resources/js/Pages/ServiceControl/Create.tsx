@@ -13,6 +13,10 @@ type CreateProps = PageProps & {
   requesterOptions: any[]
   assigneeOptions: any[]
   defaultType?: 'services' | 'bm'
+  defaultServiceSource?: 'ESR' | 'ESW'
+  externalDefaults?: Partial<ServiceControlFormData>
+  pageTitle?: string
+  submitRouteName?: string
 }
 
 export default function Create ({
@@ -28,9 +32,14 @@ export default function Create ({
   requesterOptions,
   assigneeOptions,
   defaultType = 'services',
+  defaultServiceSource = 'ESR',
+  externalDefaults = {},
+  pageTitle = 'Create Service Control',
+  submitRouteName = 'service-control.store',
 }: CreateProps) {
   const isStandalone = !order.id
   const isBm = defaultType === 'bm' && !isStandalone
+  const newClientDefaults = order.client?.id ? {} : (externalDefaults.new_client ?? {})
   const { data, setData, post, processing, errors } = useForm<ServiceControlFormData>({
     order_id: order.id ?? null,
     client_id: order.client?.id ?? '',
@@ -40,18 +49,23 @@ export default function Create ({
       email: '',
       other_phone: '',
       secondary_email: '',
+      ...newClientDefaults,
     },
-    service_name: `${order.name ?? 'Order'} ${isBm ? 'BM' : 'Services'}`,
-    service_id: '',
+    service_name: externalDefaults.service_name ?? (order.name ?? ''),
+    service_id: externalDefaults.service_id ?? '',
+    external_order_id: externalDefaults.external_order_id ?? '',
     is_bm: isBm,
-    service_type: ['OTHER'],
-    description: '',
+    service_source: externalDefaults.service_source ?? defaultServiceSource,
+    creation_source: externalDefaults.creation_source ?? 'MANUAL',
+    request_origin: externalDefaults.request_origin ?? 'SERVICE',
+    service_type: ['GLASS'],
+    description: externalDefaults.description ?? '',
     requires_part: false,
     requested_parts: false,
     parts_available: false,
-    service_status: 'PENDING',
+    service_status: 'Order In Review',
     priority: 'MEDIUM',
-    cost: '',
+    cost: externalDefaults.cost ?? '',
     area: '',
     requester_type: '',
     requester_id: '',
@@ -75,13 +89,17 @@ export default function Create ({
     bm_pickup_date: '',
     bm_invoice_number: '',
     bm_invoice_status: 'PENDING',
+    external_company_contact_id: externalDefaults.external_company_contact_id ?? '',
+    external_owner_id: externalDefaults.external_owner_id ?? '',
+    external_owner_name: externalDefaults.external_owner_name ?? '',
+    external_owner_email: externalDefaults.external_owner_email ?? '',
   })
 
   return (
     <ServiceControlForm
       auth={auth}
       flash={flash}
-      title="Create Service Control"
+      title={pageTitle}
       mode="create"
       order={order}
       data={data}
@@ -98,7 +116,7 @@ export default function Create ({
       assigneeOptions={assigneeOptions}
       onSubmit={(event) => {
         event.preventDefault()
-        post(route('service-control.store'))
+        post(route(submitRouteName))
       }}
     />
   )

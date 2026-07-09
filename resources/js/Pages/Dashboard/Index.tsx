@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Head } from '@inertiajs/react'
 import { type Role, type PageProps, type InstallationTeam, type User } from '@/types'
 import '@mobiscroll/react/dist/css/mobiscroll.min.css'
@@ -22,16 +22,7 @@ interface CalendarFilter {
   name: string
 }
 
-const CALENDAR_STATUS_FILTER_OPTIONS = [
-  'PLANNED',
-  'MATERIAL ORDER COMPLETED',
-  'MATERIAL ORDER COMPLETED FINANCED',
-  'STORAGE MATERIAL',
-  'MATERIALS PICK UP OR DELIVERED',
-  'COMPLETE'
-]
-
-export default function Dashboard ({ auth, services, status, statusmodal, legend, installation_teams, supervisors }: PageProps & { services: string[], status: string[], statusmodal: [], legend: Legend[], installation_teams: InstallationTeam[], supervisors: User[] }) {
+export default function Dashboard ({ auth, services, statusmodal, legend, installation_teams, supervisors, calendarStatusOptions }: PageProps & { services: string[], statusmodal: [], legend: Legend[], installation_teams: InstallationTeam[], supervisors: User[], calendarStatusOptions: string[] }) {
   const IS_ADMIN = isAdmin(auth.user.roles.map((role: Role) => role.name))
   const IS_ACCOUNT_MANAGER = isAccountManager(auth.user.roles.map((role: Role) => role.name))
   const IS_SUPERVISOR = isSupervisor(auth.user.roles.map((role: Role) => role.name))
@@ -44,7 +35,6 @@ export default function Dashboard ({ auth, services, status, statusmodal, legend
   const [currentDate, setCurrentDate] = useState(new Date())
   const [calendarFilter, setCalendarFilter] = useState<CalendarFilter>({ service: IS_ADMIN || IS_ACCOUNT_MANAGER ? 'all' : services[0] ?? 'INSTALLATION', status: 'all', name: '' })
   const [eventId, setEventId] = useState(0)
-  const calendarRef = useRef<HTMLDivElement>(null)
 
   const [isModalOpen, setModalOpen] = useState(false)
   const [eventsPerDay, setEventsPerDay] = useState<number | 'all' >(10)
@@ -53,12 +43,6 @@ export default function Dashboard ({ auth, services, status, statusmodal, legend
     setEventId(args.event.order_id)
     setModalOpen(true)
   }, [])
-
-  const handleScroll = (event: Event) => {
-    const target = event.target as HTMLDivElement
-
-    // console.log(target.scrollTop)
-  }
 
   const loadEvents = (date: Date) => {
     const year = date.getFullYear()
@@ -141,7 +125,7 @@ export default function Dashboard ({ auth, services, status, statusmodal, legend
                 }}
               >
                 <option value="all">All</option>
-                {CALENDAR_STATUS_FILTER_OPTIONS.map((status) => (
+                {calendarStatusOptions.map((status) => (
                   <option key={status}>{status}</option>
                 ))}
               </select>

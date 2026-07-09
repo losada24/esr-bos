@@ -170,6 +170,10 @@ Route::middleware('auth')->group(function () {
       ->name('service-control.clients.search')
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value .'|'. RoleEnum::SERVICE_MANAGER->value]);
 
+    Route::get('service-control/external-service-orders/search', [ServiceControlController::class, 'searchExternalServiceOrders'])
+      ->name('service-control.external-service-orders.search')
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value .'|'. RoleEnum::SERVICE_MANAGER->value]);
+
     Route::resource('service-control', ServiceControlController::class)
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value .'|'. RoleEnum::SERVICE_MANAGER->value]);
 
@@ -185,11 +189,15 @@ Route::middleware('auth')->group(function () {
       ->except(['show'])
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value .'|'. RoleEnum::SERVICE_MANAGER->value .'|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::FRONTDESK_ADMIN->value]);
 
+    Route::put('order/{order}/status-only', [OrderController::class, 'updateStatusOnly'])
+      ->name('order.update_status_only')
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value .'|'. RoleEnum::SERVICE_MANAGER->value .'|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::FRONTDESK_ADMIN->value . '|FRONTDESK_ADMIN|frondesk_admin|frondestk_admin|FRONDESK_ADMIN|FRONDESTK_ADMIN'] );
+
     Route::resource('order', OrderController::class)
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value .'|'. RoleEnum::SERVICE_MANAGER->value .'|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::FRONTDESK_ADMIN->value . '|FRONTDESK_ADMIN|frondesk_admin|frondestk_admin|FRONDESK_ADMIN|FRONDESTK_ADMIN'] );
 
     Route::get('orders/search', [OrderSearchController::class, 'index'])
-      ->middleware(["role:" . RoleEnum::ADMIN->value . '|' . RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::ACCOUNTING->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value . '|' . RoleEnum::OWNER_ADMIN->value . '|' . RoleEnum::OWNER->value . '|' . RoleEnum::FRONTDESK_ADMIN->value . '|' . RoleEnum::FRONTDESK_ESR->value . '|' . RoleEnum::SERVICE_MANAGER->value . '|' . RoleEnum::PRODUCTION->value])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|' . RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::ACCOUNTING->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value . '|' . RoleEnum::OWNER_ADMIN->value . '|' . RoleEnum::OWNER->value . '|' . RoleEnum::FRONTDESK_ADMIN->value . '|' . RoleEnum::FRONTDESK_ESR->value . '|' . RoleEnum::SERVICE_MANAGER->value . '|' . RoleEnum::SERVICE->value . '|' . RoleEnum::PRODUCTION->value])
       ->name('order.search');
 
     Route::get('order/get_delivery_and_installation_date/{payment_factory_date}/{type_of_housing}/{county_id}/{service}/{hasPermit}', [OrderController::class, 'getDeliveryAndInstallationDate'])
@@ -400,6 +408,18 @@ Route::middleware('auth')->group(function () {
       Route::get('esr-process/create-order', [EsrProcessController::class, 'create'])
         ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::OWNER->value . '|'. RoleEnum::FRONTDESK_ADMIN->value . '|'. RoleEnum::FRONTDESK_ESR->value])
         ->name('esr-process.create-order');
+      Route::get('esr-process/create-service', [EsrProcessController::class, 'createService'])
+        ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::OWNER->value . '|'. RoleEnum::FRONTDESK_ADMIN->value . '|'. RoleEnum::FRONTDESK_ESR->value])
+        ->name('esr-process.create-service');
+      Route::post('esr-process/services', [EsrProcessController::class, 'storeService'])
+        ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::OWNER->value . '|'. RoleEnum::FRONTDESK_ADMIN->value . '|'. RoleEnum::FRONTDESK_ESR->value])
+        ->name('esr-process.store-service');
+      Route::get('esr-process/orders/search-external', [EsrProcessController::class, 'searchExternalOrder'])
+        ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::OWNER->value . '|'. RoleEnum::FRONTDESK_ADMIN->value . '|'. RoleEnum::FRONTDESK_ESR->value])
+        ->name('esr-process.orders.search-external');
+      Route::get('esr-process/orders/{order}/prefill', [EsrProcessController::class, 'bosOrderPrefill'])
+        ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::OWNER->value . '|'. RoleEnum::FRONTDESK_ADMIN->value . '|'. RoleEnum::FRONTDESK_ESR->value])
+        ->name('esr-process.orders.prefill');
       Route::get('esr-process/orders/{id}', [FrontdeskController::class, 'orderView'])
         ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::ACCOUNTING->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::OWNER->value . '|'. RoleEnum::FRONTDESK_ADMIN->value . '|'. RoleEnum::FRONTDESK_ESR->value . '|'. RoleEnum::PRODUCTION->value])
         ->name('esr-process.order-view');

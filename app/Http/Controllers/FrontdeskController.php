@@ -515,6 +515,7 @@ class FrontdeskController extends Controller
     return [
       OrderStatusEnum::DEALER_REQUEST->value,
       OrderStatusEnum::FOLLOW_UP_PROJECTS->value,
+      OrderStatusEnum::SERVICE_IN_REVIEW->value,
       OrderStatusEnum::REVIEW->value,
       OrderStatusEnum::ACCOUNT_RECEIPT->value,
       OrderStatusEnum::PRODUCTION->value,
@@ -943,9 +944,14 @@ public function showQuantifiedModal(Order $order)
     $order = Order::findOrFail($id);
     $isEsrProcessView = request()->routeIs('esr-process.order-view');
 
+    if ($isEsrProcessView && $order->is_post_sale_service && $order->service_origin === 'SERVICE') {
+      abort(404);
+    }
+
     if ($isEsrProcessView && !in_array($order->status, [
       OrderStatusEnum::DEALER_REQUEST->value,
       OrderStatusEnum::FOLLOW_UP_PROJECTS->value,
+      OrderStatusEnum::SERVICE_IN_REVIEW->value,
       OrderStatusEnum::REVIEW->value,
       OrderStatusEnum::ACCOUNT_RECEIPT->value,
       OrderStatusEnum::PLANNED->value,

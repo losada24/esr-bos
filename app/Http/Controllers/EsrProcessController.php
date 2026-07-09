@@ -15,6 +15,12 @@ use App\Enum\PaymentScheduleTypeEnum;
 use App\Enum\ProductLineEnum;
 use App\Enum\RoleEnum;
 use App\Enum\ServiceEnum;
+use App\Enum\ServiceControlPriorityEnum;
+use App\Enum\ServiceControlCreationSourceEnum;
+use App\Enum\ServiceControlRequestOriginEnum;
+use App\Enum\ServiceControlSourceEnum;
+use App\Enum\ServiceControlStatusEnum;
+use App\Enum\ServiceControlTypeEnum;
 use App\Enum\StatusUserEnum;
 use App\Enum\TypeOfFinancing;
 use App\Http\Requests\StoreEsrOrderRequest;
@@ -23,6 +29,7 @@ use App\Models\CompanyContact;
 use App\Models\Order;
 use App\Models\OrderCompanyContact;
 use App\Models\PaymentSchedule;
+use App\Models\ServiceControl;
 use App\Models\Source;
 use App\Models\User;
 use App\Support\ClientCompanyContactManager;
@@ -34,7 +41,9 @@ use App\Support\PaymentScheduleTemplates;
 use App\Services\CrmNotificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -42,8 +51,19 @@ use Inertia\Response;
 
 class EsrProcessController extends OrderStorageController
 {
+    private function normalizePhone(?string $phone): string
+    {
+        return preg_replace('/\D+/', '', (string) $phone) ?? '';
+    }
+
     public function editData(Order $order, OrderClientEmailManager $emailManager): JsonResponse
     {
+        if ($order->is_post_sale_service && $order->service_origin === ServiceControlRequestOriginEnum::SERVICE->value) {
+            return response()->json([
+                'message' => 'Post-sale services can only be moved between statuses from the ESR PROCESS pipeline.',
+            ], 422);
+        }
+
         if (!in_array($order->status, $this->storageStatuses(), true)) {
             return response()->json([
                 'message' => 'This order does not belong to ESR PROCESS.',
@@ -165,6 +185,16 @@ class EsrProcessController extends OrderStorageController
 
     public function create(): Response
     {
+        return Inertia::render('EsrProcess/Create', $this->createFormData());
+    }
+
+    public function createService(): Response
+    {
+        return Inertia::render('EsrProcess/Create', $this->createFormData(true));
+    }
+
+    private function createFormData(bool $isServiceForm = false): array
+    {
         $owners = User::assignableOrderOwner()
             ->select('id', 'name')
             ->where('status', StatusUserEnum::ACTIVE->value)
@@ -181,7 +211,7 @@ class EsrProcessController extends OrderStorageController
             ->orderBy('name')
             ->get();
 
-        return Inertia::render('EsrProcess/Create', [
+        return [
             'clients' => $clients,
             'owners' => $owners,
             'companies' => CompanyContact::visibleTo(auth()->user())
@@ -203,11 +233,7 @@ class EsrProcessController extends OrderStorageController
                 static fn (ProductLineEnum $productLine) => $productLine->value,
                 ProductLineEnum::cases()
             ),
-            'statuses' => [
-                OrderStatusEnum::DEALER_REQUEST->value,
-                OrderStatusEnum::FOLLOW_UP_PROJECTS->value,
-                OrderStatusEnum::REVIEW->value,
-            ],
+            'statuses' => $this->createOrderStatuses(),
             'methods_of_payment' => $this->esrPaymentMethods(),
             'type_of_financing' => array_map(
                 static fn (TypeOfFinancing $financing) => $financing->value,
@@ -218,6 +244,188 @@ class EsrProcessController extends OrderStorageController
                 static fn (\App\Enum\ContactSourceEnum $source) => $source->value,
                 \App\Enum\ContactSourceEnum::cases()
             ),
+            'is_service_form' => $isServiceForm,
+            'page_title' => $isServiceForm ? 'New Service' : 'Create ESR Order',
+            'submit_route' => $isServiceForm ? 'esr-process.store-service' : 'esr-process.store-order',
+        ];
+    }
+
+    public function searchExternalOrder(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'search' => ['required', 'string', 'max:255'],
+            'service_only' => ['nullable', 'boolean'],
+            'sales_only' => ['nullable', 'boolean'],
+        ]);
+
+        $baseUrl = rtrim((string) config('services.esr_orders.base_url'), '/');
+        $token = (string) config('services.esr_orders.token');
+
+        if ($token === '') {
+            return response()->json([
+                'message' => 'ESR orders token is not configured.',
+            ], 422);
+        }
+
+        $response = Http::withToken($token)
+            ->acceptJson()
+            ->timeout(15)
+            ->get($baseUrl . '/crm/orders', [
+                'search' => $validated['search'],
+            ]);
+
+        if ($response->failed()) {
+            return response()->json([
+                'message' => 'Unable to search the ESR order service.',
+            ], 502);
+        }
+
+        $serviceOnly = (bool) ($validated['service_only'] ?? false);
+        $salesOnly = (bool) ($validated['sales_only'] ?? false);
+        $orders = collect($response->json('data', []))
+            ->when($serviceOnly, function ($items) {
+                return $items->filter(function ($item) {
+                    $orderType = Str::lower((string) data_get($item, 'order_type', ''));
+                    $serviceValue = Str::lower((string) data_get($item, 'service', ''));
+
+                    return Str::contains($orderType . ' ' . $serviceValue, 'service');
+                });
+            })
+            ->when($salesOnly, function ($items) {
+                return $items->reject(function ($item) {
+                    $orderType = Str::lower((string) data_get($item, 'order_type', ''));
+                    $serviceValue = Str::lower((string) data_get($item, 'service', ''));
+
+                    return Str::contains($orderType . ' ' . $serviceValue, 'service');
+                });
+            })
+            ->values();
+        $search = trim((string) $validated['search']);
+        $order = $orders->first(fn ($item) => (string) data_get($item, 'order_number') === $search)
+            ?? $orders->first();
+
+        if (!$order) {
+            return response()->json([
+                'message' => $serviceOnly
+                    ? 'No ESR service found for that number.'
+                    : ($salesOnly
+                        ? 'No ESR sale order found for that number.'
+                        : 'No ESR order found for that number.'),
+            ], 404);
+        }
+
+        $glassType = Str::upper((string) data_get($order, 'glass_type', ''));
+        $orderType = Str::lower((string) data_get($order, 'order_type', ''));
+        $serviceValue = Str::lower((string) data_get($order, 'service', ''));
+        $accountManagerEmail = Str::lower(trim((string) data_get($order, 'account_manager.email', '')));
+        $companyEmail = Str::lower(trim((string) data_get($order, 'company.email', '')));
+        $companyPhone = trim((string) data_get($order, 'company.phone', ''));
+        $normalizedCompanyPhone = $this->normalizePhone($companyPhone);
+        $owner = $accountManagerEmail !== ''
+            ? User::assignableOrderOwner()
+                ->select('id', 'name', 'email')
+                ->where('status', StatusUserEnum::ACTIVE->value)
+                ->when(
+                    $this->isRestrictedOwner(),
+                    fn ($query) => $query->where('id', auth()->id())
+                )
+                ->whereRaw('LOWER(email) = ?', [$accountManagerEmail])
+                ->first()
+            : null;
+        $company = $companyEmail !== ''
+            ? CompanyContact::visibleTo(auth()->user())
+                ->select('id', 'name', 'email', 'phone')
+                ->whereRaw('LOWER(email) = ?', [$companyEmail])
+                ->first()
+            : null;
+
+        if (!$company && $normalizedCompanyPhone !== '') {
+            $company = CompanyContact::visibleTo(auth()->user())
+                ->select('id', 'name', 'email', 'phone')
+                ->whereNotNull('phone')
+                ->get()
+                ->first(fn (CompanyContact $item) => $this->normalizePhone($item->phone) === $normalizedCompanyPhone);
+        }
+
+        return response()->json([
+            'order' => [
+                'name' => data_get($order, 'name'),
+                'order_number' => (string) data_get($order, 'order_number', ''),
+                'project_amount' => data_get($order, 'amount'),
+                'esr_express' => $glassType === 'EXPRESS',
+                'esr_reylos_glass' => (int) data_get($order, 'company.id') === 68,
+                'esr_service' => Str::contains($orderType . ' ' . $serviceValue, 'service'),
+                'owner_id' => $owner?->id,
+                'account_manager_email' => $accountManagerEmail !== '' ? $accountManagerEmail : null,
+                'company_contact_id' => $company?->id,
+                'company_email' => $companyEmail !== '' ? $companyEmail : null,
+                'company_phone' => $companyPhone !== '' ? $companyPhone : null,
+            ],
+        ]);
+    }
+
+    public function bosOrderPrefill(Order $order, OrderClientEmailManager $emailManager): JsonResponse
+    {
+        if ($this->isRestrictedOwner() && !$order->isAccessibleToOwner(auth()->user())) {
+            return response()->json([
+                'message' => 'You are not authorized to access this order.',
+            ], 403);
+        }
+
+        if (
+            $order->parent_order_id !== null
+            || $order->is_post_sale_service
+            || filled($order->service_origin)
+            || $order->esr_service
+        ) {
+            return response()->json([
+                'message' => 'Only original BOS orders can be associated to an ESW service.',
+            ], 422);
+        }
+
+        $order->load([
+            'client.companyContacts:id,name,email',
+            'owners:id,name',
+            'orderCompanyContacts.companyContact:id,name,email',
+            'orderCompanyContacts.client:id,name,email,phone,other_phone,secondary_email,company_contact_id',
+            'orderCompanyContacts.source:id,name',
+            'paymentSchedule.installments',
+        ]);
+
+        $selectedContact = $order->orderCompanyContacts
+            ->firstWhere('is_selected', true)
+            ?? ($order->orderCompanyContacts->count() === 1 ? $order->orderCompanyContacts->first() : null);
+
+        return response()->json([
+            'order' => [
+                'id' => $order->id,
+                'original_order_number' => $order->order_number,
+                'name' => $order->name,
+                'product_line' => $order->product_line,
+                'service' => $order->service,
+                'project_amount' => $order->project_amount,
+                'job_address' => $order->job_address,
+                'city' => $order->city,
+                'job_state' => $order->job_state,
+                'job_zip' => $order->job_zip,
+                'method_of_payment' => $order->method_of_payment,
+                'type_of_financing' => $order->type_of_financing,
+                'down_payment' => $order->down_payment,
+                'payment_schedule_type' => $order->paymentSchedule?->schedule_type,
+                'client_id' => $selectedContact?->client_id ?? $order->client_id,
+                'company_contact_id' => $selectedContact?->company_contact_id,
+                'client_email_selection' => $emailManager->selectionForOrder($order),
+                'owner_ids' => $order->owners->pluck('id')->values()->all(),
+                'company_pairs' => $order->orderCompanyContacts
+                    ->map(fn (OrderCompanyContact $contact) => [
+                        'company_contact_id' => $contact->company_contact_id,
+                        'client_id' => $contact->client_id ?: $order->client_id,
+                        'source_id' => $contact->source_id,
+                        'is_selected' => (bool) $contact->is_selected,
+                    ])
+                    ->values()
+                    ->all(),
+            ],
         ]);
     }
 
@@ -255,6 +463,15 @@ class EsrProcessController extends OrderStorageController
                 ]);
             }
         }
+        $parentOrder = null;
+        if (! empty($validated['parent_order_id'])) {
+            $parentOrder = Order::query()
+                ->when(
+                    $this->isRestrictedOwner(),
+                    fn ($query) => $query->accessibleToOwner($request->user())
+                )
+                ->findOrFail((int) $validated['parent_order_id']);
+        }
         $selectionError = $emailManager->validateSelectionForContext(
             $client,
             (string) $validated['client_email_selection'],
@@ -267,13 +484,15 @@ class EsrProcessController extends OrderStorageController
             ]);
         }
 
-        DB::transaction(function () use ($request, $validated, $ownerIds, $emailManager, $client, $clientCompanyContactManager, $crmNotificationService) {
+        DB::transaction(function () use ($request, $validated, $ownerIds, $emailManager, $client, $clientCompanyContactManager, $crmNotificationService, $parentOrder) {
             $sourceId = Source::firstOrCreate([
                 'name' => ContactSourceEnum::ESR_REFER->value,
             ])->id;
 
             $order = Order::create([
                 'client_id' => $validated['client_id'],
+                'parent_order_id' => $parentOrder?->id,
+                'root_order_id' => $parentOrder ? ($parentOrder->root_order_id ?: $parentOrder->id) : null,
                 'user_id' => auth()->id(),
                 'order_type' => OrderTypeEnum::COMMERCIAL->value,
                 'product_line' => $validated['product_line'],
@@ -282,6 +501,8 @@ class EsrProcessController extends OrderStorageController
                 'esr_express' => $request->boolean('esr_express'),
                 'esr_reylos_glass' => $request->boolean('esr_reylos_glass'),
                 'esr_service' => $request->boolean('esr_service'),
+                'service_origin' => $request->boolean('esr_service') ? 'OWNER' : null,
+                'is_post_sale_service' => false,
                 'method_of_payment' => $validated['method_of_payment'] ?? null,
                 'type_of_financing' => in_array(($validated['method_of_payment'] ?? null), [
                     MethodOfPayment::FINANCED->value,
@@ -356,6 +577,10 @@ class EsrProcessController extends OrderStorageController
                 'notes' => $validated['status'] . ' created by ' . auth()->user()->name,
             ]);
 
+            if ($request->boolean('esr_service')) {
+                $this->createInitialServiceControlForEsrOrder($order, $validated);
+            }
+
             if (!empty($validated['notes'])) {
                 $order->notes()->create([
                     'content' => $validated['notes'],
@@ -389,6 +614,55 @@ class EsrProcessController extends OrderStorageController
         return redirect()
             ->route('esr-process.index')
             ->with('success', 'Order created successfully.');
+    }
+
+    public function storeService(
+        StoreEsrOrderRequest $request,
+        OrderClientEmailManager $emailManager,
+        ClientCompanyContactManager $clientCompanyContactManager,
+        CrmNotificationService $crmNotificationService
+    ): RedirectResponse {
+        return $this->store($request, $emailManager, $clientCompanyContactManager, $crmNotificationService);
+    }
+
+    private function createInitialServiceControlForEsrOrder(Order $order, array $validated): void
+    {
+        $serviceControl = ServiceControl::create([
+            'order_id' => $order->id,
+            'service_name' => $order->name,
+            'service_id' => $order->order_number,
+            'is_bm' => false,
+            'service_source' => $validated['service_source'] ?? ServiceControlSourceEnum::ESR->value,
+            'creation_source' => ServiceControlCreationSourceEnum::MANUAL->value,
+            'request_origin' => ServiceControlRequestOriginEnum::OWNER->value,
+            'service_type' => [ServiceControlTypeEnum::GLASS->value],
+            'description' => null,
+            'requires_part' => false,
+            'requested_parts' => false,
+            'parts_available' => false,
+            'service_status' => ServiceControlStatusEnum::ORDER_IN_REVIEW->value,
+            'priority' => ServiceControlPriorityEnum::MEDIUM->value,
+            'service_created_date' => now()->format('Y-m-d'),
+            'opened_at' => now()->format('Y-m-d'),
+            'created_by' => auth()->id(),
+            'updated_by' => auth()->id(),
+        ]);
+
+        $serviceControl->histories()->create([
+            'user_id' => auth()->id(),
+            'event_type' => 'CREATED',
+            'summary' => 'Service control created from ESR service order.',
+            'new_values' => [
+                'order_id' => $order->id,
+                'service_name' => $serviceControl->service_name,
+                'service_id' => $serviceControl->service_id,
+                'service_source' => $serviceControl->service_source,
+                'creation_source' => $serviceControl->creation_source,
+                'request_origin' => $serviceControl->request_origin,
+                'service_status' => $serviceControl->service_status,
+                'priority' => $serviceControl->priority,
+            ],
+        ]);
     }
 
     private function createPaymentSchedule(Order $order, array $validated): void
@@ -467,6 +741,12 @@ class EsrProcessController extends OrderStorageController
 
     public function destroy(Order $order): JsonResponse
     {
+        if ($order->is_post_sale_service && $order->service_origin === ServiceControlRequestOriginEnum::SERVICE->value) {
+            return response()->json([
+                'message' => 'Post-sale services cannot be deleted from the ESR PROCESS pipeline.',
+            ], 422);
+        }
+
         if (!in_array($order->status, $this->storageStatuses(), true)) {
             return response()->json([
                 'message' => 'This order does not belong to ESR PROCESS.',
@@ -486,6 +766,7 @@ class EsrProcessController extends OrderStorageController
             OrderStatusEnum::DEALER_REQUEST->value,
             OrderStatusEnum::FOLLOW_UP_PROJECTS->value,
             OrderStatusEnum::REVIEW->value,
+            OrderStatusEnum::SERVICE_IN_REVIEW->value,
             OrderStatusEnum::ACCOUNT_RECEIPT->value,
             OrderStatusEnum::PRODUCTION->value,
             OrderStatusEnum::PRODUCTION_SERVICES->value,
@@ -501,6 +782,15 @@ class EsrProcessController extends OrderStorageController
             OrderStatusEnum::PENDING_PAYMENT->value,
             OrderStatusEnum::COMPLETE->value,
             OrderStatusEnum::LOST->value,
+        ];
+    }
+
+    private function createOrderStatuses(): array
+    {
+        return [
+            OrderStatusEnum::DEALER_REQUEST->value,
+            OrderStatusEnum::FOLLOW_UP_PROJECTS->value,
+            OrderStatusEnum::REVIEW->value,
         ];
     }
 
@@ -538,6 +828,11 @@ class EsrProcessController extends OrderStorageController
     }
 
     protected function showCreateOrder(): bool
+    {
+        return true;
+    }
+
+    protected function showNewService(): bool
     {
         return true;
     }

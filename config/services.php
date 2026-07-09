@@ -43,4 +43,9 @@ return [
       'transcription_language' => env('OPENAI_TRANSCRIPTION_LANGUAGE'),
     ],
 
+    'esr_orders' => [
+      'base_url' => env('ESR_ORDERS_BASE_URL', 'https://orders.esrimpact.com/api/mobile'),
+      'token' => env('ESR_ORDERS_TOKEN'),
+    ],
+
 ];

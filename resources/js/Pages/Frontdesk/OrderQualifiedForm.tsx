@@ -24,6 +24,7 @@ import { type Source } from '@/types/interfaces/order'
 import ClientModal from './ClientModal'
 import { type Client } from '../Client/ClientCommon'
 import { NO_CLIENT_EMAIL_SELECTION, PRIMARY_CLIENT_EMAIL_SELECTION } from '@/Pages/Sales/ContractSignedModal'
+import OrderGlobalSearch, { type OrderSearchResult } from '@/Components/OrderGlobalSearch'
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
 const GOOGLE_MAPS_LIBRARIES: Array<'places'> = ['places']
@@ -66,6 +67,46 @@ const buildJobAddress = (streetNumber: string, route: string, subpremise: string
 type PaymentScheduleTemplateItem = { label: string, percentage: number }
 type PaymentScheduleTemplates = Record<string, PaymentScheduleTemplateItem[]>
 type CustomScheduleItem = { label: string, amount: string }
+type ExternalEsrOrder = {
+  name?: string | null
+  order_number?: string | number | null
+  project_amount?: string | number | null
+  esr_express?: boolean
+  esr_reylos_glass?: boolean
+  esr_service?: boolean
+  owner_id?: number | string | null
+  account_manager_email?: string | null
+  company_contact_id?: number | string | null
+  company_email?: string | null
+  company_phone?: string | null
+}
+type BosOrderPrefill = {
+  name?: string | null
+  product_line?: string | null
+  service?: string | null
+  project_amount?: string | number | null
+  job_address?: string | null
+  city?: string | null
+  job_state?: string | null
+  job_zip?: string | null
+  method_of_payment?: string | null
+  type_of_financing?: string | null
+  down_payment?: string | number | null
+  payment_schedule_type?: string | null
+  client_id?: number | null
+  company_contact_id?: number | null
+  client_email_selection?: string | null
+  owner_ids?: number[]
+  company_pairs?: Array<{
+    company_contact_id?: number | null
+    client_id?: number | null
+    source_id?: number | null
+  }>
+}
+type ExternalOrderSearchStatus = 'idle' | 'loading' | 'found' | 'error'
+const BOS_ORDER_MODULES = [
+  { value: 'service_control', label: 'BOS Orders' }
+]
 
 const CUSTOM_SCHEDULE_TYPE = 'CUSTOMIZED'
 
@@ -232,7 +273,8 @@ const OrderQualifiedForm = ({
   hideActions = false,
   showAttachmentsField = false,
   companyStoreRoute = 'company_contact.store',
-  clientStoreRoute = 'client.store'
+  clientStoreRoute = 'client.store',
+  serviceCreationMode = false
 }: {
   submitCount: number
   errors: FormikErrors<OrderFormValues>
@@ -274,6 +316,7 @@ const OrderQualifiedForm = ({
   showAttachmentsField?: boolean
   companyStoreRoute?: string
   clientStoreRoute?: string
+  serviceCreationMode?: boolean
 }) => {
   const jobAddressInputRef = useRef<HTMLInputElement | null>(null)
   const autocompleteInstanceRef = useRef<google.maps.places.Autocomplete | null>(null)
@@ -290,6 +333,13 @@ const OrderQualifiedForm = ({
   const [clientsList, setClientsList] = useState<Client[]>(clients)
   const [showCompanyModal, setShowCompanyModal] = useState<boolean>(false)
   const [showClientModal, setShowClientModal] = useState<boolean>(false)
+  const [externalOrderSearch, setExternalOrderSearch] = useState<string>('')
+  const [externalOrderSearchStatus, setExternalOrderSearchStatus] = useState<ExternalOrderSearchStatus>('idle')
+  const [externalOrderSearchMessage, setExternalOrderSearchMessage] = useState<string>('')
+  const [externalOwnerWarning, setExternalOwnerWarning] = useState<string>('')
+  const [externalCompanyWarning, setExternalCompanyWarning] = useState<string>('')
+  const [selectedBosOrder, setSelectedBosOrder] = useState<OrderSearchResult | null>(null)
+  const externalOrderSearchRequestIdRef = useRef(0)
 
   useEffect(() => {
     if (!isLoaded) return
@@ -714,6 +764,192 @@ const OrderQualifiedForm = ({
       ? 'Locked for this role while payment method and schedule are already assigned before CONTRACT SIGNED BY CLIENT.'
       : null
   const canShowChangeOrderFields = showPaymentInformationSection && !isCreate && (values.has_contract_signed || esrMode)
+
+  const firstClientIdForCompany = useCallback((companyId: number | null) => {
+    if (companyId == null) return null
+
+    return clientsList.find(client => clientBelongsToCompany(client, companyId))?.id ?? null
+  }, [clientsList])
+
+  const applyExternalOrder = useCallback((order: ExternalEsrOrder) => {
+    setFieldValue('name', order.name ?? '')
+    setFieldValue('order_number', order.order_number != null ? String(order.order_number) : '')
+    setFieldValue('project_amount', order.project_amount ?? 0)
+    setFieldValue('esr_express', Boolean(order.esr_express))
+    setFieldValue('esr_reylos_glass', Boolean(order.esr_reylos_glass))
+    setFieldValue('esr_service', serviceCreationMode ? true : Boolean(order.esr_service))
+
+    if (order.owner_id != null && order.owner_id !== '') {
+      setFieldValue('owner_ids', [Number(order.owner_id)])
+    }
+
+    if (order.company_contact_id != null && order.company_contact_id !== '') {
+      const companyId = Number(order.company_contact_id)
+      const clientId = firstClientIdForCompany(companyId)
+      setCommercialPairs(prev => {
+        const next = prev.length > 0 ? [...prev] : [{ companyId: null, clientId: null, sourceId: null }]
+        next[0] = { ...next[0], companyId, clientId }
+        return next
+      })
+      setFieldValue('company_contact_id', companyId)
+      setFieldValue('client_id', clientId)
+    }
+  }, [firstClientIdForCompany, serviceCreationMode, setFieldValue])
+
+  const applyBosOrderPrefill = useCallback((order: BosOrderPrefill) => {
+    const prefillService = order.service && services.includes(order.service)
+      ? order.service
+      : (values.service ?? '')
+
+    setFieldValue('name', order.name ?? '')
+    if (!serviceCreationMode) {
+      setFieldValue('product_line', order.product_line ?? values.product_line ?? '')
+    }
+    setFieldValue('service', prefillService)
+    setFieldValue('project_amount', order.project_amount ?? 0)
+    setFieldValue('job_address', order.job_address ?? '')
+    setFieldValue('city', order.city ?? '')
+    setFieldValue('job_state', order.job_state ?? '')
+    setFieldValue('job_zip', order.job_zip ?? '')
+    setFieldValue('method_of_payment', order.method_of_payment ?? values.method_of_payment ?? '')
+    setFieldValue('type_of_financing', order.type_of_financing ?? null)
+    setFieldValue('down_payment', order.down_payment ?? null)
+    setFieldValue('payment_schedule_type', order.payment_schedule_type ?? null)
+    setFieldValue('client_email_selection', order.client_email_selection ?? NO_CLIENT_EMAIL_SELECTION)
+
+    if (Array.isArray(order.owner_ids) && order.owner_ids.length > 0) {
+      setFieldValue('owner_ids', order.owner_ids.map(Number))
+    }
+
+    const pairs = Array.isArray(order.company_pairs) && order.company_pairs.length > 0
+      ? order.company_pairs.map(pair => ({
+        companyId: pair.company_contact_id != null ? Number(pair.company_contact_id) : null,
+        clientId: pair.client_id != null ? Number(pair.client_id) : null,
+        sourceId: pair.source_id != null ? Number(pair.source_id) : null
+      }))
+      : [{
+          companyId: order.company_contact_id != null ? Number(order.company_contact_id) : null,
+          clientId: order.client_id != null ? Number(order.client_id) : null,
+          sourceId: null
+        }]
+
+    setCommercialPairs(pairs.length > 0 ? pairs : [{ companyId: null, clientId: null, sourceId: null }])
+  }, [serviceCreationMode, services, setFieldValue, values.method_of_payment, values.product_line, values.service])
+
+  const loadBosOrderPrefill = useCallback(async (orderId: number) => {
+    try {
+      const response = await fetch(route('esr-process.orders.prefill', { order: orderId }), {
+        headers: {
+          Accept: 'application/json'
+        }
+      })
+      const payload = await response.json().catch(() => ({}))
+
+      if (!response.ok) {
+        throw new Error(payload?.message ?? 'Unable to load BOS order data.')
+      }
+
+      applyBosOrderPrefill(payload.order ?? {})
+    } catch (error) {
+      setExternalOrderSearchStatus('error')
+      setExternalOrderSearchMessage(error instanceof Error ? error.message : 'Unable to load BOS order data.')
+    }
+  }, [applyBosOrderPrefill])
+
+  const handleExternalOrderSearch = useCallback(async (searchOverride?: string) => {
+    const search = (searchOverride ?? externalOrderSearch).trim()
+
+    if (!search) {
+      setExternalOrderSearchStatus('error')
+      setExternalOrderSearchMessage('Enter an order number to search.')
+      return
+    }
+
+    const requestId = externalOrderSearchRequestIdRef.current + 1
+    externalOrderSearchRequestIdRef.current = requestId
+    setExternalOrderSearchStatus('loading')
+    setExternalOrderSearchMessage('')
+    setExternalOwnerWarning('')
+    setExternalCompanyWarning('')
+
+    try {
+      const params = new URLSearchParams({ search })
+      if (serviceCreationMode) {
+        params.set('service_only', '1')
+      } else {
+        params.set('sales_only', '1')
+      }
+      const response = await fetch(`${route('esr-process.orders.search-external')}?${params.toString()}`, {
+        headers: {
+          Accept: 'application/json'
+        }
+      })
+      const payload = await response.json().catch(() => ({}))
+
+      if (!response.ok) {
+        throw new Error(payload?.message ?? 'Unable to search ESR order.')
+      }
+
+      if (requestId !== externalOrderSearchRequestIdRef.current) return
+
+      const externalOrder = payload.order ?? {}
+      applyExternalOrder(externalOrder)
+      setExternalOrderSearchStatus('found')
+      setExternalOrderSearchMessage('Order data loaded. You can still edit the fields before creating it.')
+      setExternalOwnerWarning(
+        externalOrder.account_manager_email && !externalOrder.owner_id
+          ? `Owner does not exist in BOS for ${externalOrder.account_manager_email}.`
+          : ''
+      )
+      setExternalCompanyWarning(
+        (externalOrder.company_email || externalOrder.company_phone) && !externalOrder.company_contact_id
+          ? `Company does not exist in BOS for ${externalOrder.company_email ?? externalOrder.company_phone}.`
+          : ''
+      )
+    } catch (error) {
+      if (requestId !== externalOrderSearchRequestIdRef.current) return
+
+      setExternalOrderSearchStatus('error')
+      setExternalOrderSearchMessage(error instanceof Error ? error.message : 'Unable to search ESR order.')
+    }
+  }, [applyExternalOrder, externalOrderSearch, serviceCreationMode])
+
+  useEffect(() => {
+    if (!esrMode || !isCreate || (serviceCreationMode && values.service_source !== 'ESR')) return
+
+    const search = externalOrderSearch.trim()
+    if (search.length === 0) {
+      setExternalOrderSearchStatus('idle')
+      setExternalOrderSearchMessage('')
+      setExternalOwnerWarning('')
+      setExternalCompanyWarning('')
+      return
+    }
+
+    if (search.length < 3) return
+
+    const timeout = window.setTimeout(() => {
+      void handleExternalOrderSearch(search)
+    }, 600)
+
+    return () => {
+      window.clearTimeout(timeout)
+    }
+  }, [esrMode, externalOrderSearch, handleExternalOrderSearch, isCreate, serviceCreationMode, values.service_source])
+
+  useEffect(() => {
+    if (!serviceCreationMode) return
+
+    if (!values.esr_service) {
+      setFieldValue('esr_service', true)
+    }
+
+    if (values.service_source !== 'ESW' && values.parent_order_id) {
+      setFieldValue('parent_order_id', null)
+      setSelectedBosOrder(null)
+    }
+  }, [serviceCreationMode, setFieldValue, values.esr_service, values.parent_order_id, values.service_source])
+
   console.log('frame_colors ->', frame_colors)
   return (
     <>
@@ -740,6 +976,95 @@ const OrderQualifiedForm = ({
         <fieldset className='p-3 border rounded-xl'>
           <legend className='text-lg font-semibold px-3'>Order Information</legend>
           <div className='grid gap-4 grid-cols-4'>
+            {esrMode && isCreate && serviceCreationMode && (
+              <div className="col-span-4 md:col-span-1">
+                <label htmlFor="service_source">Service Origin</label>
+                <Field
+                  id="service_source"
+                  name="service_source"
+                  className="form-select"
+                  as="select"
+                  onChange={(event: React.ChangeEvent<HTMLSelectElement>) => {
+                    const value = event.target.value
+                    setFieldValue('service_source', value)
+                    setFieldValue('product_line', value)
+                    setExternalOrderSearch('')
+                    setExternalOrderSearchStatus('idle')
+                    setExternalOrderSearchMessage('')
+                    setExternalOwnerWarning('')
+                    setExternalCompanyWarning('')
+                    if (value !== 'ESW') {
+                      setFieldValue('parent_order_id', null)
+                      setSelectedBosOrder(null)
+                    }
+                  }}
+                >
+                  <option value="ESR">ESR</option>
+                  <option value="ESW">ESW</option>
+                </Field>
+              </div>
+            )}
+            {esrMode && isCreate && (!serviceCreationMode || values.service_source === 'ESR') && (
+              <div className="col-span-4 rounded-lg border border-slate-200 bg-slate-50 p-3">
+                <label htmlFor="external_order_search" className="mb-2 block text-sm font-semibold text-slate-700">
+                  {serviceCreationMode ? 'Search ESR Service' : 'Search ESR Order'}
+                </label>
+                <input
+                  id="external_order_search"
+                  type="text"
+                  className="form-input"
+                  value={externalOrderSearch}
+                  placeholder="Order Number"
+                  onChange={(event) => {
+                    setExternalOrderSearch(event.target.value)
+                    if (externalOrderSearchStatus !== 'idle') {
+                      setExternalOrderSearchStatus('idle')
+                      setExternalOrderSearchMessage('')
+                    }
+                  }}
+                />
+                {externalOrderSearchMessage && (
+                  <p className={`mt-2 text-sm ${externalOrderSearchStatus === 'error' ? 'text-danger' : 'text-emerald-600'}`}>
+                    {externalOrderSearchMessage}
+                  </p>
+                )}
+              </div>
+            )}
+            {esrMode && isCreate && serviceCreationMode && values.service_source === 'ESW' && (
+              <div className="col-span-4 rounded-lg border border-slate-200 bg-slate-50 p-3">
+                <label className="mb-2 block text-sm font-semibold text-slate-700">
+                  Search BOS Order
+                </label>
+                <OrderGlobalSearch
+                  origin="service_control"
+                  modules={BOS_ORDER_MODULES}
+                  defaultModule="service_control"
+                  onSelectOrder={(orderId, order) => {
+                    setFieldValue('parent_order_id', orderId)
+                    setSelectedBosOrder(order ?? null)
+                    void loadBosOrderPrefill(orderId)
+                  }}
+                />
+                {selectedBosOrder && (
+                  <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-emerald-200 bg-white px-3 py-2 text-sm">
+                    <div>
+                      <p className="font-semibold text-slate-700">{selectedBosOrder.name ?? 'BOS Order'}</p>
+                      <p className="text-xs text-slate-500">{selectedBosOrder.client ?? 'No client'} · {selectedBosOrder.status ?? 'No status'}</p>
+                    </div>
+                    <button
+                      type="button"
+                      className="btn btn-outline-secondary btn-sm"
+                      onClick={() => {
+                        setFieldValue('parent_order_id', null)
+                        setSelectedBosOrder(null)
+                      }}
+                    >
+                      Clear
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
              <div className={submitCount ? (errors.order_type) ? 'has-error' : 'has-success' : ''}>
             <label htmlFor="order_type">Order Type</label>
             <Field
@@ -779,7 +1104,18 @@ const OrderQualifiedForm = ({
             </div>
             <div className={submitCount ? (errors.product_line) ? 'has-error' : 'has-success' : ''}>
               <label htmlFor="product_line">Product Line</label>
-              <Field id="product_line" name="product_line" className="form-select" as="select">
+              <Field
+                id="product_line"
+                name="product_line"
+                className="form-select"
+                as="select"
+                onChange={(event: React.ChangeEvent<HTMLSelectElement>) => {
+                  setFieldValue('product_line', event.target.value)
+                  setExternalOrderSearch('')
+                  setExternalOrderSearchStatus('idle')
+                  setExternalOrderSearchMessage('')
+                }}
+              >
                 <option value="">Product Line</option>
                 {PRODUCT_LINES.map((productLine) => (
                   <option key={productLine} value={productLine}>{productLine}</option>
@@ -809,13 +1145,16 @@ const OrderQualifiedForm = ({
                     { field: 'esr_reylos_glass', label: 'Reylos Glass' },
                     { field: 'esr_service', label: 'Service' }
                   ].map((option) => {
-                    const checked = Boolean((values as any)[option.field])
+                    const isServiceOption = serviceCreationMode && option.field === 'esr_service'
+                    const checked = isServiceOption ? true : Boolean((values as any)[option.field])
 
                     return (
                       <label
                         key={option.field}
                         className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition ${
-                          checked
+                          isServiceOption
+                            ? 'border-[#2c7df6] bg-blue-50 text-[#1f5fbf]'
+                            : checked
                             ? 'border-[#2c7df6] bg-blue-50 text-[#1f5fbf]'
                             : 'border-[#e0e6ed] bg-white text-slate-600 hover:border-[#2c7df6]/60'
                         }`}
@@ -824,7 +1163,12 @@ const OrderQualifiedForm = ({
                           type="checkbox"
                           className="form-checkbox"
                           checked={checked}
+                          disabled={isServiceOption}
                           onChange={(event) => {
+                            if (isServiceOption) {
+                              setFieldValue(option.field, true)
+                              return
+                            }
                             setFieldValue(option.field, event.target.checked)
                           }}
                         />
@@ -1040,7 +1384,7 @@ const OrderQualifiedForm = ({
                 />
                 {(submitCount && errors.job_zip) ? <InputError message={errors.job_zip} className="mt-2" /> : ''}
               </div>
-              {showOwnerField && esrMode && (
+                {showOwnerField && esrMode && (
                 <div>
                   <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Owners</label>
                   <div className="mt-2 rounded-lg border border-slate-200 p-1">
@@ -1057,6 +1401,11 @@ const OrderQualifiedForm = ({
                       styles={{ control: (base) => ({ ...base, minHeight: '40px', border: 'none', boxShadow: 'none' }) }}
                     />
                   </div>
+                  {externalOwnerWarning && (
+                    <div className="mt-2 rounded-md border border-yellow-300 bg-yellow-50 px-3 py-2 text-sm font-medium text-yellow-800">
+                      {externalOwnerWarning}
+                    </div>
+                  )}
                   {(submitCount && errors.owner_ids) ? <InputError message={(errors.owner_ids as any) ?? null} className="mt-2" /> : null}
                 </div>
               )}
@@ -1229,8 +1578,9 @@ const OrderQualifiedForm = ({
                                   isMulti={false}
                                   onChange={(option) => {
                                     const companyId = option ? Number((option as any).value) : null
+                                    const clientId = firstClientIdForCompany(companyId)
                                     setCommercialPairs(prev => prev.map((item, i) => (
-                                      i === index ? { companyId, clientId: null, sourceId: null } : item
+                                      i === index ? { companyId, clientId, sourceId: null } : item
                                     )))
                                   }}
                                   options={companyOptions}
@@ -1249,6 +1599,11 @@ const OrderQualifiedForm = ({
                             {(submitCount && companyError)
                               ? <InputError message={companyError as any} className="mt-2" />
                               : null}
+                            {index === 0 && externalCompanyWarning && (
+                              <div className="mt-2 rounded-md border border-yellow-300 bg-yellow-50 px-3 py-2 text-sm font-medium text-yellow-800">
+                                {externalCompanyWarning}
+                              </div>
+                            )}
                           </div>
 
                           {showClientField && (

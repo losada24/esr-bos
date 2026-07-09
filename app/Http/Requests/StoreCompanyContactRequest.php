@@ -19,6 +19,27 @@ class StoreCompanyContactRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $clients = collect($this->input('clients', []))
+            ->map(function ($client) {
+                if (!is_array($client)) {
+                    return $client;
+                }
+
+                if (empty($client['id'])) {
+                    $client['id'] = null;
+                }
+
+                return $client;
+            })
+            ->all();
+
+        $this->merge([
+            'clients' => $clients,
+        ]);
+    }
+
     /**
      * Get the validation rules that apply to the request.
      *

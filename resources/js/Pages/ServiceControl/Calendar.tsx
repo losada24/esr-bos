@@ -35,11 +35,16 @@ const Detail = ({ label, value }: { label: string, value?: string | number | nul
   </div>
 )
 
-const ServiceEventModal = ({ event, show, onClose }: { event: Record<string, any> | null, show: boolean, onClose: () => void }) => (
+const ServiceEventModal = ({ event, show, canOpenService, onClose }: { event: Record<string, any> | null, show: boolean, canOpenService: boolean, onClose: () => void }) => (
   <Modal show={show} maxWidth="2xl" onClose={onClose}>
     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 px-6 py-4">
       <div>
         <h3 className="text-lg font-semibold text-gray-900">Service Details</h3>
+        {event?.type_label && (
+          <span className="mt-1 mr-2 inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold text-white" style={{ backgroundColor: event.color }}>
+            {event.type_label}
+          </span>
+        )}
         {event?.status_label && (
           <span className="mt-1 inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold text-white" style={{ backgroundColor: event.color }}>
             {event.status_label}
@@ -57,17 +62,16 @@ const ServiceEventModal = ({ event, show, onClose }: { event: Record<string, any
         <Detail label="Client" value={event?.client_name} />
         <Detail label="Client Phone" value={event?.client_phone} />
         <Detail label="Event Date" value={event?.event_date} />
-        <Detail label="Scheduled Date" value={event?.scheduled_date} />
-        <Detail label="Supervisor" value={event?.supervisor_name} />
+        <Detail label="Production Output Date" value={event?.production_output_date} />
+        <Detail label="Urgency Status" value={event?.urgency_status} />
         <Detail label="Owners" value={event?.owner_names} />
-        <Detail label="Open Days" value={event?.open_days} />
-        <Detail label="Created Date" value={event?.service_created_date} />
+        <Detail label="Reception Date" value={event?.service_created_date} />
       </div>
       <div className="rounded-md border border-gray-200 px-3 py-2">
         <div className="text-[11px] uppercase tracking-wide text-gray-500">Description</div>
         <div className="text-sm font-medium text-gray-900">{event?.description || '-'}</div>
       </div>
-      {event?.service_control_id && (
+      {canOpenService && event?.service_control_id && (
         <Link href={route('service-control.edit', event.service_control_id)} className="btn btn-primary">
           Open Service
         </Link>
@@ -86,6 +90,8 @@ export default function ServiceControlCalendar ({ auth, legend, statusOptions }:
   const [legendExpanded, setLegendExpanded] = useState(true)
   const [selectedEvent, setSelectedEvent] = useState<Record<string, any> | null>(null)
   const [showEventModal, setShowEventModal] = useState(false)
+  const roleNames = auth.user.roles.map((role) => String(role.name ?? '').trim().toLowerCase().replace(/[\s-]+/g, '_'))
+  const canOpenService = roleNames.includes('admin') || roleNames.includes('account_manager') || roleNames.includes('service_manager')
 
   const loadEvents = useCallback((date: Date) => {
     const year = date.getFullYear()
@@ -136,6 +142,9 @@ export default function ServiceControlCalendar ({ auth, legend, statusOptions }:
     return (
       <div className="flex min-w-0 items-center gap-[4px] leading-tight" title={originalEvent.tooltip ?? eventData.title}>
         <span className="truncate text-xs font-semibold">{originalEvent.service_name ?? eventData.title}</span>
+        {originalEvent.type_label && (
+          <span className="shrink-0 text-[10px] font-bold uppercase text-gray-800 dark:text-gray-100">- {originalEvent.type_label}</span>
+        )}
         {originalEvent.assignee_name && (
           <span className="truncate text-[10px] text-gray-700 dark:text-gray-200">- {originalEvent.assignee_name}</span>
         )}
@@ -146,6 +155,7 @@ export default function ServiceControlCalendar ({ auth, legend, statusOptions }:
   const renderScheduleEventContent = useCallback((eventData: MbscCalendarEventData) => {
     const originalEvent = (eventData.original as Record<string, any>) ?? {}
     const details = [
+      originalEvent.type_label,
       originalEvent.status_label,
       originalEvent.assignee_name && `Assignee: ${originalEvent.assignee_name}`,
       originalEvent.service_id && `ID: ${originalEvent.service_id}`,
@@ -156,7 +166,7 @@ export default function ServiceControlCalendar ({ auth, legend, statusOptions }:
     return (
       <div className="flex min-w-0 flex-col gap-[2px] leading-tight" title={originalEvent.tooltip ?? eventData.title}>
         <span className="text-[11px] font-semibold">
-          {[originalEvent.service_name ?? eventData.title, originalEvent.assignee_name].filter(Boolean).join(' - ')}
+          {[originalEvent.service_name ?? eventData.title, originalEvent.type_label, originalEvent.assignee_name].filter(Boolean).join(' - ')}
         </span>
         <span className="text-[10px] text-gray-700 dark:text-gray-200">{details.join(' • ')}</span>
       </div>
@@ -253,6 +263,7 @@ export default function ServiceControlCalendar ({ auth, legend, statusOptions }:
         <ServiceEventModal
           show={showEventModal}
           event={selectedEvent}
+          canOpenService={canOpenService}
           onClose={() => {
             setShowEventModal(false)
             setSelectedEvent(null)

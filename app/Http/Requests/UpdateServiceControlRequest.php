@@ -3,7 +3,10 @@
 namespace App\Http\Requests;
 
 use App\Enum\ServiceControlClosureResultEnum;
+use App\Enum\ServiceControlCreationSourceEnum;
 use App\Enum\ServiceControlPriorityEnum;
+use App\Enum\ServiceControlRequestOriginEnum;
+use App\Enum\ServiceControlSourceEnum;
 use App\Enum\ServiceControlStatusEnum;
 use App\Enum\ServiceControlTypeEnum;
 use App\Enum\AreaEnum;
@@ -31,12 +34,15 @@ class UpdateServiceControlRequest extends FormRequest
         $this->merge([
             'new_client' => $newClient,
             'service_type' => is_string($serviceType) && $serviceType !== '' ? [$serviceType] : $serviceType,
+            'service_source' => $this->input('service_source') ?: ServiceControlSourceEnum::ESR->value,
+            'request_origin' => $this->input('request_origin') ?: ServiceControlRequestOriginEnum::SERVICE->value,
         ]);
     }
 
     public function rules(): array
     {
         $requiresStandaloneClient = fn () => ! $this->filled('order_id') && ! $this->filled('client_id');
+        $serviceControlId = (int) ($this->route('service_control')?->id ?? $this->route('service_control') ?? 0);
 
         return [
             'order_id' => ['nullable', 'integer', 'exists:orders,id'],
@@ -52,8 +58,19 @@ class UpdateServiceControlRequest extends FormRequest
             'new_client.other_phone' => ['nullable', 'string', 'max:20'],
             'new_client.secondary_email' => ['nullable', 'email', 'max:255'],
             'service_name' => ['required', 'string', 'max:255'],
-            'service_id' => ['nullable', 'string', 'max:255'],
+            'service_id' => [
+                'nullable',
+                'string',
+                'max:255',
+                Rule::unique('service_controls', 'service_id')
+                    ->ignore($serviceControlId)
+                    ->whereNull('deleted_at'),
+            ],
+            'external_order_id' => ['nullable', 'string', 'max:255'],
             'is_bm' => ['boolean'],
+            'service_source' => [Rule::excludeIf(fn () => $this->boolean('is_bm')), Rule::requiredIf(fn () => ! $this->boolean('is_bm')), 'string', Rule::in(array_column(ServiceControlSourceEnum::cases(), 'value'))],
+            'creation_source' => ['nullable', 'string', Rule::in(array_column(ServiceControlCreationSourceEnum::cases(), 'value'))],
+            'request_origin' => ['nullable', 'string', Rule::in(array_column(ServiceControlRequestOriginEnum::cases(), 'value'))],
             'service_type' => [Rule::excludeIf(fn () => $this->boolean('is_bm')), Rule::requiredIf(fn () => ! $this->boolean('is_bm')), 'array', 'min:1'],
             'service_type.*' => ['string', Rule::in(array_column(ServiceControlTypeEnum::cases(), 'value'))],
             'description' => ['nullable', 'string'],
@@ -81,7 +98,6 @@ class UpdateServiceControlRequest extends FormRequest
             'closure_result' => [
                 'nullable',
                 'string',
-                Rule::requiredIf(fn () => $this->input('service_status') === ServiceControlStatusEnum::CLOSED->value),
                 Rule::in(array_column(ServiceControlClosureResultEnum::cases(), 'value')),
             ],
             'observations' => ['nullable', 'string'],

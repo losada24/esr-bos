@@ -25,7 +25,7 @@ class ServiceControlExport implements FromView, WithStyles
     public function styles(Worksheet $sheet): array
     {
         $isBm = ($this->data['filters']['type'] ?? 'services') === 'bm';
-        $lastColumn = $isBm ? 'I' : 'T';
+        $lastColumn = $isBm ? 'I' : 'Q';
         $lastColumnIndex = Coordinate::columnIndexFromString($lastColumn);
 
         $sheet->setAutoFilter("A4:{$lastColumn}4");
@@ -65,7 +65,7 @@ class ServiceControlExport implements FromView, WithStyles
             'A:C' => [
                 'alignment' => ['horizontal' => Alignment::HORIZONTAL_LEFT],
             ],
-            $isBm ? 'D:I' : 'D:T' => [
+            $isBm ? 'D:I' : 'D:Q' => [
                 'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
             ],
         ];

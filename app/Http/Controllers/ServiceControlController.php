@@ -5,18 +5,27 @@ namespace App\Http\Controllers;
 use App\Enum\AreaEnum;
 use App\Enum\BmInvoiceStatusEnum;
 use App\Enum\ContactSourceEnum;
+use App\Enum\OrderStatusEnum;
+use App\Enum\OrderTypeEnum;
 use App\Enum\RoleEnum;
 use App\Enum\ServiceControlClosureResultEnum;
+use App\Enum\ServiceControlCreationSourceEnum;
 use App\Enum\ServiceControlPriorityEnum;
+use App\Enum\ServiceControlRequestOriginEnum;
+use App\Enum\ServiceControlSourceEnum;
 use App\Enum\ServiceControlStatusEnum;
 use App\Enum\ServiceControlTypeEnum;
+use App\Enum\ServiceEnum;
 use App\Enum\StatusUserEnum;
 use App\Http\Requests\StoreServiceControlRequest;
 use App\Http\Requests\UpdateServiceControlRequest;
 use App\Models\Client;
+use App\Models\CompanyContact;
 use App\Models\Order;
+use App\Models\OrderCompanyContact;
 use App\Models\ServiceControl;
 use App\Models\ServiceControlHistory;
+use App\Models\Source;
 use App\Models\User;
 use App\Exports\ServiceControlExport;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -27,12 +36,26 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Inertia\Inertia;
 use Inertia\Response;
 use Maatwebsite\Excel\Facades\Excel;
 
 class ServiceControlController extends Controller
 {
+    private function normalizePhone(?string $phone): string
+    {
+        return preg_replace('/\D+/', '', (string) $phone) ?? '';
+    }
+
+    private function existingRoleNames(array $roles): array
+    {
+        return DB::table('roles')
+            ->whereIn('name', $roles)
+            ->pluck('name')
+            ->all();
+    }
+
     public function index(Request $request): Response
     {
         $data = $this->buildIndexData($request, 50);
@@ -60,13 +83,18 @@ class ServiceControlController extends Controller
     public function calendar(): Response
     {
         return Inertia::render('ServiceControl/Calendar', [
-            'legend' => collect($this->serviceCalendarStatuses())
-                ->map(fn (string $status) => [
-                    'label' => $this->humanizeStatus($status),
-                    'status' => $status,
-                    'color' => $this->serviceCalendarStatusColor($status),
-                ])
-                ->values(),
+            'legend' => [
+                [
+                    'label' => 'Services',
+                    'status' => ServiceControlRequestOriginEnum::SERVICE->value,
+                    'color' => $this->serviceCalendarOriginColor(ServiceControlRequestOriginEnum::SERVICE->value),
+                ],
+                [
+                    'label' => 'Quotes',
+                    'status' => ServiceControlRequestOriginEnum::OWNER->value,
+                    'color' => $this->serviceCalendarOriginColor(ServiceControlRequestOriginEnum::OWNER->value),
+                ],
+            ],
             'statusOptions' => collect($this->serviceCalendarStatuses())
                 ->map(fn (string $status) => [
                     'label' => $this->humanizeStatus($status),
@@ -101,6 +129,7 @@ class ServiceControlController extends Controller
                 'histories' => fn ($query) => $query->orderByDesc('created_at'),
             ])
             ->where('is_bm', false)
+            ->whereNotNull('parts_received_date')
             ->whereIn('service_status', $statuses)
             ->when($search !== '', function (Builder $query) use ($search) {
                 $like = '%' . $search . '%';
@@ -108,6 +137,7 @@ class ServiceControlController extends Controller
                     $builder
                         ->where('service_name', 'like', $like)
                         ->orWhere('service_id', 'like', $like)
+                        ->orWhere('external_order_id', 'like', $like)
                         ->orWhereHas('order', function (Builder $orderQuery) use ($like) {
                             $orderQuery
                                 ->where('name', 'like', $like)
@@ -135,7 +165,8 @@ class ServiceControlController extends Controller
         $events = $serviceControls
             ->map(function (ServiceControl $serviceControl) use ($calendarTimezone) {
                 $status = (string) $serviceControl->service_status;
-                $eventDate = $this->serviceCalendarDate($serviceControl, $status, $calendarTimezone);
+                $requestOrigin = $serviceControl->request_origin ?? ServiceControlRequestOriginEnum::SERVICE->value;
+                $eventDate = $this->serviceCalendarDate($serviceControl, $calendarTimezone);
 
                 if (! $eventDate) {
                     return null;
@@ -155,7 +186,9 @@ class ServiceControlController extends Controller
                     'start' => $eventStart->format(\DateTimeInterface::ATOM),
                     'end' => $eventEnd->format(\DateTimeInterface::ATOM),
                     'allDay' => true,
-                    'color' => $this->serviceCalendarStatusColor($status),
+                    'color' => $this->serviceCalendarEventColor($serviceControl, $status, $requestOrigin, $calendarTimezone),
+                    'request_origin' => $requestOrigin,
+                    'type_label' => $requestOrigin === ServiceControlRequestOriginEnum::OWNER->value ? 'Quote' : 'Service',
                     'status' => $status,
                     'status_label' => $this->humanizeStatus($status),
                     'service_name' => $serviceControl->service_name,
@@ -167,18 +200,23 @@ class ServiceControlController extends Controller
                         $serviceControl->client
                     ),
                     'order_name' => $order?->name ?? 'Standalone Service',
-                    'order_number' => $order?->order_number,
+                    'order_number' => $this->serviceControlOrderNumber($serviceControl),
                     'client_name' => $client?->name ?? '',
                     'client_phone' => $client?->phone ?? '',
                     'owner_names' => $owners,
                     'supervisor_name' => $order?->supervisor?->name ?? '',
                     'event_date' => $eventStart->format('M d, Y'),
+                    'production_output_date' => $this->formatDate($serviceControl->parts_received_date),
+                    'urgency_status' => $this->productionOutputUrgencyStatus($serviceControl, $calendarTimezone),
+                    'production_output_overdue_days' => $serviceControl->production_output_overdue_days,
+                    'production_output_overdue_resolved_at' => optional($serviceControl->production_output_overdue_resolved_at)->toISOString(),
                     'scheduled_date' => $this->formatDate($serviceControl->scheduled_date),
                     'service_created_date' => $this->formatDate($serviceControl->service_created_date),
                     'open_days' => $serviceControl->open_days,
                     'description' => $serviceControl->description,
                     'tooltip' => implode(' | ', array_filter([
                         $serviceControl->service_name,
+                        $requestOrigin === ServiceControlRequestOriginEnum::OWNER->value ? 'Quote' : 'Service',
                         'Status: ' . $this->humanizeStatus($status),
                         $client?->name ? 'Client: ' . $client->name : null,
                     ])),
@@ -223,6 +261,19 @@ class ServiceControlController extends Controller
         return response()->json(['results' => $clients]);
     }
 
+    public function searchExternalServiceOrders(Request $request): JsonResponse
+    {
+        $search = trim((string) $request->query('search', ''));
+
+        if ($search === '') {
+            return response()->json(['results' => []]);
+        }
+
+        return response()->json([
+            'results' => $this->externalServiceOrders($search),
+        ]);
+    }
+
     private function buildIndexData(Request $request, ?int $limit = null): array
     {
         $query = ServiceControl::query()
@@ -231,6 +282,7 @@ class ServiceControlController extends Controller
                 'order.client.companyContacts',
                 'order.orderCompanyContacts.companyContact',
                 'order.orderCompanyContacts.client',
+                'order.parentOrder:id,order_number,name',
                 'order.user:id,name',
                 'order.owners:id,name',
                 'order.supervisor:id,name',
@@ -240,11 +292,37 @@ class ServiceControlController extends Controller
             ]);
 
         if ($this->isOwnerRestricted($request->user())) {
-            $query->whereHas('order', fn (Builder $builder) => $builder->accessibleToOwner($request->user()));
+            $query->where(function (Builder $builder) use ($request) {
+                $builder
+                    ->whereHas('order', fn (Builder $orderQuery) => $orderQuery->accessibleToOwner($request->user()))
+                    ->orWhere('created_by', $request->user()?->id);
+            });
         }
 
-        $type = $request->query('type') === 'bm' ? 'bm' : 'services';
-        $query->where('is_bm', $type === 'bm');
+        $type = $request->query('type') === 'quotes' ? 'quotes' : 'services';
+        $query->where('is_bm', false);
+
+        if ($type === 'quotes') {
+            $query->where(function (Builder $builder) {
+                $builder
+                    ->where('request_origin', ServiceControlRequestOriginEnum::OWNER->value)
+                    ->orWhereHas('order', function (Builder $orderQuery) {
+                        $orderQuery
+                            ->where('service_origin', 'OWNER')
+                            ->orWhere('esr_service', true);
+                    });
+            });
+        } else {
+            $query->where(function (Builder $builder) {
+                $builder
+                    ->where('request_origin', ServiceControlRequestOriginEnum::SERVICE->value)
+                    ->orWhereHas('order', function (Builder $orderQuery) {
+                        $orderQuery
+                            ->where('service_origin', 'SERVICE')
+                            ->orWhere('is_post_sale_service', true);
+                    });
+            });
+        }
 
         $text = trim((string) $request->query('search', ''));
         if ($text !== '') {
@@ -253,6 +331,7 @@ class ServiceControlController extends Controller
                 $builder
                     ->where('service_name', 'like', $like)
                     ->orWhere('service_id', 'like', $like)
+                    ->orWhere('external_order_id', 'like', $like)
                     ->orWhere('bm_invoice_number', 'like', $like)
                     ->orWhere('bm_picked_up_by', 'like', $like)
                     ->orWhereRaw('JSON_SEARCH(service_type, "one", ?) IS NOT NULL', [$like])
@@ -320,17 +399,130 @@ class ServiceControlController extends Controller
         ];
     }
 
+    private function externalServiceOrders(string $search): array
+    {
+        $baseUrl = rtrim((string) config('services.esr_orders.base_url'), '/');
+        $token = (string) config('services.esr_orders.token');
+
+        if ($token === '') {
+            return [];
+        }
+
+        try {
+            $response = Http::withToken($token)
+                ->acceptJson()
+                ->timeout(15)
+                ->get($baseUrl . '/crm/orders', [
+                    'search' => $search,
+                ]);
+        } catch (\Throwable) {
+            return [];
+        }
+
+        if ($response->failed()) {
+            return [];
+        }
+
+        return collect($response->json('data', []))
+            ->filter(fn ($order) => strtolower((string) data_get($order, 'order_type', '')) === 'service')
+            ->map(function ($order) {
+                $companySummary = [
+                    'name' => data_get($order, 'company.name'),
+                    'email' => data_get($order, 'company.email'),
+                    'phone' => data_get($order, 'company.phone'),
+                ];
+                $matchedCompany = $this->resolveExternalCompanyFromSummary($companySummary);
+
+                return [
+                    'order_id' => data_get($order, 'order_id'),
+                    'order_number' => data_get($order, 'order_number'),
+                    'name' => data_get($order, 'name'),
+                    'amount' => data_get($order, 'amount'),
+                    'company' => [
+                        ...$companySummary,
+                        'bos_id' => $matchedCompany?->id,
+                        'exists_in_bos' => $matchedCompany !== null,
+                    ],
+                    'client' => [
+                        'name' => data_get($order, 'client.name') ?: data_get($order, 'customer.name'),
+                        'email' => data_get($order, 'client.email') ?: data_get($order, 'customer.email'),
+                        'phone' => data_get($order, 'client.phone') ?: data_get($order, 'customer.phone'),
+                    ],
+                    'account_manager' => [
+                        'name' => data_get($order, 'account_manager.name'),
+                        'email' => data_get($order, 'account_manager.email'),
+                    ],
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    private function resolveExternalCompanyFromSummary(array $company): ?CompanyContact
+    {
+        $email = strtolower(trim((string) ($company['email'] ?? '')));
+        $phone = $this->normalizePhone($company['phone'] ?? null);
+        $name = trim((string) ($company['name'] ?? ''));
+
+        $query = CompanyContact::query()
+            ->select('id', 'name', 'email', 'phone');
+
+        if ($email !== '') {
+            $matched = (clone $query)->whereRaw('LOWER(email) = ?', [$email])->first();
+            if ($matched) {
+                return $matched;
+            }
+        }
+
+        if ($phone !== '') {
+            $matched = (clone $query)
+                ->whereNotNull('phone')
+                ->get()
+                ->first(fn (CompanyContact $item) => $this->normalizePhone($item->phone) === $phone);
+
+            if ($matched) {
+                return $matched;
+            }
+        }
+
+        if ($name !== '') {
+            return (clone $query)->where('name', $name)->first();
+        }
+
+        return null;
+    }
+
     public function create(Request $request): RedirectResponse|Response
     {
         $orderId = (int) $request->query('order_id', 0);
         $order = $orderId > 0 ? $this->loadOrderForServiceControl($orderId) : null;
+        $externalOrder = $order ? [] : $this->externalOrderSummaryFromRequest($request);
+        $externalContext = $externalOrder === []
+            ? ['client' => null, 'company' => null, 'owner' => null]
+            : $this->resolveExternalServiceOrderContext($request, $externalOrder);
 
         if ($order) {
             $this->ensureCanAccessOrder($request->user(), $order);
         }
 
+        if (
+            ! $order
+            && $externalOrder !== []
+            && ! $externalContext['company']
+            && ! empty($externalOrder['company_name'])
+        ) {
+            return redirect()->route('service-control.index', ['type' => 'services'])
+                ->with('error', 'The company from ESR does not exist in BOS. Create the company before continuing.');
+        }
+
         return Inertia::render('ServiceControl/Create', [
-            'order' => $order ? $this->serializeOrderForServiceControl($order) : $this->standaloneOrderSummary(),
+            'order' => $order ? $this->serializeOrderForServiceControl($order) : $this->standaloneOrderSummary($externalContext['client'], $externalOrder, $externalContext),
+            'externalDefaults' => $order ? [] : $this->externalServiceDefaults($externalOrder, $externalContext),
+            'pageTitle' => $request->routeIs('esr-process.create-service') ? 'New Service' : 'Create Service Control',
+            'submitRouteName' => $request->routeIs('esr-process.create-service') ? 'esr-process.store-service' : 'service-control.store',
+            'defaultServiceSource' => $request->query('service_source') === ServiceControlSourceEnum::ESW->value
+                ? ServiceControlSourceEnum::ESW->value
+                : ServiceControlSourceEnum::ESR->value,
             'defaultType' => $request->query('type') === 'bm' ? 'bm' : 'services',
             'serviceTypeOptions' => array_column(ServiceControlTypeEnum::cases(), 'value'),
             'serviceStatusOptions' => $this->serviceStatusOptions(),
@@ -346,13 +538,14 @@ class ServiceControlController extends Controller
     public function show(Request $request, ServiceControl $serviceControl): Response
     {
         $serviceControl->load([
-            'order.client.companyContact',
-            'order.client.companyContacts',
-            'order.orderCompanyContacts.companyContact',
-            'order.orderCompanyContacts.client',
-            'order.user:id,name',
-            'order.owners:id,name',
-            'order.supervisor:id,name',
+                'order.client.companyContact',
+                'order.client.companyContacts',
+                'order.orderCompanyContacts.companyContact',
+                'order.orderCompanyContacts.client',
+                'order.parentOrder:id,order_number,name',
+                'order.user:id,name',
+                'order.owners:id,name',
+                'order.supervisor:id,name',
             'client',
             'creator:id,name',
             'updater:id,name',
@@ -408,13 +601,25 @@ class ServiceControlController extends Controller
     public function store(StoreServiceControlRequest $request): RedirectResponse
     {
         $orderId = (int) $request->input('order_id', 0);
+        $parentOrder = null;
 
         if ($orderId > 0) {
-            $order = $this->loadOrderForServiceControl($orderId);
-            $this->ensureCanAccessOrder($request->user(), $order);
+            $parentOrder = $this->loadOrderForServiceControl($orderId);
+            $this->ensureCanAccessOrder($request->user(), $parentOrder);
         }
 
-        $serviceControl = DB::transaction(function () use ($request) {
+        $serviceControl = DB::transaction(function () use ($request, $parentOrder) {
+            if (
+                ! $request->boolean('is_bm')
+                && $request->input('request_origin') === ServiceControlRequestOriginEnum::SERVICE->value
+            ) {
+                $order = $this->createPostSaleServiceOrder($request, $parentOrder);
+                $request->merge([
+                    'order_id' => $order->id,
+                    'client_id' => null,
+                ]);
+            }
+
             $serviceControl = ServiceControl::create($this->buildPayload($request, null));
 
             $serviceControl->histories()->create([
@@ -423,12 +628,142 @@ class ServiceControlController extends Controller
                 'summary' => 'Service control created.',
                 'new_values' => $this->trackedValues($serviceControl),
             ]);
+            $this->syncServiceManCompletedOrderStatus($serviceControl, $request);
 
             return $serviceControl;
         });
 
+        if ($request->routeIs('esr-process.store-service')) {
+            return redirect()->route('esr-process.index')
+                ->with('success', 'Service created successfully.');
+        }
+
         return redirect()->route('service-control.edit', $serviceControl)
             ->with('success', 'Service control created successfully.');
+    }
+
+    private function createPostSaleServiceOrder(StoreServiceControlRequest $request, ?Order $parentOrder = null): Order
+    {
+        $parentOrder?->loadMissing(['owners:id', 'orderCompanyContacts']);
+        $clientId = $parentOrder?->client_id ?? $this->resolveStandaloneClientId($request, null);
+        $serviceName = trim((string) $request->input('service_name'));
+        $serviceId = trim((string) $request->input('service_id'));
+
+        $order = Order::create([
+            'client_id' => $clientId,
+            'parent_order_id' => $parentOrder?->id,
+            'root_order_id' => $parentOrder ? ($parentOrder->root_order_id ?: $parentOrder->id) : null,
+            'user_id' => $request->user()?->id,
+            'order_type' => $parentOrder?->order_type ?? OrderTypeEnum::COMMERCIAL->value,
+            'product_line' => $parentOrder?->product_line,
+            'service' => ServiceEnum::SERVICE->value,
+            'status' => OrderStatusEnum::SERVICE_IN_REVIEW->value,
+            'name' => $serviceName !== '' ? $serviceName : ($parentOrder?->name ?? 'Post Sale Service'),
+            'order_number' => $serviceId !== '' ? $serviceId : null,
+            'project_amount' => 0,
+            'notes' => $request->input('description'),
+            'service_origin' => 'SERVICE',
+            'is_post_sale_service' => true,
+            'esr_service' => false,
+        ]);
+
+        $order->orderStatus()->create([
+            'status' => OrderStatusEnum::SERVICE_IN_REVIEW->value,
+            'user_id' => $request->user()?->id,
+            'notes' => 'Post sale service order created from Service Control.',
+        ]);
+
+        if ($parentOrder) {
+            $order->owners()->sync($parentOrder->owners->pluck('id')->all());
+            $parentOrder->orderCompanyContacts->each(function (OrderCompanyContact $contact) use ($order, $clientId) {
+                OrderCompanyContact::create([
+                    'order_id' => $order->id,
+                    'company_contact_id' => $contact->company_contact_id,
+                    'client_id' => $contact->client_id ?: $clientId,
+                    'source_id' => $contact->source_id,
+                    'is_selected' => $contact->is_selected,
+                    'selected_at' => $contact->selected_at,
+                ]);
+            });
+        } else {
+            $this->syncExternalOwner($order, $request);
+            $this->attachExternalCompany($order, $request);
+        }
+
+        return $order;
+    }
+
+    private function syncExternalOwner(Order $order, StoreServiceControlRequest $request): void
+    {
+        $ownerId = (int) $request->input('external_owner_id', 0);
+        if ($ownerId > 0) {
+            $ownerExists = User::assignableOrderOwner()
+                ->where('status', StatusUserEnum::ACTIVE->value)
+                ->whereKey($ownerId)
+                ->exists();
+
+            if ($ownerExists) {
+                $order->owners()->syncWithoutDetaching([$ownerId]);
+                return;
+            }
+        }
+
+        $ownerEmail = strtolower(trim((string) $request->input('external_owner_email', '')));
+        $ownerName = trim((string) $request->input('external_owner_name', ''));
+
+        if ($ownerEmail === '' && $ownerName === '') {
+            return;
+        }
+
+        $owner = User::assignableOrderOwner()
+            ->select('id', 'name', 'email')
+            ->where('status', StatusUserEnum::ACTIVE->value)
+            ->when(
+                $ownerEmail !== '',
+                fn (Builder $query) => $query->whereRaw('LOWER(email) = ?', [$ownerEmail]),
+                fn (Builder $query) => $query->where('name', $ownerName)
+            )
+            ->first();
+
+        if (! $owner) {
+            return;
+        }
+
+        $order->owners()->syncWithoutDetaching([$owner->id]);
+    }
+
+    private function attachExternalCompany(Order $order, StoreServiceControlRequest $request): void
+    {
+        $companyId = (int) $request->input('external_company_contact_id', 0);
+
+        if ($companyId <= 0 || ! $order->client_id) {
+            return;
+        }
+
+        $company = CompanyContact::visibleTo($request->user())
+            ->whereKey($companyId)
+            ->first();
+
+        if (! $company) {
+            return;
+        }
+
+        $sourceId = Source::firstOrCreate([
+            'name' => ContactSourceEnum::ESR_REFER->value,
+        ])->id;
+
+        OrderCompanyContact::updateOrCreate(
+            [
+                'order_id' => $order->id,
+                'company_contact_id' => $company->id,
+            ],
+            [
+                'client_id' => $order->client_id,
+                'source_id' => $sourceId,
+                'is_selected' => true,
+                'selected_at' => now(),
+            ]
+        );
     }
 
     public function update(UpdateServiceControlRequest $request, ServiceControl $serviceControl): RedirectResponse
@@ -441,12 +776,14 @@ class ServiceControlController extends Controller
         DB::transaction(function () use ($request, $serviceControl, $before) {
             $payload = $this->buildPayload($request, $serviceControl);
             $serviceControl->fill($payload);
+            $this->resolveProductionOutputOverdueIfNeeded($serviceControl, $before);
 
             $dirty = collect($serviceControl->getDirty())
                 ->only(array_keys($before))
                 ->all();
 
             $serviceControl->save();
+            $this->syncServiceManCompletedOrderStatus($serviceControl, $request);
 
             if ($dirty === []) {
                 return;
@@ -542,7 +879,11 @@ class ServiceControlController extends Controller
             'client_id' => $serviceControl->client_id,
             'service_name' => $serviceControl->service_name,
             'service_id' => $serviceControl->service_id,
+            'external_order_id' => $serviceControl->external_order_id,
             'is_bm' => (bool) $serviceControl->is_bm,
+            'service_source' => $serviceControl->service_source ?? ServiceControlSourceEnum::ESR->value,
+            'creation_source' => $serviceControl->creation_source ?? ServiceControlCreationSourceEnum::MANUAL->value,
+            'request_origin' => $serviceControl->request_origin ?? ServiceControlRequestOriginEnum::SERVICE->value,
             'service_type' => $this->normalizeServiceTypes($serviceControl->service_type),
             'description' => $serviceControl->description,
             'requires_part' => (bool) $serviceControl->requires_part,
@@ -569,6 +910,9 @@ class ServiceControlController extends Controller
             'service_id_requested_date' => $this->formatDate($serviceControl->service_id_requested_date),
             'eta_date' => $this->formatDate($serviceControl->eta_date),
             'parts_received_date' => $this->formatDate($serviceControl->parts_received_date),
+            'urgency_status' => $this->productionOutputUrgencyStatus($serviceControl, (string) config('app.timezone', 'UTC')),
+            'production_output_overdue_days' => $serviceControl->production_output_overdue_days,
+            'production_output_overdue_resolved_at' => optional($serviceControl->production_output_overdue_resolved_at)->toISOString(),
             'part_delivered_date' => $this->formatDate($serviceControl->part_delivered_date),
             'scheduled_date' => $this->formatDate($serviceControl->scheduled_date),
             'executed_date' => $this->formatDate($serviceControl->executed_date),
@@ -638,6 +982,12 @@ class ServiceControlController extends Controller
             'id' => $order->id,
             'name' => $order->name,
             'order_number' => $order->order_number,
+            'parent_order_id' => $order->parent_order_id,
+            'parent_order' => $order->parentOrder ? [
+                'id' => $order->parentOrder->id,
+                'name' => $order->parentOrder->name,
+                'order_number' => $order->parentOrder->order_number,
+            ] : null,
             'order_type' => $order->order_type,
             'job_address' => $order->job_address,
             'city' => $order->city,
@@ -686,6 +1036,9 @@ class ServiceControlController extends Controller
                     'id' => $serviceControl->id,
                     'service_name' => $serviceControl->service_name,
                     'service_id' => $serviceControl->service_id,
+                    'service_source' => $serviceControl->service_source ?? ServiceControlSourceEnum::ESR->value,
+                    'creation_source' => $serviceControl->creation_source ?? ServiceControlCreationSourceEnum::MANUAL->value,
+                    'request_origin' => $serviceControl->request_origin ?? ServiceControlRequestOriginEnum::SERVICE->value,
                     'service_type' => $this->normalizeServiceTypes($serviceControl->service_type),
                     'service_status' => $serviceControl->service_status,
                     'priority' => $serviceControl->priority,
@@ -696,13 +1049,16 @@ class ServiceControlController extends Controller
         ];
     }
 
-    private function standaloneOrderSummary(?Client $client = null): array
+    private function standaloneOrderSummary(?Client $client = null, array $externalOrder = [], array $externalContext = []): array
     {
+        $company = $externalContext['company'] ?? null;
+        $owner = $externalContext['owner'] ?? null;
+
         return [
             'id' => null,
-            'name' => 'Standalone Service',
-            'order_number' => null,
-            'order_type' => null,
+            'name' => $externalOrder['name'] ?? 'Standalone Service',
+            'order_number' => $externalOrder['order_number'] ?? null,
+            'order_type' => $externalOrder !== [] ? 'service' : null,
             'job_address' => null,
             'city' => null,
             'job_state' => null,
@@ -710,11 +1066,195 @@ class ServiceControlController extends Controller
             'address_label' => null,
             'today_date' => now()->format('Y-m-d'),
             'client' => $client ? $this->serializeServiceClient($client) : null,
-            'company' => null,
+            'company' => $company
+                ? [
+                    'id' => $company->id,
+                    'name' => $company->name,
+                    'email' => $company->email,
+                    'phone' => $company->phone,
+                ]
+                : (!empty($externalOrder['company_name']) ? [
+                    'id' => null,
+                    'name' => $externalOrder['company_name'],
+                    'email' => $externalOrder['company_email'] ?? null,
+                    'phone' => $externalOrder['company_phone'] ?? null,
+                ] : null),
             'supervisor' => null,
             'seller' => null,
-            'owners' => [],
+            'owners' => $owner ? [[
+                'id' => $owner->id,
+                'name' => $owner->name,
+            ]] : [],
             'service_controls' => [],
+        ];
+    }
+
+    private function resolveExternalServiceOrderContext(Request $request, array $externalOrder): array
+    {
+        $company = $this->resolveExternalCompany($request, $externalOrder);
+        $client = $this->resolveExternalClient($request, $externalOrder);
+        $owner = $this->resolveExternalOwner($externalOrder);
+
+        return [
+            'company' => $company,
+            'client' => $client,
+            'owner' => $owner,
+        ];
+    }
+
+    private function resolveExternalCompany(Request $request, array $externalOrder): ?CompanyContact
+    {
+        $email = strtolower(trim((string) ($externalOrder['company_email'] ?? '')));
+        $phone = $this->normalizePhone($externalOrder['company_phone'] ?? null);
+        $name = trim((string) ($externalOrder['company_name'] ?? ''));
+
+        $query = CompanyContact::visibleTo($request->user())
+            ->select('id', 'name', 'email', 'phone');
+
+        if ($email !== '') {
+            $company = (clone $query)->whereRaw('LOWER(email) = ?', [$email])->first();
+            if ($company) {
+                return $company;
+            }
+        }
+
+        if ($phone !== '') {
+            $company = (clone $query)
+                ->whereNotNull('phone')
+                ->get()
+                ->first(fn (CompanyContact $item) => $this->normalizePhone($item->phone) === $phone);
+
+            if ($company) {
+                return $company;
+            }
+        }
+
+        if ($name !== '') {
+            return (clone $query)->where('name', $name)->first();
+        }
+
+        return null;
+    }
+
+    private function resolveExternalClient(Request $request, array $externalOrder): ?Client
+    {
+        $email = strtolower(trim((string) ($externalOrder['client_email'] ?? $externalOrder['company_email'] ?? '')));
+        $phone = $this->normalizePhone($externalOrder['client_phone'] ?? $externalOrder['company_phone'] ?? null);
+        $name = trim((string) ($externalOrder['client_name'] ?? $externalOrder['company_name'] ?? ''));
+
+        $query = Client::visibleTo($request->user())
+            ->select('id', 'name', 'phone', 'email', 'other_phone', 'secondary_email');
+
+        if ($phone !== '') {
+            $client = (clone $query)
+                ->whereNotNull('phone')
+                ->get()
+                ->first(fn (Client $item) => $this->normalizePhone($item->phone) === $phone);
+
+            if ($client) {
+                return $client;
+            }
+        }
+
+        if ($email !== '') {
+            $client = (clone $query)->whereRaw('LOWER(email) = ?', [$email])->first();
+            if ($client) {
+                return $client;
+            }
+        }
+
+        if ($name !== '') {
+            return (clone $query)->where('name', $name)->first();
+        }
+
+        return null;
+    }
+
+    private function resolveExternalOwner(array $externalOrder): ?User
+    {
+        $email = strtolower(trim((string) ($externalOrder['owner_email'] ?? '')));
+        $name = trim((string) ($externalOrder['owner_name'] ?? ''));
+
+        $query = User::assignableOrderOwner()
+            ->select('id', 'name', 'email')
+            ->where('status', StatusUserEnum::ACTIVE->value);
+
+        if ($email !== '') {
+            $owner = (clone $query)->whereRaw('LOWER(email) = ?', [$email])->first();
+            if ($owner) {
+                return $owner;
+            }
+        }
+
+        if ($name !== '') {
+            return (clone $query)->where('name', $name)->first();
+        }
+
+        return null;
+    }
+
+    private function externalOrderSummaryFromRequest(Request $request): array
+    {
+        $externalOrderId = trim((string) $request->query('external_order_id', ''));
+        $orderNumber = trim((string) $request->query('external_order_number', ''));
+        $name = trim((string) $request->query('external_order_name', ''));
+        $companyName = trim((string) $request->query('external_company_name', ''));
+        $clientName = trim((string) $request->query('external_client_name', ''));
+        $ownerName = trim((string) $request->query('external_owner_name', ''));
+        $ownerEmail = trim((string) $request->query('external_owner_email', ''));
+
+        if ($externalOrderId === '' && $orderNumber === '' && $name === '' && $companyName === '' && $clientName === '' && $ownerEmail === '') {
+            return [];
+        }
+
+        return [
+            'external_order_id' => $externalOrderId !== '' ? $externalOrderId : null,
+            'order_number' => $orderNumber !== '' ? $orderNumber : null,
+            'name' => $name !== '' ? $name : 'External ESR Service',
+            'amount' => trim((string) $request->query('external_amount', '')),
+            'company_name' => $companyName !== '' ? $companyName : null,
+            'company_email' => trim((string) $request->query('external_company_email', '')) ?: null,
+            'company_phone' => trim((string) $request->query('external_company_phone', '')) ?: null,
+            'client_name' => $clientName !== '' ? $clientName : null,
+            'client_email' => trim((string) $request->query('external_client_email', '')) ?: null,
+            'client_phone' => trim((string) $request->query('external_client_phone', '')) ?: null,
+            'owner_name' => $ownerName !== '' ? $ownerName : null,
+            'owner_email' => $ownerEmail !== '' ? $ownerEmail : null,
+        ];
+    }
+
+    private function externalServiceDefaults(array $externalOrder, array $externalContext = []): array
+    {
+        if ($externalOrder === []) {
+            return [];
+        }
+
+        $orderNumber = $externalOrder['order_number'] ?? null;
+        $externalOrderId = $externalOrder['external_order_id'] ?? null;
+        $orderName = $externalOrder['name'] ?? 'External ESR Service';
+        $company = $externalContext['company'] ?? null;
+        $owner = $externalContext['owner'] ?? null;
+
+        return [
+            'service_name' => $orderName,
+            'service_id' => $orderNumber,
+            'external_order_id' => $externalOrderId,
+            'service_source' => ServiceControlSourceEnum::ESR->value,
+            'creation_source' => ServiceControlCreationSourceEnum::EXTERNAL->value,
+            'request_origin' => ServiceControlRequestOriginEnum::SERVICE->value,
+            'cost' => $externalOrder['amount'] ?? '',
+            'description' => '',
+            'new_client' => [
+                'name' => $externalOrder['client_name'] ?? $externalOrder['company_name'] ?? '',
+                'phone' => $externalOrder['client_phone'] ?? $externalOrder['company_phone'] ?? '',
+                'email' => $externalOrder['client_email'] ?? $externalOrder['company_email'] ?? '',
+                'other_phone' => '',
+                'secondary_email' => '',
+            ],
+            'external_company_contact_id' => $company?->id,
+            'external_owner_id' => $owner?->id,
+            'external_owner_name' => $externalOrder['owner_name'] ?? '',
+            'external_owner_email' => $externalOrder['owner_email'] ?? '',
         ];
     }
 
@@ -748,13 +1288,34 @@ class ServiceControlController extends Controller
         return $serviceControl->order?->client ?? $serviceControl->client;
     }
 
+    private function serviceControlOrderNumber(ServiceControl $serviceControl): ?string
+    {
+        $source = $serviceControl->service_source ?? ServiceControlSourceEnum::ESR->value;
+
+        if ($source === ServiceControlSourceEnum::ESR->value) {
+            return filled($serviceControl->external_order_id) ? (string) $serviceControl->external_order_id : null;
+        }
+
+        $parentOrderNumber = $serviceControl->order?->parentOrder?->order_number;
+
+        if (filled($parentOrderNumber)) {
+            return (string) $parentOrderNumber;
+        }
+
+        return filled($serviceControl->order?->order_number) ? (string) $serviceControl->order->order_number : null;
+    }
+
     private function trackedValues(ServiceControl $serviceControl): array
     {
         return [
             'client_id' => $serviceControl->client_id,
             'service_name' => $serviceControl->service_name,
             'service_id' => $serviceControl->service_id,
+            'external_order_id' => $serviceControl->external_order_id,
             'is_bm' => (bool) $serviceControl->is_bm,
+            'service_source' => $serviceControl->service_source ?? ServiceControlSourceEnum::ESR->value,
+            'creation_source' => $serviceControl->creation_source ?? ServiceControlCreationSourceEnum::MANUAL->value,
+            'request_origin' => $serviceControl->request_origin ?? ServiceControlRequestOriginEnum::SERVICE->value,
             'service_type' => $this->normalizeServiceTypes($serviceControl->service_type),
             'description' => $serviceControl->description,
             'requires_part' => (bool) $serviceControl->requires_part,
@@ -775,6 +1336,8 @@ class ServiceControlController extends Controller
             'service_id_requested_date' => $this->formatDate($serviceControl->service_id_requested_date),
             'eta_date' => $this->formatDate($serviceControl->eta_date),
             'parts_received_date' => $this->formatDate($serviceControl->parts_received_date),
+            'production_output_overdue_days' => $serviceControl->production_output_overdue_days,
+            'production_output_overdue_resolved_at' => optional($serviceControl->production_output_overdue_resolved_at)->toISOString(),
             'part_delivered_date' => $this->formatDate($serviceControl->part_delivered_date),
             'scheduled_date' => $this->formatDate($serviceControl->scheduled_date),
             'executed_date' => $this->formatDate($serviceControl->executed_date),
@@ -795,8 +1358,12 @@ class ServiceControlController extends Controller
     {
         $status = (string) $request->input('service_status');
         $executedDate = $request->input('executed_date');
+        $etaDate = $request->input('eta_date');
+        $partsReceivedDate = filled($etaDate)
+            ? $this->productionOutputDateFromEta((string) $etaDate)
+            : $request->input('parts_received_date');
         $orderId = $serviceControl?->order_id ?? (((int) $request->input('order_id', 0)) ?: null);
-        $closedAt = $status === ServiceControlStatusEnum::CLOSED->value
+        $closedAt = $status === ServiceControlStatusEnum::COMPLETED->value
             ? ($executedDate ?: now()->format('Y-m-d'))
             : null;
         $isBm = $orderId ? $request->boolean('is_bm') : false;
@@ -804,6 +1371,19 @@ class ServiceControlController extends Controller
         $requesterType = $isBm ? null : $request->input('requester_type');
         $requesterId = $isBm ? null : $request->input('requester_id');
         $requesterRole = $isBm ? null : $request->input('requester_role');
+        $creationSource = $serviceControl?->creation_source
+            ?? ($request->input('creation_source') === ServiceControlCreationSourceEnum::EXTERNAL->value
+                ? ServiceControlCreationSourceEnum::EXTERNAL->value
+                : ServiceControlCreationSourceEnum::MANUAL->value);
+        $serviceSource = $creationSource === ServiceControlCreationSourceEnum::EXTERNAL->value
+            ? ServiceControlSourceEnum::ESR->value
+            : $request->input('service_source', ServiceControlSourceEnum::ESR->value);
+        $requestOrigin = $serviceControl?->request_origin
+            ?? ($request->input('request_origin') === ServiceControlRequestOriginEnum::OWNER->value
+                ? ServiceControlRequestOriginEnum::OWNER->value
+                : ServiceControlRequestOriginEnum::SERVICE->value);
+        $externalOrderId = $serviceControl?->external_order_id
+            ?? (filled($request->input('external_order_id')) ? $request->input('external_order_id') : null);
 
         if (! $orderId && $clientId && blank($requesterType) && blank($requesterId)) {
             $requesterType = 'client';
@@ -816,7 +1396,11 @@ class ServiceControlController extends Controller
             'client_id' => $clientId,
             'service_name' => $request->input('service_name'),
             'service_id' => $isBm ? null : $request->input('service_id'),
+            'external_order_id' => $isBm ? null : $externalOrderId,
             'is_bm' => $isBm,
+            'service_source' => $isBm ? null : $serviceSource,
+            'creation_source' => $isBm ? null : $creationSource,
+            'request_origin' => $isBm ? null : $requestOrigin,
             'service_type' => $isBm ? null : $this->normalizeServiceTypes($request->input('service_type')),
             'description' => $isBm ? null : $request->input('description'),
             'requires_part' => $isBm ? false : $request->boolean('requires_part'),
@@ -835,8 +1419,8 @@ class ServiceControlController extends Controller
             'target_date' => $isBm ? null : $request->input('target_date'),
             'service_created_date' => $isBm ? null : $request->input('service_created_date'),
             'service_id_requested_date' => $isBm ? null : $request->input('service_id_requested_date'),
-            'eta_date' => $isBm ? null : $request->input('eta_date'),
-            'parts_received_date' => $isBm ? null : $request->input('parts_received_date'),
+            'eta_date' => $isBm ? null : $etaDate,
+            'parts_received_date' => $isBm ? null : $partsReceivedDate,
             'part_delivered_date' => $isBm ? null : $request->input('part_delivered_date'),
             'scheduled_date' => $isBm ? null : $request->input('scheduled_date'),
             'executed_date' => $isBm ? null : $executedDate,
@@ -915,6 +1499,11 @@ class ServiceControlController extends Controller
         return Carbon::parse((string) $value)->format('Y-m-d');
     }
 
+    private function productionOutputDateFromEta(string $etaDate): string
+    {
+        return Carbon::parse($etaDate)->addWeekdays(2)->format('Y-m-d');
+    }
+
     private function normalizeServiceTypes(mixed $value): array
     {
         if ($value === null || $value === '') {
@@ -931,68 +1520,175 @@ class ServiceControlController extends Controller
             ->all();
     }
 
-    private function serviceCalendarDate(ServiceControl $serviceControl, string $status, string $timezone): ?Carbon
+    private function syncServiceManCompletedOrderStatus(ServiceControl $serviceControl, Request $request): void
     {
-        if ($status === ServiceControlStatusEnum::SCHEDULED->value && ! empty($serviceControl->scheduled_date)) {
-            return Carbon::parse($serviceControl->scheduled_date, $timezone);
+        if (! $this->isCompletedServiceMan($serviceControl)) {
+            return;
         }
 
-        $history = $serviceControl->histories
-            ->first(function (ServiceControlHistory $history) use ($status) {
-                $newValues = is_array($history->new_values) ? $history->new_values : [];
+        $order = $serviceControl->order;
 
-                return ($newValues['service_status'] ?? null) === $status;
-            });
-
-        if ($history?->created_at) {
-            return $history->created_at instanceof CarbonInterface
-                ? $history->created_at->copy()->timezone($timezone)
-                : Carbon::parse($history->created_at, $timezone);
+        if (! $order || ! $order->is_post_sale_service || $order->status === OrderStatusEnum::COMPLETE->value) {
+            return;
         }
 
-        if ($status === ServiceControlStatusEnum::COMPLETED->value && ! empty($serviceControl->executed_date)) {
-            return Carbon::parse($serviceControl->executed_date, $timezone);
+        $order->update([
+            'status' => OrderStatusEnum::COMPLETE->value,
+        ]);
+
+        $order->orderStatus()->create([
+            'status' => OrderStatusEnum::COMPLETE->value,
+            'user_id' => $request->user()?->id,
+            'notes' => 'Post-sale service order completed automatically from Service Control.',
+        ]);
+    }
+
+    private function isCompletedServiceMan(ServiceControl $serviceControl): bool
+    {
+        return (string) $serviceControl->service_status === ServiceControlStatusEnum::COMPLETED->value
+            && in_array(ServiceControlTypeEnum::SERVICE_MAN->value, $this->normalizeServiceTypes($serviceControl->service_type), true);
+    }
+
+    private function serviceCalendarDate(ServiceControl $serviceControl, string $timezone): ?Carbon
+    {
+        if (! empty($serviceControl->parts_received_date)) {
+            return Carbon::parse($serviceControl->parts_received_date, $timezone);
         }
 
-        return $serviceControl->updated_at
-            ? Carbon::parse($serviceControl->updated_at, $timezone)
-            : null;
+        return null;
+    }
+
+    private function productionOutputOverdueDays(ServiceControl $serviceControl, string $timezone, ?CarbonInterface $asOf = null): int
+    {
+        if (empty($serviceControl->parts_received_date)) {
+            return 0;
+        }
+
+        $productionOutputDate = Carbon::parse($serviceControl->parts_received_date, $timezone)->startOfDay();
+        $comparisonDate = $asOf
+            ? Carbon::parse($asOf, $timezone)->startOfDay()
+            : now($timezone)->startOfDay();
+
+        return (int) max(0, $productionOutputDate->diffInDays($comparisonDate, false));
+    }
+
+    private function productionOutputResolvedStatuses(): array
+    {
+        return [
+            ServiceControlStatusEnum::PRODUCTION_IN_PROGRESS->value,
+            ServiceControlStatusEnum::PRODUCTION_COMPLETED->value,
+            ServiceControlStatusEnum::READY_FOR_DELIVERY->value,
+            ServiceControlStatusEnum::DELIVERED->value,
+            ServiceControlStatusEnum::COMPLETED->value,
+        ];
+    }
+
+    private function isProductionOutputResolved(ServiceControl $serviceControl): bool
+    {
+        return in_array((string) $serviceControl->service_status, $this->productionOutputResolvedStatuses(), true);
+    }
+
+    private function productionOutputUrgencyStatus(ServiceControl $serviceControl, string $timezone): string
+    {
+        if (empty($serviceControl->parts_received_date)) {
+            return 'No Production Output Date';
+        }
+
+        $productionOutputDate = Carbon::parse($serviceControl->parts_received_date, $timezone)->startOfDay();
+        $today = now($timezone)->startOfDay();
+        $days = $productionOutputDate->diffInDays($today, false);
+
+        if ($this->isProductionOutputResolved($serviceControl)) {
+            $storedDays = (int) ($serviceControl->production_output_overdue_days ?? 0);
+
+            return $storedDays > 0
+                ? 'Resolved after ' . $storedDays . ' overdue ' . ($storedDays === 1 ? 'day' : 'days')
+                : 'Resolved on time';
+        }
+
+        if ($days > 0) {
+            return 'Overdue by ' . $days . ' ' . ($days === 1 ? 'day' : 'days');
+        }
+
+        if ($days === 0) {
+            return 'Due today';
+        }
+
+        $daysRemaining = abs($days);
+
+        return 'Due in ' . $daysRemaining . ' ' . ($daysRemaining === 1 ? 'day' : 'days');
+    }
+
+    private function resolveProductionOutputOverdueIfNeeded(ServiceControl $serviceControl, array $before): void
+    {
+        if ((string) $serviceControl->service_status !== ServiceControlStatusEnum::PRODUCTION_IN_PROGRESS->value) {
+            return;
+        }
+
+        if (($before['service_status'] ?? null) === ServiceControlStatusEnum::PRODUCTION_IN_PROGRESS->value) {
+            return;
+        }
+
+        if (empty($serviceControl->parts_received_date)) {
+            return;
+        }
+
+        $timezone = (string) config('app.timezone', 'UTC');
+
+        $serviceControl->production_output_overdue_days = $this->productionOutputOverdueDays($serviceControl, $timezone);
+        $serviceControl->production_output_overdue_resolved_at = now();
     }
 
     private function serviceCalendarStatuses(): array
     {
         return [
-            ServiceControlStatusEnum::WAITING_FOR_PART->value,
-            ServiceControlStatusEnum::READY_TO_SCHEDULE->value,
-            ServiceControlStatusEnum::SCHEDULED->value,
+            ServiceControlStatusEnum::ORDER_IN_REVIEW->value,
+            ServiceControlStatusEnum::MATERIAL_REVIEWED->value,
+            ServiceControlStatusEnum::PRODUCTION->value,
+            ServiceControlStatusEnum::PRODUCTION_IN_PROGRESS->value,
+            ServiceControlStatusEnum::PRODUCTION_COMPLETED->value,
+            ServiceControlStatusEnum::READY_FOR_DELIVERY->value,
+            ServiceControlStatusEnum::DELIVERED->value,
             ServiceControlStatusEnum::COMPLETED->value,
-            ServiceControlStatusEnum::CANCELED->value,
         ];
     }
 
     private function serviceStatusOptions(): array
     {
         return collect(ServiceControlStatusEnum::cases())
-            ->reject(fn (ServiceControlStatusEnum $status) => $status === ServiceControlStatusEnum::CLOSED)
             ->map(fn (ServiceControlStatusEnum $status) => $status->value)
             ->values()
             ->all();
     }
 
-    private function serviceCalendarStatusColor(string $status): string
+    private function serviceCalendarOriginColor(?string $requestOrigin): string
     {
         return [
-            ServiceControlStatusEnum::WAITING_FOR_PART->value => '#f97316',
-            ServiceControlStatusEnum::READY_TO_SCHEDULE->value => '#0ea5e9',
-            ServiceControlStatusEnum::SCHEDULED->value => '#facc15',
-            ServiceControlStatusEnum::COMPLETED->value => '#22c55e',
-            ServiceControlStatusEnum::CANCELED->value => '#ef4444',
-        ][$status] ?? '#6b7280';
+            ServiceControlRequestOriginEnum::SERVICE->value => '#2563eb',
+            ServiceControlRequestOriginEnum::OWNER->value => '#7c3aed',
+        ][$requestOrigin] ?? '#2563eb';
+    }
+
+    private function serviceCalendarEventColor(ServiceControl $serviceControl, string $status, ?string $requestOrigin, string $timezone): string
+    {
+        if (
+            ! in_array($status, $this->productionOutputResolvedStatuses(), true)
+            && ! empty($serviceControl->parts_received_date)
+            && Carbon::parse($serviceControl->parts_received_date, $timezone)->startOfDay()->lte(now($timezone)->startOfDay())
+        ) {
+            return '#dc2626';
+        }
+
+        if ($status === ServiceControlStatusEnum::COMPLETED->value) {
+            return '#16a34a';
+        }
+
+        return $this->serviceCalendarOriginColor($requestOrigin);
     }
 
     private function humanizeStatus(string $status): string
     {
-        return ucwords(strtolower(str_replace('_', ' ', $status)));
+        return $status;
     }
 
     private function isMissingServiceIdOverdue(ServiceControl $serviceControl): bool
@@ -1062,52 +1758,18 @@ class ServiceControlController extends Controller
     {
         $options = collect();
 
-        if ($order?->client) {
-            $options->push($this->partyOption('client', $order->client->id, $order->client->name, 'client'));
-        }
-
-        if (! $order && $standaloneClient) {
-            $options->push($this->partyOption('client', $standaloneClient->id, $standaloneClient->name, 'client'));
-        }
-
-        if (! $order) {
-            User::query()
-                ->select('id', 'name')
-                ->where('status', StatusUserEnum::ACTIVE->value)
-                ->role([RoleEnum::SUPERVISOR->value, RoleEnum::SERVICE_MANAGER->value, RoleEnum::SERVICE->value, RoleEnum::INSTALLER->value, RoleEnum::ACCOUNT_MANAGER->value])
-                ->orderBy('name')
-                ->get()
-                ->each(function (User $user) use ($options) {
-                    $role = $user->hasRole(RoleEnum::ACCOUNT_MANAGER->value)
-                        ? 'account_manager'
-                        : ($user->hasRole(RoleEnum::SERVICE_MANAGER->value)
-                            ? 'service_manager'
-                            : ($user->hasSupervisorOnlyAccess()
-                                ? 'supervisor'
-                                : ($user->hasRole(RoleEnum::SERVICE->value)
-                                    ? 'service'
-                                    : 'installer')));
-                    $options->push($this->partyOption('user', $user->id, $user->name, $role));
-                });
-
-            return $options->unique('value')->values()->all();
-        }
+        $assignableRoles = $this->existingRoleNames([
+            RoleEnum::SERVICE->value,
+        ]);
 
         User::query()
             ->select('id', 'name')
             ->where('status', StatusUserEnum::ACTIVE->value)
-            ->role([RoleEnum::SUPERVISOR->value, RoleEnum::SERVICE_MANAGER->value, RoleEnum::SERVICE->value, RoleEnum::INSTALLER->value, RoleEnum::ACCOUNT_MANAGER->value])
+            ->role($assignableRoles)
             ->orderBy('name')
             ->get()
             ->each(function (User $user) use ($options) {
-                $role = $user->hasRole(RoleEnum::ACCOUNT_MANAGER->value)
-                    ? 'account_manager'
-                    : ($user->hasRole(RoleEnum::SERVICE_MANAGER->value)
-                        ? 'service_manager'
-                        : ($user->hasSupervisorOnlyAccess()
-                            ? 'supervisor'
-                            : ($user->hasRole(RoleEnum::SERVICE->value) ? 'service' : 'installer')));
-                $options->push($this->partyOption('user', $user->id, $user->name, $role));
+                $options->push($this->partyOption('user', $user->id, $user->name, RoleEnum::SERVICE->value));
             });
 
         return $options->unique('value')->values()->all();

@@ -40,6 +40,8 @@ class Order extends Model
     'esr_express',
     'esr_reylos_glass',
     'esr_service',
+    'service_origin',
+    'is_post_sale_service',
     'name',
     'job_address',
     'job_city',
@@ -149,6 +151,7 @@ class Order extends Model
       'esr_express' => 'boolean',
       'esr_reylos_glass' => 'boolean',
       'esr_service' => 'boolean',
+      'is_post_sale_service' => 'boolean',
     ];
   }
 
@@ -160,6 +163,15 @@ class Order extends Model
   public function scopeFilter($query, array $filters)
   {
     $query->when($filters['status'] ?? null, function ($query, $search) {
+      if ($search === OrderStatusEnum::SERVICE_IN_REVIEW->value) {
+        $query->whereIn('status', [
+          OrderStatusEnum::SERVICE_IN_REVIEW->value,
+          'Service in Review',
+        ]);
+
+        return;
+      }
+
       $query->where('status', $search);
     })->when(($filters['is_supply'] ?? false) === true, function ($query) {
       $query->where('is_supply', true);
@@ -189,6 +201,17 @@ class Order extends Model
 
   public function scopeCalendarFilter($query, array $filters)
   {
+    $user = auth()->user();
+    $projectScheduleCalendarStatuses = [
+      OrderStatusEnum::PLANNED->value,
+      OrderStatusEnum::MATERIAL_ORDER_COMPLETED->value,
+      OrderStatusEnum::MATERIAL_ORDER_COMPLETED_FINANCED->value,
+      OrderStatusEnum::STORAGE_MATERIAL->value,
+      OrderStatusEnum::MATERIALS_PICK_UP_OR_DELIVERED->value,
+      OrderStatusEnum::PENDING_PAYMENT->value,
+      OrderStatusEnum::COMPLETE->value,
+    ];
+
     /*i f (isset($filters['status']) && $filters['status'] != 'all') {
         $query->where('status', $filters['status']);
       } */
@@ -258,58 +281,16 @@ class Order extends Model
 
       if ($user->hasSupervisorOnlyAccess()) {
         $query->where('supervisor_id', $user->id)
-          ->whereIn('status', [
-            OrderStatusEnum::PLANNED,        // Solo órdenes en "PLANNED"
-            OrderStatusEnum::REVIEW,         // Solo órdenes en "REVIEW"
-            OrderStatusEnum::CONFIRMED,
-            OrderStatusEnum::MATERIALS_RECEIVED, 
-           
-              // Solo órdenes en "EXECUTION"
-            //OrderStatusEnum::EXECUTION,
-            //OrderStatusEnum::SUPERVISION,
-            //OrderStatusEnum::INSPECTION,
-           //OrderStatusEnum::FINISH,
-            //OrderStatusEnum::SERVICE,
-            OrderStatusEnum::ON_HOLD,
-            //OrderStatusEnum::FINAL_INSPECTION,
-            //OrderStatusEnum::FINAL_COLLECT,
-            OrderStatusEnum::COMPLETE,
-            OrderStatusEnum::MATERIALS_RECEIVED,
-          ]);
+          ->whereIn('status', $projectScheduleCalendarStatuses);
       }
 
       if ($user->hasRole(RoleEnum::OWNER->value)) {
         $query->accessibleToOwner($user)
-          ->whereIn('status', [
-            OrderStatusEnum::PLANNED,
-            OrderStatusEnum::RESCHEDULE,
-            OrderStatusEnum::CONFIRMED,
-            OrderStatusEnum::EXECUTION,
-            OrderStatusEnum::SUPERVISION,
-            OrderStatusEnum::INSPECTION,
-            OrderStatusEnum::FINISH,
-            OrderStatusEnum::SERVICE,
-            OrderStatusEnum::ON_HOLD,
-            OrderStatusEnum::FINAL_INSPECTION,
-            OrderStatusEnum::FINAL_COLLECT,
-            OrderStatusEnum::COMPLETE,
-          ]);
+          ->whereIn('status', $projectScheduleCalendarStatuses);
       }
 
       if ($user->hasRole(RoleEnum::SERVICE_MANAGER->value) || $user->hasRole(RoleEnum::PAYMENT_COORDINATOR->value)) {
-        $query->whereIn('status', [
-          OrderStatusEnum::RESCHEDULE,   // Solo órdenes en "EXECUTION"
-          OrderStatusEnum::CONFIRMED,   // Solo órdenes en "EXECUTION"
-          OrderStatusEnum::EXECUTION,
-          OrderStatusEnum::SUPERVISION,
-          OrderStatusEnum::INSPECTION,
-          OrderStatusEnum::FINISH,
-          OrderStatusEnum::SERVICE,
-          OrderStatusEnum::ON_HOLD,
-          OrderStatusEnum::FINAL_INSPECTION,
-          OrderStatusEnum::FINAL_COLLECT,
-          OrderStatusEnum::COMPLETE,
-        ]);
+        $query->whereIn('status', $projectScheduleCalendarStatuses);
       }
     }
   }

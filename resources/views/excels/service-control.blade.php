@@ -1,18 +1,45 @@
 @php
     $isBm = ($filters['type'] ?? 'services') === 'bm';
-    $colspan = $isBm ? 9 : 20;
+    $isQuotes = ($filters['type'] ?? 'services') === 'quotes';
+    $colspan = $isBm ? 9 : 17;
+    $reportTitle = $isBm ? 'BM Report' : ($isQuotes ? 'Quotes Report' : 'Services Report');
+    $serviceOrderNumber = function (array $serviceControl): string {
+        $source = strtoupper((string) ($serviceControl['service_source'] ?? 'ESR'));
+
+        if ($source === 'ESR') {
+            return filled($serviceControl['external_order_id'] ?? null) ? (string) $serviceControl['external_order_id'] : 'N/A';
+        }
+
+        return $serviceControl['order']['parent_order']['order_number']
+            ?? $serviceControl['order']['order_number']
+            ?? 'N/A';
+    };
+    $ownerNames = function (array $serviceControl): string {
+        $owners = $serviceControl['order']['owners'] ?? [];
+
+        if (is_array($owners) && count($owners) > 0) {
+            return collect($owners)->pluck('name')->filter()->implode(', ') ?: 'N/A';
+        }
+
+        return $serviceControl['order']['seller']['name'] ?? 'N/A';
+    };
+    $serviceTypes = function (array $serviceControl): string {
+        $types = $serviceControl['service_type'] ?? null;
+
+        return is_array($types) ? (implode(', ', $types) ?: 'N/A') : ($types ?: 'N/A');
+    };
 @endphp
 
 <table>
     <thead>
         <tr>
-            <td colspan="{{ $isBm ? 3 : 5 }}" style="font-weight: bold; font-size: 16px; text-align: left; background-color: #f0f0f0;">
-                {{ $isBm ? 'BM Report' : 'Services Report' }}
+            <td colspan="{{ $isBm ? 3 : 6 }}" style="font-weight: bold; font-size: 16px; text-align: left; background-color: #f0f0f0;">
+                {{ $reportTitle }}
             </td>
-            <td colspan="{{ $isBm ? 3 : 5 }}" style="font-weight: bold; font-size: 16px; text-align: left; background-color: #f0f0f0;">
+            <td colspan="{{ $isBm ? 3 : 6 }}" style="font-weight: bold; font-size: 16px; text-align: left; background-color: #f0f0f0;">
                 Search: {{ ($filters['search'] ?? '') !== '' ? $filters['search'] : 'ALL' }}
             </td>
-            <td colspan="{{ $isBm ? 3 : 10 }}" style="font-weight: bold; font-size: 16px; text-align: left; background-color: #f0f0f0;">
+            <td colspan="{{ $isBm ? 3 : 5 }}" style="font-weight: bold; font-size: 16px; text-align: left; background-color: #f0f0f0;">
                 @if (! $isBm)
                     Status: {{ ($filters['status'] ?? '') !== '' ? $filters['status'] : 'ALL' }} | Priority: {{ ($filters['priority'] ?? '') !== '' ? $filters['priority'] : 'ALL' }}
                 @else
@@ -34,25 +61,22 @@
                 <th>Updated</th>
                 <th>Service Name</th>
             @else
+                <th>Order #</th>
+                <th>Service/Quote #</th>
+                <th>Origin</th>
                 <th>Service Name</th>
+                <th>Company</th>
                 <th>Client</th>
-                <th>Order Address</th>
-                <th>Service ID</th>
-                <th>Created Date</th>
+                <th>Owner</th>
                 <th>Service Type</th>
-                <th>Description</th>
-                <th>Requires Part</th>
-                <th>Requested Parts</th>
-                <th>Parts Available</th>
                 <th>Status</th>
                 <th>Priority</th>
-                <th>Supervisor</th>
-                <th>Assignee</th>
-                <th>Target Date</th>
-                <th>Scheduled Date</th>
-                <th>Executed Date</th>
-                <th>Open Days</th>
-                <th>Closure Result</th>
+                <th>Reception Date</th>
+                <th>Put Into Production Date</th>
+                <th>ETA</th>
+                <th>Production Output Date</th>
+                <th>Urgency Status</th>
+                <th>Description</th>
                 <th>Observations</th>
             @endif
         </tr>
@@ -71,25 +95,22 @@
                     <td>{{ ! empty($serviceControl['updated_at']) ? \Carbon\Carbon::parse($serviceControl['updated_at'])->format('m/d/Y h:i A') : 'N/A' }}</td>
                     <td>{{ $serviceControl['service_name'] ?? 'N/A' }}</td>
                 @else
-                    <td>{{ $serviceControl['service_name'] ?? 'N/A' }}</td>
-                    <td>{{ $serviceControl['order']['client']['name'] ?? 'N/A' }}</td>
-                    <td>{{ $serviceControl['order']['address_label'] ?? 'N/A' }}</td>
+                    <td>{{ $serviceOrderNumber($serviceControl) }}</td>
                     <td>{{ $serviceControl['service_id'] ?? 'N/A' }}</td>
-                    <td>{{ $serviceControl['service_created_date'] ?? 'N/A' }}</td>
-                    <td>{{ is_array($serviceControl['service_type'] ?? null) ? implode(', ', $serviceControl['service_type']) : ($serviceControl['service_type'] ?? 'N/A') }}</td>
-                    <td>{{ $serviceControl['description'] ?? 'N/A' }}</td>
-                    <td>{{ ! empty($serviceControl['requires_part']) ? 'Yes' : 'No' }}</td>
-                    <td>{{ ! empty($serviceControl['requested_parts']) ? 'Yes' : 'No' }}</td>
-                    <td>{{ ! empty($serviceControl['parts_available']) ? 'Yes' : 'No' }}</td>
+                    <td>{{ $serviceControl['service_source'] ?? 'ESR' }}</td>
+                    <td>{{ $serviceControl['service_name'] ?? 'N/A' }}</td>
+                    <td>{{ $serviceControl['order']['company']['name'] ?? 'N/A' }}</td>
+                    <td>{{ $serviceControl['order']['client']['name'] ?? $serviceControl['client']['name'] ?? 'No client' }}</td>
+                    <td>{{ $ownerNames($serviceControl) }}</td>
+                    <td>{{ $serviceTypes($serviceControl) }}</td>
                     <td>{{ $serviceControl['service_status'] ?? 'N/A' }}</td>
                     <td>{{ $serviceControl['priority'] ?? 'N/A' }}</td>
-                    <td>{{ $serviceControl['order']['supervisor']['name'] ?? 'N/A' }}</td>
-                    <td>{{ $serviceControl['assignee_name'] ?? 'N/A' }}</td>
-                    <td>{{ $serviceControl['target_date'] ?? 'N/A' }}</td>
-                    <td>{{ $serviceControl['scheduled_date'] ?? 'N/A' }}</td>
-                    <td>{{ $serviceControl['executed_date'] ?? 'N/A' }}</td>
-                    <td>{{ $serviceControl['open_days'] ?? 0 }}</td>
-                    <td>{{ $serviceControl['closure_result'] ?? 'N/A' }}</td>
+                    <td>{{ $serviceControl['service_created_date'] ?? 'N/A' }}</td>
+                    <td>{{ $serviceControl['service_id_requested_date'] ?? 'N/A' }}</td>
+                    <td>{{ $serviceControl['eta_date'] ?? 'N/A' }}</td>
+                    <td>{{ $serviceControl['parts_received_date'] ?? 'N/A' }}</td>
+                    <td>{{ $serviceControl['urgency_status'] ?? 'N/A' }}</td>
+                    <td>{{ $serviceControl['description'] ?? 'N/A' }}</td>
                     <td>{{ $serviceControl['observations'] ?? 'N/A' }}</td>
                 @endif
             </tr>
