@@ -15,6 +15,14 @@ type IndexClientProps = PageProps & {
   }
 }
 
+const formatPhoneWithExt = (phone?: string | null, ext?: string | null) => {
+  const normalizedPhone = typeof phone === 'string' ? phone.trim() : ''
+  if (!normalizedPhone) return ''
+
+  const normalizedExt = typeof ext === 'string' ? ext.trim() : ''
+  return normalizedExt ? `${normalizedPhone} ext ${normalizedExt}` : normalizedPhone
+}
+
 export default function Index ({ auth, clients }: IndexClientProps) {
   const roleNames = Array.isArray(auth?.user?.roles)
     ? auth.user.roles.map((role: Role) => role.name)
@@ -61,7 +69,7 @@ export default function Index ({ auth, clients }: IndexClientProps) {
               </tr>
             </thead>
             <tbody>
-              {clients.data.map(({ id, name, email, phone, client_address, updated_at, user }) => {
+              {clients.data.map(({ id, name, email, phone, phone_ext, client_address, updated_at, user }) => {
                 return (
                   <tr
                     key={id}
@@ -74,7 +82,7 @@ export default function Index ({ auth, clients }: IndexClientProps) {
                       {email}
                     </td>
                     <td className="border-t px-6 py-4 align-top">
-                      {phone}
+                      {formatPhoneWithExt(phone, phone_ext)}
                     </td>
                     <td className="border-t px-6 py-4 align-top">
                       {client_address.map(({ id, address }) => {

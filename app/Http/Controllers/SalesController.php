@@ -110,13 +110,15 @@ class SalesController extends Controller
         $visibleStatuses = $ownerVisibleStatuses;
     }
 
+    $useEsrAmounts = OrderBoardFilter::hasEsrProductLineFilter($filters);
+
     // Armar el arreglo que espera el componente React
-    $data = collect($visibleStatuses)->map(function ($status) use ($user, $paginatedStatuses, $filters, $filterRows, $filterMatch, $hasMultiFilters, $sort) {
+    $data = collect($visibleStatuses)->map(function ($status) use ($user, $paginatedStatuses, $filters, $filterRows, $filterMatch, $hasMultiFilters, $sort, $useEsrAmounts) {
         $ordersQuery = $this->salesOrdersForStatusQuery($status, $user);
         $ordersQuery = $hasMultiFilters
             ? OrderBoardFilter::applyMultiple($ordersQuery, $filterRows, $filterMatch)
             : OrderBoardFilter::apply($ordersQuery, $filters);
-        $totalProjectAmount = (float) ((clone $ordersQuery)->sum('project_amount') ?? 0);
+        $totalProjectAmount = OrderBoardFilter::totalAmount($ordersQuery, $useEsrAmounts);
 
         if (in_array($status, $paginatedStatuses, true)) {
             $total = (clone $ordersQuery)->count();
@@ -270,6 +272,9 @@ class SalesController extends Controller
   private function salesPipelineStatuses(): array
   {
     return [
+      OrderStatusEnum::PENDING_FINANCING_OR_DEPOSIT->value,
+      OrderStatusEnum::PENDING_HOA_APPROVAL->value,
+      OrderStatusEnum::RECTIFICATION_OF_MEASURES->value,
       OrderStatusEnum::RECTIFICATION_OF_MEASURES_AND_HOA->value,
       OrderStatusEnum::ORDER_MATERIALS_AND_FILE_ORGANIZATION->value,
     ];
@@ -324,6 +329,23 @@ class SalesController extends Controller
     return $query;
   }
 
+  private function contractSignedPipelineStatus(Order $order, bool $pendingFinancingOrDeposit, bool $pendingHoaApproval): string
+  {
+    if ($pendingFinancingOrDeposit) {
+      return OrderStatusEnum::PENDING_FINANCING_OR_DEPOSIT->value;
+    }
+
+    if ($order->is_supply) {
+      return OrderStatusEnum::ORDER_MATERIALS_AND_FILE_ORGANIZATION->value;
+    }
+
+    if ($pendingHoaApproval) {
+      return OrderStatusEnum::PENDING_HOA_APPROVAL->value;
+    }
+
+    return OrderStatusEnum::RECTIFICATION_OF_MEASURES->value;
+  }
+
   private function mapSalesOrderToTask(Order $order, string $status): array
   {
     $clientEmailManager = $this->clientEmailManager();
@@ -370,7 +392,10 @@ class SalesController extends Controller
       'email_check' => (bool) ($order->email_check ?? false),
       'city_permits' => (bool) ($order->city_permits ?? false),
       'association_permits' => (bool) ($order->association_permits ?? false),
+      'pending_financing_or_deposit' => $order->pending_financing_or_deposit,
+      'pending_hoa_approval' => $order->pending_hoa_approval,
       'project_amount' => $order->project_amount ? (float) $order->project_amount : 0,
+      'esr_cost' => $order->esr_cost !== null ? (float) $order->esr_cost : null,
       'down_payment' => $order->down_payment ? (float) $order->down_payment : null,
       'job_address' => $order->job_address ?? null,
       'city' => $order->city ?? null,
@@ -438,10 +463,7 @@ class SalesController extends Controller
     if (in_array($status, $this->salesStatuses(), true)) {
       return $status;
     }
-    if (in_array($status, [
-      OrderStatusEnum::RECTIFICATION_OF_MEASURES_AND_HOA->value,
-      OrderStatusEnum::ORDER_MATERIALS_AND_FILE_ORGANIZATION->value
-    ], true)) {
+    if (in_array($status, $this->salesPipelineStatuses(), true)) {
       $hadContractSigned = $order->orderStatus->contains(function ($orderStatus) {
         return $orderStatus->status === OrderStatusEnum::CONTRACT_SIGNED_BY_CLIENT->value;
       });
@@ -1011,6 +1033,12 @@ class SalesController extends Controller
             'nullable',
             Rule::enum(ProductLineEnum::class),
           ],
+          'esr_cost' => [
+            'nullable',
+            'numeric',
+            'min:0',
+            Rule::requiredIf(fn () => ($request->input('product_line') ?? $order->product_line) === ProductLineEnum::MIXED->value),
+          ],
           'note' => ['nullable', 'string'],
           'attachments' => ['required', 'array'],
           'attachments.*' => ['file', 'max:10240', 'mimes:pdf'],
@@ -1038,6 +1066,9 @@ class SalesController extends Controller
           $oldProjectAmount = (float) ($order->project_amount ?? 0);
           $order->project_amount = $validated['project_amount'];
           $order->product_line = $validated['product_line'] ?? $order->product_line;
+          $order->esr_cost = $order->product_line === ProductLineEnum::MIXED->value
+            ? $validated['esr_cost']
+            : null;
           $order->status = $validated['status'];
           $order->save();
 
@@ -1097,6 +1128,7 @@ class SalesController extends Controller
             'schedule_appointment_iso' => $schedule ? $schedule->format('Y-m-d\TH:i') : null,
             'project_amount' => $order->project_amount,
             'product_line' => $order->product_line,
+            'esr_cost' => $order->esr_cost,
             'owner_ids' => $order->owners->pluck('id')->values(),
             'owners' => $order->owners->map(fn ($owner) => [
               'id' => $owner->id,
@@ -1123,6 +1155,12 @@ class SalesController extends Controller
         'nullable',
         Rule::enum(ProductLineEnum::class),
       ],
+      'esr_cost' => [
+        'nullable',
+        'numeric',
+        'min:0',
+        Rule::requiredIf(fn () => ($request->input('product_line') ?? $order->product_line) === ProductLineEnum::MIXED->value),
+      ],
     ]);
 
     $noteContent = trim($validated['note']);
@@ -1136,6 +1174,9 @@ class SalesController extends Controller
 
     DB::transaction(function () use ($order, $noteContent, $validated) {
       $order->product_line = $validated['product_line'] ?? $order->product_line;
+      $order->esr_cost = $order->product_line === ProductLineEnum::MIXED->value
+        ? $validated['esr_cost']
+        : null;
       $order->status = OrderStatusEnum::STAND_BY->value;
       $order->save();
 
@@ -1164,6 +1205,7 @@ class SalesController extends Controller
         'id' => $order->id,
         'status' => $order->status,
         'product_line' => $order->product_line,
+        'esr_cost' => $order->esr_cost,
         'schedule_appointment' => $schedule ? $schedule->format('M d, Y h:i A') : null,
         'schedule_appointment_iso' => $schedule ? $schedule->format('Y-m-d\\TH:i') : null,
         'owner_ids' => $order->owners->pluck('id')->values(),
@@ -1324,9 +1366,11 @@ class SalesController extends Controller
 
     $this->ensureRequestRescheduleTransitionAllowed(
       $order,
-      $order->is_supply
-        ? OrderStatusEnum::ORDER_MATERIALS_AND_FILE_ORGANIZATION->value
-        : OrderStatusEnum::RECTIFICATION_OF_MEASURES_AND_HOA->value
+      $this->contractSignedPipelineStatus(
+        $order,
+        $request->boolean('pending_financing_or_deposit'),
+        $request->boolean('association_permits') && $request->boolean('pending_hoa_approval')
+      )
     );
 
     if ($request->has('type_of_financing') && trim((string) $request->input('type_of_financing')) === '') {
@@ -1351,6 +1395,12 @@ class SalesController extends Controller
         'nullable',
         Rule::enum(ProductLineEnum::class),
       ],
+      'esr_cost' => [
+        'nullable',
+        'numeric',
+        'min:0',
+        Rule::requiredIf(fn () => ($request->input('product_line') ?? $order->product_line) === ProductLineEnum::MIXED->value),
+      ],
       'project_amount' => ['required', 'numeric', 'min:1'],
       'job_address' => ['nullable', 'string'],
       'city' => ['nullable', 'string', 'max:255'],
@@ -1363,6 +1413,8 @@ class SalesController extends Controller
       'email_check' => ['nullable', 'boolean'],
       'city_permits' => ['nullable', 'boolean'],
       'association_permits' => ['nullable', 'boolean'],
+      'pending_financing_or_deposit' => ['required', 'boolean'],
+      'pending_hoa_approval' => ['required_if:association_permits,1', 'nullable', 'boolean'],
       'method_of_payment' => ['required', Rule::in(array_map(fn (MethodOfPayment $method) => $method->value, MethodOfPayment::cases()))],
       'type_of_financing' => ['nullable', Rule::in(array_map(fn (TypeOfFinancing $financing) => $financing->value, TypeOfFinancing::cases()))],
       'down_payment' => ['nullable', 'numeric', 'min:0'],
@@ -1486,13 +1538,20 @@ class SalesController extends Controller
       $beforeClientEmailDelivery = $this->orderClientEmailDeliveryLogger()->capture($order);
       $beforePaymentInformation = OrderPaymentInformationAuditLogger::snapshot($order);
       $oldProjectAmount = (float) ($order->project_amount ?? 0);
-      $newPipelineStatus = $order->is_supply
-        ? OrderStatusEnum::ORDER_MATERIALS_AND_FILE_ORGANIZATION->value
-        : OrderStatusEnum::RECTIFICATION_OF_MEASURES_AND_HOA->value;
+      $pendingFinancingOrDeposit = $request->boolean('pending_financing_or_deposit');
+      $pendingHoaApproval = $request->boolean('association_permits') && $request->boolean('pending_hoa_approval');
+      $newPipelineStatus = $this->contractSignedPipelineStatus(
+        $order,
+        $pendingFinancingOrDeposit,
+        $pendingHoaApproval
+      );
 
       $order->name = $validated['project_name'];
       $order->project_amount = $validated['project_amount'];
       $order->product_line = $validated['product_line'] ?? $order->product_line;
+      $order->esr_cost = $order->product_line === ProductLineEnum::MIXED->value
+        ? $validated['esr_cost']
+        : null;
       $order->job_address = isset($validated['job_address']) && $validated['job_address'] !== ''
         ? $validated['job_address']
         : null;
@@ -1518,6 +1577,8 @@ class SalesController extends Controller
       $order->email_check = $request->boolean('email_check');
       $order->city_permits = $request->boolean('city_permits');
       $order->association_permits = $request->boolean('association_permits');
+      $order->pending_financing_or_deposit = $pendingFinancingOrDeposit;
+      $order->pending_hoa_approval = $pendingHoaApproval;
       $order->status = $newPipelineStatus;
       $order->save();
 
@@ -1735,6 +1796,7 @@ class SalesController extends Controller
         'name' => $order->name,
         'status' => $order->status,
         'product_line' => $order->product_line,
+        'esr_cost' => $order->esr_cost,
         'project_amount' => $order->project_amount,
         'down_payment' => $order->down_payment,
         'job_address' => $order->job_address,
@@ -1761,6 +1823,8 @@ class SalesController extends Controller
         'email_check' => (bool) ($order->email_check ?? false),
         'city_permits' => (bool) ($order->city_permits ?? false),
         'association_permits' => (bool) ($order->association_permits ?? false),
+        'pending_financing_or_deposit' => (bool) ($order->pending_financing_or_deposit ?? false),
+        'pending_hoa_approval' => (bool) ($order->pending_hoa_approval ?? false),
         'has_contract_signed' => true,
         'payment_schedule' => PaymentInstallmentPresenter::schedule($order->paymentSchedule),
         'financial_events' => $order->financialEvents

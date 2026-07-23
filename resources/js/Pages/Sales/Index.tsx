@@ -46,6 +46,7 @@ type PaymentScheduleTemplates = Record<string, PaymentScheduleTemplateItem[]>
 type ContractSignedSubmitValues = {
   projectName: string
   productLine: string
+  esrCost: string
   projectAmount: string
   downPayment: string
   jobAddress: string
@@ -63,6 +64,8 @@ type ContractSignedSubmitValues = {
   emailCheck: boolean
   cityPermits: boolean
   associationPermits: boolean
+  pendingFinancingOrDeposit: boolean
+  pendingHoaApproval: boolean
   paymentScheduleType: string
   customSchedule: Array<{ label: string, amount: number }>
 }
@@ -346,7 +349,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
   const [preContractError, setPreContractError] = useState<string | null>(null)
   const [pendingPreContract, setPendingPreContract] = useState<{ task: Tasks, oldStatus: string, newStatus: string } | null>(null)
   const [contractSignedModalOpen, setContractSignedModalOpen] = useState(false)
-  const [contractSignedInitialValues, setContractSignedInitialValues] = useState<{ projectName: string, projectAmount: string, downPayment: string, jobAddress: string, city: string, jobState: string, jobZip: string, methodOfPayment: string, typeOfFinancing: string, clientEmailSelection: string, orderCompanyContactId: number | null, nameCheck: boolean, addressCheck: boolean, amountCheck: boolean, emailCheck: boolean, cityPermits: boolean, associationPermits: boolean, paymentScheduleType: string, customSchedule: Array<{ label: string, amount: string }> }>({ projectName: '', projectAmount: '', downPayment: '', jobAddress: '', city: '', jobState: '', jobZip: '', methodOfPayment: '', typeOfFinancing: '', clientEmailSelection: PRIMARY_CLIENT_EMAIL_SELECTION, orderCompanyContactId: null, nameCheck: false, addressCheck: false, amountCheck: false, emailCheck: false, cityPermits: false, associationPermits: false, paymentScheduleType: '', customSchedule: buildEmptyCustomSchedule() })
+  const [contractSignedInitialValues, setContractSignedInitialValues] = useState<{ projectName: string, projectAmount: string, downPayment: string, jobAddress: string, city: string, jobState: string, jobZip: string, methodOfPayment: string, typeOfFinancing: string, clientEmailSelection: string, orderCompanyContactId: number | null, nameCheck: boolean, addressCheck: boolean, amountCheck: boolean, emailCheck: boolean, cityPermits: boolean, associationPermits: boolean, pendingFinancingOrDeposit: boolean | null, pendingHoaApproval: boolean | null, paymentScheduleType: string, customSchedule: Array<{ label: string, amount: string }> }>({ projectName: '', projectAmount: '', downPayment: '', jobAddress: '', city: '', jobState: '', jobZip: '', methodOfPayment: '', typeOfFinancing: '', clientEmailSelection: PRIMARY_CLIENT_EMAIL_SELECTION, orderCompanyContactId: null, nameCheck: false, addressCheck: false, amountCheck: false, emailCheck: false, cityPermits: false, associationPermits: false, pendingFinancingOrDeposit: null, pendingHoaApproval: null, paymentScheduleType: '', customSchedule: buildEmptyCustomSchedule() })
   const [contractSignedSaving, setContractSignedSaving] = useState(false)
   const [contractSignedError, setContractSignedError] = useState<string | null>(null)
   const [contractSignedConfirmation, setContractSignedConfirmation] = useState<null | { message: string, userEmail?: string, userRoles?: string[] }>(null)
@@ -760,7 +763,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
     setContractSignedConfirmation(null)
     setContractSignedPendingValues(null)
     setContractSignedSaving(false)
-    setContractSignedInitialValues({ projectName: '', projectAmount: '', downPayment: '', jobAddress: '', city: '', jobState: '', jobZip: '', methodOfPayment: '', typeOfFinancing: '', clientEmailSelection: PRIMARY_CLIENT_EMAIL_SELECTION, orderCompanyContactId: null, nameCheck: false, addressCheck: false, amountCheck: false, emailCheck: false, cityPermits: false, associationPermits: false, paymentScheduleType: '', customSchedule: buildEmptyCustomSchedule() })
+    setContractSignedInitialValues({ projectName: '', projectAmount: '', downPayment: '', jobAddress: '', city: '', jobState: '', jobZip: '', methodOfPayment: '', typeOfFinancing: '', clientEmailSelection: PRIMARY_CLIENT_EMAIL_SELECTION, orderCompanyContactId: null, nameCheck: false, addressCheck: false, amountCheck: false, emailCheck: false, cityPermits: false, associationPermits: false, pendingFinancingOrDeposit: null, pendingHoaApproval: null, paymentScheduleType: '', customSchedule: buildEmptyCustomSchedule() })
     setPendingContractSigned(null)
   }
 
@@ -774,7 +777,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
     setPendingLostContract(null)
   }
 
-  const handleFollowUpSubmit = async (values: { projectAmount: string, note: string, attachments: File[], productLine: string }) => {
+  const handleFollowUpSubmit = async (values: { projectAmount: string, note: string, attachments: File[], productLine: string, esrCost: string }) => {
     if (!pendingFollowUp) return
 
     setFollowUpSaving(true)
@@ -786,6 +789,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
       formData.append('project_amount', values.projectAmount)
       formData.append('note', values.note)
       formData.append('product_line', values.productLine)
+      formData.append('esr_cost', values.esrCost)
 
       values.attachments?.forEach((file) => {
         formData.append('attachments[]', file)
@@ -831,6 +835,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
         owner_ids: data.order.owner_ids ?? pendingFollowUp.task.owner_ids,
         owners: data.order.owners ?? pendingFollowUp.task.owners,
         product_line: data.order.product_line ?? pendingFollowUp.task.product_line,
+        esr_cost: data.order.esr_cost ?? pendingFollowUp.task.esr_cost,
         project_amount: Number.isFinite(normalizedProjectAmount) ? normalizedProjectAmount : 0
       })
 
@@ -845,7 +850,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
     }
   }
 
-  const handleStandBySubmit = async (values: { note: string, productLine: string }) => {
+  const handleStandBySubmit = async (values: { note: string, productLine: string, esrCost: string }) => {
     if (!pendingStandBy) return
 
     setStandBySaving(true)
@@ -861,7 +866,8 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
         },
         body: JSON.stringify({
           note: values.note,
-          product_line: values.productLine
+          product_line: values.productLine,
+          esr_cost: values.esrCost
         })
       })
 
@@ -888,7 +894,8 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
         schedule_appointment_iso: data.order.schedule_appointment_iso ?? pendingStandBy.task.schedule_appointment_iso,
         owner_ids: data.order.owner_ids ?? pendingStandBy.task.owner_ids,
         owners: data.order.owners ?? pendingStandBy.task.owners,
-        product_line: data.order.product_line ?? pendingStandBy.task.product_line
+        product_line: data.order.product_line ?? pendingStandBy.task.product_line,
+        esr_cost: data.order.esr_cost ?? pendingStandBy.task.esr_cost
       })
 
       applyTaskMove(updatedTask, pendingStandBy.newStatus)
@@ -1037,6 +1044,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
       const formData = new FormData()
       formData.append('project_name', values.projectName)
       formData.append('product_line', values.productLine)
+      formData.append('esr_cost', values.esrCost)
       formData.append('project_amount', values.projectAmount)
       formData.append('job_address', values.jobAddress.trim())
       formData.append('city', normalizedCity)
@@ -1049,6 +1057,8 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
       formData.append('email_check', values.emailCheck ? '1' : '0')
       formData.append('city_permits', values.cityPermits ? '1' : '0')
       formData.append('association_permits', values.associationPermits ? '1' : '0')
+      formData.append('pending_financing_or_deposit', values.pendingFinancingOrDeposit ? '1' : '0')
+      formData.append('pending_hoa_approval', values.pendingHoaApproval ? '1' : '0')
       formData.append('method_of_payment', normalizedMethod)
       formData.append('type_of_financing', normalizedFinancing)
       formData.append('down_payment', normalizedDownPayment)
@@ -1119,15 +1129,16 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
       const normalizedDownPaymentNumber = downPaymentRaw === '' || downPaymentRaw === null || downPaymentRaw === undefined
         ? null
         : Number(
-            typeof downPaymentRaw === 'string'
-              ? downPaymentRaw.replace(/,/g, '')
-              : downPaymentRaw
-          )
+          typeof downPaymentRaw === 'string'
+            ? downPaymentRaw.replace(/,/g, '')
+            : downPaymentRaw
+        )
 
       const updatedTask: Tasks = stampTaskAsUpdated({
         ...pendingContractSigned.task,
         title: data.order.name ?? values.projectName,
         product_line: data.order.product_line ?? pendingContractSigned.task.product_line,
+        esr_cost: data.order.esr_cost ?? pendingContractSigned.task.esr_cost,
         project_amount: Number.isFinite(normalizedProjectAmount) ? normalizedProjectAmount : 0,
         down_payment: Number.isFinite(normalizedDownPaymentNumber ?? NaN) ? normalizedDownPaymentNumber : null,
         job_address: data.order.job_address ?? values.jobAddress.trim(),
@@ -1151,6 +1162,8 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
         email_check: data.order.email_check ?? values.emailCheck,
         city_permits: data.order.city_permits ?? values.cityPermits,
         association_permits: data.order.association_permits ?? values.associationPermits,
+        pending_financing_or_deposit: data.order.pending_financing_or_deposit ?? values.pendingFinancingOrDeposit,
+        pending_hoa_approval: data.order.pending_hoa_approval ?? values.pendingHoaApproval,
         order_company_contacts: data.order.order_company_contacts ?? pendingContractSigned.task.order_company_contacts
       })
 
@@ -1514,8 +1527,10 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
                           const taskCompanyContacts = Array.isArray(foundTask.order_company_contacts)
                             ? foundTask.order_company_contacts
                             : []
-                          const selectedCompanyId = taskCompanyContacts.find((item) => item.is_selected)?.id
-                            ?? (taskCompanyContacts.length === 1 ? taskCompanyContacts[0]?.id : null)
+                          const selectedCompanyId = (
+                            taskCompanyContacts.find((item) => item.is_selected)?.id ??
+                            (taskCompanyContacts.length === 1 ? taskCompanyContacts[0]?.id : null)
+                          )
 
                           setContractSignedInitialValues({
                             projectName: foundTask.title ?? '',
@@ -1539,8 +1554,10 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
                             emailCheck: foundTask.email_check ?? false,
                             cityPermits: foundTask.city_permits ?? false,
                             associationPermits: foundTask.association_permits ?? false,
+                            pendingFinancingOrDeposit: foundTask.pending_financing_or_deposit ?? null,
+                            pendingHoaApproval: foundTask.pending_hoa_approval ?? null,
                             paymentScheduleType: '',
-                            customSchedule: buildEmptyCustomSchedule(),
+                            customSchedule: buildEmptyCustomSchedule()
                           })
                           setPendingContractSigned({ task: foundTask, oldStatus, newStatus })
                           setContractSignedModalOpen(true)
@@ -1777,6 +1794,12 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
                                   </div>
                                 )
                                 )}
+                              {task.product_line === 'MIXED' && task.esr_cost !== undefined && task.esr_cost !== null && (
+                                <p className="mt-1 break-all text-xs font-semibold text-slate-700">
+                                  <span className="font-medium text-slate-500">ESR Cost: </span>
+                                  {formatCurrency(toNumericAmount(task.esr_cost))}
+                                </p>
+                              )}
                               {appointmentDisplay && (
                                 <div className="mt-1 flex justify-end">
                                   <span className="inline-flex max-w-full items-center gap-1.5 text-[11px] font-semibold text-sky-700 dark:text-sky-200">
@@ -1819,6 +1842,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
         initialProjectAmount={followUpInitialValues.projectAmount}
         initialNote={followUpInitialValues.note}
         initialProductLine={pendingFollowUp?.task.product_line ?? ''}
+        initialEsrCost={pendingFollowUp?.task.esr_cost != null ? String(pendingFollowUp.task.esr_cost) : ''}
         requireProductLine={matchesStatus(pendingFollowUp?.oldStatus ?? '', ESTIMATE_STATUS)}
         loading={followUpSaving}
         error={followUpError}
@@ -1831,6 +1855,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
         taskTitle={pendingStandBy?.task.title ?? ''}
         initialNote={standByInitialNote}
         initialProductLine={pendingStandBy?.task.product_line ?? ''}
+        initialEsrCost={pendingStandBy?.task.esr_cost != null ? String(pendingStandBy.task.esr_cost) : ''}
         requireProductLine={matchesStatus(pendingStandBy?.oldStatus ?? '', ESTIMATE_STATUS)}
         loading={standBySaving}
         error={standByError}
@@ -1865,6 +1890,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
         taskTitle={pendingContractSigned?.task.title ?? ''}
         initialProjectName={contractSignedInitialValues.projectName}
         initialProductLine={pendingContractSigned?.task.product_line ?? ''}
+        initialEsrCost={pendingContractSigned?.task.esr_cost != null ? String(pendingContractSigned.task.esr_cost) : ''}
         requireProductLine={matchesStatus(pendingContractSigned?.oldStatus ?? '', ESTIMATE_STATUS)}
         initialProjectAmount={contractSignedInitialValues.projectAmount}
         initialDownPayment={contractSignedInitialValues.downPayment}
@@ -1890,6 +1916,8 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
         initialEmailCheck={contractSignedInitialValues.emailCheck}
         initialCityPermits={contractSignedInitialValues.cityPermits}
         initialAssociationPermits={contractSignedInitialValues.associationPermits}
+        initialPendingFinancingOrDeposit={contractSignedInitialValues.pendingFinancingOrDeposit}
+        initialPendingHoaApproval={contractSignedInitialValues.pendingHoaApproval}
         initialPaymentScheduleType={contractSignedInitialValues.paymentScheduleType}
         initialCustomSchedule={contractSignedInitialValues.customSchedule}
         paymentMethods={paymentMethods}

@@ -50,6 +50,10 @@ class StoreQualifiedOrderRequest extends FormRequest
               )
             ],
             'product_line' => ['nullable', 'string', Rule::enum(ProductLineEnum::class)],
+            'esr_cost' => [
+              'nullable',
+              'numeric',
+            ],
             'status' =>  [
             'nullable',
             'string',

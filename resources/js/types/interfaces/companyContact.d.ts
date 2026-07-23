@@ -5,6 +5,7 @@ export interface CompanyContact {
   name: string
   email: string
   phone: string
+  phone_ext?: string | null
   website: string
   billing_street: string
   billing_state: string

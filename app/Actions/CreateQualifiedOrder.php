@@ -5,6 +5,7 @@ namespace App\Actions;
 use App\Enum\OrderStatusEnum;
 use App\Enum\OrderTypeEnum;
 use App\Enum\PlaningDateSupervisorEnum;
+use App\Enum\ProductLineEnum;
 use App\Models\Client;
 use App\Models\CompanyContact;
 use Illuminate\Http\Request;
@@ -122,6 +123,9 @@ class CreateQualifiedOrder
         'user_id' => auth()->user()->id,
         'order_type' => $request->order_type,
         'product_line' => $request->product_line,
+        'esr_cost' => $request->product_line === ProductLineEnum::MIXED->value
+          ? $request->esr_cost
+          : null,
         'name' => $request->name,
         'job_address' => $request->job_address,
         'city' => $request->city,

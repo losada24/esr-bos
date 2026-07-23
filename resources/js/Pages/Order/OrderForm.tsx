@@ -1363,6 +1363,12 @@ const OrderForm = ({
                 name="product_line"
                 className="form-select"
                 as="select"
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                  setFieldValue('product_line', e.target.value)
+                  if (e.target.value !== 'MIXED') {
+                    setFieldValue('esr_cost', null)
+                  }
+                }}
               >
                 <option value="">Product Line</option>
                 {PRODUCT_LINES.map((productLine) => (
@@ -1371,6 +1377,22 @@ const OrderForm = ({
               </Field>
               {(submitCount && errors.product_line) ? <InputError message={errors.product_line} className="mt-2" /> : ''}
             </div>
+            {values.product_line === 'MIXED' && (
+              <div className={submitCount ? (errors.esr_cost ? 'has-error' : 'has-success') : ''}>
+                <label htmlFor="esr_cost">ESR Cost</label>
+                <Field
+                  id="esr_cost"
+                  name="esr_cost"
+                  className="form-input text-right"
+                  autoComplete="esr_cost"
+                  placeholder="ESR Cost"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                />
+                {(submitCount && errors.esr_cost) ? <InputError message={errors.esr_cost as string} className="mt-2" /> : ''}
+              </div>
+            )}
             <div className={submitCount ? (errors.name) ? 'has-error' : 'has-success' : ''}>
               <label htmlFor="name">Name</label>
               <Field

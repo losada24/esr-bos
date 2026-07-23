@@ -78,6 +78,11 @@ class UpdateQualifiedOrderRequest extends FormRequest
               )
             ],
             'product_line' => ['nullable', 'string', Rule::enum(ProductLineEnum::class)],
+            'esr_cost' => [
+                'nullable',
+                'numeric',
+                'min:0',
+            ],
            /* 'status' =>  [
             'nullable',
             'string',

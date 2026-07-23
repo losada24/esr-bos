@@ -33,6 +33,7 @@ class CreateOrderPipeline
       $client = Client::create([
         'name' => $request->client_name,
         'phone' => $request->phone,
+        'phone_ext' => $request->phone_ext,
         'source' => $request->source,
         'user_id' => auth()->user()->id,
         'is_contact' => false,

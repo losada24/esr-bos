@@ -104,6 +104,8 @@ export default function EditService ({
       job_state: values.job_state,
       job_zip: values.job_zip,
       city: values.city,
+      product_line: values.product_line,
+      esr_cost: values.product_line === 'MIXED' ? values.esr_cost : null,
       city_permits: values.city_permits,
       additional_travel_costs: values.additional_travel_costs,
       travel_cost_id: values.travel_cost_id !== 0 ? values.travel_cost_id : '',

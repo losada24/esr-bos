@@ -28,6 +28,7 @@ export default function CompanyQuickEditModal ({
     name: company?.name ?? '',
     email: company?.email ?? '',
     phone: company?.phone ?? '',
+    phone_ext: company?.phone_ext ?? '',
     website: company?.website ?? '',
     billing_street: company?.billing_street ?? '',
     billing_city: company?.billing_city ?? '',
@@ -51,6 +52,7 @@ export default function CompanyQuickEditModal ({
         name: normalizeValue(values.name) ?? '',
         email: normalizeValue(values.email),
         phone: normalizeValue(values.phone),
+        phone_ext: normalizeValue(values.phone_ext),
         website: normalizeValue(values.website),
         billing_street: normalizeValue(values.billing_street),
         billing_city: normalizeValue(values.billing_city),
@@ -130,6 +132,11 @@ export default function CompanyQuickEditModal ({
                   <label htmlFor="phone">Phone</label>
                   <Field id="phone" name="phone" className="form-input" placeholder="Phone" />
                   {(submitCount && errors.phone) ? <InputError message={errors.phone as string} className="mt-2" /> : null}
+                </div>
+                <div className={submitCount ? (errors.phone_ext ? 'has-error' : 'has-success') : ''}>
+                  <label htmlFor="phone_ext">Ext</label>
+                  <Field id="phone_ext" name="phone_ext" className="form-input" placeholder="Ext" />
+                  {(submitCount && errors.phone_ext) ? <InputError message={errors.phone_ext as string} className="mt-2" /> : null}
                 </div>
                 <div className={submitCount ? (errors.website ? 'has-error' : 'has-success') : ''}>
                   <label htmlFor="website">Website</label>

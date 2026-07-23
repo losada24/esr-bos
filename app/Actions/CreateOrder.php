@@ -5,6 +5,7 @@ namespace App\Actions;
 use App\Enum\PlaningDateSupervisorEnum;
 use App\Enum\MethodOfPayment;
 use App\Enum\PaymentScheduleTypeEnum;
+use App\Enum\ProductLineEnum;
 use App\Models\Client;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -47,6 +48,7 @@ class CreateOrder
         $client = Client::create([
           'name' => $request->client_name,
           'phone' => $request->phone,
+          'phone_ext' => $request->phone_ext,
           'email' => $request->email,
           'vip_clients' => $request->vip_clients,
           'vip_notes' => $request->vip_notes,
@@ -152,6 +154,9 @@ class CreateOrder
         'cost_delivery' => $request->cost_delivery,
         'cost_city_fee' => $request->cost_city_fee,
         'project_amount' => $request->project_amount,
+        'esr_cost' => $request->product_line === ProductLineEnum::MIXED->value
+          ? $request->esr_cost
+          : null,
         'down_payment' => $request->method_of_payment === MethodOfPayment::FINANCEDCASH->value
           ? $request->down_payment
           : null,

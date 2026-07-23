@@ -15,6 +15,7 @@ export default function Edit ({ auth, companyContact, sources, clientslist }: Pa
     name: companyContact.name,
     email: companyContact.email,
     phone: companyContact.phone,
+    phone_ext: companyContact.phone_ext ?? '',
     website: companyContact.website,
     billing_street: companyContact.billing_street,
     billing_city: companyContact.billing_city,

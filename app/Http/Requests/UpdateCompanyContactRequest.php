@@ -36,6 +36,7 @@ class UpdateCompanyContactRequest extends FormRequest
             'name' => 'required|string|max:255',
             'email' => 'nullable|email',
             'phone' => 'nullable|max:20',
+            'phone_ext' => 'nullable|string|max:20',
             'website' => 'nullable|url|max:255',
             'billing_street' => 'nullable|string|max:255',
             'billing_city' => 'nullable|string|max:100',
@@ -43,6 +44,7 @@ class UpdateCompanyContactRequest extends FormRequest
             'billing_code' => 'nullable|numeric',
             'bid_due_date' =>'nullable|date_format:Y-m-d',
             'clients' => 'sometimes|array',
+            'clients.*.phone_ext' => 'nullable|string|max:20',
             'clients.*.source' => [
                 'nullable',
                 'string',

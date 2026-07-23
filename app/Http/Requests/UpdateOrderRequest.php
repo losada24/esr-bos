@@ -102,6 +102,7 @@ class UpdateOrderRequest extends FormRequest
                 [Rule::unique('clients', 'phone')->ignore($this->input('client_id'))]
               )
             ],
+          'phone_ext' => 'nullable|string|max:20',
           'email' => 'nullable|email|max:255',
           'client_email_selection' => 'nullable|string|max:255',
           'vip_clients' => 'boolean',
@@ -169,6 +170,10 @@ class UpdateOrderRequest extends FormRequest
           'new_travel_cost' => 'nullable|numeric',
           'cost_city_fee' => 'nullable|numeric',
           'project_amount' => 'nullable|numeric',
+          'esr_cost' => [
+            'nullable',
+            'numeric',
+          ],
           'down_payment' => 'nullable|numeric',
           'city' => 'nullable|string|max:100',
           'job_state' => 'nullable|string|max:100',

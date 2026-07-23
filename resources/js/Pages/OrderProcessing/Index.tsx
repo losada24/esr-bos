@@ -728,7 +728,7 @@ const OrderProcessing = ({ auth, data, statuses, owners, supervisors, created_by
                                     )}
                                   </div>
                                   )
-                                : (
+                              : (
                                   task.is_supply && (
                                     <div className="mt-1 flex justify-end">
                                       <span className="text-xs font-bold uppercase tracking-wide text-sky-600">
@@ -737,6 +737,12 @@ const OrderProcessing = ({ auth, data, statuses, owners, supervisors, created_by
                                     </div>
                                   )
                                   )}
+                              {task.product_line === 'MIXED' && task.esr_cost !== undefined && task.esr_cost !== null && (
+                                <p className="mt-1 break-all text-xs font-semibold text-slate-700">
+                                  <span className="font-medium text-slate-500">ESR Cost: </span>
+                                  {formatCurrency(toNumericAmount(task.esr_cost))}
+                                </p>
+                              )}
                             </div>
                           </div>
                         )

@@ -17,6 +17,7 @@ export const clientSchema = Yup.object({
       then: (schema) => schema.notRequired().nullable(),
       otherwise: (schema) => schema.required('Name is required')
     }),
+  phone_ext: Yup.string().nullable().max(20, 'Ext must be 20 characters or less'),
   notes: Yup.string().max(20, 'Notes must be less than 500 characters'),
   address: Yup.string().max(500, 'Address must be less than 500 characters'),
   source: Yup.string()
@@ -28,6 +29,7 @@ export interface Client {
   name: string
   email: string | null
   phone: string | null
+  phone_ext?: string | null
   contact_type: string | null
   other_phone: string | null
   secondary_email: string | null

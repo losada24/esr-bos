@@ -21,6 +21,7 @@ class InstallationTeamResource extends JsonResource
           'worker_compensation_expiration_date' => $this->worker_compensation_expiration_date ?? '',
           'liability_expiration_date' => $this->liability_expiration_date ?? '',
           'annual_w9_expiration_date' => $this->annual_w9_expiration_date ?? '',
+          'disable_expiration_document_emails' => (bool) $this->disable_expiration_document_emails,
           'company_name' => $this->company_name ?? '',
           'phone' => $this->phone ?? '',
           'notes' => $this->notes ?? '',

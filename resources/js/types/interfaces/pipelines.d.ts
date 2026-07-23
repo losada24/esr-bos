@@ -30,7 +30,10 @@ export interface Tasks {
   email_check?: boolean
   city_permits?: boolean
   association_permits?: boolean
+  pending_financing_or_deposit?: boolean | null
+  pending_hoa_approval?: boolean | null
   project_amount?: number | string | null
+  esr_cost?: number | string | null
   down_payment?: number | string | null
   job_address?: string | null
   city?: string | null

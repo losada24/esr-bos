@@ -210,6 +210,9 @@ const SALES_STATUS_OPTIONS = [
 ] as const
 
 const ORDER_PROCESSING_STATUS_OPTIONS = [
+  'PENDING DEPOSIT OR FINANCING',
+  'PENDING HOA APPROVAL',
+  'RECTIFICATION OF MEASURES',
   'RECTIFICATION OF MEASURES AND HOA',
   'ORDER MATERIALS AND FILE ORGANIZATION',
   'FILE REVIEW',
@@ -356,6 +359,13 @@ const ownerDisplayName = (owner: Record<string, any>): string => {
   return 'Unknown'
 }
 
+const installationTeamDisplayName = (team: Record<string, any>): string => {
+  if (team?.name) return String(team.name)
+  if (team?.company_name) return String(team.company_name)
+  if (team?.email) return String(team.email)
+  return 'Unknown'
+}
+
 const diffAddedItems = (current: Array<Record<string, any>>, previous: Array<Record<string, any>>): Array<Record<string, any>> => {
   const previousKeys = new Set(previous.map(snapshotKeyOf).filter(Boolean) as string[])
   return current.filter((item) => {
@@ -369,6 +379,7 @@ const FIELD_LABELS: Record<string, string> = {
   schedule_appointment: 'Schedule appointment',
   order_type: 'Order type',
   product_line: 'Product Line',
+  esr_cost: 'ESR Cost',
   method_of_payment: 'Method of payment',
   project_amount: 'Project amount',
   down_payment: 'Cash amount',
@@ -635,6 +646,8 @@ export default function ShowStatusOrder ({
     emailCheck: Boolean(order.email_check),
     cityPermits: Boolean(order.city_permits),
     associationPermits: Boolean(order.association_permits),
+    pendingFinancingOrDeposit: order.pending_financing_or_deposit ?? null,
+    pendingHoaApproval: order.pending_hoa_approval ?? null,
     paymentScheduleType: initialScheduleType,
     customSchedule: initialCustomSchedule
   })
@@ -679,6 +692,7 @@ export default function ShowStatusOrder ({
     email: initialOrder.client?.email ?? '',
     secondary_email: initialOrder.client?.secondary_email ?? '',
     phone: initialOrder.client?.phone ?? '',
+    phone_ext: initialOrder.client?.phone_ext ?? '',
     other_phone: initialOrder.client?.other_phone ?? '',
     source: initialOrder.client?.source ?? '',
     vip_clients: normalizeBoolean(initialOrder.client?.vip_clients),
@@ -727,6 +741,7 @@ export default function ShowStatusOrder ({
       email: order.client?.email ?? '',
       secondary_email: order.client?.secondary_email ?? '',
       phone: order.client?.phone ?? '',
+      phone_ext: order.client?.phone_ext ?? '',
       other_phone: order.client?.other_phone ?? '',
       source: order.client?.source ?? '',
       vip_clients: normalizeBoolean(order.client?.vip_clients),
@@ -744,6 +759,7 @@ export default function ShowStatusOrder ({
       email: client.email ?? '',
       secondary_email: client.secondary_email ?? '',
       phone: client.phone ?? '',
+      phone_ext: client.phone_ext ?? '',
       other_phone: client.other_phone ?? '',
       source: client.source ?? '',
       vip_clients: normalizeBoolean(client.vip_clients),
@@ -1076,6 +1092,7 @@ export default function ShowStatusOrder ({
         email: updatedOrder.client?.email ?? '',
         secondary_email: updatedOrder.client?.secondary_email ?? '',
         phone: updatedOrder.client?.phone ?? '',
+        phone_ext: updatedOrder.client?.phone_ext ?? '',
         other_phone: updatedOrder.client?.other_phone ?? '',
         source: updatedOrder.client?.source ?? '',
         vip_clients: normalizeBoolean(updatedOrder.client?.vip_clients),
@@ -1132,8 +1149,15 @@ export default function ShowStatusOrder ({
       return formattedSegment ? `${leadingWhitespace}${formattedSegment}${trailingWhitespace}` : segment
     })
   }
+  const formatPhoneWithExtForDisplay = (phone?: string | null, ext?: string | null) => {
+    const formattedPhone = formatPhoneForDisplay(phone)
+    if (!formattedPhone) return null
+
+    const normalizedExt = normalizeDetailValue(ext)
+    return normalizedExt ? `${formattedPhone} ext ${normalizedExt}` : formattedPhone
+  }
   const primaryContactEmail = normalizeDetailValue(order.client?.email)
-  const primaryContactPhone = formatPhoneForDisplay(order.client?.phone)
+  const primaryContactPhone = formatPhoneWithExtForDisplay(order.client?.phone, order.client?.phone_ext)
   const secondaryContactPhone = formatPhoneForDisplay(order.client?.other_phone)
   const orderRecipientEmail = normalizeDetailValue(order.contact_email)
   const orderEmailDeliveryValue = order.do_not_send_email
@@ -1729,6 +1753,8 @@ export default function ShowStatusOrder ({
         emailCheck: Boolean(order.email_check),
         cityPermits: Boolean(order.city_permits),
         associationPermits: Boolean(order.association_permits),
+        pendingFinancingOrDeposit: order.pending_financing_or_deposit ?? null,
+        pendingHoaApproval: order.pending_hoa_approval ?? null,
         paymentScheduleType: order.payment_schedule?.schedule_type ?? prev.paymentScheduleType,
         customSchedule: order.payment_schedule?.schedule_type === CUSTOM_SCHEDULE_TYPE
           ? buildCustomSchedule(order.payment_schedule?.installments)
@@ -1848,7 +1874,7 @@ export default function ShowStatusOrder ({
     setPendingFollowUp(null)
   }
 
-  const handleFollowUpSubmit = async (values: { projectAmount: string, note: string, attachments: File[], productLine: string }) => {
+  const handleFollowUpSubmit = async (values: { projectAmount: string, note: string, attachments: File[], productLine: string, esrCost: string }) => {
     if (!pendingFollowUp) return
 
     setFollowUpSaving(true)
@@ -1860,6 +1886,7 @@ export default function ShowStatusOrder ({
       formData.append('project_amount', values.projectAmount)
       formData.append('note', values.note)
       formData.append('product_line', values.productLine)
+      formData.append('esr_cost', values.esrCost)
 
       values.attachments?.forEach((file) => {
         formData.append('attachments[]', file)
@@ -1900,6 +1927,7 @@ export default function ShowStatusOrder ({
         owner_ids: data.owner_ids ?? prev.owner_ids,
         owners: data.owners ?? prev.owners,
         product_line: data.product_line ?? prev.product_line,
+        esr_cost: data.esr_cost ?? prev.esr_cost,
         project_amount: Number.isFinite(normalizedProjectAmount) ? normalizedProjectAmount : prev.project_amount
       }))
 
@@ -1921,7 +1949,7 @@ export default function ShowStatusOrder ({
     setPendingStandBy(null)
   }
 
-  const handleStandBySubmit = async (values: { note: string, productLine: string }) => {
+  const handleStandBySubmit = async (values: { note: string, productLine: string, esrCost: string }) => {
     if (!pendingStandBy) return
 
     setStandBySaving(true)
@@ -1937,7 +1965,8 @@ export default function ShowStatusOrder ({
         },
         body: JSON.stringify({
           note: values.note,
-          product_line: values.productLine
+          product_line: values.productLine,
+          esr_cost: values.esrCost
         })
       })
 
@@ -1962,6 +1991,7 @@ export default function ShowStatusOrder ({
         ...prev,
         status: pendingStandBy.newStatus,
         product_line: data.product_line ?? prev.product_line,
+        esr_cost: data.esr_cost ?? prev.esr_cost,
         schedule_appointment: data.schedule_appointment ?? prev.schedule_appointment,
         schedule_appointment_iso: data.schedule_appointment_iso ?? prev.schedule_appointment_iso,
         owner_ids: data.owner_ids ?? prev.owner_ids,
@@ -2124,6 +2154,7 @@ export default function ShowStatusOrder ({
       const fieldMap: Record<string, string> = {
         projectName: 'project_name',
         productLine: 'product_line',
+        esrCost: 'esr_cost',
         projectAmount: 'project_amount',
         downPayment: 'down_payment',
         jobAddress: 'job_address',
@@ -2140,10 +2171,12 @@ export default function ShowStatusOrder ({
         emailCheck: 'email_check',
         cityPermits: 'city_permits',
         associationPermits: 'association_permits',
+        pendingFinancingOrDeposit: 'pending_financing_or_deposit',
+        pendingHoaApproval: 'pending_hoa_approval',
         orderCompanyContactId: 'order_company_contact_id'
       }
 
-      const booleanFields = new Set(['nameCheck', 'addressCheck', 'amountCheck', 'emailCheck', 'cityPermits', 'associationPermits'])
+      const booleanFields = new Set(['nameCheck', 'addressCheck', 'amountCheck', 'emailCheck', 'cityPermits', 'associationPermits', 'pendingFinancingOrDeposit', 'pendingHoaApproval'])
       Object.entries(values).forEach(([key, value]) => {
         if (key === 'attachments' && Array.isArray(value)) {
           value.forEach((file: File) => {
@@ -2207,6 +2240,7 @@ export default function ShowStatusOrder ({
         owners: data.owners ?? prev.owners,
         project_amount: data.project_amount ?? prev.project_amount,
         product_line: data.product_line ?? prev.product_line,
+        esr_cost: data.esr_cost ?? prev.esr_cost,
         down_payment: data.down_payment ?? prev.down_payment,
         job_address: data.job_address ?? prev.job_address,
         city: data.city ?? prev.city,
@@ -2225,6 +2259,8 @@ export default function ShowStatusOrder ({
         email_check: data.email_check ?? prev.email_check,
         city_permits: data.city_permits ?? prev.city_permits,
         association_permits: data.association_permits ?? prev.association_permits,
+        pending_financing_or_deposit: data.pending_financing_or_deposit ?? prev.pending_financing_or_deposit,
+        pending_hoa_approval: data.pending_hoa_approval ?? prev.pending_hoa_approval,
         order_company_contacts: data.order_company_contacts ?? (prev as any).order_company_contacts
       }))
 
@@ -2773,6 +2809,10 @@ export default function ShowStatusOrder ({
   const formattedProjectAmount = showProjectAmount
     ? `$${projectAmountNumber.toLocaleString()}`
     : null
+  const esrCostNumber = Number(order.esr_cost ?? Number.NaN)
+  const formattedEsrCost = order.product_line === 'MIXED' && Number.isFinite(esrCostNumber)
+    ? `$${esrCostNumber.toLocaleString()}`
+    : null
   const formattedTotalProjectAmountWithChangeOrder = hasChangeOrderAmount && Number.isFinite(totalProjectAmountWithChangeOrder)
     ? `$${totalProjectAmountWithChangeOrder.toLocaleString()}`
     : null
@@ -2868,6 +2908,27 @@ export default function ShowStatusOrder ({
       }
       const createdAt = snapshot.created_at ? new Date(snapshot.created_at) : new Date()
       const actorName = data.actor?.name ?? snapshot.user?.name ?? 'System'
+
+      if (data.event_type === 'installation_team_changed') {
+        const beforeNames = normalizeSnapshotArray(data.before_installation_teams)
+          .map(installationTeamDisplayName)
+          .join(', ')
+        const afterNames = normalizeSnapshotArray(data.after_installation_teams)
+          .map(installationTeamDisplayName)
+          .join(', ')
+
+        items.push({
+          id: `snapshot-${snapshot.id}-installation-teams`,
+          createdAt,
+          timeLabel: formatTimelineTime(createdAt),
+          dateLabel: formatTimelineDate(createdAt),
+          title: `Installation team updated by ${actorName}`,
+          description: `Before: ${beforeNames || 'None'} -> After: ${afterNames || 'None'}`,
+          icon: UserIcon,
+          iconTone: 'info'
+        })
+        return
+      }
 
       if (!previousData) {
         items.push({
@@ -3168,6 +3229,12 @@ export default function ShowStatusOrder ({
                       <span className="text-[10px] uppercase tracking-wide text-sky-600">Product Line</span>
                       <span>{order.product_line ?? 'Not assigned'}</span>
                     </span>
+                    {formattedEsrCost && (
+                      <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200">
+                        <span className="text-[10px] uppercase tracking-wide text-emerald-600">ESR Cost</span>
+                        <span>{formattedEsrCost}</span>
+                      </span>
+                    )}
                     {primaryOwnerDisplay && (
                       <span className="inline-flex items-center gap-2 rounded-full bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
                         <UserIcon className="h-4 w-4 text-slate-400" />
@@ -3441,7 +3508,7 @@ export default function ShowStatusOrder ({
                             </div>
                             <div className="mt-1 text-slate-500">
                               Phone:{' '}
-                              <span className="font-medium text-slate-600">{formatPhoneForDisplay(item.client?.phone) ?? '—'}</span>
+                              <span className="font-medium text-slate-600">{formatPhoneWithExtForDisplay(item.client?.phone, item.client?.phone_ext) ?? '—'}</span>
                             </div>
                             {formatPhoneForDisplay(item.client?.other_phone) && (
                               <div className="mt-1 text-slate-500">
@@ -3453,7 +3520,10 @@ export default function ShowStatusOrder ({
                           <div className="rounded-lg bg-slate-50 px-3 py-2">
                             <span className="uppercase tracking-wide text-slate-400">Company Phone</span>
                             <div className="mt-0.5 font-medium text-slate-700">
-                              {formatPhoneForDisplay(item.company_contact?.phone ?? item.companyContact?.phone) ?? '—'}
+                              {formatPhoneWithExtForDisplay(
+                                item.company_contact?.phone ?? item.companyContact?.phone,
+                                item.company_contact?.phone_ext ?? item.companyContact?.phone_ext
+                              ) ?? '—'}
                             </div>
                           </div>
                           <div className="rounded-lg bg-slate-50 px-3 py-2">
@@ -3492,7 +3562,7 @@ export default function ShowStatusOrder ({
                         <p className="text-sm font-semibold text-slate-700">{company.name}</p>
                         <p className="text-xs text-slate-500">
                           Phone:{' '}
-                          <span className="font-medium text-slate-600">{formatPhoneForDisplay(company.phone) ?? '—'}</span>
+                          <span className="font-medium text-slate-600">{formatPhoneWithExtForDisplay(company.phone, company.phone_ext) ?? '—'}</span>
                         </p>
                         {company.bid_due_date && (
                           <div className="flex items-center justify-between rounded-md bg-slate-100 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -4540,6 +4610,7 @@ export default function ShowStatusOrder ({
         initialProjectAmount={followUpInitialValues.projectAmount}
         initialNote={followUpInitialValues.note}
         initialProductLine={order.product_line ?? ''}
+        initialEsrCost={order.esr_cost != null ? String(order.esr_cost) : ''}
         requireProductLine={matchesStatus(pendingFollowUp?.oldStatus ?? '', ESTIMATE_STATUS)}
         loading={followUpSaving}
         error={followUpError}
@@ -4552,6 +4623,7 @@ export default function ShowStatusOrder ({
         taskTitle={order.name ?? ''}
         initialNote={standByInitialNote}
         initialProductLine={order.product_line ?? ''}
+        initialEsrCost={order.esr_cost != null ? String(order.esr_cost) : ''}
         requireProductLine={matchesStatus(pendingStandBy?.oldStatus ?? '', ESTIMATE_STATUS)}
         loading={standBySaving}
         error={standByError}
@@ -4586,6 +4658,7 @@ export default function ShowStatusOrder ({
         taskTitle={order.name ?? ''}
         initialProjectName={contractSignedInitialValues.projectName}
         initialProductLine={order.product_line ?? ''}
+        initialEsrCost={order.esr_cost != null ? String(order.esr_cost) : ''}
         requireProductLine={matchesStatus(pendingContractSigned?.oldStatus ?? '', ESTIMATE_STATUS)}
         initialProjectAmount={contractSignedInitialValues.projectAmount}
         initialDownPayment={contractSignedInitialValues.downPayment}
@@ -4606,6 +4679,8 @@ export default function ShowStatusOrder ({
         initialEmailCheck={contractSignedInitialValues.emailCheck}
         initialCityPermits={contractSignedInitialValues.cityPermits}
         initialAssociationPermits={contractSignedInitialValues.associationPermits}
+        initialPendingFinancingOrDeposit={contractSignedInitialValues.pendingFinancingOrDeposit}
+        initialPendingHoaApproval={contractSignedInitialValues.pendingHoaApproval}
         initialPaymentScheduleType={contractSignedInitialValues.paymentScheduleType}
         initialCustomSchedule={contractSignedInitialValues.customSchedule}
         paymentMethods={methods_of_payment ?? []}

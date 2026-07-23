@@ -36,6 +36,7 @@ class StoreClientRequest extends FormRequest
               'regex:/^\d{10}$/',
               Rule::unique('clients', 'phone')->ignore($this->client_id)
             ],
+            'phone_ext' => 'nullable|string|max:20',
             'address' => 'nullable|string|max:500',
             'appointment_date' => 'nullable|date',
             'notes' => 'nullable|string',

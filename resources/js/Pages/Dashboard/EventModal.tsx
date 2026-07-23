@@ -519,7 +519,12 @@ const EventModal = ({
       }
     >
         <div className="flex items-center justify-between bg-[#fbfbfb] px-5 py-3 dark:bg-[#121c2c]">
-          <div className="text-lg font-bold">Order Number: {`#${event?.order_number}`}</div>
+          <div className="flex items-center gap-2 text-lg font-bold">
+            <span>Order Number: {`#${event?.order_number}`}</span>
+            {isVipClient && (
+              <span className="text-red-600 dark:text-red-400">VIP Client</span>
+            )}
+          </div>
           <button type="button" className="text-white-dark hover:text-dark" onClick={() => { onClose(false); setShowValidationErrors(false); setReplannedReasonsError(null); setMessage(null) }}>
             <CloseIcon />
           </button>
@@ -538,7 +543,7 @@ const EventModal = ({
                     {event?.client?.name ?? 'N/A'}
                   </InfoItem>
                   <InfoItem label='Is VIP'>
-                    VIP
+                    <span className="font-semibold text-red-600 dark:text-red-400">VIP</span>
                   </InfoItem>
                   <InfoItem label='VIP Notes'>
                     {event?.client?.vip_notes ?? 'No VIP notes available'}

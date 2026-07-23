@@ -45,6 +45,7 @@ class OrderProcessingController extends Controller
         $filterRows = is_array($filters['filters']) ? $filters['filters'] : [];
         $filterMatch = (string) ($filters['filter_match'] ?? 'and');
         $hasMultiFilters = count($filterRows) > 0;
+        $useEsrAmounts = OrderBoardFilter::hasEsrProductLineFilter($filters);
 
         $processingStatuses = $this->processingStatuses();
         $paginatedStatuses = $this->paginatedProcessingStatuses();
@@ -69,14 +70,14 @@ class OrderProcessingController extends Controller
             return $this->determinePipelineStatus($order, $pipelineStatusMap);
         };
 
-        $data = collect($processingStatuses)->map(function (string $status) use ($orders, $determinePipelineStatus, $paginatedStatuses, $user, $filters, $filterRows, $filterMatch, $hasMultiFilters, $sort) {
+        $data = collect($processingStatuses)->map(function (string $status) use ($orders, $determinePipelineStatus, $paginatedStatuses, $user, $filters, $filterRows, $filterMatch, $hasMultiFilters, $sort, $useEsrAmounts) {
             if (in_array($status, $paginatedStatuses, true)) {
                 $closedWonQuery = $this->closedWonOrdersQuery($user);
                 $closedWonQuery = $hasMultiFilters
                     ? OrderBoardFilter::applyMultiple($closedWonQuery, $filterRows, $filterMatch)
                     : OrderBoardFilter::apply($closedWonQuery, $filters);
                 $total = (clone $closedWonQuery)->count();
-                $totalProjectAmount = (float) ((clone $closedWonQuery)->sum('project_amount') ?? 0);
+                $totalProjectAmount = OrderBoardFilter::totalAmount($closedWonQuery, $useEsrAmounts);
                 OrderPipelineSort::apply($closedWonQuery, $sort['sort_by'], $sort['sort_dir']);
                 $closedWonOrders = $closedWonQuery
                     ->with($this->orderProcessingRelations())
@@ -100,7 +101,11 @@ class OrderProcessingController extends Controller
                 'id' => $status,
                 'title' => $status,
                 'total_tasks' => $ordersByStatus->count(),
-                'total_project_amount' => (float) $ordersByStatus->sum(fn (Order $order) => (float) ($order->project_amount ?? 0)),
+                'total_project_amount' => $useEsrAmounts
+                    ? (float) $ordersByStatus->sum(fn (Order $order) => $order->product_line === 'MIXED'
+                        ? (float) ($order->esr_cost ?? 0)
+                        : ($order->product_line === 'ESR' ? (float) ($order->project_amount ?? 0) : 0))
+                    : (float) $ordersByStatus->sum(fn (Order $order) => (float) ($order->project_amount ?? 0)),
                 'tasks' => $ordersByStatus->map(fn (Order $order) => $this->mapOrderToTask($order))->values(),
             ];
         });
@@ -246,11 +251,23 @@ class OrderProcessingController extends Controller
     private function determinePipelineStatus(Order $order, array $pipelineStatusMap): string
     {
         if ($order->status === OrderStatusEnum::CONTRACT_SIGNED_BY_CLIENT->value) {
+            if ($order->pending_financing_or_deposit) {
+                return OrderStatusEnum::PENDING_FINANCING_OR_DEPOSIT->value;
+            }
+
             if ($order->is_supply) {
                 return OrderStatusEnum::ORDER_MATERIALS_AND_FILE_ORGANIZATION->value;
             }
 
-            return OrderStatusEnum::RECTIFICATION_OF_MEASURES_AND_HOA->value;
+            if ($order->pending_hoa_approval) {
+                return OrderStatusEnum::PENDING_HOA_APPROVAL->value;
+            }
+
+            if ($order->pending_financing_or_deposit === null && $order->pending_hoa_approval === null) {
+                return OrderStatusEnum::RECTIFICATION_OF_MEASURES_AND_HOA->value;
+            }
+
+            return OrderStatusEnum::RECTIFICATION_OF_MEASURES->value;
         }
 
         return $pipelineStatusMap[$order->status] ?? $order->status;
@@ -269,6 +286,9 @@ class OrderProcessingController extends Controller
     private function processingStatuses(): array
     {
         return [
+            OrderStatusEnum::PENDING_FINANCING_OR_DEPOSIT->value,
+            OrderStatusEnum::PENDING_HOA_APPROVAL->value,
+            OrderStatusEnum::RECTIFICATION_OF_MEASURES->value,
             OrderStatusEnum::RECTIFICATION_OF_MEASURES_AND_HOA->value,
             OrderStatusEnum::ORDER_MATERIALS_AND_FILE_ORGANIZATION->value,
             OrderStatusEnum::FILE_REVIEW->value,
@@ -284,6 +304,9 @@ class OrderProcessingController extends Controller
     private function statusPipelineMap(): array
     {
         return [
+            OrderStatusEnum::PENDING_FINANCING_OR_DEPOSIT->value => OrderStatusEnum::PENDING_FINANCING_OR_DEPOSIT->value,
+            OrderStatusEnum::PENDING_HOA_APPROVAL->value => OrderStatusEnum::PENDING_HOA_APPROVAL->value,
+            OrderStatusEnum::RECTIFICATION_OF_MEASURES->value => OrderStatusEnum::RECTIFICATION_OF_MEASURES->value,
             OrderStatusEnum::RECTIFICATION_OF_MEASURES_AND_HOA->value => OrderStatusEnum::RECTIFICATION_OF_MEASURES_AND_HOA->value,
             OrderStatusEnum::CONTRACT_SIGNED_BY_CLIENT->value => OrderStatusEnum::RECTIFICATION_OF_MEASURES_AND_HOA->value,
             OrderStatusEnum::ORDER_MATERIALS_AND_FILE_ORGANIZATION->value => OrderStatusEnum::ORDER_MATERIALS_AND_FILE_ORGANIZATION->value,
@@ -358,7 +381,10 @@ class OrderProcessingController extends Controller
             'created_by' => $order->user->name ?? null,
             'is_supply' => (bool) ($order->is_supply ?? false),
             'project_amount' => $order->project_amount ? (float) $order->project_amount : null,
+            'esr_cost' => $order->esr_cost !== null ? (float) $order->esr_cost : null,
             'down_payment' => $order->down_payment ? (float) $order->down_payment : null,
+            'pending_financing_or_deposit' => (bool) ($order->pending_financing_or_deposit ?? false),
+            'pending_hoa_approval' => (bool) ($order->pending_hoa_approval ?? false),
             'job_address' => $order->job_address,
             'city' => $order->city,
             'job_state' => $order->job_state,

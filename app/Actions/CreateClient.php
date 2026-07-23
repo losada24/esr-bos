@@ -55,6 +55,7 @@ class CreateClient {
             'name' => $request->name,
             'email' => $request->email,
             'phone' => $request->phone,
+            'phone_ext' => $request->phone_ext,
             'contact_type' => $request->contact_type ? $request->contact_type : '',
             'other_phone' => $request->other_phone,
             'secondary_email' => $request->secondary_email,

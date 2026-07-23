@@ -142,6 +142,7 @@ class UpdateInstallationTeam {
         'worker_compensation_expiration_date' => $request->worker_compensation_expiration_date,
         'liability_expiration_date' => $request->liability_expiration_date,
         'annual_w9_expiration_date' => $request->annual_w9_expiration_date,
+        'disable_expiration_document_emails' => $request->boolean('disable_expiration_document_emails'),
         'company_name' => $request->company_name,
         'phone' => $request->phone,
       ];

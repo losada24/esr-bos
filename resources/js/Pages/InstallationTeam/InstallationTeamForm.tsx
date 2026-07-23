@@ -167,6 +167,15 @@ const InstallationTeamForm = ({
         />
         {(submitCount && errors.annual_w9_expiration_date) ? <InputError message={errors.annual_w9_expiration_date.toString()} className="mt-2" /> : ''}
       </div>
+      <label htmlFor="disable_expiration_document_emails" className="flex items-center gap-3">
+        <Field
+          id="disable_expiration_document_emails"
+          name="disable_expiration_document_emails"
+          type="checkbox"
+          className="form-checkbox"
+        />
+        <span>Do not send expiration document emails to this installation team</span>
+      </label>
       <div className={submitCount ? (errors.liability_expiration_attach) ? 'has-error' : 'has-success' : ''}>
         <label htmlFor="liability_expiration_attach">Liability Expiration File</label>
         <input

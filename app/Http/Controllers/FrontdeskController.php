@@ -432,7 +432,7 @@ class FrontdeskController extends Controller
   {
     return Inertia::render('Frontdesk/CreateQualified', [
       'clients' => Client::with(['companyContact:id,name,email', 'companyContacts:id,name,email'])
-        ->select('id', 'name', 'phone', 'email', 'other_phone', 'secondary_email', 'source', 'vip_clients', 'vip_notes', 'company_contact_id')
+        ->select('id', 'name', 'phone', 'phone_ext', 'email', 'other_phone', 'secondary_email', 'source', 'vip_clients', 'vip_notes', 'company_contact_id')
         ->orderBy('name')
         ->get(),
       'owners' => User::role(RoleEnum::OWNER->value)
@@ -833,6 +833,7 @@ public function showQuantifiedModal(Order $order)
             'email' => $request['email'],
             'secondary_email' => $request['secondary_email'],
             'phone' => $request['phone'],
+            'phone_ext' => $request['phone_ext'] ?? null,
             'other_phone' => $request['other_phone'],
             'vip_clients' => $request['vip_clients'] ?? false,
             'vip_notes' => $request['vip_notes'],
@@ -1073,7 +1074,7 @@ public function showQuantifiedModal(Order $order)
     $typeOfFinancing = array_map(fn (TypeOfFinancing $financing) => $financing->value, TypeOfFinancing::cases());
 
     $clients = Client::with(['companyContact:id,name,email', 'companyContacts:id,name,email'])
-      ->select('id', 'name', 'phone', 'email', 'other_phone', 'secondary_email', 'source', 'vip_clients', 'vip_notes', 'company_contact_id')
+      ->select('id', 'name', 'phone', 'phone_ext', 'email', 'other_phone', 'secondary_email', 'source', 'vip_clients', 'vip_notes', 'company_contact_id')
       ->orderBy('name')
       ->get();
 
@@ -1253,6 +1254,7 @@ public function showQuantifiedModal(Order $order)
       'client_name' => ['required', 'string', 'max:255'],
       'email' => ['nullable', 'email', 'max:255'],
       'secondary_email' => ['nullable', 'email', 'max:255'],
+      'phone_ext' => ['nullable', 'string', 'max:20'],
       'other_phone' => ['nullable', 'string', 'max:50'],
       'notes' => ['nullable', 'string', 'max:1000'],
       'vip_clients' => ['nullable', 'boolean'],
@@ -1331,6 +1333,10 @@ public function showQuantifiedModal(Order $order)
 
         if (array_key_exists('phone', $data) && $data['phone'] !== null) {
           $clientPayload['phone'] = $data['phone'];
+        }
+
+        if (array_key_exists('phone_ext', $data)) {
+          $clientPayload['phone_ext'] = $data['phone_ext'];
         }
 
         if (array_key_exists('email', $data)) {

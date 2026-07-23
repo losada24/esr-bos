@@ -31,6 +31,7 @@ class CreateCompanyContact {
           $existingCompany = CompanyContact::create([
             'name' => $request->name,
             'phone' => $request->phone,
+            'phone_ext' => $request->phone_ext,
             'email' => $request->email,
             'website' => $request->website,
             'billing_street' => $request->billing_street,
@@ -65,6 +66,7 @@ class CreateCompanyContact {
             'company_contact_id' => $existingCompany->id,
             'name' =>$client['name'],
             'phone' => $client['phone'],
+            'phone_ext' => $client['phone_ext'] ?? null,
             'email' => $client['email'],
             'user_id' => auth()->user()->id,
             'vip_clients' => $client['vip_clients'] ?? false,

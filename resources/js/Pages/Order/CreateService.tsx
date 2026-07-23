@@ -69,6 +69,7 @@ export default function CreateService ({
     city: orderFormObj.city ?? '',
     method_of_payment: '',
     project_amount: 0,
+    esr_cost: null,
     duration_of_work_id: 0,
     type_of_financing: '',
     vip_clients: false,

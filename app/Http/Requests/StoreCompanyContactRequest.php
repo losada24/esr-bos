@@ -37,6 +37,7 @@ class StoreCompanyContactRequest extends FormRequest
             'email' => 'nullable|email',
             //'phone' => 'required|max:20',
              'phone' => 'nullable|max:20',
+            'phone_ext' => 'nullable|string|max:20',
             'website' => 'nullable|url|max:255',
             'billing_street' => 'nullable|string|max:255',
             'billing_city' => 'nullable|string|max:100',
@@ -46,6 +47,7 @@ class StoreCompanyContactRequest extends FormRequest
             'from_modal' => 'sometimes|boolean',
             'clients' => 'sometimes|array',
             'clients.*.id' => 'nullable|integer|exists:clients,id',
+            'clients.*.phone_ext' => 'nullable|string|max:20',
             'clients.*.source' => [
                 'nullable',
                 'string',
