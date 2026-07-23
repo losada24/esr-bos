@@ -49,6 +49,7 @@ export default function Index ({ auth, installation_teams }: IndexCompanyProps) 
                 <th className="px-6 pt-5 pb-4">Type Of Housing</th>
                 <th className="px-6 pt-5 pb-4">Worker Compensation Expiration</th>
                 <th className="px-6 pt-5 pb-4">Liability Expiration</th>
+                <th className="px-6 pt-5 pb-4">Expiration Emails</th>
                 <th className="px-6 pt-5 pb-4">Attachments</th>
                 <th className="px-6 pt-5 pb-4 w-14">Actions</th>
               </tr>
@@ -83,6 +84,9 @@ export default function Index ({ auth, installation_teams }: IndexCompanyProps) 
                     </td>
                     <td className="border-t px-6 py-4 align-top">
                       {installation_team.liability_expiration_date?.toString()}
+                    </td>
+                    <td className="border-t px-6 py-4 align-top">
+                      {installation_team.disable_expiration_document_emails ? 'Disabled' : 'Enabled'}
                     </td>
                     <td className="border-t px-6 py-4 align-top">
                       {installation_team.attachments.map((attachment) => {

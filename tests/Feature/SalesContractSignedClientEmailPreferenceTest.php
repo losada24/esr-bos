@@ -57,6 +57,8 @@ function contractSignedPayload(array $overrides = []): array
         'email_check' => '1',
         'city_permits' => '0',
         'association_permits' => '0',
+        'pending_financing_or_deposit' => '0',
+        'pending_hoa_approval' => '0',
         'method_of_payment' => MethodOfPayment::FINANCED->value,
         'type_of_financing' => TypeOfFinancing::WELLS_FARGO->value,
         'attachments' => [
@@ -92,6 +94,63 @@ test('contract signed stores an alternate client recipient without changing the 
     expect((bool) $order->do_not_send_email)->toBeFalse();
     expect($client->email)->toBe('primary-client@example.com');
 });
+
+test('contract signed routes supply orders by pending financing or deposit', function (string $pendingFinancing, string $expectedStatus) {
+    Storage::fake('public');
+
+    $user = createOwnerAdminUser();
+    $client = Client::factory()->create([
+        'email' => 'primary-client@example.com',
+        'secondary_email' => 'secondary-client@example.com',
+    ]);
+    $order = createContractSignedTestOrder($client, $user);
+    $order->update(['is_supply' => true]);
+
+    $response = $this
+        ->actingAs($user)
+        ->post(route('sales.assign_contract_signed', $order), contractSignedPayload([
+            'pending_financing_or_deposit' => $pendingFinancing,
+            'pending_hoa_approval' => '1',
+        ]));
+
+    $response->assertOk()
+        ->assertJsonPath('order.status', $expectedStatus);
+
+    expect($order->fresh()->status)->toBe($expectedStatus);
+})->with([
+    'supply without pending financing' => ['0', OrderStatusEnum::ORDER_MATERIALS_AND_FILE_ORGANIZATION->value],
+    'supply with pending financing' => ['1', OrderStatusEnum::PENDING_FINANCING_OR_DEPOSIT->value],
+]);
+
+test('contract signed routes non supply orders by pending financing and hoa approval', function (string $pendingFinancing, string $pendingHoa, string $expectedStatus) {
+    Storage::fake('public');
+
+    $user = createOwnerAdminUser();
+    $client = Client::factory()->create([
+        'email' => 'primary-client@example.com',
+        'secondary_email' => 'secondary-client@example.com',
+    ]);
+    $order = createContractSignedTestOrder($client, $user);
+    $order->update(['is_supply' => false]);
+
+    $response = $this
+        ->actingAs($user)
+        ->post(route('sales.assign_contract_signed', $order), contractSignedPayload([
+            'pending_financing_or_deposit' => $pendingFinancing,
+            'pending_hoa_approval' => $pendingHoa,
+            'association_permits' => $pendingHoa,
+        ]));
+
+    $response->assertOk()
+        ->assertJsonPath('order.status', $expectedStatus);
+
+    expect($order->fresh()->status)->toBe($expectedStatus);
+})->with([
+    'no pending financing and no hoa' => ['0', '0', OrderStatusEnum::RECTIFICATION_OF_MEASURES->value],
+    'pending financing only' => ['1', '0', OrderStatusEnum::PENDING_FINANCING_OR_DEPOSIT->value],
+    'pending hoa only' => ['0', '1', OrderStatusEnum::PENDING_HOA_APPROVAL->value],
+    'pending financing and hoa' => ['1', '1', OrderStatusEnum::PENDING_FINANCING_OR_DEPOSIT->value],
+]);
 
 test('contract signed can disable client emails for a specific order', function () {
     Storage::fake('public');

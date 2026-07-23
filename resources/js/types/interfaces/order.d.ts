@@ -18,6 +18,8 @@ export interface Order {
   job_zip?: string
   city_permits: boolean
   association_permits: boolean
+  pending_financing_or_deposit?: boolean | null
+  pending_hoa_approval?: boolean | null
   equipment_rental: boolean
   notes?: string
   work_team_notes?: string
@@ -64,6 +66,7 @@ export interface Order {
   cost_delivery?: number
   cost_city_fee?: number
   project_amount?: number
+  esr_cost?: number | null
   down_payment?: number | null
   city?: string
   job_state?: string
@@ -215,6 +218,7 @@ export interface InstallationTeam {
   worker_compensation_expiration_date: Date | null
   liability_expiration_date: Date | null
   annual_w9_expiration_date: Date | null
+  disable_expiration_document_emails: boolean
   notes?: string
   user_id: number
   user?: User

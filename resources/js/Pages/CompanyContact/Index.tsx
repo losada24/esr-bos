@@ -14,6 +14,14 @@ type IndexClientProps = PageProps & {
   }
 
 }
+
+const formatPhoneWithExt = (phone?: string | null, ext?: string | null) => {
+  const normalizedPhone = typeof phone === 'string' ? phone.trim() : ''
+  if (!normalizedPhone) return ''
+
+  const normalizedExt = typeof ext === 'string' ? ext.trim() : ''
+  return normalizedExt ? `${normalizedPhone} ext ${normalizedExt}` : normalizedPhone
+}
  
 export default function Index ({ auth, company_contacts }: IndexClientProps) {
   console.log(company_contacts)
@@ -61,7 +69,7 @@ export default function Index ({ auth, company_contacts }: IndexClientProps) {
               </tr>
             </thead>
             <tbody>
-              {company_contacts.data.map(({ id, name, email, phone, website, clients }) => {
+              {company_contacts.data.map(({ id, name, email, phone, phone_ext, website, clients }) => {
                 return (
                   <tr
                     key={id}
@@ -74,7 +82,7 @@ export default function Index ({ auth, company_contacts }: IndexClientProps) {
                       {email}
                     </td>
                     <td className="border-t px-6 py-4 align-top">
-                      {phone}
+                      {formatPhoneWithExt(phone, phone_ext)}
                     </td>
                     <td className="border-t px-6 py-4 align-top">
                       {website}

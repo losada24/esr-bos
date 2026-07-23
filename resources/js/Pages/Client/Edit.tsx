@@ -21,6 +21,7 @@ export default function Edit ({ auth, clients, tags, clientAddress, contact_type
     address: clients?.client_address?.[0]?.address ?? '',
     appointment_date: clients?.client_address?.[0]?.appointment_date ?? null,
     phone: clients.phone ?? '',
+    phone_ext: clients.phone_ext ?? '',
     confirmed: false,
     notes: clients?.client_address?.[0]?.notes ?? '',
     contact_type: clients.contact_type ?? '',

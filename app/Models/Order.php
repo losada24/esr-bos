@@ -39,6 +39,8 @@ class Order extends Model
     'job_city',
     'city_permits',
     'association_permits',
+    'pending_financing_or_deposit',
+    'pending_hoa_approval',
     'equipment_rental',
     'equipment_rental_price',
     'additional_travel_costs',
@@ -64,6 +66,7 @@ class Order extends Model
     'cost_delivery',
     'cost_city_fee',
         'project_amount',
+        'esr_cost',
         'down_payment',
     'city',
     'type_of_financing',
@@ -132,6 +135,9 @@ class Order extends Model
   {
     return [
       'city_permits' => 'boolean',
+      'association_permits' => 'boolean',
+      'pending_financing_or_deposit' => 'boolean',
+      'pending_hoa_approval' => 'boolean',
       'payment_definition' => 'boolean',
       'hide_on_weekends' => 'boolean',
       'do_not_send_email' => 'boolean',
@@ -148,6 +154,7 @@ class Order extends Model
       'address_check' => 'boolean',
       'amount_check' => 'boolean',
       'email_check' => 'boolean',
+      'esr_cost' => 'decimal:2',
     ];
   }
 

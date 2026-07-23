@@ -5,6 +5,7 @@ namespace App\Actions;
 use App\Enum\MethodOfPayment;
 use App\Enum\OrderTypeEnum;
 use App\Enum\PaymentScheduleTypeEnum;
+use App\Enum\ProductLineEnum;
 use App\Http\Requests\UpdateQualifiedOrderRequest;
 use App\Models\Client;
 use App\Models\CompanyContact;
@@ -50,6 +51,9 @@ class UpdateQualifiedOrder
                 'client_id' => $request->client_id,
                 'order_type' => $request->order_type,
                 'product_line' => $request->product_line,
+                'esr_cost' => $request->product_line === ProductLineEnum::MIXED->value
+                    ? $request->esr_cost
+                    : null,
                 'name' => $request->name,
                 'job_address' => $request->job_address,
                 'city' => $request->city,

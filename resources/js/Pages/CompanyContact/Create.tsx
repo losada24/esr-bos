@@ -14,6 +14,7 @@ export default function Create ({ auth, contact_type, sources }: PageProps & { a
     name: '',
     email: '',
     phone: '',
+    phone_ext: '',
     website: '',
     billing_street: '',
     billing_city: '',

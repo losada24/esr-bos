@@ -7,6 +7,7 @@ export interface Client {
   last_name: string
   email: string
   phone?: string
+  phone_ext?: string | null
   city?: string
   state?: string
   zip?: string

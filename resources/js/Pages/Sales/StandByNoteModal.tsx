@@ -6,6 +6,7 @@ import { PRODUCT_LINES } from '@/Utils/constants'
 interface StandByFormValues {
   note: string
   productLine: string
+  esrCost: string
 }
 
 export interface StandByNoteModalProps {
@@ -15,8 +16,9 @@ export interface StandByNoteModalProps {
   error?: string | null
   initialNote: string
   initialProductLine: string
+  initialEsrCost?: string
   requireProductLine?: boolean
-  onSubmit: (values: { note: string, productLine: string }) => void
+  onSubmit: (values: { note: string, productLine: string, esrCost: string }) => void
   onCancel: () => void
 }
 
@@ -27,6 +29,7 @@ export default function StandByNoteModal ({
   error,
   initialNote,
   initialProductLine,
+  initialEsrCost = '',
   requireProductLine = false,
   onSubmit,
   onCancel
@@ -57,7 +60,8 @@ export default function StandByNoteModal ({
           enableReinitialize
           initialValues={{
             note: initialNote ?? '',
-            productLine: initialProductLine ?? ''
+            productLine: initialProductLine ?? '',
+            esrCost: initialEsrCost ?? ''
           }}
           validate={(values) => {
             const issues: Partial<Record<keyof StandByFormValues, string>> = {}
@@ -68,13 +72,17 @@ export default function StandByNoteModal ({
             if (requireProductLine && !values.productLine) {
               issues.productLine = 'Product Line is required.'
             }
+            if (values.productLine === 'MIXED' && String(values.esrCost ?? '').trim() === '') {
+              issues.esrCost = 'ESR Cost is required.'
+            }
 
             return issues
           }}
           onSubmit={(values) => {
             onSubmit({
               note: values.note.trim(),
-              productLine: values.productLine
+              productLine: values.productLine,
+              esrCost: values.esrCost
             })
           }}
         >
@@ -87,6 +95,11 @@ export default function StandByNoteModal ({
                   {PRODUCT_LINES.map((line) => <option key={line} value={line}>{line}</option>)}
                 </select>
                 {submitCount && errors.productLine ? <InputError message={errors.productLine} className="mt-2" /> : null}
+              </div>}
+              {values.productLine === 'MIXED' && <div className={submitCount ? (errors.esrCost ? 'has-error' : 'has-success') : ''}>
+                <label className="mb-1 block text-sm font-medium text-slate-600">ESR Cost</label>
+                <input name="esrCost" type="number" min="0" step="0.01" value={values.esrCost} onChange={handleChange} onBlur={handleBlur} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700" placeholder="Enter ESR cost" disabled={loading} />
+                {submitCount && errors.esrCost ? <InputError message={errors.esrCost} className="mt-2" /> : null}
               </div>}
               <div className={submitCount ? (errors.note ? 'has-error' : 'has-success') : ''}>
                 <label className="mb-1 block text-sm font-medium text-slate-600">Note</label>

@@ -8,6 +8,7 @@ export interface ContactFormValues {
   email: string
   secondary_email: string
   phone: string
+  phone_ext: string
   other_phone: string
   source: string
   vip_clients: boolean
@@ -109,6 +110,18 @@ export function ContactEditModal ({
                     />
                   </SectionField>
                   <InputError message={errors.phone?.[0] ?? null} className="mt-1" />
+                </div>
+                <div>
+                  <SectionField label="Ext" htmlFor="contact-phone-ext">
+                    <input
+                      id="contact-phone-ext"
+                      type="text"
+                      className="form-input"
+                      value={values.phone_ext}
+                      onChange={(event) => { onChange('phone_ext', event.target.value) }}
+                    />
+                  </SectionField>
+                  <InputError message={errors.phone_ext?.[0] ?? null} className="mt-1" />
                 </div>
                 <div>
                   <SectionField label="Email" htmlFor="contact-email">

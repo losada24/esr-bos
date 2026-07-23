@@ -4,7 +4,8 @@ import { type OrderProduct, type OrderProductsExtraWorks } from '@/types/interfa
 import * as Yup from 'yup'
 
 export const orderSchema = Yup.object({
-  id: Yup.number()
+  id: Yup.number(),
+  esr_cost: Yup.number().nullable()
   // status: Yup.string().required('Status is required'),
   // notes: Yup.string().required().max(1000, 'Notes must be less than 255 characters')
 })
@@ -69,6 +70,7 @@ export type OrderFormValues = Omit<Order, 'installation_date' | 'delivery_date' 
   contact_type: string
   order_type?: string
   product_line?: string
+  esr_cost?: number | null
   is_supply?: boolean
   has_contract_signed?: boolean
   client_company_name?: string
@@ -120,6 +122,7 @@ export const orderFormObj: OrderFormValues = {
   cost_delivery: 0,
   cost_city_fee: 0,
   project_amount: 0,
+  esr_cost: null,
   service: '',
   contract_signing_date: null,
   payment_factory_date: null,
@@ -225,6 +228,7 @@ export const loadOrderFormObj = (order: Order): OrderFormValues => {
     cost_delivery: order.cost_delivery,
     cost_city_fee: order.cost_city_fee,
     project_amount: order.project_amount,
+    esr_cost: order.esr_cost ?? null,
     city: order.city,
     duration_of_work_id: order.duration_of_work_id,
     method_of_payment: order.method_of_payment,

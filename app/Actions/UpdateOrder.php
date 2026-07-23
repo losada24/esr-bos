@@ -5,6 +5,7 @@ namespace App\Actions;
 use App\Enum\RoleEnum;
 use App\Enum\OrderStatusEnum;
 use App\Enum\PaymentScheduleTypeEnum;
+use App\Enum\ProductLineEnum;
 use App\Enum\ServiceEnum;
 use App\Enum\SupervisorPaymentStatusEnum;
 use App\Enum\MethodOfPayment;
@@ -26,6 +27,7 @@ use App\Support\PaymentScheduleTemplates;
 use App\Traits\ComissionSupervisor;
 use App\Traits\OrderEmails;
 use App\Traits\OrderStatus;
+use App\Traits\Snapshot;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -46,7 +48,7 @@ class UpdateOrder
     'MATERIALS',
   ];
 
-  use OrderEmails, OrderStatus, Twilio, ComissionSupervisor;
+  use OrderEmails, OrderStatus, Twilio, ComissionSupervisor, Snapshot;
 
   public function __construct(
     protected OrderOwnerChangeNotifier $orderOwnerChangeNotifier,
@@ -60,7 +62,8 @@ class UpdateOrder
   public function handle(Request $request, Order $order)
   {
     //dd($request->all());
-    $order->loadMissing(['installationTeams']);
+    $order->loadMissing(['installationTeams.user']);
+    $beforeInstallationTeams = $this->snapshotInstallationTeams($order);
     $installer = $order->installationTeams()->pluck('installation_teams.id')->toArray();
     $currentInstallers = array_map('intval', $installer);
     $requestInstallers = array_map('intval', $request->installation_teams ?? []);
@@ -162,6 +165,7 @@ class UpdateOrder
           [
             'name' => (string) $request->client_name,
             'email' => $request->email,
+            'phone_ext' => $request->phone_ext,
             'vip_clients' => (bool) $request->vip_clients,
             'vip_notes' => $request->vip_notes,
             'contact_type' => $request->contact_type,
@@ -205,6 +209,7 @@ class UpdateOrder
       
       //dd($request->pending_collect);
       $sendEmail = $status != $order->status;
+      $pendingCollectDate = $this->resolvePendingCollectDate($order, $status);
       //dd($sendEmail,$status,$order->status);
       $splitFields = $this->orderSplitResolver->resolve(
         $request->filled('parent_order_id') ? (int) $request->parent_order_id : null,
@@ -255,6 +260,9 @@ class UpdateOrder
         'cost_delivery' => $request->cost_delivery,
         'cost_city_fee' => $request->cost_city_fee,
         'project_amount' => $request->project_amount,
+        'esr_cost' => $request->product_line === ProductLineEnum::MIXED->value
+          ? $request->esr_cost
+          : null,
         'down_payment' => $request->method_of_payment === MethodOfPayment::FINANCEDCASH->value
           ? $request->down_payment
           : null,
@@ -273,7 +281,7 @@ class UpdateOrder
         'new_travel_cost' => $request->new_travel_cost,
         'material_received_date' => $request->material_received_date,
         'complete_date' => $request->complete_date,
-        'pending_collect'=> $request->pending_collect,
+        'pending_collect'=> $pendingCollectDate,
 
         
       ];
@@ -586,12 +594,19 @@ class UpdateOrder
       }
       $this->syncAttachmentRoleTargets($request, $order);
       $order->installationTeams()->sync($request->installation_teams ?? []);
-      $order->load('installationTeams');
+      $order->load('installationTeams.user');
      
       $nextOwnerIds = $this->orderOwnerChangeNotifier->normalizeOwnerIds($request->owners ?? []);
       $order->owners()->sync($nextOwnerIds);
       $this->orderOwnerChangeNotifier->notify($order, $previousOwnerIds, $nextOwnerIds);
       $order->syncFrameColors($request->frame_color ?? []);
+      if ($installationTeamsChanged) {
+        $this->createInstallationTeamChangeSnapshot(
+          $order,
+          $beforeInstallationTeams,
+          $this->snapshotInstallationTeams($order)
+        );
+      }
       $order->orderProducts()->delete();
       $orderProductsPayload = $request->orderProducts ?? [];
       foreach ($orderProductsPayload as $product) {
@@ -646,6 +661,7 @@ class UpdateOrder
           'pickup_date' => $request->delivery_date,
           'service_date' => $request->service_date,
           'complete_date' => $request->complete_date,
+          'pending_collect' => $pendingCollectDate,
           'material_received_date' => $request->material_received_date,
         ]);
 
@@ -676,6 +692,7 @@ class UpdateOrder
   public function partialUpdate(Request $request, Order $order)
   {
     $statusOrder = $order->status;
+    $pendingCollectDate = $this->resolvePendingCollectDate($order, $request->status);
 
     if ($request->has('project_amount') && $order->hasReachedContractSigned()) {
       $incomingAmount = $request->input('project_amount');
@@ -695,7 +712,8 @@ class UpdateOrder
       }
     }
 
-    $order->loadMissing(['installationTeams']);
+    $order->loadMissing(['installationTeams.user']);
+    $beforeInstallationTeams = $this->snapshotInstallationTeams($order);
     $installer = $order->installationTeams()->pluck('installation_teams.id')->toArray();
     $currentInstallers = array_map('intval', $installer);
     $requestInstallers = array_map('intval', $request->installation_teams ?? []);
@@ -706,14 +724,23 @@ class UpdateOrder
     $installationTeamsChanged = $currentInstallers !== $requestInstallers;
     $supervisorChanged = ((int) $order->supervisor_id !== (int) $request->supervisor_id);
 
-    $order->update($request->except('installation_teams', 'supervisor_payment_status', 'replanned_reasons'));
+    $orderData = $request->except('installation_teams', 'supervisor_payment_status', 'replanned_reasons');
+    $orderData['pending_collect'] = $pendingCollectDate;
+    $order->update($orderData);
     if ($request->status == OrderStatusEnum::COMPLETE->value) {
       $supervisor_payment_status = SupervisorPaymentStatusEnum::PENDING->value;
     } else {
       $supervisor_payment_status = $order->supervisor_payment_status;
     }
     $order->installationTeams()->sync($request->installation_teams);
-    $order->load('installationTeams');
+    $order->load('installationTeams.user');
+    if ($installationTeamsChanged) {
+      $this->createInstallationTeamChangeSnapshot(
+        $order,
+        $beforeInstallationTeams,
+        $this->snapshotInstallationTeams($order)
+      );
+    }
 
 
     $installer = $order->installationTeams()->count();
@@ -791,6 +818,7 @@ class UpdateOrder
         'final_inspection_date' => $request->final_inspection_date,
         'service_date' => $request->service_date,
         'complete_date' => $request->complete_date,
+        'pending_collect' => $pendingCollectDate,
         'material_received_date' => $request->material_received_date,
       ]);
 
@@ -823,6 +851,7 @@ class UpdateOrder
           'service_date' => $request->service_date,
           'final_inspection_date' => $request->final_inspection_date,
           'complete_date' => $request->complete_date,
+          'pending_collect' => $pendingCollectDate,
           'material_received_date' => $request->material_received_date,
         ];
 
@@ -859,6 +888,19 @@ class UpdateOrder
     $normalized = array_values(array_unique($normalized));
 
     return $normalized === [] ? null : $normalized;
+  }
+
+  private function resolvePendingCollectDate(Order $order, ?string $status): ?string
+  {
+    if ($status !== OrderStatusEnum::FINAL_COLLECT->value) {
+      return null;
+    }
+
+    if ($order->status === OrderStatusEnum::FINAL_COLLECT->value) {
+      return $order->pending_collect?->format('Y-m-d');
+    }
+
+    return now()->toDateString();
   }
 
   private function syncAttachmentRoleTargets(Request $request, Order $order): void

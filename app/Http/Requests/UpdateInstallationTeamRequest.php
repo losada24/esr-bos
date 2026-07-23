@@ -39,6 +39,7 @@ class UpdateInstallationTeamRequest extends FormRequest
             'liability_expiration_attach' => 'nullable|file|mimes:jpeg,png,jpg,pdf,docx,doc,xlsx|max:10240',
             'installer_agrement_attach' => 'nullable|file|mimes:jpeg,png,jpg,pdf,docx,doc,xlsx|max:10240',
             'annual_w9_attach' => 'nullable|file|mimes:jpeg,png,jpg,pdf,docx,doc,xlsx|max:10240',
+            'disable_expiration_document_emails' => 'nullable|boolean',
             'company_name' => 'required|string|max:255',
             'phone' => 'required|string|max:255',
             'type_of_housings' => 'required|array',

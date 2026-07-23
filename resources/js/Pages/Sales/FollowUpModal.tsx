@@ -8,6 +8,7 @@ interface FollowUpFormValues {
   note: string
   attachments: File[]
   productLine: string
+  esrCost: string
 }
 
 export interface FollowUpModalProps {
@@ -17,10 +18,11 @@ export interface FollowUpModalProps {
   initialProjectAmount: string
   initialNote: string
   initialProductLine: string
+  initialEsrCost?: string
   requireProductLine?: boolean
   loading?: boolean
   error?: string | null
-  onSubmit: (values: { projectAmount: string, note: string, attachments: File[], productLine: string }) => void
+  onSubmit: (values: { projectAmount: string, note: string, attachments: File[], productLine: string, esrCost: string }) => void
   onCancel: () => void
 }
 
@@ -31,6 +33,7 @@ export default function FollowUpModal ({
   initialProjectAmount,
   initialNote,
   initialProductLine,
+  initialEsrCost = '',
   requireProductLine = false,
   loading = false,
   error,
@@ -65,12 +68,16 @@ export default function FollowUpModal ({
             projectAmount: initialProjectAmount ?? '',
             note: initialNote ?? '',
             attachments: [],
-            productLine: initialProductLine ?? ''
+            productLine: initialProductLine ?? '',
+            esrCost: initialEsrCost ?? ''
           }}
           validate={(values) => {
             const issues: Partial<Record<keyof FollowUpFormValues, string>> = {}
             if (requireProductLine && !values.productLine) {
               issues.productLine = 'Product Line is required.'
+            }
+            if (values.productLine === 'MIXED' && String(values.esrCost ?? '').trim() === '') {
+              issues.esrCost = 'ESR Cost is required.'
             }
             return issues
           }}
@@ -79,7 +86,8 @@ export default function FollowUpModal ({
               projectAmount: values.projectAmount,
               note: values.note,
               attachments: values.attachments ?? [],
-              productLine: values.productLine
+              productLine: values.productLine,
+              esrCost: values.esrCost
             })
           }}
         >
@@ -92,6 +100,11 @@ export default function FollowUpModal ({
                   {PRODUCT_LINES.map((line) => <option key={line} value={line}>{line}</option>)}
                 </select>
                 {submitCount && errors.productLine ? <InputError message={errors.productLine} className="mt-2" /> : null}
+              </div>}
+              {values.productLine === 'MIXED' && <div className={submitCount ? (errors.esrCost ? 'has-error' : 'has-success') : ''}>
+                <label className="mb-1 block text-sm font-medium text-slate-600">ESR Cost</label>
+                <input name="esrCost" type="number" min="0" step="0.01" value={values.esrCost} onChange={handleChange} onBlur={handleBlur} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 outline-none focus:border-sky-400 focus:ring-4 focus:ring-sky-100" placeholder="Enter ESR cost" disabled={loading} />
+                {submitCount && errors.esrCost ? <InputError message={errors.esrCost} className="mt-2" /> : null}
               </div>}
               <div className={submitCount ? (errors.projectAmount ? 'has-error' : 'has-success') : ''}>
                 <label className="mb-1 block text-sm font-medium text-slate-600">Project Amount</label>

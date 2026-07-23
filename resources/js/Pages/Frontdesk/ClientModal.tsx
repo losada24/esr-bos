@@ -47,6 +47,7 @@ const ClientModal = ({
     name: '',
     email: '',
     phone: '',
+    phone_ext: '',
     contact_type: '',
     other_phone: '',
     secondary_email: '',
@@ -297,6 +298,18 @@ const ClientModal = ({
                         />
                       </SectionField>
                       <InputError message={submitCount && errors.phone ? errors.phone : null} className="mt-1" />
+                    </div>
+                    <div>
+                      <SectionField label="Ext" htmlFor="phone_ext">
+                        <Field
+                          id="phone_ext"
+                          name="phone_ext"
+                          className="form-input"
+                          autoComplete="off"
+                          placeholder="Ext"
+                        />
+                      </SectionField>
+                      <InputError message={submitCount && errors.phone_ext ? errors.phone_ext : null} className="mt-1" />
                     </div>
                     <div>
                       <SectionField label="Other Phone" htmlFor="other_phone">

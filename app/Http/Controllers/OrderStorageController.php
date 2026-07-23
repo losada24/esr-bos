@@ -45,16 +45,17 @@ class OrderStorageController extends Controller
         $filterRows = is_array($filters['filters']) ? $filters['filters'] : [];
         $filterMatch = (string) ($filters['filter_match'] ?? 'and');
         $hasMultiFilters = count($filterRows) > 0;
+        $useEsrAmounts = OrderBoardFilter::hasEsrProductLineFilter($filters);
 
         $storageStatuses = $this->storageStatuses();
         $paginatedStatuses = $this->paginatedStorageStatuses();
 
-        $data = collect($storageStatuses)->map(function (string $status) use ($user, $paginatedStatuses, $filters, $filterRows, $filterMatch, $hasMultiFilters, $sort) {
+        $data = collect($storageStatuses)->map(function (string $status) use ($user, $paginatedStatuses, $filters, $filterRows, $filterMatch, $hasMultiFilters, $sort, $useEsrAmounts) {
             $ordersQuery = $this->storageOrdersForStatusQuery($status, $user);
             $ordersQuery = $hasMultiFilters
                 ? OrderBoardFilter::applyMultiple($ordersQuery, $filterRows, $filterMatch)
                 : OrderBoardFilter::apply($ordersQuery, $filters);
-            $totalProjectAmount = (float) ((clone $ordersQuery)->sum('project_amount') ?? 0);
+            $totalProjectAmount = OrderBoardFilter::totalAmount($ordersQuery, $useEsrAmounts);
 
             if (in_array($status, $paginatedStatuses, true)) {
                 $total = (clone $ordersQuery)->count();
@@ -298,6 +299,7 @@ class OrderStorageController extends Controller
             'is_parent_order' => (int) ($order->child_orders_count ?? 0) > 0,
             'child_orders_count' => (int) ($order->child_orders_count ?? 0),
             'project_amount' => $order->project_amount ? (float) $order->project_amount : null,
+            'esr_cost' => $order->esr_cost !== null ? (float) $order->esr_cost : null,
             'down_payment' => $order->down_payment ? (float) $order->down_payment : null,
             'job_address' => $order->job_address,
             'city' => $order->city,

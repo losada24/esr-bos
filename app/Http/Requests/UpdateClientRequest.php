@@ -36,6 +36,7 @@ class UpdateClientRequest extends FormRequest
               'regex:/^\d{10}$/',
               Rule::unique('clients', 'phone')->ignore($this->id)
             ],
+            'phone_ext' => 'nullable|string|max:20',
             'address' => 'nullable|string|max:500',
             'vip_clients' => 'boolean',
             'vip_notes' => 'nullable|string|max:1000',

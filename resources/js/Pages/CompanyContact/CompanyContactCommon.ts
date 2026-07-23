@@ -2,7 +2,8 @@ import * as Yup from 'yup'
 export {}
 
 export const companyContactSchema = Yup.object({
-  name: Yup.string().required('Name is required')
+  name: Yup.string().required('Name is required'),
+  phone_ext: Yup.string().nullable().max(20, 'Ext must be 20 characters or less')
 })
 
 export const clientSchema = Yup.object({
@@ -15,6 +16,7 @@ export const clientSchema = Yup.object({
       then: (schema) => schema.notRequired().nullable(),
       otherwise: (schema) => schema.required('Phone is required')
     }),
+  phone_ext: Yup.string().nullable().max(20, 'Ext must be 20 characters or less'),
   email: Yup.string().email('Invalid email address').nullable(),
   source: Yup.string().required('Source is required')
 })
@@ -24,6 +26,7 @@ export interface CompanyContact {
   name: string
   email: string
   phone: string
+  phone_ext?: string | null
   website: string
   billing_street: string
   billing_state: string

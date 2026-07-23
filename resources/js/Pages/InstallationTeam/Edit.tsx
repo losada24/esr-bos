@@ -13,6 +13,7 @@ export default function Edit ({ auth, type_of_housings, users, installation_team
     worker_compensation_expiration_date: installation_team.worker_compensation_expiration_date,
     liability_expiration_date: installation_team.liability_expiration_date,
     annual_w9_expiration_date: installation_team.annual_w9_expiration_date,
+    disable_expiration_document_emails: installation_team.disable_expiration_document_emails,
     user_id: { value: installation_team.user_id, label: users.find((user: User) => user.id === installation_team.user_id)?.name ?? '' },
     attachments: [],
     type_housing: installation_team.type_housing?.map((typeOfHousing) => {
@@ -37,6 +38,7 @@ export default function Edit ({ auth, type_of_housings, users, installation_team
       worker_compensation_expiration_date: values.worker_compensation_expiration_date,
       liability_expiration_date: values.liability_expiration_date,
       annual_w9_expiration_date: values.annual_w9_expiration_date,
+      disable_expiration_document_emails: values.disable_expiration_document_emails,
       user_id: values.user_id.value,
       worker_compensation_attach: values.worker_compensation_attach,
       worker_compensation_exception_attach: values.worker_compensation_exception_attach,

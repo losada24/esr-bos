@@ -84,7 +84,11 @@ class OrderBoardFilter
                 break;
             case 'product_line':
                 if (self::hasText($value) && strtolower(trim((string) $value)) !== 'all') {
-                    $query->where('orders.product_line', $value);
+                    if (strtoupper(trim((string) $value)) === 'ESR') {
+                        $query->whereIn('orders.product_line', ['ESR', 'MIXED']);
+                    } else {
+                        $query->where('orders.product_line', $value);
+                    }
                 }
                 break;
             case 'is_supply':
@@ -211,12 +215,46 @@ class OrderBoardFilter
         return $query;
     }
 
+    public static function hasEsrProductLineFilter(array $filters): bool
+    {
+        $filterRows = $filters['filters'] ?? [];
+        if (is_array($filterRows)) {
+            foreach ($filterRows as $filterRow) {
+                if (is_array($filterRow) && self::isEsrProductLineFilter(self::normalizeFilter($filterRow))) {
+                    return true;
+                }
+            }
+        }
+
+        return self::isEsrProductLineFilter($filters);
+    }
+
+    public static function totalAmount(Builder $query, bool $useEsrAmounts = false): float
+    {
+        if (!$useEsrAmounts) {
+            return (float) ((clone $query)->sum('project_amount') ?? 0);
+        }
+
+        return (float) ((clone $query)
+            ->selectRaw(
+                'COALESCE(SUM(CASE WHEN orders.product_line = ? THEN COALESCE(orders.project_amount, 0) WHEN orders.product_line = ? THEN COALESCE(orders.esr_cost, 0) ELSE 0 END), 0) AS total_amount',
+                ['ESR', 'MIXED']
+            )
+            ->value('total_amount') ?? 0);
+    }
+
     private static function applyLike(Builder $query, string $column, $value): void
     {
         if (!self::hasText($value)) {
             return;
         }
         $query->where($column, 'like', self::likeValue($value));
+    }
+
+    private static function isEsrProductLineFilter(array $filter): bool
+    {
+        return ($filter['filter_field'] ?? null) === 'product_line'
+            && strtoupper(trim((string) ($filter['filter_value'] ?? ''))) === 'ESR';
     }
 
     private static function applyAmountFilter(Builder $query, array $filters): void

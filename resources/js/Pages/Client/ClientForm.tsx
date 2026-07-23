@@ -152,6 +152,17 @@ const ClientForm = ({ submitCount, errors, isCreate, setFieldValue, values, cont
           />
           {(submitCount && errors.phone) ? <InputError message={errors.phone} className="mt-2" /> : ''}
         </div>
+        <div className={submitCount ? (errors.phone_ext) ? 'has-error' : 'has-success' : ''}>
+          <label htmlFor="phone_ext">Ext</label>
+          <Field
+            id="phone_ext"
+            name="phone_ext"
+            className="form-input"
+            autoComplete={false}
+            placeholder='Ext'
+          />
+          {(submitCount && errors.phone_ext) ? <InputError message={errors.phone_ext} className="mt-2" /> : ''}
+        </div>
         <div className={`mb-3 ${submitCount ? (errors.other_phone) ? 'has-error' : 'has-success' : ''}`}>
           <label htmlFor="email">Other Phone</label>
           <Field

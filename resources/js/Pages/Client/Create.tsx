@@ -21,6 +21,7 @@ export default function Create ({ auth, contact_type, sources, companies }: Page
     address: '',
     appointment_date: null,
     phone: '',
+    phone_ext: '',
     confirmed: false,
     notes: '',
     contact_type: '',

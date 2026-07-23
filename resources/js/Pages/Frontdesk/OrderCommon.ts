@@ -17,6 +17,7 @@ export const orderQuantifiedSchema = Yup.object({
 
 export const requestSchema = Yup.object({
   client_name: Yup.string().required('Request Name is required'),
+  phone_ext: Yup.string().nullable().max(20, 'Ext must be 20 characters or less'),
   name_check: Yup.boolean().optional(),
   address_check: Yup.boolean().optional(),
   amount_check: Yup.boolean().optional(),
@@ -28,6 +29,7 @@ export const requestSchema = Yup.object({
 export const orderQualifiedSchema = Yup.object({
   order_type: Yup.string().required('Order Type is required'),
   language: Yup.string().required('Language is required'),
+  esr_cost: Yup.number().nullable(),
   change_order_enabled: Yup.boolean().optional(),
   change_order_amount: Yup.number()
     .nullable()
@@ -153,6 +155,7 @@ export interface Order {
   associate_client_id_3: number | null
   associate_client_id_4: number | null
   project_amount: number
+  esr_cost?: number | null
   status: string
   notes: string
   job_address?: string
@@ -191,6 +194,8 @@ export interface Order {
   email_check?: boolean
   city_permits?: boolean
   association_permits?: boolean
+  pending_financing_or_deposit?: boolean | null
+  pending_hoa_approval?: boolean | null
   payment_schedule?: PaymentSchedule | null
   change_order_payment?: OrderPayment | null
   financial_events?: OrderFinancialEvent[]
@@ -202,6 +207,7 @@ export interface Order {
 export type OrderFormValues = Order & {
   client_name: string
   phone: string
+  phone_ext: string
   source: string
   refer_name?: string
   refer_phone?: string
@@ -263,12 +269,14 @@ export const orderFormObj: OrderFormValues = {
   invoice_number: '',
   client_name: '',
   phone: '',
+  phone_ext: '',
   client_id: 0,
   associate_client_id_1: null,
   associate_client_id_2: null,
   associate_client_id_3: null,
   associate_client_id_4: null,
   project_amount: 0,
+  esr_cost: null,
   status: '',
   source: '',
   refer_name: '',
@@ -391,6 +399,7 @@ export const loadOrderFormObj = (order: Order): OrderFormValues => {
     id: order.id,
     client_name: order.client?.name ?? '',
     phone: order.client?.phone ?? '',
+    phone_ext: order.client?.phone_ext ?? '',
     name: order.name,
     invoice_number: order.invoice_number ?? '',
     source: order.client?.source ?? '',
@@ -400,6 +409,7 @@ export const loadOrderFormObj = (order: Order): OrderFormValues => {
     associate_client_id_3: getClientId(assocCompany3) ?? order.associate_client_id_3 ?? null,
     associate_client_id_4: getClientId(assocCompany4) ?? order.associate_client_id_4 ?? null,
     project_amount: order.project_amount,
+    esr_cost: order.esr_cost ?? null,
     status: order.status,
     notes: order.notes ?? '',
     email: order.client?.email ?? '',

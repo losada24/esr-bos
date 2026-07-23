@@ -43,6 +43,7 @@ class StoreFrontDeskOrderRequest extends FormRequest
               'regex:/^\d{10}$/',
               Rule::unique('clients', 'phone')->ignore($this->client_id)
             ],
+            'phone_ext' => 'nullable|string|max:20',
             'status' =>  [
             'required',
             'string',

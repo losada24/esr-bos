@@ -20,6 +20,7 @@ class InstallationTeam extends Model
         'worker_compensation_expiration_date',
         'liability_expiration_date',
         'annual_w9_expiration_date',
+        'disable_expiration_document_emails',
         'notes',
         'user_id',
         'company_name',
@@ -32,6 +33,10 @@ class InstallationTeam extends Model
       'worker_compensation_expiration_date',
       'liability_expiration_date',
       'annual_w9_expiration_date',
+    ];
+
+    protected $casts = [
+      'disable_expiration_document_emails' => 'boolean',
     ];
 
     public function scopeFilter($query, array $filters)

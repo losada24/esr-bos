@@ -231,7 +231,7 @@ class ClientController extends Controller
         $like = '%' . $term . '%';
 
         $clients = Client::query()
-            ->select('id', 'name', 'phone', 'email', 'secondary_email', 'vip_clients', 'vip_notes', 'company_contact_id')
+            ->select('id', 'name', 'phone', 'phone_ext', 'email', 'secondary_email', 'vip_clients', 'vip_notes', 'company_contact_id')
             ->with(['companyContact:id,name,email', 'companyContacts:id,name,email'])
             ->where(function ($query) use ($like, $digits) {
                 $query->where('name', 'like', $like)

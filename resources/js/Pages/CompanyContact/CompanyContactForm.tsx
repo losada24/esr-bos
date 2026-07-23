@@ -82,6 +82,17 @@ const CompanyContactForm = ({ submitCount, errors, isCreate, setFieldValue, valu
           />
           {(submitCount && errors.phone) ? <InputError message={errors.phone} className="mt-2" /> : ''}
         </div>
+        <div className={`mb-3 ${submitCount ? (errors.phone_ext) ? 'has-error' : 'has-success' : ''}`}>
+          <label htmlFor="phone_ext">Ext</label>
+          <Field
+            id="phone_ext"
+            name="phone_ext"
+            className="form-input"
+            autoComplete={false}
+            placeholder='Ext'
+          />
+          {(submitCount && errors.phone_ext) ? <InputError message={errors.phone_ext} className="mt-2" /> : ''}
+        </div>
         <div className={submitCount ? (errors.website) ? 'has-error' : 'has-success' : ''}>
           <label htmlFor="phone">Website</label>
           <Field
@@ -168,6 +179,7 @@ const CompanyContactForm = ({ submitCount, errors, isCreate, setFieldValue, valu
                 <th className='px-4 py-2'>Client Name</th>
                 <th className='px-4 py-2'>Email</th>
                 <th className='px-4 py-2'>Phone</th>
+                <th className='px-4 py-2'>Ext</th>
                 <th className='px-4 py-2 text-right'>Actions</th>
               </tr>
             </thead>
@@ -177,6 +189,7 @@ const CompanyContactForm = ({ submitCount, errors, isCreate, setFieldValue, valu
                   <td className='border px-4 py-2'>{client.name}</td>
                   <td className='border px-4 py-2'>{client.email}</td>
                   <td className='border px-4 py-2'>{client.phone}</td>
+                  <td className='border px-4 py-2'>{client.phone_ext ?? ''}</td>
                   <td className='border px-4 py-2 text-right'>
                     <button
                       type="button"
@@ -192,7 +205,7 @@ const CompanyContactForm = ({ submitCount, errors, isCreate, setFieldValue, valu
               ))}
               {clients.length === 0 && (
                 <tr>
-                  <td className='border px-4 py-2' colSpan={4}>No clients added yet.</td>
+                  <td className='border px-4 py-2' colSpan={5}>No clients added yet.</td>
                 </tr>
               )}
             </tbody>

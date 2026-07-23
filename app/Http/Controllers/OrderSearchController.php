@@ -162,6 +162,9 @@ class OrderSearchController extends Controller
                 OrderStatusEnum::LOST_CONTRACT->value,
             ],
             'order_processing' => [
+                OrderStatusEnum::PENDING_FINANCING_OR_DEPOSIT->value,
+                OrderStatusEnum::PENDING_HOA_APPROVAL->value,
+                OrderStatusEnum::RECTIFICATION_OF_MEASURES->value,
                 OrderStatusEnum::RECTIFICATION_OF_MEASURES_AND_HOA->value,
                 OrderStatusEnum::ORDER_MATERIALS_AND_FILE_ORGANIZATION->value,
                 OrderStatusEnum::FILE_REVIEW->value,
@@ -186,6 +189,9 @@ class OrderSearchController extends Controller
             'service_control' => [
                 OrderStatusEnum::CONTRACT_SIGNED_BY_CLIENT->value,
                 OrderStatusEnum::CLOSED_WON->value,
+                OrderStatusEnum::PENDING_FINANCING_OR_DEPOSIT->value,
+                OrderStatusEnum::PENDING_HOA_APPROVAL->value,
+                OrderStatusEnum::RECTIFICATION_OF_MEASURES->value,
                 OrderStatusEnum::RECTIFICATION_OF_MEASURES_AND_HOA->value,
                 OrderStatusEnum::ORDER_MATERIALS_AND_FILE_ORGANIZATION->value,
                 OrderStatusEnum::FILE_REVIEW->value,

@@ -89,6 +89,7 @@ class StoreOrderRequest extends FormRequest
                 [Rule::unique('clients', 'phone')]
               )
             ],
+            'phone_ext' => 'nullable|string|max:20',
             'email' => 'nullable|email|max:255',
             'client_email_selection' => 'nullable|string|max:255',
             'is_send_email' => 'boolean',
@@ -150,6 +151,10 @@ class StoreOrderRequest extends FormRequest
             'new_travel_cost' => 'nullable|numeric',
             'cost_city_fee' => 'nullable|numeric',
             'project_amount' => 'nullable|numeric',
+            'esr_cost' => [
+              'nullable',
+              'numeric',
+            ],
             'down_payment' => 'nullable|numeric',
             'initial_payment_percentage' => 'nullable|numeric',
             'payment_definition' => 'boolean',

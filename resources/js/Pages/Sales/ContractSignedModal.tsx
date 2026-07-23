@@ -25,6 +25,7 @@ export const NO_CLIENT_EMAIL_SELECTION = '__NONE__'
 interface ContractSignedFormValues {
   projectName: string
   productLine: string
+  esrCost: string
   projectAmount: string
   downPayment: string
   jobAddress: string
@@ -41,6 +42,8 @@ interface ContractSignedFormValues {
   emailCheck: boolean
   cityPermits: boolean
   associationPermits: boolean
+  pendingFinancingOrDeposit: string
+  pendingHoaApproval: string
   attachments: File[]
   paymentScheduleType: string
   customSchedule: CustomScheduleItem[]
@@ -57,6 +60,7 @@ type CustomSchedulePayload = { label: string, amount: number }
 type ContractSignedSubmitValues = {
   projectName: string
   productLine: string
+  esrCost: string
   projectAmount: string
   downPayment: string
   jobAddress: string
@@ -74,6 +78,8 @@ type ContractSignedSubmitValues = {
   emailCheck: boolean
   cityPermits: boolean
   associationPermits: boolean
+  pendingFinancingOrDeposit: boolean
+  pendingHoaApproval: boolean
   paymentScheduleType: string
   customSchedule: CustomSchedulePayload[]
 }
@@ -83,6 +89,7 @@ export interface ContractSignedModalProps {
   taskTitle: string
   initialProjectName: string
   initialProductLine: string
+  initialEsrCost?: string
   requireProductLine?: boolean
   initialProjectAmount: string
   initialDownPayment: string
@@ -100,6 +107,8 @@ export interface ContractSignedModalProps {
   initialEmailCheck: boolean
   initialCityPermits: boolean
   initialAssociationPermits: boolean
+  initialPendingFinancingOrDeposit?: boolean | null
+  initialPendingHoaApproval?: boolean | null
   orderType?: string | null
   companyOptions?: Array<{ id: number, label: string, client_email?: string | null, clientEmailOptions?: ClientEmailOption[] }>
   initialOrderCompanyContactId?: number | null
@@ -122,6 +131,7 @@ export default function ContractSignedModal ({
   taskTitle,
   initialProjectName,
   initialProductLine,
+  initialEsrCost = '',
   requireProductLine = false,
   initialProjectAmount,
   initialDownPayment,
@@ -139,6 +149,8 @@ export default function ContractSignedModal ({
   initialEmailCheck,
   initialCityPermits,
   initialAssociationPermits,
+  initialPendingFinancingOrDeposit = null,
+  initialPendingHoaApproval = null,
   orderType,
   companyOptions = [],
   initialOrderCompanyContactId = null,
@@ -159,10 +171,12 @@ export default function ContractSignedModal ({
 
   const CUSTOM_SCHEDULE_TYPE = 'CUSTOMIZED'
   const buildCustomSchedule = (items?: CustomScheduleItem[]) => {
-    const normalized = Array.isArray(items) ? items.map((item) => ({
-      label: item.label ?? '',
-      amount: item.amount != null ? String(item.amount) : ''
-    })) : []
+    const normalized = Array.isArray(items)
+      ? items.map((item) => ({
+        label: item.label ?? '',
+        amount: item.amount != null ? String(item.amount) : ''
+      }))
+      : []
     while (normalized.length < 6) {
       normalized.push({ label: '', amount: '' })
     }
@@ -172,6 +186,11 @@ export default function ContractSignedModal ({
   const isCommercial = orderType?.toLowerCase() === 'commercial'
   const requiresCompanySelection = isCommercial && companyOptions.length > 1
   const hiddenPaymentMethods = new Set(['CHECK', 'ZELLE', 'AIA'])
+  const booleanToRequiredSelection = (value?: boolean | null) => {
+    if (value === true) return '1'
+    if (value === false) return '0'
+    return ''
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
@@ -228,6 +247,7 @@ export default function ContractSignedModal ({
           initialValues={{
             projectName: initialProjectName ?? '',
             productLine: initialProductLine ?? '',
+            esrCost: initialEsrCost ?? '',
             projectAmount: initialProjectAmount ?? '',
             downPayment: initialDownPayment ?? '',
             jobAddress: initialJobAddress ?? '',
@@ -244,11 +264,13 @@ export default function ContractSignedModal ({
             emailCheck: initialEmailCheck ?? true,
             cityPermits: initialCityPermits ?? false,
             associationPermits: initialAssociationPermits ?? false,
+            pendingFinancingOrDeposit: booleanToRequiredSelection(initialPendingFinancingOrDeposit),
+            pendingHoaApproval: booleanToRequiredSelection(initialPendingHoaApproval),
             attachments: [],
             paymentScheduleType: initialMethodOfPayment === PAYMENT_METHODS.CASH_AND_FINANCE
               ? CUSTOM_SCHEDULE_TYPE
               : (initialPaymentScheduleType ?? ''),
-            customSchedule: buildCustomSchedule(initialCustomSchedule),
+            customSchedule: buildCustomSchedule(initialCustomSchedule)
           }}
           validate={(values) => {
             const issues: Partial<Record<keyof ContractSignedFormValues, string>> = {}
@@ -271,6 +293,9 @@ export default function ContractSignedModal ({
             }
             if (requireProductLine && !values.productLine) {
               issues.productLine = 'Product Line is required.'
+            }
+            if (values.productLine === 'MIXED' && String(values.esrCost ?? '').trim() === '') {
+              issues.esrCost = 'ESR Cost is required.'
             }
 
             if (!values.projectAmount) {
@@ -380,6 +405,14 @@ export default function ContractSignedModal ({
               issues.attachments = 'At least one attachment is required.'
             }
 
+            if (values.pendingFinancingOrDeposit === '') {
+              issues.pendingFinancingOrDeposit = 'Select Yes or No.'
+            }
+
+            if (values.associationPermits && values.pendingHoaApproval === '') {
+              issues.pendingHoaApproval = 'Select Yes or No.'
+            }
+
             if (requiresCompanySelection && !values.orderCompanyContactId) {
               issues.orderCompanyContactId = 'Select the company for this contract.'
             }
@@ -404,6 +437,7 @@ export default function ContractSignedModal ({
             onSubmit({
               projectName: values.projectName.trim(),
               productLine: values.productLine,
+              esrCost: values.esrCost,
               projectAmount: values.projectAmount,
               downPayment: values.downPayment,
               jobAddress: values.jobAddress.trim(),
@@ -420,9 +454,11 @@ export default function ContractSignedModal ({
               emailCheck: values.emailCheck,
               cityPermits: values.cityPermits,
               associationPermits: values.associationPermits,
+              pendingFinancingOrDeposit: values.pendingFinancingOrDeposit === '1',
+              pendingHoaApproval: values.associationPermits ? values.pendingHoaApproval === '1' : false,
               attachments: values.attachments ?? [],
               paymentScheduleType: values.paymentScheduleType,
-              customSchedule,
+              customSchedule
             })
           }}
         >
@@ -513,6 +549,37 @@ export default function ContractSignedModal ({
               : values.clientEmailSelection === PRIMARY_CLIENT_EMAIL_SELECTION
                 ? (primaryEmailOption?.value ?? 'Primary client email is not available.')
                 : (selectedAlternateEmail?.value ?? values.clientEmailSelection)
+            const renderYesNoSegment = (
+              name: 'pendingFinancingOrDeposit' | 'pendingHoaApproval',
+              value: string
+            ) => (
+              <div className="grid w-28 grid-cols-2 gap-px rounded-md border border-slate-200 bg-slate-100 p-px">
+                {[
+                  { label: 'Yes', value: '1' },
+                  { label: 'No', value: '0' }
+                ].map((option) => {
+                  const selected = value === option.value
+
+                  return (
+                    <button
+                      key={`${name}-${option.value}`}
+                      type="button"
+                      onClick={() => { setFieldValue(name, option.value) }}
+                      className={[
+                        'rounded px-1.5 py-1 text-[11px] font-semibold leading-4 transition focus:outline-none focus:ring-2 focus:ring-sky-100 disabled:cursor-not-allowed disabled:opacity-70',
+                        selected
+                          ? 'bg-sky-600 text-white shadow-sm ring-1 ring-sky-600'
+                          : 'bg-transparent text-slate-600 hover:bg-white hover:text-slate-800'
+                      ].filter(Boolean).join(' ')}
+                      disabled={loading}
+                      aria-pressed={selected}
+                    >
+                      {option.label}
+                    </button>
+                  )
+                })}
+              </div>
+            )
 
             return (
             <Form className="mt-4 space-y-4" encType="multipart/form-data">
@@ -583,6 +650,11 @@ export default function ContractSignedModal ({
                       {PRODUCT_LINES.map((line) => <option key={line} value={line}>{line}</option>)}
                     </select>
                     {submitCount && errors.productLine ? <InputError message={errors.productLine} className="mt-2" /> : null}
+                  </div>}
+                  {values.productLine === 'MIXED' && <div className={submitCount ? (errors.esrCost ? 'has-error' : 'has-success') : ''}>
+                    <label className="mb-1 block text-sm font-medium text-slate-600">ESR Cost</label>
+                    <input name="esrCost" type="number" min="0" step="0.01" value={values.esrCost} onChange={handleChange} onBlur={handleBlur} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 outline-none focus:border-sky-400 focus:ring-4 focus:ring-sky-100" placeholder="Enter ESR cost" disabled={loading} />
+                    {submitCount && errors.esrCost ? <InputError message={errors.esrCost} className="mt-2" /> : null}
                   </div>}
 
                   <div className={`grid gap-4 md:grid-cols-2 ${submitCount ? (errors.projectAmount ? 'has-error' : 'has-success') : ''}`}>
@@ -957,12 +1029,39 @@ export default function ContractSignedModal ({
                       type="checkbox"
                       name="associationPermits"
                       checked={values.associationPermits}
-                      onChange={(event) => { setFieldValue('associationPermits', event.target.checked) }}
+                      onChange={(event) => {
+                        setFieldValue('associationPermits', event.target.checked)
+                        if (!event.target.checked) {
+                          setFieldValue('pendingHoaApproval', '')
+                        }
+                      }}
                       className="form-checkbox h-4 w-4"
                       disabled={loading}
                     />
                     <span>HOA</span>
                   </label>
+                </div>
+                <div className="mt-2.5 grid gap-2 md:grid-cols-2">
+                  <div className={submitCount ? (errors.pendingFinancingOrDeposit ? 'has-error' : 'has-success') : ''}>
+                    <label className="mb-1 block text-[11px] font-semibold uppercase leading-4 text-slate-500">
+                      Pending financing or deposit
+                    </label>
+                    {renderYesNoSegment('pendingFinancingOrDeposit', values.pendingFinancingOrDeposit)}
+                    {submitCount && errors.pendingFinancingOrDeposit
+                      ? <InputError message={errors.pendingFinancingOrDeposit} className="mt-2" />
+                      : null}
+                  </div>
+                  {values.associationPermits && (
+                    <div className={submitCount ? (errors.pendingHoaApproval ? 'has-error' : 'has-success') : ''}>
+                      <label className="mb-1 block text-[11px] font-semibold uppercase leading-4 text-slate-500">
+                        Pending HOA approval
+                      </label>
+                      {renderYesNoSegment('pendingHoaApproval', values.pendingHoaApproval)}
+                      {submitCount && errors.pendingHoaApproval
+                        ? <InputError message={errors.pendingHoaApproval} className="mt-2" />
+                        : null}
+                    </div>
+                  )}
                 </div>
                 {submitCount > 0 && errors.nameCheck && (
                   <InputError message={errors.nameCheck} className="mt-2" />
@@ -1018,8 +1117,8 @@ export default function ContractSignedModal ({
                 </button>
               </div>
             </Form>
-            )}
-          }
+            )
+          }}
         </Formik>
         </div>
       </div>
