@@ -1,1 +1,0 @@
-import{c as r,b as e,e as i}from"./object-145c9752.js";const t=r({id:e(),number_of_member:e().required("Number of member is required"),worker_compensation_expiration_date:i().required("Worker compensation expiration date is required"),liability_expiration_date:i().required("Liability expiration date is required")});export{t as i};
