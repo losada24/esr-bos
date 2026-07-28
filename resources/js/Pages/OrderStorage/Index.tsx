@@ -148,6 +148,51 @@ const normalizeStatusValue = (value: string | number): string => String(value).r
 const matchesStatus = (value: string | number, target: string | number): boolean =>
   normalizeStatusValue(value) === normalizeStatusValue(target)
 
+const ESR_SALES_STATUSES = new Set([
+  'DEALER REQUEST',
+  'FOLLOW UP PROJECTS',
+  'REVIEW'
+])
+
+const ESR_SERVICES_STATUSES = new Set([
+  'SERVICE IN REVIEW',
+  'PRODUCTION SERVICES'
+])
+
+const ESR_ACCOUNTING_STATUSES = new Set([
+  'ACCOUNT RECEIPT',
+  'PRE-COORDINATION ACCOUNTING',
+  'MATERIALS PICK UP OR DELIVERED',
+  'PENDING PAYMENT MATCH'
+])
+
+const ESR_PRODUCTION_STATUSES = new Set([
+  'PRODUCTION'
+])
+
+const ESR_COORDINATION_LOGISTICS_STATUSES = new Set([
+  'PENDING MAT REYLOS',
+  'PENDING MATERIALS DEALER ESR',
+  'PENDING MATERIALS ESW',
+  'MATERIAL ORDER COMPLETED',
+  'MATERIAL ORDER COMPLETED FINANCED',
+  'STORAGE MATERIAL'
+])
+
+const formatPipelineStatusTitle = (status: string | number, isEsrBoard: boolean): string => {
+  const statusLabel = String(status)
+  const normalizedStatus = normalizeStatusValue(statusLabel)
+
+  if (!isEsrBoard) return statusLabel
+  if (ESR_SALES_STATUSES.has(normalizedStatus)) return `${statusLabel} (Sales)`
+  if (ESR_SERVICES_STATUSES.has(normalizedStatus)) return `${statusLabel} (Services)`
+  if (ESR_ACCOUNTING_STATUSES.has(normalizedStatus)) return `${statusLabel} (Accounting)`
+  if (ESR_PRODUCTION_STATUSES.has(normalizedStatus)) return `${statusLabel} (Production)`
+  if (ESR_COORDINATION_LOGISTICS_STATUSES.has(normalizedStatus)) return `${statusLabel} (Coordination and Logistics)`
+
+  return statusLabel
+}
+
 const getStageOverdueBadge = (pipeline: Pick<Pipelines, 'id' | 'title'>, task: Tasks): string | null => {
   if (!task.stage_overdue) return null
   if (task.current_status && !matchesStatus(task.current_status, pipeline.title)) return null
@@ -922,7 +967,7 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
                   <div className="sticky top-0 z-10 bg-white dark:bg-[#0b1220] pt-3 pb-2 shadow-sm">
                     <div className="flex items-start justify-between gap-3">
                       <h4 className="flex-1 text-xs font-semibold uppercase tracking-wide text-slate-700 dark:text-white mb-0">
-                        {pipeline.title}
+                        {formatPipelineStatusTitle(pipeline.title, isEsrBoard)}
                       </h4>
                       <div className="flex flex-col items-end gap-1 text-[11px] font-semibold text-slate-600 dark:text-white">
                         <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide shadow-sm dark:border-white-dark/30 dark:bg-white-dark/10">
