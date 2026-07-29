@@ -93,6 +93,7 @@ export default function Create ({
     external_owner_id: externalDefaults.external_owner_id ?? '',
     external_owner_name: externalDefaults.external_owner_name ?? '',
     external_owner_email: externalDefaults.external_owner_email ?? '',
+    attachments: [],
   })
 
   return (
@@ -116,7 +117,7 @@ export default function Create ({
       assigneeOptions={assigneeOptions}
       onSubmit={(event) => {
         event.preventDefault()
-        post(route(submitRouteName))
+        post(route(submitRouteName), { forceFormData: true })
       }}
     />
   )

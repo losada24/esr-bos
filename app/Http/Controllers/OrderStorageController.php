@@ -355,6 +355,7 @@ class OrderStorageController extends Controller
 
         return [
             'id' => $order->id,
+            'order_number' => $order->order_number,
             'title' => $order->name ?? 'No Title',
             'client_id' => $order->client_id,
             'date_edited' => optional($order->updated_at)->format('M d, Y h:i A'),
@@ -404,6 +405,7 @@ class OrderStorageController extends Controller
             'esr_service' => (bool) ($order->esr_service ?? false),
             'service_origin' => $order->service_origin,
             'is_post_sale_service' => (bool) ($order->is_post_sale_service ?? false),
+            'service_control_id' => $order->serviceControls->first()?->id,
             'service_source' => $order->serviceControls->first()?->service_source,
             'bid_due_date' => $this->resolveBidDueDate($order),
             'tags' => ($order->tags ?? collect())->map(function ($tag) {

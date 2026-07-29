@@ -174,6 +174,14 @@ Route::middleware('auth')->group(function () {
       ->name('service-control.external-service-orders.search')
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value .'|'. RoleEnum::SERVICE_MANAGER->value]);
 
+    Route::post('service-control/{serviceControl}/attachments', [ServiceControlController::class, 'storeAttachment'])
+      ->name('service-control.attachments.store')
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value .'|'. RoleEnum::SERVICE_MANAGER->value]);
+
+    Route::delete('service-control/{serviceControl}/attachments/{attachment}', [ServiceControlController::class, 'dropAttachment'])
+      ->name('service-control.attachments.destroy')
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value .'|'. RoleEnum::SERVICE_MANAGER->value]);
+
     Route::resource('service-control', ServiceControlController::class)
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value .'|'. RoleEnum::SERVICE_MANAGER->value]);
 

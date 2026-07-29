@@ -20,6 +20,7 @@ use App\Enum\StatusUserEnum;
 use App\Http\Requests\StoreServiceControlRequest;
 use App\Http\Requests\UpdateServiceControlRequest;
 use App\Models\Client;
+use App\Models\Attachment;
 use App\Models\CompanyContact;
 use App\Models\Order;
 use App\Models\OrderCompanyContact;
@@ -37,6 +38,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 use Maatwebsite\Excel\Facades\Excel;
@@ -94,6 +96,11 @@ class ServiceControlController extends Controller
                     'status' => ServiceControlRequestOriginEnum::OWNER->value,
                     'color' => $this->serviceCalendarOriginColor(ServiceControlRequestOriginEnum::OWNER->value),
                 ],
+                [
+                    'label' => 'Scheduled Date',
+                    'status' => 'scheduled_date',
+                    'color' => $this->serviceCalendarScheduledColor(),
+                ],
             ],
             'statusOptions' => collect($this->serviceCalendarStatuses())
                 ->map(fn (string $status) => [
@@ -129,7 +136,11 @@ class ServiceControlController extends Controller
                 'histories' => fn ($query) => $query->orderByDesc('created_at'),
             ])
             ->where('is_bm', false)
-            ->whereNotNull('parts_received_date')
+            ->where(function (Builder $query) {
+                $query
+                    ->whereNotNull('scheduled_date')
+                    ->orWhereNotNull('parts_received_date');
+            })
             ->whereIn('service_status', $statuses)
             ->when($search !== '', function (Builder $query) use ($search) {
                 $like = '%' . $search . '%';
@@ -371,6 +382,11 @@ class ServiceControlController extends Controller
             $query->where('priority', $priority);
         }
 
+        $serviceType = trim((string) $request->query('service_type', ''));
+        if ($serviceType !== '') {
+            $query->whereJsonContains('service_type', $serviceType);
+        }
+
         $query->latest();
 
         if ($limit !== null) {
@@ -388,6 +404,7 @@ class ServiceControlController extends Controller
                 'search' => $text,
                 'status' => $status,
                 'priority' => $priority,
+                'service_type' => $serviceType,
                 'type' => $type,
             ],
             'serviceTypeOptions' => array_column(ServiceControlTypeEnum::cases(), 'value'),
@@ -621,6 +638,7 @@ class ServiceControlController extends Controller
             }
 
             $serviceControl = ServiceControl::create($this->buildPayload($request, null));
+            $this->storeAttachments($request, $serviceControl);
 
             $serviceControl->histories()->create([
                 'user_id' => $request->user()?->id,
@@ -783,6 +801,7 @@ class ServiceControlController extends Controller
                 ->all();
 
             $serviceControl->save();
+            $this->storeAttachments($request, $serviceControl);
             $this->syncServiceManCompletedOrderStatus($serviceControl, $request);
 
             if ($dirty === []) {
@@ -821,6 +840,57 @@ class ServiceControlController extends Controller
             ->with('success', 'Service control updated successfully.');
     }
 
+    public function storeAttachment(Request $request, ServiceControl $serviceControl): JsonResponse
+    {
+        $this->ensureCanAccessServiceControl($request->user(), $serviceControl);
+
+        $request->validate([
+            'attachments' => ['required', 'array'],
+            'attachments.*' => ['file', 'max:10240'],
+        ]);
+
+        $this->storeAttachments($request, $serviceControl);
+        $serviceControl->load('attachments.user');
+
+        return response()->json([
+            'attachments' => $this->serializeAttachments($serviceControl),
+        ]);
+    }
+
+    public function dropAttachment(Request $request, ServiceControl $serviceControl, Attachment $attachment): JsonResponse
+    {
+        $this->ensureCanAccessServiceControl($request->user(), $serviceControl);
+
+        if (
+            $attachment->attachable_type !== ServiceControl::class ||
+            (int) $attachment->attachable_id !== (int) $serviceControl->id
+        ) {
+            return response()->json(['message' => 'Attachment not found.'], 404);
+        }
+
+        $user = $request->user();
+        $canDelete = $user && (
+            (int) $attachment->user_id === (int) $user->id ||
+            $user->hasRole([
+                RoleEnum::ADMIN->value,
+                RoleEnum::ACCOUNT_MANAGER->value,
+                RoleEnum::SERVICE_MANAGER->value,
+            ])
+        );
+
+        if (! $canDelete) {
+            return response()->json(['message' => 'You do not have permission to delete this file.'], 403);
+        }
+
+        $attachment->delete();
+        $serviceControl->load('attachments.user');
+
+        return response()->json([
+            'message' => 'Attachment deleted.',
+            'attachments' => $this->serializeAttachments($serviceControl),
+        ]);
+    }
+
     public function destroy(Request $request, ServiceControl $serviceControl): RedirectResponse
     {
         $serviceControl->load('order');
@@ -840,6 +910,44 @@ class ServiceControlController extends Controller
         return redirect()->route('service-control.index', [
             'type' => $serviceControl->is_bm ? 'bm' : 'services',
         ])->with('success', 'Service control deleted successfully.');
+    }
+
+    private function storeAttachments(Request $request, ServiceControl $serviceControl): void
+    {
+        if (! $request->hasFile('attachments')) {
+            return;
+        }
+
+        foreach ($request->file('attachments') as $file) {
+            $fileName = time() . '_' . Str::replace(' ', '_', $file->getClientOriginalName());
+            $filePath = $file->storeAs('service_control_files', $fileName, 'public');
+
+            $serviceControl->attachments()->create([
+                'filename' => $file->getClientOriginalName(),
+                'file_path' => $filePath,
+                'file_type' => 'service_control_files',
+                'mime_type' => $file->getMimeType() ?: $file->getClientMimeType(),
+                'size_bytes' => $file->getSize(),
+                'user_id' => $request->user()?->id,
+            ]);
+        }
+    }
+
+    private function serializeAttachments(ServiceControl $serviceControl): \Illuminate\Support\Collection
+    {
+        $serviceControl->loadMissing('attachments.user');
+
+        return $serviceControl->attachments
+            ->map(fn (Attachment $attachment) => [
+                'id' => $attachment->id,
+                'filename' => $attachment->filename,
+                'file_path' => $attachment->file_path,
+                'file_type' => $attachment->file_type,
+                'created_at' => optional($attachment->created_at)->toIso8601String(),
+                'uploaded_by' => $attachment->user?->name,
+                'user_id' => $attachment->user_id,
+            ])
+            ->values();
     }
 
     private function loadOrderForServiceControl(int $orderId): Order
@@ -871,6 +979,7 @@ class ServiceControlController extends Controller
             'client',
             'creator:id,name',
             'updater:id,name',
+            'attachments.user',
         ]);
 
         $client = $this->serviceClient($serviceControl);
@@ -929,6 +1038,7 @@ class ServiceControlController extends Controller
             'bm_invoice_status' => $serviceControl->bm_invoice_status,
             'created_at' => optional($serviceControl->created_at)->toISOString(),
             'updated_at' => optional($serviceControl->updated_at)->toISOString(),
+            'attachments' => $this->serializeAttachments($serviceControl),
             'is_missing_service_id_overdue' => $this->isMissingServiceIdOverdue($serviceControl),
             'is_missing_eta_overdue' => $this->isMissingEtaOverdue($serviceControl),
             'creator' => $serviceControl->creator ? [
@@ -1551,6 +1661,10 @@ class ServiceControlController extends Controller
 
     private function serviceCalendarDate(ServiceControl $serviceControl, string $timezone): ?Carbon
     {
+        if (! empty($serviceControl->scheduled_date)) {
+            return Carbon::parse($serviceControl->scheduled_date, $timezone);
+        }
+
         if (! empty($serviceControl->parts_received_date)) {
             return Carbon::parse($serviceControl->parts_received_date, $timezone);
         }
@@ -1578,6 +1692,8 @@ class ServiceControlController extends Controller
             ServiceControlStatusEnum::PRODUCTION_IN_PROGRESS->value,
             ServiceControlStatusEnum::PRODUCTION_COMPLETED->value,
             ServiceControlStatusEnum::READY_FOR_DELIVERY->value,
+            ServiceControlStatusEnum::SCHEDULE_SERVICE_MAN->value,
+            ServiceControlStatusEnum::SCHEDULED_SERVICE_MAN->value,
             ServiceControlStatusEnum::DELIVERED->value,
             ServiceControlStatusEnum::COMPLETED->value,
         ];
@@ -1648,6 +1764,8 @@ class ServiceControlController extends Controller
             ServiceControlStatusEnum::PRODUCTION_IN_PROGRESS->value,
             ServiceControlStatusEnum::PRODUCTION_COMPLETED->value,
             ServiceControlStatusEnum::READY_FOR_DELIVERY->value,
+            ServiceControlStatusEnum::SCHEDULE_SERVICE_MAN->value,
+            ServiceControlStatusEnum::SCHEDULED_SERVICE_MAN->value,
             ServiceControlStatusEnum::DELIVERED->value,
             ServiceControlStatusEnum::COMPLETED->value,
         ];
@@ -1669,8 +1787,17 @@ class ServiceControlController extends Controller
         ][$requestOrigin] ?? '#2563eb';
     }
 
+    private function serviceCalendarScheduledColor(): string
+    {
+        return '#facc15';
+    }
+
     private function serviceCalendarEventColor(ServiceControl $serviceControl, string $status, ?string $requestOrigin, string $timezone): string
     {
+        if (! empty($serviceControl->scheduled_date)) {
+            return $this->serviceCalendarScheduledColor();
+        }
+
         if (
             ! in_array($status, $this->productionOutputResolvedStatuses(), true)
             && ! empty($serviceControl->parts_received_date)

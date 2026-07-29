@@ -10,6 +10,8 @@ enum ServiceControlStatusEnum: string
     case PRODUCTION_IN_PROGRESS = 'Production in Progress';
     case PRODUCTION_COMPLETED = 'Production Completed';
     case READY_FOR_DELIVERY = 'Ready for Delivery';
+    case SCHEDULE_SERVICE_MAN = 'Schedule Service Man';
+    case SCHEDULED_SERVICE_MAN = 'Scheduled Service Man';
     case DELIVERED = 'Delivered';
     case COMPLETED = 'COMPLETED';
 }

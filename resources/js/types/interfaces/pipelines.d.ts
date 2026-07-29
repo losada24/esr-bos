@@ -1,5 +1,6 @@
 export interface Tasks {
   id: number
+  order_number?: string | number | null
   title: string
   // description: string
   date: string
@@ -54,6 +55,7 @@ export interface Tasks {
   esr_service?: boolean
   service_origin?: string | null
   service_source?: string | null
+  service_control_id?: number | null
   is_post_sale_service?: boolean
   bid_due_date?: string | null
   vip_clients?: boolean

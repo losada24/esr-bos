@@ -211,6 +211,33 @@ const isPostSaleServiceTask = (task: Tasks): boolean => (
   Boolean(task.is_post_sale_service) && String(task.service_origin ?? '').toUpperCase() === 'SERVICE'
 )
 
+const canEditServiceControl = (roleNames: string[]): boolean => (
+  roleNames.includes('admin') ||
+  roleNames.includes('account_manager') ||
+  roleNames.includes('service_manager')
+)
+
+const isRestrictedOwnerRoleSet = (roleNames: string[]): boolean => (
+  roleNames.includes('owner') &&
+  !roleNames.some(roleName => ['admin', 'account_manager', 'owner_admin', 'frontdesk_admin'].includes(roleName))
+)
+
+const isRestrictedOwnerAdminRoleSet = (roleNames: string[]): boolean => (
+  roleNames.includes('owner_admin') &&
+  !roleNames.some(roleName => ['admin', 'account_manager', 'frontdesk_admin'].includes(roleName))
+)
+
+const OWNER_ALLOWED_ESR_STATUSES = new Set([
+  'DEALER REQUEST',
+  'FOLLOW UP PROJECTS',
+  'REVIEW'
+])
+
+const OWNER_ADMIN_ALLOWED_ESR_STATUSES = new Set([
+  ...OWNER_ALLOWED_ESR_STATUSES,
+  'ACCOUNT RECEIPT'
+])
+
 const INFINITE_SCROLL_STATUSES = new Set(['COMPLETE', 'LOST'])
 const TASKS_PAGE_SIZE = 20
 const SCROLL_THRESHOLD_PX = 120
@@ -323,6 +350,10 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
   const sortHydratedRef = useRef(false)
   const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? ''
   const isEsrBoard = searchOrigin === 'esr_process'
+  const roleNames = (auth.user.roles ?? []).map(role => role.name)
+  const canEditPostSaleService = canEditServiceControl(roleNames)
+  const isRestrictedOwner = isRestrictedOwnerRoleSet(roleNames)
+  const isRestrictedOwnerAdmin = isRestrictedOwnerAdminRoleSet(roleNames)
   const appliedFilters = filters ?? {}
   const filterQueryParams = useMemo(() => buildFilterQuery(appliedFilters), [appliedFilters])
   const sortState = useMemo(() => normalizePipelineSort(sort), [sort])
@@ -1034,6 +1065,32 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
                             .flatMap(pipeline => pipeline.tasks ?? [])
                             .find(task => task.id === orderId)
 
+                          if (
+                            isEsrBoard &&
+                            isRestrictedOwner &&
+                            !OWNER_ALLOWED_ESR_STATUSES.has(normalizeStatusValue(newStatus))
+                          ) {
+                            if (dragSnapshotRef.current) {
+                              setPipelines(dragSnapshotRef.current)
+                            }
+                            dragSnapshotRef.current = null
+                            window.alert('Owners can only move ESR orders to Dealer Request, Follow Up Projects, or Review.')
+                            return
+                          }
+
+                          if (
+                            isEsrBoard &&
+                            isRestrictedOwnerAdmin &&
+                            !OWNER_ADMIN_ALLOWED_ESR_STATUSES.has(normalizeStatusValue(newStatus))
+                          ) {
+                            if (dragSnapshotRef.current) {
+                              setPipelines(dragSnapshotRef.current)
+                            }
+                            dragSnapshotRef.current = null
+                            window.alert('Owner admins can only move ESR orders to Dealer Request, Follow Up Projects, Review, or Account Receipt.')
+                            return
+                          }
+
                           if (isEsrBoard && movedTaskForLock && isPostSaleServiceTask(movedTaskForLock)) {
                             if (dragSnapshotRef.current) {
                               setPipelines(dragSnapshotRef.current)
@@ -1193,20 +1250,30 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
                           : (task.esr_service
                               ? 'bg-yellow-100 ring-1 ring-yellow-300 dark:bg-yellow-500/20 dark:ring-yellow-400/40'
                               : 'bg-[#f4f4f4] dark:bg-white-dark/20')
+                        const orderNumber = String(task.order_number ?? '').trim()
 
                         return (
                           <div className={`sortable-list ${isPostSaleServiceCard ? 'js-post-sale-service-card' : ''}`} key={task.id} data-id={task.id}>
                             <div className={`shadow ${cardBackgroundClass} p-3 pb-4 rounded-md mb-5 space-y-2 ${isPostSaleServiceCard ? 'cursor-default' : 'cursor-move'} text-xs text-slate-600`}>
                               <div className="flex items-center justify-between w-full">
-                                <p className="flex items-center gap-2 break-all text-sm font-semibold text-slate-700 dark:text-white">
-                                  {task.title}
-                                  {isVipClient && (
-                                    <span className="inline-flex items-center rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-rose-700 ring-1 ring-rose-200 dark:bg-rose-500/20 dark:text-rose-200 dark:ring-rose-400/40">
-                                      VIP
-                                    </span>
-                                  )}
-                                </p>
+                                {isEsrBoard && orderNumber !== '' ? (
+                                  <div className="inline-flex w-fit items-center rounded-full bg-slate-900 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white ring-1 ring-slate-700">
+                                    Order #{orderNumber}
+                                  </div>
+                                ) : <span />}
                                 <div className="flex items-center gap-2 text-[11px]">
+                                  {isPostSaleServiceCard && canEditPostSaleService && task.service_control_id && (
+                                    <Link
+                                      href={route('service-control.edit', task.service_control_id)}
+                                      title="Edit Service Control"
+                                      className="flex items-center gap-1 hover:text-info"
+                                      onClick={(event) => {
+                                        event.stopPropagation()
+                                      }}
+                                    >
+                                      <EditIcon />
+                                    </Link>
+                                  )}
                                   {!isPostSaleServiceCard && (
                                     <Link
                                       href={route(orderViewRoute, orderViewRoute === 'esr-process.order-view' ? { id: task.id } : task.id)}
@@ -1274,6 +1341,14 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
                                   />
                                 </div>
                               </div>
+                              <p className="flex items-center gap-2 break-all text-sm font-semibold text-slate-700 dark:text-white">
+                                {task.title}
+                                {isVipClient && (
+                                  <span className="inline-flex items-center rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-rose-700 ring-1 ring-rose-200 dark:bg-rose-500/20 dark:text-rose-200 dark:ring-rose-400/40">
+                                    VIP
+                                  </span>
+                                )}
+                              </p>
                               <div className="flex gap-2 items-center flex-wrap">
                                 {task.is_parent_order && !isEsrBoard && (
                                   <span

@@ -107,6 +107,8 @@ class UpdateServiceControlRequest extends FormRequest
             'bm_pickup_date' => ['nullable', 'date_format:Y-m-d'],
             'bm_invoice_number' => ['nullable', 'string', 'max:255'],
             'bm_invoice_status' => ['nullable', Rule::requiredIf(fn () => $this->boolean('is_bm')), 'string', Rule::in(array_column(BmInvoiceStatusEnum::cases(), 'value'))],
+            'attachments' => ['nullable', 'array'],
+            'attachments.*' => ['file', 'max:10240'],
         ];
     }
 }

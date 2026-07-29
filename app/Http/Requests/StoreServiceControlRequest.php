@@ -110,6 +110,8 @@ class StoreServiceControlRequest extends FormRequest
             'external_owner_id' => ['nullable', 'integer', 'exists:users,id'],
             'external_owner_name' => ['nullable', 'string', 'max:255'],
             'external_owner_email' => ['nullable', 'email', 'max:255'],
+            'attachments' => ['nullable', 'array'],
+            'attachments.*' => ['file', 'max:10240'],
         ];
     }
 }

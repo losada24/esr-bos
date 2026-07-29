@@ -62,6 +62,7 @@ const ServiceEventModal = ({ event, show, canOpenService, onClose }: { event: Re
         <Detail label="Client" value={event?.client_name} />
         <Detail label="Client Phone" value={event?.client_phone} />
         <Detail label="Event Date" value={event?.event_date} />
+        <Detail label="Scheduled Date" value={event?.scheduled_date} />
         <Detail label="Production Output Date" value={event?.production_output_date} />
         <Detail label="Urgency Status" value={event?.urgency_status} />
         <Detail label="Owners" value={event?.owner_names} />

@@ -1,4 +1,5 @@
 import { type User } from '@/types/interfaces/user'
+import { type Attachment } from '@/types/interfaces/order'
 
 export interface ServiceControlOrderSummary {
   id?: number | null
@@ -128,6 +129,7 @@ export interface ServiceControl {
   is_missing_eta_overdue?: boolean
   creator?: User | null
   updater?: User | null
+  attachments?: Attachment[]
   order?: ServiceControlOrderSummary | null
   client?: ServiceControlOrderSummary['client'] | null
   histories?: ServiceControlHistory[]

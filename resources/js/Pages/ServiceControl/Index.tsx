@@ -13,6 +13,7 @@ type IndexProps = PageProps & {
     search?: string
     status?: string
     priority?: string
+    service_type?: string
     type?: string
   }
   serviceTypeOptions: string[]
@@ -48,6 +49,7 @@ type ServiceControlFilterState = {
   search: string
   status: string
   priority: string
+  service_type: string
 }
 
 type CreationOrigin = 'ESR' | 'ESW'
@@ -153,6 +155,7 @@ function buildFilterState (filters: ServiceControlFilterState): ServiceControlFi
     search: filters.search ?? '',
     status: filters.status ?? '',
     priority: filters.priority ?? '',
+    service_type: filters.service_type ?? ''
   }
 }
 
@@ -169,6 +172,7 @@ function readStoredFilters (): ServiceControlFilterState | null {
       search: parsed.search ?? '',
       status: parsed.status ?? '',
       priority: parsed.priority ?? '',
+      service_type: parsed.service_type ?? ''
     })
   } catch {
     window.localStorage.removeItem(FILTER_STORAGE_KEY)
@@ -190,7 +194,7 @@ function hasExplicitFilterParams (): boolean {
   if (typeof window === 'undefined') return false
   const params = new URLSearchParams(window.location.search)
 
-  return ['type', 'search', 'status', 'priority'].some((key) => {
+  return ['type', 'search', 'status', 'priority', 'service_type'].some((key) => {
     const value = params.get(key)
     return value !== null && value !== ''
   })
@@ -200,12 +204,14 @@ export default function Index ({
   auth,
   serviceControls,
   filters,
+  serviceTypeOptions,
   serviceStatusOptions,
   priorityOptions,
 }: IndexProps) {
   const [search, setSearch] = useState(filters.search ?? '')
   const [status, setStatus] = useState(filters.status ?? '')
   const [priority, setPriority] = useState(filters.priority ?? '')
+  const [serviceType, setServiceType] = useState(filters.service_type ?? '')
   const [externalSearch, setExternalSearch] = useState('')
   const [externalResults, setExternalResults] = useState<ExternalServiceOrder[]>([])
   const [externalLoading, setExternalLoading] = useState(false)
@@ -218,12 +224,14 @@ export default function Index ({
     search: filters.search ?? '',
     status: filters.status ?? '',
     priority: filters.priority ?? '',
-  }), [activeType, filters.search, filters.status, filters.priority])
+    service_type: filters.service_type ?? ''
+  }), [activeType, filters.search, filters.status, filters.priority, filters.service_type])
   const exportQuery = `?${new URLSearchParams({
     type: activeType,
     search,
     status,
     priority,
+    service_type: serviceType
   }).toString()}`
 
   useEffect(() => {
@@ -250,6 +258,7 @@ export default function Index ({
       search,
       status,
       priority,
+      service_type: serviceType
     })
 
     storeFilters(nextFilters)
@@ -386,6 +395,12 @@ export default function Index ({
               <option key={option} value={option}>{humanize(option)}</option>
             ))}
           </select>
+          <select value={serviceType} onChange={(event) => { setServiceType(event.target.value) }} className="form-select w-44">
+            <option value="">All service types</option>
+            {serviceTypeOptions.map((option) => (
+              <option key={option} value={option}>{humanize(option)}</option>
+            ))}
+          </select>
           <button type="button" className="btn btn-primary" onClick={applyFilters}>Filter</button>
           <button
             type="button"
@@ -395,6 +410,7 @@ export default function Index ({
               setSearch('')
               setStatus('')
               setPriority('')
+              setServiceType('')
               router.get(route('service-control.index'), { type: activeType }, { replace: true })
             }}
           >

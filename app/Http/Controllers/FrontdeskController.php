@@ -544,6 +544,23 @@ class FrontdeskController extends Controller
     return $currentIndex !== false && $targetIndex !== false && $targetIndex < $currentIndex;
   }
 
+  private function ownerAllowedEsrProcessStatuses(): array
+  {
+    return [
+      OrderStatusEnum::DEALER_REQUEST->value,
+      OrderStatusEnum::FOLLOW_UP_PROJECTS->value,
+      OrderStatusEnum::REVIEW->value,
+    ];
+  }
+
+  private function ownerAdminAllowedEsrProcessStatuses(): array
+  {
+    return [
+      ...$this->ownerAllowedEsrProcessStatuses(),
+      OrderStatusEnum::ACCOUNT_RECEIPT->value,
+    ];
+  }
+
   public function updateStatus(Request $request, Order $order)
   {
     if (!$this->ownerCanAccessOrder($request->user(), $order)) {
@@ -580,6 +597,26 @@ class FrontdeskController extends Controller
       ? OrderStatusEnum::ACCOUNT_RECEIPT->value
       : $status;
     $isEsrProcessOrder = in_array($order->status, $this->esrProcessStatusOrder(), true);
+
+    if (
+      $isEsrProcessOrder &&
+      $this->isOwnerRestricted($request->user()) &&
+      !in_array($finalStatus, $this->ownerAllowedEsrProcessStatuses(), true)
+    ) {
+      return response()->json([
+        'message' => 'Owners can only move ESR orders to Dealer Request, Follow Up Projects, or Review.',
+      ], 422);
+    }
+
+    if (
+      $isEsrProcessOrder &&
+      $this->isOwnerAdminRestricted($request->user()) &&
+      !in_array($finalStatus, $this->ownerAdminAllowedEsrProcessStatuses(), true)
+    ) {
+      return response()->json([
+        'message' => 'Owner admins can only move ESR orders to Dealer Request, Follow Up Projects, Review, or Account Receipt.',
+      ], 422);
+    }
 
     if ($isEsrProcessOrder && $finalStatus === OrderStatusEnum::PLANNED->value) {
       return response()->json([
@@ -1699,6 +1736,19 @@ public function showQuantifiedModal(Order $order)
           RoleEnum::ADMIN->value,
           RoleEnum::ACCOUNT_MANAGER->value,
           RoleEnum::OWNER_ADMIN->value,
+          RoleEnum::FRONTDESK_ADMIN->value,
+      ]);
+  }
+
+  private function isOwnerAdminRestricted(?User $user): bool
+  {
+      if (!$user) {
+          return false;
+      }
+
+      return $user->hasRole(RoleEnum::OWNER_ADMIN->value) && !$user->hasAnyRole([
+          RoleEnum::ADMIN->value,
+          RoleEnum::ACCOUNT_MANAGER->value,
           RoleEnum::FRONTDESK_ADMIN->value,
       ]);
   }

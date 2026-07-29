@@ -5,7 +5,9 @@ import Flatpickr from 'react-flatpickr'
 import 'flatpickr/dist/flatpickr.css'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout'
 import HistoryTimeline from './HistoryTimeline'
-import { type PageProps, type ServiceControl, type ServiceControlOrderSummary } from '@/types'
+import DeleteIcon from '@/Components/Icons/DeleteIcon'
+import ExportIcon from '@/Components/Icons/ExportIcon'
+import { type Attachment, type PageProps, type ServiceControl, type ServiceControlOrderSummary } from '@/types'
 
 type PartyOption = {
   value: string
@@ -82,6 +84,7 @@ export type ServiceControlFormData = {
   external_owner_id?: number | string | null
   external_owner_name?: string
   external_owner_email?: string
+  attachments: File[]
 }
 
 type Props = PageProps & {
@@ -199,6 +202,9 @@ export default function ServiceControlForm ({
   const [selectedClientLabel, setSelectedClientLabel] = useState(
     order.client?.id ? `${order.client.name ?? 'Client'} - ${order.client.phone ?? order.client.email ?? 'No contact'}` : ''
   )
+  const [attachmentsList, setAttachmentsList] = useState<Attachment[]>(serviceControl?.attachments ?? [])
+  const [isUploadingAttachments, setIsUploadingAttachments] = useState(false)
+  const [attachmentUploadError, setAttachmentUploadError] = useState('')
   const selectedStandaloneClientOption = isStandalone && data.client_id && selectedClientLabel
     ? {
         value: `client:${data.client_id}:client`,
@@ -369,6 +375,10 @@ export default function ServiceControlForm ({
     setLocalAssignee(selectedAssignee)
   }, [selectedAssignee?.value])
 
+  useEffect(() => {
+    setAttachmentsList(serviceControl?.attachments ?? [])
+  }, [serviceControl?.attachments])
+
   const applyParty = (prefix: 'requester' | 'assignee', option: PartyOption | null) => {
     const [type = '', id = '', role = ''] = option?.value?.split(':') ?? []
 
@@ -388,6 +398,103 @@ export default function ServiceControlForm ({
       assignee_id: id,
       assignee_role: role,
     }))
+  }
+
+  const handleAttachmentChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = Array.from(event.currentTarget.files ?? [])
+    event.currentTarget.value = ''
+
+    if (selectedFiles.length === 0) {
+      return
+    }
+
+    setAttachmentUploadError('')
+
+    if (mode === 'create') {
+      setData((currentData) => ({
+        ...currentData,
+        attachments: [...(currentData.attachments ?? []), ...selectedFiles],
+      }))
+      return
+    }
+
+    if (!currentRecord?.id) {
+      setAttachmentUploadError('Save the service before uploading attachments.')
+      return
+    }
+
+    if (isUploadingAttachments) {
+      return
+    }
+
+    setIsUploadingAttachments(true)
+
+    try {
+      const formData = new FormData()
+      selectedFiles.forEach((file) => { formData.append('attachments[]', file) })
+
+      const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? ''
+      const response = await fetch(route('service-control.attachments.store', currentRecord.id), {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'X-CSRF-TOKEN': token,
+        },
+        body: formData,
+      })
+
+      const payload = await response.json().catch(() => null)
+      if (!response.ok) {
+        if (response.status === 422 && payload?.errors) {
+          const messages = Object.values(payload.errors as Record<string, string[]>).flat()
+          throw new Error(String(messages[0] ?? 'Unable to upload attachments.'))
+        }
+
+        throw new Error(String(payload?.message ?? 'Unable to upload attachments.'))
+      }
+
+      setAttachmentsList(Array.isArray(payload?.attachments) ? payload.attachments as Attachment[] : [])
+    } catch (error: any) {
+      setAttachmentUploadError(error?.message ?? 'Unable to upload attachments.')
+    } finally {
+      setIsUploadingAttachments(false)
+    }
+  }
+
+  const removePendingAttachment = (index: number) => {
+    setData((currentData) => ({
+      ...currentData,
+      attachments: (currentData.attachments ?? []).filter((_, itemIndex) => itemIndex !== index),
+    }))
+  }
+
+  const deleteAttachment = async (attachmentId: number) => {
+    if (!currentRecord?.id || !window.confirm('Are you sure you want to delete this attachment?')) {
+      return
+    }
+
+    try {
+      const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? ''
+      const response = await fetch(route('service-control.attachments.destroy', {
+        serviceControl: currentRecord.id,
+        attachment: attachmentId,
+      }), {
+        method: 'DELETE',
+        headers: {
+          Accept: 'application/json',
+          'X-CSRF-TOKEN': token,
+        },
+      })
+
+      const payload = await response.json().catch(() => null)
+      if (!response.ok) {
+        throw new Error(String(payload?.message ?? 'Unable to delete attachment.'))
+      }
+
+      setAttachmentsList(Array.isArray(payload?.attachments) ? payload.attachments as Attachment[] : [])
+    } catch (error: any) {
+      setAttachmentUploadError(error?.message ?? 'Unable to delete attachment.')
+    }
   }
 
   return (
@@ -675,7 +782,7 @@ export default function ServiceControlForm ({
                     <FieldError message={errors.cost} />
                   </div>
                   {dateField('service_created_date', 'Reception Date')}
-                  {dateField('service_id_requested_date', 'Put Into Production Date')}
+                  {dateField('service_id_requested_date', 'Processing Date')}
                   {dateField('eta_date', 'ETA Date')}
                   {dateField('parts_received_date', 'Production Output Date')}
                   {dateField('scheduled_date', 'Scheduled Date')}
@@ -709,6 +816,83 @@ export default function ServiceControlForm ({
                 </div>
               </>
             )}
+
+          <div className="rounded-xl border border-slate-200 p-4">
+            <div className="grid gap-4">
+              <div>
+                <label htmlFor="service_control_attachments" className="text-sm font-semibold text-slate-700">Attachments</label>
+                {!isReadOnly && (
+                  <input
+                    id="service_control_attachments"
+                    name="attachments"
+                    type="file"
+                    accept="*"
+                    multiple
+                    className="form-input mt-1 file:py-2 file:px-4 file:border-0 file:font-semibold p-0 file:bg-primary/90 ltr:file:mr-5 rtl:file:ml-5 file:text-white file:hover:bg-primary"
+                    disabled={isUploadingAttachments}
+                    onChange={(event) => { void handleAttachmentChange(event) }}
+                  />
+                )}
+                {isUploadingAttachments && (
+                  <p className="mt-2 text-xs text-primary">Uploading attachments...</p>
+                )}
+                {attachmentUploadError !== '' && (
+                  <FieldError message={attachmentUploadError} />
+                )}
+                <FieldError message={errors.attachments} />
+              </div>
+
+              {mode === 'create' && data.attachments.length > 0 && (
+                <div className="rounded-md border border-[#e0e6ed] bg-[#f8fafc] px-4 py-3 text-sm text-[#0e1726] dark:border-[#1b2e4b] dark:bg-[#0e1726] dark:text-[#ebedf2]">
+                  <p className="font-semibold">Selected files</p>
+                  <ul className="mt-2 space-y-1">
+                    {data.attachments.map((file, index) => (
+                      <li key={`${file.name}-${index}`} className="flex items-center justify-between gap-3">
+                        <span>{file.name}</span>
+                        <button type="button" className="text-xs font-semibold text-rose-600 hover:text-rose-700" onClick={() => { removePendingAttachment(index) }}>
+                          Remove
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {attachmentsList.length > 0 && (
+                <div className="overflow-hidden rounded-md border border-[#e0e6ed] dark:border-[#1b2e4b]">
+                  <table className="w-full whitespace-nowrap">
+                    <thead>
+                      <tr>
+                        <th className="border-b px-4 py-2 text-left">File</th>
+                        <th className="border-b px-4 py-2 text-left">Uploaded By</th>
+                        <th className="border-b px-4 py-2 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {attachmentsList.map((attachment) => (
+                        <tr key={attachment.id} className="border-b border-[#e0e6ed] last:border-b-0 dark:border-[#1b2e4b]">
+                          <td className="px-4 py-2.5">{attachment.filename}</td>
+                          <td className="px-4 py-2.5">{attachment.uploaded_by ?? 'Unknown'}</td>
+                          <td className="px-4 py-2.5 text-right">
+                            <div className="flex justify-end gap-2">
+                              <a href={route('download.file', { id: attachment.id })} target="_blank" rel="noreferrer" title="Open Attachment">
+                                <ExportIcon />
+                              </a>
+                              {!isReadOnly && (
+                                <button type="button" title="Delete Attachment" onClick={() => { void deleteAttachment(attachment.id) }}>
+                                  <DeleteIcon />
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
 
           {!isReadOnly && (
             <div className="flex justify-end">

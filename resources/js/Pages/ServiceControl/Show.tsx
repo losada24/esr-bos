@@ -78,6 +78,7 @@ export default function Show ({
     bm_pickup_date: serviceControl.bm_pickup_date ?? '',
     bm_invoice_number: serviceControl.bm_invoice_number ?? '',
     bm_invoice_status: serviceControl.bm_invoice_status ?? '',
+    attachments: [],
   })
 
   return (

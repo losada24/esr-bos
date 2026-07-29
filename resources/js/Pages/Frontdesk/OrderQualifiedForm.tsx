@@ -668,6 +668,20 @@ const OrderQualifiedForm = ({
       })
     }
   }
+  const appendPendingAttachments = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = Array.from(event.currentTarget.files ?? [])
+    event.currentTarget.value = ''
+
+    if (selectedFiles.length === 0) {
+      return
+    }
+
+    const pendingFiles = Array.isArray(values.attachments)
+      ? values.attachments.filter((attachment): attachment is File => attachment instanceof File)
+      : []
+
+    setFieldValue('attachments', [...pendingFiles, ...selectedFiles])
+  }
   const selectedStatus: SingleValue<OptionType> = {
     value: values.status ?? '',
     label: status.find((status) => status === values.status) ?? ''
@@ -1903,7 +1917,7 @@ const OrderQualifiedForm = ({
                   multiple
                   className="form-input"
                   onChange={(event) => {
-                    setFieldValue('attachments', Array.from(event.currentTarget.files ?? []))
+                    appendPendingAttachments(event)
                   }}
                 />
                 {(submitCount && typeof errors.attachments === 'string')
@@ -2256,7 +2270,7 @@ const OrderQualifiedForm = ({
                     multiple
                     className="form-input"
                     onChange={(event) => {
-                      setFieldValue('attachments', Array.from(event.currentTarget.files ?? []))
+                      appendPendingAttachments(event)
                     }}
                   />
                   {(submitCount && typeof errors.attachments === 'string')
