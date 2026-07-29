@@ -1,1 +1,0 @@
-import{j as i}from"./app-ffba534e.js";function s({className:e="",disabled:t,children:n,...r}){return i.jsx("button",{...r,className:`inline-flex items-center uppercase tracking-widest transition ease-in-out duration-150 ${t===!0&&"opacity-25"} `+e,disabled:t,children:n})}export{s as P};
