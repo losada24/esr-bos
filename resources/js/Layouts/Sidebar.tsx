@@ -177,6 +177,14 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                 </NavLink>
                             </li>
                             <li className="menu nav-item">
+                                <NavLink href={route('commercial.index')} active={route().current('commercial.index')} className="group">
+                                    <div className="flex items-center">
+                                        <CodeIcon />
+                                        <SidebarLinkLabel>Commercial Pipeline</SidebarLinkLabel>
+                                    </div>
+                                </NavLink>
+                            </li>
+                            <li className="menu nav-item">
                                 <NavLink href={route('sales.calendar')} active={route().current('sales.calendar')} className="group">
                                     <div className="flex items-center">
                                         <CalendarIcon />
