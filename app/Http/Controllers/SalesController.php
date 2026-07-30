@@ -49,6 +49,8 @@ class SalesController extends Controller
 {
     use OrderEmails, Snapshot;
     private const SALES_PAGE_SIZE = 20;
+    private const BOARD_SALES = 'sales';
+    private const BOARD_COMMERCIAL = 'commercial';
 
     private function orderClientEmailDeliveryLogger(): OrderClientEmailDeliveryLogger
     {
@@ -56,6 +58,16 @@ class SalesController extends Controller
     }
 
   public function index(Request $request)
+  {
+    return $this->renderBoard($request, self::BOARD_SALES);
+  }
+
+  public function commercialIndex(Request $request)
+  {
+    return $this->renderBoard($request, self::BOARD_COMMERCIAL);
+  }
+
+  private function renderBoard(Request $request, string $board)
   {
         $user = auth()->user();
         $sort = OrderPipelineSort::resolveFromRequest($request);
@@ -70,7 +82,7 @@ class SalesController extends Controller
         $filterMatch = (string) ($filters['filter_match'] ?? 'and');
         $hasMultiFilters = count($filterRows) > 0;
 
-    $salesStatuses = $this->salesStatuses();
+    $salesStatuses = $this->salesStatusesForBoard($board);
     $ownerVisibleStatuses = $this->ownerVisibleSalesStatuses();
     $visibleStatuses = $salesStatuses;
     $paginatedStatuses = $this->paginatedSalesStatuses();
@@ -101,11 +113,9 @@ class SalesController extends Controller
             ContactSourceEnum::COSTCO->value,
     ];
 
-    $order_types = [
-      OrderTypeEnum::RESIDENTIAL->value,
-      OrderTypeEnum::COMMERCIAL->value,
-      OrderTypeEnum::SUPPLY->value,
-    ];
+    $order_types = $board === self::BOARD_COMMERCIAL
+      ? [OrderTypeEnum::COMMERCIAL->value]
+      : [OrderTypeEnum::RESIDENTIAL->value, OrderTypeEnum::SUPPLY->value];
     if ($this->isOwnerRestricted($user)) {
         $visibleStatuses = $ownerVisibleStatuses;
     }
@@ -113,8 +123,8 @@ class SalesController extends Controller
     $useEsrAmounts = OrderBoardFilter::hasEsrProductLineFilter($filters);
 
     // Armar el arreglo que espera el componente React
-    $data = collect($visibleStatuses)->map(function ($status) use ($user, $paginatedStatuses, $filters, $filterRows, $filterMatch, $hasMultiFilters, $sort, $useEsrAmounts) {
-        $ordersQuery = $this->salesOrdersForStatusQuery($status, $user);
+    $data = collect($visibleStatuses)->map(function ($status) use ($user, $paginatedStatuses, $filters, $filterRows, $filterMatch, $hasMultiFilters, $sort, $useEsrAmounts, $board) {
+        $ordersQuery = $this->salesOrdersForStatusQuery($status, $user, $board);
         $ordersQuery = $hasMultiFilters
             ? OrderBoardFilter::applyMultiple($ordersQuery, $filterRows, $filterMatch)
             : OrderBoardFilter::apply($ordersQuery, $filters);
@@ -192,6 +202,9 @@ class SalesController extends Controller
       'tags' => $tags,
       'filters' => $filters,
       'sort' => $sort,
+      'pageTitle' => $board === self::BOARD_COMMERCIAL ? 'Commercial' : 'Sales',
+      'indexRouteName' => $board === self::BOARD_COMMERCIAL ? 'commercial.index' : 'sales.index',
+      'tasksRouteName' => $board === self::BOARD_COMMERCIAL ? 'commercial.tasks' : 'sales.tasks',
       'methods_of_payment' => array_values(array_filter(
         array_map(fn (MethodOfPayment $method) => $method->value, MethodOfPayment::cases()),
         fn (string $method) => !in_array($method, [
@@ -207,6 +220,16 @@ class SalesController extends Controller
 
   public function tasks(Request $request): JsonResponse
   {
+    return $this->boardTasks($request, self::BOARD_SALES);
+  }
+
+  public function commercialTasks(Request $request): JsonResponse
+  {
+    return $this->boardTasks($request, self::BOARD_COMMERCIAL);
+  }
+
+  private function boardTasks(Request $request, string $board): JsonResponse
+  {
     $user = auth()->user();
     $sort = OrderPipelineSort::resolveFromRequest($request);
     $status = (string) $request->query('status', '');
@@ -214,7 +237,7 @@ class SalesController extends Controller
     $perPage = (int) $request->query('per_page', self::SALES_PAGE_SIZE);
     $perPage = max(1, min(100, $perPage));
 
-    $allowedStatuses = $this->salesStatuses();
+    $allowedStatuses = $this->salesStatusesForBoard($board);
     if ($this->isOwnerRestricted($user)) {
       $allowedStatuses = $this->ownerVisibleSalesStatuses();
     }
@@ -241,7 +264,7 @@ class SalesController extends Controller
     $filterRows = is_array($filters['filters']) ? $filters['filters'] : [];
     $filterMatch = (string) ($filters['filter_match'] ?? 'and');
     $hasMultiFilters = count($filterRows) > 0;
-    $ordersQuery = $this->salesOrdersForStatusQuery($status, $user);
+    $ordersQuery = $this->salesOrdersForStatusQuery($status, $user, $board);
     $ordersQuery = $hasMultiFilters
         ? OrderBoardFilter::applyMultiple($ordersQuery, $filterRows, $filterMatch)
         : OrderBoardFilter::apply($ordersQuery, $filters);
@@ -303,7 +326,7 @@ class SalesController extends Controller
     ];
   }
 
-  private function salesOrdersForStatusQuery(string $status, ?User $user): Builder
+  private function salesOrdersForStatusQuery(string $status, ?User $user, string $board = self::BOARD_SALES): Builder
   {
     $query = Order::query();
 
@@ -326,7 +349,22 @@ class SalesController extends Controller
       $query->accessibleToOwner($user);
     }
 
+    $this->applyBoardOrderTypeFilter($query, $board);
+
     return $query;
+  }
+
+  private function applyBoardOrderTypeFilter(Builder $query, string $board): void
+  {
+    if ($board === self::BOARD_COMMERCIAL) {
+      $query->where('orders.order_type', OrderTypeEnum::COMMERCIAL->value);
+      return;
+    }
+
+    $query->where(function (Builder $query) {
+      $query->whereNull('orders.order_type')
+        ->orWhere('orders.order_type', '!=', OrderTypeEnum::COMMERCIAL->value);
+    });
   }
 
   private function contractSignedPipelineStatus(Order $order, bool $pendingFinancingOrDeposit, bool $pendingHoaApproval): string
@@ -600,6 +638,18 @@ class SalesController extends Controller
       OrderStatusEnum::CONTRACT_SIGNED_BY_CLIENT->value,
       OrderStatusEnum::LOST_CONTRACT->value,
     ];
+  }
+
+  private function salesStatusesForBoard(string $board): array
+  {
+    $hiddenStatus = $board === self::BOARD_COMMERCIAL
+      ? OrderStatusEnum::PENDING_ASSIGNMENT->value
+      : OrderStatusEnum::COMMERCIAL_ASSIGNMENT->value;
+
+    return array_values(array_filter(
+      $this->salesStatuses(),
+      fn (string $status) => $status !== $hiddenStatus
+    ));
   }
 
   private function ownerVisibleSalesStatuses(): array

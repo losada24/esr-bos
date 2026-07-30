@@ -305,7 +305,7 @@ const getEstimateStaleClass = (pipeline: Pipelines, task: Tasks): string | null 
 const normalizeStatusValue = (value: string): string => value.replace(/\s+/g, ' ').trim().toUpperCase()
 const matchesStatus = (value: string, target: string): boolean => normalizeStatusValue(value) === normalizeStatusValue(target)
 
-export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order_types, product_lines, statuses, owners, supervisors, created_by_users, tags, filters, sort, methods_of_payment, type_of_financing, payment_schedule_templates }: PageProps & { data: Pipelines[], lossReasonFrontdesk: string [], sources: string[], order_types: string[], product_lines: string[], statuses: string[], owners: OwnerOption[], supervisors: IdOption[], created_by_users: IdOption[], tags: TagOption[], filters: BoardFilters, sort: { sort_by?: string, sort_dir?: string }, methods_of_payment: string[], type_of_financing: string[], payment_schedule_templates: PaymentScheduleTemplates }) {
+export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order_types, product_lines, statuses, owners, supervisors, created_by_users, tags, filters, sort, pageTitle = 'Sales', indexRouteName = 'sales.index', tasksRouteName = 'sales.tasks', methods_of_payment, type_of_financing, payment_schedule_templates }: PageProps & { data: Pipelines[], lossReasonFrontdesk: string [], sources: string[], order_types: string[], product_lines: string[], statuses: string[], owners: OwnerOption[], supervisors: IdOption[], created_by_users: IdOption[], tags: TagOption[], filters: BoardFilters, sort: { sort_by?: string, sort_dir?: string }, pageTitle?: string, indexRouteName?: string, tasksRouteName?: string, methods_of_payment: string[], type_of_financing: string[], payment_schedule_templates: PaymentScheduleTemplates }) {
   const roleNames = auth.user.roles.map((role: Role) => role.name)
   const IS_ADMIN = isAdmin(roleNames)
   const IS_OWNER_ADMIN = isOwnerAdmin(roleNames)
@@ -443,8 +443,8 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
     if (!storedSort) return
     if (storedSort.sort_by === sortState.sort_by && storedSort.sort_dir === sortState.sort_dir) return
 
-    router.get(route('sales.index'), { ...filterQueryParams, ...storedSort }, { replace: true, preserveState: true, preserveScroll: true })
-  }, [filterQueryParams, hasSortInUrl, sortState.sort_by, sortState.sort_dir])
+    router.get(route(indexRouteName), { ...filterQueryParams, ...storedSort }, { replace: true, preserveState: true, preserveScroll: true })
+  }, [filterQueryParams, hasSortInUrl, indexRouteName, sortState.sort_by, sortState.sort_dir])
 
   useEffect(() => {
     if (!sortHydratedRef.current) return
@@ -452,12 +452,12 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
   }, [sortState.sort_by, sortState.sort_dir])
 
   const applySort = useCallback((nextSortBy: PipelineSortBy, nextSortDir: PipelineSortDir) => {
-    router.get(route('sales.index'), { ...filterQueryParams, sort_by: nextSortBy, sort_dir: nextSortDir }, {
+    router.get(route(indexRouteName), { ...filterQueryParams, sort_by: nextSortBy, sort_dir: nextSortDir }, {
       replace: true,
       preserveState: true,
       preserveScroll: true
     })
-  }, [filterQueryParams])
+  }, [filterQueryParams, indexRouteName])
 
   const ownerOptions = owners ?? []
   const paymentMethods = methods_of_payment ?? []
@@ -592,7 +592,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
     }))
 
     try {
-      const response = await fetch(route('sales.tasks', { status: statusKey, page: nextPage, per_page: TASKS_PAGE_SIZE, ...filterQueryParams, ...sortQueryParams }), {
+      const response = await fetch(route(tasksRouteName, { status: statusKey, page: nextPage, per_page: TASKS_PAGE_SIZE, ...filterQueryParams, ...sortQueryParams }), {
         headers: { Accept: 'application/json' }
       })
 
@@ -649,7 +649,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
         }
       }))
     }
-  }, [setProjectList, setStatusPagination, filterQueryParams, sortQueryParams])
+  }, [setProjectList, setStatusPagination, filterQueryParams, sortQueryParams, tasksRouteName])
 
   const closeScheduleModal = (restoreTask = false) => {
     if (restoreTask && pendingMove) {
@@ -1287,7 +1287,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
         </div>
       }
     >
-      <Head title="Sales" />
+      <Head title={pageTitle} />
       {isFilterOpen && (
         <div
           className="fixed inset-0 z-40 bg-black/40"
@@ -1317,11 +1317,11 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
               ...sortQueryParams,
               ...(Array.isArray(params.filters) ? { filters: JSON.stringify(params.filters) } : {})
             }
-            router.get(route('sales.index'), payload, { replace: true, preserveState: true })
+            router.get(route(indexRouteName), payload, { replace: true, preserveState: true })
             setIsFilterOpen(false)
           }}
             onReset={() => {
-              router.get(route('sales.index'), sortQueryParams, { replace: true, preserveState: false })
+              router.get(route(indexRouteName), sortQueryParams, { replace: true, preserveState: false })
               setIsFilterOpen(false)
             }}
           />
