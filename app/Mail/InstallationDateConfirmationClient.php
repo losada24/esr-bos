@@ -3,6 +3,7 @@
 namespace App\Mail;
 
 use App\Models\Order;
+use App\Models\OrderPhase;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
@@ -23,6 +24,7 @@ class InstallationDateConfirmationClient extends Mailable implements ShouldQueue
       //protected bool $displaySummary = false,
       protected bool $clientAttachments = false,
       protected array $selectedOrderAttachmentIds = [],
+      protected ?OrderPhase $phase = null,
       //protected bool $installationAttachments = false
     ){}
 
@@ -46,6 +48,7 @@ class InstallationDateConfirmationClient extends Mailable implements ShouldQueue
             view: 'emails.installation-date-confirmation-client',
             with: [
               'order' => $this->order,
+              'phase' => $this->phase,
               //'displaySummary' => $this->displaySummary,
             ]
         );

@@ -105,7 +105,7 @@ trait OrderStatus {
     return $color;
   }
 
-  public function createEvent($order_id, $title, $tooltip, $start, $end, $color, $type_of_event, $hide_on_weekends = false) {
+  public function createEvent($order_id, $title, $tooltip, $start, $end, $color, $type_of_event, $hide_on_weekends = false, array $extra = []) {
     return [
       'order_id' => $order_id,
       'title' => $title,
@@ -114,7 +114,7 @@ trait OrderStatus {
       'end' => $end,
       'color' => $color,
       'type_of_event' => $type_of_event,
-    ];
+    ] + $extra;
   }
 
   public function getEventPopover($status, $service, $isInstallationEvent = false) {

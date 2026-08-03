@@ -50,7 +50,7 @@ interface DropdownOption {
   value: string
 }
 
-export type OrderFormValues = Omit<Order, 'installation_date' | 'delivery_date' | 'payment_factory_date' | 'contract_signing_date' | 'eta_date' | 'installation_end_date' | 'entry_date' | 'frame_color' | 'attachments'> & {
+export type OrderFormValues = Omit<Order, 'installation_date' | 'delivery_date' | 'payment_factory_date' | 'contract_signing_date' | 'eta_date' | 'installation_end_date' | 'entry_date' | 'frame_color' | 'attachments' | 'phases'> & {
   client_name: string
   last_name: string
   phone: string
@@ -84,11 +84,36 @@ export type OrderFormValues = Omit<Order, 'installation_date' | 'delivery_date' 
   change_order_note?: string
   attachment_role_targets?: Record<string, number[]>
   parent_order_id?: number | null
+  install_by_phases?: boolean
+  phases?: Array<{
+    id?: number
+    position: number
+    name: string
+    status: string
+    delivery_date?: Date | string | null
+    installation_date?: Date | string | null
+    installation_end_date?: Date | string | null
+    inspection_date?: Date | string | null
+    finish_date?: Date | string | null
+    service_date?: Date | string | null
+    pending_collect?: Date | string | null
+    final_inspection_date?: Date | string | null
+    complete_date?: Date | string | null
+    supervisor_id?: number | { value: number, label: string } | null
+    installation_teams?: any[]
+    products?: Array<{ order_product_id?: number, product_index?: number, qty: number }>
+    phase_products?: Array<{ order_product_id: number, qty: number }>
+    replanned_reasons?: string[] | null
+    notes?: string | null
+    logs?: any[]
+  }>
 }
 
 export const orderFormObj: OrderFormValues = {
   id: 0,
   parent_order_id: null,
+  install_by_phases: false,
+  phases: [],
   last_name: '',
   client_name: '',
   phone: '',
@@ -198,6 +223,7 @@ export const loadOrderFormObj = (order: Order): OrderFormValues => {
   return {
     id: order.id,
     parent_order_id: order.parent_order_id ?? null,
+    install_by_phases: Boolean(order.install_by_phases ?? false),
     client: order.client,
     last_name: order.client?.last_name ?? '',
     client_name: order.client?.name ?? '',
@@ -271,6 +297,31 @@ export const loadOrderFormObj = (order: Order): OrderFormValues => {
     change_order_enabled: Boolean(order.change_order_payment),
     change_order_amount: order.change_order_payment?.amount ?? null,
     change_order_note: order.change_order_payment?.note ?? '',
+    phases: (order.phases ?? []).map((phase: any, index: number) => ({
+      id: phase.id,
+      position: phase.position ?? index + 1,
+      name: phase.name ?? `Phase ${index + 1}`,
+      status: phase.status ?? order.status ?? 'PLANNED',
+      delivery_date: phase.delivery_date ?? null,
+      installation_date: phase.installation_date ?? null,
+      installation_end_date: phase.installation_end_date ?? null,
+      inspection_date: phase.inspection_date ?? null,
+      finish_date: phase.finish_date ?? null,
+      service_date: phase.service_date ?? null,
+      pending_collect: phase.pending_collect ?? null,
+      final_inspection_date: phase.final_inspection_date ?? null,
+      complete_date: phase.complete_date ?? null,
+      supervisor_id: phase.supervisor_id ?? order.supervisor_id ?? null,
+      installation_teams: phase.installation_teams ?? [],
+      products: (phase.phase_products ?? []).map((product: any) => ({
+        order_product_id: product.order_product_id,
+        qty: Number(product.qty ?? 0)
+      })),
+      phase_products: phase.phase_products ?? [],
+      replanned_reasons: phase.replanned_reasons ?? [],
+      notes: phase.notes ?? '',
+      logs: phase.logs ?? []
+    })),
     attachment_role_targets: {
       supervisor: getAttachmentRoleTargetIds('supervisor'),
       service_manager: getAttachmentRoleTargetIds('service_manager'),

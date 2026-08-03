@@ -78,6 +78,28 @@ export default function Create ({
     service: defaultService ?? orderFormObj.service
   }
   const resolvedTitle = pageTitle ?? 'Create Order'
+  const dateOnly = (value: unknown) => value ? String(value).slice(0, 10) : null
+  const normalizePhasePayload = (phases: any[] = []) => phases.map((phase, index) => ({
+    ...phase,
+    position: index + 1,
+    status: typeof phase.status === 'string' ? phase.status : phase.status?.value,
+    delivery_date: dateOnly(phase.delivery_date),
+    installation_date: dateOnly(phase.installation_date),
+    installation_end_date: dateOnly(phase.installation_end_date),
+    inspection_date: dateOnly(phase.inspection_date),
+    finish_date: dateOnly(phase.finish_date),
+    service_date: dateOnly(phase.service_date),
+    pending_collect: dateOnly(phase.pending_collect),
+    final_inspection_date: dateOnly(phase.final_inspection_date),
+    complete_date: dateOnly(phase.complete_date),
+    supervisor_id: typeof phase.supervisor_id === 'object' ? phase.supervisor_id?.value : phase.supervisor_id,
+    installation_teams: (phase.installation_teams ?? []).map((team: any) => Number(team.value ?? team.id ?? team)),
+    products: (phase.products ?? []).map((product: any) => ({
+      order_product_id: product.order_product_id,
+      product_index: product.product_index,
+      qty: Number(product.qty ?? 0)
+    })).filter((product: any) => product.qty > 0)
+  }))
   // console.log('Initial values:', initialValues)
   const handleSubmit = async (values: any, helpers: FormikHelpers<OrderFormValues>) => {
     const isInstallationService = values.service === SERVICES.DELIVERY_AND_INSTALLATION
@@ -118,6 +140,8 @@ export default function Create ({
         : null,
       down_payment: isCashAndFinanced ? values.down_payment : null,
       do_not_send_email: values.client_email_selection === '__NONE__',
+      install_by_phases: Boolean(values.install_by_phases),
+      phases: Boolean(values.install_by_phases) ? normalizePhasePayload(values.phases ?? []) : [],
       payment_schedule_type: resolvedPaymentScheduleType,
       custom_schedule: requiresSchedule && resolvedPaymentScheduleType === 'CUSTOMIZED'
         ? (values.custom_schedule ?? [])

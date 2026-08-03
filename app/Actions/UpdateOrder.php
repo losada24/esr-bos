@@ -22,6 +22,7 @@ use App\Support\OrderOwnerChangeNotifier;
 use App\Support\OrderPaymentInformationAuditLogger;
 use App\Support\Commissions\CommissionCalculator;
 use App\Support\Orders\OrderSplitResolver;
+use App\Support\Orders\OrderPhaseManager;
 use App\Support\PaymentScheduleCalculator;
 use App\Support\PaymentScheduleTemplates;
 use App\Traits\ComissionSupervisor;
@@ -55,7 +56,8 @@ class UpdateOrder
     protected OrderClientEmailManager $orderClientEmailManager,
     protected OrderClientEmailDeliveryLogger $orderClientEmailDeliveryLogger,
     protected CommissionCalculator $commissionCalculator,
-    protected OrderSplitResolver $orderSplitResolver
+    protected OrderSplitResolver $orderSplitResolver,
+    protected OrderPhaseManager $orderPhaseManager
   ) {
   }
 
@@ -220,6 +222,7 @@ class UpdateOrder
         'parent_order_id' => $splitFields['parent_order_id'],
         'root_order_id' => $splitFields['root_order_id'],
         'counts_for_owner_commission' => $splitFields['counts_for_owner_commission'],
+        'install_by_phases' => $request->boolean('install_by_phases'),
         'user_id' => auth()->user()->id,
         'name' => $request->name,
         'job_address' => $request->job_address,
@@ -607,9 +610,15 @@ class UpdateOrder
           $this->snapshotInstallationTeams($order)
         );
       }
+      $oldProductIdsByIndex = collect($request->orderProducts ?? [])
+        ->map(fn ($product) => isset($product['id']) ? (int) $product['id'] : null)
+        ->all();
+      $newProductIdsByOldId = [];
+      $newProductIdsByIndex = [];
+
       $order->orderProducts()->delete();
       $orderProductsPayload = $request->orderProducts ?? [];
-      foreach ($orderProductsPayload as $product) {
+      foreach ($orderProductsPayload as $index => $product) {
         $typeOfWorkId = $product['type_of_work_id'] ?? null;
         if ($typeOfWorkId === 0 || $typeOfWorkId === '0' || $typeOfWorkId === '') {
           $typeOfWorkId = null;
@@ -636,6 +645,12 @@ class UpdateOrder
           'new_price_storefront' => $product['new_price_storefront'],
         ]);
 
+        $newProductIdsByIndex[$index] = $orderProduct->id;
+        $oldProductId = $oldProductIdsByIndex[$index] ?? null;
+        if ($oldProductId) {
+          $newProductIdsByOldId[(int) $oldProductId] = $orderProduct->id;
+        }
+
         $extraWorks = [];
         $product_extra_works = $product['extra_works'] ?? [];
 
@@ -648,6 +663,9 @@ class UpdateOrder
 
         $orderProduct->orderProductExtraWorks()->attach($extraWorks);
       }
+
+      $this->remapPhaseProductIds($request, $newProductIdsByOldId, $newProductIdsByIndex);
+      $this->orderPhaseManager->syncFromRequest($order->fresh(['installationTeams', 'orderProducts']), $request);
 
       DB::commit();
       if ($sendEmail || $order->is_send_email == 0) {
@@ -669,7 +687,9 @@ class UpdateOrder
           event(new OrderStatusChanged($order, $status));
         }
         
-        $this->sendEmail($order);
+        if (! $order->fresh()->install_by_phases) {
+          $this->sendEmail($order);
+        }
         $order->update([
           'is_send_email' => true,
         ]);
@@ -826,7 +846,9 @@ class UpdateOrder
         event(new OrderStatusChanged($order, $request->status));
       }
 
-      $this->sendEmail($order);
+      if (! $order->fresh()->install_by_phases) {
+        $this->sendEmail($order);
+      }
       //$this->whatsapp($order);
     }  else if (($installationTeamsChanged || $supervisorChanged) && $request->status== OrderStatusEnum::CONFIRMED->value) {
       $originalDoNotSendEmail = $order->do_not_send_email;
@@ -888,6 +910,38 @@ class UpdateOrder
     $normalized = array_values(array_unique($normalized));
 
     return $normalized === [] ? null : $normalized;
+  }
+
+  private function remapPhaseProductIds(Request $request, array $newProductIdsByOldId, array $newProductIdsByIndex): void
+  {
+    $phases = $request->input('phases', []);
+    if (!is_array($phases)) {
+      return;
+    }
+
+    foreach ($phases as $phaseIndex => $phase) {
+      if (!is_array($phase) || !is_array($phase['products'] ?? null)) {
+        continue;
+      }
+
+      foreach ($phase['products'] as $productIndex => $product) {
+        if (!is_array($product)) {
+          continue;
+        }
+
+        $oldProductId = isset($product['order_product_id']) ? (int) $product['order_product_id'] : 0;
+        $sourceIndex = isset($product['product_index']) ? (int) $product['product_index'] : null;
+        $newProductId = $oldProductId && isset($newProductIdsByOldId[$oldProductId])
+          ? $newProductIdsByOldId[$oldProductId]
+          : ($sourceIndex !== null ? ($newProductIdsByIndex[$sourceIndex] ?? null) : null);
+
+        if ($newProductId) {
+          $phases[$phaseIndex]['products'][$productIndex]['order_product_id'] = $newProductId;
+        }
+      }
+    }
+
+    $request->merge(['phases' => $phases]);
   }
 
   private function resolvePendingCollectDate(Order $order, ?string $status): ?string

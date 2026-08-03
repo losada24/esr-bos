@@ -103,7 +103,7 @@ class OrderController extends Controller
     $filters = $request->only(['text', 'status']);
     $filters['is_supply'] = $request->boolean('is_supply');
 
-    $orders = Order::with(['installationTeams.user'])
+    $orders = Order::with(['installationTeams.user', 'phases'])
         ->whereIn('orders.status', $allowedStatuses)   // <- filtro duro por status permitidos
         ->filter($filters)   // si viene un status fuera de la lista, igual quedará excluido
         ->orderBy('orders.updated_at', 'desc')
@@ -334,6 +334,10 @@ class OrderController extends Controller
       $loadedOrder = $order->load([
         'client.companyContact',
         'installationTeams.user',
+        'phases.installationTeams.user',
+        'phases.phaseProducts.orderProduct.typeOfProduct',
+        'phases.logs.user',
+        'phases.supervisor',
         'orderProducts.productConfig',
         'orderProducts.productCategory',
         'orderProducts.orderProductExtraWorks',
@@ -407,6 +411,10 @@ class OrderController extends Controller
         'changeOrderPayment',
 
         'installationTeams.user',
+        'phases.installationTeams.user',
+        'phases.phaseProducts.orderProduct.typeOfProduct',
+        'phases.logs.user',
+        'phases.supervisor',
       ]);
     $orderData = $loadedOrder->toArray();
     $orderData['attachment_role_targets_by_role'] = $this->attachmentRoleTargetsByRole($loadedOrder);
@@ -683,7 +691,7 @@ class OrderController extends Controller
 
   public function statusOrder($id)
   { // Obtener las órdenes por supervisor
-    $order = Order::find($id);
+    $order = Order::with(['phases.logs.user'])->findOrFail($id);
     $orderStatuses = OrderStatus::where('order_id', $id)
       ->with(['order', 'user'])
       ->get();
@@ -700,6 +708,41 @@ class OrderController extends Controller
             ->format('Y-m-d'),
         ];
       }),
+      'phaseStatuses' => $order->install_by_phases
+        ? $order->phases->sortBy('position')->map(function ($phase) {
+          return [
+            'id' => $phase->id,
+            'name' => $phase->name,
+            'position' => $phase->position,
+            'status' => $phase->status,
+            'logs' => $phase->logs
+              ->reject(fn ($log) => $log->action === 'email_sent')
+              ->sortByDesc('created_at')
+              ->values()
+              ->map(function ($log) {
+              $after = is_array($log->after) ? $log->after : [];
+              $before = is_array($log->before) ? $log->before : [];
+
+              return [
+                ...$log->toArray(),
+                'created_at_formatted' => Carbon::parse($log->created_at)
+                  ->setTimezone('America/New_York')
+                  ->format('Y-m-d'),
+                'delivery_date' => $after['delivery_date'] ?? $before['delivery_date'] ?? null,
+                'installation_date' => $after['installation_date'] ?? $before['installation_date'] ?? null,
+                'installation_end_date' => $after['installation_end_date'] ?? $before['installation_end_date'] ?? null,
+                'inspection_date' => $after['inspection_date'] ?? $before['inspection_date'] ?? null,
+                'finish_date' => $after['finish_date'] ?? $before['finish_date'] ?? null,
+                'service_date' => $after['service_date'] ?? $before['service_date'] ?? null,
+                'pending_collect' => $after['pending_collect'] ?? $before['pending_collect'] ?? null,
+                'final_inspection_date' => $after['final_inspection_date'] ?? $before['final_inspection_date'] ?? null,
+                'complete_date' => $after['complete_date'] ?? $before['complete_date'] ?? null,
+                'replanned_reasons' => $after['replanned_reasons'] ?? $before['replanned_reasons'] ?? null,
+              ];
+            }),
+          ];
+        })->values()
+        : [],
 
 
     ]);

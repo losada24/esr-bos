@@ -1,5 +1,5 @@
 import { type CompanyContact, type Client, type User } from '@/types'
-import { type Attachment } from '@/types/interfaces/order'
+import { type Attachment, type OrderPhase } from '@/types/interfaces/order'
 import { type SaleForm } from '@/types/interfaces/saleForm'
 import * as Yup from 'yup'
 
@@ -166,6 +166,7 @@ export interface Order {
   description?: string
   order_type?: string
   product_line?: string
+  phases?: OrderPhase[]
   bid_due_date?: Date | null
   user: User
   owners?: User[]

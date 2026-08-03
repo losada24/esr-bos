@@ -137,6 +137,12 @@ export default function Index ({ auth, orders, statuses }: IndexOrderProps) {
                         <li><strong>Payment Factory Date:</strong> {order.payment_factory_date?.toString()}</li>
                         <li><strong>Delivery Date:</strong> {order.delivery_date?.toString()}</li>
                         <li><strong>Installation Date:</strong> {order.installation_date?.toString()}</li>
+                        {order.install_by_phases && (
+                          <li>
+                            <strong>Phases:</strong> {order.phases_completed_count ?? 0}/{order.phases_count ?? 0} complete
+                            {order.next_phase ? ` · Next: ${order.next_phase.name} (${order.next_phase.status}) ${order.next_phase.installation_date ?? ''}` : ''}
+                          </li>
+                        )}
                       </ul>
                     </td>
                     <td className="border-t flex items-center px-6 py-4">

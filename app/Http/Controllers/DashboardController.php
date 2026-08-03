@@ -9,8 +9,10 @@ use App\Enum\StatusColorEnum;
 use App\Mail\DeliveryConfirmed;
 use App\Models\InstallationTeam;
 use App\Models\Order;
+use App\Models\OrderPhase;
 use App\Models\OrderStatus as ModelsOrderStatus;
 use App\Models\User;
+use App\Support\Orders\OrderPhaseManager;
 use App\Traits\OrderStatus;
 use App\Traits\Twilio;
 use Illuminate\Http\Request;
@@ -284,6 +286,9 @@ class DashboardController extends Controller
 
     $orders = Order::with([
         'permit',
+        'phases.installationTeams.user',
+        'phases.phaseProducts.orderProduct.typeOfProduct',
+        'phases.supervisor',
         'orderStatus' => fn ($query) => $query
           ->where('status', OrderStatusEnum::ON_HOLD->value)
           ->latest('created_at')
@@ -309,6 +314,16 @@ class DashboardController extends Controller
                   ->whereBetween('created_at', [$previewMonth, $nextMonth]);
               });
             });
+        })->orWhereHas('phases', function ($query) use ($previewMonth, $nextMonth) {
+          $query->whereBetween('delivery_date', [$previewMonth, $nextMonth])
+            ->orWhereBetween('installation_date', [$previewMonth, $nextMonth])
+            ->orWhereBetween('installation_end_date', [$previewMonth, $nextMonth])
+            ->orWhereBetween('inspection_date', [$previewMonth, $nextMonth])
+            ->orWhereBetween('finish_date', [$previewMonth, $nextMonth])
+            ->orWhereBetween('service_date', [$previewMonth, $nextMonth])
+            ->orWhereBetween('pending_collect', [$previewMonth, $nextMonth])
+            ->orWhereBetween('final_inspection_date', [$previewMonth, $nextMonth])
+            ->orWhereBetween('complete_date', [$previewMonth, $nextMonth]);
         });
       });
 
@@ -333,6 +348,93 @@ class DashboardController extends Controller
       // Agrega más según sea necesario
     ];
     foreach ($orders->get() as $order) {
+      if ($order->install_by_phases) {
+        foreach ($order->phases as $phase) {
+          if (!$this->phaseHasAnyCalendarDate($phase)) {
+            continue;
+          }
+
+          if ($user->hasRole(RoleEnum::INSTALLER->value)) {
+            $isAssignedToPhase = $phase->installationTeams
+              ->contains(fn ($team) => (int) ($team->user_id ?? 0) === (int) $user->id);
+            if (! $isAssignedToPhase) {
+              continue;
+            }
+          }
+
+          if ($user->hasSupervisorOnlyAccess()) {
+            $effectiveSupervisorId = $phase->supervisor_id ?: $order->supervisor_id;
+            if ((int) $effectiveSupervisorId !== (int) $user->id) {
+              continue;
+            }
+          }
+
+          $phaseProducts = $phase->phaseProducts->map(function ($phaseProduct) use ($customAbbreviations) {
+            $orderProduct = $phaseProduct->orderProduct;
+            $productName = $orderProduct?->typeOfProduct?->name ?? 'Product';
+            $shortName = $customAbbreviations[$productName] ?? strtolower(substr($productName, 0, 1));
+            return ((float) $phaseProduct->qty) . $shortName;
+          })->filter()->join(', ');
+
+          $phaseTitle = '#' . $order->order_number . ' - ' . $order->name . ' - ' . $phase->name . (!empty($order->city) ? ' - ' . $order->city : '');
+          $phaseTooltip = $phaseProducts !== '' ? 'Products: ' . $phaseProducts : 'Products: Not assigned';
+          $phaseExtra = [
+            'order_phase_id' => $phase->id,
+            'phase_name' => $phase->name,
+            'phase_status' => $phase->status,
+          ];
+
+          if (!$showOnlyInstallation && $phase->delivery_date) {
+            $events[] = $this->createEvent(
+              $order->id,
+              $phaseTitle,
+              $phaseTooltip,
+              $this->formatCalendarDate($phase->delivery_date),
+              $this->formatCalendarDate($phase->delivery_date),
+              $this->getColorByStatus($phase->status, ServiceEnum::DELIVERY->value),
+              ServiceEnum::DELIVERY->value,
+              false,
+              $phaseExtra
+            );
+          }
+
+          [$phaseStartDate, $phaseEndDate, $phaseColor] = $this->phaseInstallationCalendarRange($phase, $order, $user);
+          if (!$showOnlyDeliveries && $phaseStartDate) {
+            $events[] = $this->createEvent(
+              $order->id,
+              $phaseTitle,
+              $phaseTooltip,
+              $phaseStartDate,
+              $phaseEndDate,
+              $phaseColor,
+              ServiceEnum::INSTALLATION->value,
+              false,
+              $phaseExtra
+            );
+          }
+
+          if (
+            !$showOnlyDeliveries
+            && $phase->status === OrderStatusEnum::FINISH->value
+            && $phase->finish_date
+            && ($user->hasRole(RoleEnum::ACCOUNT_MANAGER->value) || $user->hasRole(RoleEnum::ADMIN->value))
+          ) {
+            $events[] = $this->createEvent(
+              $order->id,
+              $phaseTitle,
+              $phaseTooltip,
+              $this->formatCalendarDate($phase->finish_date),
+              $this->formatCalendarDate($phase->finish_date),
+              $this->getColorByStatus($phase->status, $order->service, true),
+              ServiceEnum::INSTALLATION->value,
+              false,
+              $phaseExtra
+            );
+          }
+        }
+
+        continue;
+      }
 
       $productCounts = $order->orderProducts()
         ->select('type_of_product_id', DB::raw('SUM(qty) as total'))
@@ -567,6 +669,13 @@ class DashboardController extends Controller
 
   public function updateEvent(Request $request, $id)
   {
+    if ($request->filled('order_phase_id')) {
+      $phase = OrderPhase::findOrFail((int) $request->order_phase_id);
+      app(OrderPhaseManager::class)->updateCalendarPhase($phase, $request);
+
+      return response()->json($phase->fresh(['order', 'installationTeams.user', 'supervisor']));
+    }
+
     $order = Order::find($id);
     if (in_array($request->type_of_event, [
       ServiceEnum::INSTALLATION->value,
@@ -604,6 +713,10 @@ class DashboardController extends Controller
       'durationOfWork',
       'orderProducts.orderProductExtraWorks',
       'orderColors',
+      'phases.installationTeams.user',
+      'phases.phaseProducts.orderProduct.typeOfProduct',
+      'phases.logs.user',
+      'phases.supervisor',
     ]);
 
     $attachmentRoleTargetsByRole = $order->attachmentRoleTargets
@@ -635,6 +748,66 @@ class DashboardController extends Controller
       ->first();
 
     return is_array($statusRecord?->replanned_reasons) ? $statusRecord->replanned_reasons : [];
+  }
+
+  private function phaseInstallationCalendarRange(OrderPhase $phase, Order $order, User $user): array
+  {
+    $startDate = $phase->installation_date;
+    $endDate = $phase->installation_end_date ?: $phase->installation_date;
+    $color = $this->getColorByStatus($phase->status, $order->service, true);
+
+    if (!($user->hasRole(RoleEnum::ACCOUNT_MANAGER->value) || $user->hasRole(RoleEnum::ADMIN->value))) {
+      if ($phase->status === OrderStatusEnum::INSPECTION->value && $phase->inspection_date) {
+        $startDate = $phase->inspection_date;
+        $endDate = $phase->inspection_date;
+        $color = StatusColorEnum::INSPECTION->value;
+      } else if ($phase->status === OrderStatusEnum::FINISH->value && $phase->finish_date) {
+        $startDate = $phase->finish_date;
+        $endDate = $phase->finish_date;
+        $color = StatusColorEnum::FINISH->value;
+      } else if ($phase->status === OrderStatusEnum::SERVICE->value && $phase->service_date) {
+        $startDate = $phase->service_date;
+        $endDate = $phase->service_date;
+        $color = StatusColorEnum::SERVICE->value;
+      } else if ($phase->status === OrderStatusEnum::FINAL_COLLECT->value && $phase->pending_collect) {
+        $startDate = $phase->pending_collect;
+        $endDate = $phase->pending_collect;
+        $color = $this->getColorByStatus($phase->status, $order->service, true);
+      } else if ($phase->status === OrderStatusEnum::FINAL_INSPECTION->value && $phase->final_inspection_date) {
+        $startDate = $phase->final_inspection_date;
+        $endDate = $phase->final_inspection_date;
+        $color = StatusColorEnum::FINAL_INSPECTION->value;
+      } else if ($phase->status === OrderStatusEnum::COMPLETE->value && $phase->complete_date) {
+        $startDate = $phase->complete_date;
+        $endDate = $phase->complete_date;
+        $color = $this->getColorByStatus($phase->status, $order->service, true);
+      }
+    }
+
+    return [
+      $this->formatCalendarDate($startDate),
+      $this->formatCalendarDate($endDate ?: $startDate),
+      $color,
+    ];
+  }
+
+  private function phaseHasAnyCalendarDate(OrderPhase $phase): bool
+  {
+    return (bool) (
+      $phase->delivery_date
+      || $phase->installation_date
+      || $phase->inspection_date
+      || $phase->finish_date
+      || $phase->service_date
+      || $phase->pending_collect
+      || $phase->final_inspection_date
+      || $phase->complete_date
+    );
+  }
+
+  private function formatCalendarDate(mixed $date): ?string
+  {
+    return $date ? Carbon::parse($date)->format('Y-m-d') : null;
   }
 
   private function isRestrictedOwner(?User $user): bool

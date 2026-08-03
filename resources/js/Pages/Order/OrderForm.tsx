@@ -28,6 +28,7 @@ import Select, { type SingleValue } from 'react-select'
 import { getOrderProducts, getValueIdNotNull, type OrderFormValues } from './OrderCommon'
 import ProductModal from './ProductModal'
 import ProductTable from './ProductTable'
+import OrderPhasesEditor from './OrderPhasesEditor'
 import DeleteIcon from '@/Components/Icons/DeleteIcon'
 import ExportIcon from '@/Components/Icons/ExportIcon'
 import { PAYMENT_METHODS, PRODUCT_LINES, SERVICES, STOREFRONT_CATEGORY } from '@/Utils/constants'
@@ -2565,6 +2566,21 @@ const OrderForm = ({
             product_costs={product_costs}
           />
         </fieldset>
+        {(values.service === SERVICES.DELIVERY_AND_INSTALLATION) && (
+          <OrderPhasesEditor
+            values={values}
+            setFieldValue={setFieldValue}
+            errors={errors}
+            installationTeams={installation_teams}
+            supervisors={supervisors}
+            statuses={status}
+            orderProducts={orderProducts}
+            typeOfProducts={type_of_products}
+            productCategories={product_category}
+            productConfigs={products_config}
+            isParentOrder={false}
+          />
+        )}
         <fieldset className='p-3 border rounded-xl'>
           <legend className='text-lg font-semibold px-3'>Work Team Notes (All Notes)</legend>
           <OrderNotesForOrder orderId={values.id || null} canCreate={values.id !== 0} />

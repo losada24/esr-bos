@@ -579,6 +579,15 @@ export default function ShowStatusOrder ({
   const isProjectAmountReadOnlyBeforeContract = showProjectAmountOnlyBeforeContract && isOwner(roleNames) && hasAssignedPaymentConfiguration
   const canSubmitProjectAmountBeforeContract = showProjectAmountOnlyBeforeContract && !isProjectAmountReadOnlyBeforeContract
   const isFrontdeskEsrRole = isFrontdeskEsr(roleNames)
+  const phaseNotes = useMemo(() => (
+    (order.phases ?? [])
+      .map((phase) => ({
+        id: phase.id ?? phase.position,
+        name: String(phase.name ?? `Phase ${phase.position ?? ''}`).trim(),
+        notes: String(phase.notes ?? '').trim()
+      }))
+      .filter((phase) => phase.notes !== '')
+  ), [order.phases])
 
   const [scheduleModalOpen, setScheduleModalOpen] = useState(false)
   const [scheduleInitialValues, setScheduleInitialValues] = useState<{ scheduleDate: string, ownerIds: number[] }>({
@@ -3804,7 +3813,21 @@ export default function ShowStatusOrder ({
 
               <div className="flex-1 overflow-hidden rounded-xl border border-slate-200/70 bg-white">
                 {tab === 'home' && (
-                  <div id="panel-home" role="tabpanel" aria-labelledby="tab-home" className="h-full">
+                  <div id="panel-home" role="tabpanel" aria-labelledby="tab-home" className="h-full overflow-y-auto">
+                    {phaseNotes.length > 0 && (
+                      <div className="border-b border-slate-200/70 bg-slate-50/70 p-4">
+                        <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-400">Phase Notes</h3>
+                        <div className="mt-3 space-y-2">
+                          {phaseNotes.map((phaseNote) => (
+                            <div key={phaseNote.id} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700">
+                              <span className="font-semibold text-slate-900">{phaseNote.name}</span>
+                              <span className="mx-2 text-slate-400">-</span>
+                              <span>{phaseNote.notes}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                     <OrderNotesForOrder orderId={order.id} canCreate includeRelatedActivities refreshKey={activityRefreshKey} />
                   </div>
                 )}

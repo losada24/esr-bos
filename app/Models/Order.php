@@ -33,6 +33,7 @@ class Order extends Model
     'parent_order_id',
     'root_order_id',
     'counts_for_owner_commission',
+    'install_by_phases',
     'invoice_number',
     'name',
     'job_address',
@@ -150,6 +151,7 @@ class Order extends Model
       'is_new_travel_cost' => 'boolean',
       'is_supply' => 'boolean',
       'counts_for_owner_commission' => 'boolean',
+      'install_by_phases' => 'boolean',
       'name_check' => 'boolean',
       'address_check' => 'boolean',
       'amount_check' => 'boolean',
@@ -266,8 +268,12 @@ class Order extends Model
     if (!$hasCalendarWideAccess) {
       if ($user->hasRole(RoleEnum::INSTALLER->value)) {
         $installationTeams = InstallationTeam::where('user_id', $user->id)->first();
-        $query->whereHas('installationTeams', function ($q) use ($installationTeams) {
-          $q->where('installation_teams.id', $installationTeams->id);
+        $query->where(function ($query) use ($installationTeams) {
+          $query->whereHas('installationTeams', function ($q) use ($installationTeams) {
+            $q->where('installation_teams.id', $installationTeams?->id);
+          })->orWhereHas('phases.installationTeams', function ($q) use ($installationTeams) {
+            $q->where('installation_teams.id', $installationTeams?->id);
+          });
         });
       }
       /*if (auth()->user()->hasRole(RoleEnum::SUPERVISOR->value)) {
@@ -277,8 +283,12 @@ class Order extends Model
         });*/
 
       if ($user->hasSupervisorOnlyAccess()) {
-        $query->where('supervisor_id', $user->id)
-          ->whereIn('status', [
+        $query->where(function ($query) use ($user) {
+          $query->where('supervisor_id', $user->id)
+            ->orWhereHas('phases', function ($phaseQuery) use ($user) {
+              $phaseQuery->where('supervisor_id', $user->id);
+            });
+        })->whereIn('status', [
             OrderStatusEnum::PLANNED,        // Solo órdenes en "PLANNED"
             OrderStatusEnum::REPLANNED,
             OrderStatusEnum::RESCHEDULE,   // Solo órdenes en "EXECUTION"
@@ -407,6 +417,11 @@ class Order extends Model
   public function childOrders(): HasMany
   {
     return $this->hasMany(Order::class, 'parent_order_id');
+  }
+
+  public function phases(): HasMany
+  {
+    return $this->hasMany(OrderPhase::class)->orderBy('position')->orderBy('id');
   }
 
   public function scopeAccessibleToOwner(Builder $query, User $user): Builder
