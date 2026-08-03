@@ -3,6 +3,7 @@
 namespace App\Mail;
 
 use App\Models\Order;
+use App\Models\OrderPhase;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
@@ -27,7 +28,8 @@ class InstallationDateConfirmation extends Mailable implements ShouldQueue
       protected bool $orderAttachments = false,
       protected bool $installationAttachments = false,
       protected bool $supervisorAttachments = false,
-      protected array $selectedOrderAttachmentIds = []
+      protected array $selectedOrderAttachmentIds = [],
+      protected ?OrderPhase $phase = null
 
     ){}
 
@@ -47,10 +49,17 @@ class InstallationDateConfirmation extends Mailable implements ShouldQueue
      */
     public function content(): Content
     {
+        $this->phase?->loadMissing([
+          'phaseProducts.orderProduct.typeOfProduct',
+          'phaseProducts.orderProduct.productCategory',
+          'phaseProducts.orderProduct.productConfig',
+        ]);
+
         return new Content(
             view: 'emails.installation-date-confirmation',
             with: [
               'order' => $this->order,
+              'phase' => $this->phase,
               'displaySummary' => $this->displaySummary,
             ]
         );

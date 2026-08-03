@@ -907,6 +907,7 @@ public function showQuantifiedModal(Order $order)
       'changeOrderPayment.paidBy',
       'financialEvents.user',
       'serviceControls.creator:id,name',
+      'phases',
       'orderCompanyContacts.companyContact',
       'orderCompanyContacts.client.companyContacts',
       'orderCompanyContacts.source'

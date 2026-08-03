@@ -103,6 +103,66 @@ export interface Order {
   email_check?: boolean
   order_type?: string
   product_line?: string
+  install_by_phases?: boolean
+  phases?: OrderPhase[]
+  phases_count?: number
+  phases_completed_count?: number
+  next_phase?: {
+    id: number
+    name: string
+    status: string
+    installation_date?: Date | string | null
+  } | null
+}
+
+export interface OrderPhase {
+  id?: number
+  order_id?: number
+  position: number
+  name: string
+  status: string
+  delivery_date?: Date | string | null
+  installation_date?: Date | string | null
+  installation_end_date?: Date | string | null
+  inspection_date?: Date | string | null
+  finish_date?: Date | string | null
+  service_date?: Date | string | null
+  pending_collect?: Date | string | null
+  final_inspection_date?: Date | string | null
+  complete_date?: Date | string | null
+  supervisor_id?: number | null
+  supervisor?: User | null
+  installation_teams?: InstallationTeam[]
+  phase_products?: OrderPhaseProduct[]
+  products?: OrderPhaseProductDraft[]
+  replanned_reasons?: string[] | null
+  notes?: string | null
+  logs?: OrderPhaseLog[]
+}
+
+export interface OrderPhaseProduct {
+  id?: number
+  order_phase_id?: number
+  order_product_id: number
+  qty: number
+  order_product?: OrderProduct
+}
+
+export interface OrderPhaseProductDraft {
+  order_product_id?: number
+  product_index?: number
+  qty: number
+}
+
+export interface OrderPhaseLog {
+  id: number
+  action: string
+  status?: string | null
+  before?: Record<string, unknown> | null
+  after?: Record<string, unknown> | null
+  notes?: string | null
+  created_at?: string
+  user?: User | null
 }
 
 export interface TypeOfWork {

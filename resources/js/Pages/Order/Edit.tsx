@@ -90,6 +90,28 @@ export default function Edit ({
   let messageconfirm = 'Are you sure you want to change the status to confirmed?'
   const isRentalEquipment: boolean = !!order.equipment_rental
   const isAssociationPermit: boolean = !!order.association_permits
+  const dateOnly = (value: unknown) => value ? String(value).slice(0, 10) : null
+  const normalizePhasePayload = (phases: any[] = []) => phases.map((phase, index) => ({
+    ...phase,
+    position: index + 1,
+    status: typeof phase.status === 'string' ? phase.status : phase.status?.value,
+    delivery_date: dateOnly(phase.delivery_date),
+    installation_date: dateOnly(phase.installation_date),
+    installation_end_date: dateOnly(phase.installation_end_date),
+    inspection_date: dateOnly(phase.inspection_date),
+    finish_date: dateOnly(phase.finish_date),
+    service_date: dateOnly(phase.service_date),
+    pending_collect: dateOnly(phase.pending_collect),
+    final_inspection_date: dateOnly(phase.final_inspection_date),
+    complete_date: dateOnly(phase.complete_date),
+    supervisor_id: typeof phase.supervisor_id === 'object' ? phase.supervisor_id?.value : phase.supervisor_id,
+    installation_teams: (phase.installation_teams ?? []).map((team: any) => Number(team.value ?? team.id ?? team)),
+    products: (phase.products ?? []).map((product: any) => ({
+      order_product_id: product.order_product_id,
+      product_index: product.product_index,
+      qty: Number(product.qty ?? 0)
+    })).filter((product: any) => product.qty > 0)
+  }))
 
   if (isRentalEquipment) {
     messageconfirm += 'This order required EQUIPMENT RENTAL.'
@@ -145,6 +167,8 @@ export default function Edit ({
         : null,
       down_payment: isCashAndFinanced ? values.down_payment : null,
       do_not_send_email: values.client_email_selection === '__NONE__',
+      install_by_phases: Boolean(values.install_by_phases),
+      phases: Boolean(values.install_by_phases) ? normalizePhasePayload(values.phases ?? []) : [],
       frame_color: (values.frame_color || []).map((color: { label: string, value: string }) => color.label),
       complete_date: values.status.value === 'COMPLETE' ? new Date().toLocaleDateString('en-CA') : null,
       pending_collect: values.status.value === 'PENDING COLLECT' ? new Date().toLocaleDateString('en-CA') : null,

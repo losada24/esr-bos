@@ -4,6 +4,7 @@ namespace App\Actions;
 
 use App\Enum\PlaningDateSupervisorEnum;
 use App\Enum\MethodOfPayment;
+use App\Enum\OrderStatusEnum;
 use App\Enum\PaymentScheduleTypeEnum;
 use App\Enum\ProductLineEnum;
 use App\Models\Client;
@@ -19,6 +20,7 @@ use App\Support\OrderClientEmailDeliveryLogger;
 use App\Support\OrderClientEmailManager;
 use App\Support\OrderFinancialEventLogger;
 use App\Support\Orders\OrderSplitResolver;
+use App\Support\Orders\OrderPhaseManager;
 use App\Support\PaymentScheduleCalculator;
 use App\Support\PaymentScheduleTemplates;
 use App\Traits\ComissionSupervisor;
@@ -35,7 +37,8 @@ class CreateOrder
   public function __construct(
     protected OrderClientEmailManager $orderClientEmailManager,
     protected OrderClientEmailDeliveryLogger $orderClientEmailDeliveryLogger,
-    protected OrderSplitResolver $orderSplitResolver
+    protected OrderSplitResolver $orderSplitResolver,
+    protected OrderPhaseManager $orderPhaseManager
   ) {
   }
  
@@ -118,6 +121,7 @@ class CreateOrder
         'parent_order_id' => $splitFields['parent_order_id'],
         'root_order_id' => $splitFields['root_order_id'],
         'counts_for_owner_commission' => $splitFields['counts_for_owner_commission'],
+        'install_by_phases' => $request->boolean('install_by_phases'),
         'user_id' => auth()->user()->id,
         'name' => $request->name,
         'job_address' => $request->job_address,
@@ -329,8 +333,9 @@ class CreateOrder
       $order->syncFrameColors($request->frame_color ?? []);
 
       $orderProductsPayload = $request->orderProducts ?? [];
+      $newProductIdsByIndex = [];
 
-      foreach ($orderProductsPayload as $product) {
+      foreach ($orderProductsPayload as $index => $product) {
         $typeOfWorkId = $product['type_of_work_id'] ?? null;
         if ($typeOfWorkId === 0 || $typeOfWorkId === '0' || $typeOfWorkId === '') {
           $typeOfWorkId = null;
@@ -368,18 +373,76 @@ class CreateOrder
         }
 
         $orderProduct->orderProductExtraWorks()->attach($extraWorks);
+        $newProductIdsByIndex[$index] = $orderProduct->id;
       }
 
-      $order->load('client.companyContact', 'client.companyContacts');
+      $this->remapPhaseProductIds($request, $newProductIdsByIndex);
+      $this->orderPhaseManager->syncFromRequest($order->fresh(['installationTeams', 'orderProducts']), $request);
+
+      $order = $order->fresh([
+        'client.companyContact',
+        'client.companyContacts',
+        'orderCompanyContacts.client.companyContacts',
+        'orderCompanyContacts.companyContact',
+        'owners',
+        'installationTeams.user',
+        'supervisor',
+        'phases',
+      ]);
       $this->orderClientEmailDeliveryLogger->logIfConfiguredDifferentlyFromDefault(
         $order,
         $client->email
       );
-      $this->sendEmail($order);
+      if (! $this->phaseEmailWasHandledOnCreate($order)) {
+        $this->sendEmail($order);
+      }
      
       if (!$order) {
         throw new \Exception('Order not created');
       }
     });
+  }
+
+  private function phaseEmailWasHandledOnCreate(Order $order): bool
+  {
+    if (! $order->install_by_phases || (bool) $order->do_not_send_email) {
+      return false;
+    }
+
+    return $order->phases->contains(function ($phase) {
+      return in_array($phase->status, [
+        OrderStatusEnum::PLANNED->value,
+        OrderStatusEnum::CONFIRMED->value,
+        OrderStatusEnum::RESCHEDULE->value,
+      ], true) && ! empty($phase->installation_date);
+    });
+  }
+
+  private function remapPhaseProductIds(Request $request, array $newProductIdsByIndex): void
+  {
+    $phases = $request->input('phases', []);
+    if (!is_array($phases)) {
+      return;
+    }
+
+    foreach ($phases as $phaseIndex => $phase) {
+      if (!is_array($phase) || !is_array($phase['products'] ?? null)) {
+        continue;
+      }
+
+      foreach ($phase['products'] as $productIndex => $product) {
+        if (!is_array($product)) {
+          continue;
+        }
+
+        $orderProductId = isset($product['order_product_id']) ? (int) $product['order_product_id'] : 0;
+        $sourceIndex = isset($product['product_index']) ? (int) $product['product_index'] : null;
+        if ($orderProductId <= 0 && $sourceIndex !== null && isset($newProductIdsByIndex[$sourceIndex])) {
+          $phases[$phaseIndex]['products'][$productIndex]['order_product_id'] = $newProductIdsByIndex[$sourceIndex];
+        }
+      }
+    }
+
+    $request->merge(['phases' => $phases]);
   }
 }

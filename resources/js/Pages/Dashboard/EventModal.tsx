@@ -96,6 +96,7 @@ const EventModal = ({
   showModal,
   onClose,
   id,
+  phaseId,
   isAdminOrAccountManager,
   isSupervisor,
   isInstaller,
@@ -114,6 +115,7 @@ const EventModal = ({
   isOwner: boolean
   onClose: CallableFunction
   id: number
+  phaseId?: number | null
   isPaymentCoordinator: boolean
   isAdminOrAccountManager: boolean
   isServiceManager: boolean
@@ -126,6 +128,7 @@ const EventModal = ({
     entry_date: null,
     installation_date: null,
     delivery_date: null,
+    phase_name: null,
     payment_factory_date: null,
     contract_signing_date: null,
     eta_date: null,
@@ -240,29 +243,34 @@ const EventModal = ({
           // const installationDate = new Date(data.installation_date ?? new Date())
           // const duration = data?.duration_of_work?.number_of_day ?? 0
           // const endDate = new Date(installationDate.setDate(installationDate.getDate() + duration - 1))
+          const selectedPhase = phaseId ? (data.phases ?? []).find((phase: any) => Number(phase.id) === Number(phaseId)) : null
+          const phaseTeams = selectedPhase?.installation_teams ?? []
+          const effectiveTeams = phaseTeams.length > 0 ? phaseTeams : (data.installation_teams ?? [])
+          const effectiveSupervisorId = selectedPhase?.supervisor_id ?? data.supervisor?.id ?? 0
           setEditableData({
             entry_date: data.entry_date ?? null,
             service: data.service ?? '',
             contract_signing_date: data.contract_signing_date ?? null,
             payment_factory_date: data.payment_factory_date ?? null,
             eta_date: data.eta_date ?? null,
-            delivery_date: data.delivery_date ?? null,
-            installation_date: data.installation_date ?? null,
-            inspection_date: data.inspection_date ?? null,
-            finish_date: data.finish_date ?? null,
-            service_date: data.service_date ?? null,
-            pending_collect: data.pending_collect ?? null,
-            complete_date: data.complete_date ?? null,
-            final_inspection_date: data.final_inspection_date ?? null,
+            delivery_date: selectedPhase?.delivery_date ?? data.delivery_date ?? null,
+            phase_name: selectedPhase?.name ?? null,
+            installation_date: selectedPhase?.installation_date ?? data.installation_date ?? null,
+            inspection_date: selectedPhase?.inspection_date ?? data.inspection_date ?? null,
+            finish_date: selectedPhase?.finish_date ?? data.finish_date ?? null,
+            service_date: selectedPhase?.service_date ?? data.service_date ?? null,
+            pending_collect: selectedPhase?.pending_collect ?? data.pending_collect ?? null,
+            complete_date: selectedPhase?.complete_date ?? data.complete_date ?? null,
+            final_inspection_date: selectedPhase?.final_inspection_date ?? data.final_inspection_date ?? null,
             material_received_date: data.material_received_date ?? null,
-            installation_end_date: data.installation_end_date ?? null,
-            installation_teams: data.installation_teams.map((item) => { return { label: item.user?.name, value: item.id } }) ?? [],
-            supervisor_id: data.supervisor?.id ?? 0, // Asumimos que `data.supervisor` es un objeto con los datos del superviso
-            status: { label: data.status, value: data.status },
+            installation_end_date: selectedPhase?.installation_end_date ?? data.installation_end_date ?? null,
+            installation_teams: effectiveTeams.map((item: any) => { return { label: item.user?.name, value: item.id } }) ?? [],
+            supervisor_id: effectiveSupervisorId,
+            status: { label: selectedPhase?.status ?? data.status, value: selectedPhase?.status ?? data.status },
             hide_on_weekends: data.hide_on_weekends ?? null,
-            notes: data.notes ?? '',
+            notes: selectedPhase?.notes ?? data.notes ?? '',
             work_team_notes: data.work_team_notes ?? '',
-            replanned_reasons: normalizeReplannedReasons(data.replanned_reasons),
+            replanned_reasons: normalizeReplannedReasons(selectedPhase?.replanned_reasons ?? data.replanned_reasons),
             pre_inspection: data.pre_inspection ?? false,
             inspection: data.inspection ?? false,
             walk_trough: data.walk_trough ?? false,
@@ -277,7 +285,7 @@ const EventModal = ({
       setAttachmentRoleTargets(buildEmptyAttachmentRoleTargets())
       setIsUploadingAttachments(false)
     }
-  }, [showModal])
+  }, [showModal, phaseId])
   // console.log(editableData)
   console.log(event)
 
@@ -445,6 +453,61 @@ const EventModal = ({
 
     setReplannedReasonsError(null)
 
+    if (phaseId) {
+      let phaseCompleteDate = editableData.complete_date
+      if (editableData.status.value === 'COMPLETE' && !phaseCompleteDate) {
+        phaseCompleteDate = new Date().toLocaleDateString('en-CA')
+      }
+
+      let phasePendingCollect = editableData.pending_collect
+      if (editableData.status.value === 'PENDING COLLECT' && !phasePendingCollect) {
+        phasePendingCollect = new Date().toLocaleDateString('en-CA')
+      }
+
+      const updateEventRoute = route('dashboard.update_event', { id })
+      const phasePayload: any = {
+        order_phase_id: phaseId,
+        delivery_date: editableData.delivery_date,
+        start: editableData.installation_date,
+        end: editableData.installation_end_date,
+        installation_teams: editableData.installation_teams.map((team: any) => team.value),
+        supervisor_id: editableData.supervisor_id || null,
+        inspection_date: editableData.inspection_date,
+        finish_date: editableData.finish_date,
+        service_date: editableData.service_date,
+        pending_collect: phasePendingCollect,
+        final_inspection_date: editableData.final_inspection_date,
+        complete_date: phaseCompleteDate,
+        status: editableData.status.value,
+        replanned_reasons: normalizedReplannedReasons
+      }
+      if (allowsAttachmentRoleSelection) {
+        phasePayload.attachment_role_targets = attachmentRoleTargets
+      }
+
+      fetch(updateEventRoute, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? ''
+        },
+        body: JSON.stringify(phasePayload)
+      })
+        .then(async (response) => {
+          if (!response.ok) throw await response.json()
+          setEditableData(defaultState)
+          setReplannedReasonsError(null)
+          onClose(false)
+        })
+        .catch((errors: any) => {
+          if (errors?.errors?.replanned_reasons) {
+            setReplannedReasonsError(String(errors.errors.replanned_reasons[0] ?? 'Select at least one replanned reason.'))
+          }
+        })
+      return
+    }
+
     let completeDate = editableData.complete_date
     if (editableData.status.value === 'COMPLETE') {
       if (!completeDate) {
@@ -555,7 +618,7 @@ const EventModal = ({
                 {`#${event?.order_number ?? 'N/A'}`}
               </InfoItem>
               <InfoItem label="Name">
-                {event?.name ?? 'N/A'}
+                {[event?.name ?? 'N/A', editableData.phase_name].filter(Boolean).join(' - ')}
               </InfoItem>
               <InfoItem label="Address">
                 {event?.job_address ? (
@@ -1284,13 +1347,15 @@ const EventModal = ({
                     </table>
                   </div>
                 </div>
-                <fieldset className='p-3 border rounded-xl mt-3'>
-                  <legend className='text-lg font-semibold px-3'>Work Team Notes (All Notes)</legend>
-                  <OrderNotesForOrder
-                    orderId={event?.id ?? null}
-                    canCreate={(event?.id ?? 0) !== 0}
-                  />
-                </fieldset>
+                {!isInstaller && (
+                  <fieldset className='p-3 border rounded-xl mt-3'>
+                    <legend className='text-lg font-semibold px-3'>Work Team Notes (All Notes)</legend>
+                    <OrderNotesForOrder
+                      orderId={event?.id ?? null}
+                      canCreate={(event?.id ?? 0) !== 0}
+                    />
+                  </fieldset>
+                )}
                 {!isSupervisor && !(event?.service === 'PICKUP' || event?.service === 'DELIVERY ONLY') && (
                   <div className='flex flex-col gap-2'>
                     <strong>Payment List:</strong>

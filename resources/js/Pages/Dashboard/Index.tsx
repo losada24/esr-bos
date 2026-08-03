@@ -35,6 +35,7 @@ export default function Dashboard ({ auth, services, status, statusmodal, legend
   const [currentDate, setCurrentDate] = useState(new Date())
   const [calendarFilter, setCalendarFilter] = useState<CalendarFilter>({ service: IS_ADMIN || IS_ACCOUNT_MANAGER ? 'all' : services[0] ?? 'INSTALLATION', status: 'all', name: '' })
   const [eventId, setEventId] = useState(0)
+  const [eventPhaseId, setEventPhaseId] = useState<number | null>(null)
   const calendarRef = useRef<HTMLDivElement>(null)
 
   const [isModalOpen, setModalOpen] = useState(false)
@@ -42,6 +43,7 @@ export default function Dashboard ({ auth, services, status, statusmodal, legend
 
   const handleEventClick = useCallback((args: any) => {
     setEventId(args.event.order_id)
+    setEventPhaseId(args.event.order_phase_id ?? null)
     setModalOpen(true)
   }, [])
 
@@ -68,6 +70,7 @@ export default function Dashboard ({ auth, services, status, statusmodal, legend
   const handleEventUpdate = (args: any) => {
     const updateEventRoute = route('dashboard.update_event', { id: args.event.order_id })
     const data = {
+      order_phase_id: args.event.order_phase_id,
       type_of_event: args.event.type_of_event,
       start: args.event.start.toISOString().slice(0, 10),
       end: args.event.end.toISOString().slice(0, 10)
@@ -76,7 +79,8 @@ export default function Dashboard ({ auth, services, status, statusmodal, legend
     fetch(updateEventRoute, {
       method: 'PUT',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? ''
       },
       body: JSON.stringify(data)
     })
@@ -209,6 +213,7 @@ export default function Dashboard ({ auth, services, status, statusmodal, legend
         isOwner={IS_OWNER}
         isPaymentCoordinator ={IS_PAYMENT_COORDINATOR}
         id={eventId}
+        phaseId={eventPhaseId}
         installation_teams ={installation_teams}
         supervisors={supervisors}
         status = {statusmodal}

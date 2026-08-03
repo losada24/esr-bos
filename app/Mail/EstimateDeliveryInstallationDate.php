@@ -3,6 +3,7 @@
 namespace App\Mail;
 
 use App\Models\Order;
+use App\Models\OrderPhase;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
@@ -19,6 +20,7 @@ class EstimateDeliveryInstallationDate extends Mailable implements ShouldQueue
      */
     public function __construct(
       protected Order $order,
+      protected ?OrderPhase $phase = null,
     ){}
 
     /**
@@ -40,7 +42,8 @@ class EstimateDeliveryInstallationDate extends Mailable implements ShouldQueue
         return new Content(
             view: 'emails.estimate-delivery-installation-date',
             with: [
-              'order' => $this->order
+              'order' => $this->order,
+              'phase' => $this->phase,
             ]
         );
     }
