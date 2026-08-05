@@ -351,9 +351,10 @@ const OrderQualifiedForm = ({
   const [clientModalTargetIndex, setClientModalTargetIndex] = useState<number | null>(null)
 
   const isCommercial = values.order_type === ORDER_TYPES.COMMERCIAL
+  const usesCompanyContacts = isCommercial || (esrMode && values.order_type === ORDER_TYPES.RESIDENTIAL)
   type CommercialPair = { companyId: number | null, clientId: number | null, sourceId: number | null }
   const buildCommercialPairsFromValues = useCallback((): CommercialPair[] => {
-    if (!isCommercial) return []
+    if (!usesCompanyContacts) return []
     const pairs: CommercialPair[] = []
     if (values.company_contact_id) {
       pairs.push({
@@ -392,7 +393,7 @@ const OrderQualifiedForm = ({
     }
     return pairs.length > 0 ? pairs : [{ companyId: null, clientId: null, sourceId: null }]
   }, [
-    isCommercial,
+    usesCompanyContacts,
     values.associate_client_id_1,
     values.associate_client_id_2,
     values.associate_client_id_3,
@@ -412,15 +413,17 @@ const OrderQualifiedForm = ({
   const [commercialPairs, setCommercialPairs] = useState<CommercialPair[]>(buildCommercialPairsFromValues)
 
   useEffect(() => {
-    if (!isCommercial) {
+    if (!usesCompanyContacts) {
       setCommercialPairs([])
       return
     }
-    setCommercialPairs(prev => (prev.length > 0 ? prev : buildCommercialPairsFromValues()))
-  }, [isCommercial, buildCommercialPairsFromValues])
+    setCommercialPairs(prev => {
+      return prev.length > 0 ? prev : buildCommercialPairsFromValues()
+    })
+  }, [usesCompanyContacts, buildCommercialPairsFromValues, setFieldValue])
 
   useEffect(() => {
-    if (!isCommercial) return
+    if (!usesCompanyContacts) return
     const [primary, assoc1, assoc2, assoc3, assoc4] = commercialPairs
     setFieldValue('company_contact_id', primary?.companyId ?? null)
     setFieldValue('client_id', primary?.clientId ?? null)
@@ -437,7 +440,7 @@ const OrderQualifiedForm = ({
     setFieldValue('associate_company_contact_id_4', assoc4?.companyId ?? null)
     setFieldValue('associate_client_id_4', assoc4?.clientId ?? null)
     setFieldValue('associate_source_id_4', assoc4?.sourceId ?? null)
-  }, [commercialPairs, isCommercial, setFieldValue])
+  }, [commercialPairs, usesCompanyContacts, setFieldValue, values.order_type])
 
   const onCompanyCreated = (company: CompanyContact) => {
     setCompaniesList(prev =>
@@ -470,7 +473,7 @@ const OrderQualifiedForm = ({
   }
 
   const onClientCreated = (client: Client) => {
-    if (isCommercial && clientModalTargetIndex != null) {
+    if (usesCompanyContacts && clientModalTargetIndex != null) {
       const targetCompanyId = commercialPairs[clientModalTargetIndex]?.companyId ?? null
       const clientWithCompany = withClientCompanyLink(client, targetCompanyId)
 
@@ -514,10 +517,10 @@ const OrderQualifiedForm = ({
     ? clientsOptions.find(o => o.value === values.client_id) ?? null
     : null
   const primaryCommercialPair = commercialPairs[0] ?? null
-  const emailContextClientId = isCommercial
+  const emailContextClientId = usesCompanyContacts
     ? (primaryCommercialPair?.clientId ?? null)
     : (values.client_id ? Number(values.client_id) : null)
-  const emailContextCompanyId = isCommercial
+  const emailContextCompanyId = usesCompanyContacts
     ? (primaryCommercialPair?.companyId ?? null)
     : (values.company_contact_id ? Number(values.company_contact_id) : null)
   const emailContextClient = emailContextClientId != null
@@ -1089,21 +1092,43 @@ const OrderQualifiedForm = ({
               placeholder='Order Type'
               as="select"
               onChange={(e: { target: { value: string } }) => {
-                setFieldValue('order_type', e.target.value)
+                const nextOrderType = e.target.value
+                const nextUsesCompanyContacts = nextOrderType === ORDER_TYPES.COMMERCIAL || (esrMode && nextOrderType === ORDER_TYPES.RESIDENTIAL)
+                setFieldValue('order_type', nextOrderType)
                 // setFieldValue('status', '') // Reset status when order type changes
-                setFieldValue('client_id', null) // Reset client when order type changes
-                setFieldValue('company_contact_id', null) // Reset company contact when order type changes
-                setFieldValue('company_source_id', null) // Reset company source when order type changes
-                setFieldValue('associate_company_contact_id_1', null) // Reset associate company contact 1 when order type changes
-                setFieldValue('associate_company_contact_id_2', null) // Reset associate company contact 2 when order type changes
+                if (usesCompanyContacts && nextUsesCompanyContacts) {
+                  const [primary, assoc1, assoc2, assoc3, assoc4] = commercialPairs
+                  setFieldValue('company_contact_id', primary?.companyId ?? null)
+                  setFieldValue('client_id', primary?.clientId ?? null)
+                  setFieldValue('company_source_id', primary?.sourceId ?? null)
+                  setFieldValue('associate_company_contact_id_1', assoc1?.companyId ?? null)
+                  setFieldValue('associate_client_id_1', assoc1?.clientId ?? null)
+                  setFieldValue('associate_source_id_1', assoc1?.sourceId ?? null)
+                  setFieldValue('associate_company_contact_id_2', assoc2?.companyId ?? null)
+                  setFieldValue('associate_client_id_2', assoc2?.clientId ?? null)
+                  setFieldValue('associate_source_id_2', assoc2?.sourceId ?? null)
+                  setFieldValue('associate_company_contact_id_3', assoc3?.companyId ?? null)
+                  setFieldValue('associate_client_id_3', assoc3?.clientId ?? null)
+                  setFieldValue('associate_source_id_3', assoc3?.sourceId ?? null)
+                  setFieldValue('associate_company_contact_id_4', assoc4?.companyId ?? null)
+                  setFieldValue('associate_client_id_4', assoc4?.clientId ?? null)
+                  setFieldValue('associate_source_id_4', assoc4?.sourceId ?? null)
+                  return
+                }
+
+                setFieldValue('client_id', null)
+                setFieldValue('company_contact_id', null)
+                setFieldValue('company_source_id', null)
+                setFieldValue('associate_company_contact_id_1', null)
+                setFieldValue('associate_company_contact_id_2', null)
                 setFieldValue('associate_company_contact_id_3', null)
                 setFieldValue('associate_company_contact_id_4', null)
-                setFieldValue('associate_client_id_1', null) // Reset associate client 1 when order type changes
-                setFieldValue('associate_client_id_2', null) // Reset associate client 2 when order type changes
+                setFieldValue('associate_client_id_1', null)
+                setFieldValue('associate_client_id_2', null)
                 setFieldValue('associate_client_id_3', null)
                 setFieldValue('associate_client_id_4', null)
-                setFieldValue('associate_source_id_1', null) // Reset associate source 1 when order type changes
-                setFieldValue('associate_source_id_2', null) // Reset associate source 2 when order type changes
+                setFieldValue('associate_source_id_1', null)
+                setFieldValue('associate_source_id_2', null)
                 setFieldValue('associate_source_id_3', null)
                 setFieldValue('associate_source_id_4', null)
                 setFieldValue('client_email_selection', NO_CLIENT_EMAIL_SELECTION)
@@ -1423,45 +1448,45 @@ const OrderQualifiedForm = ({
                   {(submitCount && errors.owner_ids) ? <InputError message={(errors.owner_ids as any) ?? null} className="mt-2" /> : null}
                 </div>
               )}
-                {showClientField && !isCommercial && (
-                  <div className={submitCount ? (errors.client_id ? 'has-error' : 'has-success') : ''}>
-                    <label htmlFor="client_id">Contact Name</label>
-                    <div className="flex items-center">
-                      <div className="flex-grow">
-                        <Select
-                          id="client_id"
-                          inputId="client_id"
-                          name="client_id"
-                          placeholder="Client"
-                          value={selectedClient}
-                          isMulti={false}
-                          onChange={(option) => {
-                            const clientId = (option as any)?.value ?? null
-                            setFieldValue('client_id', clientId)
-                            if (clientId == null) {
-                              setFieldValue('company_contact_id', null)
-                              return
-                            }
-                            const c = clientsList.find(x => Number(x.id) === clientId)
-                            const companyId = c?.company_contact_id != null ? Number(c.company_contact_id) : null
-                            setFieldValue('company_contact_id', companyId)
-                          }}
-                          options={clientsOptions}
-                          styles={{ control: (base) => ({ ...base, minHeight: '40px' }) }}
-                        />
-                      </div>
-                      <button
-                        type="button"
-                        title="Create Client"
-                        onClick={() => { setModalTargetClientField('client_id'); setShowClientModal(true) }}
-                        className="bg-[#2c7df6] w-[44px] h-[40px] flex justify-center items-center ltr:rounded-r-md rtl:rounded-l-md border ltr:border-l-0 rtl:border-r-0 border-[#e0e6ed] dark:border-[#17263c] dark:bg-[#1b2e4b]"
-                      >
-                        <PlusIcon className="text-[#fff]" />
-                      </button>
+              {showClientField && !usesCompanyContacts && (
+                <div className={submitCount ? (errors.client_id ? 'has-error' : 'has-success') : ''}>
+                  <label htmlFor="client_id">Contact Name</label>
+                  <div className="flex items-center">
+                    <div className="flex-grow">
+                      <Select
+                        id="client_id"
+                        inputId="client_id"
+                        name="client_id"
+                        placeholder="Client"
+                        value={selectedClient}
+                        isMulti={false}
+                        onChange={(option) => {
+                          const clientId = (option as any)?.value ?? null
+                          setFieldValue('client_id', clientId)
+                          if (clientId == null) {
+                            setFieldValue('company_contact_id', null)
+                            return
+                          }
+                          const c = clientsList.find(x => Number(x.id) === clientId)
+                          const companyId = c?.company_contact_id != null ? Number(c.company_contact_id) : null
+                          setFieldValue('company_contact_id', companyId)
+                        }}
+                        options={clientsOptions}
+                        styles={{ control: (base) => ({ ...base, minHeight: '40px' }) }}
+                      />
                     </div>
-                    {(submitCount && errors.client_id) ? <InputError message={errors.client_id} className="mt-2" /> : null}
+                    <button
+                      type="button"
+                      title="Create Client"
+                      onClick={() => { setModalTargetClientField('client_id'); setShowClientModal(true) }}
+                      className="bg-[#2c7df6] w-[44px] h-[40px] flex justify-center items-center ltr:rounded-r-md rtl:rounded-l-md border ltr:border-l-0 rtl:border-r-0 border-[#e0e6ed] dark:border-[#17263c] dark:bg-[#1b2e4b]"
+                    >
+                      <PlusIcon className="text-[#fff]" />
+                    </button>
                   </div>
-                )}
+                  {(submitCount && errors.client_id) ? <InputError message={errors.client_id} className="mt-2" /> : null}
+                </div>
+              )}
                   {!esrMode && <div className={submitCount ? (errors.schedule_appointment) ? 'has-error' : 'has-success' : ''}>
                            <label htmlFor="schedule_appointment">Appointment Date</label>
                            <Flatpickr
@@ -1520,7 +1545,7 @@ const OrderQualifiedForm = ({
               />
               {(submitCount && errors.source) ? <InputError message={errors.source} className="mt-2" /> : ''}
             </div> */}
-               {(values.order_type === ORDER_TYPES.COMMERCIAL) && (
+               {usesCompanyContacts && (
                <div className="col-span-4 space-y-4 rounded-lg border border-slate-200 bg-slate-50/50 p-4">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
@@ -1593,6 +1618,15 @@ const OrderQualifiedForm = ({
                                   onChange={(option) => {
                                     const companyId = option ? Number((option as any).value) : null
                                     const clientId = firstClientIdForCompany(companyId)
+                                    if (index === 0) {
+                                      setFieldValue('company_contact_id', companyId)
+                                      setFieldValue('client_id', clientId)
+                                      setFieldValue('company_source_id', null)
+                                    } else {
+                                      setFieldValue(`associate_company_contact_id_${index}`, companyId)
+                                      setFieldValue(`associate_client_id_${index}`, clientId)
+                                      setFieldValue(`associate_source_id_${index}`, null)
+                                    }
                                     setCommercialPairs(prev => prev.map((item, i) => (
                                       i === index ? { companyId, clientId, sourceId: null } : item
                                     )))
@@ -1634,6 +1668,7 @@ const OrderQualifiedForm = ({
                                     isMulti={false}
                                     onChange={(option) => {
                                       const clientId = option ? Number((option as any).value) : null
+                                      setFieldValue(index === 0 ? 'client_id' : `associate_client_id_${index}`, clientId)
                                       setCommercialPairs(prev => prev.map((item, i) => (
                                         i === index ? { ...item, clientId } : item
                                       )))

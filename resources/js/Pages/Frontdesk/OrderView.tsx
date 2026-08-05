@@ -1347,7 +1347,8 @@ export default function ShowStatusOrder ({
     : (order.user?.name ?? '')
   const isVipClient = Boolean(order.client?.vip_clients)
   const isCommercialOrder = order.order_type?.toLowerCase() === 'commercial'
-  const selectedCommercialCompany = isCommercialOrder
+  const usesCompanyContactsOrder = isCommercialOrder || (isEsrProcessWorkflow && order.order_type?.toLowerCase() === 'residential')
+  const selectedCommercialCompany = usesCompanyContactsOrder
     ? sortedOrderCompanyContacts.find((item: any) => item?.is_selected)
       ?? (sortedOrderCompanyContacts.length === 1 ? sortedOrderCompanyContacts[0] : null)
     : null
@@ -3589,10 +3590,12 @@ export default function ShowStatusOrder ({
                 </div>
               )}
 
-              {order.order_type?.toLowerCase() === 'commercial' && sortedOrderCompanyContacts.length > 0 && (
+              {usesCompanyContactsOrder && sortedOrderCompanyContacts.length > 0 && (
                 <div className="mt-4 space-y-3 rounded-xl border border-slate-200/80 bg-slate-50 p-3 shadow-sm">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-400">Commercial Companies</h3>
+                    <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                      {isCommercialOrder ? 'Commercial Companies' : 'Companies'}
+                    </h3>
                     <span className="text-[10px] font-medium text-slate-400">{sortedOrderCompanyContacts.length} linked</span>
                   </div>
                   <div className="space-y-3">
@@ -4730,7 +4733,7 @@ export default function ShowStatusOrder ({
         errors={requestFormErrors}
         statusOptions={requestStatusOptions}
         sourceOptions={requestSourceOptions}
-        isCommercial={String(order.order_type ?? '').toUpperCase() === 'COMMERCIAL'}
+        isCommercial={usesCompanyContactsOrder}
         companies={safeCompanies}
         clients={clientsList}
         qualifiedSources={safeQualifiedSources}

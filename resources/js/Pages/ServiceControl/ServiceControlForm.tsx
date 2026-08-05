@@ -181,6 +181,8 @@ export default function ServiceControlForm ({
   const currentRecord = serviceControl ?? null
   const isStandalone = !order.id
   const isExternalService = data.creation_source === 'EXTERNAL'
+  const roleNames = auth.user.roles.map((role) => String(role.name ?? '').trim().toLowerCase())
+  const canEditServiceControl = roleNames.some((roleName) => ['admin', 'account_manager', 'service_manager'].includes(roleName))
   const relatedServices = Array.isArray(order.service_controls) ? order.service_controls : []
   const fallbackRequesterOptions: PartyOption[] = [
     order.client?.id ? { value: `client:${order.client.id}:client`, label: `${order.client.name ?? 'Client'} - Client`, type: 'client', id: Number(order.client.id), role: 'client' } : null,
@@ -508,7 +510,7 @@ export default function ServiceControlForm ({
           {mode === 'edit' && onDelete && (
             <button type="button" className="btn btn-outline-danger" onClick={onDelete}>Delete</button>
           )}
-          {mode === 'show' && currentRecord && (
+          {mode === 'show' && currentRecord && canEditServiceControl && (
             <Link href={route('service-control.edit', currentRecord.id)} className="btn btn-primary">Edit Service Control</Link>
           )}
         </div>

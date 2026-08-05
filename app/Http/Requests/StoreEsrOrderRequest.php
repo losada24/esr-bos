@@ -63,7 +63,10 @@ class StoreEsrOrderRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'order_type' => ['required', Rule::in([OrderTypeEnum::COMMERCIAL->value])],
+            'order_type' => ['required', Rule::in([
+                OrderTypeEnum::COMMERCIAL->value,
+                OrderTypeEnum::RESIDENTIAL->value,
+            ])],
             'product_line' => ['required', Rule::enum(ProductLineEnum::class)],
             'name' => ['required', 'string', 'max:255'],
             'job_address' => [
