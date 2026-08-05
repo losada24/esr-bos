@@ -157,6 +157,8 @@ class UpdateQualifiedOrder
             $esrSourceId = $isEsrProcessOrder
                 ? Source::firstOrCreate(['name' => ContactSourceEnum::ESR_REFER->value])->id
                 : null;
+            $usesCompanyContacts = $request->order_type === OrderTypeEnum::COMMERCIAL->value
+                || ($isEsrProcessOrder && $request->order_type === OrderTypeEnum::RESIDENTIAL->value);
             $companyClientPairs = [];
             $addPair = function (?int $companyId, ?int $clientId, ?int $sourceId) use (&$companyClientPairs, $esrSourceId) {
                 if (!$companyId && !$clientId && !$sourceId) {
@@ -175,7 +177,7 @@ class UpdateQualifiedOrder
                 ];
             };
 
-            if ($request->order_type === OrderTypeEnum::COMMERCIAL->value) {
+            if ($usesCompanyContacts) {
                 $addPair(
                     (int) $request->input('company_contact_id'),
                     (int) $request->input('client_id'),
@@ -193,7 +195,7 @@ class UpdateQualifiedOrder
             $primaryClient = $request->filled('client_id')
                 ? Client::with('companyContacts')->find((int) $request->input('client_id'))
                 : null;
-            $primaryCompany = $request->order_type === OrderTypeEnum::COMMERCIAL->value && $request->filled('company_contact_id')
+            $primaryCompany = $usesCompanyContacts && $request->filled('company_contact_id')
                 ? CompanyContact::find((int) $request->input('company_contact_id'))
                 : null;
             $clientEmailSelection = (string) $request->input('client_email_selection', OrderClientEmailManager::NONE_SELECTION);
@@ -208,7 +210,7 @@ class UpdateQualifiedOrder
                 ]);
             }
 
-            if ($request->order_type === OrderTypeEnum::COMMERCIAL->value) {
+            if ($usesCompanyContacts) {
                 $selectedClientId = null;
                 if ($order->client_id && collect($companyClientPairs)->contains(fn ($pair) => (int) $pair['client_id'] === (int) $order->client_id)) {
                     $selectedClientId = (int) $order->client_id;
@@ -598,7 +600,7 @@ class UpdateQualifiedOrder
                 $order->saleForm()->delete();
             }
 
-            if ($request->order_type === OrderTypeEnum::COMMERCIAL->value) {
+            if ($usesCompanyContacts) {
                 foreach ($companyClientPairs as $pair) {
                     $this->applyCompanyToClient(
                         (int) $pair['client_id'],

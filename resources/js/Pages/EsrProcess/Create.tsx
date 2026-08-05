@@ -12,6 +12,18 @@ import {
 } from '@/Pages/Frontdesk/OrderCommon'
 import OrderQualifiedForm from '@/Pages/Frontdesk/OrderQualifiedForm'
 
+const requiredId = (message: string) => Yup.number()
+  .transform((value, originalValue) => {
+    if (originalValue === null || originalValue === '' || Number.isNaN(value)) {
+      return null
+    }
+
+    return value
+  })
+  .nullable()
+  .required(message)
+  .min(1, message)
+
 const esrOrderSchema = Yup.object({
   order_type: Yup.string().required('Order Type is required'),
   product_line: Yup.string().required('Product Line is required'),
@@ -32,8 +44,8 @@ const esrOrderSchema = Yup.object({
     is: (service?: string | null) => service !== 'PICKUP',
     then: (schema) => schema.required('ZIP Code is required')
   }),
-  client_id: Yup.number().required('Contact Name is required').min(1, 'Contact Name is required'),
-  company_contact_id: Yup.number().required('Company is required').min(1, 'Company is required'),
+  client_id: requiredId('Contact Name is required'),
+  company_contact_id: requiredId('Company is required'),
   client_email_selection: Yup.string().required('Client Email Delivery is required'),
   status: Yup.string().required('Status is required'),
   order_number: Yup.string().required('Order Number is required'),

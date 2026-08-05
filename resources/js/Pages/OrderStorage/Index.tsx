@@ -1274,6 +1274,18 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
                                       <EditIcon />
                                     </Link>
                                   )}
+                                  {isPostSaleServiceCard && task.service_control_id && (
+                                    <Link
+                                      href={route('service-control.show', task.service_control_id)}
+                                      title="View Service Control"
+                                      className="flex items-center gap-1 hover:text-success"
+                                      onClick={(event) => {
+                                        event.stopPropagation()
+                                      }}
+                                    >
+                                      <EyeIcon />
+                                    </Link>
+                                  )}
                                   {!isPostSaleServiceCard && (
                                     <Link
                                       href={route(orderViewRoute, orderViewRoute === 'esr-process.order-view' ? { id: task.id } : task.id)}

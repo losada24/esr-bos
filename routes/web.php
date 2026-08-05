@@ -182,7 +182,12 @@ Route::middleware('auth')->group(function () {
       ->name('service-control.attachments.destroy')
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value .'|'. RoleEnum::SERVICE_MANAGER->value]);
 
+    Route::get('service-control/{serviceControl}', [ServiceControlController::class, 'show'])
+      ->name('service-control.show')
+      ->middleware(["role:" . implode('|', array_map(fn (RoleEnum $role) => $role->value, RoleEnum::cases()))]);
+
     Route::resource('service-control', ServiceControlController::class)
+      ->except(['show'])
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value .'|'. RoleEnum::SERVICE_MANAGER->value]);
 
     Route::get('stock-material/pdf', [StockMaterialController::class, 'pdf'])

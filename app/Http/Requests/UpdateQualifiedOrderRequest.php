@@ -86,6 +86,14 @@ class UpdateQualifiedOrderRequest extends FormRequest
         ]);
     }
 
+    private function usesCompanyContacts(): bool
+    {
+        $orderType = $this->input('order_type');
+
+        return $orderType === OrderTypeEnum::COMMERCIAL->value
+            || ($this->isEsrProcessOrder() && $orderType === OrderTypeEnum::RESIDENTIAL->value);
+    }
+
     /**
      * Determine if the user is authorized to make this request.
      *
@@ -106,7 +114,12 @@ class UpdateQualifiedOrderRequest extends FormRequest
         return [
            // 'client_id' => 'nullable|integer|exists:clients,id',
             'name' => 'required|string|max:255',
-            'client_id' => ['nullable', 'required_if:order_type,COMMERCIAL', 'integer', 'exists:clients,id'],
+            'client_id' => [
+                'nullable',
+                Rule::requiredIf(fn () => $this->usesCompanyContacts()),
+                'integer',
+                'exists:clients,id',
+            ],
             // 'last_name' => 'required|string|max:255',
             'order_type' => [
             'required',
@@ -193,7 +206,12 @@ class UpdateQualifiedOrderRequest extends FormRequest
             'change_order_note' => 'nullable|string|max:2000',
            
             // Solo obligatoria en COMMERCIAL
-            'company_contact_id' => [  'nullable','required_if:order_type,COMMERCIAL', 'integer', 'exists:company_contacts,id'],
+            'company_contact_id' => [
+                'nullable',
+                Rule::requiredIf(fn () => $this->usesCompanyContacts()),
+                'integer',
+                'exists:company_contacts,id',
+            ],
             'company_source_id' => [
                 'nullable',
                 Rule::requiredIf(fn () => !$this->isEsrProcessOrder() && $this->input('order_type') === OrderTypeEnum::COMMERCIAL->value),
@@ -285,7 +303,7 @@ class UpdateQualifiedOrderRequest extends FormRequest
                 }
             }
 
-            if ($this->input('order_type') === OrderTypeEnum::COMMERCIAL->value) {
+            if ($this->usesCompanyContacts()) {
                 $requestedCompanyIds = collect([
                     $this->input('company_contact_id'),
                     $this->input('associate_company_contact_id_1'),

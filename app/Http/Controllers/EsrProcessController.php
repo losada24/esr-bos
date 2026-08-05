@@ -139,7 +139,10 @@ class EsrProcessController extends OrderStorageController
                 ContactSourceEnum::cases()
             ),
             'statuses' => $this->storageStatuses(),
-            'order_types' => [OrderTypeEnum::COMMERCIAL->value],
+            'order_types' => [
+                OrderTypeEnum::COMMERCIAL->value,
+                OrderTypeEnum::RESIDENTIAL->value,
+            ],
             'services' => array_map(
                 static fn (ServiceEnum $service) => $service->value,
                 [
@@ -221,7 +224,10 @@ class EsrProcessController extends OrderStorageController
             'sources' => Source::query()
                 ->orderBy('name')
                 ->get(),
-            'order_types' => [OrderTypeEnum::COMMERCIAL->value],
+            'order_types' => [
+                OrderTypeEnum::COMMERCIAL->value,
+                OrderTypeEnum::RESIDENTIAL->value,
+            ],
             'services' => array_map(
                 static fn (ServiceEnum $service) => $service->value,
                 [
@@ -494,7 +500,7 @@ class EsrProcessController extends OrderStorageController
                 'parent_order_id' => $parentOrder?->id,
                 'root_order_id' => $parentOrder ? ($parentOrder->root_order_id ?: $parentOrder->id) : null,
                 'user_id' => auth()->id(),
-                'order_type' => OrderTypeEnum::COMMERCIAL->value,
+                'order_type' => $validated['order_type'],
                 'product_line' => $validated['product_line'],
                 'service' => $validated['service'] ?? null,
                 'esr_design' => $request->boolean('esr_design'),
