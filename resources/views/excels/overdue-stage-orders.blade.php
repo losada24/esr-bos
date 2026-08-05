@@ -1,80 +1,83 @@
+@php
+  $selectedSeller = collect($sellers ?? [])->firstWhere('id', $filters['seller_id'] ?? null);
+  $rows = collect($groups ?? [])->flatMap(function ($group) {
+    return collect($group['rows'] ?? [])->map(function ($row) use ($group) {
+      return array_merge($row, [
+        'status' => $group['status'] ?? ($row['status'] ?? null),
+        'threshold_label' => $group['threshold_label'] ?? null,
+      ]);
+    });
+  });
+@endphp
+
 <table>
   <thead>
     <tr>
-      <td colspan="5" style="font-weight: bold; font-size: 16px; background-color: #f0f0f0;">
+      <td colspan="10" style="font-weight: bold; font-size: 16px; background-color: #f0f0f0;">
         Overdue Stage Orders
       </td>
     </tr>
     <tr>
-      <td colspan="5" style="font-weight: bold;">Generated At: {{ $generatedAt }}</td>
+      <td colspan="10" style="font-weight: bold;">Generated At: {{ $generatedAt }}</td>
     </tr>
     <tr>
-      <td colspan="5" style="font-weight: bold;">Tracked Statuses: {{ $totals['statuses'] }}</td>
+      <td colspan="10" style="font-weight: bold;">Seller: {{ $selectedSeller['name'] ?? 'All sellers' }}</td>
     </tr>
     <tr>
-      <td colspan="5" style="font-weight: bold;">Configured Statuses: {{ $totals['configured_statuses'] }}</td>
+      <td colspan="10" style="font-weight: bold;">Overdue Only: {{ ($filters['overdue_only'] ?? false) ? 'Yes' : 'No' }}</td>
     </tr>
     <tr>
-      <td colspan="5" style="font-weight: bold;">Overdue Orders: {{ $totals['orders'] }}</td>
+      <td colspan="10" style="font-weight: bold;">Status Filter: {{ empty($filters['statuses'] ?? []) ? 'All statuses' : implode(', ', $filters['statuses']) }}</td>
+    </tr>
+    <tr>
+      <td colspan="10" style="font-weight: bold;">Order Type Filter: {{ empty($filters['order_types'] ?? []) ? 'All order types' : implode(', ', $filters['order_types']) }}</td>
+    </tr>
+    <tr>
+      <td colspan="10" style="font-weight: bold;">Product Line Filter: {{ empty($filters['product_lines'] ?? []) ? 'All product lines' : implode(', ', $filters['product_lines']) }}</td>
+    </tr>
+    <tr>
+      <td colspan="10" style="font-weight: bold;">Orders: {{ $totals['orders'] }}</td>
+    </tr>
+    <tr>
+      <td colspan="10" style="font-weight: bold;">Overdue Orders: {{ $totals['overdue_orders'] }}</td>
+    </tr>
+    <tr>
+      <td colspan="10" style="font-weight: bold;">Amount: ${{ number_format((float) ($totals['amount'] ?? 0), 2) }}</td>
+    </tr>
+    <tr>
+      <td colspan="10"></td>
+    </tr>
+    <tr>
+      <th>Status</th>
+      <th>Order</th>
+      <th>Seller</th>
+      <th>Created By</th>
+      <th>Order Type</th>
+      <th>Product Line</th>
+      <th>Overdue</th>
+      <th>Amount</th>
+      <th>Days In Status</th>
+      <th>Entered Status At</th>
     </tr>
   </thead>
+  <tbody>
+    @forelse ($rows as $row)
+      <tr style="{{ ($row['is_overdue'] ?? false) ? 'background-color: #fee2e2;' : '' }}">
+        <td>{{ $row['status'] ?? '-' }}</td>
+        <td>{{ $row['order_label'] ?? '-' }}</td>
+        <td>{{ $row['seller_name'] ?? '-' }}</td>
+        <td>{{ $row['created_by_name'] ?? '-' }}</td>
+        <td>{{ $row['order_type'] ?? '-' }}</td>
+        <td>{{ $row['product_line'] ?? '-' }}</td>
+        <td>{{ ($row['is_overdue'] ?? false) ? 'Yes' : 'No' }}</td>
+        <td>${{ number_format((float) ($row['project_amount'] ?? 0), 2) }}</td>
+        <td>{{ $row['days_in_stage'] ?? 0 }}</td>
+        <td>{{ $row['stage_entered_at'] ?? '-' }}</td>
+      </tr>
+    @empty
+      <tr>
+        <td colspan="10">No orders found for the selected filters.</td>
+      </tr>
+    @endforelse
+  </tbody>
 </table>
-
-@foreach ($groups as $group)
-  <table>
-    <thead>
-      <tr>
-        <td colspan="5" style="font-weight: bold; font-size: 14px; background-color: #f0f0f0;">
-          {{ $group['status'] }} ({{ $group['count'] }}) | Threshold: {{ $group['threshold_label'] }}
-        </td>
-      </tr>
-      <tr>
-        <td colspan="5" style="font-style: italic;">{{ $group['note'] }}</td>
-      </tr>
-    </thead>
-  </table>
-
-  @if (empty($group['seller_groups']))
-    <table>
-      <tbody>
-        <tr>
-          <td colspan="5">
-            {{ $group['is_configured']
-              ? 'No overdue orders in this status.'
-              : 'No overdue evaluation is available for this status because it has no threshold configured.' }}
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  @else
-    @foreach ($group['seller_groups'] as $sellerGroup)
-      <table>
-        <thead>
-          <tr>
-            <td colspan="5" style="font-weight: bold; background-color: #fafafa;">
-              {{ $sellerGroup['source'] === 'seller' ? 'Seller' : 'Created By' }}: {{ $sellerGroup['label'] }} ({{ $sellerGroup['count'] }})
-            </td>
-          </tr>
-          <tr>
-            <th>Order</th>
-            <th>{{ $sellerGroup['source'] === 'seller' ? 'Seller' : 'Created By' }}</th>
-            <th>Days In Stage</th>
-            <th>Created At</th>
-            <th>Entered Stage At</th>
-          </tr>
-        </thead>
-        <tbody>
-          @foreach ($sellerGroup['rows'] as $row)
-            <tr>
-              <td>{{ $row['order_label'] ?? '-' }}</td>
-              <td>{{ $sellerGroup['source'] === 'seller' ? ($row['seller_name'] ?? '-') : ($row['created_by_name'] ?? '-') }}</td>
-              <td>{{ $row['days_in_stage'] ?? 0 }}</td>
-              <td>{{ $row['created_at'] ?? '-' }}</td>
-              <td>{{ $row['stage_entered_at'] ?? '-' }}</td>
-            </tr>
-          @endforeach
-        </tbody>
-      </table>
-    @endforeach
-  @endif
-@endforeach

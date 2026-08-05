@@ -13,6 +13,7 @@ use App\Enum\LostReasonfrontdeskEnum;
 use App\Enum\OrderStatusEnum;
 use App\Enum\OrderTypeEnum;
 use App\Enum\PaymentStatusEnum;
+use App\Enum\ProductLineEnum;
 use App\Enum\RoleEnum;
 use App\Enum\ServiceEnum;
 use App\Enum\StatusUserEnum;
@@ -948,22 +949,22 @@ class ReportController extends Controller
     );
   }
 
-  public function overdueStageOrders()
+  public function overdueStageOrders(Request $request)
   {
-    return Inertia::render('Report/OverdueStageOrders', $this->buildOverdueStageOrdersData());
+    return Inertia::render('Report/OverdueStageOrders', $this->buildOverdueStageOrdersData($request));
   }
 
-  public function overdueStageOrdersPdf()
+  public function overdueStageOrdersPdf(Request $request)
   {
-    $data = $this->buildOverdueStageOrdersData();
+    $data = $this->buildOverdueStageOrdersData($request);
     $pdf = Pdf::loadView('pdf.overdue-stage-orders', $data)->setPaper('A4', 'landscape');
 
     return $pdf->stream('overdue-stage-orders.pdf');
   }
 
-  public function overdueStageOrdersExcel()
+  public function overdueStageOrdersExcel(Request $request)
   {
-    $data = $this->buildOverdueStageOrdersData();
+    $data = $this->buildOverdueStageOrdersData($request);
 
     return Excel::download(
       new OverdueStageOrdersExport($data),
@@ -2231,89 +2232,175 @@ class ReportController extends Controller
     ];
   }
 
-  private function buildOverdueStageOrdersData(): array
+  private function buildOverdueStageOrdersData(Request $request): array
   {
     $now = Carbon::now();
-    $statusConfigs = $this->overdueStageStatusConfigs();
-    $trackedStatuses = collect($statusConfigs)->pluck('status')->all();
+    $configuredStatuses = collect($this->overdueStageStatusConfigs())->keyBy('status');
+    $allStatuses = collect(OrderStatusEnum::cases())->map(fn (OrderStatusEnum $status) => $status->value)->all();
+    $orderTypes = collect(OrderTypeEnum::cases())->map(fn (OrderTypeEnum $type) => $type->value)->all();
+    $productLines = collect(ProductLineEnum::cases())->map(fn (ProductLineEnum $line) => $line->value)->all();
+    $sellerId = $request->integer('seller_id') ?: null;
+    $overdueOnly = $request->boolean('overdue_only');
+    $selectedStatuses = $this->resolveOverdueStageArrayFilter($request, 'statuses', $allStatuses);
+    $selectedOrderTypes = $this->resolveOverdueStageArrayFilter($request, 'order_types', $orderTypes);
+    $selectedProductLines = $this->resolveOverdueStageArrayFilter($request, 'product_lines', $productLines);
+
+    $sellers = User::role(RoleEnum::OWNER->value)
+      ->where('status', StatusUserEnum::ACTIVE->value)
+      ->orderBy('name')
+      ->get(['id', 'name'])
+      ->map(fn (User $user) => [
+        'id' => $user->id,
+        'name' => $user->name,
+      ]);
 
     $orders = Order::query()
       ->with([
         'owners:id,name',
         'user:id,name',
-        'orderStatus' => function ($query) use ($trackedStatuses) {
+        'orderStatus' => function ($query) use ($allStatuses) {
           $query
             ->select('id', 'order_id', 'status', 'user_id', 'created_at')
-            ->whereIn('status', array_values(array_unique(array_merge($trackedStatuses, [OrderStatusEnum::FOLLOW_UP->value]))))
+            ->whereIn('status', $allStatuses)
             ->with('user:id,name')
             ->orderBy('created_at');
         },
       ])
-      ->whereIn('status', $trackedStatuses)
+      ->when($sellerId, function ($query) use ($sellerId) {
+        $query->whereHas('owners', function ($ownerQuery) use ($sellerId) {
+          $ownerQuery->where('users.id', $sellerId);
+        });
+      })
+      ->when($selectedStatuses !== [], fn ($query) => $query->whereIn('status', $selectedStatuses))
+      ->when($selectedOrderTypes !== [], fn ($query) => $query->whereIn('order_type', $selectedOrderTypes))
+      ->when($selectedProductLines !== [], fn ($query) => $query->whereIn('product_line', $selectedProductLines))
       ->get([
         'id',
         'name',
         'status',
         'order_type',
+        'product_line',
+        'project_amount',
         'schedule_appointment',
         'created_at',
       ]);
 
-    $groups = collect($statusConfigs)
-      ->map(function (array $config) use ($orders, $now) {
+    $groupStatuses = collect($this->reportPipelineStatusOrder())
+      ->merge($allStatuses)
+      ->merge($orders->pluck('status')->filter()->unique())
+      ->unique()
+      ->when($selectedStatuses !== [], fn (Collection $statuses) => $statuses->filter(fn (string $status) => in_array($status, $selectedStatuses, true)))
+      ->values();
+
+    $groups = $groupStatuses
+      ->map(function (string $status) use ($orders, $now, $configuredStatuses, $overdueOnly) {
+        $config = $configuredStatuses->get($status, [
+          'status' => $status,
+          'is_configured' => false,
+          'hours' => null,
+          'threshold_label' => 'Not configured',
+          'note' => 'No overdue threshold is configured for this status.',
+        ]);
+
         $rows = $orders
-          ->filter(fn (Order $order) => $order->status === $config['status'])
+          ->filter(fn (Order $order) => $order->status === $status)
           ->map(fn (Order $order) => $this->mapOverdueStageOrderRow($order, $config, $now))
-          ->filter(fn (array $row) => $row['is_overdue'])
+          ->when($overdueOnly, fn (Collection $rows) => $rows->filter(fn (array $row) => $row['is_overdue']))
           ->sortByDesc('days_in_stage')
-          ->map(function (array $row) {
-            unset($row['is_overdue']);
-            return $row;
-          });
-
-        $sellerGroups = $rows
-          ->groupBy('group_label')
-          ->map(function (Collection $groupRows, string $groupLabel) {
-            $firstRow = $groupRows->first();
-
-            return [
-              'label' => $groupLabel,
-              'source' => $firstRow['group_source'] ?? 'seller',
-              'count' => $groupRows->count(),
-              'rows' => $groupRows
-                ->sortByDesc('days_in_stage')
-                ->values()
-                ->map(function (array $row) {
-                  unset($row['group_label'], $row['group_source']);
-                  return $row;
-                }),
-            ];
-          })
-          ->sortBy(function (array $group) {
-            $sourceRank = ($group['source'] ?? 'seller') === 'seller' ? '0' : '1';
-            return $sourceRank . '|' . mb_strtolower((string) ($group['label'] ?? ''));
-          })
           ->values();
 
         return [
-          'status' => $config['status'],
+          'status' => $status,
           'threshold_label' => $config['threshold_label'],
           'note' => $config['note'],
           'is_configured' => $config['is_configured'],
-          'count' => $sellerGroups->sum('count'),
-          'seller_groups' => $sellerGroups,
+          'count' => $rows->count(),
+          'overdue_count' => $rows->where('is_overdue', true)->count(),
+          'amount_total' => $rows->sum('project_amount'),
+          'rows' => $rows,
         ];
       })
+      ->filter(fn (array $group) => $selectedStatuses !== [] || $group['count'] > 0)
       ->values();
 
     return [
       'generatedAt' => $now->toDateTimeString(),
+      'sellers' => $sellers,
+      'statusOptions' => collect($this->reportPipelineStatusOrder())->merge($allStatuses)->unique()->values(),
+      'orderTypeOptions' => $orderTypes,
+      'productLineOptions' => $productLines,
+      'filters' => [
+        'seller_id' => $sellerId,
+        'overdue_only' => $overdueOnly,
+        'statuses' => $selectedStatuses,
+        'order_types' => $selectedOrderTypes,
+        'product_lines' => $selectedProductLines,
+      ],
       'totals' => [
         'statuses' => $groups->count(),
         'configured_statuses' => $groups->where('is_configured', true)->count(),
         'orders' => $groups->sum('count'),
+        'overdue_orders' => $groups->sum('overdue_count'),
+        'amount' => $groups->sum('amount_total'),
       ],
       'groups' => $groups,
+    ];
+  }
+
+  private function resolveOverdueStageArrayFilter(Request $request, string $key, array $allowedValues): array
+  {
+    $value = $request->input($key, []);
+    $values = is_array($value) ? $value : [$value];
+
+    return collect($values)
+      ->flatMap(fn ($item) => is_string($item) ? explode(',', $item) : [$item])
+      ->map(fn ($item) => trim((string) $item))
+      ->filter(fn (string $item) => $item !== '' && in_array($item, $allowedValues, true))
+      ->unique()
+      ->values()
+      ->all();
+  }
+
+  private function reportPipelineStatusOrder(): array
+  {
+    return [
+      OrderStatusEnum::NEW_CUSTOMER_REQUEST->value,
+      OrderStatusEnum::NEW_CUSTOMER_REQUEST_FOLLOW_UP->value,
+      OrderStatusEnum::NEW_CUSTOMER_REQUEST_STAND_BY->value,
+      OrderStatusEnum::LOST_CUSTOMER_REQUEST->value,
+      OrderStatusEnum::QUALIFIED->value,
+      OrderStatusEnum::COMMERCIAL_ASSIGNMENT->value,
+      OrderStatusEnum::PENDING_ASSIGNMENT->value,
+      OrderStatusEnum::REQUEST_RE_SCHEDULE->value,
+      OrderStatusEnum::ESTIMATE_APPT_SCHEDULE->value,
+      OrderStatusEnum::FOLLOW_UP->value,
+      OrderStatusEnum::FOLLOW_UP_PROJECTS->value,
+      OrderStatusEnum::STAND_BY->value,
+      OrderStatusEnum::PRE_CONTRACT_APPOINTMENT->value,
+      OrderStatusEnum::CONTRACT_SIGNED_BY_CLIENT->value,
+      OrderStatusEnum::LOST_CONTRACT->value,
+      OrderStatusEnum::PENDING_FINANCING_OR_DEPOSIT->value,
+      OrderStatusEnum::PENDING_HOA_APPROVAL->value,
+      OrderStatusEnum::RECTIFICATION_OF_MEASURES->value,
+      OrderStatusEnum::RECTIFICATION_OF_MEASURES_AND_HOA->value,
+      OrderStatusEnum::ORDER_MATERIALS_AND_FILE_ORGANIZATION->value,
+      OrderStatusEnum::FILE_REVIEW->value,
+      OrderStatusEnum::CLOSED_WON->value,
+      OrderStatusEnum::ACCOUNT_RECEIPT->value,
+      OrderStatusEnum::REVIEW->value,
+      OrderStatusEnum::PLANNED->value,
+      OrderStatusEnum::REPLANNED->value,
+      OrderStatusEnum::MATERIALS_RECEIVED->value,
+      OrderStatusEnum::CONFIRMED->value,
+      OrderStatusEnum::RESCHEDULE->value,
+      OrderStatusEnum::EXECUTION->value,
+      OrderStatusEnum::ON_HOLD->value,
+      OrderStatusEnum::SUPERVISION->value,
+      OrderStatusEnum::INSPECTION->value,
+      OrderStatusEnum::FINISH->value,
+      OrderStatusEnum::FINAL_INSPECTION->value,
+      OrderStatusEnum::FINAL_COLLECT->value,
+      OrderStatusEnum::COMPLETE->value,
     ];
   }
 
@@ -2391,6 +2478,10 @@ class ReportController extends Controller
       'id' => $order->id,
       'order_name' => $order->name,
       'order_label' => $order->name ? "#{$order->id} - {$order->name}" : "#{$order->id}",
+      'status' => $order->status,
+      'order_type' => $order->order_type,
+      'product_line' => $order->product_line,
+      'project_amount' => (float) ($order->project_amount ?? 0),
       'seller_name' => $sellerNames,
       'created_by_name' => $creatorName,
       'group_label' => $groupLabel,
