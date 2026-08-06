@@ -46,6 +46,7 @@ class OverdueStageOrdersExport implements FromView, WithEvents
         $lastColumnIndex = Coordinate::columnIndexFromString($lastColumn);
         $headerRow = null;
         $overdueColumn = null;
+        $amountColumn = null;
 
         for ($row = 1; $row <= $lastRow; $row++) {
             for ($column = 1; $column <= $lastColumnIndex; $column++) {
@@ -54,6 +55,14 @@ class OverdueStageOrdersExport implements FromView, WithEvents
                 if (strcasecmp($value, 'Overdue') === 0) {
                     $headerRow = $row;
                     $overdueColumn = $column;
+                }
+
+                if (strcasecmp($value, 'Amount') === 0) {
+                    $headerRow = $row;
+                    $amountColumn = $column;
+                }
+
+                if ($overdueColumn !== null && $amountColumn !== null) {
                     break 2;
                 }
             }
@@ -67,6 +76,17 @@ class OverdueStageOrdersExport implements FromView, WithEvents
             $firstColumnValue = trim((string) $sheet->getCell("A{$row}")->getValue());
 
             if (strcasecmp($firstColumnValue, 'Total') === 0) {
+                if ($amountColumn !== null && $row > $headerRow + 1) {
+                    $amountColumnLetter = Coordinate::stringFromColumnIndex($amountColumn);
+                    $sheet->setCellValue(
+                        "{$amountColumnLetter}{$row}",
+                        "=SUBTOTAL(109,{$amountColumnLetter}" . ($headerRow + 1) . ":{$amountColumnLetter}" . ($row - 1) . ')'
+                    );
+                    $sheet->getStyle("{$amountColumnLetter}" . ($headerRow + 1) . ":{$amountColumnLetter}{$row}")
+                        ->getNumberFormat()
+                        ->setFormatCode('"$"#,##0.00');
+                }
+
                 $sheet->getStyle("A{$row}:{$lastColumn}{$row}")->applyFromArray([
                     'font' => ['bold' => true],
                     'fill' => [

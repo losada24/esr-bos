@@ -73,7 +73,7 @@
         <td style="{{ $overdueStyle }}">{{ $row['order_type'] ?? '-' }}</td>
         <td style="{{ $overdueStyle }}">{{ $row['product_line'] ?? '-' }}</td>
         <td style="{{ $overdueStyle }}">{{ ($row['is_overdue'] ?? false) ? 'Yes' : 'No' }}</td>
-        <td style="{{ $overdueStyle }}">${{ number_format((float) ($row['project_amount'] ?? 0), 2) }}</td>
+        <td style="{{ $overdueStyle }}">{{ (float) ($row['project_amount'] ?? 0) }}</td>
         <td style="{{ $overdueStyle }}">{{ $row['days_in_stage'] ?? 0 }}</td>
         <td style="{{ $overdueStyle }}">{{ $row['stage_entered_at'] ?? '-' }}</td>
       </tr>
@@ -90,7 +90,7 @@
       <td></td>
       <td></td>
       <td></td>
-      <td style="font-weight: bold;">${{ number_format((float) ($totals['amount'] ?? 0), 2) }}</td>
+      <td style="font-weight: bold;">{{ (float) ($totals['amount'] ?? 0) }}</td>
       <td></td>
       <td></td>
     </tr>

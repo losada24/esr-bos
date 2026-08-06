@@ -13,6 +13,8 @@ interface OverdueStageOrderRow {
   id: number
   order_name: string | null
   order_label: string
+  order_type: string | null
+  product_line: string | null
   project_amount: number
   seller_name: string
   created_by_name: string
@@ -358,6 +360,8 @@ export default function OverdueStageOrders ({
                           <th className="px-4 py-3">Order</th>
                           <th className="px-4 py-3">Amount</th>
                           <th className="px-4 py-3">Days In Status</th>
+                          <th className="px-4 py-3">Order Type</th>
+                          <th className="px-4 py-3">Product Line</th>
                           <th className="px-4 py-3">Seller</th>
                           <th className="px-4 py-3">Entered Status At</th>
                         </tr>
@@ -365,7 +369,7 @@ export default function OverdueStageOrders ({
                       <tbody>
                         {group.rows.length === 0 ? (
                           <tr>
-                            <td className="px-4 py-10 text-center text-sm text-slate-400" colSpan={5}>
+                            <td className="px-4 py-10 text-center text-sm text-slate-400" colSpan={7}>
                               No orders found in this status.
                             </td>
                           </tr>
@@ -381,6 +385,8 @@ export default function OverdueStageOrders ({
                               </td>
                               <td className="px-4 py-4 align-top">{formatPrice(Number(row.project_amount || 0))}</td>
                               <td className="px-4 py-4 align-top font-semibold">{row.days_in_stage}</td>
+                              <td className="px-4 py-4 align-top">{row.order_type || '-'}</td>
+                              <td className="px-4 py-4 align-top">{row.product_line || '-'}</td>
                               <td className="px-4 py-4 align-top">{row.seller_name || '-'}</td>
                               <td className="px-4 py-4 align-top">
                                 <div className={row.is_overdue ? 'text-xs text-rose-600' : 'text-xs text-slate-400'}>{formatDateTime(row.stage_entered_at)}</div>
