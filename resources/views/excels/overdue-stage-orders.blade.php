@@ -62,22 +62,37 @@
   </thead>
   <tbody>
     @forelse ($rows as $row)
-      <tr style="{{ ($row['is_overdue'] ?? false) ? 'background-color: #fee2e2;' : '' }}">
-        <td>{{ $row['status'] ?? '-' }}</td>
-        <td>{{ $row['order_label'] ?? '-' }}</td>
-        <td>{{ $row['seller_name'] ?? '-' }}</td>
-        <td>{{ $row['created_by_name'] ?? '-' }}</td>
-        <td>{{ $row['order_type'] ?? '-' }}</td>
-        <td>{{ $row['product_line'] ?? '-' }}</td>
-        <td>{{ ($row['is_overdue'] ?? false) ? 'Yes' : 'No' }}</td>
-        <td>${{ number_format((float) ($row['project_amount'] ?? 0), 2) }}</td>
-        <td>{{ $row['days_in_stage'] ?? 0 }}</td>
-        <td>{{ $row['stage_entered_at'] ?? '-' }}</td>
+      @php
+        $overdueStyle = ($row['is_overdue'] ?? false) ? 'background-color: #fee2e2; color: #7f1d1d;' : '';
+      @endphp
+      <tr>
+        <td style="{{ $overdueStyle }}">{{ $row['status'] ?? '-' }}</td>
+        <td style="{{ $overdueStyle }}">{{ $row['order_label'] ?? '-' }}</td>
+        <td style="{{ $overdueStyle }}">{{ $row['seller_name'] ?? '-' }}</td>
+        <td style="{{ $overdueStyle }}">{{ $row['created_by_name'] ?? '-' }}</td>
+        <td style="{{ $overdueStyle }}">{{ $row['order_type'] ?? '-' }}</td>
+        <td style="{{ $overdueStyle }}">{{ $row['product_line'] ?? '-' }}</td>
+        <td style="{{ $overdueStyle }}">{{ ($row['is_overdue'] ?? false) ? 'Yes' : 'No' }}</td>
+        <td style="{{ $overdueStyle }}">${{ number_format((float) ($row['project_amount'] ?? 0), 2) }}</td>
+        <td style="{{ $overdueStyle }}">{{ $row['days_in_stage'] ?? 0 }}</td>
+        <td style="{{ $overdueStyle }}">{{ $row['stage_entered_at'] ?? '-' }}</td>
       </tr>
     @empty
       <tr>
         <td colspan="10">No orders found for the selected filters.</td>
       </tr>
     @endforelse
+    <tr>
+      <td style="font-weight: bold;">Total</td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td style="font-weight: bold;">${{ number_format((float) ($totals['amount'] ?? 0), 2) }}</td>
+      <td></td>
+      <td></td>
+    </tr>
   </tbody>
 </table>
