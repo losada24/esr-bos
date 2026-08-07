@@ -103,7 +103,7 @@ class OrderController extends Controller
     $filters = $request->only(['text', 'status']);
     $filters['is_supply'] = $request->boolean('is_supply');
 
-    $orders = Order::with(['installationTeams.user', 'phases'])
+    $orders = Order::with(['client:id,name,email,phone,phone_ext', 'installationTeams.user', 'phases'])
         ->whereIn('orders.status', $allowedStatuses)   // <- filtro duro por status permitidos
         ->filter($filters)   // si viene un status fuera de la lista, igual quedará excluido
         ->orderBy('orders.updated_at', 'desc')

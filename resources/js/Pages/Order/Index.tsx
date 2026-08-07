@@ -87,6 +87,8 @@ export default function Index ({ auth, orders, statuses }: IndexOrderProps) {
             <tbody>
               {orders.data.map((order) => {
                 const isSelected = selectedRows.includes(order.id)
+                const jobAddress = `${order.job_address ?? ''}${order.city ? `, ${order.city}` : ''}${order.job_state ? `, ${order.job_state}` : ''}${order.job_zip ? `, ${order.job_zip}` : ''}`
+                const clientPhone = `${order.client?.phone ?? ''}${order.client?.phone_ext ? ` ext. ${order.client.phone_ext}` : ''}`
                 return (
                   // console.log(order),
                   <tr
@@ -113,7 +115,13 @@ export default function Index ({ auth, orders, statuses }: IndexOrderProps) {
                       )}
                     </td>
                     <td className="border-t px-6 py-4 align-top">
-                    {`${order.job_address ?? ''}${order.city ? `, ${order.city}` : ''}${order.job_state ? `, ${order.job_state}` : ''}${order.job_zip ? `, ${order.job_zip}` : ''}`}
+                      {order.client?.email && (
+                        <div className="text-sm text-gray-600">Email: {order.client.email}</div>
+                      )}
+                      {clientPhone && (
+                        <div className="text-sm text-gray-600">Phone: {clientPhone}</div>
+                      )}
+                      <div>{jobAddress}</div>
                     </td>
                     <td className="border-t px-6 py-4 align-top">
                       {order?.client?.name}
