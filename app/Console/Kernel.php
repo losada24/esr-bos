@@ -7,6 +7,7 @@ use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 use App\Console\Commands\SendExpiredInstallationTeamDocumentsDaily;
 use App\Console\Commands\SendExpiredInstallationTeamDocumentsLiabilityDaily;
+use App\Console\Commands\SendOverdueStageOrdersReport;
 
 class Kernel extends ConsoleKernel
 {
@@ -15,6 +16,7 @@ class Kernel extends ConsoleKernel
         SendExpiredInstallationTeamDocumentsDaily::class,
         SendExpiredInstallationTeamDocumentsLiabilityDaily::class,
         ChangeOrdersToExecutionStatus::class,
+        SendOverdueStageOrdersReport::class,
     ];
 
     /**  
@@ -25,6 +27,7 @@ class Kernel extends ConsoleKernel
         $schedule->command('app:send-expired-installation-team-documents-daily')->weekly()->sundays()->at('00:01');
         $schedule->command('app:send-expired-installation-team-documents-liability-daily')->weekly()->sundays()->at('00:05');
         $schedule->command('app:change-orders-to-execution-status')->daily()->at('00:10');
+        $schedule->command('app:send-overdue-stage-orders-report')->everyFifteenMinutes();
     }
 
     /**

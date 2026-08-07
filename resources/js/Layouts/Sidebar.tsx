@@ -597,6 +597,16 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                                 </div>
                                             </NavLink>
                                         </li>
+                                        {IS_ADMIN && (
+                                          <li className="menu nav-item">
+                                            <NavLink href={route('overdue-report-email-schedule.index')} active={route().current('overdue-report-email-schedule.index')} className="group">
+                                              <div className="flex items-center">
+                                                <CalendarIcon />
+                                                <SidebarLinkLabel>Overdue Email Schedule</SidebarLinkLabel>
+                                              </div>
+                                            </NavLink>
+                                          </li>
+                                        )}
                                           </>
                                         )}
                                         {CAN_VIEW_MY_REFERRED_CLIENTS && (

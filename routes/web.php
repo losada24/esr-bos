@@ -22,6 +22,7 @@ use App\Http\Controllers\FrontdeskController;
 use App\Http\Controllers\InstallationTeamController;
 use App\Http\Controllers\NoteAudioController;
 use App\Http\Controllers\OrderNoteController;
+use App\Http\Controllers\OverdueReportEmailScheduleController;
 use App\Http\Controllers\OrderProcessingController;
 use App\Http\Controllers\OrderStorageController;
 use App\Http\Controllers\OrderSearchController;
@@ -129,6 +130,12 @@ Route::middleware('auth')->group(function () {
 
     Route::resource('user', UserController::class)
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value ]);
+    Route::get('/administration/overdue-report-email-schedule', [OverdueReportEmailScheduleController::class, 'index'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value])
+      ->name('overdue-report-email-schedule.index');
+    Route::put('/administration/overdue-report-email-schedule', [OverdueReportEmailScheduleController::class, 'update'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value])
+      ->name('overdue-report-email-schedule.update');
 
       Route::get('company_contact', [CompanyContactController::class, 'index'])
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::FRONTDESK_ADMIN->value . '|'. RoleEnum::FRONTDESK_ESR->value])

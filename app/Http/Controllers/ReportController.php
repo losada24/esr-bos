@@ -46,6 +46,7 @@ use App\Models\Order;
 use App\Models\OrderProduct;
 use App\Models\PaymentExtraField;
 use App\Models\Setting;
+use App\Services\OverdueStageOrdersReportService;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Router;
@@ -949,22 +950,22 @@ class ReportController extends Controller
     );
   }
 
-  public function overdueStageOrders(Request $request)
+  public function overdueStageOrders(Request $request, OverdueStageOrdersReportService $reportService)
   {
-    return Inertia::render('Report/OverdueStageOrders', $this->buildOverdueStageOrdersData($request));
+    return Inertia::render('Report/OverdueStageOrders', $reportService->build($request->all()));
   }
 
-  public function overdueStageOrdersPdf(Request $request)
+  public function overdueStageOrdersPdf(Request $request, OverdueStageOrdersReportService $reportService)
   {
-    $data = $this->buildOverdueStageOrdersData($request);
+    $data = $reportService->build($request->all());
     $pdf = Pdf::loadView('pdf.overdue-stage-orders', $data)->setPaper('A4', 'landscape');
 
     return $pdf->stream('overdue-stage-orders.pdf');
   }
 
-  public function overdueStageOrdersExcel(Request $request)
+  public function overdueStageOrdersExcel(Request $request, OverdueStageOrdersReportService $reportService)
   {
-    $data = $this->buildOverdueStageOrdersData($request);
+    $data = $reportService->build($request->all());
 
     return Excel::download(
       new OverdueStageOrdersExport($data),
