@@ -9,13 +9,22 @@
       <td colspan="5" style="font-weight: bold;">Generated At: {{ $generatedAt }}</td>
     </tr>
     <tr>
-      <td colspan="5" style="font-weight: bold;">Tracked Statuses: {{ $totals['statuses'] }}</td>
+      <td colspan="5" style="font-weight: bold;">Seller: {{ $selectedSellerName }}</td>
+    </tr>
+    <tr>
+      <td colspan="5" style="font-weight: bold;">ESR Process Statuses: {{ $totals['statuses'] }}</td>
     </tr>
     <tr>
       <td colspan="5" style="font-weight: bold;">Configured Statuses: {{ $totals['configured_statuses'] }}</td>
     </tr>
     <tr>
-      <td colspan="5" style="font-weight: bold;">Overdue Orders: {{ $totals['orders'] }}</td>
+      <td colspan="5" style="font-weight: bold;">Orders: {{ $totals['orders'] }}</td>
+    </tr>
+    <tr>
+      <td colspan="5" style="font-weight: bold;">Overdue Orders: {{ $totals['overdue_orders'] }}</td>
+    </tr>
+    <tr>
+      <td colspan="5" style="font-weight: bold;">Amount: ${{ number_format((float) $totals['amount'], 2) }}</td>
     </tr>
   </thead>
 </table>
@@ -47,34 +56,35 @@
       </tbody>
     </table>
   @else
-    @foreach ($group['seller_groups'] as $sellerGroup)
-      <table>
-        <thead>
-          <tr>
-            <td colspan="5" style="font-weight: bold; background-color: #fafafa;">
-              {{ $sellerGroup['source'] === 'seller' ? 'Seller' : 'Created By' }}: {{ $sellerGroup['label'] }} ({{ $sellerGroup['count'] }})
-            </td>
-          </tr>
-          <tr>
-            <th>Order</th>
-            <th>{{ $sellerGroup['source'] === 'seller' ? 'Seller' : 'Created By' }}</th>
-            <th>Days In Stage</th>
-            <th>Created At</th>
-            <th>Entered Stage At</th>
-          </tr>
-        </thead>
-        <tbody>
+    <table>
+      <thead>
+        <tr>
+          <th>Order</th>
+          <th>Amount</th>
+          <th>Days In Status</th>
+          <th>Order Type</th>
+          <th>Product Line</th>
+          <th>Seller</th>
+          <th>Entered Status At</th>
+          <th>Overdue</th>
+        </tr>
+      </thead>
+      <tbody>
+        @foreach ($group['seller_groups'] as $sellerGroup)
           @foreach ($sellerGroup['rows'] as $row)
             <tr>
-              <td>{{ $row['order_label'] ?? '-' }}</td>
-              <td>{{ $sellerGroup['source'] === 'seller' ? ($row['seller_name'] ?? '-') : ($row['created_by_name'] ?? '-') }}</td>
-              <td>{{ $row['days_in_stage'] ?? 0 }}</td>
-              <td>{{ $row['created_at'] ?? '-' }}</td>
-              <td>{{ $row['stage_entered_at'] ?? '-' }}</td>
+              <td style="{{ ($row['is_overdue'] ?? false) ? 'background-color: #fde2e2; color: #7f1d1d;' : '' }}">{{ $row['order_label'] ?? '-' }}</td>
+              <td style="{{ ($row['is_overdue'] ?? false) ? 'background-color: #fde2e2; color: #7f1d1d;' : '' }}">${{ number_format((float) ($row['amount'] ?? 0), 2) }}</td>
+              <td style="{{ ($row['is_overdue'] ?? false) ? 'background-color: #fde2e2; color: #7f1d1d;' : '' }}">{{ $row['days_in_stage'] ?? 0 }}</td>
+              <td style="{{ ($row['is_overdue'] ?? false) ? 'background-color: #fde2e2; color: #7f1d1d;' : '' }}">{{ $row['order_type'] ?? '-' }}</td>
+              <td style="{{ ($row['is_overdue'] ?? false) ? 'background-color: #fde2e2; color: #7f1d1d;' : '' }}">{{ $row['product_line'] ?? '-' }}</td>
+              <td style="{{ ($row['is_overdue'] ?? false) ? 'background-color: #fde2e2; color: #7f1d1d;' : '' }}">{{ $row['seller_name'] ?? ($row['created_by_name'] ?? '-') }}</td>
+              <td style="{{ ($row['is_overdue'] ?? false) ? 'background-color: #fde2e2; color: #7f1d1d;' : '' }}">{{ $row['stage_entered_at'] ?? '-' }}</td>
+              <td style="{{ ($row['is_overdue'] ?? false) ? 'background-color: #fde2e2; color: #7f1d1d;' : '' }}">{{ ($row['is_overdue'] ?? false) ? 'Yes' : 'No' }}</td>
             </tr>
           @endforeach
-        </tbody>
-      </table>
-    @endforeach
+        @endforeach
+      </tbody>
+    </table>
   @endif
 @endforeach

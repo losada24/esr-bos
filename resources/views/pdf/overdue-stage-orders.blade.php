@@ -33,13 +33,20 @@
     background-color: #f0f0f0;
     font-weight: bold;
   }
+  .overdue-row td {
+    background-color: #fde2e2;
+    color: #7f1d1d;
+  }
 </style>
 
 <div class="meta">Overdue Stage Orders</div>
 <div class="meta">Generated At: {{ $generatedAt }}</div>
-<div class="meta">Tracked Statuses: {{ $totals['statuses'] }}</div>
+<div class="meta">Seller: {{ $selectedSellerName }}</div>
+<div class="meta">ESR Process Statuses: {{ $totals['statuses'] }}</div>
 <div class="meta">Configured Statuses: {{ $totals['configured_statuses'] }}</div>
-<div class="meta">Overdue Orders: {{ $totals['orders'] }}</div>
+<div class="meta">Orders: {{ $totals['orders'] }}</div>
+<div class="meta">Overdue Orders: {{ $totals['overdue_orders'] }}</div>
+<div class="meta">Amount: ${{ number_format((float) $totals['amount'], 2) }}</div>
 
 @foreach ($groups as $group)
   <div class="status-title">
@@ -60,33 +67,33 @@
       </tbody>
     </table>
   @else
-    @foreach ($group['seller_groups'] as $sellerGroup)
-      <div class="group-title">
-        {{ $sellerGroup['source'] === 'seller' ? 'Seller' : 'Created By' }}: {{ $sellerGroup['label'] }} ({{ $sellerGroup['count'] }})
-      </div>
-
-      <table>
-        <thead>
-          <tr>
-            <th>Order</th>
-            <th>{{ $sellerGroup['source'] === 'seller' ? 'Seller' : 'Created By' }}</th>
-            <th>Days In Stage</th>
-            <th>Created At</th>
-            <th>Entered Stage At</th>
-          </tr>
-        </thead>
-        <tbody>
+    <table>
+      <thead>
+        <tr>
+          <th>Order</th>
+          <th>Amount</th>
+          <th>Days In Status</th>
+          <th>Order Type</th>
+          <th>Product Line</th>
+          <th>Seller</th>
+          <th>Entered Status At</th>
+        </tr>
+      </thead>
+      <tbody>
+        @foreach ($group['seller_groups'] as $sellerGroup)
           @foreach ($sellerGroup['rows'] as $row)
-            <tr>
+            <tr class="{{ ($row['is_overdue'] ?? false) ? 'overdue-row' : '' }}">
               <td>{{ $row['order_label'] ?? '-' }}</td>
-              <td>{{ $sellerGroup['source'] === 'seller' ? ($row['seller_name'] ?? '-') : ($row['created_by_name'] ?? '-') }}</td>
+              <td>${{ number_format((float) ($row['amount'] ?? 0), 2) }}</td>
               <td>{{ $row['days_in_stage'] ?? 0 }}</td>
-              <td>{{ $row['created_at'] ?? '-' }}</td>
+              <td>{{ $row['order_type'] ?? '-' }}</td>
+              <td>{{ $row['product_line'] ?? '-' }}</td>
+              <td>{{ $row['seller_name'] ?? ($row['created_by_name'] ?? '-') }}</td>
               <td>{{ $row['stage_entered_at'] ?? '-' }}</td>
             </tr>
           @endforeach
-        </tbody>
-      </table>
-    @endforeach
+        @endforeach
+      </tbody>
+    </table>
   @endif
 @endforeach

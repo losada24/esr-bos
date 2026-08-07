@@ -58,7 +58,7 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
   const CAN_VIEW_SUPERVISOR_ASSIGNED = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER
   const CAN_VIEW_REPLANNED_SUMMARY = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_SERVICE_MANAGER || IS_OWNER_ADMIN || HAS_FRONTDESK_ADMIN_ROLE
   const CAN_VIEW_DAILY_ORDER_STATUS = IS_ADMIN || HAS_FRONTDESK_ADMIN_ROLE || IS_OWNER_ADMIN
-  const CAN_VIEW_OVERDUE_STAGE_REPORT = IS_ADMIN || IS_ACCOUNT_MANAGER || HAS_FRONTDESK_ADMIN_ROLE || IS_OWNER_ADMIN
+  const CAN_VIEW_OVERDUE_STAGE_REPORT = CAN_VIEW_ESR_PROCESS
   const CAN_VIEW_MARKETING_REPORT = IS_ADMIN || HAS_FRONTDESK_ADMIN_ROLE || IS_OWNER_ADMIN
   const CAN_VIEW_SALES_APPOINTMENTS = IS_ADMIN || IS_ACCOUNT_MANAGER || HAS_FRONTDESK_ADMIN_ROLE || IS_OWNER_ADMIN
   const CAN_VIEW_ORDER_STORAGE = IS_ADMIN || IS_ACCOUNT_MANAGER || IS_ACCOUNTING || HAS_FRONTDESK_ADMIN_ROLE
@@ -183,6 +183,24 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                   </div>
                                 </NavLink>
                               </li>
+                            )}
+                            {CAN_VIEW_OVERDUE_STAGE_REPORT && (
+                              <>
+                                <h2 className="py-3 px-7 flex items-center uppercase font-extrabold bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08] -mx-4 mb-1">
+                                  <svg className="w-4 h-5 flex-none hidden" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                  </svg>
+                                  <span>Report</span>
+                                </h2>
+                                <li className="menu nav-item">
+                                  <NavLink href={route('report.overdue-stage-orders')} active={route().current('report.overdue-stage-orders')} className="group">
+                                    <div className="flex items-center">
+                                      <ReferralIcon />
+                                      <SidebarLinkLabel>Overdue Stage Orders</SidebarLinkLabel>
+                                    </div>
+                                  </NavLink>
+                                </li>
+                              </>
                             )}
                             {SHOW_HIDDEN_SIDEBAR_MODULES && CAN_VIEW_FRONTDESK_PIPELINE && (
                               <li className="menu nav-item">
