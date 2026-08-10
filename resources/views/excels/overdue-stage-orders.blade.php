@@ -1,90 +1,94 @@
+@php
+  $appName = config('app.name');
+  $visibleGroups = collect($groups ?? [])->filter(fn ($group) => (int) ($group['count'] ?? 0) > 0)->values();
+@endphp
+
 <table>
   <thead>
     <tr>
-      <td colspan="5" style="font-weight: bold; font-size: 16px; background-color: #f0f0f0;">
-        Overdue Stage Orders
-      </td>
+      <td colspan="9">{{ $appName }} | Overdue Stage Orders Report</td>
     </tr>
     <tr>
-      <td colspan="5" style="font-weight: bold;">Generated At: {{ $generatedAt }}</td>
+      <td colspan="9">Generated At: {{ $generatedAt }}</td>
     </tr>
     <tr>
-      <td colspan="5" style="font-weight: bold;">Seller: {{ $selectedSellerName }}</td>
+      <td>Statuses</td>
+      <td>{{ (int) ($totals['configured_statuses'] ?? $totals['statuses'] ?? 0) }}</td>
+      <td>Overdue Orders</td>
+      <td>{{ (int) ($totals['overdue_orders'] ?? 0) }}</td>
+      <td>Amount</td>
+      <td>{{ (float) ($totals['amount'] ?? 0) }}</td>
+      <td colspan="3">Seller: {{ $selectedSellerName ?? 'All sellers' }}</td>
     </tr>
     <tr>
-      <td colspan="5" style="font-weight: bold;">ESR Process Statuses: {{ $totals['statuses'] }}</td>
+      <td colspan="9"></td>
     </tr>
     <tr>
-      <td colspan="5" style="font-weight: bold;">Configured Statuses: {{ $totals['configured_statuses'] }}</td>
-    </tr>
-    <tr>
-      <td colspan="5" style="font-weight: bold;">Orders: {{ $totals['orders'] }}</td>
-    </tr>
-    <tr>
-      <td colspan="5" style="font-weight: bold;">Overdue Orders: {{ $totals['overdue_orders'] }}</td>
-    </tr>
-    <tr>
-      <td colspan="5" style="font-weight: bold;">Amount: ${{ number_format((float) $totals['amount'], 2) }}</td>
+      <th>Row Type</th>
+      <th>Status</th>
+      <th>Seller</th>
+      <th>Order</th>
+      <th>Amount</th>
+      <th>Days In Status</th>
+      <th>Order Type</th>
+      <th>Product Line</th>
+      <th>Entered Status At</th>
     </tr>
   </thead>
-</table>
+  <tbody>
+    @forelse ($visibleGroups as $group)
+      @php
+        $sellerGroups = collect($group['seller_groups'] ?? [])
+          ->filter(fn ($sellerGroup) => (int) ($sellerGroup['count'] ?? 0) > 0)
+          ->values();
+      @endphp
 
-@foreach ($groups as $group)
-  <table>
-    <thead>
       <tr>
-        <td colspan="5" style="font-weight: bold; font-size: 14px; background-color: #f0f0f0;">
-          {{ $group['status'] }} ({{ $group['count'] }}) | Threshold: {{ $group['threshold_label'] }}
-        </td>
+        <td>Status Total</td>
+        <td>{{ $group['status'] ?? '-' }}</td>
+        <td></td>
+        <td>{{ number_format((int) ($group['count'] ?? 0)) }} orders</td>
+        <td>{{ (float) ($group['amount'] ?? 0) }}</td>
+        <td>{{ $group['threshold_label'] ?? '-' }}</td>
+        <td></td>
+        <td></td>
+        <td></td>
       </tr>
-      <tr>
-        <td colspan="5" style="font-style: italic;">{{ $group['note'] }}</td>
-      </tr>
-    </thead>
-  </table>
 
-  @if (empty($group['seller_groups']))
-    <table>
-      <tbody>
+      @foreach ($sellerGroups as $sellerGroup)
+        @php
+          $sellerRows = collect($sellerGroup['rows'] ?? []);
+        @endphp
         <tr>
-          <td colspan="5">
-            {{ $group['is_configured']
-              ? 'No overdue orders in this status.'
-              : 'No overdue evaluation is available for this status because it has no threshold configured.' }}
-          </td>
+          <td>Seller Total</td>
+          <td>{{ $group['status'] ?? '-' }}</td>
+          <td>{{ $sellerGroup['label'] ?? '-' }}</td>
+          <td>{{ number_format((int) ($sellerGroup['count'] ?? 0)) }} orders</td>
+          <td>{{ (float) $sellerRows->sum('amount') }}</td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
         </tr>
-      </tbody>
-    </table>
-  @else
-    <table>
-      <thead>
-        <tr>
-          <th>Order</th>
-          <th>Amount</th>
-          <th>Days In Status</th>
-          <th>Order Type</th>
-          <th>Product Line</th>
-          <th>Seller</th>
-          <th>Entered Status At</th>
-          <th>Overdue</th>
-        </tr>
-      </thead>
-      <tbody>
-        @foreach ($group['seller_groups'] as $sellerGroup)
-          @foreach ($sellerGroup['rows'] as $row)
-            <tr>
-              <td style="{{ ($row['is_overdue'] ?? false) ? 'background-color: #fde2e2; color: #7f1d1d;' : '' }}">{{ $row['order_label'] ?? '-' }}</td>
-              <td style="{{ ($row['is_overdue'] ?? false) ? 'background-color: #fde2e2; color: #7f1d1d;' : '' }}">${{ number_format((float) ($row['amount'] ?? 0), 2) }}</td>
-              <td style="{{ ($row['is_overdue'] ?? false) ? 'background-color: #fde2e2; color: #7f1d1d;' : '' }}">{{ $row['days_in_stage'] ?? 0 }}</td>
-              <td style="{{ ($row['is_overdue'] ?? false) ? 'background-color: #fde2e2; color: #7f1d1d;' : '' }}">{{ $row['order_type'] ?? '-' }}</td>
-              <td style="{{ ($row['is_overdue'] ?? false) ? 'background-color: #fde2e2; color: #7f1d1d;' : '' }}">{{ $row['product_line'] ?? '-' }}</td>
-              <td style="{{ ($row['is_overdue'] ?? false) ? 'background-color: #fde2e2; color: #7f1d1d;' : '' }}">{{ $row['seller_name'] ?? ($row['created_by_name'] ?? '-') }}</td>
-              <td style="{{ ($row['is_overdue'] ?? false) ? 'background-color: #fde2e2; color: #7f1d1d;' : '' }}">{{ $row['stage_entered_at'] ?? '-' }}</td>
-              <td style="{{ ($row['is_overdue'] ?? false) ? 'background-color: #fde2e2; color: #7f1d1d;' : '' }}">{{ ($row['is_overdue'] ?? false) ? 'Yes' : 'No' }}</td>
-            </tr>
-          @endforeach
+
+        @foreach ($sellerRows as $row)
+          <tr>
+            <td>Order</td>
+            <td>{{ $row['status'] ?? ($group['status'] ?? '-') }}</td>
+            <td>{{ $sellerGroup['label'] ?? ($row['seller_name'] ?? ($row['created_by_name'] ?? '-')) }}</td>
+            <td>{{ $row['order_label'] ?? '-' }}</td>
+            <td>{{ (float) ($row['amount'] ?? 0) }}</td>
+            <td>{{ $row['days_in_stage'] ?? 0 }}</td>
+            <td>{{ $row['order_type'] ?? '-' }}</td>
+            <td>{{ $row['product_line'] ?? '-' }}</td>
+            <td>{{ $row['stage_entered_at'] ?? '-' }}</td>
+          </tr>
         @endforeach
-      </tbody>
-    </table>
-  @endif
-@endforeach
+      @endforeach
+    @empty
+      <tr>
+        <td colspan="9">No matching orders were found for this report.</td>
+      </tr>
+    @endforelse
+  </tbody>
+</table>

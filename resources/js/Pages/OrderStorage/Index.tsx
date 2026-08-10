@@ -238,6 +238,12 @@ const OWNER_ADMIN_ALLOWED_ESR_STATUSES = new Set([
   'ACCOUNT RECEIPT'
 ])
 
+const OWNER_ADMIN_LOST_SOURCE_STATUSES = new Set([
+  'DEALER REQUEST',
+  'FOLLOW UP PROJECTS',
+  'REVIEW'
+])
+
 const INFINITE_SCROLL_STATUSES = new Set(['COMPLETE', 'LOST'])
 const TASKS_PAGE_SIZE = 20
 const SCROLL_THRESHOLD_PX = 120
@@ -1081,13 +1087,14 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
                           if (
                             isEsrBoard &&
                             isRestrictedOwnerAdmin &&
+                            !(normalizeStatusValue(newStatus) === 'LOST' && OWNER_ADMIN_LOST_SOURCE_STATUSES.has(normalizeStatusValue(oldStatus))) &&
                             !OWNER_ADMIN_ALLOWED_ESR_STATUSES.has(normalizeStatusValue(newStatus))
                           ) {
                             if (dragSnapshotRef.current) {
                               setPipelines(dragSnapshotRef.current)
                             }
                             dragSnapshotRef.current = null
-                            window.alert('Owner admins can only move ESR orders to Dealer Request, Follow Up Projects, Review, or Account Receipt.')
+                            window.alert('Owner admins can only move ESR orders to Dealer Request, Follow Up Projects, Review, Account Receipt, or Lost from Dealer Request, Follow Up Projects, and Review.')
                             return
                           }
 

@@ -561,6 +561,16 @@ class FrontdeskController extends Controller
     ];
   }
 
+  private function ownerAdminCanMoveEsrOrderToLost(Order $order, string $finalStatus): bool
+  {
+    return $finalStatus === OrderStatusEnum::LOST->value
+      && in_array($order->status, [
+        OrderStatusEnum::DEALER_REQUEST->value,
+        OrderStatusEnum::FOLLOW_UP_PROJECTS->value,
+        OrderStatusEnum::REVIEW->value,
+      ], true);
+  }
+
   public function updateStatus(Request $request, Order $order)
   {
     if (!$this->ownerCanAccessOrder($request->user(), $order)) {
@@ -611,10 +621,11 @@ class FrontdeskController extends Controller
     if (
       $isEsrProcessOrder &&
       $this->isOwnerAdminRestricted($request->user()) &&
+      !$this->ownerAdminCanMoveEsrOrderToLost($order, $finalStatus) &&
       !in_array($finalStatus, $this->ownerAdminAllowedEsrProcessStatuses(), true)
     ) {
       return response()->json([
-        'message' => 'Owner admins can only move ESR orders to Dealer Request, Follow Up Projects, Review, or Account Receipt.',
+        'message' => 'Owner admins can only move ESR orders to Dealer Request, Follow Up Projects, Review, Account Receipt, or Lost from Dealer Request, Follow Up Projects, and Review.',
       ], 422);
     }
 

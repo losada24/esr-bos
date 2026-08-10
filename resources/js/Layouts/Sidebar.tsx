@@ -635,6 +635,16 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                                 </div>
                                             </NavLink>
                                         </li>
+                                        {IS_ADMIN && (
+                                          <li className="nav-item">
+                                            <NavLink href={route('administration.overdue-report-email-schedule.edit')} active={route().current('administration.overdue-report-email-schedule.*')} className="group">
+                                              <div className="flex items-center">
+                                                <CalendarIcon />
+                                                <SidebarLinkLabel>Overdue Report Email Schedule</SidebarLinkLabel>
+                                              </div>
+                                            </NavLink>
+                                          </li>
+                                        )}
                                        {/* <li className="nav-item">
                                             <NavLink href={route('installation_team.index')} active={route().current('installation_team.index') || route().current('installation_team.create') || route().current('installation_team.edit')} className="group">
                                                 <div className="flex items-center">

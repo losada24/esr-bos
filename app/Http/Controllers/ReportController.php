@@ -958,7 +958,7 @@ class ReportController extends Controller
   public function overdueStageOrdersPdf(Request $request)
   {
     $data = $this->buildOverdueStageOrdersData($request);
-    $pdf = Pdf::loadView('pdf.overdue-stage-orders', $data)->setPaper('A4', 'landscape');
+    $pdf = Pdf::loadView('pdf.overdue-stage-orders', $data)->setPaper('A4', 'portrait');
 
     return $pdf->stream('overdue-stage-orders.pdf');
   }
@@ -2233,7 +2233,7 @@ class ReportController extends Controller
     ];
   }
 
-  private function buildOverdueStageOrdersData(Request $request): array
+  public function buildOverdueStageOrdersData(Request $request): array
   {
     $now = Carbon::now();
     $statusConfigs = $this->overdueStageStatusConfigs();
