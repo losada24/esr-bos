@@ -11,7 +11,6 @@ class StrictlyZeroPaymentLinkService
     public function create(array $payment, PaymentIntent $intent): array
     {
         $amountInCents = $this->amountToCents((float) $payment['amount']);
-        $order = $payment['order'];
 
         $payload = [
             'amount' => $amountInCents,
@@ -20,11 +19,6 @@ class StrictlyZeroPaymentLinkService
                     'key' => 'payment_reference',
                     'label' => 'Payment Reference',
                     'value' => (string) $intent->provider_reference,
-                ],
-                [
-                    'key' => 'order_number',
-                    'label' => 'Order Number',
-                    'value' => (string) ($order->order_number ?: $order->id),
                 ],
                 [
                     'key' => 'payment_intent_id',
