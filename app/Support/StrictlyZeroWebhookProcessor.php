@@ -271,13 +271,31 @@ class StrictlyZeroWebhookProcessor
 
     private function isPaidInFull(array $link, PaymentIntent $intent): bool
     {
-        $expectedAmount = $this->paymentLinkService->amountToCents((float) $intent->amount);
+        $expectedAmount = round((float) $intent->amount, 2);
+        $paidAmount = $this->strictlyAmountToDollars($link['paidAmount'] ?? null, $expectedAmount);
+        $totalAmount = $this->strictlyAmountToDollars($link['totalAmount'] ?? null, $expectedAmount);
 
         return (bool) ($link['paid'] ?? false)
             && isset($link['paidAmount'], $link['totalAmount'])
-            && (int) $link['paidAmount'] >= (int) $link['totalAmount']
-            && (int) $link['paidAmount'] >= $expectedAmount
-            && (int) $link['totalAmount'] >= $expectedAmount;
+            && $paidAmount >= $totalAmount
+            && $paidAmount >= $expectedAmount
+            && $totalAmount >= $expectedAmount;
+    }
+
+    private function strictlyAmountToDollars(mixed $amount, float $expectedAmount): float
+    {
+        if (!is_numeric($amount)) {
+            return 0.0;
+        }
+
+        $amount = (float) $amount;
+        $expectedCents = $this->paymentLinkService->amountToCents($expectedAmount);
+
+        if ($expectedCents > 0 && $amount >= $expectedCents) {
+            return round($amount / 100, 2);
+        }
+
+        return round($amount, 2);
     }
 
     private function isRepeatedGatewayTransaction(PaymentGatewayWebhook $webhook): bool
