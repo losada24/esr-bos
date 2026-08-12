@@ -35,6 +35,7 @@ use App\Http\Controllers\SalesController;
 use App\Http\Controllers\ServiceControlController;
 use App\Http\Controllers\StockMaterialController;
 use App\Http\Controllers\StrictlyZeroWebhookDebugController;
+use App\Http\Controllers\StrictlyZeroWebhookController;
 use App\Http\Controllers\SourceController;
 use App\Models\Biweekly;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -59,6 +60,9 @@ Route::post('/webhook/authorize-net/payments', [AuthorizeNetWebhookController::c
 
 Route::post('/webhook/strictly-zero/debug', [StrictlyZeroWebhookDebugController::class, 'store'])
   ->name('strictly-zero.webhooks.debug');
+
+Route::post('/webhook/strictly-zero/payments', [StrictlyZeroWebhookController::class, 'payments'])
+  ->name('strictly-zero.webhooks.payments');
 
 Route::get('/payments/authorize-net/complete', [AuthorizeNetHostedPaymentController::class, 'complete'])
   ->name('authorize-net.payments.complete');

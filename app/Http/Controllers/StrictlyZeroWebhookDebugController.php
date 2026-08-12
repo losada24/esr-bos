@@ -27,7 +27,7 @@ class StrictlyZeroWebhookDebugController extends Controller
             'signature_header' => $request->header('X-Signature') ?? $request->header('X-Webhook-Signature'),
             'signature_valid' => false,
             'source_ip' => $request->ip(),
-            'headers_json' => $request->headers->all(),
+            'headers_json' => $this->headersForStorage($request),
             'raw_body' => $rawBody,
             'payload_json' => $payload,
             'payload_entity_name' => 'payment_link_debug',
@@ -69,5 +69,17 @@ class StrictlyZeroWebhookDebugController extends Controller
         }
 
         return null;
+    }
+
+    private function headersForStorage(Request $request): array
+    {
+        $headers = $request->headers->all();
+        foreach (['authorization', 'php-auth-pw'] as $header) {
+            if (array_key_exists($header, $headers)) {
+                $headers[$header] = ['[redacted]'];
+            }
+        }
+
+        return $headers;
     }
 }

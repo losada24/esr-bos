@@ -29,5 +29,6 @@ class VerifyCsrfToken extends Middleware
         'sales/*/assign-lost-contract',
         'webhook/authorize-net/payments',
         'webhook/strictly-zero/debug',
+        'webhook/strictly-zero/payments',
     ];
 }

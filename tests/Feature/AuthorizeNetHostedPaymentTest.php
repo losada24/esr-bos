@@ -104,7 +104,22 @@ test('admin can open authorize net hosted payment redirect page for quota', func
 });
 
 test('mobile customer can request a temporary payment link', function () {
-    config()->set('authorize_net.payment_intent_ttl_minutes', 15);
+    config()->set('strictly_zero.key_hash', 'key-hash');
+    config()->set('strictly_zero.username', 'strictly-user');
+    config()->set('strictly_zero.password', 'strictly-pass');
+    config()->set('strictly_zero.base_url', 'https://api.paywithzero.net');
+    config()->set('strictly_zero.payment_link_path', '/v1/public/202104/payment-link');
+
+    Http::fake([
+        'https://api.paywithzero.net/v1/public/202104/payment-link' => Http::response([
+            'id' => 'strictly-link-id',
+            'paymentRequestId' => 'strictly-request-id',
+            'paymentLink' => 'https://merchant.paywithzero.net/zpay/payment-request/strictly-request-id',
+            'reference' => 'STR-TEST-001',
+            'status' => 'unpaid',
+            'paid' => false,
+        ]),
+    ]);
 
     $customer = User::factory()->create();
     Role::findOrCreate(RoleEnum::CUSTOMER->value);
@@ -140,18 +155,23 @@ test('mobile customer can request a temporary payment link', function () {
     $response->assertOk()
         ->assertJsonPath('data.payment_type', 'quota')
         ->assertJsonPath('data.payment_id', $installment->id)
-        ->assertJsonPath('data.channel', 'MOBILE');
+        ->assertJsonPath('data.channel', 'MOBILE')
+        ->assertJsonPath('data.provider', 'STRICTLY_ZERO')
+        ->assertJsonPath('data.payment_url', 'https://merchant.paywithzero.net/zpay/payment-request/strictly-request-id');
 
     $intent = PaymentIntent::first();
     expect($intent)->not->toBeNull()
         ->and($intent->payment_type)->toBe('quota')
         ->and($intent->payment_id)->toBe($installment->id)
         ->and($intent->channel)->toBe('MOBILE')
+        ->and($intent->provider)->toBe('STRICTLY_ZERO')
+        ->and($intent->provider_payment_link_id)->toBe('strictly-link-id')
+        ->and($intent->provider_payment_request_id)->toBe('strictly-request-id')
         ->and($intent->status)->toBe('PENDING');
 
-    $response->assertJsonPath(
-        'data.payment_url',
-        route('authorize-net.payments.intent.show', ['token' => $intent->token])
+    Http::assertSent(fn ($request) => $request->url() === 'https://api.paywithzero.net/v1/public/202104/payment-link'
+        && $request['amount'] === 10000
+        && collect($request['customValues'])->contains(fn ($customValue) => $customValue['key'] === 'payment_reference')
     );
 });
 
