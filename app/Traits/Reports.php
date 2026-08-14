@@ -159,18 +159,22 @@ trait Reports
           $subQuery->where('id', $id);
         });
       })
-      ->where(function ($query) use ($status) {
+      ->where(function ($query) use ($status, $id) {
         if ($status) {
           // ✅ Filtrar por el estado seleccionado
-          $query->whereHas('paymentExtraFields', function ($subQuery) use ($status) {
-            $subQuery->where('installer_payment_status', $status);
+          $query->whereHas('paymentExtraFields', function ($subQuery) use ($status, $id) {
+            $subQuery->where('installation_team_id', $id)
+              ->where('installer_payment_status', $status);
           });
         } else {
           // ✅ Mostrar todas las órdenes excepto FULLY PAID (incluyendo las que no tienen estado)
-          $query->where(function ($subQuery) {
-            $subQuery->whereDoesntHave('paymentExtraFields')
-              ->orWhereHas('paymentExtraFields', function ($innerQuery) {
-                $innerQuery->where('installer_payment_status', '!=', 'FULLY PAID');
+          $query->where(function ($subQuery) use ($id) {
+            $subQuery->whereDoesntHave('paymentExtraFields', function ($innerQuery) use ($id) {
+              $innerQuery->where('installation_team_id', $id);
+            })
+              ->orWhereHas('paymentExtraFields', function ($innerQuery) use ($id) {
+                $innerQuery->where('installation_team_id', $id)
+                  ->where('installer_payment_status', '!=', 'FULLY PAID');
               });
           });
         }
@@ -189,7 +193,16 @@ trait Reports
           $subQuery->whereDate('payment_date', '<=', $endDate);
         });
       })
-      ->with(['supervisor', 'orderProducts', 'travelCost', 'paymentExtraFields', 'installationPayments', 'installationTeams'])
+      ->with([
+        'supervisor',
+        'orderProducts',
+        'travelCost',
+        'paymentExtraFields' => function ($query) use ($id) {
+          $query->where('installation_team_id', $id);
+        },
+        'installationPayments',
+        'installationTeams'
+      ])
       ->orderBy('installation_date', 'desc')
       ->get();
     return $orders->map(function ($order, $key) {

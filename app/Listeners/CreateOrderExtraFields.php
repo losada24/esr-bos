@@ -21,6 +21,7 @@ class CreateOrderExtraFields
 
     $status = $order->status;
     $wt = $order->walk_trough;
+    $inspection = $order->inspection;
     $pi = $order->pre_inspection;
     $partial_payment = $order->partial_payment_installation;
     $final_payment = $order->final_payment_installation;
@@ -56,9 +57,20 @@ class CreateOrderExtraFields
         $percentage_payment = 80.00; // Porcentaje fijo
         $installer_payment = ($order->getGrandTotalPrice() * $percentage_payment) / 100; // Cálculo del 80%
 
-        // Buscar si ya existe un registro para este equipo de instalación
+        $paidPercentage = InstallationPayment::where('order_id', $order->id)
+          ->where('installation_team_id', $team->user_id)
+          ->where('payment_status', PaymentStatusEnum::PAID->value)
+          ->sum('percentage_payment');
+
+        if ($paidPercentage > 0) {
+          continue;
+        }
+
+        // Buscar si ya existe un pago pendiente para este equipo de instalación
         $installationPayment = InstallationPayment::where('order_id', $order->id)
           ->where('installation_team_id', $team->user_id)
+          ->where('payment_status', PaymentStatusEnum::REVIEW->value)
+          ->whereNull('biweekly_id')
           ->first();
 
         if ($installationPayment) {
@@ -87,7 +99,13 @@ class CreateOrderExtraFields
         }
       }
 
-      if ($status == OrderStatusEnum::COMPLETE->value && $wt == 1 && $final_payment == 1) {
+      $requiresPermit = (bool) $order->city_permits;
+      $hasFinalPaymentRequirements = $status == OrderStatusEnum::COMPLETE->value
+        && $wt == 1
+        && $final_payment == 1
+        && (! $requiresPermit || $inspection == 1);
+
+      if ($hasFinalPaymentRequirements) {
         // Buscar pagos previos realizados (ya pagados)
         $ultimo_pagos = InstallationPayment::where('order_id', $order->id)
           ->where('installation_team_id', $team->user_id)
@@ -114,7 +132,20 @@ class CreateOrderExtraFields
         // Calcular lo que falta por pagar
         $porcentaje_restante = $porcentaje_total - $porcentaje_pagado;
         $monto_restante = $total_orden - $monto_pagado;
+        $canCreateFinalInstallerPayment = $porcentaje_pagado >= 80
+          && $porcentaje_restante > 0
+          && $porcentaje_restante <= 20;
+        $canCreateFullInstallerPaymentWithoutPermit = ! $requiresPermit
+          && $porcentaje_pagado == 0
+          && $porcentaje_restante == 100;
+        $canCreateFullInstallerPaymentWithPermit = $requiresPermit
+          && $porcentaje_pagado == 0
+          && $porcentaje_restante == 100;
         //dd($total_orden, $porcentaje_total, $monto_pagado, $porcentaje_pagado, $porcentaje_restante, $monto_restante);
+
+        if (! $canCreateFinalInstallerPayment && ! $canCreateFullInstallerPaymentWithoutPermit && ! $canCreateFullInstallerPaymentWithPermit) {
+          continue;
+        }
 
 
         //dd($ultimo_pago_prev,$pago_pendiente,(int)$pago_pendiente->installer_payment);

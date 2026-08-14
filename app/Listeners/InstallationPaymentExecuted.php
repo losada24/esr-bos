@@ -14,7 +14,9 @@ class InstallationPaymentExecuted
     public function handle(PaymentCreated $event): void
     {
         $totalPrice = $event->installationPayment->order->getGrandTotalPrice();
-        $installationPayment = (float)$event->installationPayment->order->installationPayments()->sum('installer_payment');
+        $installationPayment = (float)$event->installationPayment->order->installationPayments()
+            ->where('payment_status', PaymentStatusEnum::PAID->value)
+            ->sum('installer_payment');
         $status = $event->installationPayment->payment_status;
 
         // dd($totalPrice, $installationPayment, $status);

@@ -225,6 +225,7 @@ const ReportInstallerPaymentForm = ({
         <PaymentInstallerTable
             values={values}
             amount={amount}
+            installerId={installerId}
              order={order}
              payment={payment}
              loadPaymentData={loadPaymentData}

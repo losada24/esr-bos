@@ -384,6 +384,133 @@ class ReportController extends Controller
     ]);
   }
 
+  public function installerPayments(Request $request, $id)
+  {
+    $search = trim((string) $request->get('search', ''));
+    $installer = User::findOrFail($id);
+    $companyName = InstallationTeam::where('user_id', $id)->value('company_name');
+
+    $payments = InstallationPayment::with([
+      'order.owners',
+      'order.installationTeams.user',
+      'order.orderProducts',
+      'order.travelCost',
+      'biweekly',
+      'installationTeam',
+    ])
+      ->where('installation_team_id', $id)
+      ->when($search !== '', function ($query) use ($search) {
+        $query->whereHas('order', function ($subQuery) use ($search) {
+          $subQuery->where('name', 'like', "%{$search}%")
+            ->orWhere('order_number', 'like', "%{$search}%");
+        });
+      })
+      ->orderByRaw('biweekly_id IS NULL')
+      ->orderByDesc('biweekly_id')
+      ->orderByDesc('payment_date')
+      ->orderByDesc('created_at')
+      ->get();
+
+    $orders = $payments
+      ->groupBy('order_id')
+      ->map(function ($orderPayments) use ($id) {
+        $order = $orderPayments->first()->order;
+        $otherInstallerPayments = InstallationPayment::with(['biweekly', 'installationTeam'])
+          ->where('order_id', $order->id)
+          ->where('installation_team_id', '!=', $id)
+          ->orderByDesc('biweekly_id')
+          ->orderByDesc('payment_date')
+          ->orderByDesc('created_at')
+          ->get();
+
+        return [
+          'id' => $order->id,
+          'name' => $order->name,
+          'order_number' => $order->order_number,
+          'status' => $order->status,
+          'amount' => $order->getGrandTotalPrice(),
+          'owners' => $order->owners->map(fn ($owner) => [
+            'id' => $owner->id,
+            'name' => $owner->name,
+          ])->values(),
+          'current_installers' => $order->installationTeams->map(fn ($team) => [
+            'id' => $team->user_id,
+            'name' => $team->user->name ?? '',
+            'company_name' => $team->company_name,
+          ])->values(),
+          'payments' => $orderPayments->map(function ($payment) {
+            return [
+              'id' => $payment->id,
+              'installer_id' => $payment->installation_team_id,
+              'installer_name' => $payment->installationTeam->name ?? '',
+              'percentage_payment' => (float) $payment->percentage_payment,
+              'installer_payment' => (float) $payment->installer_payment,
+              'extra_work' => (float) $payment->extra_work,
+              'extra_discount' => (float) $payment->extra_discount,
+              'other_cost_installer' => (float) $payment->other_cost_installer,
+              'total_payment' => (float) $payment->installer_payment + (float) $payment->extra_work - (float) $payment->extra_discount + (float) $payment->other_cost_installer,
+              'payment_status' => $payment->payment_status,
+              'payment_date' => $payment->payment_date ? Carbon::parse($payment->payment_date)->format('Y-m-d') : null,
+              'notes' => $payment->notes,
+              'responsible_extra_work' => $payment->responsible_extra_work,
+              'biweekly' => $payment->biweekly ? [
+                'id' => $payment->biweekly->id,
+                'start_biweekly_period' => $payment->biweekly->start_biweekly_period
+                  ? Carbon::parse($payment->biweekly->start_biweekly_period)->format('Y-m-d')
+                  : null,
+                'end_biweekly_period' => $payment->biweekly->end_biweekly_period
+                  ? Carbon::parse($payment->biweekly->end_biweekly_period)->format('Y-m-d')
+                  : null,
+              ] : null,
+            ];
+          })->values(),
+          'other_installer_payments' => $otherInstallerPayments->map(function ($payment) {
+            return [
+              'id' => $payment->id,
+              'installer_id' => $payment->installation_team_id,
+              'installer_name' => $payment->installationTeam->name ?? '',
+              'percentage_payment' => (float) $payment->percentage_payment,
+              'installer_payment' => (float) $payment->installer_payment,
+              'extra_work' => (float) $payment->extra_work,
+              'extra_discount' => (float) $payment->extra_discount,
+              'other_cost_installer' => (float) $payment->other_cost_installer,
+              'total_payment' => (float) $payment->installer_payment + (float) $payment->extra_work - (float) $payment->extra_discount + (float) $payment->other_cost_installer,
+              'payment_status' => $payment->payment_status,
+              'payment_date' => $payment->payment_date ? Carbon::parse($payment->payment_date)->format('Y-m-d') : null,
+              'notes' => $payment->notes,
+              'responsible_extra_work' => $payment->responsible_extra_work,
+              'biweekly' => $payment->biweekly ? [
+                'id' => $payment->biweekly->id,
+                'start_biweekly_period' => $payment->biweekly->start_biweekly_period
+                  ? Carbon::parse($payment->biweekly->start_biweekly_period)->format('Y-m-d')
+                  : null,
+                'end_biweekly_period' => $payment->biweekly->end_biweekly_period
+                  ? Carbon::parse($payment->biweekly->end_biweekly_period)->format('Y-m-d')
+                  : null,
+              ] : null,
+            ];
+          })->values(),
+          'total_paid' => $orderPayments->sum('installer_payment'),
+          'total_extras' => $orderPayments->sum('extra_work'),
+          'total_discounts' => $orderPayments->sum('extra_discount'),
+          'total_other_costs' => $orderPayments->sum('other_cost_installer'),
+          'total_payment' => $orderPayments->sum(fn ($payment) => (float) $payment->installer_payment + (float) $payment->extra_work - (float) $payment->extra_discount + (float) $payment->other_cost_installer),
+          'other_installers_total_payment' => $otherInstallerPayments->sum(fn ($payment) => (float) $payment->installer_payment + (float) $payment->extra_work - (float) $payment->extra_discount + (float) $payment->other_cost_installer),
+        ];
+      })
+      ->sortByDesc(fn ($order) => $order['payments']->first()['payment_date'] ?? '')
+      ->values();
+
+    return Inertia::render('Report/InstallerPayments', [
+      'installer' => $installer,
+      'companyName' => $companyName,
+      'orders' => $orders->toArray(),
+      'filters' => [
+        'search' => $search,
+      ],
+    ]);
+  }
+
   public function editReportInstaller($id, $installation_team)
   {   // Cargar la orden junto con los campos relacionados
 
@@ -401,7 +528,15 @@ class ReportController extends Controller
 
     $amount = $order->getGrandTotalPrice();
 
-    $payment = InstallationPayment::where('order_id', $id)->get();
+    $payment = InstallationPayment::with('installationTeam')
+      ->where('order_id', $id)
+      ->get()
+      ->map(function ($payment) {
+        return [
+          ...$payment->toArray(),
+          'installer_name' => $payment->installationTeam->name ?? '',
+        ];
+      });
 
 
     //dd($payment);
@@ -492,7 +627,6 @@ class ReportController extends Controller
 
       $ordersToPay = $orders->where('total_payment_amount', '>', 0);
       $ordersToPay->each(function ($order) use ($biweekly, $id) {
-        $paymentPercentage = 0;
         //dd($order);
         foreach ($order['installation_payments'] as $payment) {
           $installationPayment = InstallationPayment::find($payment['id']);
@@ -505,14 +639,14 @@ class ReportController extends Controller
               'payment_date' => Carbon::now(),
             ]);
           }
-
-          if ($installationPayment->payment_status == PaymentStatusEnum::PAID->value) {
-            $paymentPercentage += $payment['percentage_payment'];
-          }
         }
 
-        $getAllIntallerPaymentAmount = InstallationPayment::where('order_id', $order['id'])
+        $paymentPercentage = InstallationPayment::where('order_id', $order['id'])
           ->where('installation_team_id', $id)
+          ->where('payment_status', PaymentStatusEnum::PAID->value)
+          ->sum('percentage_payment');
+
+        $getAllIntallerPaymentAmount = InstallationPayment::where('order_id', $order['id'])
           ->where('payment_status', PaymentStatusEnum::PAID->value)
           ->sum('installer_payment');
         
@@ -527,13 +661,25 @@ class ReportController extends Controller
           ]);
 
           $pendingPaymentPercent = 100 - $paymentPercentage;
+          $requiresPermit = (bool) $order['city_permits'];
+          $canCreateFinalInstallerPayment = $paymentPercentage >= 80
+            && $order['status'] == OrderStatusEnum::COMPLETE->value
+            && $order['walk_trough'] == 1
+            && $order['final_payment_installation'] == 1
+            && (! $requiresPermit || $order['inspection'] == 1);
+          $canCreateFullInstallerPayment = $paymentPercentage == 0
+            && $pendingPaymentPercent == 100
+            && $order['status'] == OrderStatusEnum::COMPLETE->value
+            && $order['walk_trough'] == 1
+            && $order['final_payment_installation'] == 1
+            && (! $requiresPermit || $order['inspection'] == 1);
 
             //dd( $pendingPaymentPercent);
 
           if($order['status'] == OrderStatusEnum::INSPECTION->value || $order['pre_inspection'] == 0 || $order['partial_payment_installation'] == 0){
             $pendingPaymentPercent = 0;
           }
-          if($order['status'] == OrderStatusEnum::COMPLETE->value && ( $order['walk_trough'] == 0 || $order['final_payment_installation'] == 0)){
+          if(! $canCreateFinalInstallerPayment && ! $canCreateFullInstallerPayment){
             $pendingPaymentPercent = 0;
           }
           InstallationPayment::create([

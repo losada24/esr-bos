@@ -8,6 +8,7 @@ import EyeIcon from '@/Components/Icons/EyeIcon'
 import ExportIcon from '@/Components/Icons/ExportIcon'
 import InstallationTeamFilter from '../InstallationTeam/InstallationTeamFilter'
 import PlusIcon from '@/Components/Icons/PlusIcon'
+import MoneyIcon from '@/Components/Icons/MoneyIcon'
 
 type IndexUserProps = PageProps & {
   installation_teams: {
@@ -60,12 +61,18 @@ export default function Installer ({ auth, installation_teams}: IndexUserProps) 
                     <td className="border-t px-6 py-4 align-top">
                     {installation_team.user?.email}
                     </td>
-                    <td className="border-t flex items-center px-6 py-4">
+                    <td className="border-t flex items-center gap-2 px-6 py-4">
                         <Link
                           href={route('report.show_installer', installation_team.user?.id)}
                           title='View Orders'
                         >
                           <EyeIcon/>
+                        </Link>
+                        <Link
+                          href={route('report.installer-payments', installation_team.user?.id)}
+                          title='View Payments'
+                        >
+                          <MoneyIcon/>
                         </Link>
                     </td>
                   </tr>

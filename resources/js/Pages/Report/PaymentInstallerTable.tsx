@@ -13,12 +13,14 @@ const PaymentInstallerTable = ({
   values,
   order,
   payment,
+  installerId,
   loadPaymentData
 }: {
   amount: number
   values: InstallationPayment
   order: Order
   payment: InstallationPayment []
+  installerId: number
   loadPaymentData: (p: InstallationPayment) => void
 }) => {
   const getGrandTotal = () => {
@@ -71,6 +73,7 @@ const PaymentInstallerTable = ({
             </thead>
             <tbody>
               {payment.map((p, index) => {
+                const isOtherInstallerPayment = p.installation_team_id !== installerId && p.payment_status === 'PAID'
                 const totalProcessedPayments = payment
                   .slice(0, index + 1)
                   .reduce((acc, curr) => acc + Number(curr.installer_payment || 0), 0)
@@ -106,7 +109,12 @@ const PaymentInstallerTable = ({
                       { formatPrice(Number(p.installer_payment) + Number(p.extra_work) - Number(p.extra_discount) + Number(p.other_cost_installer))}
                     </td>
                     <td className="border-t px-6 py-4 align-top">
-                      {p.payment_status}
+                      <div>{p.payment_status}</div>
+                      {isOtherInstallerPayment ? (
+                        <span className="inline-flex mt-1 px-2 py-0.5 text-xs font-semibold text-orange-700 border border-orange-600 bg-orange-50 rounded">
+                          Paid to: {p.installer_name ?? 'Other installer'}
+                        </span>
+                      ) : null}
                     </td>
                     <td className="border-t px-6 py-4 align-top">
                     {p.payment_date ? new Date(p.payment_date).toISOString().slice(0, 10) : 'Fecha no disponible'}

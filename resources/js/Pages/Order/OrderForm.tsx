@@ -112,6 +112,7 @@ type CustomScheduleItem = { label: string, amount: string }
 
 const CUSTOM_SCHEDULE_TYPE = 'CUSTOMIZED'
 const REPLANNED_REASON_OPTIONS = ['CLIENT', 'PERMIT', 'MATERIALS'] as const
+const CITY_PERMIT_DATE_RECALC_STATUSES = new Set(['PLANNED', 'REPLANNED', 'CONFIRMED'])
 
 const getStatusValue = (statusValue: unknown): string => {
   if (typeof statusValue === 'string') return statusValue
@@ -964,6 +965,7 @@ const OrderForm = ({
     label: status.find((status) => status === values.status) ?? ''
   }
   const selectedStatusValue = getStatusValue(values.status)
+  const canRecalculateDatesFromCityPermit = CITY_PERMIT_DATE_RECALC_STATUSES.has(selectedStatusValue)
   const selectedReplannedReasons = Array.isArray(values.replanned_reasons) ? values.replanned_reasons : []
 
   const toggleReplannedReason = (reason: string, checked: boolean) => {
@@ -1836,8 +1838,9 @@ const OrderForm = ({
                             ? values.payment_factory_date
                             : values.payment_factory_date?.toISOString().slice(0, 10) ?? ''
 
-                        // Pasar el valor actualizado directamente a la función
-                        await selectDeliveryAndInstallationDate(paymentFactoryDate, isChecked)
+                        if (canRecalculateDatesFromCityPermit) {
+                          await selectDeliveryAndInstallationDate(paymentFactoryDate, isChecked)
+                        }
                       }}
                     />
                  { /* <Field

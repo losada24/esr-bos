@@ -346,6 +346,10 @@ Route::middleware('auth')->group(function () {
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::INSTALLER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value .'|'. RoleEnum::SERVICE_MANAGER->value] )
       ->name('report.show_installer');
 
+      Route::get('/report/installer-payments/{id}', [ReportController::class, 'installerPayments'])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::INSTALLER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value .'|'. RoleEnum::SERVICE_MANAGER->value] )
+      ->name('report.installer-payments');
+
       Route::get('report/get-payment-list-installer/{id}/{biweekly}', [ReportController::class, 'getPaymentListInstaller'])
       ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::INSTALLER->value . '|' . RoleEnum::PAYMENT_COORDINATOR->value])
       ->name('report.get-payment-list-installer');

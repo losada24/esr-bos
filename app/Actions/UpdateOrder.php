@@ -9,8 +9,10 @@ use App\Enum\ProductLineEnum;
 use App\Enum\ServiceEnum;
 use App\Enum\SupervisorPaymentStatusEnum;
 use App\Enum\MethodOfPayment;
+use App\Enum\PaymentStatusEnum;
 use App\Events\OrderStatusChanged;
 use App\Models\Client;
+use App\Models\InstallationPayment;
 use App\Models\Order;
 use App\Models\OrderProduct;
 use App\Models\PaymentExtraField;
@@ -598,6 +600,7 @@ class UpdateOrder
       $this->syncAttachmentRoleTargets($request, $order);
       $order->installationTeams()->sync($request->installation_teams ?? []);
       $order->load('installationTeams.user');
+      $this->syncInstallerPaymentOwnership($order);
      
       $nextOwnerIds = $this->orderOwnerChangeNotifier->normalizeOwnerIds($request->owners ?? []);
       $order->owners()->sync($nextOwnerIds);
@@ -754,6 +757,7 @@ class UpdateOrder
     }
     $order->installationTeams()->sync($request->installation_teams);
     $order->load('installationTeams.user');
+    $this->syncInstallerPaymentOwnership($order);
     if ($installationTeamsChanged) {
       $this->createInstallationTeamChangeSnapshot(
         $order,
@@ -955,6 +959,65 @@ class UpdateOrder
     }
 
     return now()->toDateString();
+  }
+
+  private function syncInstallerPaymentOwnership(Order $order): void
+  {
+    $currentInstallerUserIds = $order->installationTeams
+      ->pluck('user_id')
+      ->filter()
+      ->map(fn ($id) => (int) $id)
+      ->unique()
+      ->values();
+
+    if ($currentInstallerUserIds->isEmpty()) {
+      return;
+    }
+
+    foreach ($currentInstallerUserIds as $installerUserId) {
+      PaymentExtraField::firstOrCreate(
+        [
+          'order_id' => $order->id,
+          'installation_team_id' => $installerUserId,
+        ],
+        [
+          'installer_payment_status' => 'OPEN',
+        ]
+      );
+    }
+
+    if ($currentInstallerUserIds->count() !== 1) {
+      return;
+    }
+
+    $installerUserId = $currentInstallerUserIds->first();
+
+    InstallationPayment::where('order_id', $order->id)
+      ->where('payment_status', PaymentStatusEnum::REVIEW->value)
+      ->whereNull('biweekly_id')
+      ->whereNotIn('installation_team_id', [$installerUserId])
+      ->update(['installation_team_id' => $installerUserId]);
+
+    $hasInstallerPayment = InstallationPayment::where('order_id', $order->id)
+      ->where('installation_team_id', $installerUserId)
+      ->exists();
+
+    if (! $hasInstallerPayment) {
+      InstallationPayment::create([
+        'order_id' => $order->id,
+        'installation_team_id' => $installerUserId,
+        'installer_payment' => 0.00,
+        'percentage_payment' => 0.00,
+        'payment_date' => null,
+        'extra_work' => 0.00,
+        'extra_discount' => 0.00,
+        'other_cost_installer' => 0.00,
+        'biweekly_id' => null,
+        'payment_status' => PaymentStatusEnum::REVIEW->value,
+        'responsible_extra_work' => '',
+        'notes' => '',
+      ]);
+    }
   }
 
   private function syncAttachmentRoleTargets(Request $request, Order $order): void

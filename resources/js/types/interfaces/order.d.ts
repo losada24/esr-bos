@@ -352,6 +352,7 @@ export interface InstallationPayment {
   payment_date: Date | null
   order?: Order
   installation_team_id: number
+  installer_name?: string
   extra_work: number
   extra_discount: number
   other_cost_installer: number
