@@ -47,6 +47,7 @@ export default function Installer ({ auth, installation_teams}: IndexUserProps) 
             </thead>
             <tbody>
             {installation_teams.data.map((installation_team) => {
+              const installerUserId = installation_team.user_id ?? installation_team.user?.id
               return (
                   <tr
                   key={installation_team.id}
@@ -62,18 +63,22 @@ export default function Installer ({ auth, installation_teams}: IndexUserProps) 
                     {installation_team.user?.email}
                     </td>
                     <td className="border-t flex items-center gap-2 px-6 py-4">
+                      {installerUserId && (
+                        <>
                         <Link
-                          href={route('report.show_installer', installation_team.user?.id)}
+                          href={route('report.show_installer', installerUserId)}
                           title='View Orders'
                         >
                           <EyeIcon/>
                         </Link>
                         <Link
-                          href={route('report.installer-payments', installation_team.user?.id)}
+                          href={route('report.installer-payments', installerUserId)}
                           title='View Payments'
                         >
                           <MoneyIcon/>
                         </Link>
+                        </>
+                      )}
                     </td>
                   </tr>
               )
