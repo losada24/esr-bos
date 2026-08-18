@@ -56,6 +56,17 @@
         padding: 10px;
     }
 
+    .service-label {
+        display: inline-block;
+        margin-top: 4px;
+        padding: 2px 6px;
+        font-size: 15px;
+        font-weight: bold;
+        background-color: #007bff;
+        color: #fff;
+        border-radius: 4px;
+    }
+
 </style>
 <div class="table-container">
 <div class="table-wrapper">
@@ -164,6 +175,9 @@
               @endif
           >
               {{ $biweekly['name']}}
+              @if(($biweekly['service'] ?? null) === \App\Enum\ServiceEnum::SERVICE->value)
+                <div class="service-label">{{ \App\Enum\ServiceEnum::SERVICE->value }}</div>
+              @endif
              
           </td>
             <td width='20' height='25' text-align='left' valign='middle'>

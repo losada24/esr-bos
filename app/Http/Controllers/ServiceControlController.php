@@ -35,14 +35,14 @@ class ServiceControlController extends Controller
 {
     public function index(Request $request): Response
     {
-        $data = $this->buildIndexData($request, 50);
+        $data = $this->buildIndexData($request, 50, true);
 
         return Inertia::render('ServiceControl/Index', $data);
     }
 
     public function pdf(Request $request)
     {
-        $data = $this->buildIndexData($request);
+        $data = $this->buildIndexData($request, 50, true);
         $pdf = Pdf::loadView('pdf.service-control', $data)->setPaper('A2', 'landscape');
 
         return $pdf->stream('service-control-report.pdf');
@@ -223,7 +223,7 @@ class ServiceControlController extends Controller
         return response()->json(['results' => $clients]);
     }
 
-    private function buildIndexData(Request $request, ?int $limit = null): array
+    private function buildIndexData(Request $request, ?int $limit = null, bool $paginate = false): array
     {
         $query = ServiceControl::query()
             ->with([
@@ -294,14 +294,19 @@ class ServiceControlController extends Controller
 
         $query->latest();
 
-        if ($limit !== null) {
+        if ($limit !== null && ! $paginate) {
             $query->limit($limit);
         }
 
-        $serviceControls = $query
-            ->get()
-            ->map(fn (ServiceControl $serviceControl) => $this->serializeServiceControl($serviceControl))
-            ->values();
+        $serviceControls = $paginate
+            ? $query
+                ->paginate($limit ?? 50)
+                ->withQueryString()
+                ->through(fn (ServiceControl $serviceControl) => $this->serializeServiceControl($serviceControl))
+            : $query
+                ->get()
+                ->map(fn (ServiceControl $serviceControl) => $this->serializeServiceControl($serviceControl))
+                ->values();
 
         return [
             'serviceControls' => $serviceControls,

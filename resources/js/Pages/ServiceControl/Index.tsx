@@ -5,10 +5,18 @@ import OrderGlobalSearch from '@/Components/OrderGlobalSearch'
 import EditIcon from '@/Components/Icons/EditIcon'
 import EyeIcon from '@/Components/Icons/EyeIcon'
 import DeleteIcon from '@/Components/Icons/DeleteIcon'
-import { type PageProps, type ServiceControl } from '@/types'
+import Pagination from '@/Components/Pagination'
+import { type PageProps, type PaginatorLink, type ServiceControl } from '@/types'
 
 type IndexProps = PageProps & {
-  serviceControls: ServiceControl[]
+  serviceControls: {
+    data: ServiceControl[]
+    links: PaginatorLink[]
+    total: number
+    from: number | null
+    to: number | null
+    current_page: number
+  }
   filters: {
     search?: string
     status?: string
@@ -110,6 +118,7 @@ export default function Index ({
   const [priority, setPriority] = useState(filters.priority ?? '')
   const activeType = filters.type === 'bm' ? 'bm' : 'services'
   const isBmView = activeType === 'bm'
+  const rows = serviceControls.data
   const appliedFilters = useMemo(() => buildFilterState({
     type: activeType,
     search: filters.search ?? '',
@@ -121,6 +130,7 @@ export default function Index ({
     search,
     status: isBmView ? '' : status,
     priority: isBmView ? '' : priority,
+    page: String(serviceControls.current_page),
   }).toString()}`
 
   useEffect(() => {
@@ -287,7 +297,7 @@ export default function Index ({
               <p className="text-sm text-slate-400">{isBmView ? 'BM records linked to sold orders.' : 'Latest operational service records linked to sold orders.'}</p>
             </div>
             <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
-              {serviceControls.length} items
+              {serviceControls.total} items
             </span>
           </div>
 
@@ -327,7 +337,7 @@ export default function Index ({
                 </tr>
               </thead>
               <tbody>
-                {serviceControls.map((serviceControl) => {
+                {rows.map((serviceControl) => {
                   const isOverdue = !isBmView && (serviceControl.is_missing_service_id_overdue || serviceControl.is_missing_eta_overdue)
 
                   return (
@@ -400,7 +410,7 @@ export default function Index ({
                     </tr>
                   )
                 })}
-                {serviceControls.length === 0 && (
+                {rows.length === 0 && (
                   <tr>
                     <td colSpan={isBmView ? 9 : 9} className="px-4 py-10 text-center text-sm text-slate-400">
                       No {isBmView ? 'BM records' : 'services'} found for the selected filters.
@@ -410,6 +420,7 @@ export default function Index ({
               </tbody>
             </table>
           </div>
+          <Pagination links={serviceControls.links} />
         </div>
       </div>
     </AuthenticatedCalendarLayout>
