@@ -2489,6 +2489,9 @@ class ReportController extends Controller
     $stageAge = $stageOverdueTracker->resolveStageAge($order);
     $stageEnteredAt = $stageAge['stage_started_at_raw'];
     $isOverdue = (bool) $stageAge['overdue'];
+    $activeExtension = $stageOverdueTracker->activeExtensionForStageAge($order, $stageAge);
+    $latestExtension = $activeExtension ?? $stageOverdueTracker->latestExtensionForStageAge($order, $stageAge);
+    $extensionPayload = $stageOverdueTracker->extensionPayload($latestExtension);
     $sellerNames = $order->owners->pluck('name')->filter()->implode(', ');
     $creatorStatusEntry = $order->orderStatus
       ->sortBy('created_at')
@@ -2514,6 +2517,8 @@ class ReportController extends Controller
       'created_at' => $order->created_at?->toDateTimeString(),
       'stage_entered_at' => $stageEnteredAt?->toDateTimeString(),
       'is_overdue' => $isOverdue,
+      'overdue_extension_active' => $activeExtension !== null,
+      'overdue_extension' => $extensionPayload,
     ];
   }
 

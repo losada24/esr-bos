@@ -23,6 +23,15 @@ interface OverdueStageOrderRow {
   created_at: string | null
   stage_entered_at: string | null
   is_overdue: boolean
+  overdue_extension_active?: boolean
+  overdue_extension?: {
+    business_days: number
+    extended_until?: string | null
+    note?: string | null
+    user?: {
+      name: string
+    } | null
+  } | null
 }
 
 interface OverdueStageSellerGroup {
@@ -348,6 +357,7 @@ export default function OverdueStageOrders ({
                           <th className="px-4 py-3">Product Line</th>
                           <th className="px-4 py-3">Seller</th>
                           <th className="px-4 py-3">Entered Status At</th>
+                          <th className="px-4 py-3">Extension</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -375,6 +385,20 @@ export default function OverdueStageOrders ({
                             </td>
                             <td className="px-4 py-4 align-top">{[row.seller_name, row.created_by_name].find(Boolean) ?? '-'}</td>
                             <td className="px-4 py-4 align-top">{formatDateTime(row.stage_entered_at)}</td>
+                            <td className="px-4 py-4 align-top">
+                              {row.overdue_extension
+                                ? (
+                                  <div className={row.overdue_extension_active ? 'text-amber-800' : 'text-slate-600'}>
+                                    <div className="font-semibold">
+                                      {row.overdue_extension_active ? 'Active extension' : 'Last extension'}
+                                    </div>
+                                    <div>{row.overdue_extension.business_days} business days until {formatDateTime(row.overdue_extension.extended_until)}</div>
+                                    {row.overdue_extension.user?.name && <div>By {row.overdue_extension.user.name}</div>}
+                                    {row.overdue_extension.note && <div className="mt-1 max-w-md whitespace-normal">{row.overdue_extension.note}</div>}
+                                  </div>
+                                  )
+                                : '-'}
+                            </td>
                           </tr>
                         ))}
                       </tbody>

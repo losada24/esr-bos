@@ -147,6 +147,17 @@ interface OrderStageOverdue {
   resolved_at?: string | null
   resolved_business_days_elapsed?: number | null
   is_active?: boolean
+  extensions?: Array<{
+    id: number | string
+    business_days: number
+    extended_until?: string | null
+    note?: string | null
+    created_at?: string | null
+    user?: {
+      id: number | string
+      name: string
+    } | null
+  }>
 }
 
 type TimelineItem = {
@@ -254,6 +265,7 @@ const ESR_PROCESS_STATUS_OPTIONS = [
   'REVIEW',
   'ACCOUNT RECEIPT',
   'PRODUCTION',
+  'PENDING GLASS INVOICE',
   'PRODUCTION SERVICES',
   'PRE-COORDINATION ACCOUNTING',
   'PENDING MAT REYLOS',
@@ -262,6 +274,8 @@ const ESR_PROCESS_STATUS_OPTIONS = [
   'MATERIAL ORDER COMPLETED',
   'MATERIAL ORDER COMPLETED FINANCED',
   'STORAGE MATERIAL',
+  'MATERIALS PICK UP OR DELIVERED FINANCED',
+  'MATERIALS PICK UP OR DELIVERED BACKORDER',
   'MATERIALS PICK UP OR DELIVERED',
   'PENDING PAYMENT MATCH',
   'COMPLETE',
@@ -611,6 +625,21 @@ export default function ShowStatusOrder ({
   const canEditPipeline = isAdmin(roleNames) || isAccountManager(roleNames) || isOwner(roleNames) || isOwnerAdmin(roleNames) || isFrontdeskAdmin(roleNames) || isFrontdeskEsrRole || isAccounting(roleNames) || isProductionRole
   const canManageServiceControl = isAdmin(roleNames) || isAccountManager(roleNames) || isServiceManager(roleNames)
   const canEditPaymentInformationInModal = isAdmin(roleNames) || isAccountManager(roleNames) || isAccounting(roleNames) || isOwnerAdmin(roleNames)
+  const canExtendOverdue = isAdmin(roleNames) || isOwnerAdmin(roleNames) || isAccountManager(roleNames)
+  const activeStageOverdue = safeStageOverdues.find((overdue) => (
+    Boolean(overdue.is_active) &&
+    !overdue.resolved_at &&
+    String(overdue.status ?? '') === String(order.status ?? '')
+  ))
+  const latestActiveOverdueExtension = activeStageOverdue?.extensions?.[0] ?? null
+  const latestActiveOverdueExtensionDate = latestActiveOverdueExtension?.extended_until
+    ? new Date(latestActiveOverdueExtension.extended_until)
+    : null
+  const hasActiveOverdueExtension = Boolean(
+    latestActiveOverdueExtensionDate &&
+    !Number.isNaN(latestActiveOverdueExtensionDate.getTime()) &&
+    latestActiveOverdueExtensionDate.getTime() >= Date.now()
+  )
   const hasReachedContractSigned = Boolean(order.has_contract_signed)
   const hasAssignedPaymentMethod = String(order.method_of_payment ?? '').trim() !== ''
   const hasAssignedPaymentSchedule = String(order.payment_schedule?.schedule_type ?? '').trim() !== ''
@@ -650,6 +679,11 @@ export default function ShowStatusOrder ({
   const [frontdeskLostError, setFrontdeskLostError] = useState<string | null>(null)
 
   const [frontdeskQuantifiedModalOpen, setFrontdeskQuantifiedModalOpen] = useState(false)
+  const [extendOverdueModalOpen, setExtendOverdueModalOpen] = useState(false)
+  const [extendOverdueDays, setExtendOverdueDays] = useState('')
+  const [extendOverdueNote, setExtendOverdueNote] = useState('')
+  const [extendOverdueError, setExtendOverdueError] = useState<string | null>(null)
+  const [extendOverdueSaving, setExtendOverdueSaving] = useState(false)
 
   const [requestRescheduleModalOpen, setRequestRescheduleModalOpen] = useState(false)
   const [requestRescheduleSaving, setRequestRescheduleSaving] = useState(false)
@@ -1513,6 +1547,49 @@ export default function ShowStatusOrder ({
     setOrderProcessingAttachments([])
     setOrderProcessingError(null)
   }, [])
+
+  const closeExtendOverdueModal = () => {
+    if (extendOverdueSaving) return
+    setExtendOverdueModalOpen(false)
+    setExtendOverdueDays('')
+    setExtendOverdueNote('')
+    setExtendOverdueError(null)
+  }
+
+  const handleExtendOverdueSubmit = () => {
+    const businessDays = Number(extendOverdueDays)
+    if (!Number.isInteger(businessDays) || businessDays <= 0) {
+      setExtendOverdueError('Business days must be greater than 0.')
+      return
+    }
+
+    if (!extendOverdueNote.trim()) {
+      setExtendOverdueError('Note is required.')
+      return
+    }
+
+    setExtendOverdueSaving(true)
+    setExtendOverdueError(null)
+
+    router.post(route('order.stage-overdue-extensions.store', order.id), {
+      business_days: businessDays,
+      note: extendOverdueNote.trim()
+    }, {
+      preserveScroll: true,
+      onSuccess: () => {
+        setExtendOverdueModalOpen(false)
+        setExtendOverdueDays('')
+        setExtendOverdueNote('')
+        router.reload({ only: ['stageOverdues'], preserveScroll: true })
+      },
+      onError: (errors) => {
+        setExtendOverdueError(String(errors.business_days ?? errors.note ?? 'Unable to save the overdue extension.'))
+      },
+      onFinish: () => {
+        setExtendOverdueSaving(false)
+      }
+    })
+  }
 
   const closeEsrBackwardModal = () => {
     setEsrBackwardModalOpen(false)
@@ -3265,6 +3342,31 @@ export default function ShowStatusOrder ({
         icon: CalendarIcon,
         iconTone: 'danger'
       })
+
+      overdue.extensions?.forEach((extension) => {
+        const createdAt = extension?.created_at ? new Date(extension.created_at) : null
+        if (!createdAt || Number.isNaN(createdAt.getTime())) {
+          return
+        }
+
+        const extendedUntil = extension.extended_until ? new Date(extension.extended_until) : null
+        const extendedUntilText = extendedUntil && !Number.isNaN(extendedUntil.getTime())
+          ? formatTimelineDate(extendedUntil)
+          : 'No date'
+        const userText = extension.user?.name ? ` by ${extension.user.name}` : ''
+        const noteText = extension.note ? ` · ${extension.note}` : ''
+
+        items.push({
+          id: `stage-overdue-extension-${extension.id}`,
+          createdAt,
+          timeLabel: formatTimelineTime(createdAt),
+          dateLabel: formatTimelineDate(createdAt),
+          title: `Overdue extended${status ? ` in ${status}` : ''}`,
+          description: `${extension.business_days} business days until ${extendedUntilText}${userText}${noteText}`,
+          icon: CalendarIcon,
+          iconTone: 'warning'
+        })
+      })
     })
 
     return items.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
@@ -3364,6 +3466,26 @@ export default function ShowStatusOrder ({
                     >
                       Create Event
                     </Link>
+                    {canExtendOverdue && activeStageOverdue && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setExtendOverdueModalOpen(true)
+                          setExtendOverdueError(null)
+                        }}
+                        className="rounded-full border border-amber-300 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-amber-700 transition hover:bg-amber-50"
+                      >
+                        Extend Overdue
+                      </button>
+                    )}
+                    {activeStageOverdue && hasActiveOverdueExtension && (
+                      <span
+                        className="rounded-full bg-amber-400 px-3 py-1 text-xs font-black uppercase tracking-wide text-amber-950 ring-1 ring-amber-300"
+                        title={latestActiveOverdueExtension?.note ?? undefined}
+                      >
+                        Extended Overdue
+                      </span>
+                    )}
                     <Link
                       href={route('activities.index', { mode: 'call', order_id: order.id })}
                       className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-500 transition hover:border-emerald-400 hover:text-emerald-600"
@@ -5137,6 +5259,85 @@ export default function ShowStatusOrder ({
                   disabled={frontdeskLostSaving}
                 >
                   {frontdeskLostSaving ? 'Saving...' : 'Save'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {extendOverdueModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl">
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-slate-800">Extend Overdue</h3>
+                <p className="text-xs text-slate-500">{order.name}</p>
+              </div>
+              <button
+                type="button"
+                className="rounded-full p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+                onClick={closeExtendOverdueModal}
+                disabled={extendOverdueSaving}
+              >
+                <span className="sr-only">Close</span>
+                x
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-600" htmlFor="order-view-extend-overdue-business-days">
+                  Business days <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  id="order-view-extend-overdue-business-days"
+                  type="number"
+                  min={1}
+                  step={1}
+                  className="form-input w-full"
+                  value={extendOverdueDays}
+                  onChange={(event) => {
+                    setExtendOverdueDays(event.target.value)
+                    if (extendOverdueError) setExtendOverdueError(null)
+                  }}
+                  disabled={extendOverdueSaving}
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-600" htmlFor="order-view-extend-overdue-note">
+                  Note <span className="text-rose-500">*</span>
+                </label>
+                <textarea
+                  id="order-view-extend-overdue-note"
+                  className="form-textarea w-full resize-none placeholder:text-slate-400"
+                  rows={4}
+                  value={extendOverdueNote}
+                  onChange={(event) => {
+                    setExtendOverdueNote(event.target.value)
+                    if (extendOverdueError) setExtendOverdueError(null)
+                  }}
+                  disabled={extendOverdueSaving}
+                  placeholder="Explain why this overdue order is being extended"
+                />
+              </div>
+              {extendOverdueError && (
+                <p className="text-sm text-rose-600">{extendOverdueError}</p>
+              )}
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={closeExtendOverdueModal}
+                  className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+                  disabled={extendOverdueSaving}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleExtendOverdueSubmit}
+                  className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-amber-950 shadow hover:bg-amber-400 disabled:cursor-not-allowed disabled:bg-amber-300"
+                  disabled={extendOverdueSaving}
+                >
+                  {extendOverdueSaving ? 'Saving...' : 'Save'}
                 </button>
               </div>
             </div>

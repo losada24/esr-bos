@@ -352,6 +352,8 @@ class OrderStorageController extends Controller
         $stageAge = $this->tracksStageOverdues()
             ? $stageOverdueTracker->sync($order)
             : $stageOverdueTracker->resolveStageAge($order);
+        $activeOverdueExtension = $stageOverdueTracker->activeExtensionForStageAge($order, $stageAge);
+        $latestOverdueExtension = $activeOverdueExtension ?? $stageOverdueTracker->latestExtensionForStageAge($order, $stageAge);
 
         return [
             'id' => $order->id,
@@ -387,6 +389,8 @@ class OrderStorageController extends Controller
             'stage_business_days_elapsed' => $stageAge['business_days_elapsed'],
             'stage_limit_business_days' => $stageAge['limit_business_days'],
             'stage_overdue' => $stageAge['overdue'],
+            'stage_overdue_extension_active' => $activeOverdueExtension !== null,
+            'stage_overdue_extension' => $stageOverdueTracker->extensionPayload($latestOverdueExtension),
             'has_payment_made' => (bool) ($order->paymentSchedule?->installments?->contains(function ($installment) {
                 return $installment->movements->isNotEmpty()
                     || $installment->paid_at !== null

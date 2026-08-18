@@ -5,6 +5,7 @@ namespace App\Support;
 use App\Enum\OrderStatusEnum;
 use App\Models\Order;
 use App\Models\OrderStageOverdue;
+use App\Models\OrderStageOverdueExtension;
 use Carbon\Carbon;
 
 class OrderStageOverdueTracker
@@ -43,6 +44,63 @@ class OrderStageOverdueTracker
         ])->save();
 
         return $stageAge;
+    }
+
+    public function activeExtensionForStageAge(Order $order, array $stageAge): ?OrderStageOverdueExtension
+    {
+        if (!($stageAge['overdue'] ?? false) || empty($stageAge['stage_started_at_raw'])) {
+            return null;
+        }
+
+        $latestExtension = OrderStageOverdueExtension::query()
+            ->with('user:id,name')
+            ->where('order_id', $order->id)
+            ->where('status', $stageAge['status'])
+            ->where('stage_started_at', $stageAge['stage_started_at_raw'])
+            ->latest('id')
+            ->first();
+
+        if (!$latestExtension || !$latestExtension->extended_until) {
+            return null;
+        }
+
+        return Carbon::parse($latestExtension->extended_until)->endOfDay()->greaterThanOrEqualTo(now())
+            ? $latestExtension
+            : null;
+    }
+
+    public function latestExtensionForStageAge(Order $order, array $stageAge): ?OrderStageOverdueExtension
+    {
+        if (!($stageAge['overdue'] ?? false) || empty($stageAge['stage_started_at_raw'])) {
+            return null;
+        }
+
+        return OrderStageOverdueExtension::query()
+            ->with('user:id,name')
+            ->where('order_id', $order->id)
+            ->where('status', $stageAge['status'])
+            ->where('stage_started_at', $stageAge['stage_started_at_raw'])
+            ->latest('id')
+            ->first();
+    }
+
+    public function extensionPayload(?OrderStageOverdueExtension $extension): ?array
+    {
+        if (!$extension) {
+            return null;
+        }
+
+        return [
+            'id' => $extension->id,
+            'business_days' => (int) $extension->business_days,
+            'extended_until' => optional($extension->extended_until)->toIso8601String(),
+            'note' => $extension->note,
+            'created_at' => optional($extension->created_at)->toIso8601String(),
+            'user' => $extension->user ? [
+                'id' => $extension->user->id,
+                'name' => $extension->user->name,
+            ] : null,
+        ];
     }
 
     public function resolveStageAge(Order $order): array
@@ -130,6 +188,7 @@ class OrderStageOverdueTracker
             OrderStatusEnum::REVIEW->value => 3,
             OrderStatusEnum::ACCOUNT_RECEIPT->value => 7,
             OrderStatusEnum::PRODUCTION->value => 25,
+            OrderStatusEnum::PENDING_GLASS_INVOICE->value => 7,
             OrderStatusEnum::PRODUCTION_SERVICES->value => 20,
             OrderStatusEnum::PRE_COORDINATION_ACCOUNTING->value => 5,
             OrderStatusEnum::PENDING_MAT_REYLOS->value => 12,
@@ -138,6 +197,8 @@ class OrderStageOverdueTracker
             OrderStatusEnum::MATERIAL_ORDER_COMPLETED->value => 7,
             OrderStatusEnum::MATERIAL_ORDER_COMPLETED_FINANCED->value => 20,
             OrderStatusEnum::STORAGE_MATERIAL->value => 60,
+            OrderStatusEnum::MATERIALS_PICK_UP_OR_DELIVERED_FINANCED->value => 15,
+            OrderStatusEnum::MATERIALS_PICK_UP_OR_DELIVERED_BACKORDER->value => 15,
             OrderStatusEnum::MATERIALS_PICK_UP_OR_DELIVERED->value => 3,
             OrderStatusEnum::PENDING_PAYMENT->value => 3,
         ];

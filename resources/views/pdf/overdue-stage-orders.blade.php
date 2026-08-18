@@ -228,12 +228,13 @@
             <table class="detail-table">
               <thead>
                 <tr>
-                  <th width="32%">Order</th>
-                  <th width="12%">Amount</th>
-                  <th width="10%">Days</th>
-                  <th width="16%">Order Type</th>
-                  <th width="16%">Product Line</th>
-                  <th width="14%">Entered Status</th>
+                  <th width="26%">Order</th>
+                  <th width="10%">Amount</th>
+                  <th width="8%">Days</th>
+                  <th width="13%">Order Type</th>
+                  <th width="13%">Product Line</th>
+                  <th width="12%">Entered Status</th>
+                  <th width="18%">Extension</th>
                 </tr>
               </thead>
               <tbody>
@@ -245,6 +246,21 @@
                   <td>{{ $row['order_type'] ?? '-' }}</td>
                   <td>{{ $row['product_line'] ?? '-' }}</td>
                   <td>{{ $row['stage_entered_at'] ?? '-' }}</td>
+                  <td>
+                    @if (!empty($row['overdue_extension']))
+                      @php($extension = $row['overdue_extension'])
+                      {{ !empty($row['overdue_extension_active']) ? 'Active' : 'Last' }}:
+                      {{ $extension['business_days'] ?? 0 }} business days until {{ $extension['extended_until'] ?? '-' }}.
+                      @if (!empty($extension['user']['name']))
+                        By {{ $extension['user']['name'] }}.
+                      @endif
+                      @if (!empty($extension['note']))
+                        Note: {{ $extension['note'] }}
+                      @endif
+                    @else
+                      -
+                    @endif
+                  </td>
                 </tr>
               @endforeach
               </tbody>

@@ -16,7 +16,11 @@ class CrmEventInvitation extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
-    public function __construct(public CrmEvent $event)
+    public function __construct(
+        public CrmEvent $event,
+        public ?Carbon $occurrenceStartsAt = null,
+        public ?Carbon $occurrenceEndsAt = null
+    )
     {
     }
 
@@ -75,11 +79,19 @@ class CrmEventInvitation extends Mailable implements ShouldQueue
 
     private function startsAt(): ?Carbon
     {
+        if ($this->occurrenceStartsAt) {
+            return Carbon::parse($this->occurrenceStartsAt, config('app.timezone'));
+        }
+
         return $this->event->starts_at ? Carbon::parse($this->event->starts_at, config('app.timezone')) : null;
     }
 
     private function endsAt(): ?Carbon
     {
+        if ($this->occurrenceEndsAt) {
+            return Carbon::parse($this->occurrenceEndsAt, config('app.timezone'));
+        }
+
         return $this->event->ends_at ? Carbon::parse($this->event->ends_at, config('app.timezone')) : null;
     }
 
@@ -135,7 +147,7 @@ class CrmEventInvitation extends Mailable implements ShouldQueue
             'VERSION:2.0',
             'PRODID:-//Reylos BOS//CRM Event//EN',
             'BEGIN:VEVENT',
-            'UID:crm-event-' . $this->event->id . '@' . parse_url(config('app.url'), PHP_URL_HOST),
+            'UID:crm-event-' . $this->event->id . '-' . ($start ?: 'pending') . '@' . parse_url(config('app.url'), PHP_URL_HOST),
             'DTSTAMP:' . $created,
             'DTSTART:' . $start,
             'DTEND:' . $end,

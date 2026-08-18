@@ -12,6 +12,18 @@ export interface Tasks {
   stage_business_days_elapsed?: number | null
   stage_limit_business_days?: number | null
   stage_overdue?: boolean
+  stage_overdue_extension_active?: boolean
+  stage_overdue_extension?: {
+    id: number
+    business_days: number
+    extended_until?: string | null
+    note?: string | null
+    created_at?: string | null
+    user?: {
+      id: number
+      name: string
+    } | null
+  } | null
   follow_up_started_at_iso?: string | null
   is_supply?: boolean
   is_parent_order?: boolean

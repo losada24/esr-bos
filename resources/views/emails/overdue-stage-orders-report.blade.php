@@ -69,6 +69,10 @@
                   $sellerGroups = collect($group['seller_groups'] ?? [])
                     ->filter(fn ($sellerGroup) => (int) ($sellerGroup['count'] ?? 0) > 0)
                     ->values();
+                  $extendedRows = $sellerGroups
+                    ->flatMap(fn ($sellerGroup) => collect($sellerGroup['rows'] ?? []))
+                    ->filter(fn ($row) => !empty($row['overdue_extension']))
+                    ->values();
                 @endphp
 
                 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:separate;border-spacing:0;margin-bottom:18px;border:1px solid #e5e7eb;border-radius:7px;">
@@ -86,6 +90,22 @@
                           {{ $sellerGroup['label'] ?? 'Seller' }}: {{ number_format((int) ($sellerGroup['count'] ?? 0)) }}
                         </span>
                       @endforeach
+
+                      @if ($extendedRows->isNotEmpty())
+                        <div style="margin-top:14px;font-size:13px;line-height:19px;color:#92400e;">
+                          <strong>{{ $extendedRows->count() }} extended overdue {{ $extendedRows->count() === 1 ? 'order' : 'orders' }}</strong>
+                          @foreach ($extendedRows->take(5) as $row)
+                            @php($extension = $row['overdue_extension'] ?? [])
+                            <div style="margin-top:8px;">
+                              {{ $row['order_label'] ?? 'Order' }}:
+                              {{ $extension['business_days'] ?? 0 }} business days until {{ $extension['extended_until'] ?? '-' }}.
+                              @if (!empty($extension['note']))
+                                Note: {{ $extension['note'] }}
+                              @endif
+                            </div>
+                          @endforeach
+                        </div>
+                      @endif
                     </td>
                   </tr>
                 </table>

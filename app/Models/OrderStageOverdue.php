@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class OrderStageOverdue extends Model
 {
@@ -35,5 +37,15 @@ class OrderStageOverdue extends Model
     public function orderStatus(): BelongsTo
     {
         return $this->belongsTo(OrderStatus::class);
+    }
+
+    public function extensions(): HasMany
+    {
+        return $this->hasMany(OrderStageOverdueExtension::class);
+    }
+
+    public function latestExtension(): HasOne
+    {
+        return $this->hasOne(OrderStageOverdueExtension::class)->latestOfMany();
     }
 }

@@ -47,6 +47,7 @@ use App\Support\PaymentScheduleTemplates;
 use App\Support\PaymentInstallmentPresenter;
 use App\Support\OrderBoardFilter;
 use App\Support\OrderClientEmailManager;
+use App\Support\OrderStageOverdueTracker;
 use App\Support\OrderPipelineSort;
 use App\Support\QualifiedOrderDuplicateChecker;
 use App\Services\CrmNotificationService;
@@ -519,6 +520,7 @@ class FrontdeskController extends Controller
       OrderStatusEnum::REVIEW->value,
       OrderStatusEnum::ACCOUNT_RECEIPT->value,
       OrderStatusEnum::PRODUCTION->value,
+      OrderStatusEnum::PENDING_GLASS_INVOICE->value,
       OrderStatusEnum::PRODUCTION_SERVICES->value,
       OrderStatusEnum::PRE_COORDINATION_ACCOUNTING->value,
       OrderStatusEnum::PENDING_MAT_REYLOS->value,
@@ -528,6 +530,8 @@ class FrontdeskController extends Controller
       OrderStatusEnum::MATERIAL_ORDER_COMPLETED->value,
       OrderStatusEnum::MATERIAL_ORDER_COMPLETED_FINANCED->value,
       OrderStatusEnum::STORAGE_MATERIAL->value,
+      OrderStatusEnum::MATERIALS_PICK_UP_OR_DELIVERED_FINANCED->value,
+      OrderStatusEnum::MATERIALS_PICK_UP_OR_DELIVERED_BACKORDER->value,
       OrderStatusEnum::MATERIALS_PICK_UP_OR_DELIVERED->value,
       OrderStatusEnum::PENDING_PAYMENT->value,
       OrderStatusEnum::COMPLETE->value,
@@ -1004,6 +1008,7 @@ public function showQuantifiedModal(Order $order)
       OrderStatusEnum::ACCOUNT_RECEIPT->value,
       OrderStatusEnum::PLANNED->value,
       OrderStatusEnum::PRODUCTION->value,
+      OrderStatusEnum::PENDING_GLASS_INVOICE->value,
       OrderStatusEnum::PRODUCTION_SERVICES->value,
       OrderStatusEnum::PRE_COORDINATION_ACCOUNTING->value,
       OrderStatusEnum::PENDING_MAT_REYLOS->value,
@@ -1012,6 +1017,8 @@ public function showQuantifiedModal(Order $order)
       OrderStatusEnum::MATERIAL_ORDER_COMPLETED->value,
       OrderStatusEnum::MATERIAL_ORDER_COMPLETED_FINANCED->value,
       OrderStatusEnum::STORAGE_MATERIAL->value,
+      OrderStatusEnum::MATERIALS_PICK_UP_OR_DELIVERED_FINANCED->value,
+      OrderStatusEnum::MATERIALS_PICK_UP_OR_DELIVERED_BACKORDER->value,
       OrderStatusEnum::MATERIALS_PICK_UP_OR_DELIVERED->value,
       OrderStatusEnum::PENDING_PAYMENT->value,
       OrderStatusEnum::COMPLETE->value,
@@ -1023,6 +1030,8 @@ public function showQuantifiedModal(Order $order)
     if (!$this->ownerCanAccessOrder(auth()->user(), $order)) {
       abort(403, 'You are not authorized to access this order.');
     }
+    $order->loadMissing('orderStatus');
+    app(OrderStageOverdueTracker::class)->sync($order);
     $order->load(
       'tags:id,name,color,taggable_id,taggable_type',
       'client.companyContact',
@@ -1039,7 +1048,7 @@ public function showQuantifiedModal(Order $order)
       'paymentSchedule.installments.movements.paidBy',
       'changeOrderPayment.paidBy',
       'financialEvents.user',
-      'stageOverdues',
+      'stageOverdues.extensions.user',
       'serviceControls.creator:id,name',
       'orderCompanyContacts.companyContact',
       'orderCompanyContacts.client.companyContacts',
@@ -1265,19 +1274,37 @@ public function showQuantifiedModal(Order $order)
     $orderData['has_contract_signed'] = $order->hasReachedContractSigned();
     $stageOverdues = $order->stageOverdues
       ->sortByDesc('detected_at')
-      ->map(fn ($overdue) => [
-        'id' => $overdue->id,
-        'status' => $overdue->status,
-        'stage_started_at' => optional($overdue->stage_started_at)->toISOString(),
-        'limit_business_days' => (int) $overdue->limit_business_days,
-        'business_days_elapsed' => (int) $overdue->business_days_elapsed,
-        'detected_at' => optional($overdue->detected_at)->toISOString(),
-        'resolved_at' => optional($overdue->resolved_at)->toISOString(),
-        'resolved_business_days_elapsed' => $overdue->resolved_business_days_elapsed !== null
-          ? (int) $overdue->resolved_business_days_elapsed
-          : null,
-        'is_active' => (bool) $overdue->is_active,
-      ])
+      ->map(function ($overdue) {
+        $extensions = $overdue->extensions
+          ->sortByDesc('created_at')
+          ->values()
+          ->map(fn ($extension) => [
+            'id' => $extension->id,
+            'business_days' => (int) $extension->business_days,
+            'extended_until' => optional($extension->extended_until)->toISOString(),
+            'note' => $extension->note,
+            'created_at' => optional($extension->created_at)->toISOString(),
+            'user' => $extension->user ? [
+              'id' => $extension->user->id,
+              'name' => $extension->user->name,
+            ] : null,
+          ]);
+
+        return [
+          'id' => $overdue->id,
+          'status' => $overdue->status,
+          'stage_started_at' => optional($overdue->stage_started_at)->toISOString(),
+          'limit_business_days' => (int) $overdue->limit_business_days,
+          'business_days_elapsed' => (int) $overdue->business_days_elapsed,
+          'detected_at' => optional($overdue->detected_at)->toISOString(),
+          'resolved_at' => optional($overdue->resolved_at)->toISOString(),
+          'resolved_business_days_elapsed' => $overdue->resolved_business_days_elapsed !== null
+            ? (int) $overdue->resolved_business_days_elapsed
+            : null,
+          'is_active' => (bool) $overdue->is_active,
+          'extensions' => $extensions,
+        ];
+      })
       ->values();
     $serviceControls = $order->serviceControls
       ->map(fn ($serviceControl) => [

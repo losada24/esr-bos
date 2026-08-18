@@ -6,10 +6,10 @@
 <table>
   <thead>
     <tr>
-      <td colspan="9">{{ $appName }} | Overdue Stage Orders Report</td>
+      <td colspan="14">{{ $appName }} | Overdue Stage Orders Report</td>
     </tr>
     <tr>
-      <td colspan="9">Generated At: {{ $generatedAt }}</td>
+      <td colspan="14">Generated At: {{ $generatedAt }}</td>
     </tr>
     <tr>
       <td>Statuses</td>
@@ -18,10 +18,10 @@
       <td>{{ (int) ($totals['overdue_orders'] ?? 0) }}</td>
       <td>Amount</td>
       <td>{{ (float) ($totals['amount'] ?? 0) }}</td>
-      <td colspan="3">Seller: {{ $selectedSellerName ?? 'All sellers' }}</td>
+      <td colspan="8">Seller: {{ $selectedSellerName ?? 'All sellers' }}</td>
     </tr>
     <tr>
-      <td colspan="9"></td>
+      <td colspan="14"></td>
     </tr>
     <tr>
       <th>Row Type</th>
@@ -33,6 +33,11 @@
       <th>Order Type</th>
       <th>Product Line</th>
       <th>Entered Status At</th>
+      <th>Extension Status</th>
+      <th>Extension Business Days</th>
+      <th>Extension Until</th>
+      <th>Extension User</th>
+      <th>Extension Note</th>
     </tr>
   </thead>
   <tbody>
@@ -53,6 +58,11 @@
         <td></td>
         <td></td>
         <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
       </tr>
 
       @foreach ($sellerGroups as $sellerGroup)
@@ -65,6 +75,11 @@
           <td>{{ $sellerGroup['label'] ?? '-' }}</td>
           <td>{{ number_format((int) ($sellerGroup['count'] ?? 0)) }} orders</td>
           <td>{{ (float) $sellerRows->sum('amount') }}</td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
           <td></td>
           <td></td>
           <td></td>
@@ -82,12 +97,17 @@
             <td>{{ $row['order_type'] ?? '-' }}</td>
             <td>{{ $row['product_line'] ?? '-' }}</td>
             <td>{{ $row['stage_entered_at'] ?? '-' }}</td>
+            <td>{{ !empty($row['overdue_extension']) ? (!empty($row['overdue_extension_active']) ? 'Active' : 'Last') : '' }}</td>
+            <td>{{ $row['overdue_extension']['business_days'] ?? '' }}</td>
+            <td>{{ $row['overdue_extension']['extended_until'] ?? '' }}</td>
+            <td>{{ $row['overdue_extension']['user']['name'] ?? '' }}</td>
+            <td>{{ $row['overdue_extension']['note'] ?? '' }}</td>
           </tr>
         @endforeach
       @endforeach
     @empty
       <tr>
-        <td colspan="9">No matching orders were found for this report.</td>
+        <td colspan="14">No matching orders were found for this report.</td>
       </tr>
     @endforelse
   </tbody>

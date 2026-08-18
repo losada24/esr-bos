@@ -7,6 +7,7 @@ use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 use App\Console\Commands\SendExpiredInstallationTeamDocumentsDaily;
 use App\Console\Commands\SendExpiredInstallationTeamDocumentsLiabilityDaily;
+use App\Console\Commands\SendRecurringCrmEventReminders;
 use App\Console\Commands\SyncOrderStageOverdues;
 use App\Console\Commands\SendOverdueStageOrdersReport;
 
@@ -16,6 +17,7 @@ class Kernel extends ConsoleKernel
     protected $commands = [
         SendExpiredInstallationTeamDocumentsDaily::class,
         SendExpiredInstallationTeamDocumentsLiabilityDaily::class,
+        SendRecurringCrmEventReminders::class,
         ChangeOrdersToExecutionStatus::class,
         SyncOrderStageOverdues::class,
         SendOverdueStageOrdersReport::class,
@@ -31,6 +33,7 @@ class Kernel extends ConsoleKernel
         $schedule->command('app:change-orders-to-execution-status')->daily()->at('00:10');
         $schedule->command('app:sync-order-stage-overdues')->daily()->at('00:20');
         $schedule->command('reports:send-overdue-stage-orders')->everyTenMinutes();
+        $schedule->command('crm-events:send-recurring-reminders')->everyTenMinutes()->withoutOverlapping();
     }
 
     /**

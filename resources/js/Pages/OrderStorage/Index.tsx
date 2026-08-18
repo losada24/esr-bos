@@ -167,7 +167,8 @@ const ESR_ACCOUNTING_STATUSES = new Set([
 ])
 
 const ESR_PRODUCTION_STATUSES = new Set([
-  'PRODUCTION'
+  'PRODUCTION',
+  'PENDING GLASS INVOICE'
 ])
 
 const ESR_COORDINATION_LOGISTICS_STATUSES = new Set([
@@ -176,7 +177,9 @@ const ESR_COORDINATION_LOGISTICS_STATUSES = new Set([
   'PENDING MATERIALS ESW',
   'MATERIAL ORDER COMPLETED',
   'MATERIAL ORDER COMPLETED FINANCED',
-  'STORAGE MATERIAL'
+  'STORAGE MATERIAL',
+  'MATERIALS PICK UP OR DELIVERED FINANCED',
+  'MATERIALS PICK UP OR DELIVERED BACKORDER'
 ])
 
 const formatPipelineStatusTitle = (status: string | number, isEsrBoard: boolean): string => {
@@ -197,6 +200,13 @@ const getStageOverdueBadge = (pipeline: Pick<Pipelines, 'id' | 'title'>, task: T
   if (!task.stage_overdue) return null
   if (task.current_status && !matchesStatus(task.current_status, pipeline.title)) return null
 
+  if (task.stage_overdue_extension_active) {
+    const extensionDays = task.stage_overdue_extension?.business_days
+    return typeof extensionDays === 'number'
+      ? `EXTENDED OVERDUE +${extensionDays} BUSINESS DAYS`
+      : 'EXTENDED OVERDUE'
+  }
+
   const elapsed = task.stage_business_days_elapsed
   const limit = task.stage_limit_business_days
 
@@ -206,6 +216,42 @@ const getStageOverdueBadge = (pipeline: Pick<Pipelines, 'id' | 'title'>, task: T
 
   return 'OVERDUE'
 }
+
+const getStageOverdueBadgeClass = (task: Tasks): string => (
+  task.stage_overdue_extension_active
+    ? 'bg-amber-400 text-amber-950 ring-amber-300'
+    : 'bg-red-600 text-white ring-red-300'
+)
+
+const formatOverdueExtensionDate = (value?: string | null): string => {
+  if (!value) return '-'
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString()
+}
+
+const getStageOverdueTitle = (task: Tasks): string | undefined => {
+  const lines: string[] = []
+
+  if (task.stage_started_at) {
+    lines.push(`Entered status: ${task.stage_started_at}`)
+  }
+
+  const extension = task.stage_overdue_extension
+  if (extension) {
+    lines.push(`Extended: ${extension.business_days} business days`)
+    lines.push(`Until: ${formatOverdueExtensionDate(extension.extended_until)}`)
+    if (extension.user?.name) lines.push(`By: ${extension.user.name}`)
+    if (extension.note) lines.push(`Note: ${extension.note}`)
+  }
+
+  return lines.length ? lines.join('\n') : undefined
+}
+
+const canExtendStageOverdue = (roleNames: string[]): boolean => (
+  roleNames.includes('admin') ||
+  roleNames.includes('owner_admin') ||
+  roleNames.includes('account_manager')
+)
 
 const isPostSaleServiceTask = (task: Tasks): boolean => (
   Boolean(task.is_post_sale_service) && String(task.service_origin ?? '').toUpperCase() === 'SERVICE'
@@ -251,6 +297,7 @@ const DUPLICATE_ORDER_ERROR_KEY = 'duplicate_order_confirmation'
 
 type StatusPaginationState = { nextPage: number, loading: boolean }
 type ActivityMenuState = { orderId: number, x: number, y: number } | null
+type ExtendOverdueTarget = { id: number, title: string } | null
 type PaymentScheduleTemplates = Record<string, { label: string, percentage: number }[]>
 type PendingEsrStatusMove = {
   orderId: number
@@ -352,12 +399,18 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
   const [esrBackwardNote, setEsrBackwardNote] = useState('')
   const [esrBackwardError, setEsrBackwardError] = useState<string | null>(null)
   const [esrBackwardSaving, setEsrBackwardSaving] = useState(false)
+  const [extendOverdueTarget, setExtendOverdueTarget] = useState<ExtendOverdueTarget>(null)
+  const [extendOverdueDays, setExtendOverdueDays] = useState('')
+  const [extendOverdueNote, setExtendOverdueNote] = useState('')
+  const [extendOverdueError, setExtendOverdueError] = useState<string | null>(null)
+  const [extendOverdueSaving, setExtendOverdueSaving] = useState(false)
   const dragSnapshotRef = useRef<Pipelines[] | null>(null)
   const sortHydratedRef = useRef(false)
   const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? ''
   const isEsrBoard = searchOrigin === 'esr_process'
   const roleNames = (auth.user.roles ?? []).map(role => role.name)
   const canEditPostSaleService = canEditServiceControl(roleNames)
+  const canExtendOverdue = canExtendStageOverdue(roleNames)
   const isRestrictedOwner = isRestrictedOwnerRoleSet(roleNames)
   const isRestrictedOwnerAdmin = isRestrictedOwnerAdminRoleSet(roleNames)
   const appliedFilters = filters ?? {}
@@ -377,6 +430,58 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
 
     return oldIndex >= 0 && newIndex >= 0 && newIndex < oldIndex
   }, [statusIndex])
+
+  const openExtendOverdueModal = (task: Tasks) => {
+    setExtendOverdueTarget({ id: task.id, title: task.title })
+    setExtendOverdueDays('')
+    setExtendOverdueNote('')
+    setExtendOverdueError(null)
+  }
+
+  const closeExtendOverdueModal = () => {
+    if (extendOverdueSaving) return
+    setExtendOverdueTarget(null)
+    setExtendOverdueDays('')
+    setExtendOverdueNote('')
+    setExtendOverdueError(null)
+  }
+
+  const submitExtendOverdue = () => {
+    if (!extendOverdueTarget) return
+
+    const businessDays = Number(extendOverdueDays)
+    if (!Number.isInteger(businessDays) || businessDays <= 0) {
+      setExtendOverdueError('Business days must be greater than 0.')
+      return
+    }
+
+    if (!extendOverdueNote.trim()) {
+      setExtendOverdueError('Note is required.')
+      return
+    }
+
+    setExtendOverdueSaving(true)
+    setExtendOverdueError(null)
+
+    router.post(route('order.stage-overdue-extensions.store', extendOverdueTarget.id), {
+      business_days: businessDays,
+      note: extendOverdueNote.trim()
+    }, {
+      preserveScroll: true,
+      onSuccess: () => {
+        setExtendOverdueTarget(null)
+        setExtendOverdueDays('')
+        setExtendOverdueNote('')
+        router.reload({ only: ['data'], preserveScroll: true })
+      },
+      onError: (errors) => {
+        setExtendOverdueError(String(errors.business_days ?? errors.note ?? 'Unable to save the overdue extension.'))
+      },
+      onFinish: () => {
+        setExtendOverdueSaving(false)
+      }
+    })
+  }
 
   const tagFilterOptions = useMemo(() => {
     const seen = new Set<string>()
@@ -1475,13 +1580,27 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
                                   )
                                   )}
                               {stageOverdueBadge && (
-                                <div className="mt-2 flex justify-end">
+                                <div className="mt-2 flex items-center justify-end gap-2">
                                   <span
-                                    className="inline-flex items-center rounded-full bg-red-600 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-white ring-2 ring-red-300 shadow-sm"
-                                    title={task.stage_started_at ? `Entered status: ${task.stage_started_at}` : undefined}
+                                    className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wide ring-2 shadow-sm ${getStageOverdueBadgeClass(task)}`}
+                                    title={getStageOverdueTitle(task)}
                                   >
                                     {stageOverdueBadge}
                                   </span>
+                                  {canExtendOverdue && task.stage_overdue && (
+                                    <button
+                                      type="button"
+                                      title="Extend Overdue"
+                                      className="rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-amber-700 ring-1 ring-amber-300 hover:bg-amber-50"
+                                      onClick={(event) => {
+                                        event.preventDefault()
+                                        event.stopPropagation()
+                                        openExtendOverdueModal(task)
+                                      }}
+                                    >
+                                      Extend
+                                    </button>
+                                  )}
                                 </div>
                               )}
                             </div>
@@ -1582,6 +1701,85 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
                   disabled={esrBackwardSaving}
                 >
                   {esrBackwardSaving ? 'Saving...' : 'Save'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {extendOverdueTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl">
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-slate-800">Extend Overdue</h3>
+                <p className="text-xs text-slate-500">{extendOverdueTarget.title}</p>
+              </div>
+              <button
+                type="button"
+                className="rounded-full p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+                onClick={closeExtendOverdueModal}
+                disabled={extendOverdueSaving}
+              >
+                <span className="sr-only">Close</span>
+                x
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-600" htmlFor="extend-overdue-business-days">
+                  Business days <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  id="extend-overdue-business-days"
+                  type="number"
+                  min={1}
+                  step={1}
+                  className="form-input w-full"
+                  value={extendOverdueDays}
+                  onChange={(event) => {
+                    setExtendOverdueDays(event.target.value)
+                    if (extendOverdueError) setExtendOverdueError(null)
+                  }}
+                  disabled={extendOverdueSaving}
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-600" htmlFor="extend-overdue-note">
+                  Note <span className="text-rose-500">*</span>
+                </label>
+                <textarea
+                  id="extend-overdue-note"
+                  className="form-textarea w-full resize-none placeholder:text-slate-400"
+                  rows={4}
+                  value={extendOverdueNote}
+                  onChange={(event) => {
+                    setExtendOverdueNote(event.target.value)
+                    if (extendOverdueError) setExtendOverdueError(null)
+                  }}
+                  disabled={extendOverdueSaving}
+                  placeholder="Explain why this overdue order is being extended"
+                />
+              </div>
+              {extendOverdueError && (
+                <p className="text-sm text-rose-600">{extendOverdueError}</p>
+              )}
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={closeExtendOverdueModal}
+                  className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+                  disabled={extendOverdueSaving}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={submitExtendOverdue}
+                  className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-amber-950 shadow hover:bg-amber-400 disabled:cursor-not-allowed disabled:bg-amber-300"
+                  disabled={extendOverdueSaving}
+                >
+                  {extendOverdueSaving ? 'Saving...' : 'Save'}
                 </button>
               </div>
             </div>

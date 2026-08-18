@@ -22,7 +22,7 @@ type ActivityModalTab = 'details' | 'notes'
 type ViewMode = 'month' | 'week' | 'day'
 type OwnershipFilter = 'mine' | 'all'
 type StatusFilter = 'open' | 'closed' | 'all'
-type ActivityTypeFilters = {
+interface ActivityTypeFilters {
   events: boolean
   calls: boolean
   tasks: boolean
@@ -60,6 +60,12 @@ interface ActivityEventRow {
   status_value?: string | null
   status_color?: string | null
   is_inactive?: boolean
+  is_repeating?: boolean
+  recurrence_frequency?: 'weekly' | 'biweekly' | 'monthly' | null
+  recurrence_interval?: number | null
+  recurrence_weekday?: number | null
+  recurrence_month_day?: number | null
+  recurrence_ends_at?: string | null
   order?: RelatedOrder | null
   client?: RelatedClient | null
   related_to?: string | null
@@ -125,6 +131,15 @@ const EVENT_CLOSED_COLOR = EVENT_COLOR
 const EVENT_CANCELLED_COLOR = '#dc2626'
 const CALL_COLOR = '#7c3aed'
 const CALL_CANCELLED_COLOR = EVENT_CANCELLED_COLOR
+const weekdayOptions = [
+  { value: 0, label: 'Sunday' },
+  { value: 1, label: 'Monday' },
+  { value: 2, label: 'Tuesday' },
+  { value: 3, label: 'Wednesday' },
+  { value: 4, label: 'Thursday' },
+  { value: 5, label: 'Friday' },
+  { value: 6, label: 'Saturday' }
+]
 
 const pad = (value: number) => value.toString().padStart(2, '0')
 
@@ -143,6 +158,13 @@ const plusHours = (value: string, hours: number) => {
   if (Number.isNaN(date.getTime())) return localInputValue()
   date.setHours(date.getHours() + hours)
   return localInputValue(date)
+}
+
+const dateInputFromValue = (value?: string | null) => {
+  if (!value) return ''
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? value.slice(0, 10) : `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
 }
 
 const dateAtDefaultActivityTime = (date: Date) => {
@@ -638,6 +660,11 @@ function EventModal ({
   const [startsAt, setStartsAt] = useState(defaultStart)
   const [endsAt, setEndsAt] = useState(plusHours(defaultStart, 1))
   const [eventStatus, setEventStatus] = useState('Scheduled')
+  const [isRepeating, setIsRepeating] = useState(false)
+  const [recurrenceFrequency, setRecurrenceFrequency] = useState<'weekly' | 'biweekly' | 'monthly'>('weekly')
+  const [recurrenceWeekday, setRecurrenceWeekday] = useState(new Date(defaultStart).getDay().toString())
+  const [recurrenceMonthDay, setRecurrenceMonthDay] = useState(new Date(defaultStart).getDate().toString())
+  const [recurrenceEndsAt, setRecurrenceEndsAt] = useState('')
   const [reminder, setReminder] = useState(true)
   const [reminderMinutes, setReminderMinutes] = useState('15')
   const [location, setLocation] = useState('')
@@ -668,6 +695,11 @@ function EventModal ({
       setStartsAt(editingEvent ? localInputFromValue(editingEvent.starts_at) : nextStart)
       setEndsAt(editingEvent ? localInputFromValue(editingEvent.ends_at) : plusHours(nextStart, 1))
       setEventStatus(editingEvent?.status_value ?? 'Scheduled')
+      setIsRepeating(editingEvent?.is_repeating ?? false)
+      setRecurrenceFrequency(editingEvent?.recurrence_frequency ?? 'weekly')
+      setRecurrenceWeekday((editingEvent?.recurrence_weekday ?? new Date(editingEvent?.starts_at ?? nextStart).getDay()).toString())
+      setRecurrenceMonthDay((editingEvent?.recurrence_month_day ?? new Date(editingEvent?.starts_at ?? nextStart).getDate()).toString())
+      setRecurrenceEndsAt(dateInputFromValue(editingEvent?.recurrence_ends_at))
       setReminder(editingEvent?.reminder_enabled ?? true)
       setReminderMinutes((editingEvent?.reminder_minutes_before ?? 15).toString())
       setLocation(editingEvent?.location ?? '')
@@ -702,7 +734,12 @@ function EventModal ({
         starts_at: startsAt,
         ends_at: endsAt,
         status: eventStatus,
-        is_repeating: false,
+        is_repeating: isRepeating,
+        recurrence_frequency: isRepeating ? recurrenceFrequency : null,
+        recurrence_interval: isRepeating ? (recurrenceFrequency === 'biweekly' ? 2 : 1) : null,
+        recurrence_weekday: isRepeating && recurrenceFrequency !== 'monthly' ? Number(recurrenceWeekday) : null,
+        recurrence_month_day: isRepeating && recurrenceFrequency === 'monthly' ? Number(recurrenceMonthDay) : null,
+        recurrence_ends_at: isRepeating && recurrenceEndsAt ? recurrenceEndsAt : null,
         reminder_enabled: reminder,
         reminder_minutes_before: reminder ? Number(reminderMinutes) : null,
         location,
@@ -741,6 +778,15 @@ function EventModal ({
       sendInvitationRef.current = true
     }
   }, [editingEvent, participants.length, sendInvitation])
+
+  const footerActions = readOnly || activeModalTab === 'notes'
+    ? <button type="button" className="btn btn-outline-primary" onClick={onClose}>Close</button>
+    : (
+      <>
+        <button type="button" className="btn btn-outline-primary" onClick={onClose}>Cancel</button>
+        <button type="button" className="btn btn-primary" disabled={saving} onClick={() => { void submit() }}>{saving ? 'Saving...' : 'Save'}</button>
+      </>
+      )
 
   return (
     <Modal show={show} maxWidth="3xl" onClose={onClose}>
@@ -792,6 +838,43 @@ function EventModal ({
             <option value="Scheduled">Scheduled</option>
             <option value="Cancelled">Cancelled</option>
           </select>
+        </div>
+        <div className="space-y-3 rounded-md border border-slate-200 bg-slate-50 px-4 py-3">
+          <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+            <input type="checkbox" className="form-checkbox" checked={isRepeating} disabled={readOnly} onChange={(event) => { setIsRepeating(event.target.checked) }} />
+            Repeat this event
+          </label>
+          {isRepeating && (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-slate-600">Frequency</label>
+                <select className="form-select" value={recurrenceFrequency} disabled={readOnly} onChange={(event) => { setRecurrenceFrequency(event.target.value as 'weekly' | 'biweekly' | 'monthly') }}>
+                  <option value="weekly">Weekly</option>
+                  <option value="biweekly">Every 2 weeks</option>
+                  <option value="monthly">Monthly</option>
+                </select>
+              </div>
+              {recurrenceFrequency === 'monthly'
+                ? (
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-slate-600">Day of month</label>
+                    <input className="form-input" type="number" min="1" max="31" value={recurrenceMonthDay} disabled={readOnly} onChange={(event) => { setRecurrenceMonthDay(event.target.value) }} />
+                  </div>
+                  )
+                : (
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-slate-600">Day</label>
+                    <select className="form-select" value={recurrenceWeekday} disabled={readOnly} onChange={(event) => { setRecurrenceWeekday(event.target.value) }}>
+                      {weekdayOptions.map((day) => <option key={day.value} value={day.value}>{day.label}</option>)}
+                    </select>
+                  </div>
+                  )}
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-slate-600">Ends</label>
+                <input className="form-input" type="date" value={recurrenceEndsAt} disabled={readOnly} onChange={(event) => { setRecurrenceEndsAt(event.target.value) }} />
+              </div>
+            </div>
+          )}
         </div>
         <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" className="form-checkbox" checked={reminder} disabled={readOnly} onChange={(event) => { setReminder(event.target.checked) }} />
@@ -872,20 +955,7 @@ function EventModal ({
         )}
       </div>
       <div className="flex justify-end gap-3 border-t border-slate-200 px-6 py-4">
-        {readOnly
-          ? (
-            <button type="button" className="btn btn-outline-primary" onClick={onClose}>Close</button>
-            )
-          : activeModalTab === 'notes'
-          ? (
-            <button type="button" className="btn btn-outline-primary" onClick={onClose}>Close</button>
-            )
-          : (
-            <>
-              <button type="button" className="btn btn-outline-primary" onClick={onClose}>Cancel</button>
-              <button type="button" className="btn btn-primary" disabled={saving} onClick={() => { void submit() }}>{saving ? 'Saving...' : 'Save'}</button>
-            </>
-            )}
+        {footerActions}
       </div>
       </div>
     </Modal>
@@ -964,7 +1034,7 @@ function CallModal ({
   useEffect(() => {
     const query = toFrom.trim()
 
-    if (!show || order || query.length < 2 || query === client?.name) {
+    if (!show || order !== null || query.length < 2 || query === client?.name) {
       setContactOptions([])
       return
     }
@@ -1204,13 +1274,15 @@ export default function ActivitiesIndex ({ auth, events: initialEvents, calls: i
       return { calendar: { type: 'month', labels: 10 } }
     }
 
-    return {
+    const scheduleView: MbscEventcalendarView = {
       schedule: {
         type: viewMode,
         startTime: viewMode === 'day' ? '00:00' : undefined,
         endTime: viewMode === 'day' ? '24:00' : undefined
       }
-    } as MbscEventcalendarView
+    }
+
+    return scheduleView
   }, [viewMode])
 
   const loadCalendarEvents = useCallback((date: Date) => {

@@ -406,6 +406,11 @@ class Order extends Model
     return $this->hasMany(OrderStageOverdue::class);
   }
 
+  public function stageOverdueExtensions(): HasMany
+  {
+    return $this->hasMany(OrderStageOverdueExtension::class);
+  }
+
   public function installationPayments()
   {
     return $this->hasMany(InstallationPayment::class);

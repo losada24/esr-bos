@@ -14,6 +14,7 @@ use App\Models\Note;
 use App\Models\Order;
 use App\Models\User;
 use App\Services\CrmNotificationService;
+use App\Support\CrmEventRecurrence;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -54,6 +55,9 @@ class ActivityController extends Controller
         $now = Carbon::now($timezone);
 
         $eventsQuery = $this->visibleEventsQuery($request->user())
+            ->where(function (Builder $query) {
+                $query->where('is_repeating', false)->orWhereNull('is_repeating');
+            })
             ->whereBetween('starts_at', [$rangeStart, $rangeEnd]);
 
         if ($ownership === 'mine') {
@@ -95,6 +99,62 @@ class ActivityController extends Controller
             })
             : collect();
 
+        $recurringEvents = collect();
+
+        if ($types->contains('events')) {
+            $recurrence = app(CrmEventRecurrence::class);
+            $recurringQuery = $this->visibleEventsQuery($request->user())
+                ->where('is_repeating', true)
+                ->where('starts_at', '<=', $rangeEnd)
+                ->where(function (Builder $query) use ($rangeStart) {
+                    $query->whereNull('recurrence_ends_at')
+                        ->orWhereDate('recurrence_ends_at', '>=', $rangeStart->toDateString());
+                });
+
+            if ($ownership === 'mine') {
+                $recurringQuery->where('host_id', $request->user()->id);
+            }
+
+            $recurringEvents = $recurringQuery
+                ->get()
+                ->flatMap(function (CrmEvent $event) use ($recurrence, $rangeStart, $rangeEnd, $timezone, $now, $statusFilter) {
+                    return $recurrence->occurrencesBetween($event, $rangeStart, $rangeEnd)
+                        ->map(function (array $occurrence) use ($event, $timezone, $now) {
+                            $start = Carbon::parse($occurrence['starts_at'], $timezone);
+                            $end = Carbon::parse($occurrence['ends_at'], $timezone);
+                            $activityStatus = $event->status === 'Cancelled'
+                                ? 'Cancelled'
+                                : ($end->lt($now) ? 'Closed' : 'Open');
+
+                            return [
+                                'id' => 'event-' . $event->id . '-' . $start->timestamp,
+                                'title' => $event->title,
+                                'text' => $event->title,
+                                'start' => $start->format(\DateTimeInterface::ATOM),
+                                'end' => $end->format(\DateTimeInterface::ATOM),
+                                'color' => $this->eventColor($activityStatus),
+                                'type' => 'event',
+                                'activity_status' => $activityStatus,
+                                'order_id' => $event->order_id,
+                                'client_id' => $event->client_id,
+                                'tooltip' => $event->title,
+                            ];
+                        })
+                        ->filter(function (array $item) use ($statusFilter) {
+                            if ($statusFilter === 'open') {
+                                return $item['activity_status'] === 'Open';
+                            }
+
+                            if ($statusFilter === 'closed') {
+                                return in_array($item['activity_status'], ['Closed', 'Cancelled'], true);
+                            }
+
+                            return true;
+                        });
+                })
+                ->values();
+        }
+
         $callsQuery = $this->visibleCallsQuery($request->user())
             ->whereBetween('call_start_time', [$rangeStart, $rangeEnd]);
 
@@ -132,7 +192,7 @@ class ActivityController extends Controller
             })
             : collect();
 
-        return response()->json($events->concat($calls)->values());
+        return response()->json($events->concat($recurringEvents)->concat($calls)->values());
     }
 
     public function storeEvent(Request $request): JsonResponse
@@ -150,6 +210,11 @@ class ActivityController extends Controller
             'client_id' => $data['client_id'] ?? $order?->client_id,
             'status' => $data['status'] ?? 'Scheduled',
             'is_repeating' => (bool) ($data['is_repeating'] ?? false),
+            'recurrence_frequency' => $data['recurrence_frequency'] ?? null,
+            'recurrence_interval' => $data['recurrence_interval'] ?? null,
+            'recurrence_weekday' => $data['recurrence_weekday'] ?? null,
+            'recurrence_month_day' => $data['recurrence_month_day'] ?? null,
+            'recurrence_ends_at' => $data['recurrence_ends_at'] ?? null,
             'reminder_enabled' => (bool) ($data['reminder_enabled'] ?? false),
             'online_meeting' => (bool) ($data['online_meeting'] ?? false),
         ]);
@@ -232,6 +297,11 @@ class ActivityController extends Controller
             'client_id' => $data['client_id'] ?? $order?->client_id,
             'status' => $data['status'] ?? 'Scheduled',
             'is_repeating' => (bool) ($data['is_repeating'] ?? false),
+            'recurrence_frequency' => $data['recurrence_frequency'] ?? null,
+            'recurrence_interval' => $data['recurrence_interval'] ?? null,
+            'recurrence_weekday' => $data['recurrence_weekday'] ?? null,
+            'recurrence_month_day' => $data['recurrence_month_day'] ?? null,
+            'recurrence_ends_at' => $data['recurrence_ends_at'] ?? null,
             'reminder_enabled' => (bool) ($data['reminder_enabled'] ?? false),
             'online_meeting' => (bool) ($data['online_meeting'] ?? false),
         ]);
@@ -615,6 +685,11 @@ class ActivityController extends Controller
             'ends_at' => ['required', 'date', 'after:starts_at'],
             'status' => ['nullable', Rule::in(['Scheduled', 'Cancelled'])],
             'is_repeating' => ['boolean'],
+            'recurrence_frequency' => ['nullable', Rule::in(['weekly', 'biweekly', 'monthly'])],
+            'recurrence_interval' => ['nullable', 'integer', 'min:1', 'max:12'],
+            'recurrence_weekday' => ['nullable', 'integer', 'min:0', 'max:6'],
+            'recurrence_month_day' => ['nullable', 'integer', 'min:1', 'max:31'],
+            'recurrence_ends_at' => ['nullable', 'date'],
             'reminder_enabled' => ['boolean'],
             'reminder_minutes_before' => ['nullable', 'integer', 'min:0', 'max:10080'],
             'location' => ['nullable', 'string', 'max:255'],
@@ -627,6 +702,36 @@ class ActivityController extends Controller
         ]);
 
         $data['participants'] = $this->normalizeEventParticipants($data['participants'] ?? []);
+        $data = $this->normalizeRecurrenceData($data);
+
+        return $data;
+    }
+
+    private function normalizeRecurrenceData(array $data): array
+    {
+        if (!filter_var($data['is_repeating'] ?? false, FILTER_VALIDATE_BOOLEAN)) {
+            $data['recurrence_frequency'] = null;
+            $data['recurrence_interval'] = null;
+            $data['recurrence_weekday'] = null;
+            $data['recurrence_month_day'] = null;
+            $data['recurrence_ends_at'] = null;
+
+            return $data;
+        }
+
+        $startsAt = $this->asCarbon($data['starts_at'] ?? null);
+        $frequency = $data['recurrence_frequency'] ?? 'weekly';
+
+        $data['recurrence_frequency'] = $frequency;
+        $data['recurrence_interval'] = $frequency === 'biweekly'
+            ? 2
+            : max(1, (int) ($data['recurrence_interval'] ?? 1));
+        $data['recurrence_weekday'] = in_array($frequency, ['weekly', 'biweekly'], true)
+            ? (int) ($data['recurrence_weekday'] ?? $startsAt?->dayOfWeek ?? 1)
+            : null;
+        $data['recurrence_month_day'] = $frequency === 'monthly'
+            ? min(31, max(1, (int) ($data['recurrence_month_day'] ?? $startsAt?->day ?? 1)))
+            : null;
 
         return $data;
     }
@@ -764,6 +869,12 @@ class ActivityController extends Controller
             'status_value' => $event->status ?? 'Scheduled',
             'status_color' => $this->eventColor($activityStatus),
             'is_inactive' => in_array($activityStatus, ['Closed', 'Cancelled'], true),
+            'is_repeating' => (bool) $event->is_repeating,
+            'recurrence_frequency' => $event->recurrence_frequency,
+            'recurrence_interval' => $event->recurrence_interval,
+            'recurrence_weekday' => $event->recurrence_weekday,
+            'recurrence_month_day' => $event->recurrence_month_day,
+            'recurrence_ends_at' => optional($event->recurrence_ends_at)->toDateString(),
             'related_to' => $event->order?->name ?? $event->client?->name,
             'order' => $event->order ? $this->orderOption($event->order) : null,
             'client' => $event->client ? $this->clientOption($event->client) : null,

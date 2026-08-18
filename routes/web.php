@@ -28,6 +28,7 @@ use App\Http\Controllers\OrderStorageController;
 use App\Http\Controllers\OrderSearchController;
 use App\Http\Controllers\OrderPaymentController;
 use App\Http\Controllers\OverdueReportEmailScheduleController;
+use App\Http\Controllers\OrderStageOverdueExtensionController;
 use App\Http\Controllers\PaymentInstallmentMovementController;
 use App\Http\Controllers\PaymentScheduleController;
 use App\Http\Controllers\ReferralController;
@@ -124,6 +125,9 @@ Route::middleware('auth')->group(function () {
         Route::post('notes', [OrderNoteController::class, 'store'])->name('notes.store');
         Route::put('notes/{note}',    [OrderNoteController::class, 'update'])->name('notes.update');
         Route::delete('notes/{note}', [OrderNoteController::class, 'destroy'])->name('notes.destroy');
+        Route::post('stage-overdue-extensions', [OrderStageOverdueExtensionController::class, 'store'])
+          ->middleware(["role:" . RoleEnum::ADMIN->value . '|' . RoleEnum::OWNER_ADMIN->value . '|' . RoleEnum::ACCOUNT_MANAGER->value])
+          ->name('stage-overdue-extensions.store');
     });
 
     Route::get('user/referred-clients', [UserController::class, 'referredClients'])

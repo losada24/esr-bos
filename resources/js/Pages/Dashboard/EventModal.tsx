@@ -771,6 +771,8 @@ const EventModal = ({
                     'MATERIAL ORDER COMPLETED',
                     'MATERIAL ORDER COMPLETED FINANCED',
                     'STORAGE MATERIAL',
+                    'MATERIALS PICK UP OR DELIVERED FINANCED',
+                    'MATERIALS PICK UP OR DELIVERED BACKORDER',
                     'MATERIALS PICK UP OR DELIVERED',
                     'COMPLETE'
                   ].map((status) => { return { label: status, value: status } })}
