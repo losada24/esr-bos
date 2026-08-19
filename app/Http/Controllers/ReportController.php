@@ -398,6 +398,7 @@ class ReportController extends Controller
       'biweekly',
       'installationTeam',
     ])
+      ->whereHas('order')
       ->where('installation_team_id', $id)
       ->when($search !== '', function ($query) use ($search) {
         $query->whereHas('order', function ($subQuery) use ($search) {

@@ -31,6 +31,8 @@ use App\Traits\ComissionSupervisor;
 use App\Traits\OrderEmails;
 use App\Traits\OrderStatus;
 use App\Traits\Snapshot;
+use Carbon\Carbon;
+use DateTimeInterface;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -955,7 +957,17 @@ class UpdateOrder
     }
 
     if ($order->status === OrderStatusEnum::FINAL_COLLECT->value) {
-      return $order->pending_collect?->format('Y-m-d');
+      $pendingCollect = $order->pending_collect;
+
+      if (! $pendingCollect) {
+        return null;
+      }
+
+      if ($pendingCollect instanceof DateTimeInterface) {
+        return $pendingCollect->format('Y-m-d');
+      }
+
+      return Carbon::parse($pendingCollect)->format('Y-m-d');
     }
 
     return now()->toDateString();

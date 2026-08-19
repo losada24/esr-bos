@@ -157,6 +157,22 @@ class Order extends Model
       'amount_check' => 'boolean',
       'email_check' => 'boolean',
       'esr_cost' => 'decimal:2',
+      'entry_date' => 'date',
+      'installation_date' => 'date',
+      'contract_signing_date' => 'date',
+      'payment_factory_date' => 'date',
+      'delivery_date' => 'date',
+      'eta_date' => 'date',
+      'installation_end_date' => 'date',
+      'supervisor_payment_date' => 'date',
+      'inspection_date' => 'date',
+      'finish_date' => 'date',
+      'final_inspection_date' => 'date',
+      'complete_date' => 'date',
+      'service_date' => 'date',
+      'pending_collect' => 'date',
+      'material_received_date' => 'date',
+      'bid_due_date' => 'date',
     ];
   }
 
