@@ -172,6 +172,11 @@ test('mobile customer can request a temporary payment link', function () {
     Http::assertSent(fn ($request) => $request->url() === 'https://api.paywithzero.net/v1/public/202104/payment-link'
         && $request['amount'] === 10000
         && collect($request['customValues'])->contains(fn ($customValue) => $customValue['key'] === 'payment_reference')
+        && collect($request['customValues'])->contains(fn ($customValue) => $customValue['key'] === 'order_number')
+        && collect($request['customValues'])->contains(fn ($customValue) => $customValue['key'] === 'payment_label' && $customValue['value'] === 'Installment 1')
+        && !collect($request['customValues'])->contains(fn ($customValue) => $customValue['key'] === 'payment_intent_id')
+        && !collect($request['customValues'])->contains(fn ($customValue) => $customValue['key'] === 'payment_id')
+        && !collect($request['customValues'])->contains(fn ($customValue) => $customValue['key'] === 'order_id')
     );
 });
 

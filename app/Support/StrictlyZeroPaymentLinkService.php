@@ -11,6 +11,7 @@ class StrictlyZeroPaymentLinkService
     public function create(array $payment, PaymentIntent $intent): array
     {
         $amountInCents = $this->amountToCents((float) $payment['amount']);
+        $order = $payment['order'];
 
         $payload = [
             'amount' => $amountInCents,
@@ -21,24 +22,14 @@ class StrictlyZeroPaymentLinkService
                     'value' => (string) $intent->provider_reference,
                 ],
                 [
-                    'key' => 'payment_intent_id',
-                    'label' => 'Payment Intent ID',
-                    'value' => (string) $intent->id,
+                    'key' => 'order_number',
+                    'label' => 'Order Number',
+                    'value' => (string) ($order->order_number ?: $order->id),
                 ],
                 [
-                    'key' => 'payment_type',
-                    'label' => 'Payment Type',
-                    'value' => (string) $intent->payment_type,
-                ],
-                [
-                    'key' => 'payment_id',
-                    'label' => 'Payment ID',
-                    'value' => (string) $intent->payment_id,
-                ],
-                [
-                    'key' => 'order_id',
-                    'label' => 'Order ID',
-                    'value' => (string) $intent->order_id,
+                    'key' => 'payment_label',
+                    'label' => 'Payment',
+                    'value' => $this->paymentLabel($payment),
                 ],
             ],
             'showBilling' => true,
@@ -105,6 +96,19 @@ class StrictlyZeroPaymentLinkService
     public function amountToCents(float $amount): int
     {
         return (int) round($amount * 100);
+    }
+
+    private function paymentLabel(array $payment): string
+    {
+        if (isset($payment['payment_installment'])) {
+            return (string) ($payment['payment_installment']->label ?: 'Installment Payment');
+        }
+
+        if (isset($payment['order_payment'])) {
+            return 'Change Order';
+        }
+
+        return 'Payment';
     }
 
     private function url(): string
