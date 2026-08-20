@@ -45,6 +45,7 @@ type PaymentScheduleTemplates = Record<string, PaymentScheduleTemplateItem[]>
 
 type ContractSignedSubmitValues = {
   projectName: string
+  orderNumber: string
   productLine: string
   esrCost: string
   projectAmount: string
@@ -349,7 +350,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
   const [preContractError, setPreContractError] = useState<string | null>(null)
   const [pendingPreContract, setPendingPreContract] = useState<{ task: Tasks, oldStatus: string, newStatus: string } | null>(null)
   const [contractSignedModalOpen, setContractSignedModalOpen] = useState(false)
-  const [contractSignedInitialValues, setContractSignedInitialValues] = useState<{ projectName: string, projectAmount: string, downPayment: string, jobAddress: string, city: string, jobState: string, jobZip: string, methodOfPayment: string, typeOfFinancing: string, clientEmailSelection: string, orderCompanyContactId: number | null, nameCheck: boolean, addressCheck: boolean, amountCheck: boolean, emailCheck: boolean, cityPermits: boolean, associationPermits: boolean, pendingFinancingOrDeposit: boolean | null, pendingHoaApproval: boolean | null, paymentScheduleType: string, customSchedule: Array<{ label: string, amount: string }> }>({ projectName: '', projectAmount: '', downPayment: '', jobAddress: '', city: '', jobState: '', jobZip: '', methodOfPayment: '', typeOfFinancing: '', clientEmailSelection: PRIMARY_CLIENT_EMAIL_SELECTION, orderCompanyContactId: null, nameCheck: false, addressCheck: false, amountCheck: false, emailCheck: false, cityPermits: false, associationPermits: false, pendingFinancingOrDeposit: null, pendingHoaApproval: null, paymentScheduleType: '', customSchedule: buildEmptyCustomSchedule() })
+  const [contractSignedInitialValues, setContractSignedInitialValues] = useState<{ projectName: string, orderNumber: string, projectAmount: string, downPayment: string, jobAddress: string, city: string, jobState: string, jobZip: string, methodOfPayment: string, typeOfFinancing: string, clientEmailSelection: string, orderCompanyContactId: number | null, nameCheck: boolean, addressCheck: boolean, amountCheck: boolean, emailCheck: boolean, cityPermits: boolean, associationPermits: boolean, pendingFinancingOrDeposit: boolean | null, pendingHoaApproval: boolean | null, paymentScheduleType: string, customSchedule: Array<{ label: string, amount: string }> }>({ projectName: '', orderNumber: '', projectAmount: '', downPayment: '', jobAddress: '', city: '', jobState: '', jobZip: '', methodOfPayment: '', typeOfFinancing: '', clientEmailSelection: PRIMARY_CLIENT_EMAIL_SELECTION, orderCompanyContactId: null, nameCheck: false, addressCheck: false, amountCheck: false, emailCheck: false, cityPermits: false, associationPermits: false, pendingFinancingOrDeposit: null, pendingHoaApproval: null, paymentScheduleType: '', customSchedule: buildEmptyCustomSchedule() })
   const [contractSignedSaving, setContractSignedSaving] = useState(false)
   const [contractSignedError, setContractSignedError] = useState<string | null>(null)
   const [contractSignedConfirmation, setContractSignedConfirmation] = useState<null | { message: string, userEmail?: string, userRoles?: string[] }>(null)
@@ -763,7 +764,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
     setContractSignedConfirmation(null)
     setContractSignedPendingValues(null)
     setContractSignedSaving(false)
-    setContractSignedInitialValues({ projectName: '', projectAmount: '', downPayment: '', jobAddress: '', city: '', jobState: '', jobZip: '', methodOfPayment: '', typeOfFinancing: '', clientEmailSelection: PRIMARY_CLIENT_EMAIL_SELECTION, orderCompanyContactId: null, nameCheck: false, addressCheck: false, amountCheck: false, emailCheck: false, cityPermits: false, associationPermits: false, pendingFinancingOrDeposit: null, pendingHoaApproval: null, paymentScheduleType: '', customSchedule: buildEmptyCustomSchedule() })
+    setContractSignedInitialValues({ projectName: '', orderNumber: '', projectAmount: '', downPayment: '', jobAddress: '', city: '', jobState: '', jobZip: '', methodOfPayment: '', typeOfFinancing: '', clientEmailSelection: PRIMARY_CLIENT_EMAIL_SELECTION, orderCompanyContactId: null, nameCheck: false, addressCheck: false, amountCheck: false, emailCheck: false, cityPermits: false, associationPermits: false, pendingFinancingOrDeposit: null, pendingHoaApproval: null, paymentScheduleType: '', customSchedule: buildEmptyCustomSchedule() })
     setPendingContractSigned(null)
   }
 
@@ -1043,6 +1044,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
 
       const formData = new FormData()
       formData.append('project_name', values.projectName)
+      formData.append('order_number', values.orderNumber)
       formData.append('product_line', values.productLine)
       formData.append('esr_cost', values.esrCost)
       formData.append('project_amount', values.projectAmount)
@@ -1137,6 +1139,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
       const updatedTask: Tasks = stampTaskAsUpdated({
         ...pendingContractSigned.task,
         title: data.order.name ?? values.projectName,
+        order_number: data.order.order_number ?? values.orderNumber,
         product_line: data.order.product_line ?? pendingContractSigned.task.product_line,
         esr_cost: data.order.esr_cost ?? pendingContractSigned.task.esr_cost,
         project_amount: Number.isFinite(normalizedProjectAmount) ? normalizedProjectAmount : 0,
@@ -1534,6 +1537,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
 
                           setContractSignedInitialValues({
                             projectName: foundTask.title ?? '',
+                            orderNumber: foundTask.order_number != null ? String(foundTask.order_number) : '',
                             projectAmount: foundTask.project_amount !== undefined && foundTask.project_amount !== null
                               ? String(foundTask.project_amount)
                               : '',
@@ -1889,6 +1893,7 @@ export default function Sales ({ auth, data, lossReasonFrontdesk, sources, order
         open={contractSignedModalOpen && !!pendingContractSigned}
         taskTitle={pendingContractSigned?.task.title ?? ''}
         initialProjectName={contractSignedInitialValues.projectName}
+        initialOrderNumber={contractSignedInitialValues.orderNumber}
         initialProductLine={pendingContractSigned?.task.product_line ?? ''}
         initialEsrCost={pendingContractSigned?.task.esr_cost != null ? String(pendingContractSigned.task.esr_cost) : ''}
         requireProductLine={matchesStatus(pendingContractSigned?.oldStatus ?? '', ESTIMATE_STATUS)}

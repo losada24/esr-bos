@@ -345,6 +345,7 @@ class OrderController extends Controller
         'paymentSchedule.installments.paidBy',
         'paymentSchedule.installments.movements.paidBy',
         'changeOrderPayment',
+        'cityFeePayment',
         'owners',
         'attachments',
         'attachmentRoleTargets',
@@ -409,6 +410,7 @@ class OrderController extends Controller
         'paymentSchedule.installments.paidBy',
         'paymentSchedule.installments.movements.paidBy',
         'changeOrderPayment',
+        'cityFeePayment',
 
         'installationTeams.user',
         'phases.installationTeams.user',

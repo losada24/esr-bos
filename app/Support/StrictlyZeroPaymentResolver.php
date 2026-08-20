@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Exceptions\StrictlyZeroPaymentNotPayableException;
+use App\Models\Order;
 use App\Models\OrderPayment;
 use App\Models\PaymentInstallment;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -14,6 +15,7 @@ class StrictlyZeroPaymentResolver
         return match ($paymentType) {
             'quota' => $this->resolveQuota($paymentId, $channel),
             'change-order' => $this->resolveChangeOrder($paymentId, $channel),
+            'city-fee' => $this->resolveCityFee($paymentId, $channel),
             default => throw new ModelNotFoundException("Unsupported payment type [{$paymentType}]"),
         };
     }
@@ -73,6 +75,52 @@ class StrictlyZeroPaymentResolver
             'order' => $order,
             'order_payment' => $orderPayment,
             'description' => trim(sprintf('Change order payment for order %s', $order->order_number ?: $order->id)),
+        ];
+    }
+
+    private function resolveCityFee(int $paymentId, string $channel): array
+    {
+        $order = Order::query()
+            ->with(['client', 'cityFeePayment'])
+            ->findOrFail($paymentId);
+
+        if (!$order->city_permits) {
+            throw new StrictlyZeroPaymentNotPayableException("Order [{$paymentId}] does not require city permits.");
+        }
+
+        $amount = round((float) ($order->cost_city_fee ?? 0), 2);
+        if ($amount <= 0.0) {
+            throw new StrictlyZeroPaymentNotPayableException("Order [{$paymentId}] does not have a city fee amount.");
+        }
+
+        $orderPayment = $order->cityFeePayment;
+        if ($orderPayment && strtoupper((string) $orderPayment->status) === 'PAID') {
+            throw new StrictlyZeroPaymentNotPayableException("City fee payment for order [{$paymentId}] is already paid.");
+        }
+
+        if (!$orderPayment) {
+            $orderPayment = $order->orderPayments()->create([
+                'type' => 'CITY_FEE',
+                'amount' => $amount,
+                'note' => 'City Fee',
+                'status' => 'PENDING',
+            ]);
+        } else {
+            $orderPayment->forceFill([
+                'amount' => $amount,
+                'note' => $orderPayment->note ?: 'City Fee',
+                'status' => $orderPayment->status ?: 'PENDING',
+            ])->save();
+        }
+
+        return [
+            'payment_type' => 'city-fee',
+            'payment_id_for_intent' => $orderPayment->id,
+            'channel' => strtolower($channel),
+            'amount' => number_format($amount, 2, '.', ''),
+            'order' => $order,
+            'order_payment' => $orderPayment,
+            'description' => trim(sprintf('City fee payment for order %s', $order->order_number ?: $order->id)),
         ];
     }
 }

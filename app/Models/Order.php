@@ -516,6 +516,11 @@ class Order extends Model
     return $this->hasOne(OrderPayment::class)->where('type', 'CHANGE_ORDER');
   }
 
+  public function cityFeePayment(): HasOne
+  {
+    return $this->hasOne(OrderPayment::class)->where('type', 'CITY_FEE');
+  }
+
   public function financialEvents(): HasMany
   {
     return $this->hasMany(OrderFinancialEvent::class)->latest();

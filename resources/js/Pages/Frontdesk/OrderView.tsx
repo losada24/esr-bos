@@ -154,6 +154,12 @@ type MovementFormValues = {
   note: string
 }
 
+type CreditTransferDraft = {
+  targetInstallmentId: string
+  amount: string
+  note: string
+}
+
 const HIDE_DESCRIPTION_AND_JOB_STATUS = new Set([
   'NEW REQUEST',
   'REQUEST FOLLOW UP',
@@ -639,6 +645,7 @@ export default function ShowStatusOrder ({
     : buildCustomSchedule()
   const [contractSignedInitialValues, setContractSignedInitialValues] = useState({
     projectName: order.name ?? '',
+    orderNumber: order.order_number ?? '',
     projectAmount: order.project_amount ? String(order.project_amount) : '',
     downPayment: order.down_payment ? String(order.down_payment) : '',
     jobAddress: order.job_address ?? '',
@@ -666,9 +673,14 @@ export default function ShowStatusOrder ({
   const [movementDrafts, setMovementDrafts] = useState<Record<number, MovementFormValues>>({})
   const [movementEdits, setMovementEdits] = useState<Record<number, MovementFormValues>>({})
   const [movementSavingKey, setMovementSavingKey] = useState<string | null>(null)
+  const [creditTransferDrafts, setCreditTransferDrafts] = useState<Record<number, CreditTransferDraft>>({})
   const [changeOrderStatus, setChangeOrderStatus] = useState<string>(initialOrder.change_order_payment?.status ?? 'PENDING')
   const [changeOrderSaving, setChangeOrderSaving] = useState(false)
   const [changeOrderError, setChangeOrderError] = useState<string | null>(null)
+  const [cityFeeAmount, setCityFeeAmount] = useState<string>(initialOrder.cost_city_fee != null ? String(initialOrder.cost_city_fee) : '')
+  const [cityFeeStatus, setCityFeeStatus] = useState<string>(initialOrder.city_fee_payment?.status ?? 'PENDING')
+  const [cityFeeSaving, setCityFeeSaving] = useState(false)
+  const [cityFeeError, setCityFeeError] = useState<string | null>(null)
 
   const [lostContractModalOpen, setLostContractModalOpen] = useState(false)
   const [lostContractSaving, setLostContractSaving] = useState(false)
@@ -727,6 +739,11 @@ export default function ShowStatusOrder ({
   useEffect(() => {
     setChangeOrderStatus(order.change_order_payment?.status ?? 'PENDING')
   }, [order.change_order_payment?.id, order.change_order_payment?.status])
+
+  useEffect(() => {
+    setCityFeeStatus(order.city_fee_payment?.status ?? 'PENDING')
+    setCityFeeAmount(order.cost_city_fee != null ? String(order.cost_city_fee) : '')
+  }, [order.city_fee_payment?.id, order.city_fee_payment?.status, order.cost_city_fee])
 
   const contactSourceOptions = useMemo(
     () => mergeOptionWithCurrent(sources, contactFormValues.source),
@@ -1746,6 +1763,7 @@ export default function ShowStatusOrder ({
       setContractSignedInitialValues((prev) => ({
         ...prev,
         projectName: order.name ?? prev.projectName,
+        orderNumber: order.order_number ?? prev.orderNumber,
         projectAmount: order.project_amount ? String(order.project_amount) : prev.projectAmount,
         downPayment: order.down_payment ? String(order.down_payment) : prev.downPayment,
         jobAddress: order.job_address ?? prev.jobAddress,
@@ -2162,6 +2180,7 @@ export default function ShowStatusOrder ({
       const formData = new FormData()
       const fieldMap: Record<string, string> = {
         projectName: 'project_name',
+        orderNumber: 'order_number',
         productLine: 'product_line',
         esrCost: 'esr_cost',
         projectAmount: 'project_amount',
@@ -2242,6 +2261,7 @@ export default function ShowStatusOrder ({
         ...prev,
         ...data,
         name: data.name ?? prev.name,
+        order_number: data.order_number ?? prev.order_number,
         status: data.status ?? prev.status,
         schedule_appointment: data.schedule_appointment ?? prev.schedule_appointment,
         schedule_appointment_iso: data.schedule_appointment_iso ?? prev.schedule_appointment_iso,
@@ -2267,6 +2287,8 @@ export default function ShowStatusOrder ({
         amount_check: data.amount_check ?? prev.amount_check,
         email_check: data.email_check ?? prev.email_check,
         city_permits: data.city_permits ?? prev.city_permits,
+        cost_city_fee: data.cost_city_fee ?? prev.cost_city_fee,
+        city_fee_payment: data.city_fee_payment ?? prev.city_fee_payment,
         association_permits: data.association_permits ?? prev.association_permits,
         pending_financing_or_deposit: data.pending_financing_or_deposit ?? prev.pending_financing_or_deposit,
         pending_hoa_approval: data.pending_hoa_approval ?? prev.pending_hoa_approval,
@@ -2283,13 +2305,14 @@ export default function ShowStatusOrder ({
     }
   }
 
-  const mergeUpdatedInstallment = (updated: PaymentInstallment) => {
+  const mergeUpdatedInstallments = (updatedItems: PaymentInstallment[]) => {
     setOrder(prev => {
       const schedule = prev.payment_schedule
       if (!schedule || !Array.isArray(schedule.installments)) return prev
 
+      const updatedById = new Map(updatedItems.map((item) => [item.id, item]))
       const updatedInstallments = schedule.installments.map((item) =>
-        item.id === updated.id ? { ...item, ...updated } : item
+        updatedById.has(item.id) ? { ...item, ...updatedById.get(item.id) } : item
       )
 
       const paidAmount = updatedInstallments.reduce((total, installment) => {
@@ -2311,6 +2334,10 @@ export default function ShowStatusOrder ({
         }
       }
     })
+  }
+
+  const mergeUpdatedInstallment = (updated: PaymentInstallment) => {
+    mergeUpdatedInstallments([updated])
   }
 
   const handleInstallmentFieldChange = (installmentId: number, field: 'dueDate', value: string) => {
@@ -2385,6 +2412,78 @@ export default function ShowStatusOrder ({
         [field]: value
       }
     }))
+  }
+
+  const handleCreditTransferDraftChange = (installmentId: number, field: keyof CreditTransferDraft, value: string) => {
+    setCreditTransferDrafts(prev => ({
+      ...prev,
+      [installmentId]: {
+        ...(prev[installmentId] ?? { targetInstallmentId: '', amount: '', note: '' }),
+        [field]: value
+      }
+    }))
+  }
+
+  const handleCreditTransfer = async (installment: PaymentInstallment, fallbackTargetId: string, fallbackAmount: number) => {
+    const installmentId = installment.id
+    const draft = creditTransferDrafts[installmentId] ?? { targetInstallmentId: fallbackTargetId, amount: String(fallbackAmount), note: '' }
+    const targetInstallmentId = Number(draft.targetInstallmentId || fallbackTargetId)
+    const amount = Number(String(draft.amount || fallbackAmount).replace(/,/g, '').trim())
+
+    if (!Number.isFinite(targetInstallmentId) || targetInstallmentId <= 0) {
+      setPaymentError('Select an installment to receive the credit.')
+      return
+    }
+
+    if (!Number.isFinite(amount) || amount <= 0) {
+      setPaymentError('Enter a valid credit amount greater than 0.')
+      return
+    }
+
+    setMovementSavingKey(`credit-${installmentId}`)
+    setPaymentError(null)
+
+    try {
+      const response = await fetch(route('payment_installment_credit_transfers.store', installmentId), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          'X-CSRF-TOKEN': csrfToken
+        },
+        body: JSON.stringify({
+          target_installment_id: targetInstallmentId,
+          amount,
+          note: draft.note || null
+        })
+      })
+
+      const payload = await response.json().catch(() => null)
+      if (!response.ok) {
+        if (response.status === 422 && payload?.errors) {
+          const messages = Object.values(payload.errors).flat()
+          throw new Error(typeof messages[0] === 'string' ? messages[0] : 'Unable to apply credit.')
+        }
+        throw new Error(payload?.message ?? 'Unable to apply credit.')
+      }
+
+      if (!payload?.source_installment || !payload?.target_installment) {
+        throw new Error('Unexpected server response.')
+      }
+
+      mergeUpdatedInstallments([payload.source_installment, payload.target_installment])
+      setCreditTransferDrafts(prev => {
+        const next = { ...prev }
+        delete next[installmentId]
+        return next
+      })
+      refreshOrderActivity()
+    } catch (error: any) {
+      console.error('payment credit transfer error', error)
+      setPaymentError(error?.message ?? 'No se pudo aplicar el crédito.')
+    } finally {
+      setMovementSavingKey(prev => (prev === `credit-${installmentId}` ? null : prev))
+    }
   }
 
   const handleMovementEditChange = (movement: PaymentInstallmentMovement, field: keyof MovementFormValues, value: string) => {
@@ -2642,6 +2741,103 @@ export default function ShowStatusOrder ({
     }
   }
 
+  const handleCityFeeCreate = async () => {
+    const amount = Number(String(cityFeeAmount ?? '').replace(/,/g, '').trim())
+    if (!Number.isFinite(amount) || amount <= 0) {
+      setCityFeeError('Enter a valid city fee amount greater than 0.')
+      return
+    }
+
+    setCityFeeSaving(true)
+    setCityFeeError(null)
+
+    try {
+      const response = await fetch(route('order_payments.city_fee.store', order.id), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          'X-CSRF-TOKEN': csrfToken
+        },
+        body: JSON.stringify({
+          amount,
+          note: 'City Fee'
+        })
+      })
+
+      const payload = await response.json().catch(() => null)
+      if (!response.ok) {
+        if (response.status === 422 && payload?.errors) {
+          const messages = Object.values(payload.errors).flat()
+          throw new Error(typeof messages[0] === 'string' ? messages[0] : 'Unable to save city fee payment.')
+        }
+
+        throw new Error(payload?.message ?? 'Unable to save city fee payment.')
+      }
+
+      if (!payload?.payment) {
+        throw new Error('Unexpected server response.')
+      }
+
+      setOrder(prev => ({
+        ...prev,
+        cost_city_fee: payload.cost_city_fee ?? amount,
+        city_fee_payment: payload.payment
+      }))
+      refreshOrderActivity()
+    } catch (error: any) {
+      setCityFeeError(error?.message ?? 'Unable to save city fee payment.')
+    } finally {
+      setCityFeeSaving(false)
+    }
+  }
+
+  const handleCityFeeStatusSave = async () => {
+    const cityFeePayment = order.city_fee_payment
+    if (!cityFeePayment) return
+    setCityFeeSaving(true)
+    setCityFeeError(null)
+
+    try {
+      const response = await fetch(route('order_payments.update', cityFeePayment.id), {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          'X-CSRF-TOKEN': csrfToken
+        },
+        body: JSON.stringify({
+          status: cityFeeStatus
+        })
+      })
+
+      const payload = await response.json().catch(() => null)
+
+      if (!response.ok) {
+        if (response.status === 422 && payload?.errors) {
+          const messages = Object.values(payload.errors).flat()
+          throw new Error(typeof messages[0] === 'string' ? messages[0] : 'Unable to update city fee payment.')
+        }
+
+        throw new Error(payload?.message ?? 'Unable to update city fee payment.')
+      }
+
+      if (!payload?.payment) {
+        throw new Error('Unexpected server response.')
+      }
+
+      setOrder(prev => ({
+        ...prev,
+        city_fee_payment: payload.payment
+      }))
+      refreshOrderActivity()
+    } catch (error: any) {
+      setCityFeeError(error?.message ?? 'Unable to update city fee payment.')
+    } finally {
+      setCityFeeSaving(false)
+    }
+  }
+
   const closeLostContractModal = () => {
     setLostContractModalOpen(false)
     setLostContractError(null)
@@ -2808,6 +3004,9 @@ export default function ShowStatusOrder ({
 
   const projectAmountNumber = Number(order.project_amount ?? 0)
   const changeOrderPayment = order.change_order_payment ?? null
+  const cityFeePayment = order.city_fee_payment ?? null
+  const showCityFeePayment = Boolean(order.city_permits)
+  const cityFeeAmountNumber = Number(order.cost_city_fee ?? 0)
   const changeOrderAmountNumber = Number(changeOrderPayment?.amount ?? 0)
   const hasChangeOrderAmount = changeOrderPayment !== null && Number.isFinite(changeOrderAmountNumber)
   const hasNegativeChangeOrder = hasChangeOrderAmount && changeOrderAmountNumber < 0
@@ -4141,6 +4340,22 @@ export default function ShowStatusOrder ({
                                   const scheduledAmount = Number(installment.amount ?? 0)
                                   const paidAmount = Number(installment.paid_amount ?? 0)
                                   const remainingAmount = Number(installment.balance ?? Math.max(0, scheduledAmount - paidAmount))
+                                  const creditAmount = Number(installment.credit ?? 0)
+                                  const creditTransferTargets = paymentInstallments.filter((item) => {
+                                    if (item.id === installment.id) return false
+                                    const targetBalance = Number(item.balance ?? Math.max(0, Number(item.amount ?? 0) - Number(item.paid_amount ?? 0)))
+                                    return Number.isFinite(targetBalance) && targetBalance > 0
+                                  })
+                                  const creditTransferDraft = creditTransferDrafts[installment.id] ?? {
+                                    targetInstallmentId: creditTransferTargets[0] ? String(creditTransferTargets[0].id) : '',
+                                    amount: '',
+                                    note: ''
+                                  }
+                                  const selectedCreditTarget = creditTransferTargets.find((item) => String(item.id) === String(creditTransferDraft.targetInstallmentId)) ?? creditTransferTargets[0]
+                                  const selectedTargetBalance = selectedCreditTarget
+                                    ? Number(selectedCreditTarget.balance ?? Math.max(0, Number(selectedCreditTarget.amount ?? 0) - Number(selectedCreditTarget.paid_amount ?? 0)))
+                                    : 0
+                                  const suggestedCreditAmount = round2(Math.min(creditAmount, selectedTargetBalance))
                                   const defaultAmount = Math.min(remainingAmount > 0 ? remainingAmount : scheduledAmount, scheduleRemainingCapacity)
                                   const progress = scheduledAmount > 0
                                     ? Math.min(100, Math.max(0, Math.round((paidAmount / scheduledAmount) * 100)))
@@ -4181,6 +4396,63 @@ export default function ShowStatusOrder ({
                                           <p className="text-sm font-semibold text-sky-700">{formatScheduleCurrency(Number(installment.credit ?? 0))}</p>
                                         </div>
                                       </div>
+
+                                      {creditAmount > 0 && (
+                                        <div className="mt-4 rounded-xl border border-sky-200 bg-sky-50 p-3">
+                                          <p className="text-xs font-semibold uppercase tracking-wide text-sky-700">Apply Credit</p>
+                                          {creditTransferTargets.length > 0
+                                            ? (
+                                              <>
+                                                <div className="mt-2 grid gap-2 md:grid-cols-4">
+                                                  <select
+                                                    value={creditTransferDraft.targetInstallmentId || (selectedCreditTarget ? String(selectedCreditTarget.id) : '')}
+                                                    onChange={(event) => { handleCreditTransferDraftChange(installment.id, 'targetInstallmentId', event.target.value) }}
+                                                    className="rounded-lg border border-sky-200 px-2 py-2 text-xs text-slate-700 focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
+                                                  >
+                                                    {creditTransferTargets.map((target) => (
+                                                      <option key={target.id} value={target.id}>
+                                                        {target.label} - {formatScheduleCurrency(Number(target.balance ?? 0))}
+                                                      </option>
+                                                    ))}
+                                                  </select>
+                                                  <input
+                                                    type="number"
+                                                    step="0.01"
+                                                    min="0"
+                                                    max={suggestedCreditAmount}
+                                                    value={creditTransferDraft.amount}
+                                                    onChange={(event) => { handleCreditTransferDraftChange(installment.id, 'amount', event.target.value) }}
+                                                    className="rounded-lg border border-sky-200 px-2 py-2 text-xs text-slate-700 focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
+                                                    placeholder={formatScheduleCurrency(suggestedCreditAmount)}
+                                                  />
+                                                  <input
+                                                    type="text"
+                                                    value={creditTransferDraft.note}
+                                                    onChange={(event) => { handleCreditTransferDraftChange(installment.id, 'note', event.target.value) }}
+                                                    className="rounded-lg border border-sky-200 px-2 py-2 text-xs text-slate-700 focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
+                                                    placeholder="Note (optional)"
+                                                  />
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => { handleCreditTransfer(installment, selectedCreditTarget ? String(selectedCreditTarget.id) : '', suggestedCreditAmount) }}
+                                                    className="rounded-lg border border-sky-300 bg-white px-3 py-2 text-xs font-semibold text-sky-700 hover:border-sky-400 disabled:cursor-not-allowed disabled:opacity-60"
+                                                    disabled={movementSavingKey === `credit-${installment.id}` || suggestedCreditAmount <= 0}
+                                                  >
+                                                    {movementSavingKey === `credit-${installment.id}` ? 'Applying...' : 'Apply credit'}
+                                                  </button>
+                                                </div>
+                                                <p className="mt-2 text-[11px] text-sky-700">
+                                                  Available credit: {formatScheduleCurrency(creditAmount)}. Suggested amount: {formatScheduleCurrency(suggestedCreditAmount)}.
+                                                </p>
+                                              </>
+                                              )
+                                            : (
+                                              <p className="mt-2 text-xs text-sky-700">
+                                                This installment has credit, but there is no other installment with balance due.
+                                              </p>
+                                              )}
+                                        </div>
+                                      )}
 
                                       <div className="mt-4 grid gap-2 lg:grid-cols-[220px_1fr_auto]">
                                         <input
@@ -4250,6 +4522,7 @@ export default function ShowStatusOrder ({
                                           ? (
                                             <div className="mt-2 space-y-2">
                                               {movements.map((movement) => {
+                                                const isCreditTransferMovement = String(movement.method ?? '').toUpperCase() === 'CREDIT_TRANSFER'
                                                 const hasEdit = Object.prototype.hasOwnProperty.call(movementEdits, movement.id)
                                                 const edited = hasEdit
                                                   ? movementEdits[movement.id]
@@ -4260,41 +4533,57 @@ export default function ShowStatusOrder ({
                                                     }
                                                 return (
                                                   <div key={movement.id} className="rounded-lg border border-slate-200 bg-white p-3">
-                                                    <div className="grid gap-2 md:grid-cols-3">
-                                                      <input
-                                                        type="number"
-                                                        step="0.01"
-                                                        min="0"
-                                                        value={edited.amount}
-                                                        onChange={(event) => { handleMovementEditChange(movement, 'amount', event.target.value) }}
-                                                        className="rounded-lg border border-slate-200 px-2 py-2 text-xs text-slate-700 focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
-                                                      />
-                                                      <input
-                                                        type="text"
-                                                        value={edited.note}
-                                                        onChange={(event) => { handleMovementEditChange(movement, 'note', event.target.value) }}
-                                                        className="rounded-lg border border-slate-200 px-2 py-2 text-xs text-slate-700 focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
-                                                        placeholder="Note (optional)"
-                                                      />
-                                                      <div className="flex items-center justify-end gap-2">
-                                                        <button
-                                                          type="button"
-                                                          onClick={() => { handleMovementUpdate(movement) }}
-                                                          className="rounded border border-slate-200 px-2 py-1.5 text-[11px] font-semibold text-slate-600 hover:border-sky-400 hover:text-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
-                                                          disabled={movementSavingKey === `update-${movement.id}`}
-                                                        >
-                                                          {movementSavingKey === `update-${movement.id}` ? 'Updating...' : 'Update'}
-                                                        </button>
-                                                        <button
-                                                          type="button"
-                                                          onClick={() => { handleMovementVoid(movement.id, installment.id) }}
-                                                          className="rounded border border-rose-200 px-2 py-1.5 text-[11px] font-semibold text-rose-600 hover:border-rose-300 disabled:cursor-not-allowed disabled:opacity-60"
-                                                          disabled={movementSavingKey === `void-${movement.id}`}
-                                                        >
-                                                          {movementSavingKey === `void-${movement.id}` ? 'Deleting...' : 'Delete'}
-                                                        </button>
-                                                      </div>
-                                                    </div>
+                                                    {isCreditTransferMovement
+                                                      ? (
+                                                        <div className="grid gap-2 md:grid-cols-[160px_1fr_auto]">
+                                                          <div className="rounded-lg border border-sky-100 bg-sky-50 px-2 py-2 text-xs font-semibold text-sky-700">
+                                                            {formatScheduleCurrency(Number(movement.amount ?? 0))}
+                                                          </div>
+                                                          <div className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-2 text-xs text-slate-600">
+                                                            {movement.note || 'Credit transfer'}
+                                                          </div>
+                                                          <span className="rounded border border-sky-200 px-2 py-1.5 text-[11px] font-semibold text-sky-700">
+                                                            Credit transfer
+                                                          </span>
+                                                        </div>
+                                                        )
+                                                      : (
+                                                        <div className="grid gap-2 md:grid-cols-3">
+                                                          <input
+                                                            type="number"
+                                                            step="0.01"
+                                                            min="0"
+                                                            value={edited.amount}
+                                                            onChange={(event) => { handleMovementEditChange(movement, 'amount', event.target.value) }}
+                                                            className="rounded-lg border border-slate-200 px-2 py-2 text-xs text-slate-700 focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
+                                                          />
+                                                          <input
+                                                            type="text"
+                                                            value={edited.note}
+                                                            onChange={(event) => { handleMovementEditChange(movement, 'note', event.target.value) }}
+                                                            className="rounded-lg border border-slate-200 px-2 py-2 text-xs text-slate-700 focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
+                                                            placeholder="Note (optional)"
+                                                          />
+                                                          <div className="flex items-center justify-end gap-2">
+                                                            <button
+                                                              type="button"
+                                                              onClick={() => { handleMovementUpdate(movement) }}
+                                                              className="rounded border border-slate-200 px-2 py-1.5 text-[11px] font-semibold text-slate-600 hover:border-sky-400 hover:text-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                                              disabled={movementSavingKey === `update-${movement.id}`}
+                                                            >
+                                                              {movementSavingKey === `update-${movement.id}` ? 'Updating...' : 'Update'}
+                                                            </button>
+                                                            <button
+                                                              type="button"
+                                                              onClick={() => { handleMovementVoid(movement.id, installment.id) }}
+                                                              className="rounded border border-rose-200 px-2 py-1.5 text-[11px] font-semibold text-rose-600 hover:border-rose-300 disabled:cursor-not-allowed disabled:opacity-60"
+                                                              disabled={movementSavingKey === `void-${movement.id}`}
+                                                            >
+                                                              {movementSavingKey === `void-${movement.id}` ? 'Deleting...' : 'Delete'}
+                                                            </button>
+                                                          </div>
+                                                        </div>
+                                                        )}
                                                     <p className="mt-2 text-[11px] text-slate-500">
                                                       Recorded by {movement.paid_by?.name ?? '-'} on {formatPaidAt(movement.paid_at)}
                                                     </p>
@@ -4324,6 +4613,84 @@ export default function ShowStatusOrder ({
                       : (
                         <p className="text-sm text-slate-400">No payment schedule has been created for this order.</p>
                         )}
+                    {showCityFeePayment && (
+                      <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div>
+                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">City Fee Payment</p>
+                            <p className="text-sm font-semibold text-slate-700">
+                              {cityFeePayment?.note || 'City Fee'}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Amount</p>
+                            <p className="text-sm font-semibold text-slate-700">
+                              {formatScheduleCurrency(cityFeePayment ? Number(cityFeePayment.amount ?? 0) : cityFeeAmountNumber)}
+                            </p>
+                          </div>
+                        </div>
+                        {cityFeeError && (
+                          <div className="mt-3 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-600">
+                            {cityFeeError}
+                          </div>
+                        )}
+                        {cityFeePayment
+                          ? (
+                            <div className="mt-3 flex flex-wrap gap-4 text-xs text-slate-500">
+                              <div>
+                                <span className="font-semibold text-slate-600">Status:</span>{' '}
+                                <select
+                                  value={cityFeeStatus}
+                                  onChange={(event) => { setCityFeeStatus(event.target.value) }}
+                                  className="ml-2 rounded-lg border border-slate-200 px-2 py-1 text-xs text-slate-700 focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
+                                >
+                                  <option value="PENDING">PENDING</option>
+                                  <option value="PAID">PAID</option>
+                                </select>
+                              </div>
+                              <div>
+                                <span className="font-semibold text-slate-600">Paid at:</span>{' '}
+                                {formatPaidAt(cityFeePayment.paid_at)}
+                              </div>
+                              <div>
+                                <span className="font-semibold text-slate-600">Paid by:</span>{' '}
+                                {cityFeePayment.paid_by?.name ?? '-'}
+                              </div>
+                              <div>
+                                <button
+                                  type="button"
+                                  onClick={handleCityFeeStatusSave}
+                                  className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:border-sky-400 hover:text-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                  disabled={cityFeeSaving}
+                                >
+                                  {cityFeeSaving ? 'Saving...' : 'Save'}
+                                </button>
+                              </div>
+                            </div>
+                            )
+                          : (
+                            <div className="mt-3 grid gap-2 md:grid-cols-[220px_auto]">
+                              <input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                value={cityFeeAmount}
+                                onChange={(event) => { setCityFeeAmount(event.target.value) }}
+                                className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
+                                placeholder="City fee amount"
+                              />
+                              <button
+                                type="button"
+                                onClick={handleCityFeeCreate}
+                                className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-xs font-semibold text-sky-700 hover:border-sky-300 disabled:cursor-not-allowed disabled:opacity-60"
+                                disabled={cityFeeSaving}
+                              >
+                                {cityFeeSaving ? 'Saving...' : 'Create City Fee'}
+                              </button>
+                            </div>
+                            )}
+                      </div>
+                    )}
                     {changeOrderPayment && (
                       <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
                         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -4680,6 +5047,7 @@ export default function ShowStatusOrder ({
         open={contractSignedModalOpen && !!pendingContractSigned}
         taskTitle={order.name ?? ''}
         initialProjectName={contractSignedInitialValues.projectName}
+        initialOrderNumber={contractSignedInitialValues.orderNumber}
         initialProductLine={order.product_line ?? ''}
         initialEsrCost={order.esr_cost != null ? String(order.esr_cost) : ''}
         requireProductLine={matchesStatus(pendingContractSigned?.oldStatus ?? '', ESTIMATE_STATUS)}

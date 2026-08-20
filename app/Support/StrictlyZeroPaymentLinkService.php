@@ -105,7 +105,9 @@ class StrictlyZeroPaymentLinkService
         }
 
         if (isset($payment['order_payment'])) {
-            return 'Change Order';
+            return strtoupper((string) $payment['order_payment']->type) === 'CITY_FEE'
+                ? 'City Fee'
+                : 'Change Order';
         }
 
         return 'Payment';

@@ -32,7 +32,7 @@ class MobilePaymentLinkController extends Controller
         }
 
         $validated = $request->validate([
-            'payment_type' => ['required', 'in:quota,change-order'],
+            'payment_type' => ['required', 'in:quota,change-order,city-fee'],
             'payment_id' => ['required', 'integer', 'min:1'],
         ]);
 
@@ -60,7 +60,7 @@ class MobilePaymentLinkController extends Controller
         $intent = PaymentIntent::create([
             'token' => Str::random(64),
             'payment_type' => $validated['payment_type'],
-            'payment_id' => (int) $validated['payment_id'],
+            'payment_id' => (int) ($payment['payment_id_for_intent'] ?? $validated['payment_id']),
             'order_id' => $order->id,
             'amount' => (float) $payment['amount'],
             'channel' => 'MOBILE',

@@ -1,6 +1,7 @@
 export interface Tasks {
   id: number
   title: string
+  order_number?: string | number | null
   // description: string
   date: string
   date_edited: string

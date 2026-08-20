@@ -905,6 +905,7 @@ public function showQuantifiedModal(Order $order)
       'paymentSchedule.installments.paidBy',
       'paymentSchedule.installments.movements.paidBy',
       'changeOrderPayment.paidBy',
+      'cityFeePayment.paidBy',
       'financialEvents.user',
       'serviceControls.creator:id,name',
       'phases',

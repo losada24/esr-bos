@@ -405,6 +405,7 @@ class SalesController extends Controller
     return [
       'id' => $order->id,
       'title' => $order->name ?? 'No Title',
+      'order_number' => $order->order_number,
       'client_id' => $order->client_id ?? null,
       //'description' => $order->notes ?? '',
       'date_edited' => optional($order->updated_at)->format('M d, Y h:i A'),
@@ -1440,6 +1441,7 @@ class SalesController extends Controller
 
     $rules = [
       'project_name' => ['required', 'string', 'max:255'],
+      'order_number' => ['required', 'string', 'max:255'],
       'product_line' => [
         Rule::requiredIf($order->status === OrderStatusEnum::ESTIMATE_APPT_SCHEDULE->value),
         'nullable',
@@ -1597,6 +1599,7 @@ class SalesController extends Controller
       );
 
       $order->name = $validated['project_name'];
+      $order->order_number = trim((string) $validated['order_number']);
       $order->project_amount = $validated['project_amount'];
       $order->product_line = $validated['product_line'] ?? $order->product_line;
       $order->esr_cost = $order->product_line === ProductLineEnum::MIXED->value
@@ -1831,7 +1834,7 @@ class SalesController extends Controller
     });
 
     $this->createSnapshot($order->fresh());
-    $order->load('owners', 'client.companyContacts', 'paymentSchedule.installments.paidBy', 'paymentSchedule.installments.movements.paidBy', 'orderCompanyContacts.companyContact', 'orderCompanyContacts.client.companyContacts', 'orderCompanyContacts.source', 'financialEvents.user');
+    $order->load('owners', 'client.companyContacts', 'paymentSchedule.installments.paidBy', 'paymentSchedule.installments.movements.paidBy', 'cityFeePayment.paidBy', 'orderCompanyContacts.companyContact', 'orderCompanyContacts.client.companyContacts', 'orderCompanyContacts.source', 'financialEvents.user');
     $selectedContact = $order->orderCompanyContacts
       ->firstWhere('is_selected', true)
       ?? ($order->orderCompanyContacts->count() === 1 ? $order->orderCompanyContacts->first() : null);
@@ -1844,6 +1847,7 @@ class SalesController extends Controller
       'order' => [
         'id' => $order->id,
         'name' => $order->name,
+        'order_number' => $order->order_number,
         'status' => $order->status,
         'product_line' => $order->product_line,
         'esr_cost' => $order->esr_cost,
@@ -1872,6 +1876,19 @@ class SalesController extends Controller
         'amount_check' => (bool) ($order->amount_check ?? false),
         'email_check' => (bool) ($order->email_check ?? false),
         'city_permits' => (bool) ($order->city_permits ?? false),
+        'cost_city_fee' => $order->cost_city_fee,
+        'city_fee_payment' => $order->cityFeePayment ? [
+          'id' => $order->cityFeePayment->id,
+          'order_id' => $order->cityFeePayment->order_id,
+          'type' => $order->cityFeePayment->type,
+          'amount' => (float) $order->cityFeePayment->amount,
+          'note' => $order->cityFeePayment->note,
+          'status' => $order->cityFeePayment->status,
+          'paid_at' => $order->cityFeePayment->paid_at?->toISOString(),
+          'paid_by' => $order->cityFeePayment->paidBy
+            ? ['id' => $order->cityFeePayment->paidBy->id, 'name' => $order->cityFeePayment->paidBy->name]
+            : null,
+        ] : null,
         'association_permits' => (bool) ($order->association_permits ?? false),
         'pending_financing_or_deposit' => (bool) ($order->pending_financing_or_deposit ?? false),
         'pending_hoa_approval' => (bool) ($order->pending_hoa_approval ?? false),

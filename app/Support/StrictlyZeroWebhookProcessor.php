@@ -122,7 +122,7 @@ class StrictlyZeroWebhookProcessor
         $webhook->forceFill([
             'order_id' => $intent->order_id,
             'payment_installment_id' => $intent->payment_type === 'quota' ? $intent->payment_id : null,
-            'order_payment_id' => $intent->payment_type === 'change-order' ? $intent->payment_id : null,
+            'order_payment_id' => in_array($intent->payment_type, ['change-order', 'city-fee'], true) ? $intent->payment_id : null,
             'matched_by' => $paymentLinkId,
             'processing_status' => self::STATUS_MATCHED,
         ])->save();
@@ -164,7 +164,7 @@ class StrictlyZeroWebhookProcessor
 
             if ($intent->payment_type === 'quota') {
                 $this->applyInstallmentPayment($webhook, $intent, $link);
-            } elseif ($intent->payment_type === 'change-order') {
+            } elseif (in_array($intent->payment_type, ['change-order', 'city-fee'], true)) {
                 $this->applyOrderPayment($webhook, $intent, $link);
             } else {
                 throw new RuntimeException("Unsupported PaymentIntent payment type [{$intent->payment_type}].");

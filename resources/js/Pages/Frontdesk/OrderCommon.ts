@@ -147,6 +147,7 @@ export interface OrderFinancialEvent {
 
 export interface Order {
   id: number
+  order_number?: string | null
   client?: Client
   name: string
   client_id: number
@@ -156,6 +157,7 @@ export interface Order {
   associate_client_id_4: number | null
   project_amount: number
   esr_cost?: number | null
+  cost_city_fee?: number | null
   status: string
   notes: string
   job_address?: string
@@ -199,6 +201,7 @@ export interface Order {
   pending_hoa_approval?: boolean | null
   payment_schedule?: PaymentSchedule | null
   change_order_payment?: OrderPayment | null
+  city_fee_payment?: OrderPayment | null
   financial_events?: OrderFinancialEvent[]
   has_contract_signed?: boolean
   invoice_number?: string | null

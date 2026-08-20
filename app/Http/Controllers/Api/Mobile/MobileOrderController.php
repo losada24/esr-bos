@@ -105,6 +105,8 @@ class MobileOrderController extends Controller
                 'paymentSchedule.installments.movements.paidBy:id,name',
                 'changeOrderPayment:id,order_id,type,amount,note,status,paid_at,paid_by_id,created_at,updated_at',
                 'changeOrderPayment.paidBy:id,name',
+                'cityFeePayment:id,order_id,type,amount,note,status,paid_at,paid_by_id,created_at,updated_at',
+                'cityFeePayment.paidBy:id,name',
             ];
         }
 
@@ -274,6 +276,7 @@ class MobileOrderController extends Controller
             $payload['status_history'] = $order->orderStatus;
             $payload['payment_schedule'] = PaymentInstallmentPresenter::schedule($order->paymentSchedule);
             $payload['change_order_payment'] = $this->serializeOrderPayment($order->changeOrderPayment);
+            $payload['city_fee_payment'] = $this->serializeOrderPayment($order->cityFeePayment);
         }
 
         return $payload;

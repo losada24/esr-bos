@@ -24,6 +24,7 @@ export const NO_CLIENT_EMAIL_SELECTION = '__NONE__'
 
 interface ContractSignedFormValues {
   projectName: string
+  orderNumber: string
   productLine: string
   esrCost: string
   projectAmount: string
@@ -59,6 +60,7 @@ type CustomSchedulePayload = { label: string, amount: number }
 
 type ContractSignedSubmitValues = {
   projectName: string
+  orderNumber: string
   productLine: string
   esrCost: string
   projectAmount: string
@@ -88,6 +90,7 @@ export interface ContractSignedModalProps {
   open: boolean
   taskTitle: string
   initialProjectName: string
+  initialOrderNumber?: string
   initialProductLine: string
   initialEsrCost?: string
   requireProductLine?: boolean
@@ -130,6 +133,7 @@ export default function ContractSignedModal ({
   open,
   taskTitle,
   initialProjectName,
+  initialOrderNumber = '',
   initialProductLine,
   initialEsrCost = '',
   requireProductLine = false,
@@ -246,6 +250,7 @@ export default function ContractSignedModal ({
           enableReinitialize
           initialValues={{
             projectName: initialProjectName ?? '',
+            orderNumber: initialOrderNumber ?? '',
             productLine: initialProductLine ?? '',
             esrCost: initialEsrCost ?? '',
             projectAmount: initialProjectAmount ?? '',
@@ -290,6 +295,11 @@ export default function ContractSignedModal ({
 
             if (!values.projectName || values.projectName.trim() === '') {
               issues.projectName = 'Project name is required.'
+            }
+            if (!values.orderNumber || values.orderNumber.trim() === '') {
+              issues.orderNumber = 'Order number is required.'
+            } else if (values.orderNumber.length > 255) {
+              issues.orderNumber = 'Order number is too long.'
             }
             if (requireProductLine && !values.productLine) {
               issues.productLine = 'Product Line is required.'
@@ -436,6 +446,7 @@ export default function ContractSignedModal ({
 
             onSubmit({
               projectName: values.projectName.trim(),
+              orderNumber: values.orderNumber.trim(),
               productLine: values.productLine,
               esrCost: values.esrCost,
               projectAmount: values.projectAmount,
@@ -633,6 +644,23 @@ export default function ContractSignedModal ({
                     />
                     {submitCount && errors.projectName
                       ? <InputError message={errors.projectName} className="mt-2" />
+                      : null}
+                  </div>
+
+                  <div className={submitCount ? (errors.orderNumber ? 'has-error' : 'has-success') : ''}>
+                    <label className="mb-1 block text-sm font-medium text-slate-600">Order Number</label>
+                    <input
+                      name="orderNumber"
+                      type="text"
+                      value={values.orderNumber}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 outline-none focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                      placeholder="Enter order number"
+                      disabled={loading}
+                    />
+                    {submitCount && errors.orderNumber
+                      ? <InputError message={errors.orderNumber} className="mt-2" />
                       : null}
                   </div>
 

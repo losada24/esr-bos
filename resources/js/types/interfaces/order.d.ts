@@ -83,6 +83,7 @@ export interface Order {
   installation_payment?: InstallationPayment[]
   payment_schedule?: PaymentSchedule | null
   change_order_payment?: OrderPayment | null
+  city_fee_payment?: OrderPayment | null
   pre_inspection?: boolean
   inspection?: boolean
   walk_trough?: boolean
