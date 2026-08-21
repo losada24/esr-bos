@@ -107,9 +107,30 @@
             </tr>
         @endforeach
         <tr>
-            <td colspan="5" style="font-weight: bold; text-align: right;">Total:</td>
+            <td colspan="5" style="font-weight: bold; text-align: right;">Total</td>
             <td style="font-weight: bold;">
                 {{ '=IF(ROW()-1<MATCH("Final Payment Pending",A:A,0)+2,0,SUMPRODUCT(--SUBSTITUTE(SUBSTITUTE(INDEX(F:F, MATCH("Final Payment Pending",A:A,0)+2):INDEX(F:F, ROW()-1),"$",""),",","")))' }}
+            </td>
+            <td></td>
+        </tr>
+        <tr>
+            <td colspan="5" style="font-weight: bold; text-align: right;">Combined Total:</td>
+            <td style="font-weight: bold;">
+                {{ '=INDEX(F:F, MATCH("Final Payment Pending",A:A,0)-2)+INDEX(F:F, ROW()-1)' }}
+            </td>
+            <td></td>
+        </tr>
+        <tr>
+            <td colspan="5" style="font-weight: bold; text-align: right;">Grand Total Payment:</td>
+            <td style="font-weight: bold;">
+                {{ $grandTotalPayment }}
+            </td>
+            <td></td>
+        </tr>
+        <tr>
+            <td colspan="5" style="font-weight: bold; text-align: right;">% of Grand Total Payment:</td>
+            <td style="font-weight: bold;">
+                {{ '=IF(INDEX(F:F, ROW()-1)=0,0,INDEX(F:F, ROW()-2)/INDEX(F:F, ROW()-1))' }}
             </td>
             <td></td>
         </tr>
