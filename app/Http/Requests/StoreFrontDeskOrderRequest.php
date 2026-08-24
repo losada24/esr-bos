@@ -44,6 +44,7 @@ class StoreFrontDeskOrderRequest extends FormRequest
               Rule::unique('clients', 'phone')->ignore($this->client_id)
             ],
             'phone_ext' => 'nullable|string|max:20',
+            'email' => 'nullable|email|max:255',
             'status' =>  [
             'required',
             'string',

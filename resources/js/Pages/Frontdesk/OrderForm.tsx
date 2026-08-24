@@ -148,6 +148,18 @@ const OrderForm = ({
               />
               {(submitCount && errors.phone_ext) ? <InputError message={errors.phone_ext} className="mt-2" /> : ''}
             </div>
+   <div className={submitCount ? (errors.email) ? 'has-error' : 'has-success' : ''}>
+              <label htmlFor="email">Email</label>
+              <Field
+                id="email"
+                name="email"
+                type="email"
+                className="form-input"
+                autoComplete="email"
+                placeholder='Email'
+              />
+              {(submitCount && errors.email) ? <InputError message={errors.email} className="mt-2" /> : ''}
+            </div>
              <div className={submitCount ? (errors.status) ? 'has-error' : 'has-success' : ''}>
               <label htmlFor="status">Status</label>
               <Select

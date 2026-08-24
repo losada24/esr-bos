@@ -1441,7 +1441,7 @@ class SalesController extends Controller
 
     $rules = [
       'project_name' => ['required', 'string', 'max:255'],
-      'order_number' => ['required', 'string', 'max:255'],
+      'order_number' => ['nullable', 'string', 'max:255'],
       'product_line' => [
         Rule::requiredIf($order->status === OrderStatusEnum::ESTIMATE_APPT_SCHEDULE->value),
         'nullable',
@@ -1599,7 +1599,9 @@ class SalesController extends Controller
       );
 
       $order->name = $validated['project_name'];
-      $order->order_number = trim((string) $validated['order_number']);
+      if (isset($validated['order_number']) && trim((string) $validated['order_number']) !== '') {
+        $order->order_number = trim((string) $validated['order_number']);
+      }
       $order->project_amount = $validated['project_amount'];
       $order->product_line = $validated['product_line'] ?? $order->product_line;
       $order->esr_cost = $order->product_line === ProductLineEnum::MIXED->value

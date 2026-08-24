@@ -34,6 +34,7 @@ class CreateOrderPipeline
         'name' => $request->client_name,
         'phone' => $request->phone,
         'phone_ext' => $request->phone_ext,
+        'email' => $request->email,
         'source' => $request->source,
         'user_id' => auth()->user()->id,
         'is_contact' => false,

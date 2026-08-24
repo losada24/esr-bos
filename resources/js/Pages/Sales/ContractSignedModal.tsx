@@ -296,11 +296,6 @@ export default function ContractSignedModal ({
             if (!values.projectName || values.projectName.trim() === '') {
               issues.projectName = 'Project name is required.'
             }
-            if (!values.orderNumber || values.orderNumber.trim() === '') {
-              issues.orderNumber = 'Order number is required.'
-            } else if (values.orderNumber.length > 255) {
-              issues.orderNumber = 'Order number is too long.'
-            }
             if (requireProductLine && !values.productLine) {
               issues.productLine = 'Product Line is required.'
             }
@@ -644,23 +639,6 @@ export default function ContractSignedModal ({
                     />
                     {submitCount && errors.projectName
                       ? <InputError message={errors.projectName} className="mt-2" />
-                      : null}
-                  </div>
-
-                  <div className={submitCount ? (errors.orderNumber ? 'has-error' : 'has-success') : ''}>
-                    <label className="mb-1 block text-sm font-medium text-slate-600">Order Number</label>
-                    <input
-                      name="orderNumber"
-                      type="text"
-                      value={values.orderNumber}
-                      onChange={handleChange}
-                      onBlur={handleBlur}
-                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 outline-none focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
-                      placeholder="Enter order number"
-                      disabled={loading}
-                    />
-                    {submitCount && errors.orderNumber
-                      ? <InputError message={errors.orderNumber} className="mt-2" />
                       : null}
                   </div>
 

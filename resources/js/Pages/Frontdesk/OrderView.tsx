@@ -299,6 +299,23 @@ const normalizeStatusValue = (value: string | number): string => String(value).r
 const matchesStatus = (value: string | number, target: string | number): boolean =>
   normalizeStatusValue(value) === normalizeStatusValue(target)
 
+const parseEsrEswOrderNumber = (value?: string | number | null): { esr: string, esw: string } => {
+  const normalized = String(value ?? '').trim()
+  const esrMatch = normalized.match(/\bESR\s*([^\s]+)/i)
+  const eswMatch = normalized.match(/\bESW\s*([^\s]+)/i)
+
+  return {
+    esr: esrMatch?.[1] ?? '',
+    esw: eswMatch?.[1] ?? ''
+  }
+}
+
+const buildEsrEswOrderNumber = (esrNumber: string, eswNumber: string): string =>
+  [
+    esrNumber.trim() !== '' ? `ESR${esrNumber.trim()}` : '',
+    eswNumber.trim() !== '' ? `ESW${eswNumber.trim()}` : ''
+  ].filter(Boolean).join(' ')
+
 const isFrontdeskStatus = (value: string): boolean =>
   FRONTDESK_STATUS_OPTIONS.some(status => matchesStatus(status, value))
 
@@ -699,6 +716,8 @@ export default function ShowStatusOrder ({
   const [orderProcessingModalOpen, setOrderProcessingModalOpen] = useState(false)
   const [orderProcessingNote, setOrderProcessingNote] = useState('')
   const [orderProcessingInvoiceNumber, setOrderProcessingInvoiceNumber] = useState('')
+  const [orderProcessingEsrNumber, setOrderProcessingEsrNumber] = useState('')
+  const [orderProcessingEswNumber, setOrderProcessingEswNumber] = useState('')
   const [orderProcessingAttachments, setOrderProcessingAttachments] = useState<File[]>([])
   const [orderProcessingError, setOrderProcessingError] = useState<string | null>(null)
   const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? ''
@@ -907,6 +926,15 @@ export default function ShowStatusOrder ({
     setRequestFormErrors({})
     setRequestSaving(true)
     try {
+      const requestPayload = {
+        mode: 'frontdesk',
+        ...requestFormValues
+      } as Partial<RequestFormValues> & { mode: 'frontdesk' }
+
+      if (requestPayload.commercial_pairs?.length === 0) {
+        delete requestPayload.commercial_pairs
+      }
+
       const response = await fetch(route('frontdesk.orders.update-contact', { order: order.id }), {
         method: 'PUT',
         headers: {
@@ -915,10 +943,7 @@ export default function ShowStatusOrder ({
           'X-CSRF-TOKEN': csrfToken,
           'X-Requested-With': 'XMLHttpRequest'
         },
-        body: JSON.stringify({
-          mode: 'frontdesk',
-          ...requestFormValues
-        })
+        body: JSON.stringify(requestPayload)
       })
       const responseData = await response.json().catch(() => null)
       if (!response.ok) {
@@ -1429,6 +1454,8 @@ export default function ShowStatusOrder ({
     setPendingOrderProcessingMove(null)
     setOrderProcessingNote('')
     setOrderProcessingInvoiceNumber('')
+    setOrderProcessingEsrNumber('')
+    setOrderProcessingEswNumber('')
     setOrderProcessingAttachments([])
     setOrderProcessingError(null)
   }, [])
@@ -1461,6 +1488,7 @@ export default function ShowStatusOrder ({
     note?: string
     attachments?: File[]
     invoice_number?: string
+    order_number?: string
     onError?: (message: string) => void
   }
 
@@ -1478,6 +1506,7 @@ export default function ShowStatusOrder ({
       const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? ''
       const noteContent = options?.note?.trim() ?? ''
       const invoiceNumber = options?.invoice_number?.trim() ?? ''
+      const orderNumber = options?.order_number?.trim() ?? ''
       const attachments = options?.attachments ?? []
 
       const response = options
@@ -1495,6 +1524,9 @@ export default function ShowStatusOrder ({
             }
             if (invoiceNumber !== '') {
               formData.append('invoice_number', invoiceNumber)
+            }
+            if (orderNumber !== '') {
+              formData.append('order_number', orderNumber)
             }
             if (confirmCustomerRole) {
               formData.append('confirm_customer_role', '1')
@@ -1515,6 +1547,7 @@ export default function ShowStatusOrder ({
           body: JSON.stringify({
             status: targetStatus,
             ...(invoiceNumber !== '' ? { invoice_number: invoiceNumber } : {}),
+            ...(orderNumber !== '' ? { order_number: orderNumber } : {}),
             ...(confirmCustomerRole ? { confirm_customer_role: true } : {})
           })
         })
@@ -1537,7 +1570,9 @@ export default function ShowStatusOrder ({
 
       setOrder((prev) => ({
         ...prev,
-        status: targetStatus
+        status: targetStatus,
+        order_number: payload.order.order_number ?? prev.order_number,
+        invoice_number: payload.order.invoice_number ?? prev.invoice_number
       }))
       refreshOrderActivity()
       return true
@@ -1559,11 +1594,20 @@ export default function ShowStatusOrder ({
     setStatusChangeError(null)
 
     const shouldSendInvoice = matchesStatus(pendingOrderProcessingMove.newStatus, 'REVIEW')
+    const shouldSendOrderNumber = matchesStatus(pendingOrderProcessingMove.newStatus, 'CLOSED WON')
+    const esrNumber = orderProcessingEsrNumber.trim()
+    const eswNumber = orderProcessingEswNumber.trim()
+
+    if (shouldSendOrderNumber && esrNumber === '' && eswNumber === '') {
+      setOrderProcessingError('Enter at least one order number: ESR or ESW.')
+      return
+    }
 
     const success = await handleSimpleStatusChange(pendingOrderProcessingMove.newStatus, {
       note: orderProcessingNote,
       attachments: orderProcessingAttachments,
       ...(shouldSendInvoice ? { invoice_number: orderProcessingInvoiceNumber } : {}),
+      ...(shouldSendOrderNumber ? { order_number: buildEsrEswOrderNumber(esrNumber, eswNumber) } : {}),
       onError: (message) => { setOrderProcessingError(message) }
     })
 
@@ -1798,9 +1842,12 @@ export default function ShowStatusOrder ({
     }
 
     if (!orderInFrontdeskFlow && !orderInSalesFlow) {
+      const orderNumberParts = parseEsrEswOrderNumber(order.order_number)
       setPendingOrderProcessingMove({ oldStatus: actualStatusValue, newStatus: targetStatus })
       setOrderProcessingNote('')
       setOrderProcessingInvoiceNumber(order.invoice_number ?? '')
+      setOrderProcessingEsrNumber(orderNumberParts.esr)
+      setOrderProcessingEswNumber(orderNumberParts.esw)
       setOrderProcessingAttachments([])
       setOrderProcessingError(null)
       setOrderProcessingModalOpen(true)
@@ -5146,6 +5193,54 @@ export default function ShowStatusOrder ({
                     placeholder="Add invoice number (optional)"
                     disabled={statusChangeSaving}
                   />
+                </div>
+              )}
+              {matchesStatus(pendingOrderProcessingMove.newStatus, 'CLOSED WON') && (
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-slate-600" htmlFor="order-processing-esr-number">
+                      ESR Number Order
+                    </label>
+                    <div className="flex overflow-hidden rounded-md border border-slate-300 bg-white focus-within:border-sky-500 focus-within:ring-1 focus-within:ring-sky-500">
+                      <span className="flex items-center border-r border-slate-200 bg-slate-50 px-3 text-sm font-semibold text-slate-600">
+                        ESR
+                      </span>
+                      <input
+                        id="order-processing-esr-number"
+                        type="text"
+                        className="min-w-0 flex-1 border-0 px-3 py-2 text-sm text-slate-700 placeholder:text-slate-400 focus:ring-0"
+                        value={orderProcessingEsrNumber}
+                        onChange={(event) => {
+                          setOrderProcessingEsrNumber(event.target.value)
+                          if (orderProcessingError) setOrderProcessingError(null)
+                        }}
+                        placeholder="Number"
+                        disabled={statusChangeSaving}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-slate-600" htmlFor="order-processing-esw-number">
+                      ESW Order Number
+                    </label>
+                    <div className="flex overflow-hidden rounded-md border border-slate-300 bg-white focus-within:border-sky-500 focus-within:ring-1 focus-within:ring-sky-500">
+                      <span className="flex items-center border-r border-slate-200 bg-slate-50 px-3 text-sm font-semibold text-slate-600">
+                        ESW
+                      </span>
+                      <input
+                        id="order-processing-esw-number"
+                        type="text"
+                        className="min-w-0 flex-1 border-0 px-3 py-2 text-sm text-slate-700 placeholder:text-slate-400 focus:ring-0"
+                        value={orderProcessingEswNumber}
+                        onChange={(event) => {
+                          setOrderProcessingEswNumber(event.target.value)
+                          if (orderProcessingError) setOrderProcessingError(null)
+                        }}
+                        placeholder="Number"
+                        disabled={statusChangeSaving}
+                      />
+                    </div>
+                  </div>
                 </div>
               )}
               <div>

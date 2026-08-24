@@ -17,6 +17,7 @@ export const orderQuantifiedSchema = Yup.object({
 
 export const requestSchema = Yup.object({
   client_name: Yup.string().required('Request Name is required'),
+  email: Yup.string().nullable().email('Invalid email'),
   phone_ext: Yup.string().nullable().max(20, 'Ext must be 20 characters or less'),
   name_check: Yup.boolean().optional(),
   address_check: Yup.boolean().optional(),

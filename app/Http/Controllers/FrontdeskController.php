@@ -531,6 +531,12 @@ class FrontdeskController extends Controller
       ],
       'note' => ['nullable', 'string', 'max:4000'],
       'invoice_number' => ['nullable', 'string', 'max:255'],
+      'order_number' => [
+        Rule::requiredIf($request->input('status') === OrderStatusEnum::CLOSED_WON->value),
+        'nullable',
+        'string',
+        'max:255',
+      ],
       'confirm_customer_role' => ['nullable', 'boolean'],
       'attachments' => ['nullable', 'array'],
       'attachments.*' => ['file', 'max:10240'],
@@ -538,6 +544,7 @@ class FrontdeskController extends Controller
 
     $noteContent = trim((string) ($validated['note'] ?? ''));
     $invoiceNumber = trim((string) ($validated['invoice_number'] ?? ''));
+    $orderNumber = trim((string) ($validated['order_number'] ?? ''));
     $status = $validated['status'];
     $finalStatus = $status === OrderStatusEnum::CLOSED_WON->value
       ? OrderStatusEnum::ACCOUNT_RECEIPT->value
@@ -572,11 +579,14 @@ class FrontdeskController extends Controller
       }
     }
 
-    DB::transaction(function () use ($order, $request, $validated, $finalStatus, $historyStatuses, $noteContent, $invoiceNumber, $status, $confirmCustomerRole) {
+    DB::transaction(function () use ($order, $request, $validated, $finalStatus, $historyStatuses, $noteContent, $invoiceNumber, $orderNumber, $status, $confirmCustomerRole) {
       $order->status = $finalStatus;
       $order->product_line = $validated['product_line'] ?? $order->product_line;
       if ($invoiceNumber !== '' && $status === OrderStatusEnum::REVIEW->value) {
         $order->invoice_number = $invoiceNumber;
+      }
+      if ($orderNumber !== '' && $status === OrderStatusEnum::CLOSED_WON->value) {
+        $order->order_number = $orderNumber;
       }
       $order->save();
 
@@ -1282,15 +1292,7 @@ public function showQuantifiedModal(Order $order)
         'phone' => $phoneRules,
         'status' => ['required', 'string', Rule::in($frontdeskStatuses)],
         'source' => ['required', 'string', Rule::in($sources)],
-        'commercial_pairs' => [
-          Rule::requiredIf(
-            $mode === 'frontdesk' &&
-            $order->order_type === OrderTypeEnum::COMMERCIAL->value
-          ),
-          'array',
-          'min:1',
-          'max:5',
-        ],
+        'commercial_pairs' => ['nullable', 'array', 'max:5'],
         'commercial_pairs.*.company_id' => ['required', 'integer', 'distinct', 'exists:company_contacts,id'],
         'commercial_pairs.*.client_id' => ['required', 'integer', 'exists:clients,id'],
         'commercial_pairs.*.source_id' => ['required', 'integer', 'exists:sources,id'],
@@ -1379,7 +1381,7 @@ public function showQuantifiedModal(Order $order)
         }
         $orderPayload['product_line'] = $data['product_line'] ?? null;
 
-        if ($order->order_type === OrderTypeEnum::COMMERCIAL->value) {
+        if ($order->order_type === OrderTypeEnum::COMMERCIAL->value && array_key_exists('commercial_pairs', $data)) {
           $commercialPairs = collect($data['commercial_pairs'] ?? []);
           $selectedClientId = $order->client_id ? (int) $order->client_id : null;
           $hasSingleCompany = $commercialPairs->count() === 1;
