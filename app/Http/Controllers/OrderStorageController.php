@@ -63,7 +63,7 @@ class OrderStorageController extends Controller
                 $orders = $ordersQuery
                     ->with($this->orderStorageRelations())
                     ->withCount('childOrders')
-                    ->limit(self::ORDER_STORAGE_PAGE_SIZE)
+                    ->limit($this->orderStoragePageSize())
                     ->get();
             } else {
                 OrderPipelineSort::apply($ordersQuery, $sort['sort_by'], $sort['sort_dir']);
@@ -173,7 +173,7 @@ class OrderStorageController extends Controller
         $sort = OrderPipelineSort::resolveFromRequest($request);
         $status = (string) $request->query('status', '');
         $page = max(1, (int) $request->query('page', 1));
-        $perPage = (int) $request->query('per_page', self::ORDER_STORAGE_PAGE_SIZE);
+        $perPage = (int) $request->query('per_page', $this->orderStoragePageSize());
         $perPage = max(1, min(100, $perPage));
 
         if (!in_array($status, $this->storageStatuses(), true)) {
@@ -264,6 +264,11 @@ class OrderStorageController extends Controller
         return [
             OrderStatusEnum::COMPLETE->value,
         ];
+    }
+
+    protected function orderStoragePageSize(): int
+    {
+        return self::ORDER_STORAGE_PAGE_SIZE;
     }
 
     protected function boardTitle(): string

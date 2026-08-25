@@ -804,10 +804,12 @@ class EsrProcessController extends OrderStorageController
 
     protected function paginatedStorageStatuses(): array
     {
-        return [
-            OrderStatusEnum::COMPLETE->value,
-            OrderStatusEnum::LOST->value,
-        ];
+        return $this->storageStatuses();
+    }
+
+    protected function orderStoragePageSize(): int
+    {
+        return 10;
     }
 
     protected function boardTitle(): string

@@ -305,7 +305,8 @@ const OWNER_ADMIN_LOST_SOURCE_STATUSES = new Set([
 ])
 
 const INFINITE_SCROLL_STATUSES = new Set(['COMPLETE', 'LOST'])
-const TASKS_PAGE_SIZE = 20
+const DEFAULT_TASKS_PAGE_SIZE = 20
+const ESR_TASKS_PAGE_SIZE = 10
 const SCROLL_THRESHOLD_PX = 120
 const DUPLICATE_ORDER_ERROR_KEY = 'duplicate_order_confirmation'
 
@@ -383,12 +384,16 @@ const buildFilterQuery = (filters?: BoardFilters): Record<string, unknown> => {
   return params
 }
 
-const buildPaginationState = (pipelines: Pipelines[] = []): Record<string, StatusPaginationState> => {
+const isInfiniteScrollStatus = (status: string | number | undefined, isEsrBoard: boolean): boolean => (
+  isEsrBoard || INFINITE_SCROLL_STATUSES.has(String(status ?? ''))
+)
+
+const buildPaginationState = (pipelines: Pipelines[] = [], isEsrBoard = false, pageSize = DEFAULT_TASKS_PAGE_SIZE): Record<string, StatusPaginationState> => {
   return pipelines.reduce<Record<string, StatusPaginationState>>((acc, pipeline) => {
-    if (!INFINITE_SCROLL_STATUSES.has(pipeline.title)) return acc
+    if (!isInfiniteScrollStatus(pipeline.title, isEsrBoard)) return acc
     const key = pipeline.id == null ? (pipeline.title ?? '') : pipeline.id.toString()
     if (!key) return acc
-    const loadedPages = pipeline.tasks.length ? Math.ceil(pipeline.tasks.length / TASKS_PAGE_SIZE) : 0
+    const loadedPages = pipeline.tasks.length ? Math.ceil(pipeline.tasks.length / pageSize) : 0
     acc[key] = {
       nextPage: loadedPages + 1,
       loading: false
@@ -398,8 +403,10 @@ const buildPaginationState = (pipelines: Pipelines[] = []): Record<string, Statu
 }
 
 const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_users, tags, sources, order_types, product_lines, filters, sort, board_title: boardTitle = 'Order Storage', index_route: indexRoute = 'order-storage.index', tasks_route: tasksRoute = 'order-storage.tasks', sortable_group: sortableGroup = 'order-storage', search_origin: searchOrigin = 'order_storage', show_create_order: showCreateOrder = false, show_new_service: showNewService = false, show_esr_task_actions: showEsrTaskActions = false, order_view_route: orderViewRoute = 'frontdesk.order_view', can_reorder_orders: canReorderOrders = true }: PageProps & BoardConfigProps & { data: Pipelines[], statuses: string[], owners: OwnerOption[], supervisors: IdOption[], created_by_users: IdOption[], tags: TagOption[], sources: string[], order_types: string[], product_lines: string[], filters: BoardFilters, sort: { sort_by?: string, sort_dir?: string } }) => {
+  const isEsrBoard = searchOrigin === 'esr_process'
+  const tasksPageSize = isEsrBoard ? ESR_TASKS_PAGE_SIZE : DEFAULT_TASKS_PAGE_SIZE
   const [pipelines, setPipelinesState] = useState<Pipelines[]>(() => data)
-  const [statusPagination, setStatusPagination] = useState<Record<string, StatusPaginationState>>(() => buildPaginationState(data))
+  const [statusPagination, setStatusPagination] = useState<Record<string, StatusPaginationState>>(() => buildPaginationState(data, isEsrBoard, tasksPageSize))
   const [isFilterOpen, setIsFilterOpen] = useState(false)
   const [activityMenu, setActivityMenu] = useState<ActivityMenuState>(null)
   const [deletingTaskId, setDeletingTaskId] = useState<number | null>(null)
@@ -421,7 +428,6 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
   const dragSnapshotRef = useRef<Pipelines[] | null>(null)
   const sortHydratedRef = useRef(false)
   const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? ''
-  const isEsrBoard = searchOrigin === 'esr_process'
   const roleNames = (auth.user.roles ?? []).map(normalizeRoleName).filter(Boolean)
   const canEditPostSaleService = canEditServiceControl(roleNames)
   const canExtendOverdue = canExtendStageOverdue(roleNames)
@@ -548,8 +554,8 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
 
   useEffect(() => {
     setPipelinesState(data)
-    setStatusPagination(buildPaginationState(data))
-  }, [data])
+    setStatusPagination(buildPaginationState(data, isEsrBoard, tasksPageSize))
+  }, [data, isEsrBoard, tasksPageSize])
 
   const setPipelines = useCallback<Dispatch<SetStateAction<Pipelines[]>>>((value) => {
     setPipelinesState(prevState => {
@@ -962,7 +968,7 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
     }))
 
     try {
-      const response = await fetch(route(tasksRoute, { status: statusKey, page: nextPage, per_page: TASKS_PAGE_SIZE, ...filterQueryParams, ...sortQueryParams }), {
+      const response = await fetch(route(tasksRoute, { status: statusKey, page: nextPage, per_page: tasksPageSize, ...filterQueryParams, ...sortQueryParams }), {
         headers: {
           Accept: 'application/json'
         }
@@ -1019,7 +1025,7 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
         }
       }))
     }
-  }, [setPipelines, setStatusPagination, filterQueryParams, sortQueryParams, tasksRoute])
+  }, [setPipelines, setStatusPagination, filterQueryParams, sortQueryParams, tasksPageSize, tasksRoute])
 
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value)
@@ -1109,7 +1115,7 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
             {pipelines.map((pipeline) => {
               const statusKey = pipeline.id?.toString() ?? pipeline.title ?? ''
               const totalTasks = pipeline.total_tasks ?? pipeline.tasks.length
-              const isInfiniteStatus = INFINITE_SCROLL_STATUSES.has(pipeline.title)
+              const isInfiniteStatus = isInfiniteScrollStatus(pipeline.title, isEsrBoard)
               const hasMoreTasks = isInfiniteStatus && pipeline.tasks.length < totalTasks
               const pagination = statusPagination[statusKey]
               const totalProjectAmount = getPipelineTotalProjectAmount(pipeline)
@@ -1145,7 +1151,7 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
                       if (pagination?.loading) return
                       const target = event.currentTarget
                       if (target.scrollHeight - target.scrollTop - target.clientHeight > SCROLL_THRESHOLD_PX) return
-                      const nextPage = pagination?.nextPage ?? Math.floor(pipeline.tasks.length / TASKS_PAGE_SIZE) + 1
+                      const nextPage = pagination?.nextPage ?? Math.floor(pipeline.tasks.length / tasksPageSize) + 1
                       loadMoreTasks(statusKey, nextPage)
                     }}
                   >
