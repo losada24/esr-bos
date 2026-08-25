@@ -148,6 +148,16 @@ const normalizeStatusValue = (value: string | number): string => String(value).r
 const matchesStatus = (value: string | number, target: string | number): boolean =>
   normalizeStatusValue(value) === normalizeStatusValue(target)
 
+const normalizeRoleName = (role: unknown): string => {
+  const value = typeof role === 'string'
+    ? role
+    : typeof role === 'object' && role !== null && 'name' in role
+      ? String((role as { name?: unknown }).name ?? '')
+      : ''
+
+  return value.trim().toLowerCase().replace(/[\s-]+/g, '_')
+}
+
 const ESR_SALES_STATUSES = new Set([
   'DEALER REQUEST',
   'FOLLOW UP PROJECTS',
@@ -250,7 +260,11 @@ const getStageOverdueTitle = (task: Tasks): string | undefined => {
 const canExtendStageOverdue = (roleNames: string[]): boolean => (
   roleNames.includes('admin') ||
   roleNames.includes('owner_admin') ||
-  roleNames.includes('account_manager')
+  roleNames.includes('account_manager') ||
+  roleNames.includes('accounting') ||
+  roleNames.includes('production') ||
+  roleNames.includes('producction') ||
+  roleNames.includes('productio')
 )
 
 const isPostSaleServiceTask = (task: Tasks): boolean => (
@@ -408,7 +422,7 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
   const sortHydratedRef = useRef(false)
   const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? ''
   const isEsrBoard = searchOrigin === 'esr_process'
-  const roleNames = (auth.user.roles ?? []).map(role => role.name)
+  const roleNames = (auth.user.roles ?? []).map(normalizeRoleName).filter(Boolean)
   const canEditPostSaleService = canEditServiceControl(roleNames)
   const canExtendOverdue = canExtendStageOverdue(roleNames)
   const isRestrictedOwner = isRestrictedOwnerRoleSet(roleNames)
@@ -1579,14 +1593,16 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
                                     </div>
                                   )
                                   )}
-                              {stageOverdueBadge && (
+                              {(stageOverdueBadge || (canExtendOverdue && task.stage_overdue)) && (
                                 <div className="mt-2 flex items-center justify-end gap-2">
-                                  <span
-                                    className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wide ring-2 shadow-sm ${getStageOverdueBadgeClass(task)}`}
-                                    title={getStageOverdueTitle(task)}
-                                  >
-                                    {stageOverdueBadge}
-                                  </span>
+                                  {stageOverdueBadge && (
+                                    <span
+                                      className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wide ring-2 shadow-sm ${getStageOverdueBadgeClass(task)}`}
+                                      title={getStageOverdueTitle(task)}
+                                    >
+                                      {stageOverdueBadge}
+                                    </span>
+                                  )}
                                   {canExtendOverdue && task.stage_overdue && (
                                     <button
                                       type="button"

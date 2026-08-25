@@ -126,7 +126,7 @@ Route::middleware('auth')->group(function () {
         Route::put('notes/{note}',    [OrderNoteController::class, 'update'])->name('notes.update');
         Route::delete('notes/{note}', [OrderNoteController::class, 'destroy'])->name('notes.destroy');
         Route::post('stage-overdue-extensions', [OrderStageOverdueExtensionController::class, 'store'])
-          ->middleware(["role:" . RoleEnum::ADMIN->value . '|' . RoleEnum::OWNER_ADMIN->value . '|' . RoleEnum::ACCOUNT_MANAGER->value])
+          ->middleware(["role:" . RoleEnum::ADMIN->value . '|' . RoleEnum::OWNER_ADMIN->value . '|' . RoleEnum::ACCOUNT_MANAGER->value . '|' . RoleEnum::ACCOUNTING->value . '|' . RoleEnum::PRODUCTION->value . '|producction|productio'])
           ->name('stage-overdue-extensions.store');
     });
 
