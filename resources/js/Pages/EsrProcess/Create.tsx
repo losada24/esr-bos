@@ -6,6 +6,7 @@ import * as Yup from 'yup'
 import { type CompanyContact, type PageProps, type User } from '@/types'
 import { type Source } from '@/types/interfaces/order'
 import { type Client } from '@/Pages/Client/ClientCommon'
+import { ORDER_TYPES } from '@/Utils/constants'
 import {
   orderFormObj,
   type OrderFormValues
@@ -101,7 +102,7 @@ export default function Create ({
 }) {
   const initialValues: OrderFormValues = {
     ...orderFormObj,
-    order_type: order_types[0] ?? 'COMMERCIAL',
+    order_type: ORDER_TYPES.RESIDENTIAL,
     product_line: isServiceForm ? 'ESR' : (product_lines[0] ?? 'ESR'),
     status: statuses[0] ?? 'DEALER REQUEST',
     service_source: isServiceForm ? 'ESR' : null,

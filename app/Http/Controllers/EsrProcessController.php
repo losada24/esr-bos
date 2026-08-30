@@ -225,8 +225,8 @@ class EsrProcessController extends OrderStorageController
                 ->orderBy('name')
                 ->get(),
             'order_types' => [
-                OrderTypeEnum::COMMERCIAL->value,
                 OrderTypeEnum::RESIDENTIAL->value,
+                OrderTypeEnum::COMMERCIAL->value,
             ],
             'services' => array_map(
                 static fn (ServiceEnum $service) => $service->value,
