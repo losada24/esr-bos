@@ -147,6 +147,9 @@ interface OrderStageOverdue {
   resolved_at?: string | null
   resolved_business_days_elapsed?: number | null
   is_active?: boolean
+  extension_maximum_business_days?: number
+  extension_business_days_used?: number
+  extension_business_days_remaining?: number
   extensions?: Array<{
     id: number | string
     business_days: number
@@ -631,6 +634,9 @@ export default function ShowStatusOrder ({
     !overdue.resolved_at &&
     String(overdue.status ?? '') === String(order.status ?? '')
   ))
+  const overdueExtensionMaximumDays = activeStageOverdue?.extension_maximum_business_days ?? 30
+  const overdueExtensionUsedDays = activeStageOverdue?.extension_business_days_used ?? 0
+  const overdueExtensionRemainingDays = activeStageOverdue?.extension_business_days_remaining ?? 30
   const latestActiveOverdueExtension = activeStageOverdue?.extensions?.[0] ?? null
   const latestActiveOverdueExtensionDate = latestActiveOverdueExtension?.extended_until
     ? new Date(latestActiveOverdueExtension.extended_until)
@@ -1560,6 +1566,11 @@ export default function ShowStatusOrder ({
     const businessDays = Number(extendOverdueDays)
     if (!Number.isInteger(businessDays) || businessDays <= 0) {
       setExtendOverdueError('Business days must be greater than 0.')
+      return
+    }
+
+    if (businessDays > overdueExtensionRemainingDays) {
+      setExtendOverdueError(`Only ${overdueExtensionRemainingDays} business days remain for this status overdue.`)
       return
     }
 
@@ -3466,7 +3477,7 @@ export default function ShowStatusOrder ({
                     >
                       Create Event
                     </Link>
-                    {canExtendOverdue && activeStageOverdue && (
+                    {canExtendOverdue && activeStageOverdue && overdueExtensionRemainingDays > 0 && (
                       <button
                         type="button"
                         onClick={() => {
@@ -5272,6 +5283,10 @@ export default function ShowStatusOrder ({
               <div>
                 <h3 className="text-lg font-semibold text-slate-800">Extend Overdue</h3>
                 <p className="text-xs text-slate-500">{order.name}</p>
+                <p className="mt-1 text-xs font-medium text-amber-700">
+                  {overdueExtensionRemainingDays} of {overdueExtensionMaximumDays} business days remaining
+                  {overdueExtensionUsedDays > 0 ? ` (${overdueExtensionUsedDays} used)` : ''}
+                </p>
               </div>
               <button
                 type="button"
@@ -5292,6 +5307,7 @@ export default function ShowStatusOrder ({
                   id="order-view-extend-overdue-business-days"
                   type="number"
                   min={1}
+                  max={overdueExtensionRemainingDays}
                   step={1}
                   className="form-input w-full"
                   value={extendOverdueDays}

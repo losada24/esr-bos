@@ -1960,6 +1960,25 @@ const OrderForm = ({
 
                 {(submitCount && errors.area) ? <InputError message={errors.area} className="mt-2" /> : ''}
               </div>
+            <div className={submitCount ? (errors.order_weight) ? 'has-error' : 'has-success' : ''}>
+              <label htmlFor="order_weight">Order Weight</label>
+              <div className="relative">
+                <Field
+                  id="order_weight"
+                  name="order_weight"
+                  className="form-input text-right pr-12"
+                  autoComplete="order_weight"
+                  placeholder="Order Weight"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                />
+                <span className="absolute inset-y-0 right-3 flex items-center text-gray-500 text-sm">
+                  LBS
+                </span>
+              </div>
+              {(submitCount && errors.order_weight) ? <InputError message={errors.order_weight} className="mt-2" /> : ''}
+            </div>
             {/* <div className={submitCount ? (errors.project_amount) ? 'has-error' : 'has-success' : ''}>
               <label htmlFor="project_amount">Project Amount</label>
               <Field

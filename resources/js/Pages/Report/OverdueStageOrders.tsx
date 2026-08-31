@@ -47,6 +47,9 @@ interface OverdueStageGroup {
   note: string
   is_configured: boolean
   overdue_count: number
+  overdue_extended_count: number
+  overdue_amount: number
+  overdue_extended_amount: number
   amount: number
   count: number
   seller_groups: OverdueStageSellerGroup[]
@@ -68,6 +71,9 @@ type OverdueStageOrdersProps = PageProps & {
     configured_statuses: number
     orders: number
     overdue_orders: number
+    overdue_extended_orders: number
+    overdue_amount: number
+    overdue_extended_amount: number
     amount: number
   }
   filters: OverdueStageFilters
@@ -285,7 +291,7 @@ export default function OverdueStageOrders ({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-4 xl:grid-cols-7">
           <div className="panel">
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Seller</p>
             <p className="mt-2 text-lg font-semibold text-slate-800">{selectedSellerName}</p>
@@ -298,8 +304,20 @@ export default function OverdueStageOrders ({
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Overdue Orders</p>
             <p className="mt-2 text-2xl font-semibold text-rose-700">{totals.overdue_orders}</p>
           </div>
+          <div className="panel border-amber-200 bg-amber-50">
+            <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">Overdue Extended</p>
+            <p className="mt-2 text-2xl font-semibold text-amber-800">{totals.overdue_extended_orders}</p>
+          </div>
+          <div className="panel border-rose-200 bg-rose-50">
+            <p className="text-xs font-semibold uppercase tracking-wide text-rose-700">Overdue Amount</p>
+            <p className="mt-2 text-2xl font-semibold text-rose-800">{formatCurrency(totals.overdue_amount)}</p>
+          </div>
+          <div className="panel border-amber-200 bg-amber-50">
+            <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">Overdue Extended Amount</p>
+            <p className="mt-2 text-2xl font-semibold text-amber-800">{formatCurrency(totals.overdue_extended_amount)}</p>
+          </div>
           <div className="panel">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Amount</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Total Amount</p>
             <p className="mt-2 text-2xl font-semibold text-slate-800">{formatCurrency(totals.amount)}</p>
           </div>
         </div>
@@ -333,7 +351,10 @@ export default function OverdueStageOrders ({
                     </div>
                     <div className="flex flex-wrap gap-2 text-xs font-semibold uppercase tracking-wide">
                       <span className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-rose-700">Overdue: {group.overdue_count}</span>
-                      <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-slate-500">Total: {formatCurrency(group.amount)}</span>
+                      <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-amber-800">Overdue Extended: {group.overdue_extended_count}</span>
+                      <span className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-rose-700">Overdue Amount: {formatCurrency(group.overdue_amount)}</span>
+                      <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-amber-800">Extended Amount: {formatCurrency(group.overdue_extended_amount)}</span>
+                      <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-slate-500">Total Amount: {formatCurrency(group.amount)}</span>
                       <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-slate-500">Threshold: {group.threshold_label}</span>
                     </div>
                   </div>
@@ -362,20 +383,24 @@ export default function OverdueStageOrders ({
                       </thead>
                       <tbody>
                         {group.seller_groups.flatMap((sellerGroup) => sellerGroup.rows).map((row) => (
-                          <tr key={`${group.status}-${row.id}`} className={`border-t text-sm ${row.is_overdue ? 'border-rose-200 bg-rose-50 text-rose-900' : 'border-slate-200 text-slate-600'}`}>
+                          <tr key={`${group.status}-${row.id}`} className={`border-t text-sm ${row.overdue_extension_active ? 'border-amber-200 bg-amber-50 text-amber-900' : row.is_overdue ? 'border-rose-200 bg-rose-50 text-rose-900' : 'border-slate-200 text-slate-600'}`}>
                             <td className="px-4 py-4 align-top">
-                              <div className={row.is_overdue ? 'font-semibold text-rose-900' : 'font-semibold text-slate-700'}>
+                              <div className={row.overdue_extension_active ? 'font-semibold text-amber-900' : row.is_overdue ? 'font-semibold text-rose-900' : 'font-semibold text-slate-700'}>
                                 {row.order_label}
                               </div>
                             </td>
                             <td className="px-4 py-4 align-top">{formatCurrency(row.amount)}</td>
                             <td className="px-4 py-4 align-top font-semibold">
                               {row.days_in_stage}
-                              {row.is_overdue && row.stage_limit_business_days != null
+                              {row.overdue_extension_active
                                 ? (
-                                <span className="ml-2 rounded-full border border-rose-200 bg-rose-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-rose-700">overdue</span>
+                                <span className="ml-2 rounded-full border border-amber-200 bg-amber-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-amber-800">overdue extended</span>
                                   )
-                                : null}
+                                : row.is_overdue && row.stage_limit_business_days != null
+                                  ? (
+                                  <span className="ml-2 rounded-full border border-rose-200 bg-rose-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-rose-700">overdue</span>
+                                    )
+                                  : null}
                             </td>
                             <td className="px-4 py-4 align-top">{row.order_type ?? '-'}</td>
                             <td className="px-4 py-4 align-top">

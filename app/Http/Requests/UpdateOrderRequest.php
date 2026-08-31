@@ -353,6 +353,7 @@ class UpdateOrderRequest extends FormRequest
           'work_team_notes' => 'nullable|string|max:2000',
           'supervisor_commissions' => 'nullable|numeric',
           'area' => 'nullable|numeric',
+          'order_weight' => 'nullable|numeric|min:0',
           'supervisor_payment_percentage' => 'nullable|numeric',
           'supervisor_payment_date' => 'nullable|date_format:Y-m-d',
           'finish_date' => 'nullable|date_format:Y-m-d',

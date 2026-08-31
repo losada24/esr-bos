@@ -14,7 +14,7 @@ class OrderStageOverdueTracker
     {
         $stageAge = $this->resolveStageAge($order);
 
-        if (!$stageAge['overdue']) {
+        if (! $stageAge['overdue']) {
             $this->resolveActiveForOrderStatus(
                 (int) $order->id,
                 (string) ($order->status ?? ''),
@@ -30,7 +30,7 @@ class OrderStageOverdueTracker
             'stage_started_at' => $stageAge['stage_started_at_raw'],
         ]);
 
-        if (!$overdue->exists) {
+        if (! $overdue->exists) {
             $overdue->detected_at = now();
         }
 
@@ -48,7 +48,7 @@ class OrderStageOverdueTracker
 
     public function activeExtensionForStageAge(Order $order, array $stageAge): ?OrderStageOverdueExtension
     {
-        if (!($stageAge['overdue'] ?? false) || empty($stageAge['stage_started_at_raw'])) {
+        if (! ($stageAge['overdue'] ?? false) || empty($stageAge['stage_started_at_raw'])) {
             return null;
         }
 
@@ -60,7 +60,7 @@ class OrderStageOverdueTracker
             ->latest('id')
             ->first();
 
-        if (!$latestExtension || !$latestExtension->extended_until) {
+        if (! $latestExtension || ! $latestExtension->extended_until) {
             return null;
         }
 
@@ -71,7 +71,7 @@ class OrderStageOverdueTracker
 
     public function latestExtensionForStageAge(Order $order, array $stageAge): ?OrderStageOverdueExtension
     {
-        if (!($stageAge['overdue'] ?? false) || empty($stageAge['stage_started_at_raw'])) {
+        if (! ($stageAge['overdue'] ?? false) || empty($stageAge['stage_started_at_raw'])) {
             return null;
         }
 
@@ -86,7 +86,7 @@ class OrderStageOverdueTracker
 
     public function extensionPayload(?OrderStageOverdueExtension $extension): ?array
     {
-        if (!$extension) {
+        if (! $extension) {
             return null;
         }
 
@@ -100,6 +100,31 @@ class OrderStageOverdueTracker
                 'id' => $extension->user->id,
                 'name' => $extension->user->name,
             ] : null,
+        ];
+    }
+
+    public function extensionAllowanceForStageAge(Order $order, array $stageAge): array
+    {
+        $maximum = OrderStageOverdueExtension::MAX_CUMULATIVE_BUSINESS_DAYS;
+
+        if (! ($stageAge['overdue'] ?? false) || empty($stageAge['stage_started_at_raw'])) {
+            return [
+                'maximum' => $maximum,
+                'used' => 0,
+                'remaining' => $maximum,
+            ];
+        }
+
+        $used = (int) OrderStageOverdueExtension::query()
+            ->where('order_id', $order->id)
+            ->where('status', $stageAge['status'])
+            ->where('stage_started_at', $stageAge['stage_started_at_raw'])
+            ->sum('business_days');
+
+        return [
+            'maximum' => $maximum,
+            'used' => $used,
+            'remaining' => max(0, $maximum - $used),
         ];
     }
 
@@ -118,7 +143,7 @@ class OrderStageOverdueTracker
                 ->first();
         $startedAt = $statusHistoryEntry?->created_at ?? $order->created_at;
 
-        if (!$startedAt) {
+        if (! $startedAt) {
             return [
                 'status' => $status,
                 'order_status_id' => $statusHistoryEntry?->id,

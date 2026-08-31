@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class OrderStageOverdueExtension extends Model
 {
+    public const MAX_CUMULATIVE_BUSINESS_DAYS = 30;
+
     protected $fillable = [
         'order_id',
         'order_stage_overdue_id',

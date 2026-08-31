@@ -104,6 +104,7 @@ class Order extends Model
     'material_received_date',
     'loss_reason_frontdesk',
     'area',
+    'order_weight',
   ];
 
   protected $dates = [

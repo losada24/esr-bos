@@ -2,6 +2,9 @@
   $statusCount = (int) ($totals['configured_statuses'] ?? $totals['statuses'] ?? 0);
   $orderCount = (int) ($totals['orders'] ?? 0);
   $overdueOrders = (int) ($totals['overdue_orders'] ?? 0);
+  $overdueExtendedOrders = (int) ($totals['overdue_extended_orders'] ?? 0);
+  $overdueAmount = (float) ($totals['overdue_amount'] ?? 0);
+  $overdueExtendedAmount = (float) ($totals['overdue_extended_amount'] ?? 0);
   $amount = (float) ($totals['amount'] ?? 0);
   $visibleGroups = collect($groups ?? [])->filter(fn ($group) => (int) ($group['count'] ?? 0) > 0)->values();
   $appName = config('app.name');
@@ -87,6 +90,26 @@
     line-height: 24px;
   }
 
+  .overdue-card {
+    background: #fee2e2;
+    border-color: #fca5a5;
+  }
+
+  .overdue-card .summary-label,
+  .overdue-card .summary-value {
+    color: #991b1b;
+  }
+
+  .overdue-extended-card {
+    background: #fef3c7;
+    border-color: #fcd34d;
+  }
+
+  .overdue-extended-card .summary-label,
+  .overdue-extended-card .summary-value {
+    color: #92400e;
+  }
+
   .note {
     color: #374151;
     font-size: 11px;
@@ -120,13 +143,13 @@
 
   .seller-block {
     background: #ffffff;
-    border-top: 1px solid #fed7aa;
+    border-top: 1px solid #bfdbfe;
     page-break-inside: avoid;
   }
 
   .seller-title {
-    background: #fff7ed;
-    color: #9a3412;
+    background: #eff6ff;
+    color: #1d4ed8;
     font-size: 11px;
     font-weight: 700;
     line-height: 15px;
@@ -166,6 +189,11 @@
     color: #7f1d1d;
   }
 
+  .overdue-extended-row td {
+    background: #fef3c7;
+    color: #92400e;
+  }
+
   .empty {
     border: 1px solid #e5e7eb;
     border-radius: 6px;
@@ -195,8 +223,27 @@
           <div class="summary-value">{{ number_format($overdueOrders) }}</div>
         </td>
         <td class="summary-gap"></td>
+        <td class="summary-card overdue-extended-card" width="32%">
+          <div class="summary-label">Overdue Extended</div>
+          <div class="summary-value">{{ number_format($overdueExtendedOrders) }}</div>
+        </td>
+      </tr>
+      <tr>
+        <td colspan="5" height="6"></td>
+      </tr>
+      <tr>
+        <td class="summary-card overdue-card" width="31%">
+          <div class="summary-label">Overdue Amount</div>
+          <div class="summary-value">${{ number_format($overdueAmount, 2) }}</div>
+        </td>
+        <td class="summary-gap"></td>
+        <td class="summary-card overdue-extended-card" width="31%">
+          <div class="summary-label">Overdue Extended Amount</div>
+          <div class="summary-value">${{ number_format($overdueExtendedAmount, 2) }}</div>
+        </td>
+        <td class="summary-gap"></td>
         <td class="summary-card amount-card" width="32%">
-          <div class="summary-label">Amount</div>
+          <div class="summary-label">Total Amount</div>
           <div class="summary-value">${{ number_format($amount, 2) }}</div>
         </td>
       </tr>
@@ -212,9 +259,12 @@
       <div class="status-block">
         <div class="status-title">{{ $group['status'] ?? 'Status' }}</div>
         <div class="status-meta">
-          {{ number_format((int) ($group['overdue_count'] ?? 0)) }} overdue orders |
-          {{ $group['threshold_label'] ?? 'Not configured' }} |
-          ${{ number_format((float) ($group['amount'] ?? 0), 2) }}
+          <div>
+            {{ number_format((int) ($group['overdue_count'] ?? 0)) }} overdue (${{ number_format((float) ($group['overdue_amount'] ?? 0), 2) }}) |
+            {{ number_format((int) ($group['overdue_extended_count'] ?? 0)) }} overdue extended (${{ number_format((float) ($group['overdue_extended_amount'] ?? 0), 2) }}) |
+            Total ${{ number_format((float) ($group['amount'] ?? 0), 2) }}
+          </div>
+          <div>{{ $group['threshold_label'] ?? 'Not configured' }}</div>
         </div>
 
         @foreach ($sellerGroups as $sellerGroup)
@@ -239,7 +289,7 @@
               </thead>
               <tbody>
               @foreach (($sellerGroup['rows'] ?? []) as $row)
-                <tr class="{{ ($row['is_overdue'] ?? false) ? 'overdue-row' : '' }}">
+                <tr class="{{ !empty($row['overdue_extension_active']) ? 'overdue-extended-row' : (($row['is_overdue'] ?? false) ? 'overdue-row' : '') }}">
                   <td>{{ $row['order_label'] ?? '-' }}</td>
                   <td>${{ number_format((float) ($row['amount'] ?? 0), 2) }}</td>
                   <td>{{ $row['days_in_stage'] ?? 0 }}</td>

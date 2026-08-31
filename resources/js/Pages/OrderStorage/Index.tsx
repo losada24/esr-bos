@@ -312,7 +312,13 @@ const DUPLICATE_ORDER_ERROR_KEY = 'duplicate_order_confirmation'
 
 type StatusPaginationState = { nextPage: number, loading: boolean }
 type ActivityMenuState = { orderId: number, x: number, y: number } | null
-type ExtendOverdueTarget = { id: number, title: string } | null
+type ExtendOverdueTarget = {
+  id: number
+  title: string
+  maximumDays: number
+  usedDays: number
+  remainingDays: number
+} | null
 type PaymentScheduleTemplates = Record<string, { label: string, percentage: number }[]>
 type PendingEsrStatusMove = {
   orderId: number
@@ -452,7 +458,13 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
   }, [statusIndex])
 
   const openExtendOverdueModal = (task: Tasks) => {
-    setExtendOverdueTarget({ id: task.id, title: task.title })
+    setExtendOverdueTarget({
+      id: task.id,
+      title: task.title,
+      maximumDays: task.stage_overdue_extension_maximum_days ?? 30,
+      usedDays: task.stage_overdue_extension_days_used ?? 0,
+      remainingDays: task.stage_overdue_extension_days_remaining ?? 30
+    })
     setExtendOverdueDays('')
     setExtendOverdueNote('')
     setExtendOverdueError(null)
@@ -472,6 +484,11 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
     const businessDays = Number(extendOverdueDays)
     if (!Number.isInteger(businessDays) || businessDays <= 0) {
       setExtendOverdueError('Business days must be greater than 0.')
+      return
+    }
+
+    if (businessDays > extendOverdueTarget.remainingDays) {
+      setExtendOverdueError(`Only ${extendOverdueTarget.remainingDays} business days remain for this status overdue.`)
       return
     }
 
@@ -1609,7 +1626,7 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
                                       {stageOverdueBadge}
                                     </span>
                                   )}
-                                  {canExtendOverdue && task.stage_overdue && (
+                                  {canExtendOverdue && task.stage_overdue && (task.stage_overdue_extension_days_remaining ?? 30) > 0 && (
                                     <button
                                       type="button"
                                       title="Extend Overdue"
@@ -1736,6 +1753,10 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
               <div>
                 <h3 className="text-lg font-semibold text-slate-800">Extend Overdue</h3>
                 <p className="text-xs text-slate-500">{extendOverdueTarget.title}</p>
+                <p className="mt-1 text-xs font-medium text-amber-700">
+                  {extendOverdueTarget.remainingDays} of {extendOverdueTarget.maximumDays} business days remaining
+                  {extendOverdueTarget.usedDays > 0 ? ` (${extendOverdueTarget.usedDays} used)` : ''}
+                </p>
               </div>
               <button
                 type="button"
@@ -1756,6 +1777,7 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
                   id="extend-overdue-business-days"
                   type="number"
                   min={1}
+                  max={extendOverdueTarget.remainingDays}
                   step={1}
                   className="form-input w-full"
                   value={extendOverdueDays}

@@ -1,9 +1,12 @@
 @php
   $statusCount = (int) ($totals['configured_statuses'] ?? $totals['statuses'] ?? 0);
   $overdueOrders = (int) ($totals['overdue_orders'] ?? 0);
+  $overdueExtendedOrders = (int) ($totals['overdue_extended_orders'] ?? 0);
+  $overdueAmount = (float) ($totals['overdue_amount'] ?? 0);
+  $overdueExtendedAmount = (float) ($totals['overdue_extended_amount'] ?? 0);
   $amount = (float) ($totals['amount'] ?? 0);
   $visibleGroups = collect($groups ?? [])
-    ->filter(fn ($group) => (int) ($group['overdue_count'] ?? $group['count'] ?? 0) > 0)
+    ->filter(fn ($group) => (int) ($group['count'] ?? 0) > 0)
     ->values();
   $appName = config('app.name');
 @endphp
@@ -40,18 +43,49 @@
                     </div>
                   </td>
                   <td width="3%"></td>
-                  <td width="31%" style="border:1px solid #bfdbfe;background:#eff6ff;border-radius:7px;padding:20px 18px;">
-                    <div style="font-size:12px;font-weight:700;text-transform:uppercase;color:#1d4ed8;margin-bottom:14px;">
+                  <td width="31%" style="border:1px solid #fca5a5;background:#fee2e2;border-radius:7px;padding:20px 18px;">
+                    <div style="font-size:12px;font-weight:700;text-transform:uppercase;color:#b91c1c;margin-bottom:14px;">
                       Overdue Orders
                     </div>
-                    <div style="font-size:28px;font-weight:700;color:#1e40af;">
+                    <div style="font-size:28px;font-weight:700;color:#991b1b;">
                       {{ number_format($overdueOrders) }}
+                    </div>
+                  </td>
+                  <td width="3%"></td>
+                  <td width="32%" style="border:1px solid #fcd34d;background:#fef3c7;border-radius:7px;padding:20px 18px;">
+                    <div style="font-size:12px;font-weight:700;text-transform:uppercase;color:#b45309;margin-bottom:14px;">
+                      Overdue Extended
+                    </div>
+                    <div style="font-size:28px;font-weight:700;color:#92400e;">
+                      {{ number_format($overdueExtendedOrders) }}
+                    </div>
+                  </td>
+                </tr>
+              </table>
+
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:separate;border-spacing:0 0;margin-top:12px;">
+                <tr>
+                  <td width="31%" style="border:1px solid #fca5a5;background:#fee2e2;border-radius:7px;padding:20px 18px;">
+                    <div style="font-size:12px;font-weight:700;text-transform:uppercase;color:#b91c1c;margin-bottom:14px;">
+                      Overdue Amount
+                    </div>
+                    <div style="font-size:24px;font-weight:700;color:#991b1b;">
+                      ${{ number_format($overdueAmount, 2) }}
+                    </div>
+                  </td>
+                  <td width="3%"></td>
+                  <td width="31%" style="border:1px solid #fcd34d;background:#fef3c7;border-radius:7px;padding:20px 18px;">
+                    <div style="font-size:12px;font-weight:700;text-transform:uppercase;color:#b45309;margin-bottom:14px;">
+                      Overdue Extended Amount
+                    </div>
+                    <div style="font-size:24px;font-weight:700;color:#92400e;">
+                      ${{ number_format($overdueExtendedAmount, 2) }}
                     </div>
                   </td>
                   <td width="3%"></td>
                   <td width="32%" style="border:1px solid #c7d2fe;background:#eef2ff;border-radius:7px;padding:20px 18px;">
                     <div style="font-size:12px;font-weight:700;text-transform:uppercase;color:#4338ca;margin-bottom:14px;">
-                      Amount
+                      Total Amount
                     </div>
                     <div style="font-size:28px;font-weight:700;color:#312e81;">
                       ${{ number_format($amount, 2) }}
@@ -71,7 +105,7 @@
                     ->values();
                   $extendedRows = $sellerGroups
                     ->flatMap(fn ($sellerGroup) => collect($sellerGroup['rows'] ?? []))
-                    ->filter(fn ($row) => !empty($row['overdue_extension']))
+                    ->filter(fn ($row) => !empty($row['overdue_extension_active']))
                     ->values();
                 @endphp
 
@@ -82,7 +116,9 @@
                         {{ $group['status'] ?? 'Status' }}
                       </div>
                       <div style="font-size:14px;line-height:20px;color:#667085;margin-bottom:18px;">
-                        {{ number_format((int) ($group['overdue_count'] ?? $group['count'] ?? 0)) }} overdue orders | ${{ number_format((float) ($group['amount'] ?? 0), 2) }}
+                        <span style="color:#991b1b;font-weight:700;">{{ number_format((int) ($group['overdue_count'] ?? 0)) }} overdue (${{ number_format((float) ($group['overdue_amount'] ?? 0), 2) }})</span> |
+                        <span style="color:#92400e;font-weight:700;">{{ number_format((int) ($group['overdue_extended_count'] ?? 0)) }} overdue extended (${{ number_format((float) ($group['overdue_extended_amount'] ?? 0), 2) }})</span> |
+                        Total ${{ number_format((float) ($group['amount'] ?? 0), 2) }}
                       </div>
 
                       @foreach ($sellerGroups as $sellerGroup)

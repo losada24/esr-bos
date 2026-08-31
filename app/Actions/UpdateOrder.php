@@ -262,6 +262,7 @@ class UpdateOrder
         'complete_date' => $request->complete_date,
         'pending_collect'=> $request->pending_collect,
         'area' => $request->area,
+        'order_weight' => $request->order_weight,
 
         
       ];

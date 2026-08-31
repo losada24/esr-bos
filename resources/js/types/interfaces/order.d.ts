@@ -98,6 +98,7 @@ export interface Order {
   order_colors?: OrderColor[] | []
   client_pending_payment?: number
   area?: number
+  order_weight?: number
 }
 
 export interface TypeOfWork {

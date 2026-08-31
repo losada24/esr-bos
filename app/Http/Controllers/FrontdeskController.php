@@ -31,6 +31,7 @@ use Illuminate\Http\Request;
 use App\Models\InstallationTeam;
 use App\Models\Order;
 use App\Models\OrderCompanyContact;
+use App\Models\OrderStageOverdueExtension;
 use App\Models\OrderStatus;
 use App\Models\SaleForm;
 use App\Models\Source;
@@ -1275,9 +1276,11 @@ public function showQuantifiedModal(Order $order)
     $stageOverdues = $order->stageOverdues
       ->sortByDesc('detected_at')
       ->map(function ($overdue) {
-        $extensions = $overdue->extensions
-          ->sortByDesc('created_at')
-          ->values()
+        $extensions = $overdue->extensions->sortByDesc('created_at')->values();
+        $extensionDaysUsed = (int) $extensions->sum('business_days');
+        $extensionDaysMaximum = OrderStageOverdueExtension::MAX_CUMULATIVE_BUSINESS_DAYS;
+        $extensionDaysRemaining = max(0, $extensionDaysMaximum - $extensionDaysUsed);
+        $extensions = $extensions
           ->map(fn ($extension) => [
             'id' => $extension->id,
             'business_days' => (int) $extension->business_days,
@@ -1302,6 +1305,9 @@ public function showQuantifiedModal(Order $order)
             ? (int) $overdue->resolved_business_days_elapsed
             : null,
           'is_active' => (bool) $overdue->is_active,
+          'extension_maximum_business_days' => $extensionDaysMaximum,
+          'extension_business_days_used' => $extensionDaysUsed,
+          'extension_business_days_remaining' => $extensionDaysRemaining,
           'extensions' => $extensions,
         ];
       })

@@ -16,9 +16,15 @@
       <td>{{ (int) ($totals['configured_statuses'] ?? $totals['statuses'] ?? 0) }}</td>
       <td>Overdue Orders</td>
       <td>{{ (int) ($totals['overdue_orders'] ?? 0) }}</td>
-      <td>Amount</td>
+      <td>Overdue Extended</td>
+      <td>{{ (int) ($totals['overdue_extended_orders'] ?? 0) }}</td>
+      <td>Overdue Amount</td>
+      <td>{{ (float) ($totals['overdue_amount'] ?? 0) }}</td>
+      <td>Overdue Extended Amount</td>
+      <td>{{ (float) ($totals['overdue_extended_amount'] ?? 0) }}</td>
+      <td>Total Amount</td>
       <td>{{ (float) ($totals['amount'] ?? 0) }}</td>
-      <td colspan="8">Seller: {{ $selectedSellerName ?? 'All sellers' }}</td>
+      <td colspan="2">Seller: {{ $selectedSellerName ?? 'All sellers' }}</td>
     </tr>
     <tr>
       <td colspan="14"></td>
@@ -52,8 +58,8 @@
         <td>Status Total</td>
         <td>{{ $group['status'] ?? '-' }}</td>
         <td></td>
-        <td>{{ number_format((int) ($group['count'] ?? 0)) }} orders</td>
-        <td>{{ (float) ($group['amount'] ?? 0) }}</td>
+        <td>{{ number_format((int) ($group['overdue_count'] ?? 0)) }} overdue / {{ number_format((int) ($group['overdue_extended_count'] ?? 0)) }} overdue extended</td>
+        <td>{{ (float) ($group['overdue_amount'] ?? 0) }} overdue / {{ (float) ($group['overdue_extended_amount'] ?? 0) }} extended / {{ (float) ($group['amount'] ?? 0) }} total</td>
         <td>{{ $group['threshold_label'] ?? '-' }}</td>
         <td></td>
         <td></td>

@@ -163,6 +163,7 @@ class CreateOrder
         'supervisor_commissions' => $totalCommission,
         'is_send_email' => true,
         'area' => $request->area,
+        'order_weight' => $request->order_weight,
       ]);
       $this->orderClientEmailManager->applySelection($order, $clientEmailSelection);
       $order->save();

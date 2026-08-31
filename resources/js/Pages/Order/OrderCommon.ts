@@ -139,6 +139,7 @@ export const orderFormObj: OrderFormValues = {
   new_travel_cost: 0,
   material_received_date: null,
   area: 0,
+  order_weight: 0,
   order_type: '',
   product_line: '',
   is_supply: false,
@@ -266,7 +267,8 @@ export const loadOrderFormObj = (order: Order): OrderFormValues => {
     new_travel_cost: order.new_travel_cost,
     material_received_date: order.material_received_date ?? null,
     order_colors: order.order_colors ?? [],
-    area: order.area ?? 0
+    area: order.area ?? 0,
+    order_weight: order.order_weight ?? 0
   }
 }
 
