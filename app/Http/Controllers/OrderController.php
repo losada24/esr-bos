@@ -91,7 +91,10 @@ class OrderController extends Controller
     $filters = $request->only(['text', 'status']);
     $filters['is_supply'] = $request->boolean('is_supply');
 
-    $orders = Order::with(['installationTeams.user'])
+    $orders = Order::with([
+        'client:id,name,phone,email',
+        'installationTeams.user',
+    ])
         ->whereIn('orders.status', $queryStatuses)   // <- filtro duro por status permitidos
         ->where(function ($query) {
             $query

@@ -20,7 +20,7 @@ type IndexOrderProps = PageProps & {
 }
 
 export default function Index ({ auth, orders, statuses }: IndexOrderProps) {
- const [selectedRows, setSelectedRows] = useState<number[]>([])
+  const [selectedRows, setSelectedRows] = useState<number[]>([])
   const destroy = (id: number) => {
     if (confirm('Are you sure you want to delete this Order?')) {
       router.delete(route('order.destroy', id))
@@ -113,7 +113,19 @@ export default function Index ({ auth, orders, statuses }: IndexOrderProps) {
                       )}
                     </td>
                     <td className="border-t px-6 py-4 align-top">
-                    {`${order.job_address ?? ''}${order.city ? `, ${order.city}` : ''}${order.job_state ? `, ${order.job_state}` : ''}${order.job_zip ? `, ${order.job_zip}` : ''}`}
+                      <div>
+                        {`${order.job_address ?? ''}${order.city ? `, ${order.city}` : ''}${order.job_state ? `, ${order.job_state}` : ''}${order.job_zip ? `, ${order.job_zip}` : ''}`}
+                      </div>
+                      {order.client?.phone && (
+                        <div className="mt-1 text-sm text-gray-600">
+                          <strong>Phone:</strong> {order.client.phone}
+                        </div>
+                      )}
+                      {order.client?.email && (
+                        <div className="text-sm text-gray-600">
+                          <strong>Email:</strong> {order.client.email}
+                        </div>
+                      )}
                     </td>
                     <td className="border-t px-6 py-4 align-top">
                       {order?.client?.name}
