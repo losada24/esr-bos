@@ -19,17 +19,16 @@ class CrmEventInvitation extends Mailable implements ShouldQueue
     public function __construct(
         public CrmEvent $event,
         public ?Carbon $occurrenceStartsAt = null,
-        public ?Carbon $occurrenceEndsAt = null
-    )
-    {
-    }
+        public ?Carbon $occurrenceEndsAt = null,
+        public bool $includeManualCalendarOptions = true,
+    ) {}
 
     public function envelope(): Envelope
     {
         $this->event->loadMissing(['host', 'order', 'client']);
 
         return new Envelope(
-            subject: 'Event Invitation: ' . $this->event->title,
+            subject: 'Event Invitation: '.$this->event->title,
         );
     }
 
@@ -41,7 +40,8 @@ class CrmEventInvitation extends Mailable implements ShouldQueue
             view: 'emails.crm-event-invitation',
             with: [
                 'event' => $this->event,
-                'googleCalendarUrl' => $this->googleCalendarUrl(),
+                'googleCalendarUrl' => $this->includeManualCalendarOptions ? $this->googleCalendarUrl() : null,
+                'hasCalendarAttachment' => $this->includeManualCalendarOptions,
                 'startsAt' => $this->startsAt(),
                 'endsAt' => $this->endsAt(),
                 'logoUrl' => 'cid:reylos-logo',
@@ -53,6 +53,10 @@ class CrmEventInvitation extends Mailable implements ShouldQueue
 
     public function attachments(): array
     {
+        if (! $this->includeManualCalendarOptions) {
+            return [];
+        }
+
         return [
             Attachment::fromData(fn () => $this->icsContent(), 'event-invitation.ics')
                 ->withMime('text/calendar'),
@@ -63,7 +67,7 @@ class CrmEventInvitation extends Mailable implements ShouldQueue
     {
         $logoPath = resource_path('assets/images/logo-reylosglass.png');
 
-        if (!is_file($logoPath)) {
+        if (! is_file($logoPath)) {
             $logoPath = resource_path('assets/images/logo-reylos.jpg');
         }
 
@@ -100,24 +104,24 @@ class CrmEventInvitation extends Mailable implements ShouldQueue
         $start = $this->startsAt();
         $end = $this->endsAt();
 
-        if (!$start || !$end) {
+        if (! $start || ! $end) {
             return null;
         }
 
         $details = collect([
             $this->event->description,
-            $this->event->meeting_link ? 'Meeting link: ' . $this->event->meeting_link : null,
-            $this->event->order ? 'Related order: ' . $this->event->order->name : null,
-            $this->event->client ? 'Contact: ' . $this->event->client->name : null,
-            $this->event->host ? 'Host: ' . $this->event->host->name : null,
+            $this->event->meeting_link ? 'Meeting link: '.$this->event->meeting_link : null,
+            $this->event->order ? 'Related order: '.$this->event->order->name : null,
+            $this->event->client ? 'Contact: '.$this->event->client->name : null,
+            $this->event->host ? 'Host: '.$this->event->host->name : null,
         ])->filter()->implode("\n");
 
         return 'https://www.google.com/calendar/render?action=TEMPLATE'
-            . '&text=' . urlencode($this->event->title)
-            . '&dates=' . $start->copy()->utc()->format('Ymd\THis\Z') . '/' . $end->copy()->utc()->format('Ymd\THis\Z')
-            . '&details=' . urlencode($details)
-            . ($this->event->location ? '&location=' . urlencode($this->event->location) : '')
-            . '&ctz=' . urlencode((string) config('app.timezone'));
+            .'&text='.urlencode($this->event->title)
+            .'&dates='.$start->copy()->utc()->format('Ymd\THis\Z').'/'.$end->copy()->utc()->format('Ymd\THis\Z')
+            .'&details='.urlencode($details)
+            .($this->event->location ? '&location='.urlencode($this->event->location) : '')
+            .'&ctz='.urlencode((string) config('app.timezone'));
     }
 
     private function participantEmails(): array
@@ -137,9 +141,9 @@ class CrmEventInvitation extends Mailable implements ShouldQueue
         $created = now()->utc()->format('Ymd\THis\Z');
         $description = collect([
             $this->event->description,
-            $this->event->meeting_link ? 'Meeting link: ' . $this->event->meeting_link : null,
-            $this->event->order ? 'Related order: ' . $this->event->order->name : null,
-            $this->event->client ? 'Contact: ' . $this->event->client->name : null,
+            $this->event->meeting_link ? 'Meeting link: '.$this->event->meeting_link : null,
+            $this->event->order ? 'Related order: '.$this->event->order->name : null,
+            $this->event->client ? 'Contact: '.$this->event->client->name : null,
         ])->filter()->implode("\n");
 
         $lines = [
@@ -147,17 +151,17 @@ class CrmEventInvitation extends Mailable implements ShouldQueue
             'VERSION:2.0',
             'PRODID:-//Reylos BOS//CRM Event//EN',
             'BEGIN:VEVENT',
-            'UID:crm-event-' . $this->event->id . '-' . ($start ?: 'pending') . '@' . parse_url(config('app.url'), PHP_URL_HOST),
-            'DTSTAMP:' . $created,
-            'DTSTART:' . $start,
-            'DTEND:' . $end,
-            'SUMMARY:' . $this->icsEscape($this->event->title),
-            'DESCRIPTION:' . $this->icsEscape($description),
-            'LOCATION:' . $this->icsEscape($this->event->location ?? ''),
+            'UID:crm-event-'.$this->event->id.'-'.($start ?: 'pending').'@'.parse_url(config('app.url'), PHP_URL_HOST),
+            'DTSTAMP:'.$created,
+            'DTSTART:'.$start,
+            'DTEND:'.$end,
+            'SUMMARY:'.$this->icsEscape($this->event->title),
+            'DESCRIPTION:'.$this->icsEscape($description),
+            'LOCATION:'.$this->icsEscape($this->event->location ?? ''),
         ];
 
         if ($this->event->meeting_link) {
-            $lines[] = 'URL:' . $this->event->meeting_link;
+            $lines[] = 'URL:'.$this->event->meeting_link;
         }
 
         $lines[] = 'END:VEVENT';
@@ -168,6 +172,6 @@ class CrmEventInvitation extends Mailable implements ShouldQueue
 
     private function icsEscape(string $value): string
     {
-        return str_replace(["\\", "\n", "\r", ',', ';'], ['\\\\', '\\n', '', '\\,', '\\;'], $value);
+        return str_replace(['\\', "\n", "\r", ',', ';'], ['\\\\', '\\n', '', '\\,', '\\;'], $value);
     }
 }

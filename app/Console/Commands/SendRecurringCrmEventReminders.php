@@ -7,6 +7,7 @@ use App\Mail\CrmEventInvitation;
 use App\Models\CrmEvent;
 use App\Models\CrmEventOccurrenceEmail;
 use App\Support\CrmEventRecurrence;
+use App\Support\GoogleCalendarInternalDomainMatcher;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Database\QueryException;
@@ -17,8 +18,10 @@ class SendRecurringCrmEventReminders extends Command
 
     protected $description = 'Send reminder emails for due recurring CRM event occurrences.';
 
-    public function handle(CrmEventRecurrence $recurrence): int
-    {
+    public function handle(
+        CrmEventRecurrence $recurrence,
+        GoogleCalendarInternalDomainMatcher $domainMatcher,
+    ): int {
         $timezone = (string) config('app.timezone', 'UTC');
         $now = Carbon::now($timezone);
         $sent = 0;
@@ -29,11 +32,11 @@ class SendRecurringCrmEventReminders extends Command
             ->where('status', '!=', 'Cancelled')
             ->where('reminder_enabled', true)
             ->whereNotNull('reminder_minutes_before')
-            ->chunkById(100, function ($events) use ($recurrence, $now, &$sent) {
+            ->chunkById(100, function ($events) use ($recurrence, $domainMatcher, $now, &$sent) {
                 foreach ($events as $event) {
                     $occurrence = $recurrence->nextOccurrenceDueForReminder($event, $now);
 
-                    if (!$occurrence) {
+                    if (! $occurrence) {
                         continue;
                     }
 
@@ -42,14 +45,19 @@ class SendRecurringCrmEventReminders extends Command
                         continue;
                     }
 
-                    if (!$this->reserveOccurrence($event->id, $occurrence['starts_at'], $occurrence['ends_at'], $now)) {
+                    if (! $this->reserveOccurrence($event->id, $occurrence['starts_at'], $occurrence['ends_at'], $now)) {
                         continue;
                     }
 
                     foreach ($emails as $email) {
                         SendGmailEmail::dispatch(
                             $email,
-                            new CrmEventInvitation($event, $occurrence['starts_at'], $occurrence['ends_at']),
+                            new CrmEventInvitation(
+                                $event,
+                                $occurrence['starts_at'],
+                                $occurrence['ends_at'],
+                                includeManualCalendarOptions: ! $domainMatcher->isInternal($email),
+                            ),
                             allowInactiveUserRecipient: true
                         )->onQueue('emails');
                     }
