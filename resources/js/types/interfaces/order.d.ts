@@ -15,6 +15,7 @@ export interface Order {
   is_supply?: boolean
   has_contract_signed?: boolean
   job_address?: string
+  financing_jobsite_address?: string | null
   job_city?: string
   job_state?: string
   job_zip?: string

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enum\MethodOfPayment;
 use App\Enum\OrderStatusEnum;
 use App\Enum\RoleEnum;
 use App\Enum\ServiceEnum;
@@ -22,6 +23,8 @@ use Spatie\Permission\Traits\HasRoles;
 class Order extends Model
 {
   use HasFactory, SoftDeletes, HasRoles;
+
+  public const FINANCING_JOBSITE_ADDRESS_MINIMUM = 10000;
 
   protected $dispatchesEvents = [
     'created' => \App\Events\OrderCreated::class,
@@ -44,6 +47,7 @@ class Order extends Model
     'is_post_sale_service',
     'name',
     'job_address',
+    'financing_jobsite_address',
     'job_city',
     'city_permits',
     'association_permits',
@@ -545,6 +549,19 @@ class Order extends Model
     return $this->orderStatus()
       ->where('status', OrderStatusEnum::CONTRACT_SIGNED_BY_CLIENT->value)
       ->exists();
+  }
+
+  public static function requiresFinancingJobsiteAddress(
+    ?string $status,
+    ?string $methodOfPayment,
+    mixed $projectAmount
+  ): bool {
+    if ($status !== OrderStatusEnum::ACCOUNT_RECEIPT->value) {
+      return false;
+    }
+
+    return $methodOfPayment === MethodOfPayment::FINANCED->value
+      && (float) ($projectAmount ?? 0) >= self::FINANCING_JOBSITE_ADDRESS_MINIMUM;
   }
 
 }

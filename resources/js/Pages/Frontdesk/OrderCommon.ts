@@ -159,6 +159,7 @@ export interface Order {
   status: string
   notes: string
   job_address?: string
+  financing_jobsite_address?: string | null
   job_city?: string
   job_state?: string
   job_zip?: string
@@ -309,6 +310,7 @@ export const orderFormObj: OrderFormValues = {
   associate_source_id_4: null,
   company_contact: [],
   job_address: '',
+  financing_jobsite_address: '',
   job_city: '',
   job_state: '',
   job_zip: '',
@@ -442,6 +444,7 @@ export const loadOrderFormObj = (order: Order): OrderFormValues => {
     associate_source_id_4: getSourceId(assocCompany4),
     company_contact: companyContacts,
     job_address: order.job_address ?? '',
+    financing_jobsite_address: order.financing_jobsite_address ?? '',
     job_city: order.job_city ?? '',
     job_state: order.job_state ?? '',
     job_zip: order.job_zip ?? '',

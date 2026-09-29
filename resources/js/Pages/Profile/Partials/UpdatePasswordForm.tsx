@@ -27,12 +27,12 @@ export default function UpdatePasswordForm ({
       preserveScroll: true,
       onSuccess: () => { reset() },
       onError: errors => {
-        if (errors.password !== null) {
+        if (errors.password) {
           reset('password', 'password_confirmation')
           passwordInput.current?.focus()
         }
 
-        if (errors.current_password !== null) {
+        if (errors.current_password) {
           reset('current_password')
           currentPasswordInput.current?.focus()
         }

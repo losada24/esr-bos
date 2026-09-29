@@ -31,6 +31,7 @@ import StarIcon from '@/Components/Icons/StarIcon'
 import PlusIcon from '@/Components/Icons/PlusIcon'
 import { isAccountManager, isAccounting, isAdmin, isFrontdeskAdmin, isFrontdeskEsr, isOwner, isOwnerAdmin, isProduction, isServiceManager } from '@/Utils/user'
 import { PAYMENT_METHODS, SOURCES } from '@/Utils/constants'
+import { requiresFinancingJobsiteAddress } from '@/Utils/financingJobsiteAddress'
 import { formatDateOnlyDisplay } from '@/Utils/dateOnly'
 import EstimateScheduleModal from '@/Pages/Sales/EstimateScheduleModal'
 import FollowUpModal from '@/Pages/Sales/FollowUpModal'
@@ -43,6 +44,7 @@ import QuantifiedModal from '@/Pages/Frontdesk/QuantifiedModal'
 import { ContactEditModal, type ContactFormValues } from '@/Pages/Frontdesk/ContactEditModals'
 import RequestEditModal, { type RequestCommercialPair, type RequestFormValues, type RequestFormErrors } from '@/Pages/Frontdesk/RequestEditModal'
 import CompanyQuickEditModal from '@/Pages/Frontdesk/CompanyQuickEditModal'
+import FinancingJobsiteAddressModal, { type FinancingJobsiteAddressValues } from '@/Components/FinancingJobsiteAddressModal'
 
 type IndexOrderProps = PageProps & {
   orderStatuses?: OrderStatus[]
@@ -752,6 +754,7 @@ export default function ShowStatusOrder ({
   const [pendingLostContract, setPendingLostContract] = useState<{ oldStatus: string, newStatus: string } | null>(null)
   const [pendingOrderProcessingMove, setPendingOrderProcessingMove] = useState<{ oldStatus: string, newStatus: string } | null>(null)
   const [pendingEsrBackwardMove, setPendingEsrBackwardMove] = useState<{ oldStatus: string, newStatus: string } | null>(null)
+  const [pendingFinancingJobsiteStatus, setPendingFinancingJobsiteStatus] = useState<string | null>(null)
   const [statusChangeSaving, setStatusChangeSaving] = useState(false)
   const [statusChangeError, setStatusChangeError] = useState<string | null>(null)
   const [orderProcessingModalOpen, setOrderProcessingModalOpen] = useState(false)
@@ -1637,6 +1640,7 @@ export default function ShowStatusOrder ({
     note?: string
     attachments?: File[]
     invoice_number?: string
+    financingJobsite?: FinancingJobsiteAddressValues
     onError?: (message: string) => void
   }
 
@@ -1671,6 +1675,10 @@ export default function ShowStatusOrder ({
             }
             if (invoiceNumber !== '') {
               formData.append('invoice_number', invoiceNumber)
+            }
+            if (options.financingJobsite) {
+              formData.append('financing_jobsite_same_as_delivery', options.financingJobsite.sameAsDelivery ? '1' : '0')
+              formData.append('financing_jobsite_address', options.financingJobsite.address)
             }
             if (confirmCustomerRole) {
               formData.append('confirm_customer_role', '1')
@@ -1713,7 +1721,8 @@ export default function ShowStatusOrder ({
 
       setOrder((prev) => ({
         ...prev,
-        status: targetStatus
+        ...payload.order,
+        status: payload.order.status ?? targetStatus
       }))
       refreshOrderActivity()
       return true
@@ -1769,6 +1778,22 @@ export default function ShowStatusOrder ({
     if (success) {
       closeEsrBackwardModal()
     }
+  }
+
+  const submitFinancingJobsiteAddress = async (values: FinancingJobsiteAddressValues) => {
+    if (!pendingFinancingJobsiteStatus) return
+
+    let submissionError = 'Unable to update status.'
+    const success = await handleSimpleStatusChange(pendingFinancingJobsiteStatus, {
+      financingJobsite: values,
+      onError: (message) => { submissionError = message }
+    })
+
+    if (!success) {
+      throw new Error(submissionError)
+    }
+
+    setPendingFinancingJobsiteStatus(null)
   }
 
   const handleFrontdeskStandBySubmit = async () => {
@@ -1877,6 +1902,18 @@ export default function ShowStatusOrder ({
         setStatusChangeError('Only ACCOUNT RECEIPT and REVIEW can be updated from this workflow.')
         return
       }
+    }
+
+    if (
+      isEsrProcessWorkflow &&
+      requiresFinancingJobsiteAddress({
+        status: targetStatus,
+        methodOfPayment: order.method_of_payment,
+        projectAmount: order.project_amount
+      })
+    ) {
+      setPendingFinancingJobsiteStatus(targetStatus)
+      return
     }
 
     if (
@@ -3983,7 +4020,9 @@ export default function ShowStatusOrder ({
 
               {!shouldHideDescriptionAndJobInfo && (
                 <div className="panel space-y-3">
-                  <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">Job Site</h2>
+                  <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
+                    {isEsrProcessWorkflow ? 'Delivery Address' : 'Job Site'}
+                  </h2>
                   {jobLocation
                     ? (
                       <div className="flex items-start gap-3 text-sm text-slate-600">
@@ -3996,6 +4035,18 @@ export default function ShowStatusOrder ({
                     : (
                       <p className="text-sm text-slate-400">No job site information provided.</p>
                       )}
+                </div>
+              )}
+
+              {isEsrProcessWorkflow && order.financing_jobsite_address && (
+                <div className="panel space-y-3">
+                  <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">Financing Jobsite Address</h2>
+                  <div className="flex items-start gap-3 text-sm text-slate-600">
+                    <span className="mt-1 text-sky-500">
+                      <LocationIcon className="h-5 w-5" />
+                    </span>
+                    <span>{order.financing_jobsite_address}</span>
+                  </div>
                 </div>
               )}
 
@@ -5386,6 +5437,13 @@ export default function ShowStatusOrder ({
           }
           setFrontdeskQuantifiedModalOpen(false)
         }}
+      />
+      <FinancingJobsiteAddressModal
+        open={pendingFinancingJobsiteStatus !== null}
+        deliveryAddress={jobLocation}
+        initialAddress={order.financing_jobsite_address}
+        onClose={() => { setPendingFinancingJobsiteStatus(null) }}
+        onSubmit={submitFinancingJobsiteAddress}
       />
     </AuthenticatedLayout>
   )

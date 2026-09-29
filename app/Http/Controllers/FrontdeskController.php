@@ -600,6 +600,8 @@ class FrontdeskController extends Controller
       ],
       'note' => ['nullable', 'string', 'max:4000'],
       'invoice_number' => ['nullable', 'string', 'max:255'],
+      'financing_jobsite_same_as_delivery' => ['nullable', 'boolean'],
+      'financing_jobsite_address' => ['nullable', 'string', 'max:500'],
       'confirm_customer_role' => ['nullable', 'boolean'],
       'attachments' => ['nullable', 'array'],
       'attachments.*' => ['file', 'max:10240'],
@@ -653,6 +655,39 @@ class FrontdeskController extends Controller
 
     $this->ensureRequestRescheduleTransitionAllowed($order, $finalStatus);
 
+    $requiresFinancingJobsiteAddress = $isEsrProcessOrder &&
+      Order::requiresFinancingJobsiteAddress(
+        $finalStatus,
+        $order->method_of_payment,
+        $order->project_amount
+      );
+    $financingJobsiteAddress = $requiresFinancingJobsiteAddress
+      ? trim((string) ($validated['financing_jobsite_address'] ?? $order->financing_jobsite_address ?? ''))
+      : '';
+
+    if ($requiresFinancingJobsiteAddress) {
+      if ((bool) ($validated['financing_jobsite_same_as_delivery'] ?? false)) {
+        $financingJobsiteAddress = collect([
+          $order->job_address,
+          $order->city,
+          $order->job_state,
+          $order->job_zip,
+        ])->filter(fn ($value) => filled($value))->implode(', ');
+
+        if ($financingJobsiteAddress === '') {
+          throw ValidationException::withMessages([
+            'financing_jobsite_same_as_delivery' => 'A delivery address is not available for this order.',
+          ]);
+        }
+      }
+
+      if ($financingJobsiteAddress === '') {
+        throw ValidationException::withMessages([
+          'financing_jobsite_address' => 'Financing Jobsite Address is required for financed orders of $10,000 or more before moving to ACCOUNT RECEIPT.',
+        ]);
+      }
+    }
+
     if ($finalStatus === OrderStatusEnum::REVIEW->value) {
       $order->loadMissing('client');
       $contactEmail = trim((string) $order->client?->email);
@@ -676,9 +711,12 @@ class FrontdeskController extends Controller
       }
     }
 
-    DB::transaction(function () use ($order, $request, $validated, $finalStatus, $historyStatuses, $noteContent, $invoiceNumber, $status, $confirmCustomerRole) {
+    DB::transaction(function () use ($order, $request, $validated, $finalStatus, $historyStatuses, $noteContent, $invoiceNumber, $status, $confirmCustomerRole, $financingJobsiteAddress) {
       $order->status = $finalStatus;
       $order->product_line = $validated['product_line'] ?? $order->product_line;
+      if ($financingJobsiteAddress !== '') {
+        $order->financing_jobsite_address = $financingJobsiteAddress;
+      }
       if ($invoiceNumber !== '' && $status === OrderStatusEnum::REVIEW->value) {
         $order->invoice_number = $invoiceNumber;
       }

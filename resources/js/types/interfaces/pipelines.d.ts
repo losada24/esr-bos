@@ -55,6 +55,7 @@ export interface Tasks {
   project_amount?: number | string | null
   down_payment?: number | string | null
   job_address?: string | null
+  financing_jobsite_address?: string | null
   city?: string | null
   job_state?: string | null
   job_zip?: string | null

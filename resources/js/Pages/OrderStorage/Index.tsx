@@ -17,12 +17,14 @@ import OrderBoardFilter, { type BoardFilters, type FilterFieldConfig } from '@/C
 import OrderGlobalSearch from '@/Components/OrderGlobalSearch'
 import OrderPipelineSort from '@/Components/OrderPipelineSort'
 import ProductLineBadge from '@/Components/ProductLineBadge'
+import FinancingJobsiteAddressModal, { type FinancingJobsiteAddressValues } from '@/Components/FinancingJobsiteAddressModal'
 import { formatDateOnlyDisplay, isDateOnlyPast } from '@/Utils/dateOnly'
 import OrderEditModal from '@/Pages/Frontdesk/OrderEditModal'
 import { getValueIdNotNull, loadOrderFormObj, type Order, type OrderFormValues } from '@/Pages/Frontdesk/OrderCommon'
 import { type Client } from '@/Pages/Client/ClientCommon'
 import { type Attachment, type Source } from '@/types/interfaces/order'
 import { PAYMENT_METHODS } from '@/Utils/constants'
+import { requiresFinancingJobsiteAddress } from '@/Utils/financingJobsiteAddress'
 import {
   type PipelineSortBy,
   type PipelineSortDir,
@@ -421,6 +423,7 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
   const [esrEditInitialValues, setEsrEditInitialValues] = useState<OrderFormValues | null>(null)
   const [esrEditError, setEsrEditError] = useState<string | null>(null)
   const [pendingEsrStatusMove, setPendingEsrStatusMove] = useState<PendingEsrStatusMove>(null)
+  const [pendingFinancingJobsiteMove, setPendingFinancingJobsiteMove] = useState<PendingEsrStatusMove>(null)
   const [pendingEsrBackwardMove, setPendingEsrBackwardMove] = useState<PendingEsrStatusMove>(null)
   const [esrBackwardModalOpen, setEsrBackwardModalOpen] = useState(false)
   const [esrBackwardNote, setEsrBackwardNote] = useState('')
@@ -684,6 +687,7 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
       esr_express: updatedOrder.esr_express ?? task.esr_express,
       esr_reylos_glass: updatedOrder.esr_reylos_glass ?? task.esr_reylos_glass,
       esr_service: updatedOrder.esr_service ?? task.esr_service,
+      financing_jobsite_address: updatedOrder.financing_jobsite_address ?? task.financing_jobsite_address,
       service_origin: updatedOrder.service_origin ?? task.service_origin,
       service_source: updatedOrder.service_source ?? task.service_source,
       is_post_sale_service: updatedOrder.is_post_sale_service ?? task.is_post_sale_service
@@ -764,7 +768,13 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
     }
   }
 
-  const updateOrderStatus = async (orderId: number, status: string, note?: string, confirmCustomerRole = false): Promise<Order | null> => {
+  const updateOrderStatus = async (
+    orderId: number,
+    status: string,
+    note?: string,
+    confirmCustomerRole = false,
+    financingJobsite?: FinancingJobsiteAddressValues
+  ): Promise<Order | null> => {
     const trimmedNote = note?.trim() ?? ''
     const response = await fetch(route('frontdesk.updateStatus', { order: orderId }), {
       method: 'POST',
@@ -776,6 +786,12 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
       body: JSON.stringify({
         status,
         ...(trimmedNote !== '' ? { note: trimmedNote } : {}),
+        ...(financingJobsite
+          ? {
+              financing_jobsite_same_as_delivery: financingJobsite.sameAsDelivery,
+              financing_jobsite_address: financingJobsite.address
+            }
+          : {}),
         ...(confirmCustomerRole ? { confirm_customer_role: true } : {})
       })
     })
@@ -789,13 +805,35 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
           return null
         }
 
-        return await updateOrderStatus(orderId, status, note, true)
+        return await updateOrderStatus(orderId, status, note, true, financingJobsite)
       }
 
       throw new Error(payload?.message ?? 'Unable to update status.')
     }
 
     return payload.order as Order
+  }
+
+  const closeFinancingJobsiteModal = () => {
+    setPendingFinancingJobsiteMove(null)
+  }
+
+  const submitFinancingJobsiteAddress = async (values: FinancingJobsiteAddressValues) => {
+    if (!pendingFinancingJobsiteMove) return
+
+    const updatedOrder = await updateOrderStatus(
+      pendingFinancingJobsiteMove.orderId,
+      pendingFinancingJobsiteMove.newStatus,
+      undefined,
+      false,
+      values
+    )
+    if (!updatedOrder) {
+      throw new Error('Unable to update status.')
+    }
+
+    applyEsrStatusMove(pendingFinancingJobsiteMove, updatedOrder)
+    closeFinancingJobsiteModal()
   }
 
   const closeEsrBackwardModal = () => {
@@ -1253,6 +1291,28 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
                               setPipelines(dragSnapshotRef.current)
                             }
                             dragSnapshotRef.current = null
+                            return
+                          }
+
+                          if (
+                            isEsrBoard &&
+                            movedTaskForLock &&
+                            requiresFinancingJobsiteAddress({
+                              status: newStatus,
+                              methodOfPayment: movedTaskForLock.method_of_payment,
+                              projectAmount: movedTaskForLock.project_amount
+                            })
+                          ) {
+                            if (dragSnapshotRef.current) {
+                              setPipelines(dragSnapshotRef.current)
+                            }
+                            dragSnapshotRef.current = null
+                            setPendingFinancingJobsiteMove({
+                              orderId,
+                              oldStatus,
+                              newStatus,
+                              task: movedTaskForLock
+                            })
                             return
                           }
 
@@ -1865,6 +1925,20 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
           errorMessage={esrEditError}
         />
       )}
+      <FinancingJobsiteAddressModal
+        open={pendingFinancingJobsiteMove !== null}
+        deliveryAddress={pendingFinancingJobsiteMove
+          ? [
+              pendingFinancingJobsiteMove.task.job_address,
+              pendingFinancingJobsiteMove.task.city,
+              pendingFinancingJobsiteMove.task.job_state,
+              pendingFinancingJobsiteMove.task.job_zip
+            ].filter(Boolean).join(', ')
+          : ''}
+        initialAddress={pendingFinancingJobsiteMove?.task.financing_jobsite_address}
+        onClose={closeFinancingJobsiteModal}
+        onSubmit={submitFinancingJobsiteAddress}
+      />
     </AuthenticatedCalendarLayout>
   )
 }

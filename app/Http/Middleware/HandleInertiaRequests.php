@@ -3,9 +3,9 @@
 namespace App\Http\Middleware;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Inertia\Middleware;
 use Tightenco\Ziggy\Ziggy;
-use Illuminate\Support\Str;
 
 class HandleInertiaRequests extends Middleware
 {
@@ -19,7 +19,7 @@ class HandleInertiaRequests extends Middleware
     /**
      * Determine the current asset version.
      */
-    public function version(Request $request): string|null
+    public function version(Request $request): ?string
     {
         return parent::version($request);
     }
@@ -32,6 +32,7 @@ class HandleInertiaRequests extends Middleware
     public function share(Request $request): array
     {
         $user = $request->user();
+        $authUser = null;
 
         if ($user) {
             $user->loadMissing('roles', 'permissions');
@@ -59,27 +60,29 @@ class HandleInertiaRequests extends Middleware
                 })
                 ->contains(true);
 
-            $user->setAttribute(
-                'has_frontdesk_admin_role',
-                $hasFrontdeskAdminRole || $user->hasRole(\App\Enum\RoleEnum::FRONTDESK_ADMIN->value) || $user->hasRole('FRONTDESK_ADMIN')
-            );
+            $authUser = [
+                ...$user->toArray(),
+                'has_frontdesk_admin_role' => $hasFrontdeskAdminRole
+                    || $user->hasRole(\App\Enum\RoleEnum::FRONTDESK_ADMIN->value)
+                    || $user->hasRole('FRONTDESK_ADMIN'),
+            ];
         }
 
         return [
             ...parent::share($request),
             'auth' => [
-              'user' => $user,
+                'user' => $authUser,
             ],
             'ziggy' => fn () => [
                 ...(new Ziggy)->toArray(),
                 'location' => $request->url(),
             ],
             'flash' => function () use ($request) {
-              return [
-                  'success' => $request->session()->get('success'),
-                  'error' => $request->session()->get('error'),
-              ];
-            }
+                return [
+                    'success' => $request->session()->get('success'),
+                    'error' => $request->session()->get('error'),
+                ];
+            },
         ];
     }
 }

@@ -1370,7 +1370,7 @@ const OrderQualifiedForm = ({
                 </>
               )}
               <div className={`${useModalLayout ? 'col-span-2' : ''} ${submitCount ? (errors.job_address ? 'has-error' : 'has-success') : ''}`}>
-                  <label htmlFor="job_address"> Job Address</label>
+                  <label htmlFor="job_address">{esrMode ? 'Delivery Address' : 'Job Address'}</label>
                     <Field
                       id="job_address"
                       name="job_address"

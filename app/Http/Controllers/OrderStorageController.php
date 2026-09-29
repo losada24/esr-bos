@@ -383,6 +383,7 @@ class OrderStorageController extends Controller
             'project_amount' => $order->project_amount ? (float) $order->project_amount : null,
             'down_payment' => $order->down_payment ? (float) $order->down_payment : null,
             'job_address' => $order->job_address,
+            'financing_jobsite_address' => $order->financing_jobsite_address,
             'city' => $order->city,
             'job_state' => $order->job_state,
             'job_zip' => $order->job_zip,
