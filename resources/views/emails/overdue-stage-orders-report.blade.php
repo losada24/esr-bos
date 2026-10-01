@@ -1,5 +1,7 @@
 @php
   $statusCount = (int) ($totals['configured_statuses'] ?? $totals['statuses'] ?? 0);
+  $notOverdueOrders = (int) ($totals['not_overdue_orders'] ?? 0);
+  $notOverdueAmount = (float) ($totals['not_overdue_amount'] ?? 0);
   $overdueOrders = (int) ($totals['overdue_orders'] ?? 0);
   $overdueExtendedOrders = (int) ($totals['overdue_extended_orders'] ?? 0);
   $overdueAmount = (float) ($totals['overdue_amount'] ?? 0);
@@ -34,7 +36,7 @@
             <td style="padding:30px 32px 18px;">
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:separate;border-spacing:0 0;">
                 <tr>
-                  <td width="31%" style="border:1px solid #fdba74;background:#fff7ed;border-radius:7px;padding:20px 18px;">
+                  <td width="22%" style="border:1px solid #fdba74;background:#fff7ed;border-radius:7px;padding:20px 12px;">
                     <div style="font-size:12px;font-weight:700;text-transform:uppercase;color:#9a3412;margin-bottom:14px;">
                       Statuses
                     </div>
@@ -42,8 +44,17 @@
                       {{ $statusCount }}
                     </div>
                   </td>
-                  <td width="3%"></td>
-                  <td width="31%" style="border:1px solid #fca5a5;background:#fee2e2;border-radius:7px;padding:20px 18px;">
+                  <td width="4%"></td>
+                  <td width="22%" style="border:1px solid #a7f3d0;background:#ecfdf5;border-radius:7px;padding:20px 12px;">
+                    <div style="font-size:12px;font-weight:700;text-transform:uppercase;color:#047857;margin-bottom:14px;">
+                      Not Overdue Orders
+                    </div>
+                    <div style="font-size:28px;font-weight:700;color:#065f46;">
+                      {{ number_format($notOverdueOrders) }}
+                    </div>
+                  </td>
+                  <td width="4%"></td>
+                  <td width="22%" style="border:1px solid #fca5a5;background:#fee2e2;border-radius:7px;padding:20px 12px;">
                     <div style="font-size:12px;font-weight:700;text-transform:uppercase;color:#b91c1c;margin-bottom:14px;">
                       Overdue Orders
                     </div>
@@ -51,8 +62,8 @@
                       {{ number_format($overdueOrders) }}
                     </div>
                   </td>
-                  <td width="3%"></td>
-                  <td width="32%" style="border:1px solid #fcd34d;background:#fef3c7;border-radius:7px;padding:20px 18px;">
+                  <td width="4%"></td>
+                  <td width="22%" style="border:1px solid #fcd34d;background:#fef3c7;border-radius:7px;padding:20px 12px;">
                     <div style="font-size:12px;font-weight:700;text-transform:uppercase;color:#b45309;margin-bottom:14px;">
                       Overdue Extended
                     </div>
@@ -65,7 +76,16 @@
 
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:separate;border-spacing:0 0;margin-top:12px;">
                 <tr>
-                  <td width="31%" style="border:1px solid #fca5a5;background:#fee2e2;border-radius:7px;padding:20px 18px;">
+                  <td width="22%" style="border:1px solid #a7f3d0;background:#ecfdf5;border-radius:7px;padding:20px 12px;">
+                    <div style="font-size:12px;font-weight:700;text-transform:uppercase;color:#047857;margin-bottom:14px;">
+                      Not Overdue Amount
+                    </div>
+                    <div style="font-size:24px;font-weight:700;color:#065f46;">
+                      ${{ number_format($notOverdueAmount, 2) }}
+                    </div>
+                  </td>
+                  <td width="4%"></td>
+                  <td width="22%" style="border:1px solid #fca5a5;background:#fee2e2;border-radius:7px;padding:20px 12px;">
                     <div style="font-size:12px;font-weight:700;text-transform:uppercase;color:#b91c1c;margin-bottom:14px;">
                       Overdue Amount
                     </div>
@@ -73,8 +93,8 @@
                       ${{ number_format($overdueAmount, 2) }}
                     </div>
                   </td>
-                  <td width="3%"></td>
-                  <td width="31%" style="border:1px solid #fcd34d;background:#fef3c7;border-radius:7px;padding:20px 18px;">
+                  <td width="4%"></td>
+                  <td width="22%" style="border:1px solid #fcd34d;background:#fef3c7;border-radius:7px;padding:20px 12px;">
                     <div style="font-size:12px;font-weight:700;text-transform:uppercase;color:#b45309;margin-bottom:14px;">
                       Overdue Extended Amount
                     </div>
@@ -82,8 +102,8 @@
                       ${{ number_format($overdueExtendedAmount, 2) }}
                     </div>
                   </td>
-                  <td width="3%"></td>
-                  <td width="32%" style="border:1px solid #c7d2fe;background:#eef2ff;border-radius:7px;padding:20px 18px;">
+                  <td width="4%"></td>
+                  <td width="22%" style="border:1px solid #c7d2fe;background:#eef2ff;border-radius:7px;padding:20px 12px;">
                     <div style="font-size:12px;font-weight:700;text-transform:uppercase;color:#4338ca;margin-bottom:14px;">
                       Total Amount
                     </div>
@@ -116,6 +136,7 @@
                         {{ $group['status'] ?? 'Status' }}
                       </div>
                       <div style="font-size:14px;line-height:20px;color:#667085;margin-bottom:18px;">
+                        <span style="color:#047857;font-weight:700;">{{ number_format((int) ($group['not_overdue_count'] ?? 0)) }} not overdue (${{ number_format((float) ($group['not_overdue_amount'] ?? 0), 2) }})</span> |
                         <span style="color:#991b1b;font-weight:700;">{{ number_format((int) ($group['overdue_count'] ?? 0)) }} overdue (${{ number_format((float) ($group['overdue_amount'] ?? 0), 2) }})</span> |
                         <span style="color:#92400e;font-weight:700;">{{ number_format((int) ($group['overdue_extended_count'] ?? 0)) }} overdue extended (${{ number_format((float) ($group['overdue_extended_amount'] ?? 0), 2) }})</span> |
                         Total ${{ number_format((float) ($group['amount'] ?? 0), 2) }}

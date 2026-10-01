@@ -46,6 +46,8 @@ interface OverdueStageGroup {
   threshold_label: string
   note: string
   is_configured: boolean
+  not_overdue_count: number
+  not_overdue_amount: number
   overdue_count: number
   overdue_extended_count: number
   overdue_amount: number
@@ -70,6 +72,8 @@ type OverdueStageOrdersProps = PageProps & {
     statuses: number
     configured_statuses: number
     orders: number
+    not_overdue_orders: number
+    not_overdue_amount: number
     overdue_orders: number
     overdue_extended_orders: number
     overdue_amount: number
@@ -300,6 +304,14 @@ export default function OverdueStageOrders ({
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Orders</p>
             <p className="mt-2 text-2xl font-semibold text-slate-800">{totals.orders}</p>
           </div>
+          <div className="panel border-emerald-200 bg-emerald-50">
+            <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Not Overdue Orders</p>
+            <p className="mt-2 text-2xl font-semibold text-emerald-800">{totals.not_overdue_orders}</p>
+          </div>
+          <div className="panel border-emerald-200 bg-emerald-50">
+            <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Not Overdue Amount</p>
+            <p className="mt-2 text-2xl font-semibold text-emerald-800">{formatCurrency(totals.not_overdue_amount)}</p>
+          </div>
           <div className="panel">
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Overdue Orders</p>
             <p className="mt-2 text-2xl font-semibold text-rose-700">{totals.overdue_orders}</p>
@@ -350,6 +362,8 @@ export default function OverdueStageOrders ({
                       <p className="mt-1 text-sm text-slate-400">{group.note}</p>
                     </div>
                     <div className="flex flex-wrap gap-2 text-xs font-semibold uppercase tracking-wide">
+                      <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-emerald-700">Not Overdue: {group.not_overdue_count}</span>
+                      <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-emerald-700">Not Overdue Amount: {formatCurrency(group.not_overdue_amount)}</span>
                       <span className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-rose-700">Overdue: {group.overdue_count}</span>
                       <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-amber-800">Overdue Extended: {group.overdue_extended_count}</span>
                       <span className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-rose-700">Overdue Amount: {formatCurrency(group.overdue_amount)}</span>

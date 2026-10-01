@@ -1,6 +1,8 @@
 @php
   $statusCount = (int) ($totals['configured_statuses'] ?? $totals['statuses'] ?? 0);
   $orderCount = (int) ($totals['orders'] ?? 0);
+  $notOverdueOrders = (int) ($totals['not_overdue_orders'] ?? 0);
+  $notOverdueAmount = (float) ($totals['not_overdue_amount'] ?? 0);
   $overdueOrders = (int) ($totals['overdue_orders'] ?? 0);
   $overdueExtendedOrders = (int) ($totals['overdue_extended_orders'] ?? 0);
   $overdueAmount = (float) ($totals['overdue_amount'] ?? 0);
@@ -213,36 +215,45 @@
   <div class="content">
     <table class="summary-table">
       <tr>
-        <td class="summary-card statuses-card" width="31%">
+        <td class="summary-card statuses-card" width="22%">
           <div class="summary-label">Statuses</div>
           <div class="summary-value">{{ number_format($statusCount) }}</div>
         </td>
         <td class="summary-gap"></td>
-        <td class="summary-card overdue-card" width="31%">
+        <td class="summary-card" width="22%">
+          <div class="summary-label">Not Overdue Orders</div>
+          <div class="summary-value">{{ number_format($notOverdueOrders) }}</div>
+        </td>
+        <td class="summary-gap"></td>
+        <td class="summary-card overdue-card" width="22%">
           <div class="summary-label">Overdue Orders</div>
           <div class="summary-value">{{ number_format($overdueOrders) }}</div>
         </td>
         <td class="summary-gap"></td>
-        <td class="summary-card overdue-extended-card" width="32%">
+        <td class="summary-card overdue-extended-card" width="22%">
           <div class="summary-label">Overdue Extended</div>
           <div class="summary-value">{{ number_format($overdueExtendedOrders) }}</div>
         </td>
       </tr>
+    </table>
+    <table class="summary-table" style="margin-top: 6px;">
       <tr>
-        <td colspan="5" height="6"></td>
-      </tr>
-      <tr>
-        <td class="summary-card overdue-card" width="31%">
+        <td class="summary-card" width="22%">
+          <div class="summary-label">Not Overdue Amount</div>
+          <div class="summary-value">${{ number_format($notOverdueAmount, 2) }}</div>
+        </td>
+        <td class="summary-gap"></td>
+        <td class="summary-card overdue-card" width="22%">
           <div class="summary-label">Overdue Amount</div>
           <div class="summary-value">${{ number_format($overdueAmount, 2) }}</div>
         </td>
         <td class="summary-gap"></td>
-        <td class="summary-card overdue-extended-card" width="31%">
+        <td class="summary-card overdue-extended-card" width="22%">
           <div class="summary-label">Overdue Extended Amount</div>
           <div class="summary-value">${{ number_format($overdueExtendedAmount, 2) }}</div>
         </td>
         <td class="summary-gap"></td>
-        <td class="summary-card amount-card" width="32%">
+        <td class="summary-card amount-card" width="22%">
           <div class="summary-label">Total Amount</div>
           <div class="summary-value">${{ number_format($amount, 2) }}</div>
         </td>
@@ -260,6 +271,7 @@
         <div class="status-title">{{ $group['status'] ?? 'Status' }}</div>
         <div class="status-meta">
           <div>
+            {{ number_format((int) ($group['not_overdue_count'] ?? 0)) }} not overdue (${{ number_format((float) ($group['not_overdue_amount'] ?? 0), 2) }}) |
             {{ number_format((int) ($group['overdue_count'] ?? 0)) }} overdue (${{ number_format((float) ($group['overdue_amount'] ?? 0), 2) }}) |
             {{ number_format((int) ($group['overdue_extended_count'] ?? 0)) }} overdue extended (${{ number_format((float) ($group['overdue_extended_amount'] ?? 0), 2) }}) |
             Total ${{ number_format((float) ($group['amount'] ?? 0), 2) }}

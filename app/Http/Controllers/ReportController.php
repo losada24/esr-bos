@@ -2340,17 +2340,20 @@ class ReportController extends Controller
         $overdueExtendedRows = $statusRows
           ->where('is_overdue', true)
           ->where('overdue_extension_active', true);
+        $notOverdueRows = $statusRows->where('is_overdue', false);
 
         return [
           'status' => $config['status'],
           'threshold_label' => $config['threshold_label'],
           'note' => $config['note'],
           'is_configured' => $config['is_configured'],
+          'not_overdue_count' => $notOverdueRows->count(),
+          'not_overdue_amount' => round((float) $notOverdueRows->sum('amount'), 2),
           'overdue_count' => $overdueRows->count(),
           'overdue_extended_count' => $overdueExtendedRows->count(),
           'overdue_amount' => round((float) $overdueRows->sum('amount'), 2),
           'overdue_extended_amount' => round((float) $overdueExtendedRows->sum('amount'), 2),
-          'amount' => round((float) ($overdueRows->sum('amount') + $overdueExtendedRows->sum('amount')), 2),
+          'amount' => round((float) $statusRows->sum('amount'), 2),
           'count' => $sellerGroups->sum('count'),
           'seller_groups' => $sellerGroups,
         ];
@@ -2367,6 +2370,7 @@ class ReportController extends Controller
     $overdueExtendedRows = $rows
       ->where('is_overdue', true)
       ->where('overdue_extension_active', true);
+    $notOverdueRows = $rows->where('is_overdue', false);
 
     return [
       'generatedAt' => $now->toDateTimeString(),
@@ -2374,11 +2378,13 @@ class ReportController extends Controller
         'statuses' => count($trackedStatuses),
         'configured_statuses' => $groups->where('is_configured', true)->count(),
         'orders' => $groups->sum('count'),
+        'not_overdue_orders' => $notOverdueRows->count(),
+        'not_overdue_amount' => round((float) $notOverdueRows->sum('amount'), 2),
         'overdue_orders' => $overdueRows->count(),
         'overdue_extended_orders' => $overdueExtendedRows->count(),
         'overdue_amount' => round((float) $overdueRows->sum('amount'), 2),
         'overdue_extended_amount' => round((float) $overdueExtendedRows->sum('amount'), 2),
-        'amount' => round((float) ($overdueRows->sum('amount') + $overdueExtendedRows->sum('amount')), 2),
+        'amount' => round((float) $rows->sum('amount'), 2),
       ],
       'filters' => [
         'seller_id' => $selectedSellerId,
