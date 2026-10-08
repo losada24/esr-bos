@@ -64,6 +64,7 @@ class UpdateCompanyContact {
      
       $companytData = [
         'name' => $request->name,
+        'category' => $request->category,
         'email' => $request->email,
         'phone' => $request->phone,
         'website' => $request->website,

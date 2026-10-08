@@ -30,6 +30,7 @@ class CreateCompanyContact {
        
           $existingCompany = CompanyContact::create([
             'name' => $request->name,
+            'category' => $request->category,
             'phone' => $request->phone,
             'email' => $request->email,
             'website' => $request->website,

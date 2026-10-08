@@ -2,8 +2,16 @@ import * as Yup from 'yup'
 export {}
 
 export const companyContactSchema = Yup.object({
-  name: Yup.string().required('Name is required')
+  name: Yup.string().required('Name is required'),
+  category: Yup.string().nullable().oneOf(['', 'PREMIUM', 'ADVANCED PLUS', 'ADVANCED'], 'Invalid company category')
 })
+
+export const companyCategoryOptions = [
+  { value: '', label: 'None' },
+  { value: 'PREMIUM', label: 'Premium' },
+  { value: 'ADVANCED PLUS', label: 'Advanced Plus' },
+  { value: 'ADVANCED', label: 'Advanced' }
+] as const
 
 export const clientSchema = Yup.object({
   name: Yup.string().required('Name is required'),
@@ -22,6 +30,7 @@ export const clientSchema = Yup.object({
 export interface CompanyContact {
   id: number
   name: string
+  category?: string | null
   email: string
   phone: string
   website: string

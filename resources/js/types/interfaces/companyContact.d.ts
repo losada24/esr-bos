@@ -3,6 +3,7 @@ import { type Client } from '@/Pages/Client/ClientCommon'
 export interface CompanyContact {
   id: number
   name: string
+  category?: string | null
   email: string
   phone: string
   website: string

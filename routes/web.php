@@ -145,7 +145,7 @@ Route::middleware('auth')->group(function () {
       ->name('administration.overdue-report-email-schedule.update');
 
       Route::get('company_contact', [CompanyContactController::class, 'index'])
-      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::FRONTDESK_ADMIN->value . '|'. RoleEnum::FRONTDESK_ESR->value])
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value . '|'. RoleEnum::OWNER->value . '|'. RoleEnum::FRONTDESK_ADMIN->value . '|'. RoleEnum::FRONTDESK_ESR->value])
       ->name('company_contact.index');
       Route::resource('company_contact', CompanyContactController::class)
       ->except(['index'])

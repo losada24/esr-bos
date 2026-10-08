@@ -2,9 +2,9 @@ import Modal from '@/Components/Modal'
 import CloseIcon from '@/Components/Icons/CloseIcon'
 import InputError from '@/Components/InputError'
 import { Field, Form, Formik, type FormikHelpers } from 'formik'
-import { companyContactSchema, type CompanyContact } from '../CompanyContact/CompanyContactCommon'
+import { companyCategoryOptions, companyContactSchema, type CompanyContact } from '../CompanyContact/CompanyContactCommon'
 
-type CompanyQuickEditModalProps = {
+interface CompanyQuickEditModalProps {
   open: boolean
   company: CompanyContact | null
   onClose: () => void
@@ -26,6 +26,7 @@ export default function CompanyQuickEditModal ({
   const initialValues: CompanyContact = {
     id: company?.id ?? 0,
     name: company?.name ?? '',
+    category: company?.category ?? '',
     email: company?.email ?? '',
     phone: company?.phone ?? '',
     website: company?.website ?? '',
@@ -49,6 +50,7 @@ export default function CompanyQuickEditModal ({
     try {
       const payload = {
         name: normalizeValue(values.name) ?? '',
+        category: normalizeValue(values.category),
         email: normalizeValue(values.email),
         phone: normalizeValue(values.phone),
         website: normalizeValue(values.website),
@@ -121,40 +123,49 @@ export default function CompanyQuickEditModal ({
                   <Field id="name" name="name" className="form-input" placeholder="Name" />
                   {(submitCount && errors.name) ? <InputError message={errors.name} className="mt-2" /> : null}
                 </div>
+                <div className={submitCount ? (errors.category ? 'has-error' : 'has-success') : ''}>
+                  <label htmlFor="category">Company Category</label>
+                  <Field id="category" name="category" as="select" className="form-select">
+                    {companyCategoryOptions.map((option) => (
+                      <option key={option.value || 'none'} value={option.value}>{option.label}</option>
+                    ))}
+                  </Field>
+                  {(submitCount && errors.category) ? <InputError message={errors.category} className="mt-2" /> : null}
+                </div>
                 <div className={submitCount ? (errors.email ? 'has-error' : 'has-success') : ''}>
                   <label htmlFor="email">Email</label>
                   <Field id="email" name="email" type="email" className="form-input" placeholder="Email" />
-                  {(submitCount && errors.email) ? <InputError message={errors.email as string} className="mt-2" /> : null}
+                  {(submitCount && errors.email) ? <InputError message={errors.email} className="mt-2" /> : null}
                 </div>
                 <div className={submitCount ? (errors.phone ? 'has-error' : 'has-success') : ''}>
                   <label htmlFor="phone">Phone</label>
                   <Field id="phone" name="phone" className="form-input" placeholder="Phone" />
-                  {(submitCount && errors.phone) ? <InputError message={errors.phone as string} className="mt-2" /> : null}
+                  {(submitCount && errors.phone) ? <InputError message={errors.phone} className="mt-2" /> : null}
                 </div>
                 <div className={submitCount ? (errors.website ? 'has-error' : 'has-success') : ''}>
                   <label htmlFor="website">Website</label>
                   <Field id="website" name="website" type="url" className="form-input" placeholder="Website" />
-                  {(submitCount && errors.website) ? <InputError message={errors.website as string} className="mt-2" /> : null}
+                  {(submitCount && errors.website) ? <InputError message={errors.website} className="mt-2" /> : null}
                 </div>
                 <div className={submitCount ? (errors.billing_street ? 'has-error' : 'has-success') : ''}>
                   <label htmlFor="billing_street">Billing Street</label>
                   <Field id="billing_street" name="billing_street" className="form-input" placeholder="Billing Street" />
-                  {(submitCount && errors.billing_street) ? <InputError message={errors.billing_street as string} className="mt-2" /> : null}
+                  {(submitCount && errors.billing_street) ? <InputError message={errors.billing_street} className="mt-2" /> : null}
                 </div>
                 <div className={submitCount ? (errors.billing_city ? 'has-error' : 'has-success') : ''}>
                   <label htmlFor="billing_city">Billing City</label>
                   <Field id="billing_city" name="billing_city" className="form-input" placeholder="Billing City" />
-                  {(submitCount && errors.billing_city) ? <InputError message={errors.billing_city as string} className="mt-2" /> : null}
+                  {(submitCount && errors.billing_city) ? <InputError message={errors.billing_city} className="mt-2" /> : null}
                 </div>
                 <div className={submitCount ? (errors.billing_state ? 'has-error' : 'has-success') : ''}>
                   <label htmlFor="billing_state">Billing State</label>
                   <Field id="billing_state" name="billing_state" className="form-input" placeholder="Billing State" />
-                  {(submitCount && errors.billing_state) ? <InputError message={errors.billing_state as string} className="mt-2" /> : null}
+                  {(submitCount && errors.billing_state) ? <InputError message={errors.billing_state} className="mt-2" /> : null}
                 </div>
                 <div className={submitCount ? (errors.billing_code ? 'has-error' : 'has-success') : ''}>
                   <label htmlFor="billing_code">Billing Code</label>
                   <Field id="billing_code" name="billing_code" className="form-input" placeholder="Billing Code" />
-                  {(submitCount && errors.billing_code) ? <InputError message={errors.billing_code as string} className="mt-2" /> : null}
+                  {(submitCount && errors.billing_code) ? <InputError message={errors.billing_code} className="mt-2" /> : null}
                 </div>
               </div>
 

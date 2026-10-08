@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Enum\ContactSourceEnum;
 use App\Enum\ContactTypeEnum;
+use App\Enum\CompanyCategoryEnum;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -55,6 +56,7 @@ class UpdateCompanyContactRequest extends FormRequest
 
         $rules = [
             'name' => 'required|string|max:255',
+            'category' => ['nullable', 'string', Rule::in(array_column(CompanyCategoryEnum::cases(), 'value'))],
             'email' => 'nullable|email',
             'phone' => 'nullable|max:20',
             'website' => 'nullable|url|max:255',

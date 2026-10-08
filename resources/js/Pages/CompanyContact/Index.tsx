@@ -6,6 +6,7 @@ import { type PageProps, type CompanyContact, type PaginatorLink, type Role } fr
 import Pagination from '@/Components/Pagination'
 import ClientFilter from './ClientFilter'
 import { isFrontdeskEsr } from '@/Utils/user'
+import { companyCategoryOptions } from './CompanyContactCommon'
 
 type IndexClientProps = PageProps & {
   company_contacts: {
@@ -14,9 +15,8 @@ type IndexClientProps = PageProps & {
   }
 
 }
- 
+
 export default function Index ({ auth, company_contacts }: IndexClientProps) {
-  console.log(company_contacts)
   const roleNames = Array.isArray(auth?.user?.roles)
     ? auth.user.roles.map((role: Role) => role.name)
     : []
@@ -53,6 +53,7 @@ export default function Index ({ auth, company_contacts }: IndexClientProps) {
             <thead>
               <tr className="font-bold text-left">
                 <th className="px-6 pt-5 pb-4">Name</th>
+                <th className="px-6 pt-5 pb-4">Category</th>
                 <th className="px-6 pt-5 pb-4">Email</th>
                 <th className="px-6 pt-5 pb-4">Phone</th>
                 <th className="px-6 pt-5 pb-4">Website</th>
@@ -61,7 +62,9 @@ export default function Index ({ auth, company_contacts }: IndexClientProps) {
               </tr>
             </thead>
             <tbody>
-              {company_contacts.data.map(({ id, name, email, phone, website, clients }) => {
+              {company_contacts.data.map(({ id, name, category, email, phone, website, clients }) => {
+                const categoryLabel = companyCategoryOptions.find((option) => option.value === category)?.label ?? 'None'
+
                 return (
                   <tr
                     key={id}
@@ -69,6 +72,9 @@ export default function Index ({ auth, company_contacts }: IndexClientProps) {
                   >
                     <td className="border-t px-6 py-4 align-top">
                       {name}
+                    </td>
+                    <td className="border-t px-6 py-4 align-top">
+                      {categoryLabel}
                     </td>
                     <td className="border-t px-6 py-4 align-top">
                       {email}
@@ -109,7 +115,7 @@ export default function Index ({ auth, company_contacts }: IndexClientProps) {
               })}
               {company_contacts.data.length === 0 && (
                 <tr>
-                  <td className="px-6 py-4 border-t" colSpan={3}>
+                  <td className="px-6 py-4 border-t" colSpan={canManageCompanies ? 7 : 6}>
                     No Companies found.
                   </td>
                 </tr>

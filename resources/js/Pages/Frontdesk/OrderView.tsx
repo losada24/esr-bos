@@ -179,6 +179,26 @@ type TimelineItem = {
 const DUPLICATE_ORDER_ERROR_KEY = 'duplicate_order_confirmation'
 const DUPLICATE_ORDER_FALLBACK_MESSAGE = 'Existe una orden con este mismo nombre y el mismo cliente asociado. ¿Desea crearla de todas formas?'
 
+const COMPANY_CATEGORY_BADGES: Record<string, { label: string, className: string }> = {
+  PREMIUM: {
+    label: 'Premium',
+    className: 'bg-amber-400 text-slate-950 ring-amber-500'
+  },
+  'ADVANCED PLUS': {
+    label: 'Advanced Plus',
+    className: 'bg-amber-400 text-slate-950 ring-amber-500'
+  },
+  ADVANCED: {
+    label: 'Advanced',
+    className: 'bg-amber-400 text-slate-950 ring-amber-500'
+  }
+}
+
+const getCompanyCategoryBadge = (category?: string | null): { label: string, className: string } | null => {
+  const normalizedCategory = String(category ?? '').trim().toUpperCase()
+  return COMPANY_CATEGORY_BADGES[normalizedCategory] ?? null
+}
+
 type MovementFormValues = {
   useDefaultAmount: boolean
   amount: string
@@ -3770,6 +3790,8 @@ export default function ShowStatusOrder ({
                   <div className="space-y-3">
                     {sortedOrderCompanyContacts.map((item: any, index: number) => {
                       const isSelected = Boolean(item.is_selected)
+                      const company = item.company_contact ?? item.companyContact
+                      const companyCategoryBadge = getCompanyCategoryBadge(company?.category)
                       const commercialPrimaryEmail = normalizeDetailValue(item.client?.email)
                       const commercialOrderEmailDelivery = order.do_not_send_email
                         ? 'Client emails will not be sent'
@@ -3845,6 +3867,18 @@ export default function ShowStatusOrder ({
                             </div>
                           </div>
                           <div className="rounded-lg bg-slate-50 px-3 py-2">
+                            <span className="uppercase tracking-wide text-slate-400">Category</span>
+                            <div className="mt-1">
+                              {companyCategoryBadge
+                                ? (
+                                  <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ring-1 shadow-sm ${companyCategoryBadge.className}`}>
+                                    {companyCategoryBadge.label}
+                                  </span>
+                                  )
+                                : <span className="font-medium text-slate-600">None</span>}
+                            </div>
+                          </div>
+                          <div className="rounded-lg bg-slate-50 px-3 py-2">
                             <span className="uppercase tracking-wide text-slate-400">Primary Email</span>
                             <div className="mt-0.5 break-all font-medium text-slate-700">
                               {commercialPrimaryEmail ?? '—'}
@@ -3875,23 +3909,37 @@ export default function ShowStatusOrder ({
                     <span className="text-[10px] font-medium text-slate-400">{companyContacts.length} linked</span>
                   </div>
                   <div className="space-y-3">
-                    {companyContacts.map((company, index) => (
-                      <div key={company.id ?? index} className="space-y-2 rounded-lg bg-white/70 p-3 shadow">
-                        <p className="text-sm font-semibold text-slate-700">{company.name}</p>
-                        <p className="text-xs text-slate-500">
-                          Phone:{' '}
-                          <span className="font-medium text-slate-600">{formatPhoneForDisplay(company.phone) ?? '—'}</span>
-                        </p>
-                        {!isEsrProcessWorkflow && company.bid_due_date && (
-                          <div className="flex items-center justify-between rounded-md bg-slate-100 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                            <span>Bid Due Date</span>
-                            <span className="text-slate-700 normal-case">
-                              {formatDateOnly(company.bid_due_date)}
-                            </span>
+                    {companyContacts.map((company, index) => {
+                      const companyCategoryBadge = getCompanyCategoryBadge(company.category)
+
+                      return (
+                        <div key={company.id ?? index} className="space-y-2 rounded-lg bg-white/70 p-3 shadow">
+                          <p className="text-sm font-semibold text-slate-700">{company.name}</p>
+                          <p className="text-xs text-slate-500">
+                            Phone:{' '}
+                            <span className="font-medium text-slate-600">{formatPhoneForDisplay(company.phone) ?? '—'}</span>
+                          </p>
+                          <div className="flex items-center gap-2 text-xs text-slate-500">
+                            <span>Category:</span>
+                            {companyCategoryBadge
+                              ? (
+                                <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ring-1 shadow-sm ${companyCategoryBadge.className}`}>
+                                  {companyCategoryBadge.label}
+                                </span>
+                                )
+                              : <span className="font-medium text-slate-600">None</span>}
                           </div>
-                        )}
-                      </div>
-                    ))}
+                          {!isEsrProcessWorkflow && company.bid_due_date && (
+                            <div className="flex items-center justify-between rounded-md bg-slate-100 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                              <span>Bid Due Date</span>
+                              <span className="text-slate-700 normal-case">
+                                {formatDateOnly(company.bid_due_date)}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
                   </div>
                 </div>
               )}

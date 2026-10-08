@@ -74,6 +74,7 @@ export interface Tasks {
   service_control_id?: number | null
   is_post_sale_service?: boolean
   bid_due_date?: string | null
+  company_category?: string | null
   vip_clients?: boolean
   order_company_contacts?: Array<{
     id: number

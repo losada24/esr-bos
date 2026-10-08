@@ -235,6 +235,26 @@ const getStageOverdueBadgeClass = (task: Tasks): string => (
     : 'bg-red-600 text-white ring-red-300'
 )
 
+const COMPANY_CATEGORY_BADGES: Record<string, { label: string, className: string }> = {
+  PREMIUM: {
+    label: 'Premium',
+    className: 'bg-amber-400 text-slate-950 ring-amber-500 shadow-sm'
+  },
+  'ADVANCED PLUS': {
+    label: 'Advanced Plus',
+    className: 'bg-amber-400 text-slate-950 ring-amber-500 shadow-sm'
+  },
+  ADVANCED: {
+    label: 'Advanced',
+    className: 'bg-amber-400 text-slate-950 ring-amber-500 shadow-sm'
+  }
+}
+
+const getCompanyCategoryBadge = (category?: string | null): { label: string, className: string } | null => {
+  const normalizedCategory = String(category ?? '').trim().toUpperCase()
+  return COMPANY_CATEGORY_BADGES[normalizedCategory] ?? null
+}
+
 const formatOverdueExtensionDate = (value?: string | null): string => {
   if (!value) return '-'
   const date = new Date(value)
@@ -1178,7 +1198,7 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
               return (
                 <div
                   key={pipeline.id}
-                  className="panel w-96 min-w-[24rem] flex-none flex flex-col h-full overflow-y-auto overflow-x-hidden"
+                  className={`panel flex-none flex flex-col h-full overflow-y-auto overflow-x-hidden ${isEsrBoard ? 'w-[28rem] min-w-[28rem]' : 'w-96 min-w-[24rem]'}`}
                   data-group={pipeline.id}
                 >
                   <div className="sticky top-0 z-10 bg-white dark:bg-[#0b1220] pt-3 pb-2 shadow-sm">
@@ -1460,14 +1480,22 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
                               ? 'bg-yellow-100 ring-1 ring-yellow-300 dark:bg-yellow-500/20 dark:ring-yellow-400/40'
                               : 'bg-[#f4f4f4] dark:bg-white-dark/20')
                         const orderNumber = String(task.order_number ?? '').trim()
+                        const companyCategoryBadge = isEsrBoard ? getCompanyCategoryBadge(task.company_category) : null
 
                         return (
                           <div className={`sortable-list ${isPostSaleServiceCard ? 'js-post-sale-service-card' : ''}`} key={task.id} data-id={task.id}>
                             <div className={`shadow ${cardBackgroundClass} p-3 pb-4 rounded-md mb-5 space-y-2 ${isPostSaleServiceCard ? 'cursor-default' : 'cursor-move'} text-xs text-slate-600`}>
                               <div className="flex items-center justify-between w-full">
                                 {isEsrBoard && orderNumber !== '' ? (
-                                  <div className="inline-flex w-fit items-center rounded-full bg-slate-900 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white ring-1 ring-slate-700">
-                                    Order #{orderNumber}
+                                  <div className="flex items-center gap-2">
+                                    <div className="inline-flex w-fit items-center whitespace-nowrap rounded-full bg-slate-900 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white ring-1 ring-slate-700">
+                                      Order #{orderNumber}
+                                    </div>
+                                    {companyCategoryBadge && (
+                                      <div className={`inline-flex w-fit items-center whitespace-nowrap rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ring-1 ${companyCategoryBadge.className}`}>
+                                        {companyCategoryBadge.label}
+                                      </div>
+                                    )}
                                   </div>
                                 ) : <span />}
                                 <div className="flex items-center gap-2 text-[11px]">

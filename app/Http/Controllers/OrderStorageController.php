@@ -422,6 +422,7 @@ class OrderStorageController extends Controller
             'service_control_id' => $order->serviceControls->first()?->id,
             'service_source' => $order->serviceControls->first()?->service_source,
             'bid_due_date' => $this->resolveBidDueDate($order),
+            'company_category' => $this->resolveCompanyCategory($order),
             'tags' => ($order->tags ?? collect())->map(function ($tag) {
                 return [
                     'name' => $tag->name,
@@ -444,6 +445,19 @@ class OrderStorageController extends Controller
         }
 
         return $bidDueDate ? Carbon::parse($bidDueDate)->format('Y-m-d') : null;
+    }
+
+    private function resolveCompanyCategory(Order $order): ?string
+    {
+        $selectedContact = $order->orderCompanyContacts
+            ->firstWhere('is_selected', true)
+            ?? ($order->orderCompanyContacts->count() === 1 ? $order->orderCompanyContacts->first() : null);
+
+        if ($selectedContact) {
+            return $selectedContact->companyContact?->category;
+        }
+
+        return $order->client?->companyContact?->category;
     }
 
     private function isOwnerRestricted(?User $user): bool

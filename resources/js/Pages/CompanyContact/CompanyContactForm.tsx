@@ -1,18 +1,16 @@
 import { Field, Form } from 'formik'
-import { useRef, useMemo, useState, type Dispatch, type SetStateAction } from 'react'
-import { useJsApiLoader, StandaloneSearchBox } from '@react-google-maps/api'
+import { useState, type Dispatch, type SetStateAction } from 'react'
 import InputError from '@/Components/InputError'
 import PrimaryButton from '@/Components/PrimaryButton'
 import { Link } from '@inertiajs/react'
 import { type FormikErrors } from 'formik'
-import Flatpickr from 'react-flatpickr'
 import 'flatpickr/dist/flatpickr.css'
-import { type CompanyContact } from './CompanyContactCommon'
+import { companyCategoryOptions, type CompanyContact } from './CompanyContactCommon'
 import ClientModal from './ClientModal'
 import { type Client } from '@/Pages/Client/ClientCommon'
 import DeleteIcon from '@/Components/Icons/DeleteIcon'
 
-const CompanyContactForm = ({ submitCount, errors, isCreate, setFieldValue, values, clients, setClients, sources }: {
+const CompanyContactForm = ({ submitCount, errors, isCreate, clients, setClients, sources }: {
   submitCount: number
   errors: FormikErrors<CompanyContact>
   setFieldValue: (field: string, value: any, shouldValidate?: boolean) => void
@@ -58,6 +56,15 @@ const CompanyContactForm = ({ submitCount, errors, isCreate, setFieldValue, valu
             placeholder='Name'
           />
           {(submitCount && errors.name) ? <InputError message={errors.name} className="mt-2" /> : ''}
+        </div>
+        <div className={submitCount ? (errors.category) ? 'has-error' : 'has-success' : ''}>
+          <label htmlFor="category">Company Category</label>
+          <Field id="category" name="category" as="select" className="form-select">
+            {companyCategoryOptions.map((option) => (
+              <option key={option.value || 'none'} value={option.value}>{option.label}</option>
+            ))}
+          </Field>
+          {(submitCount && errors.category) ? <InputError message={errors.category} className="mt-2" /> : ''}
         </div>
         <div className={`mb-3 ${submitCount ? (errors.email) ? 'has-error' : 'has-success' : ''}`}>
           <label htmlFor="email">Email</label>

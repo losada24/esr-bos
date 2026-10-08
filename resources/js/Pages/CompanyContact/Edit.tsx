@@ -3,9 +3,8 @@ import { Head, router } from '@inertiajs/react'
 import { Formik, type FormikHelpers } from 'formik'
 import { companyContactSchema, type CompanyContact } from './CompanyContactCommon'
 import CompanyContactForm from './CompanyContactForm'
-import { type User, type PageProps, type ClientAddress } from '@/types'
-import { useState, useRef } from 'react'
-import AddressModal from './AddressModal'
+import { type User, type PageProps } from '@/types'
+import { useState } from 'react'
 import { type Client } from '../Client/ClientCommon'
 
 export default function Edit ({ auth, companyContact, sources, clientslist }: PageProps & { auth: User, companyContact: CompanyContact, sources: string[], clientslist: Client[] }) {
@@ -13,6 +12,7 @@ export default function Edit ({ auth, companyContact, sources, clientslist }: Pa
   const initialValues: CompanyContact = {
     id: companyContact.id,
     name: companyContact.name,
+    category: companyContact.category ?? '',
     email: companyContact.email,
     phone: companyContact.phone,
     website: companyContact.website,
@@ -24,7 +24,6 @@ export default function Edit ({ auth, companyContact, sources, clientslist }: Pa
   }
 
   const handleSubmit = async (values: any, helpers: FormikHelpers<CompanyContact>) => {
-    console.log(values)
     values.clients = clients
     router.post(route('company_contact.update', values.id), {
       _method: 'PUT',

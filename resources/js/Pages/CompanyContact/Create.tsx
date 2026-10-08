@@ -12,6 +12,7 @@ export default function Create ({ auth, sources }: PageProps & { auth: User, con
   const initialValues: CompanyContact = {
     id: 0,
     name: '',
+    category: '',
     email: '',
     phone: '',
     website: '',

@@ -123,6 +123,14 @@ const Sidebar = ({ auth }: { auth: Auth }) => {
                                 </NavLink>
                               </li>
                               <li className="menu nav-item">
+                                <NavLink href={route('company_contact.index')} active={route().current('company_contact.*')} className="group">
+                                  <div className="flex items-center">
+                                    <BuildingIcon />
+                                    <SidebarLinkLabel>My Companies</SidebarLinkLabel>
+                                  </div>
+                                </NavLink>
+                              </li>
+                              <li className="menu nav-item">
                                 <NavLink href={route('esr-process.index')} active={route().current('esr-process.*')} className="group">
                                   <div className="flex items-center">
                                     <FolderIcon />
