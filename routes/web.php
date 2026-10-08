@@ -134,7 +134,7 @@ Route::middleware('auth')->group(function () {
       ->name('user.referred-clients');
 
     Route::resource('user', UserController::class)
-      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value ]);
+      ->middleware(["role:" . RoleEnum::ADMIN->value . '|'. RoleEnum::ACCOUNT_MANAGER->value . '|'. RoleEnum::OWNER_ADMIN->value ]);
 
     Route::get('/administration/overdue-report-email-schedule', [OverdueReportEmailScheduleController::class, 'edit'])
       ->middleware(["role:" . RoleEnum::ADMIN->value])
