@@ -81,7 +81,7 @@ class UpdateCompanyContactRequest extends FormRequest
 
         foreach ($clients as $index => $client) {
             $clientId = isset($client['id']) ? (int) $client['id'] : null;
-            $uniqueRule = Rule::unique('clients', 'phone');
+            $uniqueRule = Rule::unique('clients', 'phone')->withoutTrashed();
             if (!empty($clientId)) {
                 $uniqueRule->ignore($clientId);
             }

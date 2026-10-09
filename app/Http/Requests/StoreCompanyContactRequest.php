@@ -96,7 +96,7 @@ class StoreCompanyContactRequest extends FormRequest
                 'required',
                 'max:20',
                 'distinct',
-                Rule::unique('clients', 'phone'),
+                Rule::unique('clients', 'phone')->withoutTrashed(),
             ];
         }
 
