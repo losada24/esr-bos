@@ -178,6 +178,7 @@ class OrderSearchController extends Controller
                 OrderStatusEnum::PLANNED->value,
                 OrderStatusEnum::PRODUCTION->value,
                 OrderStatusEnum::PENDING_GLASS_INVOICE->value,
+                OrderStatusEnum::PRODUCTION_IN_PROGRESS->value,
                 OrderStatusEnum::PRODUCTION_SERVICES->value,
                 OrderStatusEnum::PRE_COORDINATION_ACCOUNTING->value,
                 OrderStatusEnum::PENDING_MAT_REYLOS->value,

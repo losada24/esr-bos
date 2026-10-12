@@ -522,6 +522,7 @@ class FrontdeskController extends Controller
       OrderStatusEnum::ACCOUNT_RECEIPT->value,
       OrderStatusEnum::PRODUCTION->value,
       OrderStatusEnum::PENDING_GLASS_INVOICE->value,
+      OrderStatusEnum::PRODUCTION_IN_PROGRESS->value,
       OrderStatusEnum::PRODUCTION_SERVICES->value,
       OrderStatusEnum::PRE_COORDINATION_ACCOUNTING->value,
       OrderStatusEnum::PENDING_MAT_REYLOS->value,
@@ -1048,6 +1049,7 @@ public function showQuantifiedModal(Order $order)
       OrderStatusEnum::PLANNED->value,
       OrderStatusEnum::PRODUCTION->value,
       OrderStatusEnum::PENDING_GLASS_INVOICE->value,
+      OrderStatusEnum::PRODUCTION_IN_PROGRESS->value,
       OrderStatusEnum::PRODUCTION_SERVICES->value,
       OrderStatusEnum::PRE_COORDINATION_ACCOUNTING->value,
       OrderStatusEnum::PENDING_MAT_REYLOS->value,
@@ -1317,7 +1319,10 @@ public function showQuantifiedModal(Order $order)
         $extensions = $overdue->extensions->sortByDesc('created_at')->values();
         $extensionDaysUsed = (int) $extensions->sum('business_days');
         $extensionDaysMaximum = OrderStageOverdueExtension::MAX_CUMULATIVE_BUSINESS_DAYS;
-        $extensionDaysRemaining = max(0, $extensionDaysMaximum - $extensionDaysUsed);
+        $extensionDaysUnlimited = OrderStageOverdueExtension::hasUnlimitedBusinessDayExtensions($overdue->status);
+        $extensionDaysRemaining = $extensionDaysUnlimited
+          ? $extensionDaysMaximum
+          : max(0, $extensionDaysMaximum - $extensionDaysUsed);
         $extensions = $extensions
           ->map(fn ($extension) => [
             'id' => $extension->id,
@@ -1346,6 +1351,7 @@ public function showQuantifiedModal(Order $order)
           'extension_maximum_business_days' => $extensionDaysMaximum,
           'extension_business_days_used' => $extensionDaysUsed,
           'extension_business_days_remaining' => $extensionDaysRemaining,
+          'extension_business_days_unlimited' => $extensionDaysUnlimited,
           'extensions' => $extensions,
         ];
       })

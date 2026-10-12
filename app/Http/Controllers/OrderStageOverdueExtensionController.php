@@ -15,12 +15,21 @@ class OrderStageOverdueExtensionController extends Controller
 {
     public function store(Request $request, Order $order, OrderStageOverdueTracker $tracker): RedirectResponse
     {
+        $order->loadMissing('orderStatus');
+        $hasUnlimitedBusinessDayExtensions = OrderStageOverdueExtension::hasUnlimitedBusinessDayExtensions(
+            (string) $order->status
+        );
+        $businessDaysRules = ['required', 'integer', 'min:1'];
+
+        if (! $hasUnlimitedBusinessDayExtensions) {
+            $businessDaysRules[] = 'max:'.OrderStageOverdueExtension::MAX_CUMULATIVE_BUSINESS_DAYS;
+        }
+
         $validated = $request->validate([
-            'business_days' => ['required', 'integer', 'min:1', 'max:'.OrderStageOverdueExtension::MAX_CUMULATIVE_BUSINESS_DAYS],
+            'business_days' => $businessDaysRules,
             'note' => ['required', 'string', 'max:5000'],
         ]);
 
-        $order->loadMissing('orderStatus');
         $stageAge = $tracker->sync($order);
 
         if (! ($stageAge['overdue'] ?? false)) {
@@ -47,13 +56,16 @@ class OrderStageOverdueExtensionController extends Controller
             }
 
             $usedBusinessDays = (int) $overdue->extensions()->sum('business_days');
+            $hasUnlimitedBusinessDayExtensions = OrderStageOverdueExtension::hasUnlimitedBusinessDayExtensions(
+                (string) $stageAge['status']
+            );
             $remainingBusinessDays = max(
                 0,
                 OrderStageOverdueExtension::MAX_CUMULATIVE_BUSINESS_DAYS - $usedBusinessDays
             );
             $requestedBusinessDays = (int) $validated['business_days'];
 
-            if ($requestedBusinessDays > $remainingBusinessDays) {
+            if (! $hasUnlimitedBusinessDayExtensions && $requestedBusinessDays > $remainingBusinessDays) {
                 throw ValidationException::withMessages([
                     'business_days' => $remainingBusinessDays > 0
                         ? "Only {$remainingBusinessDays} business days remain for this status overdue."

@@ -180,7 +180,8 @@ const ESR_ACCOUNTING_STATUSES = new Set([
 
 const ESR_PRODUCTION_STATUSES = new Set([
   'PRODUCTION',
-  'PENDING GLASS INVOICE'
+  'PENDING GLASS INVOICE',
+  'PRODUCTION IN PROGRESS'
 ])
 
 const ESR_COORDINATION_LOGISTICS_STATUSES = new Set([
@@ -340,6 +341,7 @@ type ExtendOverdueTarget = {
   maximumDays: number
   usedDays: number
   remainingDays: number
+  unlimited: boolean
 } | null
 type PaymentScheduleTemplates = Record<string, { label: string, percentage: number }[]>
 type PendingEsrStatusMove = {
@@ -486,7 +488,8 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
       title: task.title,
       maximumDays: task.stage_overdue_extension_maximum_days ?? 30,
       usedDays: task.stage_overdue_extension_days_used ?? 0,
-      remainingDays: task.stage_overdue_extension_days_remaining ?? 30
+      remainingDays: task.stage_overdue_extension_days_remaining ?? 30,
+      unlimited: task.stage_overdue_extension_unlimited ?? false
     })
     setExtendOverdueDays('')
     setExtendOverdueNote('')
@@ -510,7 +513,7 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
       return
     }
 
-    if (businessDays > extendOverdueTarget.remainingDays) {
+    if (!extendOverdueTarget.unlimited && businessDays > extendOverdueTarget.remainingDays) {
       setExtendOverdueError(`Only ${extendOverdueTarget.remainingDays} business days remain for this status overdue.`)
       return
     }
@@ -1714,7 +1717,7 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
                                       {stageOverdueBadge}
                                     </span>
                                   )}
-                                  {canExtendOverdue && task.stage_overdue && (task.stage_overdue_extension_days_remaining ?? 30) > 0 && (
+                                  {canExtendOverdue && task.stage_overdue && ((task.stage_overdue_extension_unlimited ?? false) || (task.stage_overdue_extension_days_remaining ?? 30) > 0) && (
                                     <button
                                       type="button"
                                       title="Extend Overdue"
@@ -1842,8 +1845,9 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
                 <h3 className="text-lg font-semibold text-slate-800">Extend Overdue</h3>
                 <p className="text-xs text-slate-500">{extendOverdueTarget.title}</p>
                 <p className="mt-1 text-xs font-medium text-amber-700">
-                  {extendOverdueTarget.remainingDays} of {extendOverdueTarget.maximumDays} business days remaining
-                  {extendOverdueTarget.usedDays > 0 ? ` (${extendOverdueTarget.usedDays} used)` : ''}
+                  {extendOverdueTarget.unlimited
+                    ? 'No extension-day limit while this project is overdue.'
+                    : `${extendOverdueTarget.remainingDays} of ${extendOverdueTarget.maximumDays} business days remaining${extendOverdueTarget.usedDays > 0 ? ` (${extendOverdueTarget.usedDays} used)` : ''}`}
                 </p>
               </div>
               <button
@@ -1865,7 +1869,7 @@ const OrderStorage = ({ auth, data, statuses, owners, supervisors, created_by_us
                   id="extend-overdue-business-days"
                   type="number"
                   min={1}
-                  max={extendOverdueTarget.remainingDays}
+                  max={extendOverdueTarget.unlimited ? undefined : extendOverdueTarget.remainingDays}
                   step={1}
                   className="form-input w-full"
                   value={extendOverdueDays}

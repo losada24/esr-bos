@@ -153,6 +153,26 @@ test('overdue extensions cannot exceed 30 cumulative business days in the same s
     expect(OrderStageOverdueExtension::query()->count())->toBe(2);
 });
 
+test('follow up projects overdue can always be extended beyond 30 cumulative business days', function () {
+    $order = createIsolatedOverdueOrder(OrderStatusEnum::FOLLOW_UP_PROJECTS->value);
+
+    submitIsolatedOverdueExtension($order, 31, 'First extension beyond the standard limit.');
+    $firstExtension = OrderStageOverdueExtension::query()->firstOrFail();
+
+    submitIsolatedOverdueExtension($order, 30, 'Second extension.');
+    $secondExtension = OrderStageOverdueExtension::query()->latest('id')->firstOrFail();
+
+    $expectedExtendedUntil = $firstExtension->extended_until->copy()->addWeekdays(30)->endOfDay();
+    $tracker = app(OrderStageOverdueTracker::class);
+    $allowance = $tracker->extensionAllowanceForStageAge($order, $tracker->resolveStageAge($order));
+
+    expect(OrderStageOverdueExtension::query()->count())->toBe(2)
+        ->and(OrderStageOverdueExtension::query()->sum('business_days'))->toBe(61)
+        ->and($secondExtension->extended_until->toDateTimeString())->toBe($expectedExtendedUntil->toDateTimeString())
+        ->and($allowance['unlimited'])->toBeTrue()
+        ->and($allowance['remaining'])->toBe(OrderStageOverdueExtension::MAX_CUMULATIVE_BUSINESS_DAYS);
+});
+
 test('the 30 day extension allowance resets when the order enters another status', function () {
     $order = createIsolatedOverdueOrder();
     submitIsolatedOverdueExtension($order, 30, 'Use the production allowance.');

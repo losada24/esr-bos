@@ -16,6 +16,7 @@ export interface Tasks {
   stage_overdue_extension_maximum_days?: number
   stage_overdue_extension_days_used?: number
   stage_overdue_extension_days_remaining?: number
+  stage_overdue_extension_unlimited?: boolean
   stage_overdue_extension?: {
     id: number
     business_days: number

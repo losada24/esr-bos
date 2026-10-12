@@ -106,12 +106,16 @@ class OrderStageOverdueTracker
     public function extensionAllowanceForStageAge(Order $order, array $stageAge): array
     {
         $maximum = OrderStageOverdueExtension::MAX_CUMULATIVE_BUSINESS_DAYS;
+        $unlimited = OrderStageOverdueExtension::hasUnlimitedBusinessDayExtensions(
+            (string) ($stageAge['status'] ?? '')
+        );
 
         if (! ($stageAge['overdue'] ?? false) || empty($stageAge['stage_started_at_raw'])) {
             return [
                 'maximum' => $maximum,
                 'used' => 0,
                 'remaining' => $maximum,
+                'unlimited' => $unlimited,
             ];
         }
 
@@ -124,7 +128,8 @@ class OrderStageOverdueTracker
         return [
             'maximum' => $maximum,
             'used' => $used,
-            'remaining' => max(0, $maximum - $used),
+            'remaining' => $unlimited ? $maximum : max(0, $maximum - $used),
+            'unlimited' => $unlimited,
         ];
     }
 
@@ -214,6 +219,7 @@ class OrderStageOverdueTracker
             OrderStatusEnum::ACCOUNT_RECEIPT->value => 7,
             OrderStatusEnum::PRODUCTION->value => 25,
             OrderStatusEnum::PENDING_GLASS_INVOICE->value => 7,
+            OrderStatusEnum::PRODUCTION_IN_PROGRESS->value => 7,
             OrderStatusEnum::PRODUCTION_SERVICES->value => 20,
             OrderStatusEnum::PRE_COORDINATION_ACCOUNTING->value => 5,
             OrderStatusEnum::PENDING_MAT_REYLOS->value => 12,

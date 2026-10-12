@@ -2,12 +2,18 @@
 
 namespace App\Models;
 
+use App\Enum\OrderStatusEnum;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class OrderStageOverdueExtension extends Model
 {
     public const MAX_CUMULATIVE_BUSINESS_DAYS = 30;
+
+    public static function hasUnlimitedBusinessDayExtensions(?string $status): bool
+    {
+        return $status === OrderStatusEnum::FOLLOW_UP_PROJECTS->value;
+    }
 
     protected $fillable = [
         'order_id',

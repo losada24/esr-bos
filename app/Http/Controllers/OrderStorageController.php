@@ -401,6 +401,7 @@ class OrderStorageController extends Controller
             'stage_overdue_extension_maximum_days' => $extensionAllowance['maximum'],
             'stage_overdue_extension_days_used' => $extensionAllowance['used'],
             'stage_overdue_extension_days_remaining' => $extensionAllowance['remaining'],
+            'stage_overdue_extension_unlimited' => $extensionAllowance['unlimited'],
             'has_payment_made' => (bool) ($order->paymentSchedule?->installments?->contains(function ($installment) {
                 return $installment->movements->isNotEmpty()
                     || $installment->paid_at !== null
